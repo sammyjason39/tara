@@ -169,7 +169,7 @@ export default function PeopleCore() {
                     <tr key={entry.id} className="border-t">
                       <td className="p-3">{entry.date}</td>
                       <td className="p-3">{entry.status}</td>
-                      <td className="p-3 text-muted-foreground">{entry.notes ?? "--"}</td>
+                      <td className="p-3 text-muted-foreground">{(entry as any).notes ?? "--"}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -12,7 +12,7 @@ const createId = () =>
 const canSeeFile = (session: SessionContext, file: ToolFileRecord) => {
   if (session.role === Roles.SUPERADMIN) return true;
   if (file.tenantId !== session.tenantId) return false;
-  if ([Roles.OWNER, Roles.COMPANY_ADMIN].includes(session.role)) return true;
+  if (([Roles.OWNER, Roles.COMPANY_ADMIN] as readonly string[]).includes(session.role)) return true;
   if (session.role === Roles.DEPT_HEAD || session.role === Roles.HR_ADMIN || session.role === Roles.FINANCE_ADMIN) {
     return file.departmentId === session.departmentId;
   }
@@ -22,22 +22,22 @@ const canSeeFile = (session: SessionContext, file: ToolFileRecord) => {
 const canManageFile = (session: SessionContext, file: ToolFileRecord) => {
   if (session.role === Roles.SUPERADMIN) return true;
   if (file.tenantId !== session.tenantId) return false;
-  if ([Roles.OWNER, Roles.COMPANY_ADMIN].includes(session.role)) return true;
-  if ([Roles.DEPT_HEAD, Roles.HR_ADMIN, Roles.FINANCE_ADMIN].includes(session.role)) {
+  if (([Roles.OWNER, Roles.COMPANY_ADMIN] as readonly string[]).includes(session.role)) return true;
+  if (([Roles.DEPT_HEAD, Roles.HR_ADMIN, Roles.FINANCE_ADMIN] as readonly string[]).includes(session.role)) {
     return file.departmentId === session.departmentId;
   }
   return file.departmentId === session.departmentId && file.ownerId === session.userId;
 };
 
 const canManageFolders = (session: SessionContext) => {
-  return [
+  return ([
     Roles.SUPERADMIN,
     Roles.OWNER,
     Roles.COMPANY_ADMIN,
     Roles.DEPT_HEAD,
     Roles.HR_ADMIN,
     Roles.FINANCE_ADMIN,
-  ].includes(session.role);
+  ] as readonly string[]).includes(session.role);
 };
 
 export function listFiles(tenantId: string, session: SessionContext, type?: ToolFileType) {
@@ -62,7 +62,7 @@ export function searchFiles(
 }
 
 export function listRecycleBin(tenantId: string, session: SessionContext, type?: ToolFileType) {
-  if (![Roles.SUPERADMIN, Roles.OWNER, Roles.COMPANY_ADMIN].includes(session.role)) {
+  if (!([Roles.SUPERADMIN, Roles.OWNER, Roles.COMPANY_ADMIN] as readonly string[]).includes(session.role)) {
     return [];
   }
   return toolFileRepo
@@ -235,7 +235,7 @@ export function restoreFromRecycle(
   session: SessionContext,
   fileId: string,
 ) {
-  if (![Roles.SUPERADMIN, Roles.OWNER, Roles.COMPANY_ADMIN].includes(session.role)) {
+  if (!([Roles.SUPERADMIN, Roles.OWNER, Roles.COMPANY_ADMIN] as readonly string[]).includes(session.role)) {
     return undefined;
   }
   const current = toolFileRepo.list().find((file) => file.id === fileId && file.tenantId === tenantId);

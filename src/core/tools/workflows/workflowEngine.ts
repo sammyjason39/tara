@@ -183,11 +183,11 @@ export function approveRequest(
   if (!canApproveWorkflow(session, workflow)) {
     throw new Error("Not authorized to approve workflow");
   }
-  const updatedSteps = workflow.steps.map((step) =>
+  const updatedSteps: WorkflowStep[] = workflow.steps.map((step) =>
     step.id === workflow.currentStepId
       ? {
           ...step,
-          status: "APPROVED",
+          status: "APPROVED" as const,
           decidedBy: session.userId,
           decidedAt: new Date().toISOString(),
           notes,
@@ -240,11 +240,11 @@ export function rejectRequest(
   if (!canApproveWorkflow(session, workflow)) {
     throw new Error("Not authorized to reject workflow");
   }
-  const updatedSteps = workflow.steps.map((step) =>
+  const updatedSteps: WorkflowStep[] = workflow.steps.map((step) =>
     step.id === workflow.currentStepId
       ? {
           ...step,
-          status: "REJECTED",
+          status: "REJECTED" as const,
           decidedBy: session.userId,
           decidedAt: new Date().toISOString(),
           notes,

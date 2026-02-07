@@ -13,12 +13,12 @@ const ensureTenantAccess = (tenantId: string, actor: SessionContext) => {
 
 const ensureFinanceAccess = (actor: SessionContext) => {
   if (
-    [
+    ([
       Roles.SUPERADMIN,
       Roles.OWNER,
       Roles.COMPANY_ADMIN,
       Roles.FINANCE_ADMIN,
-    ].includes(actor.role)
+    ] as readonly string[]).includes(actor.role)
   ) {
     return;
   }

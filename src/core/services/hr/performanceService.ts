@@ -20,7 +20,7 @@ export const performanceService = {
       cycles,
       reviews,
       activeCycles: active,
-      pendingReviews: reviews.filter((review) => review.status !== "completed").length,
+      pendingReviews: reviews.filter((review) => review.status !== "approved").length,
     };
   },
 
@@ -75,7 +75,7 @@ export const performanceService = {
 
   runCalibration(tenantId: string, actor: SessionContext, cycleId: string) {
     ensureTenantAccess(tenantId, actor);
-    const record = performanceRepo.updateCycle(tenantId, cycleId, { status: "calibrating" });
+    const record = performanceRepo.updateCycle(tenantId, cycleId, { status: "active" });
     if (record) {
       audit.log({
         tenantId,

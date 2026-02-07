@@ -30,7 +30,7 @@ const ensureTenantAccess = (tenantId: string, actor: SessionContext) => {
 
 const applyScopeFilter = (employees: Employee[], actor: SessionContext) => {
   if (actor.role === Roles.SUPERADMIN) return employees;
-  if ([Roles.OWNER, Roles.COMPANY_ADMIN, Roles.HR_ADMIN, Roles.FINANCE_ADMIN].includes(actor.role)) {
+  if (([Roles.OWNER, Roles.COMPANY_ADMIN, Roles.HR_ADMIN, Roles.FINANCE_ADMIN] as readonly string[]).includes(actor.role)) {
     return employees;
   }
   if (actor.role === Roles.DEPT_HEAD) {
@@ -41,7 +41,7 @@ const applyScopeFilter = (employees: Employee[], actor: SessionContext) => {
 
 const canManageStaff = (actor: SessionContext, employee?: Employee) => {
   if (actor.role === Roles.SUPERADMIN) return true;
-  if ([Roles.OWNER, Roles.COMPANY_ADMIN, Roles.HR_ADMIN].includes(actor.role)) return true;
+  if (([Roles.OWNER, Roles.COMPANY_ADMIN, Roles.HR_ADMIN] as readonly string[]).includes(actor.role)) return true;
   if (actor.role === Roles.DEPT_HEAD && employee) {
     return employee.departmentId === actor.departmentId;
   }

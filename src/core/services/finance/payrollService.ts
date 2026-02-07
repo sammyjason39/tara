@@ -1,52 +1,33 @@
-import { PayrollEntry } from "../types/payrollTypes";
-import { apiClient } from "../utils/apiClient";
+import type { PayrollEntry } from "@/core/types/finance/payrollTypes";
+
+// Finance-side payroll service (distinct from HR payroll service)
+// Uses in-memory mock for now
+let entries: PayrollEntry[] = [];
 
 export const payrollService = {
-  async getPayrollEntries(
-    tenantId: string,
-    period?: string,
-  ): Promise<PayrollEntry[]> {
-    try {
-      const response = await apiClient.get("/payroll", {
-        params: { tenantId, period },
-      });
-      return response.data;
-    } catch (err) {
-      console.error("Error fetching payroll entries:", err);
-      throw err;
-    }
+  async getPayrollEntries(tenantId: string, _period?: string): Promise<PayrollEntry[]> {
+    return entries.filter((e) => e.tenantId === tenantId);
   },
 
   async createPayrollEntry(entry: PayrollEntry): Promise<PayrollEntry> {
-    try {
-      const response = await apiClient.post("/payroll", entry);
-      return response.data;
-    } catch (err) {
-      console.error("Error creating payroll entry:", err);
-      throw err;
-    }
+    entries = [entry, ...entries];
+    return entry;
   },
 
-  async updatePayrollEntry(
-    entryId: string,
-    updates: Partial<PayrollEntry>,
-  ): Promise<PayrollEntry> {
-    try {
-      const response = await apiClient.put(`/payroll/${entryId}`, updates);
-      return response.data;
-    } catch (err) {
-      console.error("Error updating payroll entry:", err);
-      throw err;
-    }
+  async updatePayrollEntry(entryId: string, updates: Partial<PayrollEntry>): Promise<PayrollEntry> {
+    let updated: PayrollEntry | null = null;
+    entries = entries.map((e) => {
+      if (e.id === entryId) {
+        updated = { ...e, ...updates, updatedAt: new Date().toISOString() };
+        return updated;
+      }
+      return e;
+    });
+    if (!updated) throw new Error("Payroll entry not found");
+    return updated;
   },
 
-  async runPayroll(tenantId: string, period: string): Promise<boolean> {
-    try {
-      await apiClient.post("/payroll/run", { tenantId, period });
-      return true;
-    } catch (err) {
-      console.error("Error running payroll:", err);
-      throw err;
-    }
+  async runPayroll(_tenantId: string, _period: string): Promise<boolean> {
+    return true;
   },
 };

@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { payablesService } from "@/services/payablesService";
-import type { Payable } from "@/types/payablesTypes";
+import { payablesService } from "@/core/services/finance/payablesService";
+import type { PayableBill } from "@/core/types/finance/payables";
 import type { SessionContext } from "@/core/security/session";
 
 export function usePayables(tenantId: string, session: SessionContext) {
-  const [payables, setPayables] = useState<Payable[]>([]);
+  const [payables, setPayables] = useState<PayableBill[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,27 +21,13 @@ export function usePayables(tenantId: string, session: SessionContext) {
     }
   };
 
-  const createPayable = async (payable: Payable) => {
+  const createPayable = async (payable: PayableBill) => {
     setLoading(true);
     try {
       const newPayable = await payablesService.createPayable(payable);
-      setPayables((prev) => [...prev, newPayable]);
+      if (newPayable) setPayables((prev) => [...prev, newPayable]);
     } catch (err: any) {
       setError(err.message || "Failed to create payable");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const approvePayable = async (payableId: string) => {
-    setLoading(true);
-    try {
-      const updated = await payablesService.approvePayable({ payableId });
-      setPayables((prev) =>
-        prev.map((p) => (p.id === payableId ? updated : p)),
-      );
-    } catch (err: any) {
-      setError(err.message || "Failed to approve payable");
     } finally {
       setLoading(false);
     }
@@ -51,12 +37,5 @@ export function usePayables(tenantId: string, session: SessionContext) {
     fetchPayables();
   }, [tenantId]);
 
-  return {
-    payables,
-    loading,
-    error,
-    fetchPayables,
-    createPayable,
-    approvePayable,
-  };
+  return { payables, loading, error, fetchPayables, createPayable };
 }

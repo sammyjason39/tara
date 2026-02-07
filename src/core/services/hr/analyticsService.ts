@@ -24,7 +24,7 @@ export const analyticsService = {
     const late = attendance.filter((item) => item.status === "late").length;
     const riskIndex = employees.length ? Math.round(((absent + late) / employees.length) * 100) : 0;
     const payrollDrafts = payrollRuns.filter((run) => run.status !== "approved").length;
-    const expiringContracts = contracts.filter((contract) => contract.status !== "signed").length;
+    const expiringContracts = contracts.filter((contract) => contract.status !== "active").length;
 
     return {
       absenteeismRisk: riskIndex,

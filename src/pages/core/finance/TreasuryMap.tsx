@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -9,7 +9,7 @@ import { DataTableShell } from "@/core/tools/DataTableShell";
 import { FilterBar } from "@/core/tools/FilterBar";
 import { ApprovalStatusBadge } from "@/core/tools/ApprovalStatusBadge";
 import { useSession } from "@/core/security/session";
-import { treasuryService } from "@/core/services/finance/treasuryService";
+import { useTreasury } from "@/hooks/finance/useTreasury";
 
 export default function TreasuryMap() {
   const session = useSession();
@@ -18,10 +18,8 @@ export default function TreasuryMap() {
   const [fromSource, setFromSource] = useState("");
   const [toSource, setToSource] = useState("");
   const [amount, setAmount] = useState("1000000");
-  const [settlementSource, setSettlementSource] = useState("");
-  const [settlementAmount, setSettlementAmount] = useState("500000");
-  const sources = useMemo(() => treasuryService.listSources(session.tenantId, session), [session]);
-  const transfers = useMemo(() => treasuryService.listTransfers(session.tenantId, session), [session]);
+
+  const { sources, transfers, createTransfer, reconcileSettlement } = useTreasury(session.tenantId, session);
 
   const filteredSources = sources.filter((src) =>
     search ? src.name.toLowerCase().includes(search.toLowerCase()) : true,
@@ -76,11 +74,7 @@ export default function TreasuryMap() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => {
-                      setSettlementSource(src.id);
-                      setSettlementAmount(String(src.pendingSettlement ?? 0));
-                      treasuryService.reconcileSettlement(session.tenantId, session, src.id, src.pendingSettlement ?? 0);
-                    }}
+                    onClick={() => reconcileSettlement(src.id, src.pendingSettlement ?? 0)}
                   >
                     Reconcile
                   </Button>
@@ -150,7 +144,7 @@ export default function TreasuryMap() {
             <Input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
             <Button
               onClick={() => {
-                treasuryService.createTransfer(session.tenantId, session, {
+                createTransfer({
                   fromSourceId: fromSource || sources[0]?.id || "",
                   toSourceId: toSource || sources[1]?.id || "",
                   amount: Number(amount || "0"),

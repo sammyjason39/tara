@@ -30,9 +30,9 @@ import LexBoard from "@/pages/core/HR/LexBoard";
 import InsightLayer from "@/pages/core/HR/InsightLayer";
 import CaseDesk from "@/pages/core/HR/Cases/CaseDesk";
 import CaseDetail from "@/pages/core/HR/Cases/CaseDetail";
-import FinanceWorkspaceLayout from "@/pages/core/Finance/FinanceWorkspaceLayout";
-import MoneyDesk from "@/pages/core/Finance/MoneyDesk";
-import TreasuryMap from "@/pages/core/Finance/TreasuryMap";
+import FinanceWorkspaceLayout from "@/pages/core/finance/FinanceWorkspaceLayout";
+import MoneyDesk from "@/pages/core/finance/MoneyDesk";
+import TreasuryMap from "@/pages/core/finance/TreasuryMap";
 import WorkflowInbox from "@/pages/core/WorkflowInbox";
 import ToolsHome from "@/pages/core/tools/ToolsHome";
 import DocumentTool from "@/pages/core/tools/DocumentTool";
@@ -76,7 +76,7 @@ export function buildCoreRoutes(): JSX.Element[] {
       key="core-finance"
       path="finance/*"
       element={
-        <ProtectedRoute permission="core.finance.access" scope="COMPANY">
+        <ProtectedRoute permission="finance.workspace.access" scope="COMPANY">
           <FinanceWorkspaceLayout />
         </ProtectedRoute>
       }
@@ -85,7 +85,7 @@ export function buildCoreRoutes(): JSX.Element[] {
       <Route
         path="moneydesk"
         element={
-          <ProtectedRoute permission="core.finance.access" scope="COMPANY">
+          <ProtectedRoute permission="finance.workspace.access" scope="COMPANY">
             <MoneyDesk />
           </ProtectedRoute>
         }
@@ -93,7 +93,7 @@ export function buildCoreRoutes(): JSX.Element[] {
       <Route
         path="treasury"
         element={
-          <ProtectedRoute permission="core.finance.treasury" scope="COMPANY">
+          <ProtectedRoute permission="finance.treasury.view" scope="COMPANY">
             <TreasuryMap />
           </ProtectedRoute>
         }

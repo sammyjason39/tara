@@ -1,52 +1,24 @@
-import { Payable, PayableApproval } from "../types/payablesTypes";
-import { apiClient } from "../utils/apiClient";
+import type { PayableBill } from "@/core/types/finance/payables";
+import { mockFinanceRepo } from "@/core/repositories/finance/mockFinanceRepo";
+
+const repo = mockFinanceRepo;
 
 export const payablesService = {
-  async getPayables(tenantId: string, status?: string): Promise<Payable[]> {
-    try {
-      const response = await apiClient.get("/payables", {
-        params: { tenantId, status },
-      });
-      return response.data;
-    } catch (err) {
-      console.error("Error fetching payables:", err);
-      throw err;
-    }
+  async getPayables(tenantId: string, _status?: string): Promise<PayableBill[]> {
+    return repo.listPayables(tenantId);
   },
 
-  async createPayable(payable: Payable): Promise<Payable> {
-    try {
-      const response = await apiClient.post("/payables", payable);
-      return response.data;
-    } catch (err) {
-      console.error("Error creating payable:", err);
-      throw err;
-    }
+  async createPayable(payable: PayableBill): Promise<PayableBill> {
+    return repo.createPayable(payable.tenantId, payable);
   },
 
-  async updatePayable(
-    payableId: string,
-    updates: Partial<Payable>,
-  ): Promise<Payable> {
-    try {
-      const response = await apiClient.put(`/payables/${payableId}`, updates);
-      return response.data;
-    } catch (err) {
-      console.error("Error updating payable:", err);
-      throw err;
-    }
+  async updatePayable(_payableId: string, _updates: Partial<PayableBill>): Promise<PayableBill | null> {
+    // Mock repo doesn't support update for payables yet
+    return null;
   },
 
-  async approvePayable(approval: PayableApproval): Promise<Payable> {
-    try {
-      const response = await apiClient.post(
-        `/payables/${approval.payableId}/approve`,
-        approval,
-      );
-      return response.data;
-    } catch (err) {
-      console.error("Error approving payable:", err);
-      throw err;
-    }
+  async approvePayable(_approval: { payableId: string }): Promise<PayableBill | null> {
+    // Mock repo doesn't support approval yet
+    return null;
   },
 };

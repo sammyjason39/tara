@@ -53,7 +53,7 @@ export const hrWorkstreamService = {
       title: `${contract.title} pending signature`,
       status: contract.status,
       urgency: 65,
-      owner: contract.departmentId ?? "HR",
+      owner: (contract as any).departmentId ?? "HR",
       nextAction: "Route to LexBoard",
       source: "LexBoard",
       entityId: contract.id,

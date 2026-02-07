@@ -17,7 +17,7 @@ export default function LexBoard() {
   const session = useSession();
   const [version, setVersion] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState(contractTemplates[0]?.id ?? "tpl-employment");
+  const [selectedTemplate, setSelectedTemplate] = useState<string>(contractTemplates[0]?.id ?? "tpl-employment");
   const [search, setSearch] = useState("");
   const compliance = useMemo(() => legalService.getComplianceCases(session.tenantId, session), [session, version]);
   const filteredContracts = compliance.contracts.filter((contract) =>

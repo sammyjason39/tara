@@ -23,7 +23,7 @@ export default function PayCycleStudio() {
   const [varianceNote, setVarianceNote] = useState("");
   const refresh = useCallback(() => setVersion((prev) => prev + 1), []);
   useBackgroundRefresh(refresh, 20000);
-  const financeAllowed = [Roles.SUPERADMIN, Roles.OWNER, Roles.COMPANY_ADMIN, Roles.FINANCE_ADMIN].includes(session.role);
+  const financeAllowed = ([Roles.SUPERADMIN, Roles.OWNER, Roles.COMPANY_ADMIN, Roles.FINANCE_ADMIN] as readonly string[]).includes(session.role);
   const runs = useMemo(() => {
     const items = payrollService.listRuns(session.tenantId, session);
     if (!search) return items;
