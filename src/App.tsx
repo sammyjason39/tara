@@ -15,6 +15,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
+import { AppProvider } from "@/contexts/AppContext";
 import { CoreLayout } from "@/layouts/CoreLayout";
 import { ModuleLayout } from "@/layouts/ModuleLayout";
 
@@ -23,24 +24,26 @@ import { buildModuleRoutes } from "@/core/runtime/moduleRoutes";
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Landing */}
-        <Route path="/" element={<Index />} />
+    <AppProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Landing */}
+          <Route path="/" element={<Index />} />
 
-        {/* Core (Administrative Backbone) */}
-        <Route path="/core/*" element={<CoreLayout />}>
-          {buildCoreRoutes()}
-        </Route>
+          {/* Core (Administrative Backbone) */}
+          <Route path="/core/*" element={<CoreLayout />}>
+            {buildCoreRoutes()}
+          </Route>
 
-        {/* Industry Modules (Contract-Driven) */}
-        <Route path="/m/:moduleId/*" element={<ModuleLayout />}>
-          {buildModuleRoutes()}
-        </Route>
+          {/* Industry Modules (Contract-Driven) */}
+          <Route path="/m/:moduleId/*" element={<ModuleLayout />}>
+            {buildModuleRoutes()}
+          </Route>
 
-        {/* Enforcement */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+          {/* Enforcement */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </AppProvider>
   );
 }

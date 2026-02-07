@@ -4,6 +4,19 @@
 // ============================================================
 
 export { registry } from "./registry";
+export { staffService } from "./hr/staffService";
+export { peopleService } from "./hr/peopleService";
+export { orgService } from "./hr/orgService";
+export { documentService } from "./hr/documentService";
+export { hrWorkstreamService } from "./hr/hrWorkstreamService";
+export { workflowService } from "./hr/workflowService";
+export { recruitmentService } from "./hr/recruitmentService";
+export { trainingService } from "./hr/trainingService";
+export { performanceService } from "./hr/performanceService";
+export { payrollService } from "./hr/payrollService";
+export { legalService } from "./hr/legalService";
+export { analyticsService } from "./hr/analyticsService";
+export { caseService } from "./hr/caseService";
 
 /* ============================================================================ */
 /* TYPE IMPORTS (SINGLE ENTRY POINT)                                             */

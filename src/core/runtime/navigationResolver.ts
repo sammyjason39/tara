@@ -158,6 +158,22 @@ export function resolveNavigation(
     });
   }
 
+  const toolsAllowed = hasPermission(userPermissions, [
+    { resource: "core.tools", actions: ["read"] },
+  ]);
+
+  if (toolsAllowed) {
+    navigation.push({
+      id: "core-tools",
+      label: "WorkSuite",
+      path: "/core/tools",
+      icon: "toolbox",
+      moduleId: "core",
+      menuGroup: "office",
+      disabled: false,
+    });
+  }
+
   // ===========================================================================
   // 2. MODULE PAGES (DYNAMIC, PHASE 3)
   // ===========================================================================

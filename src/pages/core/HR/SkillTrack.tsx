@@ -1,0 +1,220 @@
+import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { PageHeader } from "@/core/ui/PageHeader";
+import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
+import { DataTableShell } from "@/core/tools/DataTableShell";
+import { FilterBar } from "@/core/tools/FilterBar";
+import { useSession } from "@/core/security/session";
+import { trainingService } from "@/core/services/hr/trainingService";
+import { staffService } from "@/core/services/hr/staffService";
+
+export default function SkillTrack() {
+  const session = useSession();
+  const [version, setVersion] = useState(0);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [actionType, setActionType] = useState<"assign" | "bulk" | "export" | "escalate">("assign");
+  const [selectedEmployee, setSelectedEmployee] = useState("");
+  const [selectedProgram, setSelectedProgram] = useState("");
+  const [bulkIds, setBulkIds] = useState("");
+  const [notes, setNotes] = useState("");
+  const [search, setSearch] = useState("");
+  const compliance = useMemo(() => trainingService.getComplianceStatus(session.tenantId, session), [session, version]);
+  const assignments = useMemo(() => trainingService.listAssignments(session.tenantId, session), [session, version]);
+  const programs = useMemo(() => trainingService.listPrograms(session.tenantId, session), [session]);
+  const staff = useMemo(() => staffService.listStaff(session.tenantId, session, {}, { page: 1, pageSize: 50 }), [session, version]);
+  const filteredAssignments = assignments.filter((assignment) =>
+    search ? assignment.employeeId.toLowerCase().includes(search.toLowerCase()) : true,
+  );
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="SkillTrack"
+        subtitle="Training, compliance, and certification readiness."
+        primaryAction={
+          <Button
+            onClick={() => {
+              setActionType("assign");
+              setSelectedEmployee(staff.items[0]?.id ?? "");
+              setSelectedProgram(programs[0]?.id ?? "");
+              setDialogOpen(true);
+            }}
+          >
+            Assign Training
+          </Button>
+        }
+        secondaryActions={<Input placeholder="Search training" className="min-w-[200px]" value={search} onChange={(e) => setSearch(e.target.value)} />}
+      />
+
+      <WorkspacePanel title="WorkQueue" description="Compliance actions.">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              setActionType("bulk");
+              setSelectedProgram(programs[0]?.id ?? "");
+              setDialogOpen(true);
+            }}
+          >
+            Bulk Assign
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              trainingService.exportCompliance(session.tenantId, session);
+            }}
+          >
+            Export Compliance
+          </Button>
+        </div>
+      </WorkspacePanel>
+
+      <WorkspacePanel title="Active Records" description="Training assignments and status.">
+        <FilterBar searchValue={search} onSearchChange={setSearch} />
+        <DataTableShell total={filteredAssignments.length} page={1} pageSize={10}>
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
+              <tr>
+                <th className="p-3 text-left">Employee</th>
+                <th className="p-3 text-left">Program</th>
+                <th className="p-3 text-left">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAssignments.map((assignment) => (
+                <tr key={assignment.id} className="border-t">
+                  <td className="p-3">{assignment.employeeId}</td>
+                  <td className="p-3 text-muted-foreground">{assignment.programId}</td>
+                  <td className="p-3 text-muted-foreground">{assignment.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </DataTableShell>
+      </WorkspacePanel>
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
+        <WorkspacePanel title="Pending Approvals" description="Training escalations.">
+          <div className="space-y-3 text-sm text-muted-foreground">
+            {assignments.slice(0, 3).map((assignment) => (
+              <div key={assignment.id} className="flex items-center justify-between rounded-lg border p-3">
+                <span>{assignment.employeeId}</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    trainingService.requestComplianceReview(session.tenantId, session, assignment.employeeId);
+                    setVersion((prev) => prev + 1);
+                  }}
+                >
+                  Escalate
+                </Button>
+              </div>
+            ))}
+          </div>
+        </WorkspacePanel>
+
+        <WorkspacePanel title="Insights" description="Compliance performance.">
+          <div className="space-y-3 text-sm text-muted-foreground">
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <span>Assigned</span>
+              <span className="font-semibold text-foreground">{compliance.assigned}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <span>Completed</span>
+              <span className="font-semibold text-foreground">{compliance.completed}</span>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <span>Completion rate</span>
+              <span className="font-semibold text-foreground">{compliance.completionRate}%</span>
+            </div>
+          </div>
+        </WorkspacePanel>
+      </div>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Training Action</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {actionType === "bulk" ? (
+              <>
+                <Input
+                  placeholder="Employee IDs (comma-separated)"
+                  value={bulkIds}
+                  onChange={(e) => setBulkIds(e.target.value)}
+                />
+                <Select value={selectedProgram} onValueChange={setSelectedProgram}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Training program" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {programs.map((program) => (
+                      <SelectItem key={program.id} value={program.id}>
+                        {program.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
+            ) : (
+              <>
+                <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {staff.items.map((emp) => (
+                      <SelectItem key={emp.id} value={emp.id}>
+                        {emp.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={selectedProgram} onValueChange={setSelectedProgram}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Training program" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {programs.map((program) => (
+                      <SelectItem key={program.id} value={program.id}>
+                        {program.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes" />
+              </>
+            )}
+            <Button
+              onClick={() => {
+                if (actionType === "bulk") {
+                  const ids = bulkIds.split(",").map((id) => id.trim()).filter(Boolean);
+                  trainingService.bulkAssign(session.tenantId, session, {
+                    employeeIds: ids.length ? ids : staff.items.map((emp) => emp.id),
+                    programId: selectedProgram,
+                  });
+                } else if (selectedEmployee) {
+                  trainingService.assignTraining(session.tenantId, session, {
+                    employeeId: selectedEmployee,
+                    programId: selectedProgram,
+                  });
+                }
+                setNotes("");
+                setDialogOpen(false);
+                setVersion((prev) => prev + 1);
+              }}
+            >
+              Confirm
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

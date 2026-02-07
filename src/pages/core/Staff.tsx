@@ -19,8 +19,8 @@ import {
 import { PageShell } from "@/core/ui/PageShell";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
-import FilterBar from "@/pages/core/ui/toolbar/FilterBar";
-import DataTableShell from "@/pages/core/ui/tables/DataTableShell";
+import FilterBar from "@/core/tools/FilterBar";
+import DataTableShell from "@/core/tools/DataTableShell";
 import { UserPlus } from "lucide-react";
 
 type StaffRow = {
