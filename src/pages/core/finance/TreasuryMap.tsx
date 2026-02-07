@@ -1,8 +1,19 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
@@ -10,6 +21,7 @@ import { FilterBar } from "@/core/tools/FilterBar";
 import { ApprovalStatusBadge } from "@/core/tools/ApprovalStatusBadge";
 import { useSession } from "@/core/security/session";
 import { useTreasury } from "@/hooks/finance/useTreasury";
+import { logService } from "@/core/services/finance/logService";
 
 export default function TreasuryMap() {
   const session = useSession();
@@ -19,22 +31,64 @@ export default function TreasuryMap() {
   const [toSource, setToSource] = useState("");
   const [amount, setAmount] = useState("1000000");
 
-  const { sources, transfers, createTransfer, reconcileSettlement } = useTreasury(session.tenantId, session);
+  const { sources, transfers, createTransfer, reconcileSettlement } =
+    useTreasury(session.tenantId, session);
 
-  const filteredSources = sources.filter((src) =>
-    search ? src.name.toLowerCase().includes(search.toLowerCase()) : true,
+  const filteredSources = useMemo(
+    () =>
+      sources.filter((src) =>
+        search ? src.name.toLowerCase().includes(search.toLowerCase()) : true,
+      ),
+    [sources, search],
   );
+
+  // Submit inter-account transfer
+  const handleTransfer = () => {
+    const transferRequest = {
+      fromSourceId: fromSource || sources[0]?.id || "",
+      toSourceId: toSource || sources[1]?.id || "",
+      amount: Number(amount || "0"),
+      tenantId: session.tenantId,
+      requestedBy: session.userId,
+      approvalStages: ["Treasury", "Finance", "CFO"], // multi-level approval
+    };
+
+    createTransfer(transferRequest);
+
+    // Audit log
+    logService.log(
+      session.tenantId,
+      session.userId,
+      `Created Transfer: ${JSON.stringify(transferRequest)}`,
+    );
+
+    setDialogOpen(false);
+  };
 
   return (
     <div className="space-y-6">
+      {/* Page Header */}
       <PageHeader
         title="TreasuryMap"
-        subtitle="Cash positioning, liquidity, and settlement readiness."
-        primaryAction={<Button onClick={() => setDialogOpen(true)}>Transfer</Button>}
-        secondaryActions={<Input placeholder="Search accounts" value={search} onChange={(e) => setSearch(e.target.value)} className="min-w-[220px]" />}
+        subtitle="Real-time cash positioning, liquidity, inter-account transfers, and settlements."
+        primaryAction={
+          <Button onClick={() => setDialogOpen(true)}>Transfer</Button>
+        }
+        secondaryActions={
+          <Input
+            placeholder="Search accounts"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="min-w-[220px]"
+          />
+        }
       />
 
-      <WorkspacePanel title="Liquidity Overview" description="Bank, wallets, cash registers, settlement balances.">
+      {/* Liquidity Overview */}
+      <WorkspacePanel
+        title="Liquidity Overview"
+        description="Bank, wallets, cash registers, settlement balances."
+      >
         <FilterBar searchValue={search} onSearchChange={setSearch} />
         <DataTableShell total={filteredSources.length} page={1} pageSize={10}>
           <table className="w-full text-sm">
@@ -49,10 +103,16 @@ export default function TreasuryMap() {
             <tbody>
               {filteredSources.map((src) => (
                 <tr key={src.id} className="border-t">
-                  <td className="p-3 font-medium text-foreground">{src.name}</td>
+                  <td className="p-3 font-medium text-foreground">
+                    {src.name}
+                  </td>
                   <td className="p-3 text-muted-foreground">{src.type}</td>
-                  <td className="p-3 text-muted-foreground">{src.balance.toLocaleString()}</td>
-                  <td className="p-3 text-muted-foreground">{src.pendingSettlement?.toLocaleString() ?? 0}</td>
+                  <td className="p-3 text-muted-foreground">
+                    {src.balance.toLocaleString()}
+                  </td>
+                  <td className="p-3 text-muted-foreground">
+                    {src.pendingSettlement?.toLocaleString() ?? 0}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -60,21 +120,38 @@ export default function TreasuryMap() {
         </DataTableShell>
       </WorkspacePanel>
 
+      {/* Pending Settlements & Transfers */}
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <WorkspacePanel title="Pending Settlements" description="Reconcile gateway settlements to bank.">
+        {/* Pending Settlements */}
+        <WorkspacePanel
+          title="Pending Settlements"
+          description="Reconcile gateway settlements to bank accounts."
+        >
           <div className="space-y-3">
             {filteredSources
               .filter((src) => (src.pendingSettlement ?? 0) > 0)
               .map((src) => (
-                <div key={src.id} className="flex items-center justify-between rounded-lg border p-3 text-sm">
+                <div
+                  key={src.id}
+                  className="flex items-center justify-between rounded-lg border p-3 text-sm"
+                >
                   <div>
                     <p className="font-semibold text-foreground">{src.name}</p>
-                    <p className="text-xs text-muted-foreground">Pending {src.pendingSettlement?.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Pending: {src.pendingSettlement?.toLocaleString()}
+                    </p>
                   </div>
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => reconcileSettlement(src.id, src.pendingSettlement ?? 0)}
+                    onClick={() => {
+                      reconcileSettlement(src.id, src.pendingSettlement ?? 0);
+                      logService.log(
+                        session.tenantId,
+                        session.userId,
+                        `Reconciled ${src.name} pending settlement: ${src.pendingSettlement}`,
+                      );
+                    }}
                   >
                     Reconcile
                   </Button>
@@ -83,7 +160,11 @@ export default function TreasuryMap() {
           </div>
         </WorkspacePanel>
 
-        <WorkspacePanel title="Transfers" description="Inter-account transfers and approvals.">
+        {/* Transfers Table */}
+        <WorkspacePanel
+          title="Transfers"
+          description="Inter-account transfers and approval workflow."
+        >
           <DataTableShell total={transfers.length} page={1} pageSize={5}>
             <table className="w-full text-sm">
               <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
@@ -92,16 +173,26 @@ export default function TreasuryMap() {
                   <th className="p-3 text-left">To</th>
                   <th className="p-3 text-left">Amount</th>
                   <th className="p-3 text-left">Status</th>
+                  <th className="p-3 text-left">Requested By</th>
                 </tr>
               </thead>
               <tbody>
                 {transfers.map((trf) => (
                   <tr key={trf.id} className="border-t">
-                    <td className="p-3 text-muted-foreground">{trf.fromSourceId}</td>
-                    <td className="p-3 text-muted-foreground">{trf.toSourceId}</td>
-                    <td className="p-3 text-muted-foreground">{trf.amount.toLocaleString()}</td>
+                    <td className="p-3 text-muted-foreground">
+                      {trf.fromSourceId}
+                    </td>
+                    <td className="p-3 text-muted-foreground">
+                      {trf.toSourceId}
+                    </td>
+                    <td className="p-3 text-muted-foreground">
+                      {trf.amount.toLocaleString()}
+                    </td>
                     <td className="p-3">
                       <ApprovalStatusBadge status={trf.status.toUpperCase()} />
+                    </td>
+                    <td className="p-3 text-muted-foreground">
+                      {trf.requestedBy}
                     </td>
                   </tr>
                 ))}
@@ -111,6 +202,7 @@ export default function TreasuryMap() {
         </WorkspacePanel>
       </div>
 
+      {/* Transfer Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -129,6 +221,7 @@ export default function TreasuryMap() {
                 ))}
               </SelectContent>
             </Select>
+
             <Select value={toSource} onValueChange={setToSource}>
               <SelectTrigger>
                 <SelectValue placeholder="To source" />
@@ -141,19 +234,13 @@ export default function TreasuryMap() {
                 ))}
               </SelectContent>
             </Select>
-            <Input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount" />
-            <Button
-              onClick={() => {
-                createTransfer({
-                  fromSourceId: fromSource || sources[0]?.id || "",
-                  toSourceId: toSource || sources[1]?.id || "",
-                  amount: Number(amount || "0"),
-                });
-                setDialogOpen(false);
-              }}
-            >
-              Submit & Route
-            </Button>
+
+            <Input
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Amount"
+            />
+            <Button onClick={handleTransfer}>Submit & Route</Button>
           </div>
         </DialogContent>
       </Dialog>

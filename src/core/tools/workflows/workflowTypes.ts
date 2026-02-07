@@ -8,9 +8,15 @@ export type WorkflowEntityType =
   | "PERFORMANCE"
   | "CASE"
   | "PAYMENT"
-  | "TREASURY_TRANSFER";
+  | "TREASURY_TRANSFER"
+  | "ASSET_REQUEST";
 
-export type WorkflowStatus = "PENDING" | "APPROVED" | "REJECTED" | "RETURNED" | "MODIFIED";
+export type WorkflowStatus =
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED"
+  | "RETURNED"
+  | "MODIFIED";
 
 export type WorkflowActionType =
   | "CREATE"
@@ -20,7 +26,12 @@ export type WorkflowActionType =
   | "MODIFY"
   | "FORWARD";
 
-export type WorkflowStepStatus = "PENDING" | "APPROVED" | "REJECTED" | "RETURNED" | "SKIPPED";
+export type WorkflowStepStatus =
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED"
+  | "RETURNED"
+  | "SKIPPED";
 
 export type WorkflowStep = {
   id: string;

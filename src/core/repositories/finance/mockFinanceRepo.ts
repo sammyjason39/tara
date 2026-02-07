@@ -1,11 +1,19 @@
-import type { FinanceRepository } from "./financeRepository";
+import type { Asset, FinanceRepository } from "./financeRepository";
 import type { MoneySource } from "@/core/types/finance/accounts";
-import type { TreasuryTransfer, SettlementRecord } from "@/core/types/finance/treasury";
+import type {
+  TreasuryTransfer,
+  SettlementRecord,
+} from "@/core/types/finance/treasury";
 import type { PaymentRequest } from "@/core/types/finance/payments";
 import type { ReceivableInvoice } from "@/core/types/finance/receivables";
 import type { PayableBill } from "@/core/types/finance/payables";
 import type { JournalEntry } from "@/core/types/finance/ledger";
-import { ensureSeed, loadFromStorage, nextId, saveToStorage } from "@/core/repositories/hr/storage";
+import {
+  ensureSeed,
+  loadFromStorage,
+  nextId,
+  saveToStorage,
+} from "@/core/repositories/hr/storage";
 
 const sourcesKey = (tenantId: string) => `fin:${tenantId}:sources`;
 const transfersKey = (tenantId: string) => `fin:${tenantId}:transfers`;
@@ -79,6 +87,29 @@ const seedPayables = (tenantId: string): PayableBill[] => [
     status: "pending",
     createdAt: now(),
     updatedAt: now(),
+  },
+];
+
+const assetsKey = (tenantId: string) => `fin:${tenantId}:assets`;
+
+const seedAssets = (tenantId: string): Asset[] => [
+  {
+    id: `${tenantId}-asset-001`,
+    name: "Laptop Dell XPS",
+    type: "EQUIPMENT",
+    department: "IT",
+    value: 20000000,
+    status: "ACTIVE",
+    createdAt: now(),
+  },
+  {
+    id: `${tenantId}-asset-002`,
+    name: "Office Chair",
+    type: "FURNITURE",
+    department: "Admin",
+    value: 1500000,
+    status: "ACTIVE",
+    createdAt: now(),
   },
 ];
 
@@ -178,5 +209,22 @@ export const mockFinanceRepo: FinanceRepository = {
     });
     if (updated) saveToStorage(journalKey(tenantId), next);
     return updated;
+  },
+
+  listAssets(tenantId) {
+    return ensureSeed(assetsKey(tenantId), seedAssets(tenantId));
+  },
+
+  createAsset(tenantId, payload) {
+    const items = this.listAssets(tenantId);
+    const newAsset: Asset = {
+      id: `asset-${Date.now()}`,
+      status: "ACTIVE",
+      createdAt: now(),
+      ...payload,
+    };
+    const next = [newAsset, ...items];
+    saveToStorage(assetsKey(tenantId), next);
+    return newAsset;
   },
 };
