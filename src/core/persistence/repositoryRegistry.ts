@@ -13,7 +13,7 @@ export function registerRepo<K extends RepositoryKey>(
 }
 
 export function getRepo<K extends RepositoryKey>(key: K): RepositoryMap[K] {
-  const repo = registry[key];
+  const repo = registry[key] as RepositoryMap[K] | undefined;
   if (!repo) {
     throw new Error(`Repository not registered: ${key}`);
   }

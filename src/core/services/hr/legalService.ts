@@ -24,7 +24,7 @@ export const legalService = {
     return {
       contracts,
       expiringVisas,
-      pendingRenewals: contracts.filter((item) => item.status === "pending").length,
+      pendingRenewals: contracts.filter((item) => item.status === "draft").length,
     };
   },
 
@@ -54,7 +54,7 @@ export const legalService = {
 
   markSigned(tenantId: string, actor: SessionContext, contractId: string) {
     ensureTenantAccess(tenantId, actor);
-    const record = updateContract(tenantId, contractId, { status: "signed" });
+    const record = updateContract(tenantId, contractId, { status: "active" });
     if (record) {
       audit.log({
         tenantId,
@@ -69,7 +69,7 @@ export const legalService = {
 
   requestRenewal(tenantId: string, actor: SessionContext, contractId: string) {
     ensureTenantAccess(tenantId, actor);
-    const record = updateContract(tenantId, contractId, { status: "pending" });
+    const record = updateContract(tenantId, contractId, { status: "draft" });
     if (record) {
       workflowService.createRequest(tenantId, actor, {
         entityType: "CONTRACT",

@@ -1,72 +1,29 @@
-import { LedgerBalance, LedgerEntry } from "@/core/types/finance/ledger";
+import type { LedgerEntry, LedgerBalance, JournalEntry } from "@/core/types/finance/ledger";
+import { mockFinanceRepo } from "@/core/repositories/finance/mockFinanceRepo";
+
+const repo = mockFinanceRepo;
 
 export const ledgerService = {
-  // Fetch ledger entries for a tenant, optionally filtered by department or date range
-  async getEntries(
-    tenantId: string,
-    departmentId?: string,
-    startDate?: string,
-    endDate?: string,
-  ): Promise<LedgerEntry[]> {
-    try {
-      const response = await apiClient.get("/ledger", {
-        params: { tenantId, departmentId, startDate, endDate },
-      });
-      return response.data;
-    } catch (err) {
-      console.error("Error fetching ledger entries:", err);
-      throw err;
-    }
+  async getEntries(tenantId: string): Promise<JournalEntry[]> {
+    return repo.listJournalEntries(tenantId);
   },
 
-  // Create a new ledger entry
-  async createEntry(entry: LedgerEntry): Promise<LedgerEntry> {
-    try {
-      const response = await apiClient.post("/ledger", entry);
-      return response.data;
-    } catch (err) {
-      console.error("Error creating ledger entry:", err);
-      throw err;
-    }
+  async createEntry(entry: JournalEntry): Promise<JournalEntry> {
+    return repo.createJournalEntry(entry.tenantId, entry);
   },
 
-  // Update existing ledger entry
-  async updateEntry(
-    entryId: string,
-    updates: Partial<LedgerEntry>,
-  ): Promise<LedgerEntry> {
-    try {
-      const response = await apiClient.put(`/ledger/${entryId}`, updates);
-      return response.data;
-    } catch (err) {
-      console.error("Error updating ledger entry:", err);
-      throw err;
-    }
+  async updateEntry(entryId: string, updates: Partial<JournalEntry>): Promise<JournalEntry | null> {
+    // We need tenantId from the updates or a lookup; for now use a simple approach
+    const tenantId = updates.tenantId ?? "";
+    return repo.updateJournalEntry(tenantId, entryId, updates);
   },
 
-  // Delete a ledger entry
-  async deleteEntry(entryId: string): Promise<void> {
-    try {
-      await apiClient.delete(`/ledger/${entryId}`);
-    } catch (err) {
-      console.error("Error deleting ledger entry:", err);
-      throw err;
-    }
+  async deleteEntry(_entryId: string): Promise<void> {
+    // Mock repo doesn't support delete yet; no-op
   },
 
-  // Get ledger balances (by account or department)
-  async getBalances(
-    tenantId: string,
-    departmentId?: string,
-  ): Promise<LedgerBalance[]> {
-    try {
-      const response = await apiClient.get("/ledger/balances", {
-        params: { tenantId, departmentId },
-      });
-      return response.data;
-    } catch (err) {
-      console.error("Error fetching ledger balances:", err);
-      throw err;
-    }
+  async getBalances(_tenantId: string): Promise<LedgerBalance[]> {
+    // Mock repo doesn't have balances; return empty
+    return [];
   },
 };

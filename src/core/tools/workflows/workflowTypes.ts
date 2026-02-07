@@ -6,7 +6,9 @@ export type WorkflowEntityType =
   | "RECRUITMENT"
   | "TRAINING"
   | "PERFORMANCE"
-  | "CASE";
+  | "CASE"
+  | "PAYMENT"
+  | "TREASURY_TRANSFER";
 
 export type WorkflowStatus = "PENDING" | "APPROVED" | "REJECTED" | "RETURNED" | "MODIFIED";
 

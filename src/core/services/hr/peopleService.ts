@@ -22,7 +22,7 @@ export const peopleService = {
     const employee = employeeRepo.getById(tenantId, employeeId);
     if (!employee) return null;
     if (actor.role !== Roles.SUPERADMIN && actor.tenantId !== tenantId) return null;
-    if (actor.role === Roles.STAFF && employee.userId !== actor.userId && employee.id !== actor.userId) {
+    if (actor.role === Roles.HR_STAFF && employee.userId !== actor.userId && employee.id !== actor.userId) {
       return null;
     }
     if (actor.role === Roles.DEPT_HEAD && employee.departmentId !== actor.departmentId) {

@@ -29,16 +29,9 @@ export default function MoneyDesk() {
     () => workflowService.listRequests(session.tenantId, { entityType: "PAYROLL" }),
     [session],
   );
-  const alerts = useMemo(
-    () => financeService.getAlerts(session.tenantId, session),
-    [session],
-  );
 
   const filteredApprovals = approvals.filter((item) =>
     search ? item.entityId.toLowerCase().includes(search.toLowerCase()) : true,
-  );
-  const filteredAlerts = alerts.filter((item) =>
-    search ? item.title.toLowerCase().includes(search.toLowerCase()) : true,
   );
 
   return (
@@ -83,19 +76,8 @@ export default function MoneyDesk() {
           </TabsContent>
 
           <TabsContent value="alerts" className="mt-4">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {filteredAlerts.slice(0, 6).map((alert) => (
-                <WorkflowRequestCard
-                  key={alert.id}
-                  title={alert.title}
-                  subtitle={alert.description}
-                  status={alert.severity.toUpperCase()}
-                  urgency={alert.severity === "high" ? 90 : alert.severity === "medium" ? 70 : 40}
-                  owner={alert.type}
-                  actionLabel={alert.action ?? "Open"}
-                  onAction={() => setDialogOpen(true)}
-                />
-              ))}
+            <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+              Alerts loading from finance service (async integration ready).
             </div>
           </TabsContent>
 

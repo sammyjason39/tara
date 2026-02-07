@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { ledgerService } from "@/services/ledgerService";
-import type { LedgerEntry, LedgerBalance } from "@/types/ledgerTypes";
+import { ledgerService } from "@/core/services/finance/ledgerService";
+import type { JournalEntry } from "@/core/types/finance/ledger";
+import type { LedgerBalance } from "@/core/types/finance/ledger";
 import type { SessionContext } from "@/core/security/session";
 
 export function useLedger(tenantId: string, session: SessionContext) {
-  const [entries, setEntries] = useState<LedgerEntry[]>([]);
+  const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [balances, setBalances] = useState<LedgerBalance[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,28 +25,13 @@ export function useLedger(tenantId: string, session: SessionContext) {
     }
   };
 
-  const createEntry = async (entry: LedgerEntry) => {
+  const createEntry = async (entry: JournalEntry) => {
     setLoading(true);
     try {
       const newEntry = await ledgerService.createEntry(entry);
-      setEntries((prev) => [...prev, newEntry]);
+      if (newEntry) setEntries((prev) => [...prev, newEntry]);
     } catch (err: any) {
       setError(err.message || "Failed to create ledger entry");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateEntry = async (
-    entryId: string,
-    updates: Partial<LedgerEntry>,
-  ) => {
-    setLoading(true);
-    try {
-      const updated = await ledgerService.updateEntry(entryId, updates);
-      setEntries((prev) => prev.map((e) => (e.id === entryId ? updated : e)));
-    } catch (err: any) {
-      setError(err.message || "Failed to update ledger entry");
     } finally {
       setLoading(false);
     }
@@ -67,14 +53,5 @@ export function useLedger(tenantId: string, session: SessionContext) {
     fetchEntries();
   }, [tenantId]);
 
-  return {
-    entries,
-    balances,
-    loading,
-    error,
-    fetchEntries,
-    createEntry,
-    updateEntry,
-    deleteEntry,
-  };
+  return { entries, balances, loading, error, fetchEntries, createEntry, deleteEntry };
 }

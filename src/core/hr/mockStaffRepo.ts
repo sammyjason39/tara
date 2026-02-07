@@ -121,10 +121,10 @@ export const mockStaffRepo: StaffRepository = {
     if (!current) return undefined;
     const next = items.map((item) =>
       item.tenantId === tenantId && item.id === staffId
-        ? { ...item, status: "inactive", updatedAt: new Date().toISOString() }
+        ? { ...item, status: "inactive" as const, updatedAt: new Date().toISOString() }
         : item,
     );
     write(next);
-    return { ...current, status: "inactive", updatedAt: new Date().toISOString() };
+    return { ...current, status: "inactive" as const, updatedAt: new Date().toISOString() };
   },
 };

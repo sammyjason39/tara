@@ -1,51 +1,35 @@
-import { Payment, PaymentApproval } from "../types/paymentsTypes";
-import { apiClient } from "../utils/apiClient";
+import type { PaymentRequest } from "@/core/types/finance/payments";
+import { mockFinanceRepo } from "@/core/repositories/finance/mockFinanceRepo";
+
+const repo = mockFinanceRepo;
 
 export const paymentsService = {
-  async getPayments(tenantId: string, status?: string): Promise<Payment[]> {
-    try {
-      const response = await apiClient.get("/payments", {
-        params: { tenantId, status },
-      });
-      return response.data;
-    } catch (err) {
-      console.error("Error fetching payments:", err);
-      throw err;
-    }
+  async getPayments(tenantId: string, _status?: string): Promise<PaymentRequest[]> {
+    return repo.listPaymentRequests(tenantId);
   },
 
-  async executePayment(payment: Payment): Promise<Payment> {
-    try {
-      const response = await apiClient.post("/payments/execute", payment);
-      return response.data;
-    } catch (err) {
-      console.error("Error executing payment:", err);
-      throw err;
-    }
+  async executePayment(payment: any): Promise<PaymentRequest> {
+    const now = new Date().toISOString();
+    const request: PaymentRequest = {
+      id: `pay-${Date.now()}`,
+      tenantId: payment.tenantId,
+      amount: payment.amount,
+      currency: "IDR",
+      method: payment.method ?? "BANK_TRANSFER",
+      destination: payment.destination,
+      purpose: payment.purpose,
+      status: "pending",
+      createdAt: now,
+      updatedAt: now,
+    };
+    return repo.createPaymentRequest(request.tenantId, request);
   },
 
-  async approvePayment(approval: PaymentApproval): Promise<Payment> {
-    try {
-      const response = await apiClient.post(
-        `/payments/${approval.paymentId}/approve`,
-        approval,
-      );
-      return response.data;
-    } catch (err) {
-      console.error("Error approving payment:", err);
-      throw err;
-    }
+  async approvePayment(_approval: { paymentId: string }): Promise<PaymentRequest | null> {
+    return null;
   },
 
-  async getPaymentHistory(tenantId: string, filters?: any): Promise<Payment[]> {
-    try {
-      const response = await apiClient.get("/payments/history", {
-        params: { tenantId, ...filters },
-      });
-      return response.data;
-    } catch (err) {
-      console.error("Error fetching payment history:", err);
-      throw err;
-    }
+  async getPaymentHistory(tenantId: string, _filters?: any): Promise<PaymentRequest[]> {
+    return repo.listPaymentRequests(tenantId);
   },
 };
