@@ -66,6 +66,27 @@ const seedEmployees = (tenantId: string): Employee[] => [
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
+  {
+    id: "tenant-other-emp-001",
+    tenantId: "tenant-other",
+    userId: "user-cross",
+    employeeCode: "EMP-CROSS-01",
+    firstName: "Global",
+    lastName: "Admin",
+    fullName: "Global Admin",
+    email: "global.admin@company.com",
+    phone: "+1 (555) 999-9999",
+    departmentId: "dept-ops",
+    roleTitle: "Global Director",
+    location: "Global HQ",
+    status: "active",
+    employmentType: "full_time",
+    baseSalary: 12000,
+    hourlyRate: 75,
+    hireDate: "2020-01-01",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
 ];
 
 export const employeeRepo = {

@@ -14,14 +14,14 @@ export type CandidateRecord = {
   id: string;
   name: string;
   role: string;
-  stage: "sourcing" | "screening" | "interview" | "offer";
+  stage: "sourcing" | "screening" | "interview" | "offer" | "rejected";
   departmentId: string;
   requisitionId: string;
 };
 
 export const recruitmentService = {
   getPipelineStages() {
-    return ["sourcing", "screening", "interview", "offer"] as const;
+    return ["sourcing", "screening", "interview", "offer", "rejected"] as const;
   },
   listRequisitions(tenantId: string, actor: SessionContext): RecruitmentRequisition[] {
     ensureTenantAccess(tenantId, actor);
@@ -42,7 +42,9 @@ export const recruitmentService = {
             ? "screening"
             : req.status === "offer"
               ? "offer"
-              : "interview",
+              : req.status === "rejected"
+                ? "rejected"
+                : "interview",
       departmentId: req.departmentId,
       requisitionId: req.id,
     }));
@@ -102,5 +104,71 @@ export const recruitmentService = {
       entityId: request.id,
     });
     return request;
+  },
+
+  getCandidateProfile(tenantId: string, actor: SessionContext, candidateId: string) {
+    ensureTenantAccess(tenantId, actor);
+    // In mock mode, we derive from candidateId
+    return {
+      id: candidateId,
+      name: "Candidate Details",
+      email: "candidate@example.com",
+      phone: "+1 (555) 000-0000",
+      education: "Master of Science in Operations",
+      experience: "8 years in retail management",
+      documents: [
+        { id: "doc-1", name: "Resume_v2.pdf", type: "PDF", size: "1.2 MB" },
+        { id: "doc-2", name: "Certifications.zip", type: "ZIP", size: "4.5 MB" },
+      ],
+    };
+  },
+
+  advanceCandidate(tenantId: string, actor: SessionContext, candidateId: string) {
+    ensureTenantAccess(tenantId, actor);
+    // In mock mode, requisitionId is the prefix of candidateId
+    const requisitionId = candidateId.split("-cand-")[0];
+    const stages: ("open" | "screening" | "interview" | "offer" | "closed")[] = [
+      "open",
+      "screening",
+      "interview",
+      "offer",
+      "closed",
+    ];
+
+    const requisition = recruitmentRepo.list(tenantId).find((r) => r.id === requisitionId);
+    if (requisition) {
+      const currentIndex = stages.indexOf(requisition.status as any);
+      if (currentIndex !== -1 && currentIndex < stages.length - 1) {
+        const nextStatus = stages[currentIndex + 1];
+        recruitmentRepo.update(tenantId, requisitionId, { status: nextStatus as any });
+      }
+    }
+
+    audit.log({
+      tenantId,
+      actorId: actor.userId,
+      action: "recruitment.advance",
+      entityType: "candidate",
+      entityId: candidateId,
+      after: { action: "Moved to next stage" },
+    });
+    return { success: true };
+  },
+
+  rejectCandidate(tenantId: string, actor: SessionContext, candidateId: string, reason: string) {
+    ensureTenantAccess(tenantId, actor);
+    const requisitionId = candidateId.split("-cand-")[0];
+
+    recruitmentRepo.update(tenantId, requisitionId, { status: "rejected" });
+
+    audit.log({
+      tenantId,
+      actorId: actor.userId,
+      action: "recruitment.reject",
+      entityType: "candidate",
+      entityId: candidateId,
+      after: { reason },
+    });
+    return { success: true };
   },
 };

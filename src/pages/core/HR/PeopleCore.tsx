@@ -13,6 +13,7 @@ import { DataTableShell } from "@/core/tools/DataTableShell";
 import { FilterBar } from "@/core/tools/FilterBar";
 import { ApprovalStatusBadge } from "@/core/tools/ApprovalStatusBadge";
 import { ActivityThread } from "@/core/tools/activity/ActivityThread";
+import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { peopleService } from "@/core/services/hr/peopleService";
 import { staffService } from "@/core/services/hr/staffService";
@@ -34,6 +35,18 @@ export default function PeopleCore() {
     location: "",
     status: "active",
   });
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [selectedDetail, setSelectedDetail] = useState<{ type: string; data: any } | null>(null);
+  const [actionOpen, setActionOpen] = useState(false);
+  const [actionType, setActionType] = useState<"MOVE" | "REMOVE" | "TERMINATE">("MOVE");
+  const [actionReason, setActionReason] = useState("");
+  const [targetDept, setTargetDept] = useState("HR");
+
+  const clearStatus = () => {
+    setStatusMessage(null);
+    setErrorMessage(null);
+  };
 
   const record = useMemo(
     () => peopleService.getEmployee360(session.tenantId, employeeId, session),
@@ -66,6 +79,7 @@ export default function PeopleCore() {
 
   return (
     <div className="space-y-6">
+      <FeedbackAlert message={statusMessage} error={errorMessage} onClear={clearStatus} />
       <PageHeader
         title={`PeopleCore - ${employee.fullName}`}
         subtitle={`${employee.roleTitle} - ${employee.departmentId}`}
@@ -79,13 +93,18 @@ export default function PeopleCore() {
           <Button
             variant="outline"
             onClick={() => {
-              workflowService.createRequest(session.tenantId, session, {
-                entityType: "PERFORMANCE",
-                entityId: employee.id,
-                makerDept: session.departmentId,
-                destinationDept: "ADMIN",
-                notes: "Escalated from PeopleCore",
-              });
+              try {
+                workflowService.createRequest(employee.tenantId, session, {
+                  entityType: "PERFORMANCE",
+                  entityId: employee.id,
+                  makerDept: session.departmentId,
+                  destinationDept: "ADMIN",
+                  notes: "Escalated from PeopleCore",
+                });
+                setStatusMessage("Employee record escalated to ADMIN.");
+              } catch (err) {
+                setErrorMessage("Escalation failed.");
+              }
             }}
           >
             Escalate
@@ -93,13 +112,18 @@ export default function PeopleCore() {
           <Button
             variant="outline"
             onClick={() => {
-              workflowService.createRequest(session.tenantId, session, {
-                entityType: "PERFORMANCE",
-                entityId: employee.id,
-                makerDept: session.departmentId,
-                destinationDept: "HR",
-                notes: "PeopleCore routing",
-              });
+              try {
+                workflowService.createRequest(employee.tenantId, session, {
+                  entityType: "PERFORMANCE",
+                  entityId: employee.id,
+                  makerDept: session.departmentId,
+                  destinationDept: "HR",
+                  notes: "PeopleCore routing",
+                });
+                setStatusMessage("Routed to HR FlowGate.");
+              } catch (err) {
+                setErrorMessage("Routing failed.");
+              }
             }}
           >
             Send to FlowGate
@@ -117,6 +141,35 @@ export default function PeopleCore() {
             }}
           >
             Edit Profile
+          </Button>
+          <Button
+            variant="outline"
+            className="border-blue-200 text-blue-700 hover:bg-blue-50"
+            onClick={() => {
+              setActionType("MOVE");
+              setActionOpen(true);
+            }}
+          >
+            Move (Transfer)
+          </Button>
+          <Button
+            variant="outline"
+            className="border-amber-200 text-amber-700 hover:bg-amber-50"
+            onClick={() => {
+              setActionType("REMOVE");
+              setActionOpen(true);
+            }}
+          >
+            Remove (Deactivate)
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => {
+              setActionType("TERMINATE");
+              setActionOpen(true);
+            }}
+          >
+            Terminate
           </Button>
         </div>
       </WorkspacePanel>
@@ -166,7 +219,11 @@ export default function PeopleCore() {
                 </thead>
                 <tbody>
                   {filteredAttendance.map((entry) => (
-                    <tr key={entry.id} className="border-t">
+                    <tr
+                      key={entry.id}
+                      className="border-t cursor-pointer hover:bg-muted/50"
+                      onClick={() => setSelectedDetail({ type: "Attendance", data: entry })}
+                    >
                       <td className="p-3">{entry.date}</td>
                       <td className="p-3">{entry.status}</td>
                       <td className="p-3 text-muted-foreground">{(entry as any).notes ?? "--"}</td>
@@ -188,7 +245,11 @@ export default function PeopleCore() {
                 </thead>
                 <tbody>
                   {filteredPayroll.map((run) => (
-                    <tr key={run.id} className="border-t">
+                    <tr
+                      key={run.id}
+                      className="border-t cursor-pointer hover:bg-muted/50"
+                      onClick={() => setSelectedDetail({ type: "Payroll Period", data: run })}
+                    >
                       <td className="p-3">{run.periodStart} - {run.periodEnd}</td>
                       <td className="p-3">{run.status}</td>
                     </tr>
@@ -209,7 +270,11 @@ export default function PeopleCore() {
                 </thead>
                 <tbody>
                   {filteredContracts.map((contract) => (
-                    <tr key={contract.id} className="border-t">
+                    <tr
+                      key={contract.id}
+                      className="border-t cursor-pointer hover:bg-muted/50"
+                      onClick={() => setSelectedDetail({ type: "Contract", data: contract })}
+                    >
                       <td className="p-3">{contract.title}</td>
                       <td className="p-3">{contract.status}</td>
                     </tr>
@@ -231,7 +296,11 @@ export default function PeopleCore() {
                 </thead>
                 <tbody>
                   {filteredReviews.map((review) => (
-                    <tr key={review.id} className="border-t">
+                    <tr
+                      key={review.id}
+                      className="border-t cursor-pointer hover:bg-muted/50"
+                      onClick={() => setSelectedDetail({ type: "Performance Review", data: review })}
+                    >
                       <td className="p-3">{review.cycleId}</td>
                       <td className="p-3">{review.score ?? "-"}</td>
                       <td className="p-3">{review.status}</td>
@@ -318,15 +387,20 @@ export default function PeopleCore() {
             />
             <Button
               onClick={() => {
-                workflowService.createRequest(session.tenantId, session, {
-                  entityType: workflowType,
-                  entityId: employee.id,
-                  makerDept: session.departmentId,
-                  destinationDept,
-                  notes,
-                });
-                setNotes("");
-                setDialogOpen(false);
+                try {
+                  workflowService.createRequest(session.tenantId, session, {
+                    entityType: workflowType,
+                    entityId: employee.id,
+                    makerDept: session.departmentId,
+                    destinationDept,
+                    notes,
+                  });
+                  setStatusMessage(`Workflow request for ${workflowType} initialized.`);
+                  setNotes("");
+                  setDialogOpen(false);
+                } catch (err) {
+                  setErrorMessage("Failed to create workflow request.");
+                }
               }}
             >
               Send to FlowGate
@@ -372,13 +446,18 @@ export default function PeopleCore() {
             </Select>
             <Button
               onClick={() => {
-                staffService.updateEmployee(session.tenantId, session, employee.id, {
-                  roleTitle: editForm.roleTitle || employee.roleTitle,
-                  departmentId: editForm.departmentId || employee.departmentId,
-                  location: editForm.location || employee.location,
-                  status: editForm.status as typeof employee.status,
-                });
-                setEditOpen(false);
+                try {
+                  staffService.updateEmployee(session.tenantId, session, employee.id, {
+                    roleTitle: editForm.roleTitle || employee.roleTitle,
+                    departmentId: editForm.departmentId || employee.departmentId,
+                    location: editForm.location || employee.location,
+                    status: editForm.status as typeof employee.status,
+                  });
+                  setEditOpen(false);
+                  setStatusMessage("Employee profile updated successfully.");
+                } catch (err) {
+                  setErrorMessage("Failed to update employee profile.");
+                }
               }}
             >
               Save Changes
@@ -386,6 +465,104 @@ export default function PeopleCore() {
           </div>
         </SheetContent>
       </Sheet>
+
+      <Dialog open={!!selectedDetail} onOpenChange={() => setSelectedDetail(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{selectedDetail?.type} Detail</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 text-sm gap-y-2">
+              <span className="text-muted-foreground">Record ID:</span>
+              <span className="font-mono">{selectedDetail?.data.id}</span>
+              <span className="text-muted-foreground">Status:</span>
+              <span><ApprovalStatusBadge status={selectedDetail?.data.status || "UNKNOWN"} /></span>
+              {selectedDetail?.type === "Performance Review" && (
+                <>
+                  <span className="text-muted-foreground">Cycle:</span>
+                  <span>{selectedDetail?.data.cycleId}</span>
+                  <span className="text-muted-foreground">Score:</span>
+                  <span className="font-bold">{selectedDetail?.data.score ?? "Not yet scored"}</span>
+                </>
+              )}
+              {selectedDetail?.type === "Attendance" && (
+                <>
+                  <span className="text-muted-foreground">Date:</span>
+                  <span>{selectedDetail?.data.date}</span>
+                </>
+              )}
+            </div>
+            <div className="border-t pt-2 text-xs text-muted-foreground">
+              <p>This is a historical record from the PeopleCore data layer. For detailed audit logs, check the Activity Stream.</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={actionOpen} onOpenChange={setActionOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Personnel Action: {actionType}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            {actionType === "MOVE" && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Target Department</label>
+                <Select value={targetDept} onValueChange={setTargetDept}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="HR">HR</SelectItem>
+                    <SelectItem value="FINANCE">Finance</SelectItem>
+                    <SelectItem value="OPERATIONS">Operations</SelectItem>
+                    <SelectItem value="SALES">Sales</SelectItem>
+                    <SelectItem value="IT">IT</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Reason for Action</label>
+              <Textarea
+                placeholder="Required notes for audit and approval chain..."
+                value={actionReason}
+                onChange={(e) => setActionReason(e.target.value)}
+              />
+            </div>
+            <div className="border-t pt-4">
+              <Button
+                className="w-full"
+                variant={actionType === "TERMINATE" ? "destructive" : "default"}
+                onClick={() => {
+                  try {
+                    if (!actionReason) {
+                      setErrorMessage("Reason is required for personnel actions.");
+                      return;
+                    }
+                    if (actionType === "MOVE") {
+                      (staffService as any).requestTransfer(employee.tenantId, session, employee.id, targetDept, actionReason);
+                      setStatusMessage(`Transfer request for ${employee.fullName} to ${targetDept} initiated.`);
+                    } else if (actionType === "REMOVE") {
+                      staffService.updateEmployee(employee.tenantId, session, employee.id, { status: "inactive" });
+                      setStatusMessage(`${employee.fullName} record deactivated (inactive).`);
+                    } else if (actionType === "TERMINATE") {
+                      staffService.requestTermination(employee.tenantId, session, employee.id, actionReason);
+                      setStatusMessage(`Termination workflow triggered for ${employee.fullName}.`);
+                    }
+                    setActionOpen(false);
+                    setActionReason("");
+                  } catch (err: any) {
+                    setErrorMessage(err.message || "Personnel action failed.");
+                  }
+                }}
+              >
+                Submit for Approval
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -3,6 +3,8 @@ import { FinanceController } from './finance.controller';
 import { FinanceService } from './finance.service';
 import { IFinanceRepository } from './repositories/finance.repository.interface';
 import { FinanceMockRepository } from './repositories/finance.mock.repository';
+import { FinanceDbRepository } from './repositories/finance.db.repository';
+import { useDbPersistence } from '../../shared/persistence.mode';
 
 /**
  * Finance Module
@@ -17,7 +19,7 @@ import { FinanceMockRepository } from './repositories/finance.mock.repository';
     FinanceService,
     {
       provide: IFinanceRepository,
-      useClass: FinanceMockRepository, // DEV_MOCK_MODE: Swap to real repo later
+      useClass: useDbPersistence() ? FinanceDbRepository : FinanceMockRepository,
     },
   ],
   exports: [FinanceService], // Export for cross-module usage

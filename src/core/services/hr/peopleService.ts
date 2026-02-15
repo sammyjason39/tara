@@ -18,24 +18,66 @@ const ensureTenantAccess = (tenantId: string, actor: SessionContext) => {
 
 export const peopleService = {
   getEmployee360(tenantId: string, employeeId: string, actor: SessionContext) {
-    ensureTenantAccess(tenantId, actor);
-    const employee = employeeRepo.getById(tenantId, employeeId);
+    // 1. Try primary tenant first (by ID or potentially userId)
+    let employee = employeeRepo.getById(tenantId, employeeId);
+    let effectiveTenantId = tenantId;
+
+    // Fallback: Check if employeeId is actually a userId in the current tenant
+    if (!employee) {
+      const allEmployees = employeeRepo.list(tenantId);
+      employee = allEmployees.find(e => e.userId === employeeId);
+      if (employee) {
+        console.log(`[peopleService] Found employee by userId: ${employeeId}`);
+      }
+    }
+
+    console.log(`[peopleService] Lookup: ${employeeId} in ${tenantId}. Found: ${!!employee}`);
+
+    // 2. Superadmin Fallback: Discovery from ID
+    if (!employee && actor.role === Roles.SUPERADMIN) {
+      console.log(`[peopleService] Superadmin Discovery for ${employeeId}`);
+      const parts = employeeId.split("-emp");
+      if (parts.length > 1) {
+        const discoveredTenant = parts[0];
+        console.log(`[peopleService] Attempting discovered tenant: ${discoveredTenant}`);
+        employee = employeeRepo.getById(discoveredTenant, employeeId);
+        if (employee) {
+          effectiveTenantId = discoveredTenant;
+          console.log(`[peopleService] Found in discovered tenant: ${discoveredTenant}`);
+        } else {
+          console.log(`[peopleService] Not found in discovered tenant`);
+        }
+      } else {
+        console.log(`[peopleService] Split failed. Parts: ${JSON.stringify(parts)}`);
+      }
+    }
+
     if (!employee) return null;
-    if (actor.role !== Roles.SUPERADMIN && actor.tenantId !== tenantId) return null;
-    if (actor.role === Roles.HR_STAFF && employee.userId !== actor.userId && employee.id !== actor.userId) {
-      return null;
+
+    // 3. Authorization Checks
+    ensureTenantAccess(effectiveTenantId, actor);
+
+    // Bypass restrictive role checks for Superadmins
+    if (actor.role !== Roles.SUPERADMIN) {
+      // Strict tenant boundary for non-superadmins
+      if (actor.tenantId !== effectiveTenantId) return null;
+
+      if (actor.role === Roles.HR_STAFF && employee.userId !== actor.userId && employee.id !== actor.userId) {
+        return null;
+      }
+      if (actor.role === Roles.DEPT_HEAD && employee.departmentId !== actor.departmentId) {
+        return null;
+      }
     }
-    if (actor.role === Roles.DEPT_HEAD && employee.departmentId !== actor.departmentId) {
-      return null;
-    }
-    const attendance = attendanceRepo.list(tenantId).filter((record) => record.employeeId === employeeId);
-    const payrollRuns = payrollRepo.listRuns(tenantId);
-    const contracts = contractRepo.list(tenantId).filter((contract) => contract.employeeId === employeeId);
-    const reviews = performanceRepo.listReviews(tenantId).filter((review) => review.employeeId === employeeId);
-    const cycles = performanceRepo.listCycles(tenantId);
-    const trainings = trainingRepo.listAssignments(tenantId).filter((item) => item.employeeId === employeeId);
-    const leaves = leaveRepo.list(tenantId).filter((req) => req.employeeId === employeeId);
-    const workflows = listWorkflows(tenantId).filter((flow) => flow.entityId === employeeId);
+
+    const attendance = attendanceRepo.listRecords(effectiveTenantId).filter((record) => record.employeeId === employeeId);
+    const payrollRuns = payrollRepo.listRuns(effectiveTenantId);
+    const contracts = contractRepo.list(effectiveTenantId).filter((contract) => contract.employeeId === employeeId);
+    const reviews = performanceRepo.listReviews(effectiveTenantId).filter((review) => review.employeeId === employeeId);
+    const cycles = performanceRepo.listCycles(effectiveTenantId);
+    const trainings = trainingRepo.listAssignments(effectiveTenantId).filter((item) => item.employeeId === employeeId);
+    const leaves = leaveRepo.list(effectiveTenantId).filter((req) => req.employeeId === employeeId);
+    const workflows = listWorkflows(effectiveTenantId).filter((flow) => flow.entityId === employeeId);
 
     return {
       employee,

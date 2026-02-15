@@ -8,9 +8,20 @@ import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
 import { FilterBar } from "@/core/tools/FilterBar";
+import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { orgService } from "@/core/services/hr/orgService";
 import { useBackgroundRefresh } from "@/core/runtime/events/useBackgroundRefresh";
+
+type OrgMapDept = {
+  id: string;
+  name: string;
+  headcount: number;
+  openRequisitions: number;
+  attendanceRisk: number;
+  code?: string;
+  status?: string;
+};
 
 export default function OrgMap() {
   const session = useSession();
@@ -26,6 +37,14 @@ export default function OrgMap() {
   const [requisitionTitle, setRequisitionTitle] = useState("Operations Analyst");
   const [requisitionOpenings, setRequisitionOpenings] = useState("1");
   const [version, setVersion] = useState(0);
+  const [selectedDept, setSelectedDept] = useState<OrgMapDept | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const clearStatus = () => {
+    setStatusMessage(null);
+    setErrorMessage(null);
+  };
   const refresh = useCallback(() => setVersion((prev) => prev + 1), []);
   useBackgroundRefresh(refresh, 20000);
   const data = useMemo(() => {
@@ -42,6 +61,8 @@ export default function OrgMap() {
         primaryAction={<Button onClick={() => setDialogOpen(true)}>New Department</Button>}
         secondaryActions={<Input placeholder="Search departments" className="min-w-[200px]" value={search} onChange={(e) => setSearch(e.target.value)} />}
       />
+
+      <FeedbackAlert message={statusMessage} error={errorMessage} onClear={clearStatus} />
 
       <WorkspacePanel title="WorkQueue" description="Department actions requiring attention.">
         <div className="flex flex-wrap gap-2">
@@ -83,13 +104,24 @@ export default function OrgMap() {
             </thead>
             <tbody>
               {data.map((dept) => (
-                <tr key={dept.id} className="border-t">
+                <tr
+                  key={dept.id}
+                  className="cursor-pointer border-t hover:bg-muted/50"
+                  onClick={() => setSelectedDept(dept)}
+                >
                   <td className="p-3 font-medium text-foreground">{dept.name}</td>
                   <td className="p-3 text-muted-foreground">{dept.headcount}</td>
                   <td className="p-3 text-muted-foreground">{dept.openRequisitions}</td>
                   <td className="p-3 text-muted-foreground">{dept.attendanceRisk}%</td>
                   <td className="p-3">
-                    <Button size="sm" variant="outline" onClick={() => navigate("/core/hr/roster")}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate("/core/hr/roster");
+                      }}
+                    >
                       Open RosterGrid
                     </Button>
                   </td>
@@ -110,8 +142,13 @@ export default function OrgMap() {
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    orgService.routeDepartment(session.tenantId, session, dept.id, "OrgMap routing");
-                    setVersion((prev) => prev + 1);
+                    try {
+                      orgService.routeDepartment(session.tenantId, session, dept.id, "OrgMap routing");
+                      setStatusMessage(`Department ${dept.name} routed to FlowGate.`);
+                      setVersion((prev) => prev + 1);
+                    } catch (err) {
+                      setErrorMessage("Routing failed.");
+                    }
                   }}
                 >
                   Send to FlowGate
@@ -146,14 +183,19 @@ export default function OrgMap() {
             <Input value={deptCode} onChange={(e) => setDeptCode(e.target.value)} />
             <Button
               onClick={() => {
-                orgService.createDepartment(session.tenantId, session, {
-                  id: `dept-${deptCode.toLowerCase()}`,
-                  name: deptName,
-                  code: deptCode.toUpperCase(),
-                  status: "active",
-                });
-                setDialogOpen(false);
-                setVersion((prev) => prev + 1);
+                try {
+                  orgService.createDepartment(session.tenantId, session, {
+                    id: `dept-${deptCode.toLowerCase()}`,
+                    name: deptName,
+                    code: deptCode.toUpperCase(),
+                    status: "active",
+                  });
+                  setStatusMessage(`Department ${deptName} created.`);
+                  setDialogOpen(false);
+                  setVersion((prev) => prev + 1);
+                } catch (err) {
+                  setErrorMessage("Failed to create department.");
+                }
               }}
             >
               Create
@@ -187,26 +229,61 @@ export default function OrgMap() {
             )}
             <Button
               onClick={() => {
-                if (actionType === "risk") {
-                  orgService.escalateStaffingRisk(session.tenantId, session, actionDeptId, actionNotes);
+                try {
+                  if (actionType === "risk") {
+                    orgService.escalateStaffingRisk(session.tenantId, session, actionDeptId, actionNotes);
+                    setStatusMessage("Staffing risk escalated.");
+                  }
+                  if (actionType === "requisition") {
+                    orgService.openRequisition(session.tenantId, session, {
+                      title: requisitionTitle,
+                      departmentId: actionDeptId,
+                      openings: Number(requisitionOpenings || "1"),
+                    });
+                    setStatusMessage("New job requisition opened.");
+                  }
+                  if (actionType === "route") {
+                    orgService.routeDepartment(session.tenantId, session, actionDeptId, actionNotes);
+                    setStatusMessage("Department route initiated.");
+                  }
+                  setActionNotes("");
+                  setActionOpen(false);
+                  setVersion((prev) => prev + 1);
+                } catch (err) {
+                  setErrorMessage("Action failed.");
                 }
-                if (actionType === "requisition") {
-                  orgService.openRequisition(session.tenantId, session, {
-                    title: requisitionTitle,
-                    departmentId: actionDeptId,
-                    openings: Number(requisitionOpenings || "1"),
-                  });
-                }
-                if (actionType === "route") {
-                  orgService.routeDepartment(session.tenantId, session, actionDeptId, actionNotes);
-                }
-                setActionNotes("");
-                setActionOpen(false);
-                setVersion((prev) => prev + 1);
               }}
             >
               Submit
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!selectedDept} onOpenChange={() => setSelectedDept(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Department Intel</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 text-sm gap-y-2">
+              <span className="text-muted-foreground">Name:</span>
+              <span className="font-semibold">{selectedDept?.name}</span>
+              <span className="text-muted-foreground">Code:</span>
+              <span className="font-mono">{selectedDept?.code}</span>
+              <span className="text-muted-foreground">Headcount:</span>
+              <span>{selectedDept?.headcount}</span>
+              <span className="text-muted-foreground">Openings:</span>
+              <span>{selectedDept?.openRequisitions}</span>
+              <span className="text-muted-foreground">Attendance Risk:</span>
+              <span className={Number(selectedDept?.attendanceRisk) > 15 ? "text-rose-600 font-bold" : ""}>
+                {selectedDept?.attendanceRisk}%
+              </span>
+              <span className="text-muted-foreground">Status:</span>
+              <span className="capitalize">{selectedDept?.status}</span>
+            </div>
+            <div className="border-t pt-2 text-xs text-muted-foreground">
+              <p>Department risk and headcount are calculated in real-time based on RosterGrid signals and recruitment pipeline flow.</p>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

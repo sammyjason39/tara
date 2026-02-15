@@ -8,6 +8,7 @@ import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
 import { FilterBar } from "@/core/tools/FilterBar";
 import { ApprovalStatusBadge } from "@/core/tools/ApprovalStatusBadge";
+import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { procurementService } from "@/core/services/procurement/procurementService";
 import type { SupplierBranch, SupplierMaster } from "@/core/types/procurement/procurement";
@@ -29,6 +30,15 @@ export default function SupplierDesk() {
   const [recCategory, setRecCategory] = useState("Machinery");
   const [masters, setMasters] = useState<SupplierMaster[]>([]);
   const [branches, setBranches] = useState<SupplierBranch[]>([]);
+  const [selectedSupplier, setSelectedSupplier] = useState<SupplierMaster | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<SupplierBranch | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const clearStatus = () => {
+    setStatusMessage(null);
+    setErrorMessage(null);
+  };
 
   const refresh = useCallback(() => {
     setMasters(procurementService.listSupplierMasters(session.tenantId));
@@ -60,31 +70,41 @@ export default function SupplierDesk() {
 
   const createMaster = () => {
     if (!name.trim()) return;
-    procurementService.createSupplierMaster(session.tenantId, session, {
-      name,
-      taxId,
-      categories: categories.split(",").map((item) => item.trim()).filter(Boolean),
-    });
-    setMasterDialogOpen(false);
-    setName("");
-    setTaxId("");
-    setCategories("General");
-    refresh();
+    try {
+      procurementService.createSupplierMaster(session.tenantId, session, {
+        name,
+        taxId,
+        categories: categories.split(",").map((item) => item.trim()).filter(Boolean),
+      });
+      setStatusMessage(`Supplier Master "${name}" created and routed for compliance vetting.`);
+      setMasterDialogOpen(false);
+      setName("");
+      setTaxId("");
+      setCategories("General");
+      refresh();
+    } catch (err) {
+      setErrorMessage("Failed to create supplier master.");
+    }
   };
 
   const createBranch = () => {
     if (!supplierId) return;
-    procurementService.createSupplierBranch(session.tenantId, session, {
-      supplierId,
-      branchCode,
-      branchName: branchName || `${branchCode} Branch`,
-      location,
-      leadTimeDays: Number(leadTimeDays || "0"),
-    });
-    setBranchDialogOpen(false);
-    setBranchName("");
-    setLeadTimeDays("3");
-    refresh();
+    try {
+      procurementService.createSupplierBranch(session.tenantId, session, {
+        supplierId,
+        branchCode,
+        branchName: branchName || `${branchCode} Branch`,
+        location,
+        leadTimeDays: Number(leadTimeDays || "0"),
+      });
+      setStatusMessage(`Supplier branch "${branchName || branchCode}" added successfully.`);
+      setBranchDialogOpen(false);
+      setBranchName("");
+      setLeadTimeDays("3");
+      refresh();
+    } catch (err) {
+      setErrorMessage("Failed to add supplier branch.");
+    }
   };
 
   return (
@@ -110,6 +130,8 @@ export default function SupplierDesk() {
         }
       />
 
+      <FeedbackAlert message={statusMessage} error={errorMessage} onClear={clearStatus} />
+
       <WorkspacePanel title="Supplier Master" description="Global supplier identity, compliance posture, and risk tier.">
         <FilterBar searchValue={search} onSearchChange={setSearch} />
         <DataTableShell total={filteredMasters.length} page={1} pageSize={10}>
@@ -125,7 +147,11 @@ export default function SupplierDesk() {
             </thead>
             <tbody>
               {filteredMasters.map((supplier) => (
-                <tr key={supplier.id} className="border-t">
+                <tr
+                  key={supplier.id}
+                  className="cursor-pointer border-t hover:bg-muted/50"
+                  onClick={() => setSelectedSupplier(supplier)}
+                >
                   <td className="p-3 font-medium">{supplier.name}</td>
                   <td className="p-3 text-muted-foreground">{supplier.taxId}</td>
                   <td className="p-3">
@@ -155,7 +181,11 @@ export default function SupplierDesk() {
             </thead>
             <tbody>
               {branches.map((branch) => (
-                <tr key={branch.id} className="border-t">
+                <tr
+                  key={branch.id}
+                  className="cursor-pointer border-t hover:bg-muted/50"
+                  onClick={() => setSelectedBranch(branch)}
+                >
                   <td className="p-3 font-medium">
                     {branch.branchCode} - {branch.branchName}
                   </td>
@@ -262,6 +292,59 @@ export default function SupplierDesk() {
             />
             <div className="flex justify-end gap-2">
               <Button onClick={createBranch}>Create Branch</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!selectedSupplier} onOpenChange={() => setSelectedSupplier(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Supplier Master Detail</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 text-sm gap-y-2">
+              <span className="text-muted-foreground">Supplier ID:</span>
+              <span className="font-mono text-xs">{selectedSupplier?.id}</span>
+              <span className="text-muted-foreground">Name:</span>
+              <span className="font-semibold">{selectedSupplier?.name}</span>
+              <span className="text-muted-foreground">Tax ID:</span>
+              <span>{selectedSupplier?.taxId}</span>
+              <span className="text-muted-foreground">Categories:</span>
+              <span className="flex flex-wrap gap-1">
+                {selectedSupplier?.categories.map(c => (
+                  <span key={c} className="rounded bg-muted px-1.5 py-0.5 text-[10px]">{c}</span>
+                ))}
+              </span>
+              <span className="text-muted-foreground">Compliance:</span>
+              <span><ApprovalStatusBadge status={selectedSupplier?.complianceStatus ?? ""} /></span>
+              <span className="text-muted-foreground">Rating:</span>
+              <span>{selectedSupplier?.globalRating} / 5</span>
+              <span className="text-muted-foreground">Risk Tier:</span>
+              <span className="font-bold">{selectedSupplier?.riskTier}</span>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedBranch} onOpenChange={() => setSelectedBranch(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Branch Profile Detail</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 text-sm gap-y-2">
+              <span className="text-muted-foreground">Branch Code:</span>
+              <span className="font-bold">{selectedBranch?.branchCode}</span>
+              <span className="text-muted-foreground">Branch Name:</span>
+              <span>{selectedBranch?.branchName}</span>
+              <span className="text-muted-foreground">Location:</span>
+              <span>{selectedBranch?.location}</span>
+              <span className="text-muted-foreground">Lead Time:</span>
+              <span>{selectedBranch?.leadTimeDays} days</span>
+              <span className="text-muted-foreground">Local Rating:</span>
+              <span>{selectedBranch?.localRating} / 5</span>
+              <span className="text-muted-foreground">Risk Tier:</span>
+              <span className="font-bold">{selectedBranch?.riskTier}</span>
             </div>
           </div>
         </DialogContent>

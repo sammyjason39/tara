@@ -9,7 +9,10 @@ export type WorkflowEntityType =
   | "CASE"
   | "PAYMENT"
   | "TREASURY_TRANSFER"
-  | "ASSET_REQUEST";
+  | "ASSET_REQUEST"
+  | "ATTENDANCE"
+  | "SHIFT_SWAP"
+  | "EMERGENCY_OVERRIDE";
 
 export type WorkflowStatus =
   | "PENDING"

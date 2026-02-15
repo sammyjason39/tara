@@ -1,7 +1,7 @@
 import type React from "react";
 import { cn } from "@/lib/utils";
 
-interface WorkspacePanelProps {
+interface WorkspacePanelProps extends React.HTMLAttributes<HTMLElement> {
   title?: string;
   description?: string;
   className?: string;
@@ -13,9 +13,13 @@ export function WorkspacePanel({
   description,
   className,
   children,
+  ...props
 }: WorkspacePanelProps) {
   return (
-    <section className={cn("rounded-2xl border bg-background p-5 shadow-sm", className)}>
+    <section 
+      className={cn("rounded-2xl border bg-background p-5 shadow-sm", className)}
+      {...props}
+    >
       {(title || description) && (
         <div className="mb-4 space-y-1">
           {title ? (

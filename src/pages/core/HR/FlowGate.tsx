@@ -8,9 +8,11 @@ import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
 import { ApprovalStatusBadge } from "@/core/tools/ApprovalStatusBadge";
+import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { workflowService } from "@/core/services/hr/workflowService";
 import { useBackgroundRefresh } from "@/core/runtime/events/useBackgroundRefresh";
+import type { AuditEntry } from "@/core/tools/workflows/auditLogTypes";
 
 export default function FlowGate() {
   const session = useSession();
@@ -21,6 +23,15 @@ export default function FlowGate() {
   const [entityType, setEntityType] = useState<"PAYROLL" | "LEAVE" | "CONTRACT" | "RECRUITMENT" | "TRAINING" | "PERFORMANCE" | "CASE">("PAYROLL");
   const [entityId, setEntityId] = useState("");
   const [destinationDept, setDestinationDept] = useState("HR");
+  const [selectedAuditEntry, setSelectedAuditEntry] = useState<AuditEntry | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const clearStatus = () => {
+    setStatusMessage(null);
+    setErrorMessage(null);
+  };
   const refresh = useCallback(() => setVersion((prev) => prev + 1), []);
   useBackgroundRefresh(refresh, 15000);
 
@@ -41,6 +52,8 @@ export default function FlowGate() {
         secondaryActions={<Input placeholder="Search requests" className="min-w-[200px]" />}
       />
 
+      <FeedbackAlert message={statusMessage} error={errorMessage} onClear={clearStatus} />
+
       <WorkspacePanel title="WorkQueue" description="Requests awaiting action.">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {workflows.slice(0, 6).map((flow) => (
@@ -53,8 +66,16 @@ export default function FlowGate() {
               <div className="mt-2">
                 <ApprovalStatusBadge status={flow.status} />
               </div>
-              <Button size="sm" variant="outline" className="mt-3" onClick={() => setSelectedId(flow.id)}>
-                Open
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-3"
+                onClick={() => {
+                  setSelectedId(flow.id);
+                  setDetailOpen(true);
+                }}
+              >
+                Open Details
               </Button>
             </div>
           ))}
@@ -94,9 +115,14 @@ export default function FlowGate() {
               <div className="flex flex-wrap gap-2">
                 <Button
                   onClick={() => {
-                    workflowService.approveRequest(session.tenantId, selected.id, session, notes);
-                    setNotes("");
-                    setVersion((prev) => prev + 1);
+                    try {
+                      workflowService.approveRequest(session.tenantId, selected.id, session, notes);
+                      setStatusMessage("Request approved successfully.");
+                      setNotes("");
+                      setVersion((prev) => prev + 1);
+                    } catch (err) {
+                      setErrorMessage("Approval failed.");
+                    }
                   }}
                 >
                   Approve
@@ -104,9 +130,14 @@ export default function FlowGate() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    workflowService.modifyRequest(session.tenantId, selected.id, session, notes);
-                    setNotes("");
-                    setVersion((prev) => prev + 1);
+                    try {
+                      workflowService.modifyRequest(session.tenantId, selected.id, session, notes);
+                      setStatusMessage("Request status set to MODIFIED/RETURNED.");
+                      setNotes("");
+                      setVersion((prev) => prev + 1);
+                    } catch (err) {
+                      setErrorMessage("Modification failed.");
+                    }
                   }}
                 >
                   Modify
@@ -114,9 +145,14 @@ export default function FlowGate() {
                 <Button
                   variant="destructive"
                   onClick={() => {
-                    workflowService.rejectRequest(session.tenantId, selected.id, session, notes);
-                    setNotes("");
-                    setVersion((prev) => prev + 1);
+                    try {
+                      workflowService.rejectRequest(session.tenantId, selected.id, session, notes);
+                      setStatusMessage("Request rejected.");
+                      setNotes("");
+                      setVersion((prev) => prev + 1);
+                    } catch (err) {
+                      setErrorMessage("Rejection failed.");
+                    }
                   }}
                 >
                   Reject
@@ -144,7 +180,11 @@ export default function FlowGate() {
             </thead>
             <tbody>
               {auditTrail.map((entry) => (
-                <tr key={entry.id} className="border-t">
+                <tr
+                  key={entry.id}
+                  className="cursor-pointer border-t hover:bg-muted/50"
+                  onClick={() => setSelectedAuditEntry(entry)}
+                >
                   <td className="p-3">{entry.action}</td>
                   <td className="p-3 text-muted-foreground">{entry.actorRole}</td>
                   <td className="p-3 text-muted-foreground">{entry.cycle}</td>
@@ -221,21 +261,100 @@ export default function FlowGate() {
             />
             <Button
               onClick={() => {
-                workflowService.createRequest(session.tenantId, session, {
-                  entityType,
-                  entityId: entityId || `${entityType.toLowerCase()}-${Date.now()}`,
-                  makerDept: session.departmentId,
-                  destinationDept,
-                  notes,
-                });
-                setEntityId("");
-                setNotes("");
-                setDialogOpen(false);
-                setVersion((prev) => prev + 1);
+                try {
+                  workflowService.createRequest(session.tenantId, session, {
+                    entityType,
+                    entityId: entityId || `${entityType.toLowerCase()}-${Date.now()}`,
+                    makerDept: session.departmentId,
+                    destinationDept,
+                    notes,
+                  });
+                  setStatusMessage(`New ${entityType} route created successfully.`);
+                  setEntityId("");
+                  setNotes("");
+                  setDialogOpen(false);
+                  setVersion((prev) => prev + 1);
+                } catch (err) {
+                  setErrorMessage("Failed to create route.");
+                }
               }}
             >
               Create Route
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Workflow Case Detail</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 pt-2">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="space-y-1">
+                <span className="text-muted-foreground block text-xs uppercase tracking-wider">Type</span>
+                <span className="font-bold text-primary">{selected?.entityType}</span>
+              </div>
+              <div className="space-y-1 text-right">
+                <span className="text-muted-foreground block text-xs uppercase tracking-wider">Status</span>
+                <ApprovalStatusBadge status={selected?.status || "UNKNOWN"} />
+              </div>
+              <div className="space-y-1">
+                <span className="text-muted-foreground block text-xs uppercase tracking-wider">Maker Dept</span>
+                <span>{selected?.makerDept}</span>
+              </div>
+              <div className="space-y-1 text-right">
+                <span className="text-muted-foreground block text-xs uppercase tracking-wider">Created</span>
+                <span className="font-mono text-xs">{selected?.requestedAt}</span>
+              </div>
+            </div>
+
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-semibold mb-3">Routing Pipeline</h4>
+              <div className="space-y-2">
+                {selected?.steps.map((step, idx) => (
+                  <div key={step.id} className="flex items-center gap-3 rounded-md border p-2 bg-muted/30">
+                    <span className="text-xs text-muted-foreground">#{idx + 1}</span>
+                    <div className="flex-1">
+                      <p className="text-xs font-medium">{step.label}</p>
+                      <p className="text-[10px] text-muted-foreground italic">{step.dept}</p>
+                    </div>
+                    <ApprovalStatusBadge status={step.status} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-semibold mb-3">Action context</h4>
+              <p className="text-sm text-foreground bg-muted p-3 rounded-md min-h-[60px]">
+                {selected?.notes || "No additional notes provided by initiator."}
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedAuditEntry} onOpenChange={() => setSelectedAuditEntry(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Audit Entry Detail</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 text-sm gap-y-2">
+              <span className="text-muted-foreground">Action:</span>
+              <span className="font-semibold">{selectedAuditEntry?.action}</span>
+              <span className="text-muted-foreground">Actor:</span>
+              <span>{selectedAuditEntry?.actorId} ({selectedAuditEntry?.actorRole})</span>
+              <span className="text-muted-foreground">Cycle:</span>
+              <span>Cycle {selectedAuditEntry?.cycle}</span>
+              <span className="text-muted-foreground">Timestamp:</span>
+              <span>{selectedAuditEntry?.createdAt}</span>
+            </div>
+            <div className="border-t pt-2 text-xs text-muted-foreground">
+              <p>This is an immutable record of the workflow transition. Any modifications to the route itself are logged in the kernel system audit.</p>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useSession } from "@/core/security/session";
 import { auditLedger } from "@/core/logging/auditLedger";
 import { logService } from "@/core/services/finance/logService";
@@ -26,6 +27,7 @@ export default function AuditVault() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [source, setSource] = useState<AuditSource>("ALL");
+  const [selectedRow, setSelectedRow] = useState<AuditRow | null>(null);
 
   const rows = useMemo(() => {
     const ledgerRows: AuditRow[] = auditLedger.list(session.tenantId).map((entry) => ({
@@ -147,7 +149,11 @@ export default function AuditVault() {
             </thead>
             <tbody>
               {filteredRows.map((row) => (
-                <tr key={row.id} className="border-t">
+                <tr
+                  key={row.id}
+                  className="cursor-pointer border-t hover:bg-muted/50"
+                  onClick={() => setSelectedRow(row)}
+                >
                   <td className="p-3">{new Date(row.timestamp).toLocaleString()}</td>
                   <td className="p-3 font-medium">{row.actor}</td>
                   <td className="p-3 text-muted-foreground">{row.action}</td>
@@ -159,6 +165,37 @@ export default function AuditVault() {
           </table>
         </DataTableShell>
       </WorkspacePanel>
+
+      <Dialog open={!!selectedRow} onOpenChange={() => setSelectedRow(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Audit Entry Details</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 text-sm gap-y-2">
+              <span className="text-muted-foreground">Entry ID:</span>
+              <span className="font-mono text-xs">{selectedRow?.id}</span>
+              <span className="text-muted-foreground">Timestamp:</span>
+              <span>{selectedRow ? new Date(selectedRow.timestamp).toLocaleString() : ""}</span>
+              <span className="text-muted-foreground">Actor:</span>
+              <span className="font-semibold">{selectedRow?.actor}</span>
+              <span className="text-muted-foreground">Action:</span>
+              <span className="text-blue-600 font-medium">{selectedRow?.action}</span>
+              <span className="text-muted-foreground">Source:</span>
+              <span>{selectedRow?.source}</span>
+            </div>
+            <div className="border-t pt-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Payload / Metadata</p>
+              <div className="rounded-md border bg-muted/30 p-4 text-xs font-mono break-all">
+                {selectedRow?.detail || "No additional payload recorded for this event."}
+              </div>
+            </div>
+            <div className="border-t pt-2 text-[10px] text-muted-foreground italic">
+              Verification Hash: SHA256:{Math.random().toString(36).substring(7)}... (Mocked)
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

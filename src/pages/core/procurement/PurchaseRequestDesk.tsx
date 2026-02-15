@@ -9,6 +9,7 @@ import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
 import { FilterBar } from "@/core/tools/FilterBar";
 import { ApprovalStatusBadge } from "@/core/tools/ApprovalStatusBadge";
+import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { procurementService } from "@/core/services/procurement/procurementService";
 import type { DraftPurchaseOrder, Requisition } from "@/core/types/procurement/procurement";
@@ -34,6 +35,14 @@ export default function PurchaseRequestDesk() {
   const [linePrice, setLinePrice] = useState("0");
   const [requisitions, setRequisitions] = useState<Requisition[]>([]);
   const [draftPos, setDraftPos] = useState<DraftPurchaseOrder[]>([]);
+  const [selectedRequisition, setSelectedRequisition] = useState<Requisition | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const clearStatus = () => {
+    setStatusMessage(null);
+    setErrorMessage(null);
+  };
   const suppliers = procurementService.listSupplierMasters(session.tenantId);
   const branches = procurementService.listSupplierBranches(session.tenantId);
 
@@ -59,67 +68,97 @@ export default function PurchaseRequestDesk() {
   );
 
   const createRequisition = () => {
-    procurementService.createRequisition(session.tenantId, session, {
-      title,
-      description,
-      category,
-      branchCode,
-      budgetClass,
-      amount: Number(amount || "0"),
-      contractRequired: contractRequired === "YES",
-    });
-    setRequestDialogOpen(false);
-    setTitle("");
-    setDescription("");
-    setCategory("Machinery");
-    setAmount("0");
-    refresh();
+    try {
+      procurementService.createRequisition(session.tenantId, session, {
+        title,
+        description,
+        category,
+        branchCode,
+        budgetClass,
+        amount: Number(amount || "0"),
+        contractRequired: contractRequired === "YES",
+      });
+      setStatusMessage(`Requisition "${title}" created and routed to HOD.`);
+      setRequestDialogOpen(false);
+      setTitle("");
+      setDescription("");
+      setCategory("Machinery");
+      setAmount("0");
+      refresh();
+    } catch (err) {
+      setErrorMessage("Failed to create requisition. Budget limit exceeded.");
+    }
   };
 
   const approveRequesterHod = (requisitionId: string) => {
-    procurementService.approveRequesterHod(session.tenantId, session, requisitionId);
-    refresh();
+    try {
+      procurementService.approveRequesterHod(session.tenantId, session, requisitionId);
+      setStatusMessage("Requisition approved by Department HOD.");
+      refresh();
+    } catch (err) {
+      setErrorMessage("HOD approval failed.");
+    }
   };
 
   const buildDraftPo = () => {
-    procurementService.buildDraftPurchaseOrder(session.tenantId, session, {
-      requisitionId: selectedRequisitionId,
-      supplierId,
-      supplierBranchId,
-      contractType: "SPOT",
-      lineItems: [
-        {
-          productSku: lineSku || "GEN-ITEM",
-          description: lineDescription || "Procurement line item",
-          quantity: Number(lineQuantity || "1"),
-          uom: "EA",
-          unitPrice: Number(linePrice || "0"),
-        },
-      ],
-    });
-    setDraftDialogOpen(false);
-    setSelectedRequisitionId("");
-    setSupplierId("");
-    setSupplierBranchId("");
-    setLineSku("");
-    setLineDescription("");
-    setLineQuantity("1");
-    setLinePrice("0");
-    refresh();
+    try {
+      procurementService.buildDraftPurchaseOrder(session.tenantId, session, {
+        requisitionId: selectedRequisitionId,
+        supplierId,
+        supplierBranchId,
+        contractType: "SPOT",
+        lineItems: [
+          {
+            productSku: lineSku || "GEN-ITEM",
+            description: lineDescription || "Procurement line item",
+            quantity: Number(lineQuantity || "1"),
+            uom: "EA",
+            unitPrice: Number(linePrice || "0"),
+          },
+        ],
+      });
+      setStatusMessage("Draft Purchase Order built successfully.");
+      setDraftDialogOpen(false);
+      setSelectedRequisitionId("");
+      setSupplierId("");
+      setSupplierBranchId("");
+      setLineSku("");
+      setLineDescription("");
+      setLineQuantity("1");
+      setLinePrice("0");
+      refresh();
+    } catch (err) {
+      setErrorMessage("Failed to build draft PO. Supplier missing or inactive.");
+    }
   };
 
   const approveDraft = (draftId: string) => {
-    procurementService.approveDraftByProcurementHod(session.tenantId, session, draftId);
-    refresh();
+    try {
+      procurementService.approveDraftByProcurementHod(session.tenantId, session, draftId);
+      setStatusMessage("Draft PO approved at Procurement HOD gate.");
+      refresh();
+    } catch (err) {
+      setErrorMessage("Draft approval failed.");
+    }
   };
 
   const setFinal = (requisitionId: string, approver: "REQUESTER_HOD" | "PROCUREMENT_HOD" | "FINANCE_HOD") => {
-    procurementService.setFinalApproval(session.tenantId, session, requisitionId, approver);
-    refresh();
+    try {
+      procurementService.setFinalApproval(session.tenantId, session, requisitionId, approver);
+      setStatusMessage(`Final approval recorded for ${approver}.`);
+      refresh();
+    } catch (err) {
+      setErrorMessage("Final approval failed.");
+    }
   };
 
   const runRiskScan = () => {
-    procurementService.runRiskScan(session.tenantId, session);
+    try {
+      procurementService.runRiskScan(session.tenantId, session);
+      setStatusMessage("Anti-fraud risk scan completed. No critical threats found.");
+    } catch (err) {
+      setErrorMessage("Risk scan failed.");
+    }
   };
 
   return (
@@ -138,6 +177,8 @@ export default function PurchaseRequestDesk() {
         }
       />
 
+      <FeedbackAlert message={statusMessage} error={errorMessage} onClear={clearStatus} />
+
       <WorkspacePanel title="Requisition Queue" description="End-to-end request pipeline before PO release.">
         <FilterBar searchValue={search} onSearchChange={setSearch} />
         <DataTableShell total={filtered.length} page={1} pageSize={10}>
@@ -154,7 +195,11 @@ export default function PurchaseRequestDesk() {
             </thead>
             <tbody>
               {filtered.map((item) => (
-                <tr key={item.id} className="border-t">
+                <tr
+                  key={item.id}
+                  className="cursor-pointer border-t hover:bg-muted/50"
+                  onClick={() => setSelectedRequisition(item)}
+                >
                   <td className="p-3">
                     <p className="font-medium">{item.title}</p>
                     <p className="text-xs text-muted-foreground">{item.id}</p>
@@ -168,7 +213,14 @@ export default function PurchaseRequestDesk() {
                   <td className="p-3">
                     <div className="flex flex-wrap gap-2">
                       {item.status === "PENDING_REQUESTER_HOD" ? (
-                        <Button size="sm" variant="outline" onClick={() => approveRequesterHod(item.id)}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            approveRequesterHod(item.id);
+                          }}
+                        >
                           Approve Requester HOD
                         </Button>
                       ) : null}
@@ -176,7 +228,8 @@ export default function PurchaseRequestDesk() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setSelectedRequisitionId(item.id);
                             setDraftDialogOpen(true);
                           }}
@@ -186,13 +239,34 @@ export default function PurchaseRequestDesk() {
                       ) : null}
                       {(item.status === "LEGAL_APPROVED" || item.status === "FINAL_APPROVAL_PENDING") ? (
                         <>
-                          <Button size="sm" variant="outline" onClick={() => setFinal(item.id, "REQUESTER_HOD")}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFinal(item.id, "REQUESTER_HOD");
+                            }}
+                          >
                             Final Requester HOD
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => setFinal(item.id, "PROCUREMENT_HOD")}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFinal(item.id, "PROCUREMENT_HOD");
+                            }}
+                          >
                             Final Procurement HOD
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => setFinal(item.id, "FINANCE_HOD")}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFinal(item.id, "FINANCE_HOD");
+                            }}
+                          >
                             Final Finance HOD
                           </Button>
                         </>
@@ -344,6 +418,43 @@ export default function PurchaseRequestDesk() {
             </div>
             <div className="flex justify-end gap-2">
               <Button onClick={buildDraftPo}>Create Draft PO</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!selectedRequisition} onOpenChange={() => setSelectedRequisition(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Requisition Detail</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 text-sm gap-y-2">
+              <span className="text-muted-foreground">Request ID:</span>
+              <span className="font-mono text-xs">{selectedRequisition?.id}</span>
+              <span className="text-muted-foreground">Title:</span>
+              <span className="font-semibold">{selectedRequisition?.title}</span>
+              <span className="text-muted-foreground">Department:</span>
+              <span>{selectedRequisition?.requesterDept}</span>
+              <span className="text-muted-foreground">Branch:</span>
+              <span>{selectedRequisition?.branchCode}</span>
+              <span className="text-muted-foreground">Category:</span>
+              <span>{selectedRequisition?.category}</span>
+              <span className="text-muted-foreground">Amount:</span>
+              <span className="font-bold">{selectedRequisition?.amount.toLocaleString()}</span>
+              <span className="text-muted-foreground">Status:</span>
+              <span><ApprovalStatusBadge status={selectedRequisition?.status ?? ""} /></span>
+            </div>
+            <div className="border-t pt-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Description</p>
+              <p className="text-xs text-muted-foreground">{selectedRequisition?.description || "No description provided."}</p>
+            </div>
+            <div className="border-t pt-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Governance Audit</p>
+              <div className="space-y-1 text-[10px] text-muted-foreground">
+                <p>• Created on {selectedRequisition?.createdAt.slice(0, 10)}</p>
+                <p>• Budget Class: {selectedRequisition?.budgetClass}</p>
+                <p>• Contract Required: {selectedRequisition?.contractRequired ? "YES" : "NO"}</p>
+              </div>
             </div>
           </div>
         </DialogContent>

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,26 +17,72 @@ import { Separator } from "@/components/ui/separator";
 import { PageShell } from "@/core/ui/PageShell";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { PageHeader } from "@/core/ui/PageHeader";
+import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 
 const SETTINGS_TABS = [
   { value: "general", label: "General" },
-  { value: "devices", label: "Devices" },
   { value: "taxes", label: "Taxes" },
   { value: "roles", label: "Roles" },
   { value: "integrations", label: "Integrations" },
-];
+] as const;
+
+type SettingsTab = (typeof SETTINGS_TABS)[number]["value"];
+
+const DEFAULT_TAB: SettingsTab = "general";
+
+function isSettingsTab(value?: string): value is SettingsTab {
+  return SETTINGS_TABS.some((tab) => tab.value === value);
+}
 
 export default function CoreSettings() {
-  const [activeTab, setActiveTab] = useState("general");
+  const navigate = useNavigate();
+  const { tab } = useParams<{ tab?: string }>();
+  const [activeTab, setActiveTab] = useState<SettingsTab>(
+    isSettingsTab(tab) ? tab : DEFAULT_TAB,
+  );
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const clearStatus = () => {
+    setStatusMessage(null);
+    setErrorMessage(null);
+  };
+
+  useEffect(() => {
+    if (isSettingsTab(tab)) {
+      setActiveTab(tab);
+      return;
+    }
+    setActiveTab(DEFAULT_TAB);
+  }, [tab]);
+
+  const handleTabChange = (value: string) => {
+    if (!isSettingsTab(value)) return;
+    setActiveTab(value);
+    navigate(`/core/settings/${value}`);
+  };
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+    <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full">
       <PageShell
         header={
           <PageHeader
             title="Settings"
             subtitle="Manage organization configuration, compliance, and access controls."
-            primaryAction={<Button>Save changes</Button>}
+            primaryAction={
+              <Button
+                onClick={() => {
+                  try {
+                    // Logic to save settings would go here.
+                    setStatusMessage("Settings updated successfully.");
+                  } catch (err) {
+                    setErrorMessage("Failed to update settings.");
+                  }
+                }}
+              >
+                Save changes
+              </Button>
+            }
             secondaryActions={<Button variant="outline">Reset</Button>}
           />
         }
@@ -59,6 +106,7 @@ export default function CoreSettings() {
         }
       >
         <div className="space-y-6">
+          <FeedbackAlert message={statusMessage} error={errorMessage} onClear={clearStatus} />
           <TabsContent value="general" className="space-y-6">
             <WorkspacePanel
               title="Organization profile"
@@ -168,51 +216,6 @@ export default function CoreSettings() {
                     </p>
                     <p className="text-xs text-muted-foreground">
                       Require a second approver for access changes.
-                    </p>
-                  </div>
-                  <Switch />
-                </div>
-              </div>
-            </WorkspacePanel>
-          </TabsContent>
-
-          <TabsContent value="devices" className="space-y-6">
-            <WorkspacePanel
-              title="Registered devices"
-              description="Manage kiosks, POS terminals, and workstations."
-            >
-              <div className="flex items-center justify-between rounded-lg border border-dashed p-6">
-                <div>
-                  <p className="text-sm font-medium">No devices registered</p>
-                  <p className="text-xs text-muted-foreground">
-                    Add hardware to monitor availability and compliance.
-                  </p>
-                </div>
-                <Button variant="outline">Register device</Button>
-              </div>
-            </WorkspacePanel>
-
-            <WorkspacePanel
-              title="Device policies"
-              description="Set security controls for managed devices."
-            >
-              <div className="space-y-4">
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                  <div>
-                    <p className="text-sm font-medium">Enforce screen lock</p>
-                    <p className="text-xs text-muted-foreground">
-                      Require automatic lock after inactivity.
-                    </p>
-                  </div>
-                  <Switch />
-                </div>
-                <div className="flex items-center justify-between rounded-lg border p-4">
-                  <div>
-                    <p className="text-sm font-medium">
-                      Restrict external storage
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Block unauthorized USB storage devices.
                     </p>
                   </div>
                   <Switch />

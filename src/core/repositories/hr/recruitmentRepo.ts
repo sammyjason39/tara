@@ -58,4 +58,21 @@ export const recruitmentRepo = {
     saveToStorage(key(tenantId), updated);
     return record;
   },
+
+  update(tenantId: string, requisitionId: string, patch: Partial<RecruitmentRequisition>): RecruitmentRequisition | null {
+    const records = this.list(tenantId);
+    let updatedRecord: RecruitmentRequisition | null = null;
+    const updated = records.map((record) => {
+      if (record.id !== requisitionId) return record;
+      updatedRecord = {
+        ...record,
+        ...patch,
+        updatedAt: new Date().toISOString(),
+      };
+      return updatedRecord;
+    });
+    if (!updatedRecord) return null;
+    saveToStorage(key(tenantId), updated);
+    return updatedRecord;
+  },
 };

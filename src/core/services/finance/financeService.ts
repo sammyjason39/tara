@@ -5,6 +5,7 @@ import { mockFinanceRepo } from "@/core/repositories/finance/mockFinanceRepo";
 import { Roles } from "@/core/security/roles";
 import type { SessionContext } from "@/core/security/session";
 import { workflowService } from "@/core/services/hr/workflowService";
+import { paymentService } from "@/core/services/payment/paymentService";
 import type { WorkflowEntityType, WorkflowRequest } from "@/core/tools/workflows/workflowTypes";
 import type {
   AssetAuditPack,
@@ -69,6 +70,20 @@ const CFO_APPROVER_ROLES = new Set([
 
 const toPaymentMethod = (value: string): PaymentMethod =>
   PAYMENT_METHODS.find((method) => method === value) ?? "BANK_TRANSFER";
+
+const channelToFinanceMethod = (channel: string): PaymentMethod => {
+  if (channel === "QR") return "QRIS";
+  if (channel === "WALLET") return "GOPAY";
+  if (channel === "CARD_ONLINE" || channel === "CARD_POS") return "CARD";
+  return "BANK_TRANSFER";
+};
+
+const createPaymentSystemSession = (tenantId: string): SessionContext => ({
+  userId: "finance-payment-system",
+  tenantId,
+  role: Roles.SUPERADMIN,
+  departmentId: "FINANCE",
+});
 
 const getSessionDepartmentCode = (session: SessionContext) =>
   normalizeDepartmentCode(
@@ -657,18 +672,11 @@ export const financeService = {
     },
   ): Promise<PaymentRequest> {
     ensureTenant(tenantId, session);
-    const now = nowIso();
-    const request = repo.createPaymentRequest(tenantId, {
-      id: `pay-${Date.now()}`,
-      tenantId,
-      amount: payload.amount,
-      currency: "IDR",
-      method: payload.method,
+    const request = paymentService.createFinancePaymentRequest(tenantId, session, {
       destination: payload.destination,
+      amount: payload.amount,
+      method: payload.method,
       purpose: payload.purpose,
-      status: "pending",
-      createdAt: now,
-      updatedAt: now,
     });
 
     const flow = createFinanceWorkflow(tenantId, session, {
@@ -677,7 +685,6 @@ export const financeService = {
       notes: payload.purpose,
       metadata: { amount: String(payload.amount), method: payload.method },
     });
-    repo.updatePaymentRequest(tenantId, request.id, { workflowId: flow.id });
 
     audit.log({
       tenantId,
@@ -687,7 +694,19 @@ export const financeService = {
       entityId: request.id,
       after: { workflowId: flow.id },
     });
-    return request;
+    return {
+      id: request.id,
+      tenantId,
+      amount: request.amount,
+      currency: request.currency,
+      method: payload.method,
+      destination: request.destination,
+      purpose: payload.purpose,
+      status: "pending",
+      workflowId: flow.id,
+      createdAt: request.createdAt,
+      updatedAt: request.updatedAt,
+    };
   },
 
   async listAssets(tenantId: string, session: SessionContext): Promise<Asset[]> {
@@ -1816,21 +1835,23 @@ export const financeService = {
   },
 
   listPayments(tenantId: string): FinancePaymentRow[] {
-    return repo.listPaymentRequests(tenantId).map((item) => ({
+    return paymentService.listTransactions(tenantId).map((item) => ({
       id: item.id,
       destination: item.destination,
-      method: item.method,
+      method: channelToFinanceMethod(item.channel),
       amount: item.amount,
-      purpose: item.purpose,
-      approvalLevel: 1,
+      purpose: item.type,
+      approvalLevel: item.approvedBy ? 2 : 1,
       status:
-        item.status === "approved"
-          ? "APPROVED"
-          : item.status === "rejected"
-            ? "REJECTED"
-            : item.status === "draft"
-              ? "SCHEDULED"
-              : "PENDING",
+        item.status === "REJECTED" || item.status === "CANCELLED"
+          ? "REJECTED"
+          : item.status === "FAILED"
+            ? "FAILED"
+            : item.status === "SETTLED"
+              ? "APPROVED"
+              : item.status === "APPROVAL_PENDING" || item.status === "REQUEST_CREATED"
+                ? "PENDING"
+                : "APPROVED",
     }));
   },
 
@@ -1845,18 +1866,15 @@ export const financeService = {
       recurring?: boolean;
     },
   ) {
-    const now = nowIso();
-    const payment = repo.createPaymentRequest(tenantId, {
-      id: `pay-${Date.now()}`,
-      tenantId,
-      amount: payload.amount,
-      currency: "IDR",
-      method: toPaymentMethod(payload.method),
+    const session = createPaymentSystemSession(tenantId);
+    const payment = paymentService.createFinancePaymentRequest(tenantId, session, {
       destination: payload.destination,
+      amount: payload.amount,
+      method: toPaymentMethod(payload.method),
       purpose: payload.purpose,
-      status: payload.scheduledDate ? "draft" : "pending",
-      createdAt: now,
-      updatedAt: now,
+      externalReference: payload.scheduledDate
+        ? `scheduled:${payload.scheduledDate}`
+        : undefined,
     });
     audit.log({
       tenantId,
@@ -1870,7 +1888,18 @@ export const financeService = {
         recurring: payload.recurring ?? false,
       },
     });
-    return payment;
+    return {
+      id: payment.id,
+      tenantId,
+      amount: payment.amount,
+      currency: payment.currency,
+      method: channelToFinanceMethod(payment.channel),
+      destination: payment.destination,
+      purpose: payload.purpose,
+      status: "pending",
+      createdAt: payment.createdAt,
+      updatedAt: payment.updatedAt,
+    } as PaymentRequest;
   },
 
   updatePaymentStatus(
@@ -1878,16 +1907,15 @@ export const financeService = {
     id: string,
     status: "APPROVED" | "REJECTED",
   ) {
-    const mapped: PaymentRequest["status"] =
-      status === "APPROVED" ? "approved" : "rejected";
-    repo.updatePaymentRequest(tenantId, id, { status: mapped });
+    const session = createPaymentSystemSession(tenantId);
+    paymentService.processFinanceApproval(tenantId, session, id, status === "APPROVED");
     audit.log({
       tenantId,
       actorId: "system",
       action: "finance.payment.update",
       entityType: "payment",
       entityId: id,
-      after: { status: mapped },
+      after: { status: status === "APPROVED" ? "approved" : "rejected" },
     });
   },
 

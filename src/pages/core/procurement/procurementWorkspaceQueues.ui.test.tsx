@@ -4,7 +4,7 @@ import { Roles } from "@/core/security/roles";
 import type { SessionContext } from "@/core/security/session";
 import { procurementIntegrationAdapters } from "@/core/services/procurement/procurementIntegrationAdapters";
 import LexBoard from "@/pages/core/HR/LexBoard";
-import InventoryModule from "@/pages/core/InventoryModule";
+import InventoryReceiving from "@/pages/core/inventory/InventoryReceiving";
 import AccountDesk from "@/pages/core/it/AccountDesk";
 
 const tenantId = "tenant-demo";
@@ -57,7 +57,7 @@ describe("procurement cross-workspace queue actions", () => {
       },
     );
 
-    render(<InventoryModule />);
+    render(<InventoryReceiving />);
 
     fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
@@ -89,4 +89,3 @@ describe("procurement cross-workspace queue actions", () => {
     expect(updated?.status).toBe("PROVISIONED");
   });
 });
-

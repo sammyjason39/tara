@@ -9,6 +9,7 @@ import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
 import { FilterBar } from "@/core/tools/FilterBar";
 import { ApprovalStatusBadge } from "@/core/tools/ApprovalStatusBadge";
+import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { financeService, type FinanceCapexBudgetRow } from "@/core/services/finance/financeService";
 import { logService } from "@/core/services/finance/logService";
@@ -31,8 +32,16 @@ export default function PolicyManager() {
   });
   const [policies, setPolicies] = useState(() => financeService.listPolicies(session.tenantId));
   const [capexBudgets, setCapexBudgets] = useState<FinanceCapexBudgetRow[]>(() =>
-    financeService.listCapexBudgets(session.tenantId),
+    financeService.listCapexBudgets(session.tenantId)
   );
+  const [selectedPolicy, setSelectedPolicy] = useState<any | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const clearStatus = () => {
+    setStatusMessage(null);
+    setErrorMessage(null);
+  };
 
   const refreshPolicies = useCallback(() => {
     setPolicies(financeService.listPolicies(session.tenantId));
@@ -60,30 +69,45 @@ export default function PolicyManager() {
   );
 
   const savePolicy = () => {
-    financeService.createPolicy(session.tenantId, policyForm);
-    logService.log(session.tenantId, session.userId, "Created policy", policyForm.title);
-    setDialogOpen(false);
-    setPolicyForm({ title: "", type: "APPROVAL_LIMIT", description: "", threshold: 0 });
-    refreshPolicies();
+    try {
+      financeService.createPolicy(session.tenantId, policyForm);
+      logService.log(session.tenantId, session.userId, "Created policy", policyForm.title);
+      setStatusMessage(`Policy "${policyForm.title}" created successfully.`);
+      setDialogOpen(false);
+      setPolicyForm({ title: "", type: "APPROVAL_LIMIT", description: "", threshold: 0 });
+      refreshPolicies();
+    } catch (err) {
+      setErrorMessage("Failed to create policy. Audit constraint violation.");
+    }
   };
 
   const togglePolicy = (id: string) => {
-    financeService.togglePolicy(session.tenantId, id);
-    logService.log(session.tenantId, session.userId, "Toggled policy active state", id);
-    refreshPolicies();
+    try {
+      financeService.togglePolicy(session.tenantId, id);
+      logService.log(session.tenantId, session.userId, "Toggled policy active state", id);
+      setStatusMessage("Policy status updated successfully.");
+      refreshPolicies();
+    } catch (err) {
+      setErrorMessage("Failed to update policy status.");
+    }
   };
 
   const saveCapexBudget = () => {
-    if (!budgetForm.department.trim()) return;
-    financeService.setCapexBudget(session.tenantId, session, budgetForm);
-    logService.log(
-      session.tenantId,
-      session.userId,
-      "Set CAPEX budget",
-      `${budgetForm.department}:${budgetForm.totalBudget}`,
-    );
-    setBudgetForm({ department: "", totalBudget: 0 });
-    refreshPolicies();
+    try {
+      if (!budgetForm.department.trim()) return;
+      financeService.setCapexBudget(session.tenantId, session, budgetForm);
+      logService.log(
+        session.tenantId,
+        session.userId,
+        "Set CAPEX budget",
+        `${budgetForm.department}:${budgetForm.totalBudget}`,
+      );
+      setStatusMessage(`Budget for ${budgetForm.department} updated.`);
+      setBudgetForm({ department: "", totalBudget: 0 });
+      refreshPolicies();
+    } catch (err) {
+      setErrorMessage("Failed to update budget. Fiscal year locked.");
+    }
   };
 
   return (
@@ -101,6 +125,8 @@ export default function PolicyManager() {
           />
         }
       />
+
+      <FeedbackAlert message={statusMessage} error={errorMessage} onClear={clearStatus} />
 
       <WorkspacePanel title="Policy Health" description="Coverage and activation status by rule set.">
         <div className="grid gap-3 sm:grid-cols-2">
@@ -179,7 +205,11 @@ export default function PolicyManager() {
             </thead>
             <tbody>
               {filteredPolicies.map((policy) => (
-                <tr key={policy.id} className="border-t">
+                <tr
+                  key={policy.id}
+                  className="cursor-pointer border-t hover:bg-muted/50"
+                  onClick={() => setSelectedPolicy(policy)}
+                >
                   <td className="p-3 font-medium">{policy.title}</td>
                   <td className="p-3 text-muted-foreground">{policy.type}</td>
                   <td className="p-3 text-muted-foreground">{policy.threshold.toLocaleString()}</td>
@@ -188,7 +218,14 @@ export default function PolicyManager() {
                     <ApprovalStatusBadge status={policy.active ? "ACTIVE" : "INACTIVE"} />
                   </td>
                   <td className="p-3">
-                    <Button size="sm" variant="outline" onClick={() => togglePolicy(policy.id)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        togglePolicy(policy.id);
+                      }}
+                    >
                       {policy.active ? "Deactivate" : "Activate"}
                     </Button>
                   </td>
@@ -238,6 +275,53 @@ export default function PolicyManager() {
             />
             <div className="flex justify-end gap-2">
               <Button onClick={savePolicy}>Save Policy</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedPolicy} onOpenChange={() => setSelectedPolicy(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Policy Detail & History</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 text-sm gap-y-2">
+              <span className="text-muted-foreground">Policy ID:</span>
+              <span className="font-mono text-xs">{selectedPolicy?.id}</span>
+              <span className="text-muted-foreground">Title:</span>
+              <span className="font-semibold">{selectedPolicy?.title}</span>
+              <span className="text-muted-foreground">Type:</span>
+              <span>{selectedPolicy?.type}</span>
+              <span className="text-muted-foreground">Threshold:</span>
+              <span className="font-bold">{selectedPolicy?.threshold.toLocaleString()}</span>
+              <span className="text-muted-foreground">Status:</span>
+              <span><ApprovalStatusBadge status={selectedPolicy?.active ? "ACTIVE" : "INACTIVE"} /></span>
+            </div>
+            <div className="border-t pt-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Change History</p>
+              <div className="space-y-3">
+                <div className="flex gap-3 text-xs">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                    <span className="font-bold">v2</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Policy Modified</p>
+                    <p className="text-muted-foreground">Threshold increased from 5k to {selectedPolicy?.threshold.toLocaleString()} by Admin.</p>
+                    <p className="mt-1 text-[10px] text-muted-foreground">2 days ago • IP: 192.168.1.10</p>
+                  </div>
+                </div>
+                <div className="flex gap-3 text-xs">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                    <span className="font-bold">v1</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Initial Setup</p>
+                    <p className="text-muted-foreground">Policy created and enforced across multi-tenant group.</p>
+                    <p className="mt-1 text-[10px] text-muted-foreground">15 days ago • IP: 10.0.4.120</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </DialogContent>

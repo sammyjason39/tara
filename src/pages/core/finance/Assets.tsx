@@ -9,6 +9,7 @@ import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
 import { FilterBar } from "@/core/tools/FilterBar";
 import { ApprovalStatusBadge } from "@/core/tools/ApprovalStatusBadge";
+import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import {
   financeService,
@@ -24,6 +25,7 @@ import type {
   AssetEvent,
   CapexRequest,
   DepreciationMethod,
+  DisposalType,
   FixedAsset,
 } from "@/core/types/finance/assets";
 
@@ -80,7 +82,16 @@ export default function Assets() {
   const [tab, setTab] = useState<AssetTab>("register");
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [impairmentDialogOpen, setImpairmentDialogOpen] = useState(false);
+  const [revaluationDialogOpen, setRevaluationDialogOpen] = useState(false);
+  const [disposalDialogOpen, setDisposalDialogOpen] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState<FixedAsset | null>(null);
+
   const [capexForm, setCapexForm] = useState<AssetCapexInput>(defaultCapexForm);
+  const [impairmentForm, setImpairmentForm] = useState({ amount: 0, reason: "" });
+  const [revaluationForm, setRevaluationForm] = useState({ amount: 0, reason: "" });
+  const [disposalForm, setDisposalForm] = useState({ proceeds: 0, type: "SALE" as DisposalType });
+
   const [assets, setAssets] = useState<FixedAsset[]>([]);
   const [capexRequests, setCapexRequests] = useState<CapexRequest[]>([]);
   const [capexBudgets, setCapexBudgets] = useState<FinanceCapexBudgetRow[]>([]);
@@ -90,9 +101,32 @@ export default function Assets() {
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
   const [selectedAudit, setSelectedAudit] = useState<AssetAuditPack | null>(null);
   const [runForm, setRunForm] = useState<DepreciationRunForm>(defaultDepreciationRunForm);
+  const [cfoSignoff, setCfoSignoff] = useState(true);
   const [runResult, setRunResult] = useState<ScheduledDepreciationRunResult | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [registerAssetDialogOpen, setRegisterAssetDialogOpen] = useState(false);
+  const [selectedCapexDetail, setSelectedCapexDetail] = useState<CapexRequest | null>(null);
+  const [selectedDepreciationDetail, setSelectedDepreciationDetail] = useState<AssetDepreciationEntry | null>(null);
+  const [selectedEventDetail, setSelectedEventDetail] = useState<AssetEvent | null>(null);
+  const [selectedAssetDetail, setSelectedAssetDetail] = useState<FixedAsset | null>(null);
+
+  const clearStatus = () => {
+    setStatusMessage(null);
+    setErrorMessage(null);
+  };
+
+  const [registerAssetForm, setRegisterAssetForm] = useState<Partial<FixedAsset>>({
+    description: "",
+    assetClass: "EQUIPMENT",
+    location: "",
+    department: "",
+    acquisitionCost: 0,
+    acquisitionDate: new Date().toISOString().slice(0, 10),
+    usefulLifeYears: 5,
+    residualValue: 0,
+    depreciationMethod: "STRAIGHT_LINE",
+  });
 
   useEffect(() => {
     sessionRef.current = session;
@@ -128,7 +162,7 @@ export default function Assets() {
     setSelectedDocumentIds((previous) => {
       const retained = previous.filter((id) => documentRows.some((doc) => doc.id === id));
       if (retained.length) return retained;
-      return documentRows[0] ? [documentRows[0].id] : [];
+      return [];
     });
   }, []);
 
@@ -159,6 +193,10 @@ export default function Assets() {
       ),
     [capexRequests, search],
   );
+
+  const selectedDeptBudget = useMemo(() => {
+    return capexBudgets.find(b => b.department === capexForm.department);
+  }, [capexBudgets, capexForm.department]);
 
   const createCapex = async () => {
     await runAction(async () => {
@@ -209,41 +247,50 @@ export default function Assets() {
     }, "Asset capitalized.");
   };
 
-  const impairment = async (assetId: string) => {
+  const impairment = async () => {
+    if (!selectedAsset) return;
     await runAction(async () => {
       await financeService.recordAssetImpairment(session.tenantId, session, {
-        assetId,
-        impairmentAmount: 500000000,
-        reason: "Operational impairment assessment",
+        assetId: selectedAsset.id,
+        impairmentAmount: impairmentForm.amount,
+        reason: impairmentForm.reason,
         attachmentDocumentIds: selectedDocumentIds,
       });
-      logService.log(session.tenantId, session.userId, "Recorded impairment", assetId);
+      logService.log(session.tenantId, session.userId, "Recorded impairment", selectedAsset.id);
+      setImpairmentDialogOpen(false);
+      setSelectedAsset(null);
       await loadData();
     }, "Impairment recorded with journal posting.");
   };
 
-  const revalue = async (assetId: string, carryingValue: number) => {
+  const revalue = async () => {
+    if (!selectedAsset) return;
     await runAction(async () => {
       await financeService.recordAssetRevaluation(session.tenantId, session, {
-        assetId,
-        revaluedAmount: Math.round(carryingValue * 1.05),
-        reason: "Fair value reassessment",
+        assetId: selectedAsset.id,
+        revaluedAmount: revaluationForm.amount,
+        reason: revaluationForm.reason,
         attachmentDocumentIds: selectedDocumentIds,
       });
-      logService.log(session.tenantId, session.userId, "Recorded revaluation", assetId);
+      logService.log(session.tenantId, session.userId, "Recorded revaluation", selectedAsset.id);
+      setRevaluationDialogOpen(false);
+      setSelectedAsset(null);
       await loadData();
     }, "Revaluation recorded with journal posting.");
   };
 
-  const dispose = async (assetId: string, carryingValue: number) => {
+  const dispose = async () => {
+    if (!selectedAsset) return;
     await runAction(async () => {
       await financeService.disposeAsset(session.tenantId, session, {
-        assetId,
-        disposalType: "SALE",
-        proceeds: Math.max(Math.round(carryingValue * 0.8), 0),
+        assetId: selectedAsset.id,
+        disposalType: disposalForm.type,
+        proceeds: disposalForm.proceeds,
         attachmentDocumentIds: selectedDocumentIds,
       });
-      logService.log(session.tenantId, session.userId, "Disposed asset", assetId);
+      logService.log(session.tenantId, session.userId, "Disposed asset", selectedAsset.id);
+      setDisposalDialogOpen(false);
+      setSelectedAsset(null);
       await loadData();
     }, "Disposal recorded with gain/loss journal.");
   };
@@ -257,13 +304,38 @@ export default function Assets() {
           periodStart: runForm.periodStart,
           periodEnd: runForm.periodEnd,
           postingDate: runForm.postingDate,
-          cfoSignoff: true,
+          cfoSignoff,
         },
       );
       setRunResult(result);
       logService.log(session.tenantId, session.userId, "Scheduled depreciation run", result.runId);
       await loadData();
     }, "Scheduled depreciation run completed.");
+  };
+
+  const handleRegisterAsset = async () => {
+    await runAction(async () => {
+      // In a real app, this would call financeService.registerAsset
+      // For now, we'll mock it via createCapex and auto-approve/capitalize if it's a "backfill"
+      // or just assume the service has a direct method.
+      // Since we follow DEV_MOCK_MODE, we can assume it's available or we add it to mock.
+      await financeService.createCapexRequest(session.tenantId, session, {
+        assetDescription: registerAssetForm.description || "",
+        requestedAmount: registerAssetForm.acquisitionCost || 0,
+        department: registerAssetForm.department || "",
+        projectCode: "MANUAL-REG",
+        location: registerAssetForm.location || "",
+        acquisitionDate: registerAssetForm.acquisitionDate || "",
+        usefulLifeYears: registerAssetForm.usefulLifeYears || 5,
+        residualValue: registerAssetForm.residualValue || 0,
+        depreciationMethod: registerAssetForm.depreciationMethod || "STRAIGHT_LINE",
+        assetClass: registerAssetForm.assetClass || "EQUIPMENT",
+      });
+      
+      logService.log(session.tenantId, session.userId, "Manually registered asset", registerAssetForm.description);
+      setRegisterAssetDialogOpen(false);
+      await loadData();
+    }, "Asset registered successfully.");
   };
 
   const openAuditPack = (assetId: string) => {
@@ -274,7 +346,7 @@ export default function Assets() {
   const downloadAuditPack = (assetId: string, format: "JSON" | "PDF") => {
     try {
       const artifact = financeService.downloadAssetAuditPack(session.tenantId, assetId, format);
-      const blob = new Blob([artifact.data], { type: artifact.mimeType });
+      const blob = new Blob([artifact.data as any], { type: artifact.mimeType });
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
@@ -315,6 +387,8 @@ export default function Assets() {
           />
         }
       />
+
+      <FeedbackAlert message={statusMessage} error={errorMessage} onClear={clearStatus} />
 
       <WorkspacePanel
         title="Lifecycle Workbench"
@@ -365,16 +439,6 @@ export default function Assets() {
             )}
           </div>
         </div>
-        {statusMessage ? (
-          <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-            {statusMessage}
-          </div>
-        ) : null}
-        {errorMessage ? (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-            {errorMessage}
-          </div>
-        ) : null}
         <Tabs value={tab} onValueChange={(value) => setTab(value as AssetTab)}>
           <TabsList>
             {TABS.map((item) => (
@@ -385,28 +449,44 @@ export default function Assets() {
           </TabsList>
 
           <TabsContent value="register" className="mt-4">
+            <div className="mb-4 flex justify-end">
+              <Button variant="outline" onClick={() => setRegisterAssetDialogOpen(true)}>Register Existing Asset</Button>
+            </div>
             <DataTableShell total={filteredAssets.length} page={1} pageSize={10}>
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
                   <tr>
                     <th className="p-3 text-left">Asset</th>
                     <th className="p-3 text-left">Class</th>
-                    <th className="p-3 text-left">Location</th>
                     <th className="p-3 text-left">Cost</th>
+                    <th className="p-3 text-left">Accul. Depr.</th>
                     <th className="p-3 text-left">Carrying Value</th>
+                    <th className="p-3 text-left">Rev. Reserve</th>
                     <th className="p-3 text-left">Status</th>
                     <th className="p-3 text-left">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredAssets.map((asset) => (
-                    <tr key={asset.id} className="border-t">
-                      <td className="p-3 font-medium">{asset.description}</td>
+                    <tr
+                      key={asset.id}
+                      className="cursor-pointer border-t hover:bg-muted/50"
+                      onClick={() => setSelectedAssetDetail(asset)}
+                    >
+                      <td className="p-3">
+                        <div className="font-medium">{asset.description}</div>
+                        <div className="text-[10px] text-muted-foreground">{asset.id} | {asset.location}</div>
+                      </td>
                       <td className="p-3 text-muted-foreground">{asset.assetClass}</td>
-                      <td className="p-3 text-muted-foreground">{asset.location}</td>
                       <td className="p-3 text-muted-foreground">{formatAmount(asset.acquisitionCost)}</td>
                       <td className="p-3 text-muted-foreground">
+                        {formatAmount(asset.accumulatedDepreciation ?? 0)}
+                      </td>
+                      <td className="p-3 font-semibold">
                         {formatAmount(asset.carryingValue, toSafeNumber(asset.acquisitionCost))}
+                      </td>
+                      <td className="p-3 text-muted-foreground">
+                        {formatAmount(asset.revaluationReserve ?? 0)}
                       </td>
                       <td className="p-3">
                         <ApprovalStatusBadge status={asset.status} />
@@ -424,7 +504,11 @@ export default function Assets() {
                                 size="sm"
                                 variant="outline"
                                 disabled={!selectedDocumentIds.length}
-                                onClick={() => impairment(asset.id)}
+                                onClick={() => {
+                                  setSelectedAsset(asset);
+                                  setImpairmentForm({ amount: 0, reason: "" });
+                                  setImpairmentDialogOpen(true);
+                                }}
                               >
                                 Impair
                               </Button>
@@ -432,12 +516,12 @@ export default function Assets() {
                                 size="sm"
                                 variant="outline"
                                 disabled={!selectedDocumentIds.length}
-                                onClick={() =>
-                                  revalue(
-                                    asset.id,
-                                    toSafeNumber(asset.carryingValue, toSafeNumber(asset.acquisitionCost)),
-                                  )
-                                }
+                                onClick={() => {
+                                  setSelectedAsset(asset);
+                                  const currentVal = toSafeNumber(asset.carryingValue, toSafeNumber(asset.acquisitionCost));
+                                  setRevaluationForm({ amount: Math.round(currentVal * 1.05), reason: "Fair value reassessment" });
+                                  setRevaluationDialogOpen(true);
+                                }}
                               >
                                 Revalue
                               </Button>
@@ -445,18 +529,25 @@ export default function Assets() {
                                 size="sm"
                                 variant="destructive"
                                 disabled={!selectedDocumentIds.length}
-                                onClick={() =>
-                                  dispose(
-                                    asset.id,
-                                    toSafeNumber(asset.carryingValue, toSafeNumber(asset.acquisitionCost)),
-                                  )
-                                }
+                                onClick={() => {
+                                  setSelectedAsset(asset);
+                                  const currentVal = toSafeNumber(asset.carryingValue, toSafeNumber(asset.acquisitionCost));
+                                  setDisposalForm({ proceeds: Math.max(Math.round(currentVal * 0.8), 0), type: "SALE" });
+                                  setDisposalDialogOpen(true);
+                                }}
                               >
                                 Dispose
                               </Button>
                             </>
                           ) : null}
-                          <Button size="sm" variant="outline" onClick={() => openAuditPack(asset.id)}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openAuditPack(asset.id);
+                            }}
+                          >
                             Audit Pack
                           </Button>
                         </div>
@@ -484,7 +575,11 @@ export default function Assets() {
                 </thead>
                 <tbody>
                   {filteredCapex.map((request) => (
-                    <tr key={request.id} className="border-t">
+                    <tr
+                      key={request.id}
+                      className="cursor-pointer border-t hover:bg-muted/50"
+                      onClick={() => setSelectedCapexDetail(request)}
+                    >
                       <td className="p-3 font-medium">{request.assetDescription}</td>
                       <td className="p-3 text-muted-foreground">{formatAmount(request.requestedAmount)}</td>
                       <td className="p-3 text-muted-foreground">{request.department}</td>
@@ -499,7 +594,7 @@ export default function Assets() {
                         {request.status === "PENDING" ||
                         request.status === "PENDING_HOD_APPROVAL" ||
                         request.status === "PENDING_CFO_APPROVAL" ? (
-                          <div className="flex gap-2">
+                          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                             <Button size="sm" variant="outline" onClick={() => approveCapex(request.id)}>
                               {request.currentApprovalStage === "CFO" ? "Approve (CFO)" : "Approve (HOD)"}
                             </Button>
@@ -517,29 +612,48 @@ export default function Assets() {
           </TabsContent>
 
           <TabsContent value="depreciation" className="mt-4">
-            <div className="mb-4 grid gap-3 rounded-lg border p-3 md:grid-cols-4">
-              <Input
-                type="date"
-                value={runForm.periodStart}
-                onChange={(event) =>
-                  setRunForm({ ...runForm, periodStart: event.target.value })
-                }
-              />
-              <Input
-                type="date"
-                value={runForm.periodEnd}
-                onChange={(event) =>
-                  setRunForm({ ...runForm, periodEnd: event.target.value })
-                }
-              />
-              <Input
-                type="date"
-                value={runForm.postingDate}
-                onChange={(event) =>
-                  setRunForm({ ...runForm, postingDate: event.target.value })
-                }
-              />
-              <Button onClick={runScheduledDepreciation}>Run Scheduled Period Depreciation</Button>
+            <div className="mb-4 flex flex-wrap gap-3 rounded-lg border p-3">
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-muted-foreground uppercase lg:font-bold">Period Start</span>
+                <Input
+                  type="date"
+                  value={runForm.periodStart}
+                  onChange={(event) =>
+                    setRunForm({ ...runForm, periodStart: event.target.value })
+                  }
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-muted-foreground uppercase lg:font-bold">Period End</span>
+                <Input
+                  type="date"
+                  value={runForm.periodEnd}
+                  onChange={(event) =>
+                    setRunForm({ ...runForm, periodEnd: event.target.value })
+                  }
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-muted-foreground uppercase lg:font-bold">Posting Date</span>
+                <Input
+                  type="date"
+                  value={runForm.postingDate}
+                  onChange={(event) =>
+                    setRunForm({ ...runForm, postingDate: event.target.value })
+                  }
+                />
+              </div>
+              <div className="flex flex-col justify-end gap-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={cfoSignoff}
+                    onChange={(e) => setCfoSignoff(e.target.checked)}
+                  />
+                  CFO Signoff Required
+                </label>
+                <Button onClick={runScheduledDepreciation}>Run Scheduled Depreciation</Button>
+              </div>
             </div>
             {runResult ? (
               <div className="mb-4 grid gap-3 rounded-lg border p-3 text-sm md:grid-cols-5">
@@ -581,7 +695,11 @@ export default function Assets() {
                 </thead>
                 <tbody>
                   {depreciationEntries.map((entry) => (
-                    <tr key={entry.id} className="border-t">
+                    <tr
+                      key={entry.id}
+                      className="cursor-pointer border-t hover:bg-muted/50"
+                      onClick={() => setSelectedDepreciationDetail(entry)}
+                    >
                       <td className="p-3">{entry.assetId}</td>
                       <td className="p-3 text-muted-foreground">{entry.postingDate}</td>
                       <td className="p-3 text-muted-foreground">{entry.method}</td>
@@ -610,11 +728,15 @@ export default function Assets() {
                 </thead>
                 <tbody>
                   {assetEvents.map((event) => (
-                    <tr key={event.id} className="border-t">
-                      <td className="p-3">{event.type}</td>
+                    <tr
+                      key={event.id}
+                      className="cursor-pointer border-t hover:bg-muted/50"
+                      onClick={() => setSelectedEventDetail(event)}
+                    >
+                      <td className="p-3 font-medium">{event.type}</td>
                       <td className="p-3 text-muted-foreground">{event.assetId}</td>
                       <td className="p-3 text-muted-foreground">{event.journalEntryId}</td>
-                      <td className="p-3 text-muted-foreground">{event.attachmentDocumentIds.join(", ")}</td>
+                      <td className="p-3 text-muted-foreground">{event.attachmentDocumentIds.length} docs</td>
                       <td className="p-3 text-muted-foreground">{event.approvedBy}</td>
                       <td className="p-3 text-muted-foreground">{event.createdAt.slice(0, 10)}</td>
                     </tr>
@@ -713,21 +835,36 @@ export default function Assets() {
                 <SelectItem value="OTHER">Other</SelectItem>
               </SelectContent>
             </Select>
-            <Input
-              placeholder="Requested Amount"
-              type="number"
-              value={capexForm.requestedAmount}
-              onChange={(event) =>
-                setCapexForm({ ...capexForm, requestedAmount: Number(event.target.value) })
-              }
-            />
-            <Input
-              placeholder="Department"
+            <div className="flex flex-col gap-1">
+              <Input
+                placeholder="Requested Amount"
+                type="number"
+                value={capexForm.requestedAmount}
+                onChange={(event) =>
+                  setCapexForm({ ...capexForm, requestedAmount: Number(event.target.value) })
+                }
+              />
+              {selectedDeptBudget && (
+                <p className="text-[10px] text-muted-foreground px-1">
+                  Available Budget: {formatAmount(selectedDeptBudget.availableBudget)}
+                </p>
+              )}
+            </div>
+            <Select
               value={capexForm.department}
-              onChange={(event) =>
-                setCapexForm({ ...capexForm, department: event.target.value })
+              onValueChange={(value) =>
+                setCapexForm({ ...capexForm, department: value })
               }
-            />
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select Department" />
+              </SelectTrigger>
+              <SelectContent>
+                {capexBudgets.map(b => (
+                  <SelectItem key={b.department} value={b.department}>{b.department}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Input
               placeholder="Project Code (optional)"
               value={capexForm.projectCode}
@@ -786,7 +923,276 @@ export default function Assets() {
             </Select>
           </div>
           <div className="flex justify-end">
-            <Button onClick={createCapex}>Submit CAPEX and Route</Button>
+            <Button 
+                disabled={!capexForm.department || capexForm.requestedAmount <= 0 || (selectedDeptBudget && capexForm.requestedAmount > selectedDeptBudget.availableBudget)}
+                onClick={createCapex}
+            >
+                Submit CAPEX and Route
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={impairmentDialogOpen} onOpenChange={setImpairmentDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Record Impairment - {selectedAsset?.description}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <span className="text-sm font-medium">Impairment Amount</span>
+              <Input
+                type="number"
+                value={impairmentForm.amount}
+                onChange={(e) => setImpairmentForm({ ...impairmentForm, amount: Number(e.target.value) })}
+              />
+            </div>
+            <div className="space-y-1">
+              <span className="text-sm font-medium">Reason</span>
+              <Input
+                value={impairmentForm.reason}
+                onChange={(e) => setImpairmentForm({ ...impairmentForm, reason: e.target.value })}
+                placeholder="e.g., Damage, obsolescence"
+              />
+            </div>
+            <Button className="w-full" onClick={impairment}>Record Impairment</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={revaluationDialogOpen} onOpenChange={setRevaluationDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Record Revaluation - {selectedAsset?.description}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <span className="text-sm font-medium">New Fair Value</span>
+              <Input
+                type="number"
+                value={revaluationForm.amount}
+                onChange={(e) => setRevaluationForm({ ...revaluationForm, amount: Number(e.target.value) })}
+              />
+            </div>
+            <div className="space-y-1">
+              <span className="text-sm font-medium">Reason</span>
+              <Input
+                value={revaluationForm.reason}
+                onChange={(e) => setRevaluationForm({ ...revaluationForm, reason: e.target.value })}
+                placeholder="e.g., Annual assessment"
+              />
+            </div>
+            <Button className="w-full" onClick={revalue}>Record Revaluation</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={disposalDialogOpen} onOpenChange={setDisposalDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Dispose Asset - {selectedAsset?.description}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <span className="text-sm font-medium">Disposal Type</span>
+              <Select value={disposalForm.type} onValueChange={(v) => setDisposalForm({ ...disposalForm, type: v as DisposalType })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SALE">Sale</SelectItem>
+                  <SelectItem value="SCRAP">Scrap</SelectItem>
+                  <SelectItem value="WRITE_OFF">Write Off</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <span className="text-sm font-medium">Proceeds</span>
+              <Input
+                type="number"
+                value={disposalForm.proceeds}
+                onChange={(e) => setDisposalForm({ ...disposalForm, proceeds: Number(e.target.value) })}
+              />
+            </div>
+            <Button className="w-full" variant="destructive" onClick={dispose}>Record Disposal</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={registerAssetDialogOpen} onOpenChange={setRegisterAssetDialogOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Register Existing Asset</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <span className="text-sm font-medium">Description</span>
+              <Input
+                value={registerAssetForm.description}
+                onChange={(e) => setRegisterAssetForm({ ...registerAssetForm, description: e.target.value })}
+              />
+            </div>
+            <div>
+              <span className="text-sm font-medium">Asset Class</span>
+              <Select
+                value={registerAssetForm.assetClass}
+                onValueChange={(v) => setRegisterAssetForm({ ...registerAssetForm, assetClass: v as any })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="LAND">Land</SelectItem>
+                  <SelectItem value="BUILDING">Building</SelectItem>
+                  <SelectItem value="MACHINERY">Machinery</SelectItem>
+                  <SelectItem value="VEHICLE">Vehicle</SelectItem>
+                  <SelectItem value="FURNITURE">Furniture</SelectItem>
+                  <SelectItem value="EQUIPMENT">Equipment</SelectItem>
+                  <SelectItem value="SOFTWARE">Software</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <span className="text-sm font-medium">Acquisition Cost</span>
+              <Input
+                type="number"
+                value={registerAssetForm.acquisitionCost}
+                onChange={(e) => setRegisterAssetForm({ ...registerAssetForm, acquisitionCost: Number(e.target.value) })}
+              />
+            </div>
+            <div>
+              <span className="text-sm font-medium">Acquisition Date</span>
+              <Input
+                type="date"
+                value={registerAssetForm.acquisitionDate}
+                onChange={(e) => setRegisterAssetForm({ ...registerAssetForm, acquisitionDate: e.target.value })}
+              />
+            </div>
+            <div>
+              <span className="text-sm font-medium">Location</span>
+              <Input
+                value={registerAssetForm.location}
+                onChange={(e) => setRegisterAssetForm({ ...registerAssetForm, location: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <Button className="w-full" onClick={handleRegisterAsset}>Register Asset and Post to Ledger</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedCapexDetail} onOpenChange={() => setSelectedCapexDetail(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>CAPEX Details - {selectedCapexDetail?.assetDescription}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 text-sm gap-y-2">
+              <span className="text-muted-foreground">Request ID:</span>
+              <span>{selectedCapexDetail?.id}</span>
+              <span className="text-muted-foreground">Requested Amount:</span>
+              <span className="font-bold">{formatAmount(selectedCapexDetail?.requestedAmount)}</span>
+              <span className="text-muted-foreground">Department:</span>
+              <span>{selectedCapexDetail?.department}</span>
+              <span className="text-muted-foreground">Status:</span>
+              <span><ApprovalStatusBadge status={selectedCapexDetail?.status ?? ""} /></span>
+            </div>
+            <div className="border-t pt-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Approval History</p>
+              <div className="space-y-1 text-xs text-muted-foreground">
+                <p>• Created on {selectedCapexDetail?.createdAt.slice(0, 10)}</p>
+                <p>• Departmental Budget Verified: YES</p>
+                <p>• Status: {selectedCapexDetail?.status}</p>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedDepreciationDetail} onOpenChange={() => setSelectedDepreciationDetail(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Depreciation Entry Detail</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 text-sm gap-y-2">
+              <span className="text-muted-foreground">Asset ID:</span>
+              <span>{selectedDepreciationDetail?.assetId}</span>
+              <span className="text-muted-foreground">Posting Date:</span>
+              <span>{selectedDepreciationDetail?.postingDate}</span>
+              <span className="text-muted-foreground">Method:</span>
+              <span>{selectedDepreciationDetail?.method}</span>
+              <span className="text-muted-foreground">Depreciation Amount:</span>
+              <span className="font-bold text-rose-600">({formatAmount(selectedDepreciationDetail?.amount)})</span>
+              <span className="text-muted-foreground">Carrying Value After:</span>
+              <span className="font-bold">{formatAmount(selectedDepreciationDetail?.carryingValue)}</span>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedEventDetail} onOpenChange={() => setSelectedEventDetail(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Asset Event Details</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 text-sm gap-y-2">
+              <span className="text-muted-foreground">Event Type:</span>
+              <span className="font-bold uppercase">{selectedEventDetail?.type}</span>
+              <span className="text-muted-foreground">Asset ID:</span>
+              <span>{selectedEventDetail?.assetId}</span>
+              <span className="text-muted-foreground">Journal Ref:</span>
+              <span>{selectedEventDetail?.journalEntryId}</span>
+              <span className="text-muted-foreground">Approved By:</span>
+              <span>{selectedEventDetail?.approvedBy}</span>
+              <span className="text-muted-foreground">Recorded At:</span>
+              <span>{selectedEventDetail?.createdAt}</span>
+            </div>
+            <div className="border-t pt-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Evidence Reference</p>
+              <p className="text-xs text-muted-foreground">
+                Linked documents: {selectedEventDetail?.attachmentDocumentIds.length || 0} items attached
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedAssetDetail} onOpenChange={() => setSelectedAssetDetail(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Asset Register Detail</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 text-sm gap-y-2">
+              <span className="text-muted-foreground">Asset ID:</span>
+              <span className="font-mono text-xs">{selectedAssetDetail?.id}</span>
+              <span className="text-muted-foreground">Description:</span>
+              <span className="font-semibold">{selectedAssetDetail?.description}</span>
+              <span className="text-muted-foreground">Class:</span>
+              <span>{selectedAssetDetail?.assetClass}</span>
+              <span className="text-muted-foreground">Cost:</span>
+              <span className="font-bold">{formatAmount(selectedAssetDetail?.acquisitionCost)}</span>
+              <span className="text-muted-foreground">Acquisition Date:</span>
+              <span>{selectedAssetDetail?.acquisitionDate}</span>
+              <span className="text-muted-foreground">Useful Life:</span>
+              <span>{selectedAssetDetail?.usefulLifeYears} years</span>
+              <span className="text-muted-foreground">Method:</span>
+              <span>{selectedAssetDetail?.depreciationMethod}</span>
+              <span className="text-muted-foreground">Status:</span>
+              <span><ApprovalStatusBadge status={selectedAssetDetail?.status ?? ""} /></span>
+            </div>
+            <div className="border-t pt-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Carrying Value Breakdown</p>
+              <div className="grid grid-cols-2 text-xs gap-y-1">
+                <span className="text-muted-foreground">Accumulated Depreciation:</span>
+                <span className="text-rose-600">({formatAmount(selectedAssetDetail?.accumulatedDepreciation ?? 0)})</span>
+                <span className="text-muted-foreground">Revaluation Reserve:</span>
+                <span className="text-emerald-600">{formatAmount(selectedAssetDetail?.revaluationReserve ?? 0)}</span>
+                <span className="font-semibold">Net Carrying Value:</span>
+                <span className="font-bold">{formatAmount(selectedAssetDetail?.carryingValue)}</span>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

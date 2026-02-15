@@ -1,6 +1,6 @@
 import type { HRAuditFields } from "./base";
 
-export type RecruitmentStatus = "open" | "screening" | "interview" | "offer" | "closed";
+export type RecruitmentStatus = "open" | "screening" | "interview" | "offer" | "closed" | "rejected";
 
 export interface RecruitmentRequisition extends HRAuditFields {
   id: string;

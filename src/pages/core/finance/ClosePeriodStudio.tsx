@@ -7,6 +7,7 @@ import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
 import { ApprovalStatusBadge } from "@/core/tools/ApprovalStatusBadge";
+import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { financeService, type AccountingPeriod } from "@/core/services/finance/financeService";
 import { workflowService } from "@/core/services/hr/workflowService";
@@ -23,8 +24,15 @@ export default function ClosePeriodStudio() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<AccountingPeriod | null>(null);
   const [periods, setPeriods] = useState<AccountingPeriod[]>(() =>
-    financeService.listPeriods(session.tenantId),
+    financeService.listPeriods(session.tenantId)
   );
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const clearStatus = () => {
+    setStatusMessage(null);
+    setErrorMessage(null);
+  };
 
   const refresh = useCallback(() => {
     setPeriods(financeService.listPeriods(session.tenantId));
@@ -47,41 +55,66 @@ export default function ClosePeriodStudio() {
   );
 
   const startClose = (period: AccountingPeriod) => {
-    financeService.lockPeriod(session.tenantId, period.id);
-    workflowService.createRequest(session.tenantId, session, {
-      entityType: "PAYMENT",
-      entityId: period.id,
-      makerDept: session.departmentId,
-      destinationDept: "FINANCE",
-      notes: "Period close approval",
-    });
-    logService.log(session.tenantId, session.userId, "Started period close", period.id);
-    setDialogOpen(false);
-    refresh();
+    try {
+      financeService.lockPeriod(session.tenantId, period.id);
+      workflowService.createRequest(session.tenantId, session, {
+        entityType: "PAYMENT",
+        entityId: period.id,
+        makerDept: session.departmentId,
+        destinationDept: "FINANCE",
+        notes: "Period close approval",
+      });
+      logService.log(session.tenantId, session.userId, "Started period close", period.id);
+      setStatusMessage(`Period close process started for ${period.startDate}.`);
+      setDialogOpen(false);
+      refresh();
+    } catch (err) {
+      setErrorMessage("Failed to start period close. Access denied.");
+    }
   };
 
   const approveClose = (period: AccountingPeriod) => {
-    financeService.approvePeriodClose(session.tenantId, period.id);
-    logService.log(session.tenantId, session.userId, "Approved period close", period.id);
-    refresh();
+    try {
+      financeService.approvePeriodClose(session.tenantId, period.id);
+      logService.log(session.tenantId, session.userId, "Approved period close", period.id);
+      setStatusMessage("Period close approved and books finalized.");
+      refresh();
+    } catch (err) {
+      setErrorMessage("Approval failed. Permission error.");
+    }
   };
 
   const failClose = (period: AccountingPeriod) => {
-    financeService.markPeriodFailed(session.tenantId, period.id);
-    logService.log(session.tenantId, session.userId, "Marked close as failed", period.id);
-    refresh();
+    try {
+      financeService.markPeriodFailed(session.tenantId, period.id);
+      logService.log(session.tenantId, session.userId, "Marked close as failed", period.id);
+      setErrorMessage("Period close marked as failed for further investigation.");
+      refresh();
+    } catch (err) {
+      // ignore
+    }
   };
 
   const reopen = (period: AccountingPeriod) => {
-    financeService.reopenPeriod(session.tenantId, period.id);
-    logService.log(session.tenantId, session.userId, "Reopened period", period.id);
-    refresh();
+    try {
+      financeService.reopenPeriod(session.tenantId, period.id);
+      logService.log(session.tenantId, session.userId, "Reopened period", period.id);
+      setStatusMessage("Period reopened for adjustment.");
+      refresh();
+    } catch (err) {
+      setErrorMessage("Reopen failed.");
+    }
   };
 
   const forceClose = (period: AccountingPeriod) => {
-    financeService.forceClosePeriod(session.tenantId, period.id);
-    logService.log(session.tenantId, session.userId, "Force closed period", period.id);
-    refresh();
+    try {
+      financeService.forceClosePeriod(session.tenantId, period.id);
+      logService.log(session.tenantId, session.userId, "Force closed period", period.id);
+      setStatusMessage("Period force-closed with admin override.");
+      refresh();
+    } catch (err) {
+      setErrorMessage("Force close failed.");
+    }
   };
 
   return (
@@ -103,6 +136,8 @@ export default function ClosePeriodStudio() {
           />
         }
       />
+
+      <FeedbackAlert message={statusMessage} error={errorMessage} onClear={clearStatus} />
 
       <WorkspacePanel title="Accounting Periods" description="Status-aware operations for close lifecycle.">
         <Tabs value={tab} onValueChange={(value) => setTab(value as PeriodTab)}>

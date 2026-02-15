@@ -16,16 +16,18 @@ import type {
 // PAGE COMPONENT IMPORTS (MODULE OWNED)
 // ============================================================
 
-import RetailCashier from "@/pages/retail/Cashier";
-import RetailInventory from "@/pages/retail/Inventory";
-import RetailShifts from "@/pages/retail/Shifts";
+import RetailWorkspace from "@/pages/retail/RetailWorkspace";
+import RetailPOS from "@/pages/retail/RetailPOS";
+import RetailManagement from "@/pages/retail/RetailManagement";
+import RetailVerification from "@/pages/retail/RetailVerification";
+import RetailInventory from "@/pages/retail/RetailInventory";
 
 // ============================================================
 // MODULE IDENTITY (LOCKED)
 // ============================================================
 
 const MODULE_ID = "retail" as const;
-const MODULE_VERSION = "1.0.0" as const;
+const MODULE_VERSION = "2.0.0" as const;
 
 /**
  * Canonical module route prefix.
@@ -39,7 +41,6 @@ const BASE_ROUTE = `/m/${MODULE_ID}` as const;
 
 export interface RetailModuleConfig extends ModuleConfig {
   taxRate: number;
-
   features: {
     barcodeScanning: boolean;
     requireShiftStart: boolean;
@@ -47,8 +48,7 @@ export interface RetailModuleConfig extends ModuleConfig {
 }
 
 const DEFAULT_CONFIG: RetailModuleConfig = {
-  taxRate: 8.5,
-
+  taxRate: 10, // Updated to match service logic
   features: {
     barcodeScanning: true,
     requireShiftStart: true,
@@ -60,25 +60,13 @@ const DEFAULT_CONFIG: RetailModuleConfig = {
 // ============================================================
 
 const PERMISSIONS = {
-  SALES_READ: {
-    resource: "sales",
-    actions: ["read"],
+  RETAIL_ACCESS: {
+    resource: "retail",
+    actions: ["read", "manage"],
   },
   SALES_CREATE: {
     resource: "sales",
     actions: ["create"],
-  },
-  INVENTORY_READ: {
-    resource: "inventory",
-    actions: ["read"],
-  },
-  SHIFTS_READ: {
-    resource: "shifts",
-    actions: ["read"],
-  },
-  SETTINGS_READ: {
-    resource: "settings",
-    actions: ["read"],
   },
 } satisfies Record<string, Permission>;
 
@@ -88,48 +76,54 @@ const PERMISSIONS = {
 
 const PAGES: ReadonlyArray<ModulePageDefinition> = [
   {
-    id: "cashier",
+    id: "workspace",
     moduleId: MODULE_ID,
-    title: "Cashier",
-
-    route: "/m/retail/cashier",
-    menuGroup: "operations",
-
-    requiredPermissions: [PERMISSIONS.SALES_CREATE],
-
-    component: RetailCashier,
+    title: "Retail Home",
+    route: "/m/retail/workspace",
+    icon: "Layout",
+    menuGroup: "overview",
+    requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
+    component: RetailWorkspace,
   },
-
+  {
+    id: "pos",
+    moduleId: MODULE_ID,
+    title: "POS Terminal",
+    route: "/m/retail/pos",
+    icon: "ShoppingCart",
+    menuGroup: "operations",
+    requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
+    component: RetailPOS,
+  },
+  {
+    id: "management",
+    moduleId: MODULE_ID,
+    title: "Command Center",
+    route: "/m/retail/management",
+    icon: "BarChart3",
+    menuGroup: "management",
+    requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
+    component: RetailManagement,
+  },
+  {
+    id: "verification",
+    moduleId: MODULE_ID,
+    title: "Verification Desk",
+    route: "/m/retail/verification",
+    icon: "ShieldCheck",
+    menuGroup: "operations",
+    requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
+    component: RetailVerification,
+  },
   {
     id: "inventory",
     moduleId: MODULE_ID,
-    title: "Inventory",
-
-    route: `${BASE_ROUTE}/inventory`,
-    menuGroup: "management",
-
-    requiredPermissions: [PERMISSIONS.INVENTORY_READ],
-
-    component: RetailInventory,
-
-    hidden: (ctx) =>
-      !(ctx.moduleConfig as RetailModuleConfig).features.barcodeScanning,
-  },
-
-  {
-    id: "shifts",
-    moduleId: MODULE_ID,
-    title: "Shifts",
-
-    route: `${BASE_ROUTE}/shifts`,
+    title: "Stock & Receiving",
+    route: "/m/retail/inventory",
+    icon: "Package",
     menuGroup: "operations",
-
-    requiredPermissions: [PERMISSIONS.SHIFTS_READ],
-
-    component: RetailShifts,
-
-    hidden: (ctx) =>
-      !(ctx.moduleConfig as RetailModuleConfig).features.requireShiftStart,
+    requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
+    component: RetailInventory,
   },
 ];
 

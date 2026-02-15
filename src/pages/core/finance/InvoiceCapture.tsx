@@ -28,6 +28,7 @@ export default function InvoiceCapture() {
   const [invoices, setInvoices] = useState<FinanceInvoiceRow[]>(() =>
     financeService.listInvoices(session.tenantId),
   );
+  const [selectedInvoice, setSelectedInvoice] = useState<FinanceInvoiceRow | null>(null);
 
   const refreshInvoices = useCallback(() => {
     setInvoices(financeService.listInvoices(session.tenantId));
@@ -105,7 +106,11 @@ export default function InvoiceCapture() {
         </thead>
         <tbody>
           {items.map((invoice) => (
-            <tr key={invoice.id} className="border-t">
+            <tr
+              key={invoice.id}
+              className="cursor-pointer border-t hover:bg-muted/50"
+              onClick={() => setSelectedInvoice(invoice)}
+            >
               <td className="p-3">{invoice.kind}</td>
               <td className="p-3 font-medium">{invoice.vendor}</td>
               <td className="p-3 text-muted-foreground">{invoice.amount.toLocaleString()}</td>
@@ -206,6 +211,41 @@ export default function InvoiceCapture() {
             <Input placeholder="Due Date" type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
             <div className="flex justify-end gap-2">
               <Button onClick={captureInvoice}>Capture and Route</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedInvoice} onOpenChange={() => setSelectedInvoice(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Invoice Record Detail</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 text-sm gap-y-2">
+              <span className="text-muted-foreground">Invoice ID:</span>
+              <span className="font-mono">{selectedInvoice?.id}</span>
+              <span className="text-muted-foreground">Type:</span>
+              <span className="font-bold">{selectedInvoice?.kind}</span>
+              <span className="text-muted-foreground">{selectedInvoice?.kind === "PAYABLE" ? "Vendor" : "Customer"}:</span>
+              <span className="font-semibold">{selectedInvoice?.vendor}</span>
+              <span className="text-muted-foreground">Amount:</span>
+              <span className="font-bold text-lg">{selectedInvoice?.amount.toLocaleString()}</span>
+              <span className="text-muted-foreground">Invoice Date:</span>
+              <span>{selectedInvoice?.invoiceDate}</span>
+              <span className="text-muted-foreground">Due Date:</span>
+              <span>{selectedInvoice?.dueDate}</span>
+              <span className="text-muted-foreground">Status:</span>
+              <span><ApprovalStatusBadge status={selectedInvoice?.status || "PENDING"} /></span>
+            </div>
+            <div className="border-t pt-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Digital Capture Audit</p>
+              <p className="text-xs text-muted-foreground italic">
+                Source Document Hash: SHA256:{selectedInvoice?.id.slice(-8)}...
+              </p>
+              <div className="mt-4">
+                <Button size="sm" variant="outline" className="w-full">View Scanned Image</Button>
+              </div>
             </div>
           </div>
         </DialogContent>

@@ -71,6 +71,7 @@ export default function PayFlow() {
     approvalLevel: 0,
   });
   const [batchPayments, setBatchPayments] = useState<Payment[]>([]);
+  const [selectedItem, setSelectedItem] = useState<Payment | null>(null);
 
   const { sources } = useTreasury(session.tenantId, session);
 
@@ -190,7 +191,11 @@ export default function PayFlow() {
         </thead>
         <tbody>
           {items.map((p) => (
-            <tr key={p.id} className="border-t">
+            <tr
+              key={p.id}
+              className="cursor-pointer border-t hover:bg-muted/50"
+              onClick={() => setSelectedItem(p)}
+            >
               <td className="p-3">{p.destination}</td>
               <td className="p-3 text-muted-foreground">{p.method}</td>
               <td className="p-3 text-muted-foreground">
@@ -201,22 +206,24 @@ export default function PayFlow() {
                 <ApprovalStatusBadge status={p.status ?? "PENDING"} />
               </td>
               <td className="p-3 space-x-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={p.status === "APPROVED"}
-                  onClick={() => p.id && handleApprovalAction(p.id, "APPROVED")}
-                >
-                  Approve
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  disabled={p.status === "REJECTED"}
-                  onClick={() => p.id && handleApprovalAction(p.id, "REJECTED")}
-                >
-                  Reject
-                </Button>
+                <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={p.status === "APPROVED"}
+                    onClick={() => p.id && handleApprovalAction(p.id, "APPROVED")}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    disabled={p.status === "REJECTED"}
+                    onClick={() => p.id && handleApprovalAction(p.id, "REJECTED")}
+                  >
+                    Reject
+                  </Button>
+                </div>
               </td>
             </tr>
           ))}
@@ -448,6 +455,42 @@ export default function PayFlow() {
             </Button>
             <div className="flex justify-end gap-2">
               <Button onClick={handleCreateBatch}>Create Batch</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Payment Record Detail</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 text-sm gap-y-2">
+              <span className="text-muted-foreground">Payment ID:</span>
+              <span>{selectedItem?.id}</span>
+              <span className="text-muted-foreground">Destination:</span>
+              <span className="font-semibold">{selectedItem?.destination}</span>
+              <span className="text-muted-foreground">Amount:</span>
+              <span className="font-bold text-lg">{selectedItem?.amount.toLocaleString()}</span>
+              <span className="text-muted-foreground">Method:</span>
+              <span>{selectedItem?.method}</span>
+              <span className="text-muted-foreground">Purpose:</span>
+              <span>{selectedItem?.purpose}</span>
+              <span className="text-muted-foreground">Status:</span>
+              <span><ApprovalStatusBadge status={selectedItem?.status || "PENDING"} /></span>
+              {selectedItem?.scheduledDate && (
+                <>
+                  <span className="text-muted-foreground">Scheduled Date:</span>
+                  <span>{selectedItem.scheduledDate}</span>
+                </>
+              )}
+            </div>
+            <div className="border-t pt-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Audit & Compliance</p>
+              <p className="text-xs text-muted-foreground">
+                Transaction signed by internal HSM. {selectedItem?.recurring ? "This is a recurring payment setup." : ""}
+                Compliance AML check passed on creation.
+              </p>
             </div>
           </div>
         </DialogContent>

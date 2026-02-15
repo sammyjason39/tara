@@ -3,6 +3,8 @@ import { HRController } from './hr.controller';
 import { HRService } from './hr.service';
 import { IHRRepository } from './repositories/hr.repository.interface';
 import { HRMockRepository } from './repositories/hr.mock.repository';
+import { HRDbRepository } from './repositories/hr.db.repository';
+import { useDbPersistence } from '../../shared/persistence.mode';
 
 /**
  * HR Module
@@ -17,7 +19,7 @@ import { HRMockRepository } from './repositories/hr.mock.repository';
     HRService,
     {
       provide: IHRRepository,
-      useClass: HRMockRepository, // DEV_MOCK_MODE: Swap to real repo later
+      useClass: useDbPersistence() ? HRDbRepository : HRMockRepository,
     },
   ],
   exports: [HRService], // Export for cross-module usage

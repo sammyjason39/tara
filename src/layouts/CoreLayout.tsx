@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import type { ElementType } from 'react';
+import { Outlet, NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -16,6 +17,7 @@ import {
   Settings,
   Shield,
   Wallet,
+  CreditCard,
   Package,
   ShoppingCart,
   ShieldCheck,
@@ -30,29 +32,54 @@ import {
   LogOut,
 } from 'lucide-react';
 
-const navItems = [
-  { path: '/core', icon: LayoutDashboard, label: 'Dashboard', end: true },
-  { path: '/core/operations', icon: ClipboardList, label: 'Operations' },
-  { path: '/core/finance', icon: Wallet, label: 'Finance' },
-  { path: '/core/procurement', icon: ShoppingCart, label: 'Procurement' },
-  { path: '/core/inventory', icon: Package, label: 'Inventory' },
-  { path: '/core/admin', icon: Shield, label: 'Administration' },
-  { path: '/core/hr', icon: Users2, label: 'HR' },
-  { path: '/core/workflow', icon: Inbox, label: 'Workflow Inbox' },
-  { path: '/core/tools', icon: Wrench, label: 'WorkSuite' },
-  { path: '/core/tools/explorer', icon: FolderOpen, label: 'Explorer' },
-  { path: '/core/staff', icon: Users, label: 'Staff' },
-  { path: '/core/modules', icon: Puzzle, label: 'Modules' },
-  { path: '/core/reports', icon: BarChart3, label: 'Reports' },
-  { path: '/core/integrations', icon: Link2, label: 'Integrations' },
-  { path: '/core/security', icon: ShieldCheck, label: 'Security' },
-  { path: '/core/settings', icon: Settings, label: 'Settings' },
+type NavItem = { path: string; icon: ElementType; label: string; end?: boolean };
+type NavSection = { title: string; items: NavItem[] };
+
+const navSections: NavSection[] = [
+  {
+    title: 'WorkSuite',
+    items: [
+      { path: '/core', icon: LayoutDashboard, label: 'Dashboard', end: true },
+      { path: '/core/operations', icon: ClipboardList, label: 'Operations' },
+      { path: '/core/workflow', icon: Inbox, label: 'Workflow' },
+      { path: '/core/tools', icon: Wrench, label: 'WorkTools' },
+    ],
+  },
+  {
+    title: 'Management',
+    items: [
+      { path: '/core/finance', icon: Wallet, label: 'Finance' },
+      { path: '/core/payment', icon: CreditCard, label: 'Payment' },
+      { path: '/core/procurement', icon: ShoppingCart, label: 'Procurement' },
+      { path: '/core/inventory', icon: Package, label: 'Inventory' },
+      { path: '/core/hr', icon: Users2, label: 'HR' },
+      { path: '/core/it', icon: ShieldCheck, label: 'IT' },
+    ],
+  },
+  {
+    title: 'Commerce & Growth',
+    items: [
+      { path: '/core/sales', icon: BarChart3, label: 'Sales' },
+      { path: '/core/marketing', icon: Link2, label: 'Marketing' },
+    ],
+  },
+  {
+    title: 'Backbone',
+    items: [
+      { path: '/core/admin', icon: Shield, label: 'Administration' },
+      { path: '/core/staff', icon: Users, label: 'Staff' },
+      { path: '/core/modules', icon: Puzzle, label: 'Modules' },
+      { path: '/core/reports', icon: BarChart3, label: 'Reports' },
+      { path: '/core/integrations', icon: Link2, label: 'Integrations' },
+      { path: '/core/security', icon: ShieldCheck, label: 'Security' },
+      { path: '/core/settings', icon: Settings, label: 'Settings' },
+    ],
+  },
 ];
 
 export function CoreLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { state, logout, toggleTheme } = useApp();
-  const location = useLocation();
 
   return (
     <div className="flex h-screen bg-background">
@@ -92,25 +119,32 @@ export function CoreLayout() {
 
           {/* Navigation */}
           <ScrollArea className="flex-1 py-4">
-            <nav className="px-3 space-y-1">
-              {navItems.map(({ path, icon: Icon, label, end }) => (
-                <NavLink
-                  key={path}
-                  to={path}
-                  end={end}
-                  className={({ isActive }) =>
-                    cn(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                      isActive
-                        ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                        : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
-                    )
-                  }
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <Icon size={18} />
-                  {label}
-                </NavLink>
+            <nav className="px-3 space-y-4">
+              {navSections.map((section) => (
+                <div key={section.title} className="space-y-1">
+                  <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-sidebar-foreground/50">
+                    {section.title}
+                  </p>
+                  {section.items.map(({ path, icon: Icon, label, end }) => (
+                    <NavLink
+                      key={path}
+                      to={path}
+                      end={end}
+                      className={({ isActive }) =>
+                        cn(
+                          'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                          isActive
+                            ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                        )
+                      }
+                      onClick={() => setSidebarOpen(false)}
+                    >
+                      <Icon size={18} />
+                      {label}
+                    </NavLink>
+                  ))}
+                </div>
               ))}
             </nav>
           </ScrollArea>

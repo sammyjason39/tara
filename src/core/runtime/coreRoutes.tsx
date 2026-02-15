@@ -44,6 +44,14 @@ import InvoiceCapture from "@/pages/core/finance/InvoiceCapture";
 import FinanceDocs from "@/pages/core/finance/FinanceDocs";
 import Assets from "@/pages/core/finance/Assets";
 import PolicyManager from "@/pages/core/finance/PolicyManager";
+import PaymentWorkspaceLayout from "@/pages/core/payment/PaymentWorkspaceLayout";
+import PaymentDashboard from "@/pages/core/payment/PaymentDashboard";
+import PaymentExecutionHub from "@/pages/core/payment/PaymentExecutionHub";
+import ProviderRoutingDesk from "@/pages/core/payment/ProviderRoutingDesk";
+import DeviceRoutingDesk from "@/pages/core/payment/DeviceRoutingDesk";
+import RefundDesk from "@/pages/core/payment/RefundDesk";
+import DisputeCenter from "@/pages/core/payment/DisputeCenter";
+import PaymentAuditVault from "@/pages/core/payment/PaymentAuditVault";
 import ProcurementWorkspaceLayout from "@/pages/core/procurement/ProcurementWorkspaceLayout";
 import SupplierDesk from "@/pages/core/procurement/SupplierDesk";
 import ContractDesk from "@/pages/core/procurement/ContractDesk";
@@ -52,18 +60,38 @@ import PoReleaseDesk from "@/pages/core/procurement/PoReleaseDesk";
 import SupplierPortalDesk from "@/pages/core/procurement/SupplierPortalDesk";
 import ProcurementRiskCenter from "@/pages/core/procurement/ProcurementRiskCenter";
 import ProcurementInsights from "@/pages/core/procurement/ProcurementInsights";
+import InventoryWorkspaceLayout from "@/pages/core/inventory/InventoryWorkspaceLayout";
+import InventoryDashboard from "@/pages/core/inventory/InventoryDashboard";
+import InventoryStockHub from "@/pages/core/inventory/InventoryStockHub";
+import InventoryReceiving from "@/pages/core/inventory/InventoryReceiving";
+import InventoryAdjustments from "@/pages/core/inventory/InventoryAdjustments";
+import InventoryAuditLog from "@/pages/core/inventory/InventoryAuditLog";
+import InventoryInsights from "@/pages/core/inventory/InventoryInsights";
 import ITWorkspaceLayout from "@/pages/core/it/ITWorkspaceLayout";
 import AccountDesk from "@/pages/core/it/AccountDesk";
 import DeviceDesk from "@/pages/core/it/DeviceDesk";
 import SystemHealth from "@/pages/core/it/SystemHealth";
 import SalesWorkspaceLayout from "@/pages/core/sales/SalesWorkspaceLayout";
+import SalesDashboard from "@/pages/core/sales/SalesDashboard";
 import LeadDesk from "@/pages/core/sales/LeadDesk";
+import PipelineBoard from "@/pages/core/sales/PipelineBoard";
 import OpportunityDesk from "@/pages/core/sales/OpportunityDesk";
+import QuoteDesk from "@/pages/core/sales/QuoteDesk";
+import TimelineDesk from "@/pages/core/sales/TimelineDesk";
 import SalesOrderDesk from "@/pages/core/sales/SalesOrderDesk";
+import ManagerDesk from "@/pages/core/sales/ManagerDesk";
+import ForecastDesk from "@/pages/core/sales/ForecastDesk";
+import SalesAuditLog from "@/pages/core/sales/SalesAuditLog";
 import MarketingWorkspaceLayout from "@/pages/core/marketing/MarketingWorkspaceLayout";
 import CampaignDesk from "@/pages/core/marketing/CampaignDesk";
 import ExecutionDesk from "@/pages/core/marketing/ExecutionDesk";
 import MarketingAnalytics from "@/pages/core/marketing/MarketingAnalytics";
+import MarketingDashboard from "@/pages/core/marketing/MarketingDashboard";
+import LeadCaptureDesk from "@/pages/core/marketing/LeadCaptureDesk";
+import NurtureStudio from "@/pages/core/marketing/NurtureStudio";
+import ConnectedAccountsDesk from "@/pages/core/marketing/ConnectedAccountsDesk";
+import MarketingAlerts from "@/pages/core/marketing/MarketingAlerts";
+import MarketingAuditLog from "@/pages/core/marketing/MarketingAuditLog";
 import AdminWorkspaceLayout from "@/pages/core/adminWorkspace/AdminWorkspaceLayout";
 import RequestDesk from "@/pages/core/adminWorkspace/RequestDesk";
 import RequestAssign from "@/pages/core/adminWorkspace/RequestAssign";
@@ -76,6 +104,7 @@ import PresentationTool from "@/pages/core/tools/PresentationTool";
 import CalculatorTool from "@/pages/core/tools/CalculatorTool";
 import ExportTool from "@/pages/core/tools/ExportTool";
 import Explorer from "@/pages/core/tools/Explorer";
+import CoreSettings from "@/pages/core/Settings";
 
 /**
  * Build Core Routes.
@@ -108,6 +137,8 @@ export function buildCoreRoutes(): JSX.Element[] {
   return [
     <Route key="core-index" index element={<Navigate to={defaultPath} replace />} />,
     <Route key="core-purchasing-legacy" path="purchasing" element={<Navigate to="/core/procurement" replace />} />,
+    <Route key="core-settings-devices-legacy" path="settings/devices" element={<Navigate to="/core/it/devices" replace />} />,
+    <Route key="core-settings-tabs" path="settings/:tab" element={<CoreSettings />} />,
     <Route
       key="core-finance"
       path="finance/*"
@@ -224,6 +255,73 @@ export function buildCoreRoutes(): JSX.Element[] {
       />
     </Route>,
     <Route
+      key="core-payment"
+      path="payment/*"
+      element={
+        <ProtectedRoute permission="finance.workspace.access" scope="COMPANY">
+          <PaymentWorkspaceLayout />
+        </ProtectedRoute>
+      }
+    >
+      <Route index element={<PaymentDashboard />} />
+      <Route
+        path="dashboard"
+        element={
+          <ProtectedRoute permission="finance.workspace.access" scope="COMPANY">
+            <PaymentDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="execution"
+        element={
+          <ProtectedRoute permission="finance.workspace.access" scope="COMPANY">
+            <PaymentExecutionHub />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="providers"
+        element={
+          <ProtectedRoute permission="finance.workspace.access" scope="COMPANY">
+            <ProviderRoutingDesk />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="devices"
+        element={
+          <ProtectedRoute permission="finance.workspace.access" scope="COMPANY">
+            <DeviceRoutingDesk />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="refunds"
+        element={
+          <ProtectedRoute permission="finance.workspace.access" scope="COMPANY">
+            <RefundDesk />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="disputes"
+        element={
+          <ProtectedRoute permission="finance.workspace.access" scope="COMPANY">
+            <DisputeCenter />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="audit"
+        element={
+          <ProtectedRoute permission="finance.workspace.access" scope="COMPANY">
+            <PaymentAuditVault />
+          </ProtectedRoute>
+        }
+      />
+    </Route>,
+    <Route
       key="core-procurement"
       path="procurement/*"
       element={
@@ -291,6 +389,65 @@ export function buildCoreRoutes(): JSX.Element[] {
       />
     </Route>,
     <Route
+      key="core-inventory"
+      path="inventory/*"
+      element={
+        <ProtectedRoute permission="core.tools.access" scope="COMPANY">
+          <InventoryWorkspaceLayout />
+        </ProtectedRoute>
+      }
+    >
+      <Route index element={<InventoryDashboard />} />
+      <Route
+        path="dashboard"
+        element={
+          <ProtectedRoute permission="core.tools.access" scope="COMPANY">
+            <InventoryDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="stock"
+        element={
+          <ProtectedRoute permission="core.tools.access" scope="COMPANY">
+            <InventoryStockHub />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="receiving"
+        element={
+          <ProtectedRoute permission="core.tools.access" scope="COMPANY">
+            <InventoryReceiving />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="adjustments"
+        element={
+          <ProtectedRoute permission="core.tools.access" scope="COMPANY">
+            <InventoryAdjustments />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="audit"
+        element={
+          <ProtectedRoute permission="core.tools.access" scope="COMPANY">
+            <InventoryAuditLog />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="insights"
+        element={
+          <ProtectedRoute permission="core.tools.access" scope="COMPANY">
+            <InventoryInsights />
+          </ProtectedRoute>
+        }
+      />
+    </Route>,
+    <Route
       key="core-it"
       path="it/*"
       element={
@@ -334,12 +491,28 @@ export function buildCoreRoutes(): JSX.Element[] {
         </ProtectedRoute>
       }
     >
-      <Route index element={<LeadDesk />} />
+      <Route index element={<SalesDashboard />} />
+      <Route
+        path="dashboard"
+        element={
+          <ProtectedRoute permission="core.sales.access" scope="COMPANY">
+            <SalesDashboard />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="leads"
         element={
           <ProtectedRoute permission="core.sales.access" scope="COMPANY">
             <LeadDesk />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="pipeline"
+        element={
+          <ProtectedRoute permission="core.sales.access" scope="COMPANY">
+            <PipelineBoard />
           </ProtectedRoute>
         }
       />
@@ -352,10 +525,50 @@ export function buildCoreRoutes(): JSX.Element[] {
         }
       />
       <Route
+        path="quotes"
+        element={
+          <ProtectedRoute permission="core.sales.access" scope="COMPANY">
+            <QuoteDesk />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="timeline"
+        element={
+          <ProtectedRoute permission="core.sales.access" scope="COMPANY">
+            <TimelineDesk />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="orders"
         element={
           <ProtectedRoute permission="core.sales.access" scope="COMPANY">
             <SalesOrderDesk />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="manager"
+        element={
+          <ProtectedRoute permission="core.sales.access" scope="COMPANY">
+            <ManagerDesk />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="forecast"
+        element={
+          <ProtectedRoute permission="core.sales.access" scope="COMPANY">
+            <ForecastDesk />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="audit"
+        element={
+          <ProtectedRoute permission="core.sales.access" scope="COMPANY">
+            <SalesAuditLog />
           </ProtectedRoute>
         }
       />
@@ -369,7 +582,15 @@ export function buildCoreRoutes(): JSX.Element[] {
         </ProtectedRoute>
       }
     >
-      <Route index element={<CampaignDesk />} />
+      <Route index element={<MarketingDashboard />} />
+      <Route
+        path="dashboard"
+        element={
+          <ProtectedRoute permission="core.marketing.access" scope="COMPANY">
+            <MarketingDashboard />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="campaigns"
         element={
@@ -387,10 +608,50 @@ export function buildCoreRoutes(): JSX.Element[] {
         }
       />
       <Route
+        path="lead-capture"
+        element={
+          <ProtectedRoute permission="core.marketing.access" scope="COMPANY">
+            <LeadCaptureDesk />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="nurture"
+        element={
+          <ProtectedRoute permission="core.marketing.access" scope="COMPANY">
+            <NurtureStudio />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="accounts"
+        element={
+          <ProtectedRoute permission="core.marketing.access" scope="COMPANY">
+            <ConnectedAccountsDesk />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="analytics"
         element={
           <ProtectedRoute permission="core.marketing.access" scope="COMPANY">
             <MarketingAnalytics />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="alerts"
+        element={
+          <ProtectedRoute permission="core.marketing.access" scope="COMPANY">
+            <MarketingAlerts />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="audit"
+        element={
+          <ProtectedRoute permission="core.marketing.access" scope="COMPANY">
+            <MarketingAuditLog />
           </ProtectedRoute>
         }
       />

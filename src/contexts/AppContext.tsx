@@ -27,7 +27,7 @@ export interface AuthUser {
  * Platform-recognized application identifiers.
  * Must align with module contracts.
  */
-export type ActiveAppId = "core" | "pos-retail" | "pos-cafe";
+export type ActiveAppId = "core" | "retail" | "fnb" | "pos-retail" | "pos-cafe";
 
 /* ============================================================================ */
 /* STATE                                                                        */

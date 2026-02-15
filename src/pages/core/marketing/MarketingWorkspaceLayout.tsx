@@ -14,16 +14,53 @@ import { PageShell } from "@/core/ui/PageShell";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { useSession } from "@/core/security/session";
 import { cn } from "@/lib/utils";
-import { Activity, Megaphone, PlaySquare } from "lucide-react";
+import {
+  Activity,
+  BadgeDollarSign,
+  BellRing,
+  Cable,
+  Database,
+  Megaphone,
+  PlaySquare,
+  ScrollText,
+  Workflow,
+} from "lucide-react";
 
 type MenuItem = { label: string; to: string; icon: React.ElementType };
 type MenuSection = { title: string; items: MenuItem[] };
 
 const SECTIONS: MenuSection[] = [
-  { title: "Campaigns", items: [{ label: "Campaigns", to: "/core/marketing/campaigns", icon: Megaphone }] },
-  { title: "Execution", items: [{ label: "Execution", to: "/core/marketing/execution", icon: PlaySquare }] },
-  { title: "Analytics", items: [{ label: "Analytics", to: "/core/marketing/analytics", icon: Activity }] },
+  {
+    title: "Operations",
+    items: [
+      { label: "Marketing Dashboard", to: "/core/marketing/dashboard", icon: Activity },
+      { label: "Campaign Service", to: "/core/marketing/campaigns", icon: Megaphone },
+      { label: "Execution Desk", to: "/core/marketing/execution", icon: PlaySquare },
+      { label: "Lead Capture", to: "/core/marketing/lead-capture", icon: Database },
+      { label: "Nurture Studio", to: "/core/marketing/nurture", icon: Workflow },
+    ],
+  },
+  {
+    title: "Integrations",
+    items: [
+      { label: "Connected Accounts", to: "/core/marketing/accounts", icon: Cable },
+      { label: "Analytics and ROI", to: "/core/marketing/analytics", icon: BadgeDollarSign },
+    ],
+  },
+  {
+    title: "Governance",
+    items: [
+      { label: "Alerts", to: "/core/marketing/alerts", icon: BellRing },
+      { label: "Audit Log", to: "/core/marketing/audit", icon: ScrollText },
+    ],
+  },
 ];
+
+const ROUTE_LABELS: Record<string, string> = Object.fromEntries(
+  SECTIONS.flatMap((section) =>
+    section.items.map((item) => [item.to.replace("/core/marketing/", ""), item.label]),
+  ),
+);
 
 export default function MarketingWorkspaceLayout() {
   const session = useSession();
@@ -31,7 +68,7 @@ export default function MarketingWorkspaceLayout() {
 
   const segments = location.pathname.replace("/core/marketing", "").split("/").filter(Boolean);
   const breadcrumbs = segments.map((segment, index) => ({
-    label: segment.replace(/-/g, " "),
+    label: ROUTE_LABELS[segment] ?? segment.replace(/-/g, " "),
     path: `/core/marketing/${segments.slice(0, index + 1).join("/")}`,
   }));
 
@@ -73,7 +110,7 @@ export default function MarketingWorkspaceLayout() {
             </Breadcrumb>
             <PageHeader
               title="Marketing Workspace"
-              subtitle="Campaign creation, execution routing, and analytics."
+              subtitle="Demand generation with lead capture, scoring, automation, and real-time Sales handoff."
             />
           </div>
         }

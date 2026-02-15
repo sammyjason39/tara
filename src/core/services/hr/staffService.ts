@@ -182,6 +182,40 @@ export const staffService = {
     });
     return request;
   },
+  requestTransfer(
+    tenantId: string,
+    actor: SessionContext,
+    employeeId: string,
+    targetDept: string,
+    reason?: string,
+  ) {
+    ensureTenantAccess(tenantId, actor);
+    const employee = employeeRepo.getById(tenantId, employeeId);
+    if (!employee) {
+      throw new Error("Employee not found");
+    }
+    if (!canManageStaff(actor, employee)) {
+      throw new Error("Not authorized to transfer staff");
+    }
+    const request = createWorkflowRequest({
+      tenantId,
+      entityType: "CONTRACT",
+      entityId: employeeId,
+      makerDept: actor.departmentId,
+      destinationDept: "HR",
+      requestedBy: actor.userId,
+      metadata: { employeeId, targetDept, reason: reason ?? "Department transfer request" },
+    });
+    audit.log({
+      tenantId,
+      actorId: actor.userId,
+      action: "staff.transfer.request",
+      entityType: "workflow",
+      entityId: request.id,
+      after: { employeeId, targetDept },
+    });
+    return request;
+  },
 
   importStaff(tenantId: string, actor: SessionContext, source: string) {
     ensureTenantAccess(tenantId, actor);

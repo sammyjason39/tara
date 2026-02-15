@@ -28,6 +28,7 @@ export default function FinanceDocs() {
   const [docs, setDocs] = useState<FinanceDocumentRow[]>(() =>
     financeService.listDocuments(session.tenantId),
   );
+  const [selectedItem, setSelectedItem] = useState<FinanceDocumentRow | null>(null);
 
   const refreshDocs = useCallback(() => {
     setDocs(financeService.listDocuments(session.tenantId));
@@ -110,7 +111,11 @@ export default function FinanceDocs() {
                   </thead>
                   <tbody>
                     {filteredDocs.map((doc) => (
-                      <tr key={doc.id} className="border-t">
+                      <tr
+                        key={doc.id}
+                        className="cursor-pointer border-t hover:bg-muted/50"
+                        onClick={() => setSelectedItem(doc)}
+                      >
                         <td className="p-3 font-medium">{doc.title}</td>
                         <td className="p-3 text-muted-foreground">{doc.type}</td>
                         <td className="p-3 text-muted-foreground">{doc.description}</td>
@@ -119,7 +124,7 @@ export default function FinanceDocs() {
                         </td>
                         <td className="p-3">
                           {doc.status === "PENDING" ? (
-                            <div className="flex gap-2">
+                            <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                               <Button size="sm" variant="outline" onClick={() => updateStatus(doc.id, "APPROVED")}>
                                 Approve
                               </Button>
@@ -160,8 +165,47 @@ export default function FinanceDocs() {
               </SelectContent>
             </Select>
             <Input placeholder="Description" value={description} onChange={(event) => setDescription(event.target.value)} />
+            <div className="space-y-1">
+              <span className="text-xs text-muted-foreground uppercase font-bold">Attachment</span>
+              <Input type="file" onChange={() => {}} />
+            </div>
             <div className="flex justify-end gap-2">
               <Button onClick={uploadDoc}>Upload and Route</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Document Detail</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 text-sm gap-y-2">
+              <span className="text-muted-foreground">Document ID:</span>
+              <span>{selectedItem?.id}</span>
+              <span className="text-muted-foreground">Title:</span>
+              <span className="font-semibold">{selectedItem?.title}</span>
+              <span className="text-muted-foreground">Type:</span>
+              <span className="uppercase">{selectedItem?.type}</span>
+              <span className="text-muted-foreground">Description:</span>
+              <span>{selectedItem?.description}</span>
+              <span className="text-muted-foreground">Status:</span>
+              <span><ApprovalStatusBadge status={selectedItem?.status || "PENDING"} /></span>
+              <span className="text-muted-foreground">Uploaded At:</span>
+              <span>{selectedItem?.uploadedAt.slice(0, 10)}</span>
+              <span className="text-muted-foreground">Uploaded By:</span>
+              <span>{selectedItem?.uploadedBy || "System"}</span>
+            </div>
+            <div className="border-t pt-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Storage Info</p>
+              <p className="text-xs text-muted-foreground italic">
+                Vault Location: /finance/ledger-docs/{selectedItem?.id}.pdf
+              </p>
+              <div className="mt-4">
+                <Button size="sm" variant="outline" className="w-full">Download Source File</Button>
+              </div>
             </div>
           </div>
         </DialogContent>

@@ -14,6 +14,14 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const kpis = [
   {
@@ -110,6 +118,9 @@ const complianceItems = [
 ];
 
 export default function CoreDashboard() {
+  const [selectedDetail, setSelectedDetail] = useState<{ title: string; detail: string; type?: string } | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
   return (
     <PageShell
       header={
@@ -127,11 +138,24 @@ export default function CoreDashboard() {
       }
     >
       <div className="space-y-6">
+        {statusMessage && (
+          <div className="rounded-lg bg-emerald-50 border border-emerald-100 p-3 text-emerald-900 text-sm animate-in fade-in slide-in-from-top-1">
+            {statusMessage}
+          </div>
+        )}
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {kpis.map((kpi) => {
             const Icon = kpi.icon;
             return (
-              <WorkspacePanel key={kpi.label} className="p-4">
+              <WorkspacePanel
+                key={kpi.label}
+                className="p-4 cursor-pointer transition-colors hover:bg-muted/50"
+                onClick={() => setSelectedDetail({
+                  title: `${kpi.label} Drill-down`,
+                  detail: `Current value ${kpi.value}. ${kpi.delta}. Detailed trend analysis is available in the Reports module.`,
+                  type: "KPI"
+                })}
+              >
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -159,7 +183,14 @@ export default function CoreDashboard() {
             <div className="space-y-4">
               {activities.map((activity, index) => (
                 <div key={activity.title} className="space-y-3">
-                  <div className="flex items-start justify-between gap-4">
+                  <div
+                    className="flex items-start justify-between gap-4 cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => setSelectedDetail({
+                      title: activity.title,
+                      detail: `${activity.detail} (${activity.time}). Status: ${activity.status}. Audit trail synchronized with multi-tenant directory.`,
+                      type: "Activity"
+                    })}
+                  >
                     <div>
                       <p className="text-sm font-medium text-foreground">
                         {activity.title}
@@ -193,7 +224,14 @@ export default function CoreDashboard() {
                     <p className="text-sm font-medium text-foreground">{action.title}</p>
                     <p className="text-xs text-muted-foreground">{action.description}</p>
                   </div>
-                  <Button size="sm" variant="outline">
+                   <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setStatusMessage(`Admin action [${action.title}] initiated.`);
+                      setTimeout(() => setStatusMessage(null), 3000);
+                    }}
+                  >
                     Open
                   </Button>
                 </div>
@@ -209,7 +247,14 @@ export default function CoreDashboard() {
           >
             <div className="space-y-4">
               <div className="grid gap-3 md:grid-cols-3">
-                <div className="rounded-lg border p-4">
+                 <div
+                  className="rounded-lg border p-4 cursor-pointer hover:bg-muted/30 transition-colors"
+                  onClick={() => setSelectedDetail({
+                    title: "Platform Runtime Status",
+                    detail: "The system is currently reporting 99.97% uptime. All core containers (Finance, HR, IT) are healthy across all regions.",
+                    type: "Health"
+                  })}
+                >
                   <div className="flex items-center gap-2 text-sm font-medium">
                     <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                     Platform uptime
@@ -217,7 +262,14 @@ export default function CoreDashboard() {
                   <p className="mt-2 text-2xl font-semibold text-foreground">99.97%</p>
                   <p className="text-xs text-muted-foreground">Last 30 days</p>
                 </div>
-                <div className="rounded-lg border p-4">
+                <div
+                  className="rounded-lg border p-4 cursor-pointer hover:bg-muted/30 transition-colors"
+                  onClick={() => setSelectedDetail({
+                    title: "Security Posture Analysis",
+                    detail: "Security-first posture detected. Zero critical vulnerabilities found in last 24h scan. Audit logs are consistent.",
+                    type: "Health"
+                  })}
+                >
                   <div className="flex items-center gap-2 text-sm font-medium">
                     <ShieldCheck className="h-4 w-4 text-emerald-500" />
                     Security posture
@@ -227,7 +279,14 @@ export default function CoreDashboard() {
                     No critical incidents
                   </p>
                 </div>
-                <div className="rounded-lg border p-4">
+                <div
+                  className="rounded-lg border p-4 cursor-pointer hover:bg-muted/30 transition-colors"
+                  onClick={() => setSelectedDetail({
+                    title: "Tenancy Coverage",
+                    detail: "96% of registered tenants have completed their monthly compliance checkpoint. 4% are in grace period.",
+                    type: "Health"
+                  })}
+                >
                   <div className="flex items-center gap-2 text-sm font-medium">
                     <Building2 className="h-4 w-4 text-muted-foreground" />
                     Tenants online
@@ -246,7 +305,14 @@ export default function CoreDashboard() {
             <div className="space-y-4">
               {complianceItems.map((item, index) => (
                 <div key={item.label} className="space-y-3">
-                  <div className="flex items-start justify-between gap-4">
+                   <div
+                    className="flex items-start justify-between gap-4 cursor-pointer hover:bg-muted/50 p-2 -m-2 rounded-lg transition-colors"
+                    onClick={() => setSelectedDetail({
+                      title: item.label,
+                      detail: `${item.status}. ${item.note}. Compliance badge: ${item.badge}. All data points verified in the latest Zenvix audit cycle.`,
+                      type: "Compliance"
+                    })}
+                  >
                     <div>
                       <p className="text-sm font-medium text-foreground">{item.label}</p>
                       <p className="text-xs text-muted-foreground">{item.note}</p>
@@ -260,6 +326,28 @@ export default function CoreDashboard() {
           </WorkspacePanel>
         </div>
       </div>
+
+      <Dialog open={!!selectedDetail} onOpenChange={() => setSelectedDetail(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedDetail?.title}</DialogTitle>
+            <DialogDescription>
+              Drill-down insight for {selectedDetail?.type || "Dashboard Item"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {selectedDetail?.detail}
+            </p>
+            <div className="flex justify-end gap-3 pt-4">
+              <Button variant="outline" onClick={() => setSelectedDetail(null)}>
+                Close
+              </Button>
+              <Button>View Full Report</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 }

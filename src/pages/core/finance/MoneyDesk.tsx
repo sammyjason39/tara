@@ -35,16 +35,18 @@ export default function MoneyDesk() {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"approvals" | "alerts" | "tasks">("approvals");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [amount, setAmount] = useState("5000000");
+  const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<PaymentMethod>("BANK_TRANSFER");
-  const [destination, setDestination] = useState("Vendor A");
-  const [purpose, setPurpose] = useState("Payment request");
+  const [destination, setDestination] = useState("");
+  const [purpose, setPurpose] = useState("");
 
   const [alerts, setAlerts] = useState<FinanceAlert[]>([]);
   const [tasks, setTasks] = useState<WorkflowRequest[]>([]);
   const [approvals, setApprovals] = useState<WorkflowRequest[]>([]);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowRequest | null>(null);
+  const [selectedAlert, setSelectedAlert] = useState<FinanceAlert | null>(null);
 
   const refreshDesk = useCallback(() => {
     financeService.getAlerts(session.tenantId, session).then(setAlerts);
@@ -179,9 +181,9 @@ export default function MoneyDesk() {
                   urgency={flow.status === "PENDING" ? 80 : 40}
                   owner={flow.destinationDept}
                   actionLabel="Review"
-                  onAction={() => approveTask(flow.id)}
+                  onAction={() => setSelectedWorkflow(flow)}
                   footer={
-                    <div className="flex gap-2">
+                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                       <Button size="sm" variant="outline" onClick={() => approveTask(flow.id)}>
                         Approve
                       </Button>
@@ -200,7 +202,8 @@ export default function MoneyDesk() {
               filteredAlerts.map((alert) => (
                 <div
                   key={alert.id}
-                  className="mb-2 flex items-center justify-between rounded-lg border p-3"
+                  className="mb-2 flex cursor-pointer items-center justify-between rounded-lg border p-3 hover:bg-muted/50"
+                  onClick={() => setSelectedAlert(alert)}
                 >
                   <div>
                     <p className="font-medium text-foreground">{alert.title}</p>
@@ -224,7 +227,8 @@ export default function MoneyDesk() {
               filteredTasks.map((task) => (
                 <div
                   key={task.id}
-                  className="mb-2 flex items-center justify-between rounded-lg border p-3"
+                  className="mb-2 flex cursor-pointer items-center justify-between rounded-lg border p-3 hover:bg-muted/50"
+                  onClick={() => setSelectedWorkflow(task)}
                 >
                   <div>
                     <p className="font-medium text-foreground">
@@ -260,7 +264,11 @@ export default function MoneyDesk() {
             </thead>
             <tbody>
               {filteredTasks.map((task) => (
-                <tr key={task.id} className="border-t">
+                <tr
+                  key={task.id}
+                  className="cursor-pointer border-t hover:bg-muted/50"
+                  onClick={() => setSelectedWorkflow(task)}
+                >
                   <td className="p-3">{task.entityId}</td>
                   <td className="p-3 text-muted-foreground">{task.entityType}</td>
                   <td className="p-3">
@@ -301,6 +309,85 @@ export default function MoneyDesk() {
             <Textarea value={purpose} onChange={(event) => setPurpose(event.target.value)} placeholder="Purpose" />
             <div className="flex justify-end gap-2">
               <Button onClick={submitPaymentRequest}>Create and Route</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedWorkflow} onOpenChange={() => setSelectedWorkflow(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Workflow Detail</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 text-sm gap-y-2">
+              <span className="text-muted-foreground">Flow ID:</span>
+              <span className="font-mono">{selectedWorkflow?.id}</span>
+              <span className="text-muted-foreground">Entity:</span>
+              <span className="font-semibold">{selectedWorkflow?.entityType} | {selectedWorkflow?.entityId}</span>
+              <span className="text-muted-foreground">Maker Dept:</span>
+              <span>{selectedWorkflow?.makerDept}</span>
+              <span className="text-muted-foreground">Requested By:</span>
+              <span>{selectedWorkflow?.requestedBy}</span>
+              <span className="text-muted-foreground">Status:</span>
+              <span><ApprovalStatusBadge status={selectedWorkflow?.status || "PENDING"} /></span>
+            </div>
+            <div className="border-t pt-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Finance Review Notes</p>
+              <p className="text-xs text-muted-foreground">
+                This request was automatically routed based on departmental thresholds.
+                Verify supporting documentation in Finance Docs if required.
+              </p>
+              {selectedWorkflow?.status === "PENDING" && (
+                <div className="mt-4 flex gap-2">
+                  <Button
+                    className="flex-1"
+                    onClick={() => {
+                      if (selectedWorkflow) {
+                        approveTask(selectedWorkflow.id);
+                        setSelectedWorkflow(null);
+                      }
+                    }}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    variant="destructive"
+                    onClick={() => {
+                      if (selectedWorkflow) {
+                        rejectTask(selectedWorkflow.id);
+                        setSelectedWorkflow(null);
+                      }
+                    }}
+                  >
+                    Reject
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedAlert} onOpenChange={() => setSelectedAlert(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Operational Alert</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="rounded-lg bg-rose-50 border border-rose-100 p-3 text-rose-900">
+              <p className="font-bold">{selectedAlert?.title}</p>
+              <p className="text-sm">{selectedAlert?.description}</p>
+            </div>
+            <div className="grid grid-cols-2 text-sm gap-y-2">
+              <span className="text-muted-foreground">Severity:</span>
+              <span className="font-bold uppercase">{selectedAlert?.severity}</span>
+              <span className="text-muted-foreground">Action Needed:</span>
+              <span className="font-semibold">{selectedAlert?.action || "None"}</span>
+            </div>
+            <div className="border-t pt-2 text-xs text-muted-foreground">
+              <p>Triggered by automated treasury monitoring. System suggests immediate review of linked accounts.</p>
             </div>
           </div>
         </DialogContent>

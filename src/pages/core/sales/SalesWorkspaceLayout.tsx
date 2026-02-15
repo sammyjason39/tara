@@ -14,25 +14,48 @@ import { PageShell } from "@/core/ui/PageShell";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { useSession } from "@/core/security/session";
 import { cn } from "@/lib/utils";
-import { BadgeDollarSign, Rocket, ShoppingBag } from "lucide-react";
+import {
+  BadgeDollarSign,
+  Bot,
+  ClipboardList,
+  Gauge,
+  ListTodo,
+  ShoppingBag,
+  Rocket,
+  ScrollText,
+} from "lucide-react";
 
 type MenuItem = { label: string; to: string; icon: React.ElementType };
 type MenuSection = { title: string; items: MenuItem[] };
 
 const SECTIONS: MenuSection[] = [
   {
-    title: "Pipeline",
-    items: [{ label: "Leads", to: "/core/sales/leads", icon: Rocket }],
+    title: "Operations",
+    items: [
+      { label: "Sales Dashboard", to: "/core/sales/dashboard", icon: Gauge },
+      { label: "Leads", to: "/core/sales/leads", icon: Rocket },
+      { label: "Pipeline Board", to: "/core/sales/pipeline", icon: ClipboardList },
+      { label: "Opportunities", to: "/core/sales/opps", icon: BadgeDollarSign },
+      { label: "Quote Desk", to: "/core/sales/quotes", icon: Bot },
+      { label: "Timeline", to: "/core/sales/timeline", icon: ListTodo },
+      { label: "Sales Orders", to: "/core/sales/orders", icon: ShoppingBag },
+    ],
   },
   {
-    title: "Deals",
-    items: [{ label: "Opportunities", to: "/core/sales/opps", icon: BadgeDollarSign }],
-  },
-  {
-    title: "Orders",
-    items: [{ label: "Sales Orders", to: "/core/sales/orders", icon: ShoppingBag }],
+    title: "Leadership",
+    items: [
+      { label: "Manager View", to: "/core/sales/manager", icon: Gauge },
+      { label: "Executive Forecast", to: "/core/sales/forecast", icon: BadgeDollarSign },
+      { label: "Audit Log", to: "/core/sales/audit", icon: ScrollText },
+    ],
   },
 ];
+
+const ROUTE_LABELS: Record<string, string> = Object.fromEntries(
+  SECTIONS.flatMap((section) =>
+    section.items.map((item) => [item.to.replace("/core/sales/", ""), item.label]),
+  ),
+);
 
 export default function SalesWorkspaceLayout() {
   const session = useSession();
@@ -40,7 +63,7 @@ export default function SalesWorkspaceLayout() {
 
   const segments = location.pathname.replace("/core/sales", "").split("/").filter(Boolean);
   const breadcrumbs = segments.map((segment, index) => ({
-    label: segment.replace(/-/g, " "),
+    label: ROUTE_LABELS[segment] ?? segment.replace(/-/g, " "),
     path: `/core/sales/${segments.slice(0, index + 1).join("/")}`,
   }));
 
@@ -82,7 +105,7 @@ export default function SalesWorkspaceLayout() {
             </Breadcrumb>
             <PageHeader
               title="Sales Workspace"
-              subtitle="Leads → Opportunities → Sales orders with approvals and logs."
+              subtitle="Leads -> opportunities -> quote approvals -> orders with full CRM timeline and forecasting."
             />
           </div>
         }

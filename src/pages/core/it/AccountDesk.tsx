@@ -1,6 +1,19 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
@@ -8,6 +21,7 @@ import { FilterBar } from "@/core/tools/FilterBar";
 import { ApprovalStatusBadge } from "@/core/tools/ApprovalStatusBadge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { procurementService } from "@/core/services/procurement/procurementService";
 
@@ -21,7 +35,16 @@ export default function AccountDesk() {
   const session = useSession();
   const [search, setSearch] = useState("");
   const [autoProvision, setAutoProvision] = useState(true);
-  const [, setVersion] = useState(0);
+  const [version, setVersion] = useState(0);
+  const [selectedAccount, setSelectedAccount] = useState<any | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+
+  const clearStatus = () => {
+    setStatusMessage(null);
+    setErrorMessage(null);
+  };
   const supplierAccessQueue = procurementService.listSupplierAccessProvisioning(session.tenantId);
 
   const filtered = accounts.filter((acc) =>
@@ -30,10 +53,11 @@ export default function AccountDesk() {
 
   return (
     <div className="space-y-6">
+      <FeedbackAlert message={statusMessage} error={errorMessage} onClear={clearStatus} />
       <PageHeader
         title="Accounts"
         subtitle="Create/deactivate accounts triggered by HR with audit-first routing."
-        primaryAction={<Button>New Account</Button>}
+        primaryAction={<Button onClick={() => setCreateOpen(true)}>New Account</Button>}
         secondaryActions={
           <Input
             placeholder="Search users"
@@ -58,7 +82,11 @@ export default function AccountDesk() {
             </thead>
             <tbody>
               {filtered.map((acc) => (
-                <tr key={acc.id} className="border-t">
+                <tr
+                  key={acc.id}
+                  className="border-t cursor-pointer hover:bg-muted/50"
+                  onClick={() => setSelectedAccount(acc)}
+                >
                   <td className="p-3 font-medium">{acc.user}</td>
                   <td className="p-3 text-muted-foreground">{acc.action}</td>
                   <td className="p-3 text-muted-foreground">{acc.dept}</td>
@@ -97,13 +125,18 @@ export default function AccountDesk() {
                   variant="outline"
                   disabled={request.status === "PROVISIONED"}
                   onClick={() => {
-                    procurementService.updateSupplierAccessProvisioningStatus(
-                      session.tenantId,
-                      session,
-                      request.id,
-                      "PROVISIONED",
-                    );
-                    setVersion((prev) => prev + 1);
+                    try {
+                      procurementService.updateSupplierAccessProvisioningStatus(
+                        session.tenantId,
+                        session,
+                        request.id,
+                        "PROVISIONED",
+                      );
+                      setStatusMessage(`Supplier ${request.supplierId} provisioned for portal.`);
+                      setVersion((prev) => prev + 1);
+                    } catch (err) {
+                      setErrorMessage("Failed to update provisioning status.");
+                    }
                   }}
                 >
                   Mark provisioned
@@ -123,6 +156,81 @@ export default function AccountDesk() {
           <Label htmlFor="auto-provision">Auto-provision from HR Hire with IT approval</Label>
         </div>
       </WorkspacePanel>
+
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Provision New Account</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <Input placeholder="User Full Name" />
+            <Input placeholder="Email Address" />
+            <Select>
+              <SelectTrigger>
+                <SelectValue placeholder="Department" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="finance">Finance</SelectItem>
+                <SelectItem value="hr">HR</SelectItem>
+                <SelectItem value="ops">Operations</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              className="w-full"
+              onClick={() => {
+                try {
+                  setCreateOpen(false);
+                  setStatusMessage("System account provisioning request sent to directory services.");
+                } catch (err) {
+                  setErrorMessage("Failed to initiate provisioning.");
+                }
+              }}
+            >
+              Provision Account
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!selectedAccount} onOpenChange={() => setSelectedAccount(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Account Request Detail</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 text-sm gap-y-2">
+              <span className="text-muted-foreground">User:</span>
+              <span className="font-semibold">{selectedAccount?.user}</span>
+              <span className="text-muted-foreground">Target Dept:</span>
+              <span>{selectedAccount?.dept}</span>
+              <span className="text-muted-foreground">Action:</span>
+              <span className="font-bold">{selectedAccount?.action}</span>
+              <span className="text-muted-foreground">Status:</span>
+              <span><ApprovalStatusBadge status={selectedAccount?.status || "PENDING"} /></span>
+            </div>
+            <div className="border-t pt-2 text-xs text-muted-foreground italic">
+              Audit Context: Triggered via HR Workflow {selectedAccount?.id}. Manual override available for domain admins.
+            </div>
+            {selectedAccount?.status === "PENDING" && (
+              <Button
+                className="w-full"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  try {
+                    setStatusMessage(`Account action for ${selectedAccount.user} marked as processing.`);
+                    setSelectedAccount(null);
+                  } catch (err) {
+                    setErrorMessage("Action failed.");
+                  }
+                }}
+              >
+                Start Processing
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

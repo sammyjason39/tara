@@ -61,6 +61,8 @@ export default function RosterGrid() {
     employmentType: "full_time",
     baseSalary: "0",
   });
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const refresh = useCallback(() => setVersion((prev) => prev + 1), []);
   useBackgroundRefresh(refresh, 20000);
 
@@ -99,6 +101,16 @@ export default function RosterGrid() {
 
   return (
     <div className="space-y-6">
+      {statusMessage && (
+        <div className="rounded-lg bg-emerald-50 border border-emerald-100 p-3 text-emerald-900 text-sm animate-in fade-in slide-in-from-top-1">
+          {statusMessage}
+        </div>
+      )}
+      {errorMessage && (
+        <div className="rounded-lg bg-rose-50 border border-rose-100 p-3 text-rose-900 text-sm">
+          {errorMessage}
+        </div>
+      )}
       <PageHeader
         title="RosterGrid"
         subtitle="Enterprise workforce directory with instant search and bulk actions."
@@ -162,6 +174,8 @@ export default function RosterGrid() {
             variant="outline"
             onClick={() => {
               staffService.exportStaff(session.tenantId, session);
+              setStatusMessage("Staff directory exported to CSV.");
+              setTimeout(() => setStatusMessage(null), 3000);
             }}
           >
             Export Report
@@ -290,6 +304,8 @@ export default function RosterGrid() {
                           <DropdownMenuItem
                             onClick={() => {
                               staffService.requestTermination(session.tenantId, session, employee.id, "RosterGrid request");
+                              setStatusMessage(`Termination workflow initiated for ${employee.fullName}.`);
+                              setTimeout(() => setStatusMessage(null), 4000);
                               refresh();
                             }}
                           >
@@ -317,6 +333,8 @@ export default function RosterGrid() {
                   variant="outline"
                   onClick={() => {
                     staffService.requestPerformanceReview(session.tenantId, session, employee.id);
+                    setStatusMessage(`Performance review requested for ${employee.fullName}.`);
+                    setTimeout(() => setStatusMessage(null), 3000);
                     refresh();
                   }}
                 >
@@ -411,6 +429,8 @@ export default function RosterGrid() {
                 hireDate: new Date().toISOString().slice(0, 10),
               });
               setCreateOpen(false);
+              setStatusMessage("New employee record created and provisioned.");
+              setTimeout(() => setStatusMessage(null), 3000);
               refresh();
             }}
           >
@@ -453,6 +473,8 @@ export default function RosterGrid() {
                     departmentId: form.departmentId || selectedEmployee.departmentId,
                   });
                   setEditOpen(false);
+                  setStatusMessage("Employee profile updated.");
+                  setTimeout(() => setStatusMessage(null), 3000);
                   refresh();
                 }}
               >
@@ -479,7 +501,10 @@ export default function RosterGrid() {
                 <Button
                   onClick={() => {
                     staffService.importStaff(session.tenantId, session, importSource);
+                    setStatusMessage("Staff data imported and merged.");
                     setActionOpen(false);
+                    setTimeout(() => setStatusMessage(null), 3000);
+                    refresh();
                   }}
                 >
                   Run Import
@@ -525,15 +550,17 @@ export default function RosterGrid() {
                         employeeId: actionEmployeeId,
                         programId: actionProgramId,
                       });
-                    }
-                    if (actionType === "review" && actionEmployeeId) {
+                      setStatusMessage("Training program assigned successfully.");
+                    } else if (actionType === "review" && actionEmployeeId) {
                       staffService.requestPerformanceReview(session.tenantId, session, actionEmployeeId);
-                    }
-                    if (actionType === "payroll" && actionEmployeeId) {
+                      setStatusMessage("Performance review flow started.");
+                    } else if (actionType === "payroll" && actionEmployeeId) {
                       staffService.openPayrollCase(session.tenantId, session, actionEmployeeId);
+                      setStatusMessage("Payroll case opened for IT reconciliation.");
                     }
                     setActionNotes("");
                     setActionOpen(false);
+                    setTimeout(() => setStatusMessage(null), 3000);
                     refresh();
                   }}
                 >

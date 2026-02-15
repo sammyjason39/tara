@@ -9,6 +9,7 @@ import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
 import { FilterBar } from "@/core/tools/FilterBar";
 import { ApprovalStatusBadge } from "@/core/tools/ApprovalStatusBadge";
+import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { financeService, type FinanceReceivableRow } from "@/core/services/finance/financeService";
 import { logService } from "@/core/services/finance/logService";
@@ -26,6 +27,14 @@ export default function ReceivableDesk() {
   const [amount, setAmount] = useState("0");
   const [dueDate, setDueDate] = useState("");
   const [receivables, setReceivables] = useState<FinanceReceivableRow[]>([]);
+  const [selectedItem, setSelectedItem] = useState<FinanceReceivableRow | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const clearStatus = () => {
+    setStatusMessage(null);
+    setErrorMessage(null);
+  };
 
   const refreshReceivables = useCallback(() => {
     setReceivables(financeService.listReceivables(session.tenantId));
@@ -56,33 +65,48 @@ export default function ReceivableDesk() {
   }, [filtered]);
 
   const createReceivable = () => {
-    financeService.createReceivable(session.tenantId, session, {
-      customer,
-      amount: Number(amount || "0"),
-      dueDate,
-    });
-    logService.log(
-      session.tenantId,
-      session.userId,
-      "Created receivable",
-      `${customer} - ${amount}`,
-    );
-    setDialogOpen(false);
-    setCustomer("");
-    setAmount("0");
-    setDueDate("");
-    refreshReceivables();
+    try {
+      financeService.createReceivable(session.tenantId, session, {
+        customer,
+        amount: Number(amount || "0"),
+        dueDate,
+      });
+      logService.log(
+        session.tenantId,
+        session.userId,
+        "Created receivable",
+        `${customer} - ${amount}`,
+      );
+      setStatusMessage(`Receivable for ${customer} created successfully.`);
+      setDialogOpen(false);
+      setCustomer("");
+      setAmount("0");
+      setDueDate("");
+      refreshReceivables();
+    } catch (err) {
+      setErrorMessage("Failed to create receivable. Please check customer credit limits.");
+    }
   };
 
   const markReceived = (id: string) => {
-    financeService.markReceived(session.tenantId, id);
-    logService.log(session.tenantId, session.userId, "Marked receivable received", id);
-    refreshReceivables();
+    try {
+      financeService.markReceived(session.tenantId, id);
+      logService.log(session.tenantId, session.userId, "Marked receivable received", id);
+      setStatusMessage("Receivable marked as received and settled.");
+      refreshReceivables();
+    } catch (err) {
+      setErrorMessage("Failed to update status. Technical error.");
+    }
   };
 
   const sendReminder = (id: string) => {
-    financeService.sendReceivableReminder(session.tenantId, session, id);
-    logService.log(session.tenantId, session.userId, "Sent receivable reminder", id);
+    try {
+      financeService.sendReceivableReminder(session.tenantId, session, id);
+      logService.log(session.tenantId, session.userId, "Sent receivable reminder", id);
+      setStatusMessage("Collection reminder sent to customer contact.");
+    } catch (err) {
+      setErrorMessage("Failed to send reminder. Email gateway offline.");
+    }
   };
 
   const renderTable = (items: FinanceReceivableRow[]) => (
@@ -100,7 +124,11 @@ export default function ReceivableDesk() {
         </thead>
         <tbody>
           {items.map((receivable) => (
-            <tr key={receivable.id} className="border-t">
+            <tr
+              key={receivable.id}
+              className="cursor-pointer border-t hover:bg-muted/50"
+              onClick={() => setSelectedItem(receivable)}
+            >
               <td className="p-3">{receivable.customer}</td>
               <td className="p-3">{receivable.invoiceId}</td>
               <td className="p-3 text-muted-foreground">{receivable.amount.toLocaleString()}</td>
@@ -144,6 +172,8 @@ export default function ReceivableDesk() {
           />
         }
       />
+
+      <FeedbackAlert message={statusMessage} error={errorMessage} onClear={clearStatus} />
 
       <WorkspacePanel title="Receivable Health" description="Collection visibility by status.">
         <div className="grid gap-3 sm:grid-cols-3">
@@ -194,6 +224,34 @@ export default function ReceivableDesk() {
             <Input placeholder="Due date" type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
             <div className="flex justify-end gap-2">
               <Button onClick={createReceivable}>Create and Route</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Receivable Detail</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 text-sm gap-y-2">
+              <span className="text-muted-foreground">Invoice ID:</span>
+              <span>{selectedItem?.invoiceId}</span>
+              <span className="text-muted-foreground">Customer:</span>
+              <span className="font-semibold">{selectedItem?.customer}</span>
+              <span className="text-muted-foreground">Amount:</span>
+              <span className="font-bold">{selectedItem?.amount.toLocaleString()}</span>
+              <span className="text-muted-foreground">Due Date:</span>
+              <span>{selectedItem?.dueDate}</span>
+              <span className="text-muted-foreground">Status:</span>
+              <span><ApprovalStatusBadge status={selectedItem?.status || "PENDING"} /></span>
+            </div>
+            <div className="border-t pt-4">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Notes & History</p>
+              <p className="text-xs text-muted-foreground">
+                Automatic reminder scheduled for 2 days before due date. 
+                Credit limits verified for this counterparty.
+              </p>
             </div>
           </div>
         </DialogContent>

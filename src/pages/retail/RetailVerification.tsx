@@ -1,0 +1,95 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { 
+  ShieldCheck, 
+  Search, 
+  ExternalLink,
+  QrCode,
+  CheckCircle2,
+  AlertCircle
+} from "lucide-react";
+import { PageHeader } from "@/core/ui/PageHeader";
+import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
+
+export default function RetailVerification() {
+  const [ticketId, setTicketId] = useState("");
+  const [result, setResult] = useState<any>(null);
+
+  const handleVerify = () => {
+    if (!ticketId) return;
+    // Mock Verification Logic
+    setResult({
+      status: "valid",
+      type: "Voucher/Receipt",
+      issuedAt: new Date().toISOString(),
+      balance: "$50.00"
+    });
+  };
+
+  return (
+    <div className="space-y-6 max-w-[1200px] mx-auto p-4 md:p-6">
+      <PageHeader title="Verification Desk" subtitle="Secure Receipt & Ticket Validation" />
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <Card className="border-none shadow-sm">
+          <CardHeader>
+            <CardTitle>Verification Logic</CardTitle>
+            <CardDescription>Scan barcode or enter ID manually</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input 
+                placeholder="Enter Transaction ID or Ticket code..." 
+                className="pl-10 h-12 text-lg font-mono"
+                value={ticketId}
+                onChange={(e) => setTicketId(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-3">
+              <Button className="flex-1 h-12" onClick={handleVerify}><ShieldCheck className="w-4 h-4 mr-2" /> Verify Now</Button>
+              <Button variant="outline" className="h-12"><QrCode className="w-4 h-4 mr-2" /> Scan Camera</Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-6">
+          {result ? (
+            <Card className={`border-none ${result.status === 'valid' ? 'bg-green-50' : 'bg-red-50'}`}>
+              <CardContent className="p-8 text-center space-y-4">
+                 {result.status === 'valid' ? (
+                   <CheckCircle2 className="w-16 h-16 mx-auto text-green-600" />
+                 ) : (
+                   <AlertCircle className="w-16 h-16 mx-auto text-red-600" />
+                 )}
+                 <div>
+                    <h3 className="text-xl font-bold uppercase tracking-tight">{result.status} {result.type}</h3>
+                    <p className="text-muted-foreground text-sm">Verified against Retail Core Ledger</p>
+                 </div>
+                 <div className="bg-white/50 p-4 rounded-lg text-sm grid grid-cols-2 gap-2 text-left">
+                    <span className="text-muted-foreground">Issued:</span><span className="font-medium">{new Date(result.issuedAt).toLocaleDateString()}</span>
+                    <span className="text-muted-foreground">Value:</span><span className="font-bold text-green-700">{result.balance}</span>
+                 </div>
+                 <Button className="w-full bg-green-600 hover:bg-green-700">Approve Usage</Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="h-full bg-slate-50 border-2 border-dashed rounded-lg flex flex-col items-center justify-center p-12 text-center text-muted-foreground">
+              <ShieldCheck className="w-12 h-12 mb-4 opacity-20" />
+              <p>Waiting for verification input...</p>
+              <p className="text-xs max-w-[200px] mt-2">Validate e-vouchers, member QR codes, or physical receipts.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <WorkspacePanel title="Validation History" description="Recent verification attempts at this desk">
+        <div className="p-8 text-center text-muted-foreground italic bg-slate-50/50 rounded-lg">
+          No verification history available in this session.
+        </div>
+      </WorkspacePanel>
+    </div>
+  );
+}
