@@ -1,0 +1,21 @@
+[
+  {
+    "id": "ord-1771227684791",
+    "tenantId": "tenant-demo",
+    "storeId": "store-001",
+    "status": "paid",
+    "totalAmount": 150,
+    "items": [
+      {
+        "sku": "RM-STEEL-001",
+        "quantity": 1
+      }
+    ],
+    "createdAt": "2026-02-16T07:41:24.791Z",
+    "updatedAt": "2026-02-16T07:41:24.791Z",
+    "customer": {
+      "name": "Trial User",
+      "email": "trial@test.com"
+    }
+  }
+]

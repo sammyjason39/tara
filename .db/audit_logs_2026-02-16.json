@@ -1,0 +1,23 @@
+[
+  {
+    "type": "payment_success",
+    "timestamp": "2026-02-16T12:00:00Z",
+    "actor": {
+      "type": "customer",
+      "id": "cust-001"
+    },
+    "payload": {
+      "totalAmount": 150,
+      "items": [
+        {
+          "sku": "RM-STEEL-001",
+          "quantity": 1
+        }
+      ],
+      "customer": {
+        "name": "Trial User",
+        "email": "trial@test.com"
+      }
+    }
+  }
+]

@@ -85,6 +85,11 @@ C:\USERS\USER\DOCUMENTS\SOFTWARE-DEVELOPER\ZENVIX-DEMO\BUSINESS-FLOW-SUITE-V2\SR
 ª   +---api
 ª   ª       workforceGateway.ts
 ª   ª       
+ª   +---config
+ª   ª       bankApiConfig.ts
+ª   ª       posConfig.ts
+ª   ª       workflowConfig.ts
+ª   ª       
 ª   +---contributions
 ª   ª       processor.ts
 ª   ª       registry.ts
@@ -157,22 +162,53 @@ C:\USERS\USER\DOCUMENTS\SOFTWARE-DEVELOPER\ZENVIX-DEMO\BUSINESS-FLOW-SUITE-V2\SR
 ª   ª       repositoryRegistry.ts
 ª   ª       
 ª   +---repositories
+ª   ª   +---finance
+ª   ª   ª       financeRepository.ts
+ª   ª   ª       mockFinanceRepo.ts
+ª   ª   ª       
 ª   ª   +---hr
-ª   ª           attendanceRepo.ts
-ª   ª           caseRepo.ts
-ª   ª           contractRepo.ts
-ª   ª           departmentRepo.ts
-ª   ª           employeeRepo.ts
-ª   ª           leaveRepo.ts
-ª   ª           payrollRepo.ts
-ª   ª           performanceRepo.ts
-ª   ª           recruitmentRepo.ts
-ª   ª           storage.ts
-ª   ª           trainingRepo.ts
+ª   ª   ª       attendanceRepo.ts
+ª   ª   ª       caseRepo.ts
+ª   ª   ª       contractRepo.ts
+ª   ª   ª       departmentRepo.ts
+ª   ª   ª       employeeRepo.ts
+ª   ª   ª       leaveRepo.ts
+ª   ª   ª       payrollRepo.ts
+ª   ª   ª       performanceRepo.ts
+ª   ª   ª       recruitmentRepo.ts
+ª   ª   ª       schedulingRepo.ts
+ª   ª   ª       storage.ts
+ª   ª   ª       trainingRepo.ts
+ª   ª   ª       
+ª   ª   +---inventory
+ª   ª   ª       inventoryRepository.ts
+ª   ª   ª       mockInventoryRepo.ts
+ª   ª   ª       
+ª   ª   +---marketing
+ª   ª   ª       marketingRepository.ts
+ª   ª   ª       mockMarketingRepo.ts
+ª   ª   ª       
+ª   ª   +---payment
+ª   ª   ª       mockPaymentRepo.ts
+ª   ª   ª       paymentRepository.ts
+ª   ª   ª       
+ª   ª   +---procurement
+ª   ª   ª       mockProcurementRepo.ts
+ª   ª   ª       procurementRepository.ts
+ª   ª   ª       
+ª   ª   +---retail
+ª   ª   ª       retailInterfaces.ts
+ª   ª   ª       retailMockRepo.ts
+ª   ª   ª       retailRepo.ts
+ª   ª   ª       
+ª   ª   +---sales
+ª   ª           mockSalesRepo.ts
+ª   ª           salesRepository.ts
 ª   ª           
 ª   +---runtime
 ª   ª   ª   corePageResolver.ts
 ª   ª   ª   coreRoutes.tsx
+ª   ª   ª   DeviceAwareGuard.tsx
 ª   ª   ª   modulePageResolver.ts
 ª   ª   ª   moduleRegistry.ts
 ª   ª   ª   moduleResolver.ts
@@ -200,26 +236,65 @@ C:\USERS\USER\DOCUMENTS\SOFTWARE-DEVELOPER\ZENVIX-DEMO\BUSINESS-FLOW-SUITE-V2\SR
 ª   ª   ª   payrollBridge.ts
 ª   ª   ª   registry.ts
 ª   ª   ª   
+ª   ª   +---finance
+ª   ª   ª       financeScheduler.ts
+ª   ª   ª       financeService.assets.test.ts
+ª   ª   ª       financeService.e2e.test.ts
+ª   ª   ª       financeService.ts
+ª   ª   ª       ledgerService.ts
+ª   ª   ª       logService.ts
+ª   ª   ª       payablesService.ts
+ª   ª   ª       paymentsService.ts
+ª   ª   ª       payrollService.ts
+ª   ª   ª       receivablesService.ts
+ª   ª   ª       treasuryService.ts
+ª   ª   ª       
 ª   ª   +---hr
-ª   ª           analyticsService.ts
-ª   ª           caseService.ts
-ª   ª           documentService.ts
-ª   ª           hrWorkstreamService.ts
-ª   ª           legalService.ts
-ª   ª           orgService.ts
-ª   ª           payrollService.ts
-ª   ª           peopleService.ts
-ª   ª           performanceService.ts
-ª   ª           recruitmentService.ts
-ª   ª           staffService.ts
-ª   ª           trainingService.ts
-ª   ª           workflowService.ts
+ª   ª   ª       analyticsService.ts
+ª   ª   ª       attendanceService.ts
+ª   ª   ª       caseService.ts
+ª   ª   ª       documentService.ts
+ª   ª   ª       hrWorkstreamService.ts
+ª   ª   ª       legalService.ts
+ª   ª   ª       orgService.ts
+ª   ª   ª       payrollService.ts
+ª   ª   ª       peopleService.ts
+ª   ª   ª       performanceService.ts
+ª   ª   ª       recruitmentService.ts
+ª   ª   ª       schedulingService.ts
+ª   ª   ª       staffService.ts
+ª   ª   ª       trainingService.ts
+ª   ª   ª       workflowService.ts
+ª   ª   ª       
+ª   ª   +---inventory
+ª   ª   ª       inventoryService.e2e.test.ts
+ª   ª   ª       inventoryService.ts
+ª   ª   ª       
+ª   ª   +---marketing
+ª   ª   ª       marketingService.ts
+ª   ª   ª       
+ª   ª   +---payment
+ª   ª   ª       paymentService.test.ts
+ª   ª   ª       paymentService.ts
+ª   ª   ª       
+ª   ª   +---procurement
+ª   ª   ª       procurementIntegrationAdapters.ts
+ª   ª   ª       procurementService.e2e.test.ts
+ª   ª   ª       procurementService.ts
+ª   ª   ª       
+ª   ª   +---retail
+ª   ª   ª       retailService.ts
+ª   ª   ª       
+ª   ª   +---sales
+ª   ª           salesService.e2e.test.ts
+ª   ª           salesService.ts
 ª   ª           
 ª   +---tools
 ª   ª   ª   ApprovalStatusBadge.tsx
 ª   ª   ª   contracts.ts
 ª   ª   ª   DataTableShell.tsx
 ª   ª   ª   exportPipeline.ts
+ª   ª   ª   FeedbackAlert.tsx
 ª   ª   ª   FilterBar.tsx
 ª   ª   ª   toolRegistry.ts
 ª   ª   ª   types.ts
@@ -252,18 +327,52 @@ C:\USERS\USER\DOCUMENTS\SOFTWARE-DEVELOPER\ZENVIX-DEMO\BUSINESS-FLOW-SUITE-V2\SR
 ª   +---types
 ª   ª   ª   index.ts
 ª   ª   ª   
+ª   ª   +---finance
+ª   ª   ª       accounts.ts
+ª   ª   ª       assets.ts
+ª   ª   ª       ledger.ts
+ª   ª   ª       payables.ts
+ª   ª   ª       payments.ts
+ª   ª   ª       payrollTypes.ts
+ª   ª   ª       receivables.ts
+ª   ª   ª       treasury.ts
+ª   ª   ª       workflowTypes.ts
+ª   ª   ª       
 ª   ª   +---hr
-ª   ª           attendance.ts
-ª   ª           base.ts
-ª   ª           case.ts
-ª   ª           contract.ts
-ª   ª           department.ts
-ª   ª           employee.ts
-ª   ª           leave.ts
-ª   ª           payroll.ts
-ª   ª           performance.ts
-ª   ª           recruitment.ts
-ª   ª           training.ts
+ª   ª   ª       attendance.ts
+ª   ª   ª       base.ts
+ª   ª   ª       case.ts
+ª   ª   ª       contract.ts
+ª   ª   ª       department.ts
+ª   ª   ª       employee.ts
+ª   ª   ª       leave.ts
+ª   ª   ª       payroll.ts
+ª   ª   ª       performance.ts
+ª   ª   ª       recruitment.ts
+ª   ª   ª       scheduling.ts
+ª   ª   ª       training.ts
+ª   ª   ª       
+ª   ª   +---inventory
+ª   ª   ª       inventory.ts
+ª   ª   ª       
+ª   ª   +---marketing
+ª   ª   ª       marketing.ts
+ª   ª   ª       
+ª   ª   +---payment
+ª   ª   ª       payment.ts
+ª   ª   ª       
+ª   ª   +---procurement
+ª   ª   ª       procurement.ts
+ª   ª   ª       
+ª   ª   +---retail
+ª   ª   ª       api.ts
+ª   ª   ª       catalog.ts
+ª   ª   ª       inventory.ts
+ª   ª   ª       retail.ts
+ª   ª   ª       shifts.ts
+ª   ª   ª       
+ª   ª   +---sales
+ª   ª           sales.ts
 ª   ª           
 ª   +---ui
 ª   ª       PageHeader.tsx
@@ -275,26 +384,45 @@ C:\USERS\USER\DOCUMENTS\SOFTWARE-DEVELOPER\ZENVIX-DEMO\BUSINESS-FLOW-SUITE-V2\SR
 ª           types.ts
 ª           
 +---hooks
-ª       use-mobile.tsx
-ª       use-toast.ts
-ª       
+ª   ª   use-mobile.tsx
+ª   ª   use-toast.ts
+ª   ª   
+ª   +---finance
+ª           useLedger.ts
+ª           usePayables.ts
+ª           usePayments.ts
+ª           usePayroll.ts
+ª           useReceivables.ts
+ª           useTreasury.ts
+ª           
 +---layouts
 ª       CoreLayout.tsx
 ª       ModuleLayout.tsx
 ª       POSLayout.tsx
 ª       
 +---lib
-ª       local-storage.ts
-ª       mock-data.ts
-ª       utils.ts
-ª       
+ª   ª   local-storage.ts
+ª   ª   mock-data.ts
+ª   ª   utils.ts
+ª   ª   
+ª   +---utils
+ª           currency.ts
+ª           date.ts
+ª           roles.ts
+ª           validation.ts
+ª           
 +---modules
+ª   ª   moduleBundle.ts
+ª   ª   
 ª   +---fnb
 ª   ª       index.ts
 ª   ª       
 ª   +---retail
-ª   ª       index.ts
-ª   ª       
+ª   ª   ª   index.ts
+ª   ª   ª   
+ª   ª   +---api
+ª   ª           RetailPublicGateway.ts
+ª   ª           
 ª   +---shared
 ª           contract.ts
 ª           
@@ -310,7 +438,7 @@ C:\USERS\USER\DOCUMENTS\SOFTWARE-DEVELOPER\ZENVIX-DEMO\BUSINESS-FLOW-SUITE-V2\SR
 ª   ª   ª   InventoryModule.tsx
 ª   ª   ª   Modules.tsx
 ª   ª   ª   Operations.tsx
-ª   ª   ª   Purchasing.tsx
+ª   ª   ª   ProcurementEntry.tsx
 ª   ª   ª   Reports.tsx
 ª   ª   ª   Security.tsx
 ª   ª   ª   Settings.tsx
@@ -318,7 +446,28 @@ C:\USERS\USER\DOCUMENTS\SOFTWARE-DEVELOPER\ZENVIX-DEMO\BUSINESS-FLOW-SUITE-V2\SR
 ª   ª   ª   Unauthorized.tsx
 ª   ª   ª   WorkflowInbox.tsx
 ª   ª   ª   
+ª   ª   +---adminWorkspace
+ª   ª   ª       AdminWorkspaceLayout.tsx
+ª   ª   ª       RequestAssign.tsx
+ª   ª   ª       RequestDesk.tsx
+ª   ª   ª       RequestTrack.tsx
+ª   ª   ª       
 ª   ª   +---finance
+ª   ª   ª       Assets.tsx
+ª   ª   ª       AuditVault.tsx
+ª   ª   ª       ClosePeriodStudio.tsx
+ª   ª   ª       FinanceDocs.tsx
+ª   ª   ª       FinanceInsights.tsx
+ª   ª   ª       FinanceWorkspaceLayout.tsx
+ª   ª   ª       InvoiceCapture.tsx
+ª   ª   ª       LedgerCore.tsx
+ª   ª   ª       MoneyDesk.tsx
+ª   ª   ª       PayableDesk.tsx
+ª   ª   ª       PayFlow.tsx
+ª   ª   ª       PolicyManager.tsx
+ª   ª   ª       ReceivableDesk.tsx
+ª   ª   ª       TreasuryMap.tsx
+ª   ª   ª       
 ª   ª   +---HR
 ª   ª   ª   ª   FlowGate.tsx
 ª   ª   ª   ª   GrowthCycle.tsx
@@ -341,6 +490,67 @@ C:\USERS\USER\DOCUMENTS\SOFTWARE-DEVELOPER\ZENVIX-DEMO\BUSINESS-FLOW-SUITE-V2\SR
 ª   ª   ª           CaseDesk.tsx
 ª   ª   ª           CaseDetail.tsx
 ª   ª   ª           
+ª   ª   +---inventory
+ª   ª   ª       InventoryAdjustments.tsx
+ª   ª   ª       InventoryAuditLog.tsx
+ª   ª   ª       InventoryDashboard.tsx
+ª   ª   ª       InventoryInsights.tsx
+ª   ª   ª       InventoryReceiving.tsx
+ª   ª   ª       InventoryStockHub.tsx
+ª   ª   ª       InventoryWorkspaceLayout.tsx
+ª   ª   ª       
+ª   ª   +---it
+ª   ª   ª       AccountDesk.tsx
+ª   ª   ª       DeviceDesk.tsx
+ª   ª   ª       ITWorkspaceLayout.tsx
+ª   ª   ª       SystemHealth.tsx
+ª   ª   ª       
+ª   ª   +---marketing
+ª   ª   ª       CampaignDesk.tsx
+ª   ª   ª       ConnectedAccountsDesk.tsx
+ª   ª   ª       ExecutionDesk.tsx
+ª   ª   ª       LeadCaptureDesk.tsx
+ª   ª   ª       MarketingAlerts.tsx
+ª   ª   ª       MarketingAnalytics.tsx
+ª   ª   ª       MarketingAuditLog.tsx
+ª   ª   ª       MarketingDashboard.tsx
+ª   ª   ª       MarketingWorkspaceLayout.tsx
+ª   ª   ª       NurtureStudio.tsx
+ª   ª   ª       
+ª   ª   +---payment
+ª   ª   ª       DeviceRoutingDesk.tsx
+ª   ª   ª       DisputeCenter.tsx
+ª   ª   ª       PaymentAuditVault.tsx
+ª   ª   ª       PaymentDashboard.tsx
+ª   ª   ª       PaymentExecutionHub.tsx
+ª   ª   ª       PaymentWorkspaceLayout.tsx
+ª   ª   ª       ProviderRoutingDesk.tsx
+ª   ª   ª       RefundDesk.tsx
+ª   ª   ª       
+ª   ª   +---procurement
+ª   ª   ª       ContractDesk.tsx
+ª   ª   ª       PoReleaseDesk.tsx
+ª   ª   ª       ProcurementInsights.tsx
+ª   ª   ª       ProcurementRiskCenter.tsx
+ª   ª   ª       ProcurementWorkspaceLayout.tsx
+ª   ª   ª       procurementWorkspaceQueues.ui.test.tsx
+ª   ª   ª       PurchaseRequestDesk.tsx
+ª   ª   ª       SupplierDesk.tsx
+ª   ª   ª       SupplierPortalDesk.tsx
+ª   ª   ª       
+ª   ª   +---sales
+ª   ª   ª       ForecastDesk.tsx
+ª   ª   ª       LeadDesk.tsx
+ª   ª   ª       ManagerDesk.tsx
+ª   ª   ª       OpportunityDesk.tsx
+ª   ª   ª       PipelineBoard.tsx
+ª   ª   ª       QuoteDesk.tsx
+ª   ª   ª       SalesAuditLog.tsx
+ª   ª   ª       SalesDashboard.tsx
+ª   ª   ª       SalesOrderDesk.tsx
+ª   ª   ª       SalesWorkspaceLayout.tsx
+ª   ª   ª       TimelineDesk.tsx
+ª   ª   ª       
 ª   ª   +---tools
 ª   ª           CalculatorTool.tsx
 ª   ª           DocumentTool.tsx
@@ -359,13 +569,58 @@ C:\USERS\USER\DOCUMENTS\SOFTWARE-DEVELOPER\ZENVIX-DEMO\BUSINESS-FLOW-SUITE-V2\SR
 ª   ª       Tables.tsx
 ª   ª       
 ª   +---retail
-ª           Cashier.tsx
-ª           History.tsx
-ª           Inventory.tsx
-ª           Sales.tsx
-ª           Settings.tsx
-ª           Shifts.tsx
-ª           
+ª       ª   Cashier.tsx
+ª       ª   History.tsx
+ª       ª   Inventory.tsx
+ª       ª   RetailInventory.tsx
+ª       ª   RetailManagement.tsx
+ª       ª   RetailPOS.tsx
+ª       ª   RetailVerification.tsx
+ª       ª   RetailWorkspace.tsx
+ª       ª   Sales.tsx
+ª       ª   Settings.tsx
+ª       ª   Shifts.tsx
+ª       ª   
+ª       +---components
+ª       ª       OperationalLauncherOverlay.tsx
+ª       ª       RetailGlobalAdminBar.tsx
+ª       ª       RetailModeSwitchControl.tsx
+ª       ª       
+ª       +---context
+ª       ª       RetailContext.tsx
+ª       ª       
+ª       +---layout
+ª       ª       RetailManagementShell.tsx
+ª       ª       RetailOperationalShell.tsx
+ª       ª       RetailRootLayout.tsx
+ª       ª       
+ª       +---management
+ª       ª   ª   ComplianceAuditLedger.tsx
+ª       ª   ª   DeveloperConsole.tsx
+ª       ª   ª   DeviceControlCenter.tsx
+ª       ª   ª   EcommerceConnector.tsx
+ª       ª   ª   InventoryVisibility.tsx
+ª       ª   ª   OrderFulfillment.tsx
+ª       ª   ª   PricingPromoDesk.tsx
+ª       ª   ª   ShiftControl.tsx
+ª       ª   ª   StaffAssignments.tsx
+ª       ª   ª   StoreDashboard.tsx
+ª       ª   ª   StoreProfile.tsx
+ª       ª   ª   
+ª       ª   +---modals
+ª       ª           ItemDetailModal.tsx
+ª       ª           OrderDetailModal.tsx
+ª       ª           TransferTrackingModal.tsx
+ª       ª           
+ª       +---operational
+ª               CashierPOS.tsx
+ª               OperationalGateway.tsx
+ª               ReceivingTerminal.tsx
+ª               RefundReturnDesk.tsx
+ª               SelfServiceKiosk.tsx
+ª               ShiftCloseTerminal.tsx
+ª               StockOpnameScanner.tsx
+ª               
 +---platform
 ª   +---device-detection
 ª   ª       index.ts
@@ -373,6 +628,9 @@ C:\USERS\USER\DOCUMENTS\SOFTWARE-DEVELOPER\ZENVIX-DEMO\BUSINESS-FLOW-SUITE-V2\SR
 ª   +---runtime-ui
 ª           resolver.ts
 ª           
++---server
+ª       index.ts
+ª       
 +---test
         example.test.ts
         setup.ts
