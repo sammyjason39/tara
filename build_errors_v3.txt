@@ -1,0 +1,65 @@
+src/components/shared/AppSwitcher.tsx(42,15): error TS2345: Argument of type 'string' is not assignable to parameter of type 'ActiveAppId'.
+src/core/runtime/coreRoutes.tsx(179,27): error TS2820: Type '"finance.payments.manage"' is not assignable to type 'PermissionKey'. Did you mean '"finance.payables.manage"'?
+src/core/runtime/coreRoutes.tsx(203,27): error TS2820: Type '"finance.close.manage"' is not assignable to type 'PermissionKey'. Did you mean '"finance.coa.manage"'?
+src/core/runtime/coreRoutes.tsx(219,27): error TS2322: Type '"finance.insights.view"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(227,27): error TS2820: Type '"finance.invoices.manage"' is not assignable to type 'PermissionKey'. Did you mean '"finance.coa.manage"'?
+src/core/runtime/coreRoutes.tsx(235,27): error TS2820: Type '"finance.docs.view"' is not assignable to type 'PermissionKey'. Did you mean '"finance.coa.view"'?
+src/core/runtime/coreRoutes.tsx(243,27): error TS2820: Type '"finance.assets.view"' is not assignable to type 'PermissionKey'. Did you mean '"finance.payments.view"'?
+src/core/runtime/coreRoutes.tsx(251,27): error TS2820: Type '"finance.policy.manage"' is not assignable to type 'PermissionKey'. Did you mean '"finance.coa.manage"'?
+src/core/runtime/coreRoutes.tsx(328,25): error TS2322: Type '"core.procurement.access"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(337,27): error TS2322: Type '"core.procurement.access"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(345,27): error TS2322: Type '"core.procurement.access"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(353,27): error TS2322: Type '"core.procurement.access"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(361,27): error TS2322: Type '"core.procurement.access"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(369,27): error TS2322: Type '"core.procurement.access"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(377,27): error TS2322: Type '"core.procurement.access"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(385,27): error TS2322: Type '"core.procurement.access"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(454,25): error TS2820: Type '"core.it.access"' is not assignable to type 'PermissionKey'. Did you mean '"core.hr.access"'?
+src/core/runtime/coreRoutes.tsx(463,27): error TS2820: Type '"core.it.access"' is not assignable to type 'PermissionKey'. Did you mean '"core.hr.access"'?
+src/core/runtime/coreRoutes.tsx(471,27): error TS2820: Type '"core.it.access"' is not assignable to type 'PermissionKey'. Did you mean '"core.hr.access"'?
+src/core/runtime/coreRoutes.tsx(479,27): error TS2820: Type '"core.it.access"' is not assignable to type 'PermissionKey'. Did you mean '"core.hr.access"'?
+src/core/runtime/coreRoutes.tsx(489,25): error TS2820: Type '"core.sales.access"' is not assignable to type 'PermissionKey'. Did you mean '"core.tools.access"'?
+src/core/runtime/coreRoutes.tsx(498,27): error TS2820: Type '"core.sales.access"' is not assignable to type 'PermissionKey'. Did you mean '"core.tools.access"'?
+src/core/runtime/coreRoutes.tsx(506,27): error TS2820: Type '"core.sales.access"' is not assignable to type 'PermissionKey'. Did you mean '"core.tools.access"'?
+src/core/runtime/coreRoutes.tsx(514,27): error TS2820: Type '"core.sales.access"' is not assignable to type 'PermissionKey'. Did you mean '"core.tools.access"'?
+src/core/runtime/coreRoutes.tsx(522,27): error TS2820: Type '"core.sales.access"' is not assignable to type 'PermissionKey'. Did you mean '"core.tools.access"'?
+src/core/runtime/coreRoutes.tsx(530,27): error TS2820: Type '"core.sales.access"' is not assignable to type 'PermissionKey'. Did you mean '"core.tools.access"'?
+src/core/runtime/coreRoutes.tsx(538,27): error TS2820: Type '"core.sales.access"' is not assignable to type 'PermissionKey'. Did you mean '"core.tools.access"'?
+src/core/runtime/coreRoutes.tsx(546,27): error TS2820: Type '"core.sales.access"' is not assignable to type 'PermissionKey'. Did you mean '"core.tools.access"'?
+src/core/runtime/coreRoutes.tsx(554,27): error TS2820: Type '"core.sales.access"' is not assignable to type 'PermissionKey'. Did you mean '"core.tools.access"'?
+src/core/runtime/coreRoutes.tsx(562,27): error TS2820: Type '"core.sales.access"' is not assignable to type 'PermissionKey'. Did you mean '"core.tools.access"'?
+src/core/runtime/coreRoutes.tsx(570,27): error TS2820: Type '"core.sales.access"' is not assignable to type 'PermissionKey'. Did you mean '"core.tools.access"'?
+src/core/runtime/coreRoutes.tsx(580,25): error TS2322: Type '"core.marketing.access"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(589,27): error TS2322: Type '"core.marketing.access"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(597,27): error TS2322: Type '"core.marketing.access"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(605,27): error TS2322: Type '"core.marketing.access"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(613,27): error TS2322: Type '"core.marketing.access"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(621,27): error TS2322: Type '"core.marketing.access"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(629,27): error TS2322: Type '"core.marketing.access"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(637,27): error TS2322: Type '"core.marketing.access"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(645,27): error TS2322: Type '"core.marketing.access"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(653,27): error TS2322: Type '"core.marketing.access"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(663,25): error TS2322: Type '"core.admin.requests"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(672,27): error TS2322: Type '"core.admin.requests"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(680,27): error TS2322: Type '"core.admin.requests"' is not assignable to type 'PermissionKey'.
+src/core/runtime/coreRoutes.tsx(688,27): error TS2322: Type '"core.admin.requests"' is not assignable to type 'PermissionKey'.
+src/core/services/finance/financeService.ts(217,30): error TS2367: This comparison appears to be unintentional because the types '"pending" | "draft" | "issued"' and '"paid"' have no overlap.
+src/core/services/finance/financeService.ts(382,31): error TS2345: Argument of type '"FINANCE_STAFF" | "HR_STAFF" | "DEPT_HEAD" | "FINANCE_DEPT_HEAD" | "HR_DEPT_HEAD" | "HR_ADMIN" | "FINANCE_ADMIN"' is not assignable to parameter of type '"DEPT_HEAD" | "FINANCE_DEPT_HEAD" | "COMPANY_ADMIN" | "OWNER" | "SUPERADMIN"'.
+  Type '"FINANCE_STAFF"' is not assignable to type '"DEPT_HEAD" | "FINANCE_DEPT_HEAD" | "COMPANY_ADMIN" | "OWNER" | "SUPERADMIN"'.
+src/core/services/finance/financeService.ts(390,31): error TS2345: Argument of type '"FINANCE_STAFF" | "HR_STAFF" | "DEPT_HEAD" | "FINANCE_DEPT_HEAD" | "HR_DEPT_HEAD" | "HR_ADMIN" | "FINANCE_ADMIN"' is not assignable to parameter of type '"COMPANY_ADMIN" | "FINANCE_ADMIN" | "OWNER" | "SUPERADMIN"'.
+  Type '"FINANCE_STAFF"' is not assignable to type '"COMPANY_ADMIN" | "FINANCE_ADMIN" | "OWNER" | "SUPERADMIN"'.
+src/core/services/procurement/procurementIntegrationAdapters.ts(227,9): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type 'Partial<{ id: string; }>'.
+src/core/services/procurement/procurementIntegrationAdapters.ts(244,25): error TS2339: Property 'status' does not exist on type '{ id: string; }'.
+src/core/services/procurement/procurementIntegrationAdapters.ts(245,29): error TS2339: Property 'issueCount' does not exist on type '{ id: string; }'.
+src/core/services/procurement/procurementIntegrationAdapters.ts(246,34): error TS2339: Property 'invoiceMismatch' does not exist on type '{ id: string; }'.
+src/core/services/procurement/procurementIntegrationAdapters.ts(249,5): error TS2740: Type '{ id: string; }' is missing the following properties from type 'GoodsReceiptSyncRecord': tenantId, finalPoId, requisitionId, supplierId, and 8 more.
+src/core/services/procurement/procurementService.ts(737,31): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'SupplierRecommendation' is not assignable to type '{ supplierId: string; supplierName: string; supplierBranchId: string; branchName: string; score: number; riskTier: RiskTier; unitPrice: number; leadTimeDays: number; }'.
+    Property 'unitPrice' is optional in type 'SupplierRecommendation' but required in type '{ supplierId: string; supplierName: string; supplierBranchId: string; branchName: string; score: number; riskTier: RiskTier; unitPrice: number; leadTimeDays: number; }'.
+src/core/services/sales/salesService.ts(566,19): error TS2322: Type 'number' is not assignable to type 'string'.
+src/pages/core/inventory/InventoryWorkspaceLayout.tsx(103,15): error TS2322: Type '{ title: string; subtitle: string; icon: Element; }' is not assignable to type 'IntrinsicAttributes & PageHeaderProps'.
+  Property 'icon' does not exist on type 'IntrinsicAttributes & PageHeaderProps'.
+src/pages/core/procurement/ProcurementWorkspaceLayout.tsx(114,15): error TS2322: Type '{ title: string; subtitle: string; icon: Element; }' is not assignable to type 'IntrinsicAttributes & PageHeaderProps'.
+  Property 'icon' does not exist on type 'IntrinsicAttributes & PageHeaderProps'.
+src/pages/retail/operational/ReceivingTerminal.tsx(80,27): error TS2554: Expected 5-6 arguments, but got 4.
+src/pages/retail/operational/StockOpnameScanner.tsx(85,27): error TS2554: Expected 4-5 arguments, but got 3.

@@ -36,6 +36,7 @@ const seedItems = (tenantId: string): InventoryItemMaster[] => [
     qrCode: "QR-RM-STEEL-001",
     moduleTags: ["MANUFACTURING", "PROCUREMENT"],
     active: true,
+    retailPrice: 950000,
     createdAt: now(),
     updatedAt: now(),
   },
@@ -50,6 +51,7 @@ const seedItems = (tenantId: string): InventoryItemMaster[] => [
     qrCode: "QR-CONS-GLOVE-010",
     moduleTags: ["HR", "OPERATIONS"],
     active: true,
+    retailPrice: 150000,
     createdAt: now(),
     updatedAt: now(),
   },
@@ -64,6 +66,7 @@ const seedItems = (tenantId: string): InventoryItemMaster[] => [
     qrCode: "QR-FG-PACK-101",
     moduleTags: ["SALES", "FNB", "RETAIL"],
     active: true,
+    retailPrice: 285000,
     createdAt: now(),
     updatedAt: now(),
   },
@@ -220,6 +223,13 @@ export const mockInventoryRepo: InventoryRepository = {
     const { updated, next } = updateById(this.listItems(tenantId), id, patch);
     if (updated) saveToStorage(itemsKey(tenantId), next);
     return updated;
+  },
+  deleteItem(tenantId, id) {
+    const items = this.listItems(tenantId);
+    const next = items.filter(i => i.id !== id);
+    if (next.length === items.length) return false;
+    saveToStorage(itemsKey(tenantId), next);
+    return true;
   },
 
   listBalances(tenantId) {

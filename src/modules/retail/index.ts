@@ -17,10 +17,29 @@ import type {
 // ============================================================
 
 import RetailWorkspace from "@/pages/retail/RetailWorkspace";
-import RetailPOS from "@/pages/retail/RetailPOS";
-import RetailManagement from "@/pages/retail/RetailManagement";
-import RetailVerification from "@/pages/retail/RetailVerification";
-import RetailInventory from "@/pages/retail/RetailInventory";
+
+// Management Pages
+import StoreDashboard from "@/pages/retail/management/StoreDashboard";
+import StoreProfile from "@/pages/retail/management/StoreProfile";
+import StaffAssignments from "@/pages/retail/management/StaffAssignments";
+import ShiftControl from "@/pages/retail/management/ShiftControl";
+
+import EcommerceConnector from "@/pages/retail/management/EcommerceConnector";
+import OrderFulfillment from "@/pages/retail/management/OrderFulfillment";
+import PricingPromoDesk from "@/pages/retail/management/PricingPromoDesk";
+import InventoryVisibility from "@/pages/retail/management/InventoryVisibility";
+import DeviceControlCenter from "@/pages/retail/management/DeviceControlCenter";
+import ComplianceAuditLedger from "@/pages/retail/management/ComplianceAuditLedger";
+
+// Operational Pages
+import CashierPOS from "@/pages/retail/operational/CashierPOS";
+import RefundReturnDesk from "@/pages/retail/operational/RefundReturnDesk";
+import StockOpnameScanner from "@/pages/retail/operational/StockOpnameScanner";
+import ReceivingTerminal from "@/pages/retail/operational/ReceivingTerminal";
+import SelfServiceKiosk from "@/pages/retail/operational/SelfServiceKiosk";
+import ShiftCloseTerminal from "@/pages/retail/operational/ShiftCloseTerminal";
+import RetailOperationalGateway from "@/pages/retail/operational/OperationalGateway";
+
 
 // ============================================================
 // MODULE IDENTITY (LOCKED)
@@ -48,7 +67,7 @@ export interface RetailModuleConfig extends ModuleConfig {
 }
 
 const DEFAULT_CONFIG: RetailModuleConfig = {
-  taxRate: 10, // Updated to match service logic
+  taxRate: 10,
   features: {
     barcodeScanning: true,
     requireShiftStart: true,
@@ -60,14 +79,8 @@ const DEFAULT_CONFIG: RetailModuleConfig = {
 // ============================================================
 
 const PERMISSIONS = {
-  RETAIL_ACCESS: {
-    resource: "retail",
-    actions: ["read", "manage"],
-  },
-  SALES_CREATE: {
-    resource: "sales",
-    actions: ["create"],
-  },
+  RETAIL_ACCESS: { resource: "retail", actions: ["read", "manage"] },
+  OPERATIONAL_POS: { resource: "retail_pos", actions: ["manage"] },
 } satisfies Record<string, Permission>;
 
 // ============================================================
@@ -75,6 +88,7 @@ const PERMISSIONS = {
 // ============================================================
 
 const PAGES: ReadonlyArray<ModulePageDefinition> = [
+  // Gateway
   {
     id: "workspace",
     moduleId: MODULE_ID,
@@ -85,45 +99,183 @@ const PAGES: ReadonlyArray<ModulePageDefinition> = [
     requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
     component: RetailWorkspace,
   },
+
+  // --- MANAGEMENT PLANE ---
   {
-    id: "pos",
+    id: "mgt-dashboard",
     moduleId: MODULE_ID,
-    title: "POS Terminal",
-    route: "/m/retail/pos",
-    icon: "ShoppingCart",
-    menuGroup: "operations",
-    requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
-    component: RetailPOS,
-  },
-  {
-    id: "management",
-    moduleId: MODULE_ID,
-    title: "Command Center",
-    route: "/m/retail/management",
+    title: "Store Dashboard",
+    route: "/m/retail/management/dashboard",
     icon: "BarChart3",
     menuGroup: "management",
     requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
-    component: RetailManagement,
+    component: StoreDashboard,
   },
   {
-    id: "verification",
+    id: "mgt-profile",
     moduleId: MODULE_ID,
-    title: "Verification Desk",
-    route: "/m/retail/verification",
-    icon: "ShieldCheck",
-    menuGroup: "operations",
+    title: "Store Profile",
+    route: "/m/retail/management/profile",
+    icon: "Store",
+    menuGroup: "management",
     requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
-    component: RetailVerification,
+    component: StoreProfile,
   },
   {
-    id: "inventory",
+    id: "mgt-staff",
     moduleId: MODULE_ID,
-    title: "Stock & Receiving",
-    route: "/m/retail/inventory",
-    icon: "Package",
-    menuGroup: "operations",
+    title: "Staff Roles",
+    route: "/m/retail/management/staff",
+    icon: "Users",
+    menuGroup: "management",
     requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
-    component: RetailInventory,
+    component: StaffAssignments,
+  },
+  {
+    id: "mgt-shifts",
+    moduleId: MODULE_ID,
+    title: "Shift Control",
+    route: "/m/retail/management/shifts",
+    icon: "Clock",
+    menuGroup: "management",
+    requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
+    component: ShiftControl,
+  },
+
+  {
+    id: "mgt-ecommerce",
+    moduleId: MODULE_ID,
+    title: "E-commerce Hub",
+    route: "/m/retail/management/ecommerce",
+    icon: "ShoppingBag",
+    menuGroup: "management",
+    requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
+    component: EcommerceConnector,
+  },
+  {
+    id: "mgt-orders",
+    moduleId: MODULE_ID,
+    title: "Fulfillment Hub",
+    route: "/m/retail/management/orders",
+    icon: "PackageCheck",
+    menuGroup: "management",
+    requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
+    component: OrderFulfillment,
+  },
+  {
+    id: "mgt-pricing",
+    moduleId: MODULE_ID,
+    title: "Pricing Desk",
+    route: "/m/retail/management/pricing",
+    icon: "Tag",
+    menuGroup: "management",
+    requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
+    component: PricingPromoDesk,
+  },
+  {
+    id: "mgt-inventory",
+    moduleId: MODULE_ID,
+    title: "Inventory Visibility",
+    route: "/m/retail/management/inventory",
+    icon: "Eye",
+    menuGroup: "management",
+    requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
+    component: InventoryVisibility,
+  },
+  {
+    id: "mgt-devices",
+    moduleId: MODULE_ID,
+    title: "Device Control",
+    route: "/m/retail/management/devices",
+    icon: "MonitorRemote",
+    menuGroup: "management",
+    requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
+    component: DeviceControlCenter,
+  },
+  {
+    id: "mgt-audit",
+    moduleId: MODULE_ID,
+    title: "Audit Ledger",
+    route: "/m/retail/management/audit",
+    icon: "FileText",
+    menuGroup: "management",
+    requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
+    component: ComplianceAuditLedger,
+  },
+
+  // --- OPERATIONAL PLANE ---
+  {
+    id: "ops-gateway",
+    moduleId: MODULE_ID,
+    title: "Operational Terminal",
+    route: "/m/retail/operational/gateway",
+    icon: "Monitor",
+    menuGroup: "operational",
+    requiredPermissions: [PERMISSIONS.OPERATIONAL_POS],
+    component: RetailOperationalGateway,
+  },
+  {
+    id: "ops-pos",
+    moduleId: MODULE_ID,
+    title: "Cashier Terminal",
+    route: "/m/retail/operational/pos",
+    icon: "ShoppingCart",
+    menuGroup: "operational",
+    requiredPermissions: [PERMISSIONS.OPERATIONAL_POS],
+    component: CashierPOS,
+    supportedDeviceTypes: ["desktop", "tablet"],
+  },
+  {
+    id: "ops-refund",
+    moduleId: MODULE_ID,
+    title: "Refund Desk",
+    route: "/m/retail/operational/refund",
+    icon: "RotateCcw",
+    menuGroup: "operational",
+    requiredPermissions: [PERMISSIONS.OPERATIONAL_POS],
+    component: RefundReturnDesk,
+  },
+  {
+    id: "ops-opname",
+    moduleId: MODULE_ID,
+    title: "Stock Opname",
+    route: "/m/retail/operational/opname",
+    icon: "ScanLine",
+    menuGroup: "operational",
+    requiredPermissions: [PERMISSIONS.OPERATIONAL_POS],
+    component: StockOpnameScanner,
+    supportedDeviceTypes: ["desktop", "mobile", "tablet"],
+  },
+  {
+    id: "ops-receiving",
+    moduleId: MODULE_ID,
+    title: "Stock Intake",
+    route: "/m/retail/operational/receiving",
+    icon: "Truck",
+    menuGroup: "operational",
+    requiredPermissions: [PERMISSIONS.OPERATIONAL_POS],
+    component: ReceivingTerminal,
+  },
+  {
+    id: "ops-kiosk",
+    moduleId: MODULE_ID,
+    title: "Self-Service Kiosk",
+    route: "/m/retail/operational/kiosk",
+    icon: "Monitor",
+    menuGroup: "operational",
+    requiredPermissions: [PERMISSIONS.OPERATIONAL_POS],
+    component: SelfServiceKiosk,
+    supportedDeviceTypes: ["desktop", "kiosk"],
+  },
+  {
+    id: "ops-shift-close",
+    moduleId: MODULE_ID,
+    title: "Shift Close",
+    route: "/m/retail/operational/shift-close",
+    icon: "Lock",
+    menuGroup: "operational",
+    requiredPermissions: [PERMISSIONS.OPERATIONAL_POS],
+    component: ShiftCloseTerminal,
   },
 ];
 

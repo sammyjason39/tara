@@ -16,6 +16,7 @@ export interface InventoryRepository {
     id: string,
     patch: Partial<InventoryItemMaster>,
   ) => InventoryItemMaster | null;
+  deleteItem: (tenantId: string, id: string) => boolean;
 
   listBalances: (tenantId: string) => InventoryStockBalance[];
   createBalance: (tenantId: string, payload: InventoryStockBalance) => InventoryStockBalance;

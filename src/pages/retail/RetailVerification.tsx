@@ -13,9 +13,16 @@ import {
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 
+interface VerificationResult {
+  status: string;
+  type: string;
+  issuedAt: string;
+  balance: string;
+}
+
 export default function RetailVerification() {
   const [ticketId, setTicketId] = useState("");
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<VerificationResult | null>(null);
 
   const handleVerify = () => {
     if (!ticketId) return;

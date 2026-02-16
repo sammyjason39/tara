@@ -16,7 +16,7 @@ import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { retailService } from "@/core/services/retail/retailService";
-import type { RetailOrder, RetailStore } from "@/core/types/retail/retail";
+import type { RetailOrder, RetailStore, POSDevice } from "@/core/types/retail/retail";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Roles } from "@/core/security/roles";
 
@@ -24,7 +24,7 @@ export default function RetailPOS() {
   const session = useSession();
   const [activeStore, setActiveStore] = useState<RetailStore | null>(null);
   const [stores, setStores] = useState<RetailStore[]>([]);
-  const [devices, setDevices] = useState<any[]>([]);
+  const [devices, setDevices] = useState<POSDevice[]>([]);
   const [activeDeviceId, setActiveDeviceId] = useState("");
   const [cart, setCart] = useState<{ itemId: string; name: string; price: number; quantity: number }[]>([]);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -73,9 +73,9 @@ export default function RetailPOS() {
         setDevices(deviceList);
         if (deviceList.length > 0) setActiveDeviceId(deviceList[0].id);
         setAccessError(null);
-      } catch (err: any) {
+      } catch (err: unknown) {
         setActiveStore(null);
-        setAccessError(err.message);
+        setAccessError(err instanceof Error ? err.message : "Access validation failed");
       }
     }
   };
@@ -103,8 +103,8 @@ export default function RetailPOS() {
       retailService.processPayment(session.tenantId, session, order.id, order.totalAmount, "card");
       setStatusMessage(`Order #${order.id} processed successfully!`);
       setCart([]);
-    } catch (err: any) {
-      setAccessError(err.message);
+    } catch (err: unknown) {
+      setAccessError(err instanceof Error ? err.message : "Checkout failed");
     }
   };
 

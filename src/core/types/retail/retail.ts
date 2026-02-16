@@ -61,3 +61,46 @@ export interface RetailLicense {
   maxStores: number;
   expiryDate: string;
 }
+
+export type PromotionType = "percentage" | "fixed_amount" | "bogo" | "bundle";
+export type PromotionStatus = "draft" | "active" | "scheduled" | "expired";
+
+export interface RetailPromotion extends HRAuditFields {
+  id: string;
+  tenantId: string;
+  title: string;
+  type: PromotionType;
+  value: number;
+  startDate: string;
+  endDate: string;
+  status: PromotionStatus;
+  target?: "all" | "category" | "specific_items";
+  targetIds?: string[];
+}
+
+export type ChannelType = "DIRECT" | "OWNED" | "MARKETPLACE";
+export type ChannelStatus = "active" | "inactive" | "warning";
+
+export interface RetailChannel extends HRAuditFields {
+  id: string;
+  tenantId: string;
+  name: string;
+  type: ChannelType;
+  status: ChannelStatus;
+  syncFrequency: string; // e.g. "5m", "1h"
+  lastSync?: string;
+}
+
+export interface RetailShift extends HRAuditFields {
+  id: string;
+  tenantId: string;
+  storeId: string;
+  employeeId: string;
+  startTime: string;
+  endTime?: string;
+  openingCash: number;
+  closingCash?: number;
+  expectedCash?: number;
+  status: "open" | "closed";
+  notes?: string;
+}

@@ -129,4 +129,10 @@ export const employeeRepo = {
     saveToStorage(key(tenantId), updated);
     return updatedEmployee;
   },
+
+  delete(tenantId: string, employeeId: string): void {
+    const employees = this.list(tenantId);
+    const updated = employees.filter((emp) => emp.id !== employeeId);
+    saveToStorage(key(tenantId), updated);
+  },
 };

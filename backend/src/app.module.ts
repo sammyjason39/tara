@@ -9,6 +9,7 @@ import { ITModule } from './core/it/it.module';
 import { SalesModule } from './core/sales/sales.module';
 import { MarketingModule } from './core/marketing/marketing.module';
 import { PaymentModule } from './core/payment/payment.module';
+import { RetailModule } from './core/retail/retail.module';
 
 /**
  * App Module
@@ -35,6 +36,7 @@ import { PaymentModule } from './core/payment/payment.module';
     SalesModule,
     MarketingModule,
     PaymentModule,
+    RetailModule,
   ],
   controllers: [],
   providers: [],

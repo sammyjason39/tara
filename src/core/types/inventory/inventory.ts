@@ -47,6 +47,7 @@ export type InventoryItemMaster = {
   qrCode: string;
   moduleTags: string[];
   active: boolean;
+  retailPrice?: number;
   createdAt: string;
   updatedAt: string;
 };
