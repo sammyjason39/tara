@@ -2,150 +2,182 @@ generator client {
   provider = "prisma-client-js"
 }
 
-generator backend {
-  provider = "prisma-client-js"
-  output   = "../backend/src/generated/client"
-}
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model Company {
-  id                       String                    @id @default(uuid())
-  name                     String
-  code                     String                    @unique
-  status                   String                    @default("active")
-  createdAt                DateTime                  @default(now()) @map("created_at")
-  updatedAt                DateTime                  @updatedAt @map("updated_at")
-  deletedAt                DateTime?                 @map("deleted_at")
-  attendanceRecords        AttendanceRecord[]
-  auditLogs                AuditLog[]
-  capexRequests            CapexRequest[]
-  contracts                Contract[]
-  departments              Department[]
-  emergencyOverrides       EmergencyOverride[]
-  employees                Employee[]
-  fixedAssets              FixedAsset[]
-  hrCases                  HRCase[]
-  inventoryAdjustments     InventoryAdjustment[]
-  inventoryAlerts          InventoryAlert[]
-  inventoryAuditCycles     InventoryAuditCycle[]
-  inventoryIntegrations    InventoryIntegrationEvent[]
-  jobRequisitions          JobRequisition[]
-  journalEntries           JournalEntry[]
-  leaveRequests            LeaveRequest[]
-  locations                Location[]
-  marketingAccounts        MarketingConnectedAccount[]
-  marketingAlerts          MarketingAlert[]
-  marketingAttributions    MarketingAttribution[]
-  marketingAuditEvents     MarketingAuditEvent[]
-  marketingCampaigns       MarketingCampaign[]
-  marketingExecutions      MarketingExecutionRun[]
-  marketingLeads           MarketingLead[]
-  marketingWorkflows       MarketingNurtureWorkflow[]
-  moneySources             MoneySource[]
-  payables                 Payable[]
-  paymentAuditEvents       PaymentAuditEvent[]
-  paymentChargebacks       PaymentChargeback[]
-  paymentDevicePools       PaymentDevicePool[]
-  paymentDisputes          PaymentDispute[]
-  paymentEvidencePacks     PaymentEvidencePack[]
-  paymentPosDevices        PaymentPosDevice[]
-  paymentProviders         PaymentProvider[]
-  paymentRefunds           PaymentRefund[]
-  paymentRoutingPolicies   PaymentRoutingPolicy[]
+  id                      String                      @id @default(uuid())
+  name                    String
+  code                    String                      @unique
+  status                  String                      @default("active")
+  country                 String                      @default("US")
+  currency                String                      @default("USD")
+  industry                String                      @default("retail")
+  createdAt               DateTime                    @default(now()) @map("created_at")
+  updatedAt               DateTime                    @updatedAt @map("updated_at")
+  deletedAt               DateTime?                   @map("deleted_at")
+  attendanceRecords       AttendanceRecord[]
+  auditLogs               AuditLog[]
+  capexRequests           CapexRequest[]
+  contracts               Contract[]
+  departments             Department[]
+  userCompanies           UserCompany[]
+  emergencyOverrides      EmergencyOverride[]
+  employees               Employee[]
+  fixedAssets             FixedAsset[]
+  hrCases                 HRCase[]
+  inventoryAdjustments    InventoryAdjustment[]
+  inventoryAlerts         InventoryAlert[]
+  inventoryAuditCycles    InventoryAuditCycle[]
+  inventoryIntegrations   InventoryIntegrationEvent[]
+  jobRequisitions         JobRequisition[]
+  journalEntries          JournalEntry[]
+  leaveRequests           LeaveRequest[]
+  locations               Location[]
+  marketingAccounts       MarketingConnectedAccount[]
+  marketingAlerts         MarketingAlert[]
+  marketingAttributions   MarketingAttribution[]
+  marketingAuditEvents    MarketingAuditEvent[]
+  marketingCampaigns      MarketingCampaign[]
+  marketingExecutions     MarketingExecutionRun[]
+  marketingLeads          MarketingLead[]
+  marketingWorkflows      MarketingNurtureWorkflow[]
+  moneySources            MoneySource[]
+  payables                Payable[]
+  paymentAuditEvents      PaymentAuditEvent[]
+  paymentChargebacks      PaymentChargeback[]
+  paymentDevicePools      PaymentDevicePool[]
+  paymentDisputes         PaymentDispute[]
+  paymentEvidencePacks    PaymentEvidencePack[]
+  paymentPosDevices       PaymentPosDevice[]
+  paymentProviders        PaymentProvider[]
+  paymentRefunds          PaymentRefund[]
+  paymentRoutingPolicies  PaymentRoutingPolicy[]
   paymentSettlements      PaymentSettlement[]
   paymentTransactions     PaymentTransaction[]
-  payrollLines             PayrollLine[]
-  payrollRuns              PayrollRun[]
-  performanceCycles        PerformanceCycle[]
-  performanceReviews       PerformanceReview[]
-  posDevices               POSDevice[]
-  itDevices                ITDevice[]
-  itProvisioningRequests   ITProvisioningRequest[]
-  itSettings               ITSetting[]
-  itSystemHealth           ITSystemHealth[]
-  procurementAuditEvents   ProcurementAuditEvent[]
-  procurementContracts     ProcurementContract[]
-  procurementDraftPOs      ProcurementDraftPO[]
-  procurementFinalPOs      ProcurementFinalPO[]
-  procurementRatingLogs    ProcurementRatingLog[]
-  procurementReceipts      ProcurementReceipt[]
-  procurementRequisitions  ProcurementRequisition[]
-  procurementRiskSignals   ProcurementRiskSignal[]
-  productCategories        ProductCategory[]
-  products                 Product[]
-  receivables              Receivable[]
-  retailChannels           RetailChannel[]
-  retailCustomerSessions   RetailCustomerSession[]
-  retailCarts              RetailCart[]
-  retailWishlists          RetailWishlist[]
-  ecommerceConnectors      EcommerceConnector[]
-  retailCustomers          RetailCustomer[]
-  retailOrders             RetailOrder[]
-  retailPromotions         RetailPromotion[]
-  retailShifts             RetailShift[]
-  retailGatewayNodes       RetailGatewayNode[]
-  retailLoadBalancers      RetailLoadBalancer[]
-  inventoryPools           InventoryPool[]
-  salesAlerts              SalesAlert[]
-  salesAuditEvents         SalesAuditEvent[]
-  salesLeads               SalesLead[]
-  salesOpportunities       SalesOpportunity[]
-  salesOrders              SalesOrder[]
-  salesQuotes              SalesQuote[]
-  salesTasks               SalesTask[]
-  salesTimelineEvents      SalesTimelineEvent[]
-  scheduleAssignments      ScheduleAssignment[]
-  settlementRecords        SettlementRecord[]
-  shiftSwapRequests        ShiftSwapRequest[]
-  shifts                   Shift[]
-  stockLevels              StockLevel[]
-  stockMovements           StockMovement[]
-  stores                   Store[]
-  supplierBranches         SupplierBranch[]
-  supplierMasters          SupplierMaster[]
-  supplierPortalMessages   SupplierPortalMessage[]
-  supplierProducts         SupplierProduct[]
-  trainingAssignments      TrainingAssignment[]
-  trainingPrograms         TrainingProgram[]
-  treasuryTransfers        TreasuryTransfer[]
+  payrollLines            PayrollLine[]
+  payrollRuns             PayrollRun[]
+  performanceCycles       PerformanceCycle[]
+  performanceReviews      PerformanceReview[]
+  posDevices              POSDevice[]
+  itDevices               ITDevice[]
+  itProvisioningRequests  ITProvisioningRequest[]
+  itSettings              ITSetting[]
+  itSystemHealth          ITSystemHealth[]
+  procurementAuditEvents  ProcurementAuditEvent[]
+  procurementContracts    ProcurementContract[]
+  procurementDraftPOs     ProcurementDraftPO[]
+  procurementFinalPOs     ProcurementFinalPO[]
+  procurementRatingLogs   ProcurementRatingLog[]
+  procurementReceipts     ProcurementReceipt[]
+  procurementRequisitions ProcurementRequisition[]
+  procurementRiskSignals  ProcurementRiskSignal[]
+  productCategories       ProductCategory[]
+  products                Product[]
+  receivables             Receivable[]
+  retailChannels          RetailChannel[]
+  retailCustomerSessions  RetailCustomerSession[]
+  retailCarts             RetailCart[]
+  retailWishlists         RetailWishlist[]
+  ecommerceConnectors     EcommerceConnector[]
+  retailCustomers         RetailCustomer[]
+  retailOrders            RetailOrder[]
+  retailPromotions        RetailPromotion[]
+  retailShifts            RetailShift[]
+  retailGatewayNodes      RetailGatewayNode[]
+  retailLoadBalancers     RetailLoadBalancer[]
+  inventoryPools          InventoryPool[]
+  salesAlerts             SalesAlert[]
+  salesAuditEvents        SalesAuditEvent[]
+  salesLeads              SalesLead[]
+  salesOpportunities      SalesOpportunity[]
+  salesOrders             SalesOrder[]
+  salesQuotes             SalesQuote[]
+  salesTasks              SalesTask[]
+  salesTimelineEvents     SalesTimelineEvent[]
+  scheduleAssignments     ScheduleAssignment[]
+  settlementRecords       SettlementRecord[]
+  shiftSwapRequests       ShiftSwapRequest[]
+  shifts                  Shift[]
+  stockLevels             StockLevel[]
+  stockMovements          StockMovement[]
+  stores                  Store[]
+  supplierBranches        SupplierBranch[]
+  supplierMasters         SupplierMaster[]
+  supplierPortalMessages  SupplierPortalMessage[]
+  supplierProducts        SupplierProduct[]
+  trainingAssignments     TrainingAssignment[]
+  trainingPrograms        TrainingProgram[]
+  treasuryTransfers       TreasuryTransfer[]
 
   @@index([status])
   @@map("companies")
 }
 
+model User {
+  id            String        @id @default(uuid())
+  email         String        @unique
+  passwordHash  String        @map("password_hash")
+  firstName     String        @map("first_name")
+  lastName      String        @map("last_name")
+  phone         String?
+  status        String        @default("active")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  userCompanies UserCompany[]
+
+  @@map("users")
+}
+
+model UserCompany {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  tenantId String   @map("tenant_id")
+  role      String   @default("ADMIN") // OWNER, ADMIN, MEMBER
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+  @@map("user_companies")
+}
+
 model Location {
-  id                  String               @id @default(uuid())
-  companyId           String               @map("company_id")
-  name                String
-  code                String
-  address             String?
-  type                String
-  createdAt           DateTime             @default(now()) @map("created_at")
-  updatedAt           DateTime             @updatedAt @map("updated_at")
-  deletedAt           DateTime?            @map("deleted_at")
-  attendanceRecords   AttendanceRecord[]
-  employees           Employee[]
-  company             Company              @relation(fields: [companyId], references: [id])
-  scheduleAssignments ScheduleAssignment[]
-  stockLevels         StockLevel[]
-  stores              Store[]
-  itDevices           ITDevice[]
-  fromMovements       StockMovement[]      @relation("FromLocation")
-  toMovements         StockMovement[]      @relation("ToLocation")
+  id                   String                @id @default(uuid())
+  tenantId            String                @map("tenant_id")
+  name                 String
+  code                 String
+  address              String?
+  type                 String
+  country              String?
+  currency             String?
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @updatedAt @map("updated_at")
+  deletedAt            DateTime?             @map("deleted_at")
+  attendanceRecords    AttendanceRecord[]
+  employees            Employee[]
+  company              Company               @relation(fields: [tenantId], references: [id])
+  scheduleAssignments  ScheduleAssignment[]
+  stockLevels          StockLevel[]
+  stores               Store[]
+  itDevices            ITDevice[]
+  fromMovements        StockMovement[]       @relation("FromLocation")
+  toMovements          StockMovement[]       @relation("ToLocation")
   inventoryAdjustments InventoryAdjustment[]
 
-  @@unique([companyId, code])
-  @@index([companyId])
+  @@unique([tenantId, code])
+  @@index([tenantId])
   @@map("locations")
 }
 
 model Department {
   id                      String                   @id @default(uuid())
-  companyId               String                   @map("company_id")
+  tenantId               String                   @map("tenant_id")
   name                    String
   code                    String
   headId                  String?                  @map("head_id")
@@ -154,7 +186,7 @@ model Department {
   createdAt               DateTime                 @default(now()) @map("created_at")
   updatedAt               DateTime                 @updatedAt @map("updated_at")
   deletedAt               DateTime?                @map("deleted_at")
-  company                 Company                  @relation(fields: [companyId], references: [id])
+  company                 Company                  @relation(fields: [tenantId], references: [id])
   employees               Employee[]
   hrCases                 HRCase[]
   jobRequisitions         JobRequisition[]
@@ -162,18 +194,18 @@ model Department {
   procurementRequisitions ProcurementRequisition[]
   stockLevels             StockLevel[]
   inventoryAdjustments    InventoryAdjustment[]
-  fromMovements           StockMovement[]           @relation("FromDepartment")
-  toMovements             StockMovement[]           @relation("ToDepartment")
+  fromMovements           StockMovement[]          @relation("FromDepartment")
+  toMovements             StockMovement[]          @relation("ToDepartment")
 
-  @@unique([companyId, code])
-  @@index([companyId])
+  @@unique([tenantId, code])
+  @@index([tenantId])
   @@index([status])
   @@map("departments")
 }
 
 model Employee {
   id                      String                   @id @default(uuid())
-  companyId               String                   @map("company_id")
+  tenantId               String                   @map("tenant_id")
   locationId              String                   @map("location_id")
   departmentId            String                   @map("department_id")
   firstName               String                   @map("first_name")
@@ -195,7 +227,7 @@ model Employee {
   deletedAt               DateTime?                @map("deleted_at")
   attendanceRecords       AttendanceRecord[]
   contracts               Contract[]
-  company                 Company                  @relation(fields: [companyId], references: [id])
+  company                 Company                  @relation(fields: [tenantId], references: [id])
   department              Department               @relation(fields: [departmentId], references: [id])
   location                Location                 @relation(fields: [locationId], references: [id])
   hrCases                 HRCase[]
@@ -209,11 +241,11 @@ model Employee {
   scheduleAssignments     ScheduleAssignment[]
   managedStores           Store[]
   trainingAssignments     TrainingAssignment[]
-  itDevices                ITDevice[]
-  itProvisioningRequests   ITProvisioningRequest[]
+  itDevices               ITDevice[]
+  itProvisioningRequests  ITProvisioningRequest[]
 
-  @@unique([companyId, employeeCode])
-  @@index([companyId])
+  @@unique([tenantId, employeeCode])
+  @@index([tenantId])
   @@index([locationId])
   @@index([departmentId])
   @@index([status])
@@ -223,7 +255,7 @@ model Employee {
 
 model AttendanceRecord {
   id                  String   @id @default(uuid())
-  companyId           String   @map("company_id")
+  tenantId           String   @map("tenant_id")
   employeeId          String   @map("employee_id")
   locationId          String   @map("location_id")
   date                DateTime
@@ -238,12 +270,12 @@ model AttendanceRecord {
   workDurationMinutes Int      @default(0) @map("work_duration_minutes")
   checkIn             Json?    @map("check_in")
   checkOut            Json?    @map("check_out")
-  company             Company  @relation(fields: [companyId], references: [id])
+  company             Company  @relation(fields: [tenantId], references: [id])
   employee            Employee @relation(fields: [employeeId], references: [id])
   location            Location @relation(fields: [locationId], references: [id])
   shift               Shift?   @relation(fields: [shiftId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([employeeId])
   @@index([date])
   @@map("attendance_records")
@@ -251,7 +283,7 @@ model AttendanceRecord {
 
 model LeaveRequest {
   id           String     @id @default(uuid())
-  companyId    String     @map("company_id")
+  tenantId    String     @map("tenant_id")
   employeeId   String     @map("employee_id")
   startDate    DateTime   @map("start_date")
   endDate      DateTime   @map("end_date")
@@ -264,11 +296,11 @@ model LeaveRequest {
   approvalId   String?    @map("approval_id")
   departmentId String     @map("department_id")
   type         String
-  company      Company    @relation(fields: [companyId], references: [id])
+  company      Company    @relation(fields: [tenantId], references: [id])
   department   Department @relation(fields: [departmentId], references: [id])
   employee     Employee   @relation(fields: [employeeId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([employeeId])
   @@index([status])
   @@map("leave_requests")
@@ -276,7 +308,7 @@ model LeaveRequest {
 
 model PayrollRun {
   id             String        @id @default(uuid())
-  companyId      String        @map("company_id")
+  tenantId      String        @map("tenant_id")
   periodStart    DateTime      @map("period_start")
   periodEnd      DateTime      @map("period_end")
   payDate        DateTime?     @map("pay_date")
@@ -290,9 +322,9 @@ model PayrollRun {
   totalGrossPay  Decimal       @default(0) @map("total_gross_pay") @db.Decimal(15, 2)
   totalNetPay    Decimal       @default(0) @map("total_net_pay") @db.Decimal(15, 2)
   lines          PayrollLine[]
-  company        Company       @relation(fields: [companyId], references: [id])
+  company        Company       @relation(fields: [tenantId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([status])
   @@index([periodStart, periodEnd])
   @@map("payroll_runs")
@@ -300,7 +332,7 @@ model PayrollRun {
 
 model PayrollLine {
   id           String     @id @default(uuid())
-  companyId    String     @map("company_id")
+  tenantId    String     @map("tenant_id")
   payrollRunId String     @map("payroll_run_id")
   employeeId   String     @map("employee_id")
   grossPay     Decimal    @map("gross_pay") @db.Decimal(15, 2)
@@ -308,11 +340,11 @@ model PayrollLine {
   adjustments  Decimal    @default(0) @map("adjustments") @db.Decimal(15, 2)
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
-  company      Company    @relation(fields: [companyId], references: [id])
+  company      Company    @relation(fields: [tenantId], references: [id])
   employee     Employee   @relation(fields: [employeeId], references: [id])
   payrollRun   PayrollRun @relation(fields: [payrollRunId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([payrollRunId])
   @@index([employeeId])
   @@map("payroll_lines")
@@ -320,7 +352,7 @@ model PayrollLine {
 
 model Contract {
   id         String    @id @default(uuid())
-  companyId  String    @map("company_id")
+  tenantId  String    @map("tenant_id")
   employeeId String?   @map("employee_id")
   title      String
   type       String
@@ -330,10 +362,10 @@ model Contract {
   url        String?
   createdAt  DateTime  @default(now()) @map("created_at")
   updatedAt  DateTime  @updatedAt @map("updated_at")
-  company    Company   @relation(fields: [companyId], references: [id])
+  company    Company   @relation(fields: [tenantId], references: [id])
   employee   Employee? @relation(fields: [employeeId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([employeeId])
   @@index([status])
   @@map("contracts")
@@ -341,7 +373,7 @@ model Contract {
 
 model PerformanceCycle {
   id        String              @id @default(uuid())
-  companyId String              @map("company_id")
+  tenantId String              @map("tenant_id")
   name      String
   status    String              @default("active")
   startDate DateTime            @map("start_date")
@@ -349,17 +381,17 @@ model PerformanceCycle {
   dueDate   DateTime            @map("due_date")
   createdAt DateTime            @default(now()) @map("created_at")
   updatedAt DateTime            @updatedAt @map("updated_at")
-  company   Company             @relation(fields: [companyId], references: [id])
+  company   Company             @relation(fields: [tenantId], references: [id])
   reviews   PerformanceReview[]
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([status])
   @@map("performance_cycles")
 }
 
 model PerformanceReview {
   id         String           @id @default(uuid())
-  companyId  String           @map("company_id")
+  tenantId  String           @map("tenant_id")
   cycleId    String           @map("cycle_id")
   employeeId String           @map("employee_id")
   reviewerId String           @map("reviewer_id")
@@ -368,12 +400,12 @@ model PerformanceReview {
   comments   String?
   createdAt  DateTime         @default(now()) @map("created_at")
   updatedAt  DateTime         @updatedAt @map("updated_at")
-  company    Company          @relation(fields: [companyId], references: [id])
+  company    Company          @relation(fields: [tenantId], references: [id])
   cycle      PerformanceCycle @relation(fields: [cycleId], references: [id])
   employee   Employee         @relation("SubjectEmployee", fields: [employeeId], references: [id])
   reviewer   Employee         @relation("ReviewerEmployee", fields: [reviewerId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([cycleId])
   @@index([employeeId])
   @@map("performance_reviews")
@@ -381,24 +413,24 @@ model PerformanceReview {
 
 model JobRequisition {
   id           String      @id @default(uuid())
-  companyId    String      @map("company_id")
+  tenantId    String      @map("tenant_id")
   departmentId String?     @map("department_id")
   title        String
   status       String      @default("open")
   openings     Int         @default(1)
   createdAt    DateTime    @default(now()) @map("created_at")
   updatedAt    DateTime    @updatedAt @map("updated_at")
-  company      Company     @relation(fields: [companyId], references: [id])
+  company      Company     @relation(fields: [tenantId], references: [id])
   department   Department? @relation(fields: [departmentId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([status])
   @@map("job_requisitions")
 }
 
 model Shift {
   id                String               @id @default(uuid())
-  companyId         String               @map("company_id")
+  tenantId         String               @map("tenant_id")
   name              String
   startTime         String               @map("start_time")
   endTime           String               @map("end_time")
@@ -409,62 +441,62 @@ model Shift {
   updatedAt         DateTime             @updatedAt @map("updated_at")
   attendanceRecords AttendanceRecord[]
   assignments       ScheduleAssignment[]
-  company           Company              @relation(fields: [companyId], references: [id])
+  company           Company              @relation(fields: [tenantId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@map("shifts")
 }
 
 model ScheduleAssignment {
   id            String   @id @default(uuid())
-  companyId     String   @map("company_id")
+  tenantId     String   @map("tenant_id")
   employeeId    String   @map("employee_id")
   shiftId       String   @map("shift_id")
   locationId    String   @map("location_id")
   effectiveDate DateTime @map("effective_date")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
-  company       Company  @relation(fields: [companyId], references: [id])
+  company       Company  @relation(fields: [tenantId], references: [id])
   employee      Employee @relation(fields: [employeeId], references: [id])
   location      Location @relation(fields: [locationId], references: [id])
   shift         Shift    @relation(fields: [shiftId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([employeeId])
   @@map("schedule_assignments")
 }
 
 model ShiftSwapRequest {
   id          String   @id @default(uuid())
-  companyId   String   @map("company_id")
+  tenantId   String   @map("tenant_id")
   requesterId String   @map("requester_id")
   targetId    String   @map("target_id")
   shiftId     String   @map("shift_id")
   status      String   @default("pending")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
-  company     Company  @relation(fields: [companyId], references: [id])
+  company     Company  @relation(fields: [tenantId], references: [id])
 
   @@map("shift_swap_requests")
 }
 
 model EmergencyOverride {
   id         String   @id @default(uuid())
-  companyId  String   @map("company_id")
+  tenantId  String   @map("tenant_id")
   employeeId String   @map("employee_id")
   reason     String
   startDate  DateTime @map("start_date")
   endDate    DateTime @map("end_date")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
-  company    Company  @relation(fields: [companyId], references: [id])
+  company    Company  @relation(fields: [tenantId], references: [id])
 
   @@map("emergency_overrides")
 }
 
 model TrainingProgram {
   id             String               @id @default(uuid())
-  companyId      String               @map("company_id")
+  tenantId      String               @map("tenant_id")
   name           String
   status         String               @default("active")
   completionRate Float                @default(0) @map("completion_rate")
@@ -472,15 +504,15 @@ model TrainingProgram {
   createdAt      DateTime             @default(now()) @map("created_at")
   updatedAt      DateTime             @updatedAt @map("updated_at")
   assignments    TrainingAssignment[]
-  company        Company              @relation(fields: [companyId], references: [id])
+  company        Company              @relation(fields: [tenantId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@map("training_programs")
 }
 
 model TrainingAssignment {
   id          String          @id @default(uuid())
-  companyId   String          @map("company_id")
+  tenantId   String          @map("tenant_id")
   programId   String          @map("program_id")
   employeeId  String          @map("employee_id")
   status      String          @default("in_progress")
@@ -488,11 +520,11 @@ model TrainingAssignment {
   completedAt DateTime?       @map("completed_at")
   createdAt   DateTime        @default(now()) @map("created_at")
   updatedAt   DateTime        @updatedAt @map("updated_at")
-  company     Company         @relation(fields: [companyId], references: [id])
+  company     Company         @relation(fields: [tenantId], references: [id])
   employee    Employee        @relation(fields: [employeeId], references: [id])
   program     TrainingProgram @relation(fields: [programId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([programId])
   @@index([employeeId])
   @@map("training_assignments")
@@ -500,7 +532,7 @@ model TrainingAssignment {
 
 model HRCase {
   id           String      @id @default(uuid())
-  companyId    String      @map("company_id")
+  tenantId    String      @map("tenant_id")
   employeeId   String      @map("employee_id")
   departmentId String?     @map("department_id")
   title        String
@@ -510,69 +542,71 @@ model HRCase {
   ownerId      String?     @map("owner_id")
   createdAt    DateTime    @default(now()) @map("created_at")
   updatedAt    DateTime    @updatedAt @map("updated_at")
-  company      Company     @relation(fields: [companyId], references: [id])
+  company      Company     @relation(fields: [tenantId], references: [id])
   department   Department? @relation(fields: [departmentId], references: [id])
   employee     Employee    @relation(fields: [employeeId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([employeeId])
   @@index([status])
   @@map("hr_cases")
 }
 
 model Store {
-  id               String              @id @default(uuid())
-  companyId        String              @map("company_id")
-  locationId       String              @map("location_id")
-  name             String
-  code             String
-  type             String
-  status           String              @default("active")
-  settings         Json?               @map("settings")
-  createdAt        DateTime            @default(now()) @map("created_at")
-  updatedAt        DateTime            @updatedAt @map("updated_at")
-  deletedAt        DateTime?           @map("deleted_at")
-  managerId        String?             @map("manager_id")
-  phone            String?
-  email            String?
-  timezone         String?             @default("Asia/Jakarta")
-  operatingHours   Json?               @map("operating_hours")
-  inventoryPoolId  String?             @map("inventory_pool_id")
-  devices          POSDevice[]
-  orders           RetailOrder[]
-  shifts           RetailShift[]
-  company          Company             @relation(fields: [companyId], references: [id])
-  location         Location            @relation(fields: [locationId], references: [id])
-  manager          Employee?           @relation(fields: [managerId], references: [id])
-  inventoryPool    InventoryPool?      @relation(fields: [inventoryPoolId], references: [id])
-  ecommerceStores  EcommerceConnector[] @relation("EcommerceBranchLinks")
+  id              String               @id @default(uuid())
+  tenantId       String               @map("tenant_id")
+  locationId      String               @map("location_id")
+  name            String
+  code            String
+  type            String
+  status          String               @default("active")
+  country         String?
+  currency        String?
+  settings        Json?                @map("settings")
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+  deletedAt       DateTime?            @map("deleted_at")
+  managerId       String?              @map("manager_id")
+  phone           String?
+  email           String?
+  timezone        String?              @default("Asia/Jakarta")
+  operatingHours  Json?                @map("operating_hours")
+  inventoryPoolId String?              @map("inventory_pool_id")
+  devices         POSDevice[]
+  orders          RetailOrder[]
+  shifts          RetailShift[]
+  company         Company              @relation(fields: [tenantId], references: [id])
+  location        Location             @relation(fields: [locationId], references: [id])
+  manager         Employee?            @relation(fields: [managerId], references: [id])
+  inventoryPool   InventoryPool?       @relation(fields: [inventoryPoolId], references: [id])
+  ecommerceStores EcommerceConnector[] @relation("EcommerceBranchLinks")
 
-  @@unique([companyId, code])
-  @@index([companyId])
+  @@unique([tenantId, code])
+  @@index([tenantId])
   @@index([locationId])
   @@index([status])
   @@map("stores")
 }
 
 model EcommerceConnector {
-  id              String    @id @default(uuid())
-  companyId       String    @map("company_id")
-  name            String    @default("")
-  platform        String    @default("custom")
+  id              String         @id @default(uuid())
+  tenantId       String         @map("tenant_id")
+  name            String         @default("")
+  platform        String         @default("custom")
   domain          String
-  apiKey          String    @unique @map("api_key")
-  status          String    @default("active")
-  settings        Json?     @map("settings")
-  inventoryPoolId String?   @map("inventory_pool_id")
-  managerId       String?   @map("manager_id")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  deletedAt       DateTime? @map("deleted_at")
-  company         Company   @relation(fields: [companyId], references: [id])
+  apiKey          String         @unique @map("api_key")
+  status          String         @default("active")
+  settings        Json?          @map("settings")
+  inventoryPoolId String?        @map("inventory_pool_id")
+  managerId       String?        @map("manager_id")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  deletedAt       DateTime?      @map("deleted_at")
+  company         Company        @relation(fields: [tenantId], references: [id])
   inventoryPool   InventoryPool? @relation(fields: [inventoryPoolId], references: [id])
-  branches        Store[]   @relation("EcommerceBranchLinks")
+  branches        Store[]        @relation("EcommerceBranchLinks")
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([apiKey])
   @@index([status])
   @@map("ecommerce_connectors")
@@ -580,40 +614,40 @@ model EcommerceConnector {
 
 model ProductCategory {
   id        String            @id @default(uuid())
-  companyId String            @map("company_id")
+  tenantId String            @map("tenant_id")
   name      String
   parentId  String?           @map("parent_id")
   icon      String?
   createdAt DateTime          @default(now()) @map("created_at")
   updatedAt DateTime          @updatedAt @map("updated_at")
-  company   Company           @relation(fields: [companyId], references: [id])
+  company   Company           @relation(fields: [tenantId], references: [id])
   parent    ProductCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children  ProductCategory[] @relation("CategoryHierarchy")
   products  Product[]
 
-  @@index([companyId])
-  @@unique([companyId, name])
+  @@unique([tenantId, name])
+  @@index([tenantId])
   @@map("product_categories")
 }
 
 model Product {
-  id          String            @id @default(uuid())
-  companyId   String            @map("company_id")
-  categoryId  String            @map("category_id")
-  name        String
-  sku         String
-  barcode     String
-  description String?
-  unit        String
-  basePrice   Decimal           @map("base_price") @db.Decimal(15, 2)
-  taxRate     Decimal           @default(0.11) @map("tax_rate") @db.Decimal(5, 2)
-  imageUrl    String?           @map("image_url")
-  moduleTags  String[]          @default([]) @map("module_tags")
-  status      String            @default("active")
-  createdAt   DateTime          @default(now()) @map("created_at")
-  updatedAt   DateTime          @updatedAt @map("updated_at")
-  category    ProductCategory   @relation(fields: [categoryId], references: [id])
-  company     Company           @relation(fields: [companyId], references: [id])
+  id            String                @id @default(uuid())
+  tenantId     String                @map("tenant_id")
+  categoryId    String                @map("category_id")
+  name          String
+  sku           String
+  barcode       String
+  description   String?
+  unit          String
+  basePrice     Decimal               @map("base_price") @db.Decimal(15, 2)
+  taxRate       Decimal               @default(0.11) @map("tax_rate") @db.Decimal(5, 2)
+  imageUrl      String?               @map("image_url")
+  moduleTags    String[]              @default([]) @map("module_tags")
+  status        String                @default("active")
+  createdAt     DateTime              @default(now()) @map("created_at")
+  updatedAt     DateTime              @updatedAt @map("updated_at")
+  category      ProductCategory       @relation(fields: [categoryId], references: [id])
+  company       Company               @relation(fields: [tenantId], references: [id])
   orderItems    RetailOrderItem[]
   stockLevels   StockLevel[]
   cartItems     RetailCartItem[]
@@ -622,100 +656,100 @@ model Product {
   movements     StockMovement[]
   adjustments   InventoryAdjustment[]
 
-  @@unique([companyId, sku])
-  @@unique([companyId, barcode])
-  @@index([companyId])
+  @@unique([tenantId, sku])
+  @@unique([tenantId, barcode])
+  @@index([tenantId])
   @@index([categoryId])
   @@map("products")
 }
 
 model StockLevel {
-  id              String    @id @default(uuid())
-  companyId       String    @map("company_id")
-  locationId      String    @map("location_id")
-  productId       String    @map("product_id")
-  departmentId    String?   @map("department_id")
-  onHand          Float     @default(0) @map("on_hand")
-  reserved        Float     @default(0)
-  available       Float     @default(0)
-  minBuffer       Float     @default(0) @map("min_buffer")
-  maxCapacity     Float     @default(0) @map("max_capacity")
-  lastStockTakeAt DateTime? @map("last_stock_take_at")
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-  company         Company   @relation(fields: [companyId], references: [id])
-  location        Location  @relation(fields: [locationId], references: [id])
+  id              String      @id @default(uuid())
+  tenantId       String      @map("tenant_id")
+  locationId      String      @map("location_id")
+  productId       String      @map("product_id")
+  departmentId    String?     @map("department_id")
+  onHand          Float       @default(0) @map("on_hand")
+  reserved        Float       @default(0)
+  available       Float       @default(0)
+  minBuffer       Float       @default(0) @map("min_buffer")
+  maxCapacity     Float       @default(0) @map("max_capacity")
+  lastStockTakeAt DateTime?   @map("last_stock_take_at")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  company         Company     @relation(fields: [tenantId], references: [id])
+  location        Location    @relation(fields: [locationId], references: [id])
   department      Department? @relation(fields: [departmentId], references: [id])
-  product         Product   @relation(fields: [productId], references: [id])
+  product         Product     @relation(fields: [productId], references: [id])
 
   @@unique([locationId, productId, departmentId])
-  @@index([companyId])
+  @@index([tenantId])
   @@map("stock_levels")
 }
 
 model StockMovement {
-  id             String   @id @default(uuid())
-  companyId      String   @map("company_id")
-  productId      String   @map("product_id")
-  fromLocationId   String?  @map("from_location_id")
-  fromDepartmentId String?  @map("from_department_id")
-  toLocationId     String?  @map("to_location_id")
-  toDepartmentId   String?  @map("to_department_id")
+  id               String      @id @default(uuid())
+  tenantId        String      @map("tenant_id")
+  productId        String      @map("product_id")
+  fromLocationId   String?     @map("from_location_id")
+  fromDepartmentId String?     @map("from_department_id")
+  toLocationId     String?     @map("to_location_id")
+  toDepartmentId   String?     @map("to_department_id")
   quantity         Float
-  unitCost         Decimal  @default(0) @map("unit_cost") @db.Decimal(15, 2)
+  unitCost         Decimal     @default(0) @map("unit_cost") @db.Decimal(15, 2)
   type             String
-  referenceId      String   @map("reference_id")
-  performedBy      String   @map("performed_by")
-  createdAt      DateTime @default(now()) @map("created_at")
-  company        Company  @relation(fields: [companyId], references: [id])
-  product        Product  @relation(fields: [productId], references: [id])
-  fromLocation   Location? @relation("FromLocation", fields: [fromLocationId], references: [id])
-  toLocation     Location? @relation("ToLocation", fields: [toLocationId], references: [id])
-  fromDepartment Department? @relation("FromDepartment", fields: [fromDepartmentId], references: [id])
-  toDepartment   Department? @relation("ToDepartment", fields: [toDepartmentId], references: [id])
+  referenceId      String      @map("reference_id")
+  performedBy      String      @map("performed_by")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  company          Company     @relation(fields: [tenantId], references: [id])
+  product          Product     @relation(fields: [productId], references: [id])
+  fromLocation     Location?   @relation("FromLocation", fields: [fromLocationId], references: [id])
+  toLocation       Location?   @relation("ToLocation", fields: [toLocationId], references: [id])
+  fromDepartment   Department? @relation("FromDepartment", fields: [fromDepartmentId], references: [id])
+  toDepartment     Department? @relation("ToDepartment", fields: [toDepartmentId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([productId])
   @@index([referenceId])
   @@map("stock_movements")
 }
 
 model RetailCustomer {
-  id        String        @id @default(uuid())
-  companyId String        @map("company_id")
+  id        String                  @id @default(uuid())
+  tenantId String                  @map("tenant_id")
   name      String
   email     String?
   phone     String?
   address   String?
-  tier      String        @default("regular")
-  points    Int           @default(0)
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime      @updatedAt @map("updated_at")
-  company   Company       @relation(fields: [companyId], references: [id])
+  tier      String                  @default("regular")
+  points    Int                     @default(0)
+  createdAt DateTime                @default(now()) @map("created_at")
+  updatedAt DateTime                @updatedAt @map("updated_at")
+  company   Company                 @relation(fields: [tenantId], references: [id])
   orders    RetailOrder[]
   auth      RetailCustomerAuth?
   sessions  RetailCustomerSession[]
   cart      RetailCart?
   wishlist  RetailWishlist?
 
-  @@unique([companyId, email])
-  @@unique([companyId, phone])
-  @@index([companyId])
+  @@unique([tenantId, email])
+  @@unique([tenantId, phone])
+  @@index([tenantId])
   @@map("retail_customers")
 }
 
 model RetailCart {
-  id         String         @id @default(uuid())
-  companyId  String         @map("company_id")
-  customerId String         @unique @map("customer_id")
-  status     String         @default("active")
-  createdAt  DateTime       @default(now()) @map("created_at")
-  updatedAt  DateTime       @updatedAt @map("updated_at")
-  customer   RetailCustomer @relation(fields: [customerId], references: [id])
-  company    Company        @relation(fields: [companyId], references: [id])
+  id         String           @id @default(uuid())
+  tenantId  String           @map("tenant_id")
+  customerId String           @unique @map("customer_id")
+  status     String           @default("active")
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+  customer   RetailCustomer   @relation(fields: [customerId], references: [id])
+  company    Company          @relation(fields: [tenantId], references: [id])
   items      RetailCartItem[]
 
-  @@index([companyId])
+  @@index([tenantId])
   @@map("retail_carts")
 }
 
@@ -736,16 +770,16 @@ model RetailCartItem {
 }
 
 model RetailWishlist {
-  id         String         @id @default(uuid())
-  companyId  String         @map("company_id")
-  customerId String         @unique @map("customer_id")
-  createdAt  DateTime       @default(now()) @map("created_at")
-  updatedAt  DateTime       @updatedAt @map("updated_at")
-  customer   RetailCustomer @relation(fields: [customerId], references: [id])
-  company    Company        @relation(fields: [companyId], references: [id])
+  id         String               @id @default(uuid())
+  tenantId  String               @map("tenant_id")
+  customerId String               @unique @map("customer_id")
+  createdAt  DateTime             @default(now()) @map("created_at")
+  updatedAt  DateTime             @updatedAt @map("updated_at")
+  customer   RetailCustomer       @relation(fields: [customerId], references: [id])
+  company    Company              @relation(fields: [tenantId], references: [id])
   items      RetailWishlistItem[]
 
-  @@index([companyId])
+  @@index([tenantId])
   @@map("retail_wishlists")
 }
 
@@ -764,43 +798,43 @@ model RetailWishlistItem {
 }
 
 model RetailCustomerAuth {
-  id                String   @id @default(uuid())
-  customerId        String   @unique @map("customer_id")
-  passwordHash      String   @map("password_hash")
-  failedAttempts    Int      @default(0) @map("failed_attempts")
-  lastFailedAt      DateTime? @map("last_failed_at")
-  lockedUntil       DateTime? @map("locked_until")
-  passwordUpdatedAt DateTime  @map("password_updated_at")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+  id                String         @id @default(uuid())
+  customerId        String         @unique @map("customer_id")
+  passwordHash      String         @map("password_hash")
+  failedAttempts    Int            @default(0) @map("failed_attempts")
+  lastFailedAt      DateTime?      @map("last_failed_at")
+  lockedUntil       DateTime?      @map("locked_until")
+  passwordUpdatedAt DateTime       @map("password_updated_at")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
   customer          RetailCustomer @relation(fields: [customerId], references: [id])
 
   @@map("retail_customer_auth")
 }
 
 model RetailCustomerSession {
-  id         String   @id @default(uuid())
-  customerId String   @map("customer_id")
-  companyId  String   @map("company_id")
-  tokenHash  String   @map("token_hash")
-  expiresAt  DateTime @map("expires_at")
-  revokedAt  DateTime? @map("revoked_at")
-  ipAddress  String?  @map("ip_address")
-  userAgent  String?  @map("user_agent")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id         String         @id @default(uuid())
+  customerId String         @map("customer_id")
+  tenantId  String         @map("tenant_id")
+  tokenHash  String         @map("token_hash")
+  expiresAt  DateTime       @map("expires_at")
+  revokedAt  DateTime?      @map("revoked_at")
+  ipAddress  String?        @map("ip_address")
+  userAgent  String?        @map("user_agent")
+  createdAt  DateTime       @default(now()) @map("created_at")
+  updatedAt  DateTime       @updatedAt @map("updated_at")
   customer   RetailCustomer @relation(fields: [customerId], references: [id])
-  company    Company  @relation(fields: [companyId], references: [id])
+  company    Company        @relation(fields: [tenantId], references: [id])
 
   @@index([customerId])
-  @@index([companyId])
+  @@index([tenantId])
   @@index([expiresAt])
   @@map("retail_customer_sessions")
 }
 
 model POSDevice {
   id         String        @id @default(uuid())
-  companyId  String        @map("company_id")
+  tenantId  String        @map("tenant_id")
   storeId    String        @map("store_id")
   name       String
   type       String
@@ -808,18 +842,18 @@ model POSDevice {
   macAddress String?       @map("mac_address")
   createdAt  DateTime      @default(now()) @map("created_at")
   updatedAt  DateTime      @updatedAt @map("updated_at")
-  company    Company       @relation(fields: [companyId], references: [id])
+  company    Company       @relation(fields: [tenantId], references: [id])
   store      Store         @relation(fields: [storeId], references: [id])
   orders     RetailOrder[]
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([storeId])
   @@map("pos_devices")
 }
 
 model RetailPromotion {
   id        String   @id @default(uuid())
-  companyId String   @map("company_id")
+  tenantId String   @map("tenant_id")
   title     String
   type      String
   value     Decimal  @db.Decimal(15, 2)
@@ -829,38 +863,38 @@ model RetailPromotion {
   target    String   @default("all")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  company   Company  @relation(fields: [companyId], references: [id])
+  company   Company  @relation(fields: [tenantId], references: [id])
 
-  @@index([companyId])
+  @@unique([tenantId, title])
+  @@index([tenantId])
   @@index([status])
-  @@unique([companyId, title])
   @@map("retail_promotions")
 }
 
 model RetailChannel {
-  id            String    @id @default(uuid())
-  companyId     String    @map("company_id")
-  name          String
-  type          String
-  adapterType   String    @default("CUSTOM") @map("adapter_type")
-  status        String    @default("active")
-  syncFrequency String    @map("sync_frequency")
-  lastSyncAt    DateTime? @map("last_sync_at")
+  id                  String    @id @default(uuid())
+  tenantId           String    @map("tenant_id")
+  name                String
+  type                String
+  adapterType         String    @default("CUSTOM") @map("adapter_type")
+  status              String    @default("active")
+  syncFrequency       String    @map("sync_frequency")
+  lastSyncAt          DateTime? @map("last_sync_at")
   credentials         Json?     @map("credentials") // Encrypted API keys, tokens, etc.
   webhookUrl          String?   @map("webhook_url")
   integrationCategory String    @default("PRESET") @map("integration_category")
 
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-  company       Company   @relation(fields: [companyId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  company   Company  @relation(fields: [tenantId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@map("retail_channels")
 }
 
 model RetailOrder {
   id               String            @id @default(uuid())
-  companyId        String            @map("company_id")
+  tenantId        String            @map("tenant_id")
   storeId          String            @map("store_id")
   deviceId         String            @map("device_id")
   cashierId        String            @map("cashier_id")
@@ -875,12 +909,12 @@ model RetailOrder {
   updatedAt        DateTime          @updatedAt @map("updated_at")
   items            RetailOrderItem[]
   cashier          Employee          @relation(fields: [cashierId], references: [id])
-  company          Company           @relation(fields: [companyId], references: [id])
+  company          Company           @relation(fields: [tenantId], references: [id])
   customer         RetailCustomer?   @relation(fields: [customerId], references: [id])
   device           POSDevice         @relation(fields: [deviceId], references: [id])
   store            Store             @relation(fields: [storeId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([storeId])
   @@index([cashierId])
   @@index([customerId])
@@ -905,7 +939,7 @@ model RetailOrderItem {
 
 model RetailShift {
   id           String    @id @default(uuid())
-  companyId    String    @map("company_id")
+  tenantId    String    @map("tenant_id")
   storeId      String    @map("store_id")
   employeeId   String    @map("employee_id")
   startTime    DateTime  @map("start_time")
@@ -917,60 +951,59 @@ model RetailShift {
   notes        String?
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
-  company      Company   @relation(fields: [companyId], references: [id])
+  company      Company   @relation(fields: [tenantId], references: [id])
   employee     Employee  @relation(fields: [employeeId], references: [id])
   store        Store     @relation(fields: [storeId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([storeId])
   @@index([employeeId])
   @@map("retail_shifts")
 }
 
 model RetailGatewayNode {
-  id               String   @id @default(uuid())
-  companyId        String   @map("company_id")
-  loadBalancerId   String?  @map("load_balancer_id")
-  nodeName         String   @map("node_name")
-  ipAddress        String?  @map("ip_address")
-  port             Int      @default(3000)
-  status           String   @default("ACTIVE") // ACTIVE, STANDBY, DOWN
-  healthScore      Int      @default(100) @map("health_score")
-  lastHeartbeat    DateTime? @map("last_heartbeat")
-  version          String?
-  region           String?
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  id             String    @id @default(uuid())
+  tenantId      String    @map("tenant_id")
+  loadBalancerId String?   @map("load_balancer_id")
+  nodeName       String    @map("node_name")
+  ipAddress      String?   @map("ip_address")
+  port           Int       @default(3000)
+  status         String    @default("ACTIVE") // ACTIVE, STANDBY, DOWN
+  healthScore    Int       @default(100) @map("health_score")
+  lastHeartbeat  DateTime? @map("last_heartbeat")
+  version        String?
+  region         String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  company      Company             @relation(fields: [companyId], references: [id])
+  company      Company             @relation(fields: [tenantId], references: [id])
   loadBalancer RetailLoadBalancer? @relation(fields: [loadBalancerId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([loadBalancerId])
   @@map("retail_gateway_nodes")
 }
 
 model RetailLoadBalancer {
-  id           String   @id @default(uuid())
-  companyId    String   @map("company_id")
-  name         String
-  virtualIp    String?  @map("virtual_ip")
-  algorithm    String   @default("ROUND_ROBIN")
-  status       String   @default("ONLINE")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  tenantId String   @map("tenant_id")
+  name      String
+  virtualIp String?  @map("virtual_ip")
+  algorithm String   @default("ROUND_ROBIN")
+  status    String   @default("ONLINE")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  company Company             @relation(fields: [companyId], references: [id])
+  company Company             @relation(fields: [tenantId], references: [id])
   nodes   RetailGatewayNode[]
 
-  @@index([companyId])
+  @@index([tenantId])
   @@map("retail_load_balancers")
 }
 
-
 model ITDevice {
   id           String   @id @default(uuid())
-  companyId    String   @map("company_id")
+  tenantId    String   @map("tenant_id")
   locationId   String?  @map("location_id")
   ownerId      String?  @map("owner_id")
   deviceType   String   @map("device_type")
@@ -984,32 +1017,32 @@ model ITDevice {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  company  Company   @relation(fields: [companyId], references: [id])
+  company  Company   @relation(fields: [tenantId], references: [id])
   location Location? @relation(fields: [locationId], references: [id])
   owner    Employee? @relation(fields: [ownerId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([locationId])
   @@index([ownerId])
   @@map("it_devices")
 }
 
 model ITSystemHealth {
-  id         String   @id @default(uuid())
-  companyId  String   @map("company_id")
-  component  String
-  status     String   @default("healthy")
-  latencyMs  Int      @map("latency_ms")
-  checkedAt  DateTime @default(now()) @map("checked_at")
-  company    Company  @relation(fields: [companyId], references: [id])
+  id        String   @id @default(uuid())
+  tenantId String   @map("tenant_id")
+  component String
+  status    String   @default("healthy")
+  latencyMs Int      @map("latency_ms")
+  checkedAt DateTime @default(now()) @map("checked_at")
+  company   Company  @relation(fields: [tenantId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@map("it_system_health")
 }
 
 model ITProvisioningRequest {
   id               String   @id @default(uuid())
-  companyId        String   @map("company_id")
+  tenantId        String   @map("tenant_id")
   employeeId       String?  @map("employee_id")
   supplierId       String?  @map("supplier_id")
   supplierBranchId String?  @map("supplier_branch_id")
@@ -1022,17 +1055,17 @@ model ITProvisioningRequest {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  company  Company         @relation(fields: [companyId], references: [id])
-  employee Employee?        @relation(fields: [employeeId], references: [id])
-  supplier SupplierMaster?  @relation(fields: [supplierId], references: [id])
+  company  Company         @relation(fields: [tenantId], references: [id])
+  employee Employee?       @relation(fields: [employeeId], references: [id])
+  supplier SupplierMaster? @relation(fields: [supplierId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@map("it_provisioning_requests")
 }
 
 model ITSetting {
   id          String   @id @default(uuid())
-  companyId   String   @map("company_id")
+  tenantId   String   @map("tenant_id")
   key         String
   value       String
   category    String   @default("general")
@@ -1041,16 +1074,16 @@ model ITSetting {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  company Company @relation(fields: [companyId], references: [id])
+  company Company @relation(fields: [tenantId], references: [id])
 
-  @@unique([companyId, key])
-  @@index([companyId])
+  @@unique([tenantId, key])
+  @@index([tenantId])
   @@map("it_settings")
 }
 
 model AuditLog {
   id         String   @id @default(uuid())
-  companyId  String   @map("company_id")
+  tenantId  String   @map("tenant_id")
   module     String
   action     String
   entityType String   @map("entity_type")
@@ -1059,9 +1092,9 @@ model AuditLog {
   changes    Json?
   metadata   Json?
   createdAt  DateTime @default(now()) @map("created_at")
-  company    Company  @relation(fields: [companyId], references: [id])
+  company    Company  @relation(fields: [tenantId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([module])
   @@index([entityType, entityId])
   @@index([userId])
@@ -1071,7 +1104,7 @@ model AuditLog {
 
 model MoneySource {
   id                String   @id @default(uuid())
-  companyId         String   @map("company_id")
+  tenantId         String   @map("tenant_id")
   name              String
   type              String
   currency          String   @default("IDR")
@@ -1079,27 +1112,27 @@ model MoneySource {
   pendingSettlement Decimal  @default(0) @map("pending_settlement") @db.Decimal(15, 2)
   provider          String?
   lastUpdated       DateTime @default(now()) @map("last_updated")
-  company           Company  @relation(fields: [companyId], references: [id])
+  company           Company  @relation(fields: [tenantId], references: [id])
 
-  @@index([companyId])
-  @@unique([companyId, name])
+  @@unique([tenantId, name])
+  @@index([tenantId])
   @@map("money_sources")
 }
 
 model JournalEntry {
   id          String        @id @default(uuid())
-  companyId   String        @map("company_id")
+  tenantId   String        @map("tenant_id")
   ref         String?
   description String
   status      String
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
-  company     Company       @relation(fields: [companyId], references: [id])
+  company     Company       @relation(fields: [tenantId], references: [id])
   lines       JournalLine[]
 
-  @@index([companyId])
+  @@unique([tenantId, description])
+  @@index([tenantId])
   @@index([createdAt])
-  @@unique([companyId, description])
   @@map("journal_entries")
 }
 
@@ -1119,7 +1152,7 @@ model JournalLine {
 
 model Payable {
   id         String   @id @default(uuid())
-  companyId  String   @map("company_id")
+  tenantId  String   @map("tenant_id")
   vendorName String   @map("vendor_name")
   amount     Decimal  @db.Decimal(15, 2)
   currency   String   @default("IDR")
@@ -1128,16 +1161,16 @@ model Payable {
   workflowId String?  @map("workflow_id")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
-  company    Company  @relation(fields: [companyId], references: [id])
+  company    Company  @relation(fields: [tenantId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([status])
   @@map("payables")
 }
 
 model Receivable {
   id           String   @id @default(uuid())
-  companyId    String   @map("company_id")
+  tenantId    String   @map("tenant_id")
   customerName String   @map("customer_name")
   amount       Decimal  @db.Decimal(15, 2)
   currency     String   @default("IDR")
@@ -1147,16 +1180,16 @@ model Receivable {
   workflowId   String?  @map("workflow_id")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
-  company      Company  @relation(fields: [companyId], references: [id])
+  company      Company  @relation(fields: [tenantId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([status])
   @@map("receivables")
 }
 
 model FixedAsset {
   id                      String        @id @default(uuid())
-  companyId               String        @map("company_id")
+  tenantId               String        @map("tenant_id")
   description             String
   assetClass              String        @map("asset_class")
   location                String
@@ -1175,15 +1208,15 @@ model FixedAsset {
   createdAt               DateTime      @default(now()) @map("created_at")
   updatedAt               DateTime      @updatedAt @map("updated_at")
   capexRequest            CapexRequest? @relation(fields: [capexRequestId], references: [id])
-  company                 Company       @relation(fields: [companyId], references: [id])
+  company                 Company       @relation(fields: [tenantId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@map("fixed_assets")
 }
 
 model CapexRequest {
   id                   String       @id @default(uuid())
-  companyId            String       @map("company_id")
+  tenantId            String       @map("tenant_id")
   assetDescription     String       @map("asset_description")
   requestedAmount      Decimal      @map("requested_amount") @db.Decimal(15, 2)
   department           String
@@ -1195,16 +1228,16 @@ model CapexRequest {
   currentApprovalStage String?      @map("current_approval_stage")
   createdAt            DateTime     @default(now()) @map("created_at")
   updatedAt            DateTime     @updatedAt @map("updated_at")
-  company              Company      @relation(fields: [companyId], references: [id])
+  company              Company      @relation(fields: [tenantId], references: [id])
   assets               FixedAsset[]
 
-  @@index([companyId])
+  @@index([tenantId])
   @@map("capex_requests")
 }
 
 model TreasuryTransfer {
   id           String   @id @default(uuid())
-  companyId    String   @map("company_id")
+  tenantId    String   @map("tenant_id")
   fromSourceId String   @map("from_source_id")
   toSourceId   String   @map("to_source_id")
   amount       Decimal  @db.Decimal(15, 2)
@@ -1213,15 +1246,15 @@ model TreasuryTransfer {
   requestedBy  String   @map("requested_by")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
-  company      Company  @relation(fields: [companyId], references: [id])
+  company      Company  @relation(fields: [tenantId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@map("treasury_transfers")
 }
 
 model SettlementRecord {
   id        String   @id @default(uuid())
-  companyId String   @map("company_id")
+  tenantId String   @map("tenant_id")
   sourceId  String   @map("source_id")
   amount    Decimal  @db.Decimal(15, 2)
   currency  String   @default("IDR")
@@ -1229,44 +1262,44 @@ model SettlementRecord {
   reference String?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  company   Company  @relation(fields: [companyId], references: [id])
+  company   Company  @relation(fields: [tenantId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([sourceId])
   @@map("settlement_records")
 }
 
 model SupplierMaster {
-  id               String                   @id @default(uuid())
-  companyId        String                   @map("company_id")
-  name             String
-  taxId            String?                  @map("tax_id")
-  complianceStatus String                   @default("PENDING") @map("compliance_status")
-  globalRating     Int                      @default(0) @map("global_rating")
-  riskTier         String                   @default("LOW") @map("risk_tier")
-  categories       String[]
-  createdAt        DateTime                 @default(now()) @map("created_at")
-  updatedAt        DateTime                 @updatedAt @map("updated_at")
-  deletedAt        DateTime?                @map("deleted_at")
-  contracts        ProcurementContract[]
-  draftPOs         ProcurementDraftPO[]
-  finalPOs         ProcurementFinalPO[]
-  ratingLogs       ProcurementRatingLog[]
-  receipts         ProcurementReceipt[]
-  requisitions     ProcurementRequisition[]
-  branches         SupplierBranch[]
-  company          Company                  @relation(fields: [companyId], references: [id])
-  messages         SupplierPortalMessage[]
-  products         SupplierProduct[]
+  id                     String                   @id @default(uuid())
+  tenantId              String                   @map("tenant_id")
+  name                   String
+  taxId                  String?                  @map("tax_id")
+  complianceStatus       String                   @default("PENDING") @map("compliance_status")
+  globalRating           Int                      @default(0) @map("global_rating")
+  riskTier               String                   @default("LOW") @map("risk_tier")
+  categories             String[]
+  createdAt              DateTime                 @default(now()) @map("created_at")
+  updatedAt              DateTime                 @updatedAt @map("updated_at")
+  deletedAt              DateTime?                @map("deleted_at")
+  contracts              ProcurementContract[]
+  draftPOs               ProcurementDraftPO[]
+  finalPOs               ProcurementFinalPO[]
+  ratingLogs             ProcurementRatingLog[]
+  receipts               ProcurementReceipt[]
+  requisitions           ProcurementRequisition[]
+  branches               SupplierBranch[]
+  company                Company                  @relation(fields: [tenantId], references: [id])
+  messages               SupplierPortalMessage[]
+  products               SupplierProduct[]
   itProvisioningRequests ITProvisioningRequest[]
 
-  @@index([companyId])
+  @@index([tenantId])
   @@map("supplier_masters")
 }
 
 model SupplierBranch {
   id           String                   @id @default(uuid())
-  companyId    String                   @map("company_id")
+  tenantId    String                   @map("tenant_id")
   supplierId   String                   @map("supplier_id")
   branchCode   String                   @map("branch_code")
   branchName   String                   @map("branch_name")
@@ -1283,19 +1316,19 @@ model SupplierBranch {
   ratingLogs   ProcurementRatingLog[]
   receipts     ProcurementReceipt[]
   requisitions ProcurementRequisition[]
-  company      Company                  @relation(fields: [companyId], references: [id])
+  company      Company                  @relation(fields: [tenantId], references: [id])
   supplier     SupplierMaster           @relation(fields: [supplierId], references: [id])
   messages     SupplierPortalMessage[]
   products     SupplierProduct[]
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([supplierId])
   @@map("supplier_branches")
 }
 
 model SupplierProduct {
   id           String         @id @default(uuid())
-  companyId    String         @map("company_id")
+  tenantId    String         @map("tenant_id")
   supplierId   String         @map("supplier_id")
   branchId     String         @map("branch_id")
   sku          String
@@ -1308,10 +1341,10 @@ model SupplierProduct {
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @updatedAt @map("updated_at")
   branch       SupplierBranch @relation(fields: [branchId], references: [id])
-  company      Company        @relation(fields: [companyId], references: [id])
+  company      Company        @relation(fields: [tenantId], references: [id])
   supplier     SupplierMaster @relation(fields: [supplierId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([supplierId])
   @@index([branchId])
   @@map("supplier_products")
@@ -1319,7 +1352,7 @@ model SupplierProduct {
 
 model ProcurementRequisition {
   id               String                @id @default(uuid())
-  companyId        String                @map("company_id")
+  tenantId        String                @map("tenant_id")
   requesterId      String                @map("requester_id")
   departmentId     String                @map("department_id")
   branchCode       String                @map("branch_code")
@@ -1339,13 +1372,13 @@ model ProcurementRequisition {
   contracts        ProcurementContract[]
   draftPOs         ProcurementDraftPO[]
   finalPOs         ProcurementFinalPO[]
-  company          Company               @relation(fields: [companyId], references: [id])
+  company          Company               @relation(fields: [tenantId], references: [id])
   department       Department            @relation(fields: [departmentId], references: [id])
   requester        Employee              @relation(fields: [requesterId], references: [id])
   supplierBranch   SupplierBranch?       @relation(fields: [supplierBranchId], references: [id])
   supplier         SupplierMaster?       @relation(fields: [supplierId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([requesterId])
   @@index([departmentId])
   @@map("procurement_requisitions")
@@ -1353,7 +1386,7 @@ model ProcurementRequisition {
 
 model ProcurementDraftPO {
   id               String                 @id @default(uuid())
-  companyId        String                 @map("company_id")
+  tenantId        String                 @map("tenant_id")
   requisitionId    String                 @map("requisition_id")
   branchCode       String                 @map("branch_code")
   supplierId       String                 @map("supplier_id")
@@ -1368,20 +1401,20 @@ model ProcurementDraftPO {
   createdBy        String                 @map("created_by")
   createdAt        DateTime               @default(now()) @map("created_at")
   updatedAt        DateTime               @updatedAt @map("updated_at")
-  company          Company                @relation(fields: [companyId], references: [id])
+  company          Company                @relation(fields: [tenantId], references: [id])
   requisition      ProcurementRequisition @relation(fields: [requisitionId], references: [id])
   supplierBranch   SupplierBranch         @relation(fields: [supplierBranchId], references: [id])
   supplier         SupplierMaster         @relation(fields: [supplierId], references: [id])
   finalPOs         ProcurementFinalPO[]
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([requisitionId])
   @@map("procurement_draft_pos")
 }
 
 model ProcurementFinalPO {
   id                   String                 @id @default(uuid())
-  companyId            String                 @map("company_id")
+  tenantId            String                 @map("tenant_id")
   requisitionId        String                 @map("requisition_id")
   draftPoId            String                 @map("draft_po_id")
   supplierId           String                 @map("supplier_id")
@@ -1394,21 +1427,21 @@ model ProcurementFinalPO {
   financeCommitmentId  String?                @map("finance_commitment_id")
   createdAt            DateTime               @default(now()) @map("created_at")
   updatedAt            DateTime               @updatedAt @map("updated_at")
-  company              Company                @relation(fields: [companyId], references: [id])
+  company              Company                @relation(fields: [tenantId], references: [id])
   draftPo              ProcurementDraftPO     @relation(fields: [draftPoId], references: [id])
   requisition          ProcurementRequisition @relation(fields: [requisitionId], references: [id])
   supplierBranch       SupplierBranch         @relation(fields: [supplierBranchId], references: [id])
   supplier             SupplierMaster         @relation(fields: [supplierId], references: [id])
   receipts             ProcurementReceipt[]
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([requisitionId])
   @@map("procurement_final_pos")
 }
 
 model ProcurementContract {
   id                     String                 @id @default(uuid())
-  companyId              String                 @map("company_id")
+  tenantId              String                 @map("tenant_id")
   requisitionId          String                 @map("requisition_id")
   supplierId             String                 @map("supplier_id")
   status                 String                 @default("DRAFT")
@@ -1421,18 +1454,18 @@ model ProcurementContract {
   attachmentIds          String[]               @map("attachment_ids")
   createdAt              DateTime               @default(now()) @map("created_at")
   updatedAt              DateTime               @updatedAt @map("updated_at")
-  company                Company                @relation(fields: [companyId], references: [id])
+  company                Company                @relation(fields: [tenantId], references: [id])
   requisition            ProcurementRequisition @relation(fields: [requisitionId], references: [id])
   supplier               SupplierMaster         @relation(fields: [supplierId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([requisitionId])
   @@map("procurement_contracts")
 }
 
 model ProcurementReceipt {
   id               String             @id @default(uuid())
-  companyId        String             @map("company_id")
+  tenantId        String             @map("tenant_id")
   finalPoId        String             @map("final_po_id")
   supplierId       String             @map("supplier_id")
   supplierBranchId String             @map("supplier_branch_id")
@@ -1443,19 +1476,19 @@ model ProcurementReceipt {
   issueCount       Int                @default(0) @map("issue_count")
   invoiceMismatch  Boolean            @default(false) @map("invoice_mismatch")
   createdAt        DateTime           @default(now()) @map("created_at")
-  company          Company            @relation(fields: [companyId], references: [id])
+  company          Company            @relation(fields: [tenantId], references: [id])
   finalPo          ProcurementFinalPO @relation(fields: [finalPoId], references: [id])
   supplierBranch   SupplierBranch     @relation(fields: [supplierBranchId], references: [id])
   supplier         SupplierMaster     @relation(fields: [supplierId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([finalPoId])
   @@map("procurement_receipts")
 }
 
 model ProcurementRatingLog {
   id               String         @id @default(uuid())
-  companyId        String         @map("company_id")
+  tenantId        String         @map("tenant_id")
   supplierId       String         @map("supplier_id")
   supplierBranchId String         @map("supplier_branch_id")
   supplierScore    Int            @map("supplier_score")
@@ -1463,18 +1496,18 @@ model ProcurementRatingLog {
   riskTier         String         @map("risk_tier")
   inputs           Json
   createdAt        DateTime       @default(now()) @map("created_at")
-  company          Company        @relation(fields: [companyId], references: [id])
+  company          Company        @relation(fields: [tenantId], references: [id])
   supplierBranch   SupplierBranch @relation(fields: [supplierBranchId], references: [id])
   supplier         SupplierMaster @relation(fields: [supplierId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([supplierId])
   @@map("procurement_rating_logs")
 }
 
 model ProcurementRiskSignal {
   id        String   @id @default(uuid())
-  companyId String   @map("company_id")
+  tenantId String   @map("tenant_id")
   code      String
   severity  String
   status    String   @default("OPEN")
@@ -1482,16 +1515,16 @@ model ProcurementRiskSignal {
   detail    String
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  company   Company  @relation(fields: [companyId], references: [id])
+  company   Company  @relation(fields: [tenantId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([status])
   @@map("procurement_risk_signals")
 }
 
 model SupplierPortalMessage {
   id               String         @id @default(uuid())
-  companyId        String         @map("company_id")
+  tenantId        String         @map("tenant_id")
   supplierId       String         @map("supplier_id")
   supplierBranchId String         @map("supplier_branch_id")
   direction        String
@@ -1501,34 +1534,34 @@ model SupplierPortalMessage {
   attachmentName   String?        @map("attachment_name")
   createdBy        String         @map("created_by")
   createdAt        DateTime       @default(now()) @map("created_at")
-  company          Company        @relation(fields: [companyId], references: [id])
+  company          Company        @relation(fields: [tenantId], references: [id])
   branch           SupplierBranch @relation(fields: [supplierBranchId], references: [id])
   supplier         SupplierMaster @relation(fields: [supplierId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([supplierId])
   @@map("supplier_portal_messages")
 }
 
 model ProcurementAuditEvent {
   id         String   @id @default(uuid())
-  companyId  String   @map("company_id")
+  tenantId  String   @map("tenant_id")
   actorId    String   @map("actor_id")
   action     String
   entityType String   @map("entity_type")
   entityId   String   @map("entity_id")
   detail     String
   createdAt  DateTime @default(now()) @map("created_at")
-  company    Company  @relation(fields: [companyId], references: [id])
+  company    Company  @relation(fields: [tenantId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([entityId])
   @@map("procurement_audit_events")
 }
 
 model SalesLead {
   id              String               @id @default(uuid())
-  companyId       String               @map("company_id")
+  tenantId       String               @map("tenant_id")
   companyName     String               @map("company_name")
   contactName     String               @map("contact_name")
   contactEmail    String?              @map("contact_email")
@@ -1545,19 +1578,19 @@ model SalesLead {
   firstResponseAt DateTime?            @map("first_response_at")
   createdAt       DateTime             @default(now()) @map("created_at")
   updatedAt       DateTime             @updatedAt @map("updated_at")
-  company         Company              @relation(fields: [companyId], references: [id])
+  company         Company              @relation(fields: [tenantId], references: [id])
   opportunities   SalesOpportunity[]
   tasks           SalesTask[]
   timelineEvents  SalesTimelineEvent[]
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([status])
   @@map("sales_leads")
 }
 
 model SalesOpportunity {
   id                String               @id @default(uuid())
-  companyId         String               @map("company_id")
+  tenantId         String               @map("tenant_id")
   leadId            String?              @map("lead_id")
   accountName       String               @map("account_name")
   ownerId           String               @map("owner_id")
@@ -1572,21 +1605,21 @@ model SalesOpportunity {
   lastActivityAt    DateTime             @default(now()) @map("last_activity_at")
   createdAt         DateTime             @default(now()) @map("created_at")
   updatedAt         DateTime             @updatedAt @map("updated_at")
-  company           Company              @relation(fields: [companyId], references: [id])
+  company           Company              @relation(fields: [tenantId], references: [id])
   lead              SalesLead?           @relation(fields: [leadId], references: [id])
   orders            SalesOrder[]
   quotes            SalesQuote[]
   tasks             SalesTask[]
   timelineEvents    SalesTimelineEvent[]
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([stage])
   @@map("sales_opportunities")
 }
 
 model SalesQuote {
   id              String           @id @default(uuid())
-  companyId       String           @map("company_id")
+  tenantId       String           @map("tenant_id")
   opportunityId   String           @map("opportunity_id")
   accountName     String           @map("account_name")
   version         Int              @default(1)
@@ -1603,17 +1636,17 @@ model SalesQuote {
   createdAt       DateTime         @default(now()) @map("created_at")
   updatedAt       DateTime         @updatedAt @map("updated_at")
   orders          SalesOrder[]
-  company         Company          @relation(fields: [companyId], references: [id])
+  company         Company          @relation(fields: [tenantId], references: [id])
   opportunity     SalesOpportunity @relation(fields: [opportunityId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([opportunityId])
   @@map("sales_quotes")
 }
 
 model SalesTimelineEvent {
   id            String           @id @default(uuid())
-  companyId     String           @map("company_id")
+  tenantId     String           @map("tenant_id")
   opportunityId String           @map("opportunity_id")
   leadId        String?          @map("lead_id")
   channel       String           @default("NOTE")
@@ -1622,18 +1655,18 @@ model SalesTimelineEvent {
   detail        String?
   createdBy     String           @map("created_by")
   createdAt     DateTime         @default(now()) @map("created_at")
-  company       Company          @relation(fields: [companyId], references: [id])
+  company       Company          @relation(fields: [tenantId], references: [id])
   lead          SalesLead?       @relation(fields: [leadId], references: [id])
   opportunity   SalesOpportunity @relation(fields: [opportunityId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([opportunityId])
   @@map("sales_timeline_events")
 }
 
 model SalesTask {
   id            String            @id @default(uuid())
-  companyId     String            @map("company_id")
+  tenantId     String            @map("tenant_id")
   opportunityId String?           @map("opportunity_id")
   leadId        String?           @map("lead_id")
   title         String
@@ -1645,18 +1678,18 @@ model SalesTask {
   completedAt   DateTime?         @map("completed_at")
   createdAt     DateTime          @default(now()) @map("created_at")
   updatedAt     DateTime          @updatedAt @map("updated_at")
-  company       Company           @relation(fields: [companyId], references: [id])
+  company       Company           @relation(fields: [tenantId], references: [id])
   lead          SalesLead?        @relation(fields: [leadId], references: [id])
   opportunity   SalesOpportunity? @relation(fields: [opportunityId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([ownerId])
   @@map("sales_tasks")
 }
 
 model SalesAlert {
   id           String   @id @default(uuid())
-  companyId    String   @map("company_id")
+  tenantId    String   @map("tenant_id")
   type         String
   severity     String   @default("MEDIUM")
   entityType   String   @map("entity_type")
@@ -1665,16 +1698,16 @@ model SalesAlert {
   acknowledged Boolean  @default(false)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
-  company      Company  @relation(fields: [companyId], references: [id])
+  company      Company  @relation(fields: [tenantId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([acknowledged])
   @@map("sales_alerts")
 }
 
 model SalesOrder {
   id               String           @id @default(uuid())
-  companyId        String           @map("company_id")
+  tenantId        String           @map("tenant_id")
   opportunityId    String           @map("opportunity_id")
   quoteId          String?          @map("quote_id")
   customerName     String           @map("customer_name")
@@ -1686,34 +1719,34 @@ model SalesOrder {
   createdBy        String           @map("created_by")
   createdAt        DateTime         @default(now()) @map("created_at")
   updatedAt        DateTime         @updatedAt @map("updated_at")
-  company          Company          @relation(fields: [companyId], references: [id])
+  company          Company          @relation(fields: [tenantId], references: [id])
   opportunity      SalesOpportunity @relation(fields: [opportunityId], references: [id])
   quote            SalesQuote?      @relation(fields: [quoteId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([status])
   @@map("sales_orders")
 }
 
 model SalesAuditEvent {
   id         String   @id @default(uuid())
-  companyId  String   @map("company_id")
+  tenantId  String   @map("tenant_id")
   actorId    String   @map("actor_id")
   action     String
   entityType String   @map("entity_type")
   entityId   String   @map("entity_id")
   detail     String
   createdAt  DateTime @default(now()) @map("created_at")
-  company    Company  @relation(fields: [companyId], references: [id])
+  company    Company  @relation(fields: [tenantId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([entityId])
   @@map("sales_audit_events")
 }
 
 model PaymentProvider {
   id                 String                @id
-  companyId          String                @map("company_id")
+  tenantId          String                @map("tenant_id")
   name               String
   channels           String[]
   status             String                @default("HEALTHY")
@@ -1724,17 +1757,17 @@ model PaymentProvider {
   createdAt          DateTime              @default(now()) @map("created_at")
   updatedAt          DateTime              @updatedAt @map("updated_at")
   posDevices         PaymentPosDevice[]
-  company            Company               @relation(fields: [companyId], references: [id])
+  company            Company               @relation(fields: [tenantId], references: [id])
   retryAttempts      PaymentRetryAttempt[]
   transactions       PaymentTransaction[]
 
-  @@index([companyId])
+  @@index([tenantId])
   @@map("payment_providers")
 }
 
 model PaymentRoutingPolicy {
   id                        String   @id @default(uuid())
-  companyId                 String   @map("company_id")
+  tenantId                 String   @map("tenant_id")
   name                      String
   enabled                   Boolean  @default(true)
   priorities                String[]
@@ -1743,15 +1776,15 @@ model PaymentRoutingPolicy {
   exponentialBackoffSeconds Int      @default(5) @map("exponential_backoff_seconds")
   createdAt                 DateTime @default(now()) @map("created_at")
   updatedAt                 DateTime @updatedAt @map("updated_at")
-  company                   Company  @relation(fields: [companyId], references: [id])
+  company                   Company  @relation(fields: [tenantId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@map("payment_routing_policies")
 }
 
 model PaymentPosDevice {
   id         String          @id @default(uuid())
-  companyId  String          @map("company_id")
+  tenantId  String          @map("tenant_id")
   locationId String          @map("location_id")
   deviceCode String          @unique @map("device_code")
   approved   Boolean         @default(false)
@@ -1760,61 +1793,61 @@ model PaymentPosDevice {
   lastUsedAt DateTime?       @map("last_used_at")
   createdAt  DateTime        @default(now()) @map("created_at")
   updatedAt  DateTime        @updatedAt @map("updated_at")
-  company    Company         @relation(fields: [companyId], references: [id])
+  company    Company         @relation(fields: [tenantId], references: [id])
   provider   PaymentProvider @relation(fields: [providerId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([locationId])
   @@map("payment_pos_devices")
 }
 
 model PaymentDevicePool {
   id                String   @id @default(uuid())
-  companyId         String   @map("company_id")
+  tenantId         String   @map("tenant_id")
   locationId        String   @map("location_id")
   primaryDeviceId   String   @map("primary_device_id")
   fallbackDeviceIds String[] @map("fallback_device_ids")
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
-  company           Company  @relation(fields: [companyId], references: [id])
+  company           Company  @relation(fields: [tenantId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([locationId])
   @@map("payment_device_pools")
 }
 
 model PaymentTransaction {
-  id                String                   @id @default(uuid())
-  companyId         String                   @map("company_id")
-  externalReference String?                  @map("external_reference")
-  type              String
-  amount            Decimal                  @db.Decimal(15, 2)
-  currency          String                   @default("IDR")
-  destination       String
-  source            String?
-  channel           String
-  providerId        String?                  @map("provider_id")
-  settlementId      String?                  @map("settlement_id")
-  evidencePackId    String?                  @map("evidence_pack_id")
-  idempotencyKey    String                   @unique @map("idempotency_key")
-  status            String                   @default("REQUEST_CREATED")
-  ledgerSyncAt          DateTime?                @map("ledger_sync_at")
-  ledgerSyncTriggeredAt DateTime?                @map("ledger_sync_triggered_at")
-  createdBy         String                   @map("created_by")
-  approvedBy        String?                  @map("approved_by")
-  approvedAt        DateTime?                @map("approved_at")
-  createdAt         DateTime                 @default(now()) @map("created_at")
-  updatedAt         DateTime                 @updatedAt @map("updated_at")
-  chargebacks       PaymentChargeback[]
-  disputes          PaymentDispute[]
-  evidencePack      PaymentEvidencePack?     @relation(fields: [evidencePackId], references: [id])
-  refunds           PaymentRefund[]
-  retryAttempts     PaymentRetryAttempt[]
-  settlement        PaymentSettlement?       @relation(fields: [settlementId], references: [id])
-  company           Company                  @relation(fields: [companyId], references: [id])
-  provider          PaymentProvider?         @relation(fields: [providerId], references: [id])
+  id                    String                @id @default(uuid())
+  tenantId             String                @map("tenant_id")
+  externalReference     String?               @map("external_reference")
+  type                  String
+  amount                Decimal               @db.Decimal(15, 2)
+  currency              String                @default("IDR")
+  destination           String
+  source                String?
+  channel               String
+  providerId            String?               @map("provider_id")
+  settlementId          String?               @map("settlement_id")
+  evidencePackId        String?               @map("evidence_pack_id")
+  idempotencyKey        String                @unique @map("idempotency_key")
+  status                String                @default("REQUEST_CREATED")
+  ledgerSyncAt          DateTime?             @map("ledger_sync_at")
+  ledgerSyncTriggeredAt DateTime?             @map("ledger_sync_triggered_at")
+  createdBy             String                @map("created_by")
+  approvedBy            String?               @map("approved_by")
+  approvedAt            DateTime?             @map("approved_at")
+  createdAt             DateTime              @default(now()) @map("created_at")
+  updatedAt             DateTime              @updatedAt @map("updated_at")
+  chargebacks           PaymentChargeback[]
+  disputes              PaymentDispute[]
+  evidencePack          PaymentEvidencePack?  @relation(fields: [evidencePackId], references: [id])
+  refunds               PaymentRefund[]
+  retryAttempts         PaymentRetryAttempt[]
+  settlement            PaymentSettlement?    @relation(fields: [settlementId], references: [id])
+  company               Company               @relation(fields: [tenantId], references: [id])
+  provider              PaymentProvider?      @relation(fields: [providerId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([status])
   @@index([idempotencyKey])
   @@map("payment_transactions")
@@ -1836,26 +1869,26 @@ model PaymentRetryAttempt {
 }
 
 model PaymentSettlement {
-  id                String             @id @default(uuid())
-  companyId         String             @map("company_id")
-  paymentId         String             @unique @map("payment_id")
-  providerReference String             @map("provider_reference")
-  status            String             @default("PENDING")
-  confirmedAt           DateTime?          @map("confirmed_at")
-  retryAttempts         Json?              @map("retry_attempts")
-  ledgerSyncTriggeredAt DateTime?          @map("ledger_sync_triggered_at")
-  createdAt             DateTime           @default(now()) @map("created_at")
-  updatedAt             DateTime           @updatedAt @map("updated_at")
-  company           Company            @relation(fields: [companyId], references: [id])
-  transaction       PaymentTransaction[]
+  id                    String               @id @default(uuid())
+  tenantId             String               @map("tenant_id")
+  paymentId             String               @unique @map("payment_id")
+  providerReference     String               @map("provider_reference")
+  status                String               @default("PENDING")
+  confirmedAt           DateTime?            @map("confirmed_at")
+  retryAttempts         Json?                @map("retry_attempts")
+  ledgerSyncTriggeredAt DateTime?            @map("ledger_sync_triggered_at")
+  createdAt             DateTime             @default(now()) @map("created_at")
+  updatedAt             DateTime             @updatedAt @map("updated_at")
+  company               Company              @relation(fields: [tenantId], references: [id])
+  transaction           PaymentTransaction[]
 
-  @@index([companyId])
+  @@index([tenantId])
   @@map("payment_settlements")
 }
 
 model PaymentRefund {
   id                String             @id @default(uuid())
-  companyId         String             @map("company_id")
+  tenantId         String             @map("tenant_id")
   paymentId         String             @map("payment_id")
   type              String             @default("FULL")
   amount            Decimal            @db.Decimal(15, 2)
@@ -1867,17 +1900,17 @@ model PaymentRefund {
   providerReference String?            @map("provider_reference")
   createdAt         DateTime           @default(now()) @map("created_at")
   updatedAt         DateTime           @updatedAt @map("updated_at")
-  company           Company            @relation(fields: [companyId], references: [id])
+  company           Company            @relation(fields: [tenantId], references: [id])
   transaction       PaymentTransaction @relation(fields: [paymentId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([paymentId])
   @@map("payment_refunds")
 }
 
 model PaymentDispute {
   id             String              @id @default(uuid())
-  companyId      String              @map("company_id")
+  tenantId      String              @map("tenant_id")
   paymentId      String              @map("payment_id")
   reason         String
   amount         Decimal             @db.Decimal(15, 2)
@@ -1889,60 +1922,60 @@ model PaymentDispute {
   createdAt      DateTime            @default(now()) @map("created_at")
   updatedAt      DateTime            @updatedAt @map("updated_at")
   chargebacks    PaymentChargeback[]
-  company        Company             @relation(fields: [companyId], references: [id])
+  company        Company             @relation(fields: [tenantId], references: [id])
   transaction    PaymentTransaction  @relation(fields: [paymentId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([paymentId])
   @@map("payment_disputes")
 }
 
 model PaymentChargeback {
   id          String             @id @default(uuid())
-  companyId   String             @map("company_id")
+  tenantId   String             @map("tenant_id")
   paymentId   String             @map("payment_id")
   disputeId   String             @map("dispute_id")
   amount      Decimal            @db.Decimal(15, 2)
   status      String             @default("OPEN")
   createdAt   DateTime           @default(now()) @map("created_at")
   updatedAt   DateTime           @updatedAt @map("updated_at")
-  company     Company            @relation(fields: [companyId], references: [id])
+  company     Company            @relation(fields: [tenantId], references: [id])
   dispute     PaymentDispute     @relation(fields: [disputeId], references: [id])
   transaction PaymentTransaction @relation(fields: [paymentId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([paymentId])
   @@map("payment_chargebacks")
 }
 
 model PaymentEvidencePack {
-  id                 String             @id @default(uuid())
-  companyId          String             @map("company_id")
-  paymentId          String             @unique @map("payment_id")
-  providerProof      String             @map("provider_proof")
-  approvalSignatures String[]           @map("approval_signatures")
+  id                 String               @id @default(uuid())
+  tenantId          String               @map("tenant_id")
+  paymentId          String               @unique @map("payment_id")
+  providerProof      String               @map("provider_proof")
+  approvalSignatures String[]             @map("approval_signatures")
   checksum           String
   payload            String
-  createdAt          DateTime           @default(now()) @map("created_at")
-  company            Company            @relation(fields: [companyId], references: [id])
+  createdAt          DateTime             @default(now()) @map("created_at")
+  company            Company              @relation(fields: [tenantId], references: [id])
   transactions       PaymentTransaction[]
 
-  @@index([companyId])
+  @@index([tenantId])
   @@map("payment_evidence_packs")
 }
 
 model PaymentAuditEvent {
   id         String   @id @default(uuid())
-  companyId  String   @map("company_id")
+  tenantId  String   @map("tenant_id")
   actorId    String   @map("actor_id")
   action     String
   entityType String   @map("entity_type")
   entityId   String   @map("entity_id")
   detail     String
   createdAt  DateTime @default(now()) @map("created_at")
-  company    Company  @relation(fields: [companyId], references: [id])
+  company    Company  @relation(fields: [tenantId], references: [id])
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([entityId])
   @@map("payment_audit_events")
 }
@@ -1952,91 +1985,91 @@ model PaymentAuditEvent {
 // ============================================================
 
 model InventoryAdjustment {
-  id              String   @id @default(uuid())
-  companyId       String   @map("company_id")
-  itemId          String   @map("item_id")
-  locationId      String   @map("location_id")
-  departmentId    String?  @map("department_id")
-  requestedDelta  Float    @map("requested_delta")
-  reason          String
-  status          String   @default("PENDING_APPROVAL") // PENDING_APPROVAL, APPROVED, REJECTED
-  requestedBy     String   @map("requested_by")
-  approvedBy      String?  @map("approved_by")
-  approvedAt      DateTime? @map("approved_at")
-  
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id             String    @id @default(uuid())
+  tenantId      String    @map("tenant_id")
+  itemId         String    @map("item_id")
+  locationId     String    @map("location_id")
+  departmentId   String?   @map("department_id")
+  requestedDelta Float     @map("requested_delta")
+  reason         String
+  status         String    @default("PENDING_APPROVAL") // PENDING_APPROVAL, APPROVED, REJECTED
+  requestedBy    String    @map("requested_by")
+  approvedBy     String?   @map("approved_by")
+  approvedAt     DateTime? @map("approved_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company         Company     @relation(fields: [companyId], references: [id])
-  product         Product     @relation(fields: [itemId], references: [id])
-  location        Location    @relation(fields: [locationId], references: [id])
-  department      Department? @relation(fields: [departmentId], references: [id])
+  company    Company     @relation(fields: [tenantId], references: [id])
+  product    Product     @relation(fields: [itemId], references: [id])
+  location   Location    @relation(fields: [locationId], references: [id])
+  department Department? @relation(fields: [departmentId], references: [id])
 
+  @@index([tenantId])
   @@map("inventory_adjustments")
-  @@index([companyId])
 }
 
 model InventoryAuditCycle {
-  id              String   @id @default(uuid())
-  companyId       String   @map("company_id")
-  locationCode    String   @map("location_code")
-  departmentCode  String?  @map("department_code")
-  scope           String   // LOCATION, DEPARTMENT, ITEM
-  status          String   @default("OPEN") // OPEN, COMPLETED
-  expectedValue   Float?   @map("expected_value")
-  countedValue    Float?   @map("counted_value")
-  varianceValue   Float?   @map("variance_value")
-  openedBy        String   @map("opened_by")
-  closedBy        String?  @map("closed_by")
-  
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id             String  @id @default(uuid())
+  tenantId      String  @map("tenant_id")
+  locationCode   String  @map("location_code")
+  departmentCode String? @map("department_code")
+  scope          String // LOCATION, DEPARTMENT, ITEM
+  status         String  @default("OPEN") // OPEN, COMPLETED
+  expectedValue  Float?  @map("expected_value")
+  countedValue   Float?  @map("counted_value")
+  varianceValue  Float?  @map("variance_value")
+  openedBy       String  @map("opened_by")
+  closedBy       String? @map("closed_by")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company         Company  @relation(fields: [companyId], references: [id])
+  company Company @relation(fields: [tenantId], references: [id])
 
+  @@index([tenantId])
   @@map("inventory_audit_cycles")
-  @@index([companyId])
 }
 
 model InventoryAlert {
-  id              String   @id @default(uuid())
-  companyId       String   @map("company_id")
-  type            String   // LOW_STOCK, EXPIRY_WARNING, ADJUSTMENT_REQUIRES_APPROVAL
-  severity        String   @default("MEDIUM") // LOW, MEDIUM, HIGH
-  status          String   @default("OPEN") // OPEN, ACKNOWLEDGED, RESOLVED
-  entityId        String   @map("entity_id")
-  message         String
-  acknowledged    Boolean  @default(false)
-  
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id           String  @id @default(uuid())
+  tenantId    String  @map("tenant_id")
+  type         String // LOW_STOCK, EXPIRY_WARNING, ADJUSTMENT_REQUIRES_APPROVAL
+  severity     String  @default("MEDIUM") // LOW, MEDIUM, HIGH
+  status       String  @default("OPEN") // OPEN, ACKNOWLEDGED, RESOLVED
+  entityId     String  @map("entity_id")
+  message      String
+  acknowledged Boolean @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company         Company  @relation(fields: [companyId], references: [id])
+  company Company @relation(fields: [tenantId], references: [id])
 
+  @@index([tenantId])
   @@map("inventory_alerts")
-  @@index([companyId])
 }
 
 model InventoryIntegrationEvent {
-  id              String   @id @default(uuid())
-  companyId       String   @map("company_id")
-  target          String   // FINANCE, PROCUREMENT, SALES, PAYMENT, HR, IT
-  status          String   @default("SYNCED") // PENDING, SYNCED, FAILED
-  eventType       String   @map("event_type")
-  entityId        String   @map("entity_id")
-  detail          String
-  
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id        String @id @default(uuid())
+  tenantId String @map("tenant_id")
+  target    String // FINANCE, PROCUREMENT, SALES, PAYMENT, HR, IT
+  status    String @default("SYNCED") // PENDING, SYNCED, FAILED
+  eventType String @map("event_type")
+  entityId  String @map("entity_id")
+  detail    String
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company         Company  @relation(fields: [companyId], references: [id])
+  company Company @relation(fields: [tenantId], references: [id])
 
+  @@index([tenantId])
   @@map("inventory_integration_events")
-  @@index([companyId])
 }
 
 // ============================================================
@@ -2044,186 +2077,186 @@ model InventoryIntegrationEvent {
 // ============================================================
 
 model MarketingCampaign {
-  id             String   @id @default(uuid())
-  companyId      String   @map("company_id")
-  name           String
-  objective      String   // AWARENESS, LEAD_GEN, CONVERSION, RETENTION
-  channelMix     String[] @map("channel_mix")
-  ownerId        String   @map("owner_id")
-  ownerName      String   @map("owner_name")
-  budget         Decimal  @db.Decimal(15, 2)
-  currency       String   @default("USD")
-  status         String   @default("DRAFT") // DRAFT, SCHEDULED, ACTIVE, COMPLETED, PAUSED
-  startDate      DateTime @map("start_date")
-  endDate        DateTime @map("end_date")
-  audience       String
-  aiRecommendation String? @map("ai_recommendation")
-  
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id               String   @id @default(uuid())
+  tenantId        String   @map("tenant_id")
+  name             String
+  objective        String // AWARENESS, LEAD_GEN, CONVERSION, RETENTION
+  channelMix       String[] @map("channel_mix")
+  ownerId          String   @map("owner_id")
+  ownerName        String   @map("owner_name")
+  budget           Decimal  @db.Decimal(15, 2)
+  currency         String   @default("USD")
+  status           String   @default("DRAFT") // DRAFT, SCHEDULED, ACTIVE, COMPLETED, PAUSED
+  startDate        DateTime @map("start_date")
+  endDate          DateTime @map("end_date")
+  audience         String
+  aiRecommendation String?  @map("ai_recommendation")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company        Company    @relation(fields: [companyId], references: [id])
-  executions     MarketingExecutionRun[]
-  attributions   MarketingAttribution[]
+  company      Company                 @relation(fields: [tenantId], references: [id])
+  executions   MarketingExecutionRun[]
+  attributions MarketingAttribution[]
 
+  @@index([tenantId])
   @@map("marketing_campaigns")
-  @@index([companyId])
 }
 
 model MarketingExecutionRun {
   id             String   @id @default(uuid())
-  companyId      String   @map("company_id")
+  tenantId      String   @map("tenant_id")
   campaignId     String   @map("campaign_id")
-  channel        String   // EMAIL, WHATSAPP, GOOGLE_ADS, META_ADS, LANDING_PAGE, WEBINAR, EVENT
+  channel        String // EMAIL, WHATSAPP, GOOGLE_ADS, META_ADS, LANDING_PAGE, WEBINAR, EVENT
   scheduledAt    DateTime @map("scheduled_at")
   status         String   @default("SCHEDULED") // SCHEDULED, RUNNING, COMPLETED, FAILED
   leadsGenerated Int      @default(0) @map("leads_generated")
   spend          Decimal  @default(0) @db.Decimal(15, 2)
   notes          String?
-  
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company        Company    @relation(fields: [companyId], references: [id])
-  campaign       MarketingCampaign @relation(fields: [campaignId], references: [id])
+  company  Company           @relation(fields: [tenantId], references: [id])
+  campaign MarketingCampaign @relation(fields: [campaignId], references: [id])
 
-  @@map("marketing_executions")
-  @@index([companyId])
+  @@index([tenantId])
   @@index([campaignId])
+  @@map("marketing_executions")
 }
 
 model MarketingLead {
-  id                  String   @id @default(uuid())
-  companyId           String   @map("company_id")
-  campaignId          String?  @map("campaign_id")
-  source              String   // LANDING_PAGE, EMBEDDED_FORM, CHATBOT, WEBINAR, META_LEAD_ADS, GOOGLE_ADS, PARTNER_API
-  companyName         String   @map("company_name")
-  contactName         String   @map("contact_name")
+  id                  String  @id @default(uuid())
+  tenantId           String  @map("tenant_id")
+  campaignId          String? @map("campaign_id")
+  source              String // LANDING_PAGE, EMBEDDED_FORM, CHATBOT, WEBINAR, META_LEAD_ADS, GOOGLE_ADS, PARTNER_API
+  companyName         String  @map("company_name")
+  contactName         String  @map("contact_name")
   email               String?
   phone               String?
   country             String?
   industry            String?
-  employeeBand        String?  @map("employee_band")
-  dedupKey            String   @map("dedup_key")
-  score               Int      @default(0)
-  intent              String   @default("LOW") // LOW, MEDIUM, HIGH
-  status              String   @default("SCORED") // CAPTURED, SCORED, QUALIFIED, HANDOFF_READY, HANDOFF_SENT
-  qualificationReason String?  @map("qualification_reason")
-  salesHandoffId      String?  @map("sales_handoff_id")
-  
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
+  employeeBand        String? @map("employee_band")
+  dedupKey            String  @map("dedup_key")
+  score               Int     @default(0)
+  intent              String  @default("LOW") // LOW, MEDIUM, HIGH
+  status              String  @default("SCORED") // CAPTURED, SCORED, QUALIFIED, HANDOFF_READY, HANDOFF_SENT
+  qualificationReason String? @map("qualification_reason")
+  salesHandoffId      String? @map("sales_handoff_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company             Company  @relation(fields: [companyId], references: [id])
-  attributions        MarketingAttribution[]
+  company      Company                @relation(fields: [tenantId], references: [id])
+  attributions MarketingAttribution[]
 
-  @@map("marketing_leads")
-  @@unique([companyId, dedupKey])
-  @@index([companyId])
+  @@unique([tenantId, dedupKey])
+  @@index([tenantId])
   @@index([status])
+  @@map("marketing_leads")
 }
 
 model MarketingNurtureWorkflow {
-  id             String   @id @default(uuid())
-  companyId      String   @map("company_id")
-  name           String
-  trigger        String   // LEAD_CAPTURED, STATUS_CHANGED, FORM_SUBMITTED
-  status         String   @default("DRAFT") // DRAFT, ACTIVE, PAUSED
-  steps          Json     // List of workflow steps
-  aiSuggestion   String?  @map("ai_suggestion")
-  
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id           String  @id @default(uuid())
+  tenantId    String  @map("tenant_id")
+  name         String
+  trigger      String // LEAD_CAPTURED, STATUS_CHANGED, FORM_SUBMITTED
+  status       String  @default("DRAFT") // DRAFT, ACTIVE, PAUSED
+  steps        Json // List of workflow steps
+  aiSuggestion String? @map("ai_suggestion")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company        Company  @relation(fields: [companyId], references: [id])
+  company Company @relation(fields: [tenantId], references: [id])
 
+  @@index([tenantId])
   @@map("marketing_workflows")
-  @@index([companyId])
 }
 
 model MarketingConnectedAccount {
   id             String   @id @default(uuid())
-  companyId      String   @map("company_id")
-  provider       String   // GOOGLE, META, MAILCHIMP, HUBSPOT
+  tenantId      String   @map("tenant_id")
+  provider       String // GOOGLE, META, MAILCHIMP, HUBSPOT
   accountName    String   @map("account_name")
   status         String   @default("CONNECTED") // CONNECTED, DISCONNECTED, ERROR
   tokenExpiresAt DateTime @map("token_expires_at")
   scopes         String[]
   lastSyncAt     DateTime @map("last_sync_at")
-  
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company        Company  @relation(fields: [companyId], references: [id])
+  company Company @relation(fields: [tenantId], references: [id])
 
+  @@index([tenantId])
   @@map("marketing_accounts")
-  @@index([companyId])
 }
 
 model MarketingAttribution {
-  id                String   @id @default(uuid())
-  companyId         String   @map("company_id")
-  campaignId        String   @map("campaign_id")
-  leadId            String   @map("lead_id")
-  opportunityId     String?  @map("opportunity_id")
-  revenueAttributed Decimal  @map("revenue_attributed") @db.Decimal(15, 2)
-  spend             Decimal  @db.Decimal(15, 2)
-  roiPercent        Decimal  @map("roi_percent") @db.Decimal(10, 2)
-  
-  createdAt         DateTime @default(now()) @map("created_at")
+  id                String  @id @default(uuid())
+  tenantId         String  @map("tenant_id")
+  campaignId        String  @map("campaign_id")
+  leadId            String  @map("lead_id")
+  opportunityId     String? @map("opportunity_id")
+  revenueAttributed Decimal @map("revenue_attributed") @db.Decimal(15, 2)
+  spend             Decimal @db.Decimal(15, 2)
+  roiPercent        Decimal @map("roi_percent") @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
-  company           Company  @relation(fields: [companyId], references: [id])
-  campaign          MarketingCampaign @relation(fields: [campaignId], references: [id])
-  lead              MarketingLead @relation(fields: [leadId], references: [id])
+  company  Company           @relation(fields: [tenantId], references: [id])
+  campaign MarketingCampaign @relation(fields: [campaignId], references: [id])
+  lead     MarketingLead     @relation(fields: [leadId], references: [id])
 
-  @@map("marketing_attribution")
-  @@index([companyId])
+  @@index([tenantId])
   @@index([campaignId])
   @@index([leadId])
+  @@map("marketing_attribution")
 }
 
 model MarketingAlert {
-  id             String   @id @default(uuid())
-  companyId      String   @map("company_id")
-  type           String   // TOKEN_EXPIRY, CAMPAIGN_FAILURE, HANDOFF_DELAY
-  severity       String   @default("MEDIUM") // LOW, MEDIUM, HIGH
-  entityType     String   @map("entity_type") // CAMPAIGN, ACCOUNT, LEAD
-  entityId       String   @map("entity_id")
-  message        String
-  acknowledged   Boolean  @default(false)
-  
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id           String  @id @default(uuid())
+  tenantId    String  @map("tenant_id")
+  type         String // TOKEN_EXPIRY, CAMPAIGN_FAILURE, HANDOFF_DELAY
+  severity     String  @default("MEDIUM") // LOW, MEDIUM, HIGH
+  entityType   String  @map("entity_type") // CAMPAIGN, ACCOUNT, LEAD
+  entityId     String  @map("entity_id")
+  message      String
+  acknowledged Boolean @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company        Company  @relation(fields: [companyId], references: [id])
+  company Company @relation(fields: [tenantId], references: [id])
 
+  @@index([tenantId])
   @@map("marketing_alerts")
-  @@index([companyId])
 }
 
 model MarketingAuditEvent {
-  id             String   @id @default(uuid())
-  companyId      String   @map("company_id")
-  actorId        String   @map("actor_id")
-  action         String
-  entityType     String   @map("entity_type")
-  entityId       String   @map("entity_id")
-  detail         String   @db.Text
-  
-  createdAt      DateTime @default(now()) @map("created_at")
+  id         String @id @default(uuid())
+  tenantId  String @map("tenant_id")
+  actorId    String @map("actor_id")
+  action     String
+  entityType String @map("entity_type")
+  entityId   String @map("entity_id")
+  detail     String @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
 
   // Relations
-  company        Company  @relation(fields: [companyId], references: [id])
+  company Company @relation(fields: [tenantId], references: [id])
 
+  @@index([tenantId])
   @@map("marketing_audit_events")
-  @@index([companyId])
 }
 
 // ============================================================
@@ -2231,20 +2264,20 @@ model MarketingAuditEvent {
 // ============================================================
 
 model InventoryPool {
-  id          String               @id @default(uuid())
-  companyId   String               @map("company_id")
-  name        String
-  description String?
-  type        String               @default("shared") // "shared" | "exclusive"
-  createdAt   DateTime             @default(now()) @map("created_at")
-  updatedAt   DateTime             @updatedAt @map("updated_at")
-  deletedAt   DateTime?            @map("deleted_at")
-  company     Company              @relation(fields: [companyId], references: [id])
-  stores      Store[]
+  id                  String               @id @default(uuid())
+  tenantId           String               @map("tenant_id")
+  name                String
+  description         String?
+  type                String               @default("shared") // "shared" | "exclusive"
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  deletedAt           DateTime?            @map("deleted_at")
+  company             Company              @relation(fields: [tenantId], references: [id])
+  stores              Store[]
   ecommerceConnectors EcommerceConnector[]
-  stock       InventoryPoolStock[]
+  stock               InventoryPoolStock[]
 
-  @@index([companyId])
+  @@index([tenantId])
   @@index([type])
   @@map("inventory_pools")
 }
@@ -2264,4 +2297,40 @@ model InventoryPoolStock {
   @@unique([poolId, productId])
   @@index([poolId])
   @@map("inventory_pool_stock")
+}
+
+model AdminModuleStatus {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  moduleKey String   @map("module_key")
+  enabled   Boolean  @default(true)
+  updatedBy String   @map("updated_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  @@unique([tenantId, moduleKey])
+  @@map("admin_module_statuses")
+}
+
+model AdminAuditEvent {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  action    String
+  entityType String   @map("entity_type")
+  entityId  String   @map("entity_id")
+  actorId   String   @map("actor_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  @@map("admin_audit_events")
+}
+
+model AdminRequest {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  type        String
+  title       String
+  detail      String?
+  status      String   @default("open")
+  requestedBy String   @map("requested_by")
+  resolvedBy  String?  @map("resolved_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  @@map("admin_requests")
 }

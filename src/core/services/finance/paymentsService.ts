@@ -3,9 +3,8 @@ import type {
   PaymentRequest,
   PaymentMethod,
 } from "@/core/types/finance/payments";
-import { financeRepo } from "@/core/repositories/finance/financeRepo";
-
-const repo = financeRepo;
+import { apiRequest } from "@/core/api/apiClient";
+import type { SessionContext } from "@/core/security/session";
 
 export type PaymentExecutionPayload = {
   tenantId: string;
@@ -24,60 +23,65 @@ export type PaymentHistoryFilters = {
 export const paymentsService = {
   async getPayments(
     tenantId: string,
+    session?: SessionContext,
     status?: string,
   ): Promise<PaymentRequest[]> {
-    const all = await repo.listPaymentRequests(tenantId);
-    if (!status) return all;
-    return all.filter((p) => p.status === status);
+    const query = status ? `?status=${status}` : "";
+    return apiRequest<PaymentRequest[]>(
+      `/finance/payments${query}`,
+      "GET",
+      session,
+      undefined,
+      tenantId,
+    );
   },
 
   async executePayment(
     payload: PaymentExecutionPayload,
+    session?: SessionContext,
   ): Promise<PaymentRequest> {
-    const now = new Date().toISOString();
-    const request: PaymentRequest = {
-      id: `pay-${Date.now()}`,
-      tenantId: payload.tenantId,
-      amount: payload.amount,
-      currency: "IDR",
-      method: payload.method ?? "BANK_TRANSFER",
-      destination: payload.destination,
-      purpose: payload.purpose,
-      status: "pending",
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    return await repo.createPaymentRequest(payload.tenantId, request);
+    return apiRequest<PaymentRequest>(
+      "/finance/payments",
+      "POST",
+      session,
+      payload,
+      payload.tenantId,
+    );
   },
 
-  async approvePayment(_approval: {
-    paymentId: string;
-  }): Promise<PaymentRequest | null> {
-    // TODO: implement approval logic
-    return null;
+  async approvePayment(
+    paymentId: string,
+    tenantId: string,
+    session?: SessionContext,
+  ): Promise<PaymentRequest | null> {
+    return apiRequest<PaymentRequest>(
+      `/finance/payments/${paymentId}/approve`,
+      "POST",
+      session,
+      undefined,
+      tenantId,
+    );
   },
 
   async getPaymentHistory(
     tenantId: string,
+    session?: SessionContext,
     filters?: PaymentHistoryFilters,
   ): Promise<PaymentRequest[]> {
-    let all = await repo.listPaymentRequests(tenantId);
-    if (!filters) return all;
-
-    if (filters.status) {
-      all = all.filter((p) => p.status === filters.status);
+    let query = "";
+    if (filters) {
+      const params = new URLSearchParams();
+      if (filters.status) params.append("status", filters.status);
+      if (filters.startDate) params.append("startDate", filters.startDate);
+      if (filters.endDate) params.append("endDate", filters.endDate);
+      query = `?${params.toString()}`;
     }
-    if (filters.startDate) {
-      all = all.filter(
-        (p) => new Date(p.createdAt) >= new Date(filters.startDate!),
-      );
-    }
-    if (filters.endDate) {
-      all = all.filter(
-        (p) => new Date(p.createdAt) <= new Date(filters.endDate!),
-      );
-    }
-    return all;
+    return apiRequest<PaymentRequest[]>(
+      `/finance/payments/history${query}`,
+      "GET",
+      session,
+      undefined,
+      tenantId,
+    );
   },
 };

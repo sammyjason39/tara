@@ -11,7 +11,7 @@ import {
   Code2,
   Network,
   ShoppingBag,
-  CheckCircle2
+  CheckCircle2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,9 +21,15 @@ import { useSession } from "@/core/security/session";
 import { Roles } from "@/core/security/roles";
 import { workflowService } from "@/core/services/hr/workflowService";
 import { resolveDepartment } from "@/core/org/departmentResolver";
-import { ecommerceHubService, type EcommerceConnectorRecord, type ChannelRecord } from "@/core/services/retail/ecommerceHubService";
+import {
+  ecommerceHubService,
+  type EcommerceConnectorRecord,
+  type ChannelRecord,
+} from "@/core/services/retail/ecommerceHubService";
 import type { WorkflowStatus } from "@/core/tools/workflows/workflowTypes";
+import type { RetailChannel } from "@/core/types/retail/retail";
 import DeveloperConsole from "@/pages/retail/management/DeveloperConsole";
+import { apiUrl } from "@/lib/api-config";
 
 // Modular Components
 import { MarketplaceGallery } from "./components/MarketplaceGallery";
@@ -32,15 +38,20 @@ import { ManageConnectorDialog } from "./components/ManageConnectorDialog";
 import { ChannelDetailDialog } from "./components/ChannelDetailDialog";
 import { Card, CardContent } from "@/components/ui/card";
 
+import { useRetail } from "../context/RetailContext";
+
 const EcommerceConnector = () => {
   const session = useSession();
+  const { activeStore, activeChannel } = useRetail();
   const { toast } = useToast();
-  const branchIds = ["branch_main"];
-  const gatewayUrl =
-    import.meta.env.VITE_RETAIL_GATEWAY_URL ??
-    (window.location.origin.includes(":8080")
-      ? `${window.location.origin.replace(":8080", ":3001")}/api/retail/events`
-      : `${window.location.origin}/api/retail/events`);
+
+  const branchIds = activeStore
+    ? [activeStore.id]
+    : activeChannel
+      ? [activeChannel.id]
+      : [];
+
+  const gatewayUrl = apiUrl("/retail/events");
 
   const copyCredential = (value: string, label: string) => {
     navigator.clipboard.writeText(value);
@@ -49,7 +60,7 @@ const EcommerceConnector = () => {
       description: `${label} is ready to paste into your storefront configuration.`,
     });
   };
-  
+
   // State
   const [connectors, setConnectors] = useState<EcommerceConnectorRecord[]>([]);
   const [channels, setChannels] = useState<ChannelRecord[]>([]);
@@ -58,10 +69,18 @@ const EcommerceConnector = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [rotationLoading, setRotationLoading] = useState<string | null>(null);
-  const [revocationLoading, setRevocationLoading] = useState<string | null>(null);
-  const [selectedChannel, setSelectedChannel] = useState<ChannelRecord | null>(null);
-  const [approvalStatus, setApprovalStatus] = useState<WorkflowStatus | "NONE">("NONE");
-  const [approvalRequestId, setApprovalRequestId] = useState<string | null>(null);
+  const [revocationLoading, setRevocationLoading] = useState<string | null>(
+    null,
+  );
+  const [selectedChannel, setSelectedChannel] = useState<ChannelRecord | null>(
+    null,
+  );
+  const [approvalStatus, setApprovalStatus] = useState<WorkflowStatus | "NONE">(
+    "NONE",
+  );
+  const [approvalRequestId, setApprovalRequestId] = useState<string | null>(
+    null,
+  );
 
   // Form State
   const [channelType, setChannelType] = useState<string>("MARKETPLACE");
@@ -70,8 +89,13 @@ const EcommerceConnector = () => {
   const [syncFreq, setSyncFreq] = useState("15min");
   const [detailName, setDetailName] = useState("");
   const [detailSyncFreq, setDetailSyncFreq] = useState("15min");
-  const [detailSettings, setDetailSettings] = useState<any>({ visibleCategories: [] });
-  
+  const [detailSettings, setDetailSettings] = useState<{
+    visibleCategories: string[];
+    [key: string]: string | string[] | boolean | number | undefined;
+  }>({
+    visibleCategories: [],
+  });
+
   // Credentials State
   const [marketplaceApiKey, setMarketplaceApiKey] = useState("");
   const [marketplaceApiSecret, setMarketplaceApiSecret] = useState("");
@@ -82,7 +106,7 @@ const EcommerceConnector = () => {
     clientId: string;
     clientSecret: string;
   } | null>(null);
-  
+
   const [channelSecrets, setChannelSecrets] = useState<
     Record<string, { clientId: string; clientSecret: string }>
   >({});
@@ -100,7 +124,11 @@ const EcommerceConnector = () => {
       setChannels(nextChannels);
     } catch (e) {
       console.error(e);
-      toast({ title: "Error", description: "Failed to load channels", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to load channels",
+        variant: "destructive",
+      });
     }
   }, [session, toast]);
 
@@ -110,7 +138,11 @@ const EcommerceConnector = () => {
       setConnectors(data);
     } catch (e) {
       console.error(e);
-      toast({ title: "Error", description: "Failed to load connectors", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to load connectors",
+        variant: "destructive",
+      });
     }
   }, [session, toast]);
 
@@ -120,7 +152,11 @@ const EcommerceConnector = () => {
   }, [refreshChannels, refreshConnectors]);
 
   // Actions
-  const handleOpenDialog = (preselectName?: string, type: string = "MARKETPLACE", platformVal: string = "custom") => {
+  const handleOpenDialog = (
+    preselectName?: string,
+    type: string = "MARKETPLACE",
+    platformVal: string = "custom",
+  ) => {
     setChannelName(preselectName || "");
     setChannelType(type);
     setPlatform(platformVal);
@@ -143,7 +179,8 @@ const EcommerceConnector = () => {
         return { status: "NONE" as const, requestId: null };
       }
       const latest = matches.sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
       )[0];
       return { status: latest.status, requestId: latest.id };
     },
@@ -163,15 +200,27 @@ const EcommerceConnector = () => {
     setSelectedChannel(channel);
     setDetailName(channel.name);
     setDetailSyncFreq(channel.syncFrequency || "15m");
-    setDetailSettings(channel.settings || { visibleCategories: [] });
-    
+    setDetailSettings(
+      (channel.settings as {
+        visibleCategories: string[];
+        [key: string]: string | string[] | boolean | number | undefined;
+      }) || { visibleCategories: [] },
+    );
+
     // Fallback to credentials JSON if cached secret not found
     const cachedSecret = channelSecrets[channel.id];
-    const credentials = (channel.credentials as any) || {};
-    
-    setDetailClientId(cachedSecret?.clientId ?? credentials.clientId ?? channel.clientId ?? "");
-    setDetailClientSecret(cachedSecret?.clientSecret ?? credentials.clientSecret ?? channel.clientSecret ?? "");
-    
+    const credentials = (channel.credentials as Record<string, string>) || {};
+
+    setDetailClientId(
+      cachedSecret?.clientId ?? credentials.clientId ?? channel.clientId ?? "",
+    );
+    setDetailClientSecret(
+      cachedSecret?.clientSecret ??
+        credentials.clientSecret ??
+        channel.clientSecret ??
+        "",
+    );
+
     setIsDetailOpen(true);
     loadApprovalStatus(channel.id);
   };
@@ -189,23 +238,26 @@ const EcommerceConnector = () => {
     try {
       if (channelType === "OWNED") {
         // Step 1: Create or Get Connector for this Storefront (Gateway Auth)
-        const connectorResult = await ecommerceHubService.createConnector(session, {
-          name: channelName,
-          platform: platform,
-          domain: `${channelName.toLowerCase().replace(/\s+/g, '-')}.zenvix.io`,
-          branchIds
-        });
+        const connectorResult = await ecommerceHubService.createConnector(
+          session,
+          {
+            name: channelName,
+            platform: platform,
+            domain: `${channelName.toLowerCase().replace(/\s+/g, "-")}.zenvix.io`,
+            branchIds,
+          },
+        );
 
         // Step 2: Create the Channel under this connector (Channel Auth)
         const channelResult = await ecommerceHubService.createChannel(session, {
           name: channelName,
           type: "OWNED",
-          adapterType: (platform.toUpperCase() as any),
-          integrationCategory: platform === 'custom' ? 'HEADLESS' : 'PREMADE',
+          adapterType: platform.toUpperCase() as RetailChannel["type"],
+          integrationCategory: platform === "custom" ? "HEADLESS" : "PREMADE",
           syncFrequency: syncFreq,
           settings: {
-             connectorId: connectorResult.connector.id
-          }
+            connectorId: connectorResult.connector.id,
+          },
         });
 
         // Store generated results for success view
@@ -219,7 +271,10 @@ const EcommerceConnector = () => {
 
         await refreshChannels();
         await refreshConnectors();
-        toast({ title: "Storefront Generated", description: "Credentials issued successfully." });
+        toast({
+          title: "Storefront Generated",
+          description: "Credentials issued successfully.",
+        });
         return;
       }
 
@@ -227,29 +282,38 @@ const EcommerceConnector = () => {
       await ecommerceHubService.createChannel(session, {
         name: channelName,
         type: "MARKETPLACE",
-        adapterType: (platform.toUpperCase() as any),
+        adapterType: platform.toUpperCase() as RetailChannel["type"],
         integrationCategory: "PRESET",
         syncFrequency: syncFreq,
         settings: {
-           apiKey: marketplaceApiKey,
-           apiSecret: marketplaceApiSecret
-        }
+          apiKey: marketplaceApiKey,
+          apiSecret: marketplaceApiSecret,
+        },
       });
 
       await refreshChannels();
       await refreshConnectors();
-      toast({ title: "Connection Successful", description: `Linked to ${channelName} successfully.` });
+      toast({
+        title: "Connection Successful",
+        description: `Linked to ${channelName} successfully.`,
+      });
       setIsDialogOpen(false);
     } catch (error) {
       console.error(error);
-      toast({ title: "Error", description: "Failed to create channel", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Failed to create channel",
+        variant: "destructive",
+      });
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Disconnect this channel? Integration will stop immediately.")) {
+    if (
+      !confirm("Disconnect this channel? Integration will stop immediately.")
+    ) {
       return;
     }
     try {
@@ -262,7 +326,11 @@ const EcommerceConnector = () => {
       toast({ title: "Disconnected", description: "Channel removed." });
     } catch (error) {
       console.error(error);
-      toast({ title: "Delete Failed", description: "Could not remove this channel.", variant: "destructive" });
+      toast({
+        title: "Delete Failed",
+        description: "Could not remove this channel.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -271,7 +339,10 @@ const EcommerceConnector = () => {
     options: { showDialog?: boolean } = {},
   ) => {
     const approvalSnapshot = getChannelApprovalSnapshot(channelId);
-    if (session.role !== Roles.SUPERADMIN && approvalSnapshot.status !== "APPROVED") {
+    if (
+      session.role !== Roles.SUPERADMIN &&
+      approvalSnapshot.status !== "APPROVED"
+    ) {
       toast({
         title: "Approval Required",
         description: "Request approval to rotate this channel secret.",
@@ -281,18 +352,24 @@ const EcommerceConnector = () => {
     }
     setRotationLoading(channelId);
     try {
-      const creds = await ecommerceHubService.rotateChannelCredentials(session, channelId);
-      
+      const creds = await ecommerceHubService.rotateChannelCredentials(
+        session,
+        channelId,
+      );
+
       setChannelSecrets((prev) => ({
         ...prev,
-        [channelId]: { clientId: creds.plainClientId, clientSecret: creds.plainClientSecret },
+        [channelId]: {
+          clientId: creds.plainClientId,
+          clientSecret: creds.plainClientSecret,
+        },
       }));
 
       if (selectedChannel?.id === channelId) {
         setDetailClientId(creds.plainClientId);
         setDetailClientSecret(creds.plainClientSecret);
       }
-      
+
       toast({
         title: "Credentials Rotated",
         description: "New client secret created and updated in state.",
@@ -300,7 +377,11 @@ const EcommerceConnector = () => {
       await refreshChannels();
     } catch (error) {
       console.error(error);
-      toast({ title: "Rotation Failed", description: "Could not rotate credentials.", variant: "destructive" });
+      toast({
+        title: "Rotation Failed",
+        description: "Could not rotate credentials.",
+        variant: "destructive",
+      });
     } finally {
       setRotationLoading(null);
     }
@@ -308,7 +389,10 @@ const EcommerceConnector = () => {
 
   const handleRevokeChannel = async (channelId: string) => {
     const approvalSnapshot = getChannelApprovalSnapshot(channelId);
-    if (session.role !== Roles.SUPERADMIN && approvalSnapshot.status !== "APPROVED") {
+    if (
+      session.role !== Roles.SUPERADMIN &&
+      approvalSnapshot.status !== "APPROVED"
+    ) {
       toast({
         title: "Approval Required",
         description: "Request approval to revoke this channel secret.",
@@ -316,13 +400,20 @@ const EcommerceConnector = () => {
       });
       return;
     }
-    if (!confirm("Revoke these credentials? External storefronts will immediately lose access.")) {
+    if (
+      !confirm(
+        "Revoke these credentials? External storefronts will immediately lose access.",
+      )
+    ) {
       return;
     }
     setRevocationLoading(channelId);
     try {
       await ecommerceHubService.revokeChannelCredentials(session, channelId);
-      toast({ title: "Credentials Revoked", description: "Channel access is now disabled." });
+      toast({
+        title: "Credentials Revoked",
+        description: "Channel access is now disabled.",
+      });
       setChannelSecrets((prev) => {
         const next = { ...prev };
         delete next[channelId];
@@ -334,7 +425,11 @@ const EcommerceConnector = () => {
       await refreshChannels();
     } catch (error) {
       console.error(error);
-      toast({ title: "Revoke Failed", description: "Failed to revoke credentials.", variant: "destructive" });
+      toast({
+        title: "Revoke Failed",
+        description: "Failed to revoke credentials.",
+        variant: "destructive",
+      });
     } finally {
       setRevocationLoading(null);
     }
@@ -342,7 +437,8 @@ const EcommerceConnector = () => {
 
   const handleRequestApproval = () => {
     if (!selectedChannel) return;
-    const makerDept = resolveDepartment(session.departmentId)?.code ?? session.departmentId;
+    const makerDept =
+      resolveDepartment(session.departmentId)?.code ?? session.departmentId;
     const request = workflowService.createRequest(session.tenantId, session, {
       entityType: "RETAIL_CHANNEL",
       entityId: selectedChannel.id,
@@ -361,21 +457,34 @@ const EcommerceConnector = () => {
   const handleSaveChannel = async () => {
     if (!selectedChannel) return;
     if (!detailName.trim()) {
-      toast({ title: "Missing Name", description: "Channel name is required.", variant: "destructive" });
+      toast({
+        title: "Missing Name",
+        description: "Channel name is required.",
+        variant: "destructive",
+      });
       return;
     }
-    const canEdit = session.role === Roles.SUPERADMIN || approvalStatus === "APPROVED";
+    const canEdit =
+      session.role === Roles.SUPERADMIN || approvalStatus === "APPROVED";
     if (!canEdit) {
-      toast({ title: "Approval Required", description: "Request IT approval to save changes.", variant: "destructive" });
+      toast({
+        title: "Approval Required",
+        description: "Request IT approval to save changes.",
+        variant: "destructive",
+      });
       return;
     }
     setIsSaving(true);
     try {
-      const updated = await ecommerceHubService.updateChannel(session, selectedChannel.id, {
-        name: detailName.trim(),
-        syncFrequency: detailSyncFreq,
-        settings: detailSettings,
-      });
+      const updated = await ecommerceHubService.updateChannel(
+        session,
+        selectedChannel.id,
+        {
+          name: detailName.trim(),
+          syncFrequency: detailSyncFreq,
+          settings: detailSettings,
+        },
+      );
       setChannels((prev) =>
         prev.map((channel) => (channel.id === updated.id ? updated : channel)),
       );
@@ -383,7 +492,11 @@ const EcommerceConnector = () => {
       toast({ title: "Updated", description: "Settings saved successfully." });
     } catch (error) {
       console.error(error);
-      toast({ title: "Update Failed", description: "Could not update channel.", variant: "destructive" });
+      toast({
+        title: "Update Failed",
+        description: "Could not update channel.",
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -396,7 +509,8 @@ const EcommerceConnector = () => {
     { id: "tiktok", name: "TikTok Shop", color: "slate", icon: ShoppingBag },
   ];
 
-  const canEdit = session.role === Roles.SUPERADMIN || approvalStatus === "APPROVED";
+  const canEdit =
+    session.role === Roles.SUPERADMIN || approvalStatus === "APPROVED";
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
@@ -426,7 +540,11 @@ const EcommerceConnector = () => {
 
       <WorkspacePanel>
         <div className="p-8">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="space-y-8"
+          >
             <div className="flex items-center justify-between border-b border-slate-200">
               <TabsList className="bg-transparent h-auto p-0 gap-8">
                 <TabsTrigger
@@ -461,11 +579,22 @@ const EcommerceConnector = () => {
                     <Code2 className="w-8 h-8 text-white" />
                   </div>
                   <div className="flex-1">
-                    <h2 className="text-xl font-black italic uppercase tracking-tighter text-blue-900 mb-2">Headless Strategy: Provisioning Flow</h2>
+                    <h2 className="text-xl font-black italic uppercase tracking-tighter text-blue-900 mb-2">
+                      Headless Strategy: Provisioning Flow
+                    </h2>
                     <p className="text-sm text-blue-700 font-medium leading-relaxed">
-                      To integrate a custom storefront, first click <span className="font-black italic underline cursor-pointer" onClick={() => handleOpenDialog("", "OWNED", "custom")}>PROVISION NEW STORE</span>. 
-                      You will receive <strong>Gateway Credentials</strong> (for API access) and <strong>Storefront Secrets</strong> (for Auth). 
-                      Copy these into your `.env` and use the <strong>Developer Console</strong> below to verify connectivity immediately.
+                      To integrate a custom storefront, first click{" "}
+                      <span
+                        className="font-black italic underline cursor-pointer"
+                        onClick={() => handleOpenDialog("", "OWNED", "custom")}
+                      >
+                        PROVISION NEW STORE
+                      </span>
+                      . You will receive <strong>Gateway Credentials</strong>{" "}
+                      (for API access) and <strong>Storefront Secrets</strong>{" "}
+                      (for Auth). Copy these into your `.env` and use the{" "}
+                      <strong>Developer Console</strong> below to verify
+                      connectivity immediately.
                     </p>
                   </div>
                 </div>
@@ -476,16 +605,28 @@ const EcommerceConnector = () => {
                     <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mb-6">
                       <Server className="w-6 h-6 text-white" />
                     </div>
-                    <h3 className="text-xl font-black italic uppercase italic tracking-tighter mb-2">Gateway Kit</h3>
-                    <p className="text-xs text-slate-400 font-bold mb-6 uppercase tracking-widest">Global Endpoint Configuration</p>
+                    <h3 className="text-xl font-black italic uppercase italic tracking-tighter mb-2">
+                      Gateway Kit
+                    </h3>
+                    <p className="text-xs text-slate-400 font-bold mb-6 uppercase tracking-widest">
+                      Global Endpoint Configuration
+                    </p>
                     <div className="space-y-4">
                       <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                        <div className="text-[10px] font-black uppercase text-slate-500 mb-1">Gateway URL</div>
-                        <div className="text-[11px] font-mono break-all text-emerald-400">{gatewayUrl}</div>
+                        <div className="text-[10px] font-black uppercase text-slate-500 mb-1">
+                          Gateway URL
+                        </div>
+                        <div className="text-[11px] font-mono break-all text-emerald-400">
+                          {gatewayUrl}
+                        </div>
                       </div>
                       <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
-                        <div className="text-[10px] font-black uppercase text-slate-500 mb-1">Region</div>
-                        <div className="text-xs font-bold text-white">ID-JKT-01 (Primary)</div>
+                        <div className="text-[10px] font-black uppercase text-slate-500 mb-1">
+                          Region
+                        </div>
+                        <div className="text-xs font-bold text-white">
+                          ID-JKT-01 (Primary)
+                        </div>
                       </div>
                     </div>
                   </Card>
@@ -498,24 +639,32 @@ const EcommerceConnector = () => {
 
                 {/* Filtered Channels */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-black italic uppercase tracking-widest text-slate-400">Headless Deployments</h3>
+                  <h3 className="text-sm font-black italic uppercase tracking-widest text-slate-400">
+                    Headless Deployments
+                  </h3>
                   <div className="rounded-[2rem] border border-slate-200 bg-white shadow-xl overflow-hidden">
                     <div className="divide-y divide-slate-100">
-                      {channels.filter(c => c.integrationCategory === 'HEADLESS').length === 0 ? (
-                        <div className="p-12 text-center text-slate-400 text-xs font-bold italic uppercase">No active headless deployments</div>
+                      {channels.filter(
+                        (c) => c.integrationCategory === "HEADLESS",
+                      ).length === 0 ? (
+                        <div className="p-12 text-center text-slate-400 text-xs font-bold italic uppercase">
+                          No active headless deployments
+                        </div>
                       ) : (
-                        channels.filter(c => c.integrationCategory === 'HEADLESS').map((channel) => (
-                          <ChannelListItem
-                            key={channel.id}
-                            channel={channel}
-                            session={session}
-                            branchIds={branchIds}
-                            gatewayUrl={gatewayUrl}
-                            channelSecrets={channelSecrets}
-                            onOpenDetail={handleOpenDetail}
-                            copyCredential={copyCredential}
-                          />
-                        ))
+                        channels
+                          .filter((c) => c.integrationCategory === "HEADLESS")
+                          .map((channel) => (
+                            <ChannelListItem
+                              key={channel.id}
+                              channel={channel}
+                              session={session}
+                              branchIds={branchIds}
+                              gatewayUrl={gatewayUrl}
+                              channelSecrets={channelSecrets}
+                              onOpenDetail={handleOpenDetail}
+                              copyCredential={copyCredential}
+                            />
+                          ))
                       )}
                     </div>
                   </div>
@@ -524,97 +673,118 @@ const EcommerceConnector = () => {
             </TabsContent>
 
             <TabsContent value="premade">
-               <div className="space-y-8">
-                 <div className="grid md:grid-cols-2 gap-8">
-                    <Card className="rounded-[2.5rem] border-slate-200 shadow-xl overflow-hidden hover:shadow-2xl transition-all group border-2">
-                      <CardContent className="p-10 space-y-6">
-                        <div className="w-16 h-16 bg-emerald-100 rounded-3xl flex items-center justify-center text-emerald-600 mb-6 group-hover:rotate-12 transition-transform">
-                          <Network className="w-8 h-8" />
+              <div className="space-y-8">
+                <div className="grid md:grid-cols-2 gap-8">
+                  <Card className="rounded-[2.5rem] border-slate-200 shadow-xl overflow-hidden hover:shadow-2xl transition-all group border-2">
+                    <CardContent className="p-10 space-y-6">
+                      <div className="w-16 h-16 bg-emerald-100 rounded-3xl flex items-center justify-center text-emerald-600 mb-6 group-hover:rotate-12 transition-transform">
+                        <Network className="w-8 h-8" />
+                      </div>
+                      <div>
+                        <div className="text-3xl font-black italic uppercase tracking-tighter text-slate-900">
+                          Webhook Bridge
                         </div>
-                        <div>
-                          <div className="text-3xl font-black italic uppercase tracking-tighter text-slate-900">
-                            Webhook Bridge
-                          </div>
-                          <p className="text-slate-500 font-medium leading-relaxed mt-4">
-                            Connect your bespoke CMS or ERP via simple outbound webhooks and JSON mapping.
-                          </p>
-                        </div>
-                        <Button
-                          className="w-full h-14 rounded-2xl bg-emerald-600 text-white font-black italic uppercase tracking-widest text-xs shadow-2xl mt-4"
-                          onClick={() => handleOpenDialog("Custom Webhook", "OWNED", "CUSTOM")}
-                        >
-                          Setup Bridge
-                        </Button>
-                      </CardContent>
-                    </Card>
-
-                    <Card className="rounded-[2.5rem] border-dashed border-2 border-slate-200 bg-slate-50/50 flex flex-col justify-center p-12 text-center items-center">
-                        <div className="w-16 h-16 bg-white rounded-3xl border-2 border-slate-200 flex items-center justify-center border-dashed mb-4">
-                          <Plus className="w-8 h-8 text-slate-300" />
-                        </div>
-                        <div className="font-black italic uppercase tracking-widest text-xs text-slate-500">
-                          Template Repository
-                        </div>
-                        <p className="text-xs text-slate-400 font-bold mt-2 max-w-[200px]">
-                          Import pre-defined JSON schemas for major ERP systems.
+                        <p className="text-slate-500 font-medium leading-relaxed mt-4">
+                          Connect your bespoke CMS or ERP via simple outbound
+                          webhooks and JSON mapping.
                         </p>
-                    </Card>
-                 </div>
+                      </div>
+                      <Button
+                        className="w-full h-14 rounded-2xl bg-emerald-600 text-white font-black italic uppercase tracking-widest text-xs shadow-2xl mt-4"
+                        onClick={() =>
+                          handleOpenDialog("Custom Webhook", "OWNED", "CUSTOM")
+                        }
+                      >
+                        Setup Bridge
+                      </Button>
+                    </CardContent>
+                  </Card>
 
-                 {/* Filtered Channels */}
-                 <div className="space-y-4">
-                   <h3 className="text-sm font-black italic uppercase tracking-widest text-slate-400">Active Bridges</h3>
-                   <div className="rounded-[2rem] border border-slate-200 bg-white shadow-xl overflow-hidden">
-                     <div className="divide-y divide-slate-100">
-                       {channels.filter(c => c.integrationCategory === 'PREMADE').length === 0 ? (
-                         <div className="p-12 text-center text-slate-400 text-xs font-bold italic uppercase">No active webhook bridges</div>
-                       ) : (
-                         channels.filter(c => c.integrationCategory === 'PREMADE').map((channel) => (
-                           <ChannelListItem
-                             key={channel.id}
-                             channel={channel}
-                             session={session}
-                             branchIds={branchIds}
-                             gatewayUrl={gatewayUrl}
-                             channelSecrets={channelSecrets}
-                             onOpenDetail={handleOpenDetail}
-                             copyCredential={copyCredential}
-                           />
-                         ))
-                       )}
-                     </div>
-                   </div>
-                 </div>
-               </div>
+                  <Card className="rounded-[2.5rem] border-dashed border-2 border-slate-200 bg-slate-50/50 flex flex-col justify-center p-12 text-center items-center">
+                    <div className="w-16 h-16 bg-white rounded-3xl border-2 border-slate-200 flex items-center justify-center border-dashed mb-4">
+                      <Plus className="w-8 h-8 text-slate-300" />
+                    </div>
+                    <div className="font-black italic uppercase tracking-widest text-xs text-slate-500">
+                      Template Repository
+                    </div>
+                    <p className="text-xs text-slate-400 font-bold mt-2 max-w-[200px]">
+                      Import pre-defined JSON schemas for major ERP systems.
+                    </p>
+                  </Card>
+                </div>
+
+                {/* Filtered Channels */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-black italic uppercase tracking-widest text-slate-400">
+                    Active Bridges
+                  </h3>
+                  <div className="rounded-[2rem] border border-slate-200 bg-white shadow-xl overflow-hidden">
+                    <div className="divide-y divide-slate-100">
+                      {channels.filter(
+                        (c) => c.integrationCategory === "PREMADE",
+                      ).length === 0 ? (
+                        <div className="p-12 text-center text-slate-400 text-xs font-bold italic uppercase">
+                          No active webhook bridges
+                        </div>
+                      ) : (
+                        channels
+                          .filter((c) => c.integrationCategory === "PREMADE")
+                          .map((channel) => (
+                            <ChannelListItem
+                              key={channel.id}
+                              channel={channel}
+                              session={session}
+                              branchIds={branchIds}
+                              gatewayUrl={gatewayUrl}
+                              channelSecrets={channelSecrets}
+                              onOpenDetail={handleOpenDetail}
+                              copyCredential={copyCredential}
+                            />
+                          ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="preset">
               <div className="space-y-8">
                 <MarketplaceGallery
                   marketplaces={availableMarketplaces}
-                  onSelect={(name, type, platform) => handleOpenDialog(name, type, platform)}
+                  onSelect={(name, type, platform) =>
+                    handleOpenDialog(name, type, platform)
+                  }
                 />
 
                 {/* Filtered Channels */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-black italic uppercase tracking-widest text-slate-400">Marketplace Syncs</h3>
+                  <h3 className="text-sm font-black italic uppercase tracking-widest text-slate-400">
+                    Marketplace Syncs
+                  </h3>
                   <div className="rounded-[2rem] border border-slate-200 bg-white shadow-xl overflow-hidden">
                     <div className="divide-y divide-slate-100">
-                      {channels.filter(c => c.integrationCategory === 'PRESET').length === 0 ? (
-                        <div className="p-12 text-center text-slate-400 text-xs font-bold italic uppercase">No active marketplace syncs</div>
+                      {channels.filter(
+                        (c) => c.integrationCategory === "PRESET",
+                      ).length === 0 ? (
+                        <div className="p-12 text-center text-slate-400 text-xs font-bold italic uppercase">
+                          No active marketplace syncs
+                        </div>
                       ) : (
-                        channels.filter(c => c.integrationCategory === 'PRESET').map((channel) => (
-                          <ChannelListItem
-                            key={channel.id}
-                            channel={channel}
-                            session={session}
-                            branchIds={branchIds}
-                            gatewayUrl={gatewayUrl}
-                            channelSecrets={channelSecrets}
-                            onOpenDetail={handleOpenDetail}
-                            copyCredential={copyCredential}
-                          />
-                        ))
+                        channels
+                          .filter((c) => c.integrationCategory === "PRESET")
+                          .map((channel) => (
+                            <ChannelListItem
+                              key={channel.id}
+                              channel={channel}
+                              session={session}
+                              branchIds={branchIds}
+                              gatewayUrl={gatewayUrl}
+                              channelSecrets={channelSecrets}
+                              onOpenDetail={handleOpenDetail}
+                              copyCredential={copyCredential}
+                            />
+                          ))
                       )}
                     </div>
                   </div>

@@ -4,8 +4,17 @@ import type { HRAuditFields } from "@/core/types/hr/base";
 // PHYSICAL BRANCH (Store)
 // ============================================================
 
-export type RetailStoreStatus = "active" | "inactive" | "maintenance" | "decommissioned";
-export type RetailStoreType = "flagship" | "express" | "kiosk" | "pop-up" | "warehouse";
+export type RetailStoreStatus =
+  | "active"
+  | "inactive"
+  | "maintenance"
+  | "decommissioned";
+export type RetailStoreType =
+  | "flagship"
+  | "express"
+  | "kiosk"
+  | "pop-up"
+  | "warehouse";
 
 export interface RetailStore extends HRAuditFields {
   id: string;
@@ -20,9 +29,9 @@ export interface RetailStore extends HRAuditFields {
   email?: string;
   timezone?: string;
   address?: string;
-  operatingHours?: Record<string, any>;
+  operatingHours?: Record<string, unknown>;
   inventoryPoolId?: string; // null = private per-location inventory
-  settings?: any;
+  settings?: Record<string, unknown>;
 }
 
 // ============================================================
@@ -50,7 +59,7 @@ export interface EcommerceStore extends HRAuditFields {
   managerId?: string;
   /** IDs of physical Store branches this e-commerce store serves */
   branchIds?: string[];
-  settings?: any;
+  settings?: Record<string, unknown>;
 }
 
 // ============================================================
@@ -78,7 +87,12 @@ export interface InventoryPoolStock {
 // POS DEVICE
 // ============================================================
 
-export type POSDeviceType = "pos_terminal" | "kiosk" | "mobile_pos" | "scanner" | "refund_desk";
+export type POSDeviceType =
+  | "pos_terminal"
+  | "kiosk"
+  | "mobile_pos"
+  | "scanner"
+  | "refund_desk";
 
 export interface POSDevice extends HRAuditFields {
   id: string;
@@ -94,7 +108,14 @@ export interface POSDevice extends HRAuditFields {
 // ORDERS
 // ============================================================
 
-export type OrderStatus = "draft" | "pending_payment" | "reserved" | "paid" | "fulfilled" | "cancelled" | "refunded";
+export type OrderStatus =
+  | "draft"
+  | "pending_payment"
+  | "reserved"
+  | "paid"
+  | "fulfilled"
+  | "cancelled"
+  | "refunded";
 
 export interface RetailOrderItem {
   itemId: string;
@@ -176,7 +197,7 @@ export interface RetailChannel extends HRAuditFields {
   clientSecret?: string;
   gatewayUrl?: string;
   connector?: string;
-  settings?: any;
+  settings?: Record<string, unknown>;
 }
 
 // ============================================================
@@ -240,4 +261,27 @@ export interface RetailLoadBalancer extends HRAuditFields {
   algorithm: string;
   status: "ONLINE" | "OFFLINE";
   nodes?: RetailGatewayNode[];
+}
+
+// ============================================================
+// PRODUCTS
+// ============================================================
+
+export interface RetailProduct extends HRAuditFields {
+  id: string;
+  tenantId: string;
+  sku: string;
+  barcode: string;
+  name: string;
+  description: string;
+  categoryId: string;
+  basePrice: number;
+  currency: string;
+  taxRate: number;
+  unit: string;
+  status: "active" | "discontinued" | "draft";
+  /** Convenience field for legacy components */
+  price: number;
+  /** Current stock level (on-hand) */
+  stock?: number;
 }

@@ -1,24 +1,62 @@
 import type { PayableBill } from "@/core/types/finance/payables";
-import { financeRepo } from "@/core/repositories/finance/financeRepo";
-
-const repo = financeRepo;
+import { apiRequest } from "@/core/api/apiClient";
+import type { SessionContext } from "@/core/security/session";
 
 export const payablesService = {
-  async getPayables(tenantId: string, _status?: string): Promise<PayableBill[]> {
-    return await repo.listPayables(tenantId);
+  async getPayables(
+    tenantId: string,
+    session?: SessionContext,
+    status?: string,
+  ): Promise<PayableBill[]> {
+    const query = status ? `?status=${status}` : "";
+    return apiRequest<PayableBill[]>(
+      `/finance/payables${query}`,
+      "GET",
+      session,
+      undefined,
+      tenantId,
+    );
   },
 
-  async createPayable(payable: PayableBill): Promise<PayableBill> {
-    return await repo.createPayable(payable.tenantId, payable);
+  async createPayable(
+    payable: PayableBill,
+    session?: SessionContext,
+  ): Promise<PayableBill> {
+    return apiRequest<PayableBill>(
+      "/finance/payables",
+      "POST",
+      session,
+      payable,
+      payable.tenantId,
+    );
   },
 
-  async updatePayable(_payableId: string, _updates: Partial<PayableBill>): Promise<PayableBill | null> {
-    // Mock repo doesn't support update for payables yet
-    return null;
+  async updatePayable(
+    payableId: string,
+    updates: Partial<PayableBill>,
+    session?: SessionContext,
+  ): Promise<PayableBill | null> {
+    const tenantId = updates.tenantId || "";
+    return apiRequest<PayableBill>(
+      `/finance/payables/${payableId}`,
+      "PATCH",
+      session,
+      updates,
+      tenantId,
+    );
   },
 
-  async approvePayable(_approval: { payableId: string }): Promise<PayableBill | null> {
-    // Mock repo doesn't support approval yet
-    return null;
+  async approvePayable(
+    payableId: string,
+    tenantId: string,
+    session?: SessionContext,
+  ): Promise<PayableBill | null> {
+    return apiRequest<PayableBill>(
+      `/finance/payables/${payableId}/approve`,
+      "POST",
+      session,
+      undefined,
+      tenantId,
+    );
   },
 };

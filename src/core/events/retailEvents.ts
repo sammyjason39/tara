@@ -9,7 +9,7 @@ export type RetailEventType =
   | "payment_success";
 
 export interface RetailEventScope {
-  companyId: string;
+  tenantId: string;
   branchId?: string;
   ecommerceId?: string;
 }

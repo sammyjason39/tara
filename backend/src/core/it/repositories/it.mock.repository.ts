@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateProvisioningRequestDto } from '../dto/create-provisioning-request.dto';
-import { ProvisioningRequest } from '../entities/provisioning-request.entity';
-import { SystemHealth } from '../entities/system-health.entity';
-import { IITRepository } from './it.repository.interface';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { CreateProvisioningRequestDto } from "../dto/create-provisioning-request.dto";
+import { ProvisioningRequest } from "../entities/provisioning-request.entity";
+import { SystemHealth } from "../entities/system-health.entity";
+import { IITRepository } from "./it.repository.interface";
 
 @Injectable()
 export class ITMockRepository extends IITRepository {
@@ -11,8 +11,8 @@ export class ITMockRepository extends IITRepository {
 
   constructor() {
     super();
-    this.seed('tenant-001');
-    this.seed('tenant-002');
+    this.seed("tenant-001");
+    this.seed("tenant-002");
   }
 
   private seed(tenantId: string): void {
@@ -21,10 +21,10 @@ export class ITMockRepository extends IITRepository {
       tenantId,
       supplierId: `${tenantId}-supplier-1`,
       supplierBranchId: `${tenantId}-supplier-1-jkt`,
-      scope: 'full_portal',
-      reason: 'Initial supplier onboarding',
-      status: 'requested',
-      requestedBy: 'procurement-admin',
+      scope: "full_portal",
+      reason: "Initial supplier onboarding",
+      status: "requested",
+      requestedBy: "procurement-admin",
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -32,32 +32,36 @@ export class ITMockRepository extends IITRepository {
       {
         id: `${tenantId}-health-1`,
         tenantId,
-        component: 'identity',
-        status: 'healthy',
+        component: "identity",
+        status: "healthy",
         latencyMs: 42,
         checkedAt: new Date(),
       },
       {
         id: `${tenantId}-health-2`,
         tenantId,
-        component: 'database',
-        status: 'healthy',
+        component: "database",
+        status: "healthy",
         latencyMs: 55,
         checkedAt: new Date(),
       },
       {
         id: `${tenantId}-health-3`,
         tenantId,
-        component: 'integrations',
-        status: 'degraded',
+        component: "integrations",
+        status: "degraded",
         latencyMs: 210,
         checkedAt: new Date(),
       },
     );
   }
 
-  async getProvisioningRequests(tenantId: string): Promise<ProvisioningRequest[]> {
-    return this.provisioningRequests.filter((item) => item.tenantId === tenantId);
+  async getProvisioningRequests(
+    tenantId: string,
+  ): Promise<ProvisioningRequest[]> {
+    return this.provisioningRequests.filter(
+      (item) => item.tenantId === tenantId,
+    );
   }
 
   async createProvisioningRequest(
@@ -71,8 +75,8 @@ export class ITMockRepository extends IITRepository {
       supplierBranchId: dto.supplierBranchId,
       scope: dto.scope,
       reason: dto.reason,
-      status: 'requested',
-      requestedBy: dto.requestedBy || 'system',
+      status: "requested",
+      requestedBy: dto.requestedBy || "system",
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -88,15 +92,47 @@ export class ITMockRepository extends IITRepository {
     const request = this.provisioningRequests.find(
       (item) => item.tenantId === tenantId && item.id === requestId,
     );
-    if (!request) throw new NotFoundException('Provisioning request not found.');
-    request.status = 'provisioned';
+    if (!request)
+      throw new NotFoundException("Provisioning request not found.");
+    request.status = "provisioned";
     request.provisionedBy = provisionedBy;
     request.updatedAt = new Date();
     return request;
+  }
+
+  async updateProvisioningRequest(
+    tenantId: string,
+    requestId: string,
+    dto: Partial<CreateProvisioningRequestDto>,
+  ): Promise<ProvisioningRequest> {
+    const request = this.provisioningRequests.find(
+      (item) => item.tenantId === tenantId && item.id === requestId,
+    );
+    if (!request)
+      throw new NotFoundException("Provisioning request not found.");
+    if (dto.employeeId !== undefined) request.employeeId = dto.employeeId;
+    if (dto.supplierId !== undefined) request.supplierId = dto.supplierId;
+    if (dto.supplierBranchId !== undefined)
+      request.supplierBranchId = dto.supplierBranchId;
+    if (dto.scope !== undefined) request.scope = dto.scope;
+    if (dto.reason !== undefined) request.reason = dto.reason;
+    request.updatedAt = new Date();
+    return request;
+  }
+
+  async deleteProvisioningRequest(
+    tenantId: string,
+    requestId: string,
+  ): Promise<void> {
+    const index = this.provisioningRequests.findIndex(
+      (item) => item.tenantId === tenantId && item.id === requestId,
+    );
+    if (index === -1)
+      throw new NotFoundException("Provisioning request not found.");
+    this.provisioningRequests.splice(index, 1);
   }
 
   async getSystemHealth(tenantId: string): Promise<SystemHealth[]> {
     return this.healthChecks.filter((item) => item.tenantId === tenantId);
   }
 }
-

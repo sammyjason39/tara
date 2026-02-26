@@ -6,7 +6,7 @@ import { prisma } from "@/core/persistence/database/client";
  */
 const mapToContract = (db: any): Contract => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   employeeId: db.employeeId || undefined,
   title: db.title,
   type: db.type as ContractType,
@@ -24,7 +24,7 @@ export const contractRepo = {
   async list(tenantId: string): Promise<Contract[]> {
     const list = await prisma.contract.findMany({
       where: {
-        companyId: tenantId,
+        tenantId: tenantId,
       },
       orderBy: {
         startDate: 'desc',
@@ -43,7 +43,7 @@ export const contractRepo = {
   ): Promise<Contract> {
     const record = await prisma.contract.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         employeeId: payload.employeeId,
         title: payload.title,
         type: payload.type,
@@ -75,7 +75,7 @@ export const contractRepo = {
     const updated = await prisma.contract.update({
       where: {
         id: contractId,
-        companyId: tenantId,
+        tenantId: tenantId,
       },
       data,
     });

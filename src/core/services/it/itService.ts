@@ -26,19 +26,74 @@ export interface SystemHealth {
 }
 
 export const itService = {
-  async getProvisioningRequests(tenantId: string, session: SessionContext): Promise<ProvisioningRequest[]> {
-    return apiRequest<ProvisioningRequest[]>("/it/provisioning", "GET", session);
+  async getProvisioningRequests(
+    tenantId: string,
+    session: SessionContext,
+  ): Promise<ProvisioningRequest[]> {
+    return apiRequest<ProvisioningRequest[]>(
+      "/it/provisioning",
+      "GET",
+      session,
+    );
   },
 
-  async createProvisioningRequest(tenantId: string, session: SessionContext, data: any): Promise<ProvisioningRequest> {
-    return apiRequest<ProvisioningRequest>("/it/provisioning", "POST", session, data);
+  async createProvisioningRequest(
+    tenantId: string,
+    session: SessionContext,
+    data: any,
+  ): Promise<ProvisioningRequest> {
+    return apiRequest<ProvisioningRequest>(
+      "/it/provisioning",
+      "POST",
+      session,
+      data,
+    );
   },
 
-  async markAsProvisioned(tenantId: string, session: SessionContext, requestId: string, provisionedBy: string): Promise<ProvisioningRequest> {
-    return apiRequest<ProvisioningRequest>(`/it/provisioning/${requestId}/provision`, "PUT", session, { provisionedBy });
+  async markAsProvisioned(
+    tenantId: string,
+    session: SessionContext,
+    requestId: string,
+    provisionedBy: string,
+  ): Promise<ProvisioningRequest> {
+    return apiRequest<ProvisioningRequest>(
+      `/it/provisioning/${requestId}/provision`,
+      "PUT",
+      session,
+      { provisionedBy },
+    );
   },
 
-  async getSystemHealth(tenantId: string, session: SessionContext): Promise<SystemHealth[]> {
+  async updateProvisioningRequest(
+    tenantId: string,
+    session: SessionContext,
+    requestId: string,
+    data: any,
+  ): Promise<ProvisioningRequest> {
+    return apiRequest<ProvisioningRequest>(
+      `/it/provisioning/${requestId}`,
+      "PUT",
+      session,
+      data,
+    );
+  },
+
+  async deleteProvisioningRequest(
+    tenantId: string,
+    session: SessionContext,
+    requestId: string,
+  ): Promise<{ success: boolean }> {
+    return apiRequest<{ success: boolean }>(
+      `/it/provisioning/${requestId}`,
+      "DELETE",
+      session,
+    );
+  },
+
+  async getSystemHealth(
+    tenantId: string,
+    session: SessionContext,
+  ): Promise<SystemHealth[]> {
     return apiRequest<SystemHealth[]>("/it/health", "GET", session);
   },
 };

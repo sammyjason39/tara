@@ -54,7 +54,7 @@ export class EcommerceConnectorGuard implements CanActivate {
           | null;
         scope = {
           ecommerceId: match.id,
-          companyId: match.companyId,
+          tenantId: match.tenantId,
           branchId: credentials?.branchId ?? 'branch_main',
           domain: credentials?.domain ?? match.name ?? '',
           status: match.status,
@@ -72,7 +72,7 @@ export class EcommerceConnectorGuard implements CanActivate {
       if (connector) {
         scope = {
           ecommerceId: connector.id,
-          companyId: connector.companyId,
+          tenantId: connector.tenantId,
           branchId: connector.branches[0]?.id || 'branch_main',
           branchIds: connector.branches.map(b => b.id),
           inventoryPoolId: connector.inventoryPoolId,

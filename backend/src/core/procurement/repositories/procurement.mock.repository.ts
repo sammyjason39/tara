@@ -186,6 +186,22 @@ export class ProcurementMockRepository extends IProcurementRepository {
     return [];
   }
 
+  async getSupplierRecommendations(tenantId: string, params: any): Promise<any[]> {
+    const recommendations = [];
+    const suppliers = this.suppliers.filter(
+      (s) => s.tenantId === tenantId && s.category === params.category
+    );
+    for (const supplier of suppliers) {
+       recommendations.push({
+         supplierId: supplier.id,
+         supplierName: supplier.name,
+         matchScore: supplier.rating,
+         reasons: ["High compliance rating", "In selected category"],
+       });
+    }
+    return recommendations;
+  }
+
   async getDraftPurchaseOrders(tenantId: string): Promise<any[]> {
     return [];
   }

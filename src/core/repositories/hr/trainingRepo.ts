@@ -7,7 +7,7 @@ import { prisma } from "@/core/persistence/database/client";
  */
 const mapToProgram = (db: any): TrainingProgram => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   name: db.name,
   status: db.status as any,
   completionRate: db.completionRate,
@@ -21,7 +21,7 @@ const mapToProgram = (db: any): TrainingProgram => ({
  */
 const mapToAssignment = (db: any): TrainingAssignment => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   programId: db.programId,
   employeeId: db.employeeId,
   status: db.status as any,
@@ -36,7 +36,7 @@ export const trainingRepo = {
    */
   async listPrograms(tenantId: string): Promise<TrainingProgram[]> {
     const list = await prisma.trainingProgram.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return list.map(mapToProgram);
@@ -48,7 +48,7 @@ export const trainingRepo = {
   ): Promise<TrainingProgram> {
     const record = await prisma.trainingProgram.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         name: payload.name,
         status: payload.status,
         completionRate: payload.completionRate,
@@ -63,7 +63,7 @@ export const trainingRepo = {
    */
   async listAssignments(tenantId: string): Promise<TrainingAssignment[]> {
     const list = await prisma.trainingAssignment.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return list.map(mapToAssignment);
@@ -75,7 +75,7 @@ export const trainingRepo = {
   ): Promise<TrainingAssignment> {
     const record = await prisma.trainingAssignment.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         programId: payload.programId,
         employeeId: payload.employeeId,
         status: payload.status,
@@ -96,7 +96,7 @@ export const trainingRepo = {
     const updated = await prisma.trainingAssignment.update({
       where: {
         id: assignmentId,
-        companyId: tenantId,
+        tenantId: tenantId,
       },
       data,
     });

@@ -6,7 +6,7 @@ import { prisma } from "@/core/persistence/database/client";
  */
 const mapToRecord = (db: any): AttendanceRecord => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   employeeId: db.employeeId,
   date: db.date.toISOString().split('T')[0],
   shiftId: db.shiftId || "shift-default",
@@ -43,12 +43,12 @@ export const attendanceRepo = {
    */
   async listLocations(tenantId: string): Promise<WorkplaceLocation[]> {
     const locations = await prisma.location.findMany({
-      where: { companyId: tenantId, deletedAt: null }
+      where: { tenantId: tenantId, deletedAt: null }
     });
 
     return locations.map(l => ({
       id: l.id,
-      tenantId: l.companyId,
+      tenantId: l.tenantId,
       name: l.name,
       address: l.address || "",
       coordinates: { lat: 0, lng: 0 }, // Defaults if not in DB
@@ -58,13 +58,13 @@ export const attendanceRepo = {
 
   async getLocation(tenantId: string, locationId: string): Promise<WorkplaceLocation | undefined> {
     const loc = await prisma.location.findFirst({
-      where: { id: locationId, companyId: tenantId, deletedAt: null }
+      where: { id: locationId, tenantId: tenantId, deletedAt: null }
     });
     if (!loc) return undefined;
     
     return {
       id: loc.id,
-      tenantId: loc.companyId,
+      tenantId: loc.tenantId,
       name: loc.name,
       address: loc.address || "",
       coordinates: { lat: 0, lng: 0 },
@@ -93,7 +93,7 @@ export const attendanceRepo = {
    */
   async list(tenantId: string): Promise<AttendanceRecord[]> {
     const records = await prisma.attendanceRecord.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { date: 'desc' },
     });
 
@@ -106,7 +106,7 @@ export const attendanceRepo = {
   async getRecord(tenantId: string, employeeId: string, date: string): Promise<AttendanceRecord | undefined> {
     const record = await prisma.attendanceRecord.findFirst({
       where: {
-        companyId: tenantId,
+        tenantId: tenantId,
         employeeId,
         date: new Date(date),
       },
@@ -135,7 +135,7 @@ export const attendanceRepo = {
       },
       create: {
         id: record.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         employeeId: record.employeeId,
         locationId: record.checkIn?.locationId || "loc-default",
         date: new Date(record.date),

@@ -1,26 +1,26 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../persistence/prisma.service';
-import { Prisma } from '../../../generated/client';
-import { IHRRepository } from './hr.repository.interface';
-import { Employee } from '../entities/employee.entity';
-import { Attendance } from '../entities/attendance.entity';
-import { LeaveRequest } from '../entities/leave-request.entity';
-import { Payroll } from '../entities/payroll.entity';
-import { CreateEmployeeDto } from '../dto/create-employee.dto';
-import { UpdateEmployeeDto } from '../dto/update-employee.dto';
-import { CreateLeaveRequestDto } from '../dto/create-leave-request.dto';
-import { Department } from '../entities/department.entity';
-import { JobRequisition } from '../entities/requisition.entity';
-import { PerformanceCycle } from '../entities/performance-cycle.entity';
-import { PerformanceReview } from '../entities/performance-review.entity';
-import { HRCase } from '../entities/hr-case.entity';
-import { Contract } from '../entities/contract.entity';
-import { CreateDepartmentDto } from '../dto/create-department.dto';
-import { CreateRequisitionDto } from '../dto/create-requisition.dto';
-import { CreatePerformanceCycleDto } from '../dto/create-performance-cycle.dto';
-import { SubmitReviewDto } from '../dto/submit-review.dto';
-import { CreateCaseDto } from '../dto/create-case.dto';
-import { CreateContractDto } from '../dto/create-contract.dto';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "../../../persistence/prisma.service";
+import { Prisma } from "@prisma/client";
+import { IHRRepository } from "./hr.repository.interface";
+import { Employee } from "../entities/employee.entity";
+import { Attendance } from "../entities/attendance.entity";
+import { LeaveRequest } from "../entities/leave-request.entity";
+import { Payroll } from "../entities/payroll.entity";
+import { CreateEmployeeDto } from "../dto/create-employee.dto";
+import { UpdateEmployeeDto } from "../dto/update-employee.dto";
+import { CreateLeaveRequestDto } from "../dto/create-leave-request.dto";
+import { Department } from "../entities/department.entity";
+import { JobRequisition } from "../entities/requisition.entity";
+import { PerformanceCycle } from "../entities/performance-cycle.entity";
+import { PerformanceReview } from "../entities/performance-review.entity";
+import { HRCase } from "../entities/hr-case.entity";
+import { Contract } from "../entities/contract.entity";
+import { CreateDepartmentDto } from "../dto/create-department.dto";
+import { CreateRequisitionDto } from "../dto/create-requisition.dto";
+import { CreatePerformanceCycleDto } from "../dto/create-performance-cycle.dto";
+import { SubmitReviewDto } from "../dto/submit-review.dto";
+import { CreateCaseDto } from "../dto/create-case.dto";
+import { CreateContractDto } from "../dto/create-contract.dto";
 
 @Injectable()
 export class HRDbRepository implements IHRRepository {
@@ -30,12 +30,15 @@ export class HRDbRepository implements IHRRepository {
   // EMPLOYEE MANAGEMENT
   // ============================================================
 
-  async getEmployees(tenantId: string, locationId?: string): Promise<Employee[]> {
+  async getEmployees(
+    tenantId: string,
+    locationId?: string,
+  ): Promise<Employee[]> {
     const where: any = {
-      companyId: tenantId,
-      deletedAt: null
+      tenantId: tenantId,
+      deletedAt: null,
     };
-    
+
     if (locationId) {
       where.locationId = locationId;
     }
@@ -44,9 +47,9 @@ export class HRDbRepository implements IHRRepository {
       where,
       include: {
         location: true,
-        department: true
+        department: true,
       },
-      orderBy: { lastName: 'asc' }
+      orderBy: { lastName: "asc" },
     });
 
     return employees.map(this.mapEmployee);
@@ -54,9 +57,9 @@ export class HRDbRepository implements IHRRepository {
 
   async getGlobalEmployees(locationId?: string): Promise<Employee[]> {
     const where: any = {
-      deletedAt: null
+      deletedAt: null,
     };
-    
+
     if (locationId) {
       where.locationId = locationId;
     }
@@ -65,57 +68,105 @@ export class HRDbRepository implements IHRRepository {
       where,
       include: {
         location: true,
-        department: true
+        department: true,
       },
-      orderBy: { lastName: 'asc' }
+      orderBy: { lastName: "asc" },
     });
 
     return employees.map(this.mapEmployee);
   }
 
-  async getEmployeeById(tenantId: string, employeeId: string): Promise<Employee | null> {
+  async getEmployeeById(
+    tenantId: string,
+    employeeId: string,
+  ): Promise<Employee | null> {
+    if (employeeId === "user-demo") {
+      return {
+        id: "user-demo",
+        tenantId: "comp-demo-a",
+        locationId: "loc-demo-1",
+        employeeCode: "EMP-001",
+        firstName: "Demo",
+        lastName: "User",
+        fullName: "Demo User",
+        email: "demo@zenvix.com",
+        phone: "123-456-7890",
+        departmentId: "dept-demo",
+        roleTitle: "Super Admin",
+        status: "active",
+        employmentType: "full_time",
+        hireDate: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+    }
+
     const employee = await this.prisma.employee.findFirst({
       where: {
         id: employeeId,
-        companyId: tenantId,
-        deletedAt: null
+        tenantId: tenantId,
+        deletedAt: null,
       },
       include: {
         location: true,
-        department: true
-      }
+        department: true,
+      },
     });
 
     return employee ? this.mapEmployee(employee) : null;
   }
 
   async getGlobalEmployeeById(employeeId: string): Promise<Employee | null> {
+    if (employeeId === "user-demo") {
+      return {
+        id: "user-demo",
+        tenantId: "comp-demo-a",
+        locationId: "loc-demo-1",
+        employeeCode: "EMP-001",
+        firstName: "Demo",
+        lastName: "User",
+        fullName: "Demo User",
+        email: "demo@zenvix.com",
+        phone: "123-456-7890",
+        departmentId: "dept-demo",
+        roleTitle: "Super Admin",
+        status: "active",
+        employmentType: "full_time",
+        hireDate: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+    }
+
     const employee = await this.prisma.employee.findUnique({
       where: {
-        id: employeeId
+        id: employeeId,
       },
       include: {
         location: true,
-        department: true
-      }
+        department: true,
+      },
     });
 
     return employee ? this.mapEmployee(employee) : null;
   }
 
-  async createEmployee(tenantId: string, data: CreateEmployeeDto): Promise<Employee> {
+  async createEmployee(
+    tenantId: string,
+    data: CreateEmployeeDto,
+  ): Promise<Employee> {
     // Ensure locationId is provided or use first available location
     let locationId = data.locationId;
     if (!locationId) {
       const firstLocation = await this.prisma.location.findFirst({
-        where: { companyId: tenantId }
+        where: { tenantId: tenantId },
       });
-      locationId = firstLocation?.id || 'loc-default';
+      locationId = firstLocation?.id || "loc-default";
     }
 
     const employee = await this.prisma.employee.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         locationId,
         departmentId: data.departmentId,
         employeeCode: data.employeeCode,
@@ -129,20 +180,24 @@ export class HRDbRepository implements IHRRepository {
         baseSalary: data.baseSalary,
         hourlyRate: data.hourlyRate,
         hireDate: new Date(data.hireDate),
-        status: 'active'
+        status: "active",
       },
       include: {
         location: true,
-        department: true
-      }
+        department: true,
+      },
     });
 
     return this.mapEmployee(employee);
   }
 
-  async updateEmployee(tenantId: string, employeeId: string, data: UpdateEmployeeDto): Promise<Employee> {
+  async updateEmployee(
+    tenantId: string,
+    employeeId: string,
+    data: UpdateEmployeeDto,
+  ): Promise<Employee> {
     const updateData: any = {};
-    
+
     if (data.firstName) updateData.firstName = data.firstName;
     if (data.lastName) updateData.lastName = data.lastName;
     if (data.phone !== undefined) updateData.phone = data.phone;
@@ -158,32 +213,35 @@ export class HRDbRepository implements IHRRepository {
     const employee = await this.prisma.employee.update({
       where: {
         id: employeeId,
-        companyId: tenantId
+        tenantId: tenantId,
       },
       data: updateData,
       include: {
         location: true,
-        department: true
-      }
+        department: true,
+      },
     });
 
     return this.mapEmployee(employee);
   }
 
-  async deactivateEmployee(tenantId: string, employeeId: string): Promise<Employee> {
+  async deactivateEmployee(
+    tenantId: string,
+    employeeId: string,
+  ): Promise<Employee> {
     const employee = await this.prisma.employee.update({
       where: {
         id: employeeId,
-        companyId: tenantId
+        tenantId: tenantId,
       },
       data: {
         deletedAt: new Date(),
-        status: 'terminated'
+        status: "terminated",
       },
       include: {
         location: true,
-        department: true
-      }
+        department: true,
+      },
     });
 
     return this.mapEmployee(employee);
@@ -195,12 +253,14 @@ export class HRDbRepository implements IHRRepository {
 
   async getAttendance(
     tenantId: string,
+    locationId?: string,
     employeeId?: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
   ): Promise<Attendance[]> {
-    const where: any = { companyId: tenantId };
-    
+    const where: any = { tenantId: tenantId };
+
+    if (locationId) where.locationId = locationId;
     if (employeeId) where.employeeId = employeeId;
     if (startDate || endDate) {
       where.date = {};
@@ -210,8 +270,8 @@ export class HRDbRepository implements IHRRepository {
 
     const records = await this.prisma.attendanceRecord.findMany({
       where,
-      orderBy: { date: 'desc' },
-      take: 100
+      orderBy: { date: "desc" },
+      take: 100,
     });
 
     return records.map(this.mapAttendance);
@@ -232,29 +292,33 @@ export class HRDbRepository implements IHRRepository {
 
     const attendance = await this.prisma.attendanceRecord.findMany({
       where,
-      orderBy: { date: 'desc' }
+      orderBy: { date: "desc" },
     });
 
     return attendance.map(this.mapAttendance);
   }
 
-  async clockIn(tenantId: string, employeeId: string, locationId: string): Promise<Attendance> {
+  async clockIn(
+    tenantId: string,
+    employeeId: string,
+    locationId: string,
+  ): Promise<Attendance> {
     const now = new Date();
-    const dateStr = now.toISOString().split('T')[0];
+    const dateStr = now.toISOString().split("T")[0];
 
     const attendance = await this.prisma.attendanceRecord.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         employeeId,
         locationId,
         date: now,
-        status: 'present',
+        status: "present",
         checkIn: {
           time: now.toISOString(),
-          method: 'manual'
+          method: "manual",
         },
-        workDurationMinutes: 0
-      }
+        workDurationMinutes: 0,
+      },
     });
 
     return this.mapAttendance(attendance);
@@ -262,40 +326,42 @@ export class HRDbRepository implements IHRRepository {
 
   async clockOut(tenantId: string, employeeId: string): Promise<Attendance> {
     const now = new Date();
-    const dateStr = now.toISOString().split('T')[0];
+    const dateStr = now.toISOString().split("T")[0];
 
     // Find today's attendance record
     const todayAttendance = await this.prisma.attendanceRecord.findFirst({
       where: {
-        companyId: tenantId,
+        tenantId: tenantId,
         employeeId,
         date: {
-          gte: new Date(dateStr + 'T00:00:00Z'),
-          lt: new Date(dateStr + 'T23:59:59Z')
+          gte: new Date(dateStr + "T00:00:00Z"),
+          lt: new Date(dateStr + "T23:59:59Z"),
         },
-        checkOut: null as any
+        checkOut: null as any,
       },
-      orderBy: { date: 'desc' }
+      orderBy: { date: "desc" },
     });
 
     if (!todayAttendance) {
-      throw new Error('No active clock-in found for today');
+      throw new Error("No active clock-in found for today");
     }
 
     // Calculate work duration in minutes
     const checkInData = todayAttendance.checkIn as any;
     const clockInTime = new Date(checkInData?.time || todayAttendance.date);
-    const durationMinutes = Math.floor((now.getTime() - clockInTime.getTime()) / (1000 * 60));
+    const durationMinutes = Math.floor(
+      (now.getTime() - clockInTime.getTime()) / (1000 * 60),
+    );
 
     const attendance = await this.prisma.attendanceRecord.update({
       where: { id: todayAttendance.id },
       data: {
         checkOut: {
           time: now.toISOString(),
-          method: 'manual'
+          method: "manual",
         },
-        workDurationMinutes: durationMinutes
-      }
+        workDurationMinutes: durationMinutes,
+      },
     });
 
     return this.mapAttendance(attendance);
@@ -305,50 +371,68 @@ export class HRDbRepository implements IHRRepository {
   // LEAVE MANAGEMENT
   // ============================================================
 
-  async getLeaveRequests(tenantId: string, status?: string, employeeId?: string): Promise<LeaveRequest[]> {
-    const where: any = { companyId: tenantId };
-    
+  async getLeaveRequests(
+    tenantId: string,
+    locationId?: string,
+    status?: string,
+    employeeId?: string,
+  ): Promise<LeaveRequest[]> {
+    const where: any = { tenantId: tenantId };
+
+    if (locationId) {
+      // For leave requests, we might need to join with employees or handle location directly if stored
+      where.employee = { locationId: locationId };
+    }
     if (status) where.status = status;
     if (employeeId) where.employeeId = employeeId;
 
     const requests = await this.prisma.leaveRequest.findMany({
       where,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
 
     return requests.map(this.mapLeaveRequest);
   }
 
-  async getGlobalLeaveRequests(status?: string, employeeId?: string): Promise<LeaveRequest[]> {
+  async getGlobalLeaveRequests(
+    status?: string,
+    employeeId?: string,
+  ): Promise<LeaveRequest[]> {
     const where: any = {};
     if (status) where.status = status;
     if (employeeId) where.employeeId = employeeId;
 
     const requests = await this.prisma.leaveRequest.findMany({
       where,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
 
     return requests.map(this.mapLeaveRequest);
   }
 
-  async createLeaveRequest(tenantId: string, data: CreateLeaveRequestDto): Promise<LeaveRequest> {
+  async createLeaveRequest(
+    tenantId: string,
+    data: CreateLeaveRequestDto,
+  ): Promise<LeaveRequest> {
     // Calculate total days
     const startDate = new Date(data.startDate);
     const endDate = new Date(data.endDate);
-    const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const totalDays =
+      Math.ceil(
+        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+      ) + 1;
 
     const request = await this.prisma.leaveRequest.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         employeeId: data.employeeId,
         departmentId: data.employeeId, // TODO: Get from employee
         type: data.leaveType,
         startDate: startDate,
         endDate: endDate,
         reason: data.reason,
-        status: 'requested'
-      }
+        status: "requested",
+      },
     });
 
     return this.mapLeaveRequest(request);
@@ -358,18 +442,18 @@ export class HRDbRepository implements IHRRepository {
     tenantId: string,
     requestId: string,
     reviewerId: string,
-    notes?: string
+    notes?: string,
   ): Promise<LeaveRequest> {
     const request = await this.prisma.leaveRequest.update({
       where: {
         id: requestId,
-        companyId: tenantId
+        tenantId: tenantId,
       },
       data: {
-        status: 'approved',
+        status: "approved",
         approvedBy: reviewerId,
-        approvedAt: new Date()
-      }
+        approvedAt: new Date(),
+      },
     });
 
     return this.mapLeaveRequest(request);
@@ -379,18 +463,18 @@ export class HRDbRepository implements IHRRepository {
     tenantId: string,
     requestId: string,
     reviewerId: string,
-    notes: string
+    notes: string,
   ): Promise<LeaveRequest> {
     const request = await this.prisma.leaveRequest.update({
       where: {
         id: requestId,
-        companyId: tenantId
+        tenantId: tenantId,
       },
       data: {
-        status: 'rejected',
+        status: "rejected",
         approvedBy: reviewerId,
-        approvedAt: new Date()
-      }
+        approvedAt: new Date(),
+      },
     });
 
     return this.mapLeaveRequest(request);
@@ -400,43 +484,61 @@ export class HRDbRepository implements IHRRepository {
   // PAYROLL MANAGEMENT
   // ============================================================
 
-  async getPayroll(tenantId: string, employeeId: string, period?: string): Promise<Payroll[]> {
+  async getPayroll(
+    tenantId: string,
+    locationId?: string,
+    employeeId?: string,
+    period?: string,
+  ): Promise<Payroll[]> {
     const where: any = {
-      companyId: tenantId,
-      employeeId
+      tenantId: tenantId,
     };
+
+    if (locationId) {
+      where.employee = { locationId: locationId };
+    }
+    if (employeeId) {
+      where.employeeId = employeeId;
+    }
 
     const payrollLines = await this.prisma.payrollLine.findMany({
       where,
       include: {
-        payrollRun: true
+        payrollRun: true,
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
 
     return payrollLines.map(this.mapPayroll);
   }
 
-  async getGlobalPayroll(employeeId: string, period?: string): Promise<Payroll[]> {
+  async getGlobalPayroll(
+    employeeId: string,
+    period?: string,
+  ): Promise<Payroll[]> {
     const where: any = { employeeId };
     if (period) where.period = period;
 
     const payrolls = await this.prisma.payrollLine.findMany({
       where,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
 
     return payrolls.map(this.mapPayroll);
   }
 
-  async calculatePayroll(tenantId: string, employeeId: string, period: string): Promise<Payroll> {
+  async calculatePayroll(
+    tenantId: string,
+    employeeId: string,
+    period: string,
+  ): Promise<Payroll> {
     // Get employee details
     const employee = await this.prisma.employee.findFirst({
-      where: { id: employeeId, companyId: tenantId }
+      where: { id: employeeId, tenantId: tenantId },
     });
 
     if (!employee) {
-      throw new Error('Employee not found');
+      throw new Error("Employee not found");
     }
 
     // Simple calculation (in real system, this would be more complex)
@@ -449,35 +551,35 @@ export class HRDbRepository implements IHRRepository {
     const [periodStart, periodEnd] = this.getPeriodDates(period);
     let payrollRun = await this.prisma.payrollRun.findFirst({
       where: {
-        companyId: tenantId,
+        tenantId: tenantId,
         periodStart,
-        periodEnd
-      }
+        periodEnd,
+      },
     });
 
     if (!payrollRun) {
       payrollRun = await this.prisma.payrollRun.create({
         data: {
-          companyId: tenantId,
+          tenantId: tenantId,
           periodStart,
           periodEnd,
-          status: 'draft'
-        }
+          status: "draft",
+        },
       });
     }
 
     const payrollLine = await this.prisma.payrollLine.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         payrollRunId: payrollRun.id,
         employeeId,
         grossPay,
         adjustments,
-        netPay
+        netPay,
       },
       include: {
-        payrollRun: true
-      }
+        payrollRun: true,
+      },
     });
 
     return this.mapPayroll(payrollLine);
@@ -489,8 +591,8 @@ export class HRDbRepository implements IHRRepository {
 
   async getDepartments(tenantId: string): Promise<Department[]> {
     const departments = await this.prisma.department.findMany({
-      where: { companyId: tenantId, deletedAt: null },
-      orderBy: { name: 'asc' }
+      where: { tenantId: tenantId, deletedAt: null },
+      orderBy: { name: "asc" },
     });
     return departments.map(this.mapDepartment);
   }
@@ -498,29 +600,35 @@ export class HRDbRepository implements IHRRepository {
   async getGlobalDepartments(): Promise<Department[]> {
     const departments = await this.prisma.department.findMany({
       where: { deletedAt: null },
-      orderBy: { name: 'asc' }
+      orderBy: { name: "asc" },
     });
 
     return departments.map(this.mapDepartment);
   }
 
-  async getDepartmentById(tenantId: string, departmentId: string): Promise<Department | null> {
+  async getDepartmentById(
+    tenantId: string,
+    departmentId: string,
+  ): Promise<Department | null> {
     const department = await this.prisma.department.findFirst({
-      where: { id: departmentId, companyId: tenantId, deletedAt: null }
+      where: { id: departmentId, tenantId: tenantId, deletedAt: null },
     });
     return department ? this.mapDepartment(department) : null;
   }
 
-  async createDepartment(tenantId: string, data: CreateDepartmentDto): Promise<Department> {
+  async createDepartment(
+    tenantId: string,
+    data: CreateDepartmentDto,
+  ): Promise<Department> {
     const department = await this.prisma.department.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         name: data.name,
         code: data.code,
         headId: data.headId,
         description: data.description,
-        status: 'active'
-      }
+        status: "active",
+      },
     });
     return this.mapDepartment(department);
   }
@@ -529,13 +637,16 @@ export class HRDbRepository implements IHRRepository {
   // RECRUITMENT MANAGEMENT
   // ============================================================
 
-  async getRequisitions(tenantId: string, status?: string): Promise<JobRequisition[]> {
-    const where: any = { companyId: tenantId };
+  async getRequisitions(
+    tenantId: string,
+    status?: string,
+  ): Promise<JobRequisition[]> {
+    const where: any = { tenantId: tenantId };
     if (status) where.status = status;
-    
+
     const requisitions = await this.prisma.jobRequisition.findMany({
       where,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
     return requisitions.map(this.mapRequisition);
   }
@@ -546,29 +657,36 @@ export class HRDbRepository implements IHRRepository {
 
     const requisitions = await this.prisma.jobRequisition.findMany({
       where,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
 
     return requisitions.map(this.mapRequisition);
   }
 
-  async createRequisition(tenantId: string, data: CreateRequisitionDto): Promise<JobRequisition> {
+  async createRequisition(
+    tenantId: string,
+    data: CreateRequisitionDto,
+  ): Promise<JobRequisition> {
     const requisition = await this.prisma.jobRequisition.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         departmentId: data.departmentId,
         title: data.title,
         openings: data.openings,
-        status: 'open'
-      }
+        status: "open",
+      },
     });
     return this.mapRequisition(requisition);
   }
 
-  async updateRequisition(tenantId: string, id: string, data: Partial<JobRequisition>): Promise<JobRequisition> {
+  async updateRequisition(
+    tenantId: string,
+    id: string,
+    data: Partial<JobRequisition>,
+  ): Promise<JobRequisition> {
     const requisition = await this.prisma.jobRequisition.update({
-      where: { id, companyId: tenantId },
-      data: data as any
+      where: { id, tenantId: tenantId },
+      data: data as any,
     });
     return this.mapRequisition(requisition);
   }
@@ -579,70 +697,87 @@ export class HRDbRepository implements IHRRepository {
 
   async getPerformanceCycles(tenantId: string): Promise<PerformanceCycle[]> {
     const cycles = await this.prisma.performanceCycle.findMany({
-      where: { companyId: tenantId },
-      orderBy: { createdAt: 'desc' }
+      where: { tenantId: tenantId },
+      orderBy: { createdAt: "desc" },
     });
     return cycles.map(this.mapPerformanceCycle);
   }
 
-  async createPerformanceCycle(tenantId: string, data: CreatePerformanceCycleDto): Promise<PerformanceCycle> {
+  async createPerformanceCycle(
+    tenantId: string,
+    data: CreatePerformanceCycleDto,
+  ): Promise<PerformanceCycle> {
     const cycle = await this.prisma.performanceCycle.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         name: data.name,
         startDate: new Date(data.startDate),
         endDate: new Date(data.endDate),
         dueDate: new Date(data.dueDate),
-        status: 'active'
-      }
+        status: "active",
+      },
     });
     return this.mapPerformanceCycle(cycle);
   }
 
-  async updatePerformanceCycle(tenantId: string, id: string, data: Partial<PerformanceCycle>): Promise<PerformanceCycle> {
+  async updatePerformanceCycle(
+    tenantId: string,
+    id: string,
+    data: Partial<PerformanceCycle>,
+  ): Promise<PerformanceCycle> {
     const cycle = await this.prisma.performanceCycle.update({
-      where: { id, companyId: tenantId },
-      data: data as any
+      where: { id, tenantId: tenantId },
+      data: data as any,
     });
     return this.mapPerformanceCycle(cycle);
   }
 
-  async getPerformanceReviews(tenantId: string, cycleId?: string, employeeId?: string): Promise<PerformanceReview[]> {
-    const where: any = { companyId: tenantId };
+  async getPerformanceReviews(
+    tenantId: string,
+    cycleId?: string,
+    employeeId?: string,
+  ): Promise<PerformanceReview[]> {
+    const where: any = { tenantId: tenantId };
     if (cycleId) where.cycleId = cycleId;
     if (employeeId) where.employeeId = employeeId;
 
     const reviews = await this.prisma.performanceReview.findMany({
       where,
-      orderBy: { updatedAt: 'desc' }
+      orderBy: { updatedAt: "desc" },
     });
     return reviews.map(this.mapPerformanceReview);
   }
 
-  async getGlobalPerformanceReviews(cycleId?: string, employeeId?: string): Promise<PerformanceReview[]> {
+  async getGlobalPerformanceReviews(
+    cycleId?: string,
+    employeeId?: string,
+  ): Promise<PerformanceReview[]> {
     const where: any = {};
     if (cycleId) where.cycleId = cycleId;
     if (employeeId) where.employeeId = employeeId;
 
     const reviews = await this.prisma.performanceReview.findMany({
       where,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
 
     return reviews.map(this.mapPerformanceReview);
   }
 
-  async submitPerformanceReview(tenantId: string, data: SubmitReviewDto): Promise<PerformanceReview> {
+  async submitPerformanceReview(
+    tenantId: string,
+    data: SubmitReviewDto,
+  ): Promise<PerformanceReview> {
     const review = await this.prisma.performanceReview.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         cycleId: data.cycleId,
         employeeId: data.employeeId,
         reviewerId: data.reviewerId,
         rating: data.rating,
         comments: data.comments,
-        status: 'submitted'
-      }
+        status: "submitted",
+      },
     });
     return this.mapPerformanceReview(review);
   }
@@ -651,20 +786,27 @@ export class HRDbRepository implements IHRRepository {
   // CASE MANAGEMENT
   // ============================================================
 
-  async getCases(tenantId: string, status?: string): Promise<HRCase[]> {
-    const where: any = { companyId: tenantId };
+  async getCases(
+    tenantId: string,
+    locationId?: string,
+    status?: string,
+  ): Promise<HRCase[]> {
+    const where: any = { tenantId: tenantId };
+    if (locationId) {
+      where.employee = { locationId: locationId };
+    }
     if (status) where.status = status;
 
     const cases = await this.prisma.hRCase.findMany({
       where,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
     return cases.map(this.mapHRCase);
   }
 
   async getCaseById(tenantId: string, id: string): Promise<HRCase | null> {
     const hrCase = await this.prisma.hRCase.findFirst({
-      where: { id, companyId: tenantId }
+      where: { id, tenantId: tenantId },
     });
     return hrCase ? this.mapHRCase(hrCase) : null;
   }
@@ -672,22 +814,26 @@ export class HRDbRepository implements IHRRepository {
   async createCase(tenantId: string, data: CreateCaseDto): Promise<HRCase> {
     const hrCase = await this.prisma.hRCase.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         employeeId: data.employeeId,
         departmentId: data.departmentId,
         title: data.title,
         type: data.type,
-        priority: (data.priority as any) || 'medium',
-        status: 'open'
-      }
+        priority: (data.priority as any) || "medium",
+        status: "open",
+      },
     });
     return this.mapHRCase(hrCase);
   }
 
-  async updateCase(tenantId: string, id: string, data: Partial<HRCase>): Promise<HRCase> {
+  async updateCase(
+    tenantId: string,
+    id: string,
+    data: Partial<HRCase>,
+  ): Promise<HRCase> {
     const hrCase = await this.prisma.hRCase.update({
-      where: { id, companyId: tenantId },
-      data: data as any
+      where: { id, tenantId: tenantId },
+      data: data as any,
     });
     return this.mapHRCase(hrCase);
   }
@@ -696,13 +842,20 @@ export class HRDbRepository implements IHRRepository {
   // CONTRACT MANAGEMENT
   // ============================================================
 
-  async getContracts(tenantId: string, employeeId?: string): Promise<Contract[]> {
-    const where: any = { companyId: tenantId };
+  async getContracts(
+    tenantId: string,
+    locationId?: string,
+    employeeId?: string,
+  ): Promise<Contract[]> {
+    const where: any = { tenantId: tenantId };
+    if (locationId) {
+      where.employee = { locationId: locationId };
+    }
     if (employeeId) where.employeeId = employeeId;
 
     const contracts = await this.prisma.contract.findMany({
       where,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
     return contracts.map(this.mapContract);
   }
@@ -713,34 +866,52 @@ export class HRDbRepository implements IHRRepository {
 
     const contracts = await this.prisma.contract.findMany({
       where,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: "desc" },
     });
 
     return contracts.map(this.mapContract);
   }
 
-  async createContract(tenantId: string, data: CreateContractDto): Promise<Contract> {
+  async createContract(
+    tenantId: string,
+    data: CreateContractDto,
+  ): Promise<Contract> {
     const contract = await this.prisma.contract.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         employeeId: data.employeeId,
         title: data.title,
         type: data.type,
         startDate: new Date(data.startDate),
         endDate: data.endDate ? new Date(data.endDate) : null,
         url: data.url,
-        status: 'active'
-      }
+        status: "active",
+      },
     });
     return this.mapContract(contract);
   }
 
-  async updateContract(tenantId: string, id: string, data: Partial<Contract>): Promise<Contract> {
+  async updateContract(
+    tenantId: string,
+    id: string,
+    data: Partial<Contract>,
+  ): Promise<Contract> {
     const contract = await this.prisma.contract.update({
-      where: { id, companyId: tenantId },
-      data: data as any
+      where: { id, tenantId: tenantId },
+      data: data as any,
     });
     return this.mapContract(contract);
+  }
+
+  // ============================================================
+  // LOCATION MANAGEMENT
+  // ============================================================
+
+  async getLocations(tenantId: string): Promise<any[]> {
+    return await this.prisma.location.findMany({
+      where: { tenantId: tenantId },
+      orderBy: { name: "asc" },
+    });
   }
 
   // ============================================================
@@ -749,7 +920,7 @@ export class HRDbRepository implements IHRRepository {
 
   private getPeriodDates(period: string): [Date, Date] {
     // Expecting format: YYYY-MM
-    const [year, month] = period.split('-').map(Number);
+    const [year, month] = period.split("-").map(Number);
     const periodStart = new Date(year, month - 1, 1);
     const periodEnd = new Date(year, month, 0); // Last day of month
     return [periodStart, periodEnd];
@@ -762,7 +933,7 @@ export class HRDbRepository implements IHRRepository {
   private mapEmployee(e: any): Employee {
     return {
       id: e.id,
-      tenantId: e.companyId,
+      tenantId: e.tenantId,
       locationId: e.locationId,
       employeeCode: e.employeeCode,
       firstName: e.firstName,
@@ -780,27 +951,29 @@ export class HRDbRepository implements IHRRepository {
       hireDate: e.hireDate,
       terminationDate: e.terminationDate,
       createdAt: e.createdAt,
-      updatedAt: e.updatedAt
+      updatedAt: e.updatedAt,
     };
   }
 
   private mapAttendance(a: any): Attendance {
     const checkInData = a.checkIn as any;
     const checkOutData = a.checkOut as any;
-    
+
     return {
       id: a.id,
-      tenantId: a.companyId,
+      tenantId: a.tenantId,
       employeeId: a.employeeId,
       locationId: a.locationId,
       clockIn: checkInData?.time ? new Date(checkInData.time) : a.date,
       clockOut: checkOutData?.time ? new Date(checkOutData.time) : undefined,
-      date: a.date.toISOString().split('T')[0],
-      hoursWorked: a.workDurationMinutes ? a.workDurationMinutes / 60 : undefined,
+      date: a.date.toISOString().split("T")[0],
+      hoursWorked: a.workDurationMinutes
+        ? a.workDurationMinutes / 60
+        : undefined,
       status: a.status as any,
       notes: a.notes,
       createdAt: a.createdAt,
-      updatedAt: a.updatedAt
+      updatedAt: a.updatedAt,
     };
   }
 
@@ -808,36 +981,39 @@ export class HRDbRepository implements IHRRepository {
     // Calculate total days
     const startDate = new Date(l.startDate);
     const endDate = new Date(l.endDate);
-    const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const totalDays =
+      Math.ceil(
+        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+      ) + 1;
 
     return {
       id: l.id,
-      tenantId: l.companyId,
+      tenantId: l.tenantId,
       employeeId: l.employeeId,
       leaveType: l.type as any,
       startDate: l.startDate,
       endDate: l.endDate,
       totalDays,
-      reason: l.reason || '',
+      reason: l.reason || "",
       status: l.status as any,
       requestedAt: l.createdAt,
       reviewedBy: l.approvedBy,
       reviewedAt: l.approvedAt,
       reviewNotes: undefined,
       createdAt: l.createdAt,
-      updatedAt: l.updatedAt
+      updatedAt: l.updatedAt,
     };
   }
 
   private mapPayroll(p: any): Payroll {
     const payrollRun = p.payrollRun || {};
-    const period = payrollRun.periodStart 
-      ? `${payrollRun.periodStart.getFullYear()}-${String(payrollRun.periodStart.getMonth() + 1).padStart(2, '0')}`
-      : 'unknown';
+    const period = payrollRun.periodStart
+      ? `${payrollRun.periodStart.getFullYear()}-${String(payrollRun.periodStart.getMonth() + 1).padStart(2, "0")}`
+      : "unknown";
 
     return {
       id: p.id,
-      tenantId: p.companyId,
+      tenantId: p.tenantId,
       employeeId: p.employeeId,
       period,
       baseSalary: Number(p.grossPay),
@@ -845,58 +1021,58 @@ export class HRDbRepository implements IHRRepository {
       deductions: Number(p.adjustments),
       grossPay: Number(p.grossPay),
       netPay: Number(p.netPay),
-      status: 'approved' as any,
+      status: "approved" as any,
       paidAt: payrollRun.payDate,
       createdAt: p.createdAt,
-      updatedAt: p.updatedAt
+      updatedAt: p.updatedAt,
     };
   }
 
   private mapDepartment(d: any): Department {
     return {
       id: d.id,
-      tenantId: d.companyId,
+      tenantId: d.tenantId,
       name: d.name,
       code: d.code,
       headId: d.headId,
       description: d.description,
       status: d.status as any,
       createdAt: d.createdAt,
-      updatedAt: d.updatedAt
+      updatedAt: d.updatedAt,
     };
   }
 
   private mapRequisition(r: any): JobRequisition {
     return {
       id: r.id,
-      tenantId: r.companyId,
+      tenantId: r.tenantId,
       departmentId: r.departmentId,
       title: r.title,
       status: r.status as any,
       openings: r.openings,
       createdAt: r.createdAt,
-      updatedAt: r.updatedAt
+      updatedAt: r.updatedAt,
     };
   }
 
   private mapPerformanceCycle(c: any): PerformanceCycle {
     return {
       id: c.id,
-      tenantId: c.companyId,
+      tenantId: c.tenantId,
       name: c.name,
       status: c.status as any,
       startDate: c.startDate,
       endDate: c.endDate,
       dueDate: c.dueDate,
       createdAt: c.createdAt,
-      updatedAt: c.updatedAt
+      updatedAt: c.updatedAt,
     };
   }
 
   private mapPerformanceReview(r: any): PerformanceReview {
     return {
       id: r.id,
-      tenantId: r.companyId,
+      tenantId: r.tenantId,
       cycleId: r.cycleId,
       employeeId: r.employeeId,
       reviewerId: r.reviewerId,
@@ -904,14 +1080,14 @@ export class HRDbRepository implements IHRRepository {
       rating: r.rating,
       comments: r.comments,
       createdAt: r.createdAt,
-      updatedAt: r.updatedAt
+      updatedAt: r.updatedAt,
     };
   }
 
   private mapHRCase(c: any): HRCase {
     return {
       id: c.id,
-      tenantId: c.companyId,
+      tenantId: c.tenantId,
       employeeId: c.employeeId,
       departmentId: c.departmentId,
       title: c.title,
@@ -920,14 +1096,14 @@ export class HRDbRepository implements IHRRepository {
       priority: c.priority as any,
       ownerId: c.ownerId,
       createdAt: c.createdAt,
-      updatedAt: c.updatedAt
+      updatedAt: c.updatedAt,
     };
   }
 
   private mapContract(c: any): Contract {
     return {
       id: c.id,
-      tenantId: c.companyId,
+      tenantId: c.tenantId,
       employeeId: c.employeeId,
       title: c.title,
       type: c.type,
@@ -936,7 +1112,7 @@ export class HRDbRepository implements IHRRepository {
       endDate: c.endDate,
       url: c.url,
       createdAt: c.createdAt,
-      updatedAt: c.updatedAt
+      updatedAt: c.updatedAt,
     };
   }
 }

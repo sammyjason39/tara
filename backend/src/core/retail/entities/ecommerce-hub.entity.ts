@@ -6,7 +6,7 @@
 /** Connector authenticated via API Key (x-api-key or x-ecommerce-key header). */
 export class EcommerceConnector {
   id: string;
-  companyId: string;
+  tenantId: string;
   branchIds: string[];
   name: string;
   platform: string; 
@@ -31,7 +31,7 @@ export class ConnectorWithPlainKey {
 /** Channel authenticated via clientId + clientSecret headers. */
 export class EcommerceChannel {
   id: string;
-  companyId: string;
+  tenantId: string;
   name: string;
   type: string;
   adapterType: string;

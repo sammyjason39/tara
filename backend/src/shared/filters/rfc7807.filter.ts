@@ -4,6 +4,9 @@ import { Request, Response } from 'express';
 @Catch()
 export class Rfc7807ExceptionFilter implements ExceptionFilter {
   catch(exception: any, host: ArgumentsHost) {
+    if (!(exception instanceof HttpException)) {
+      console.error('[Rfc7807ExceptionFilter] Unhandled Error:', exception);
+    }
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();

@@ -17,7 +17,7 @@ import type {
 // Mapping functions
 const mapProvider = (db: any): PaymentProvider => ({
   id: db.id as any,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   name: db.name,
   channels: db.channels as any,
   status: db.status as any,
@@ -29,7 +29,7 @@ const mapProvider = (db: any): PaymentProvider => ({
 
 const mapRoutingPolicy = (db: any): RoutingPolicy => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   name: db.name,
   enabled: db.enabled,
   priorities: db.priorities as any,
@@ -42,7 +42,7 @@ const mapRoutingPolicy = (db: any): RoutingPolicy => ({
 
 const mapPosDevice = (db: any): PosDevice => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   location: db.locationId,
   deviceCode: db.deviceCode,
   approved: db.approved,
@@ -53,7 +53,7 @@ const mapPosDevice = (db: any): PosDevice => ({
 
 const mapDevicePool = (db: any): DevicePool => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   location: db.locationId,
   primaryDeviceId: db.primaryDeviceId,
   fallbackDeviceIds: db.fallbackDeviceIds,
@@ -63,7 +63,7 @@ const mapDevicePool = (db: any): DevicePool => ({
 
 const mapTransaction = (db: any): PaymentTransaction => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   externalReference: db.externalReference || undefined,
   type: db.type as any,
   amount: Number(db.amount),
@@ -93,7 +93,7 @@ const mapTransaction = (db: any): PaymentTransaction => ({
 
 const mapSettlementRecord = (db: any): SettlementRecord => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   paymentId: db.paymentId,
   providerReference: db.providerReference,
   status: db.status as any,
@@ -104,7 +104,7 @@ const mapSettlementRecord = (db: any): SettlementRecord => ({
 
 const mapRefund = (db: any): PaymentRefund => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   paymentId: db.paymentId,
   type: db.type as any,
   amount: Number(db.amount),
@@ -120,7 +120,7 @@ const mapRefund = (db: any): PaymentRefund => ({
 
 const mapDispute = (db: any): PaymentDispute => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   paymentId: db.paymentId,
   reason: db.reason,
   amount: Number(db.amount),
@@ -135,7 +135,7 @@ const mapDispute = (db: any): PaymentDispute => ({
 
 const mapChargeback = (db: any): PaymentChargeback => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   paymentId: db.paymentId,
   disputeId: db.disputeId,
   amount: Number(db.amount),
@@ -146,7 +146,7 @@ const mapChargeback = (db: any): PaymentChargeback => ({
 
 const mapEvidencePack = (db: any): EvidencePack => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   paymentId: db.paymentId,
   providerProof: db.providerProof,
   approvalSignatures: db.approvalSignatures,
@@ -157,7 +157,7 @@ const mapEvidencePack = (db: any): EvidencePack => ({
 
 const mapAuditEvent = (db: any): PaymentAuditEvent => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   actorId: db.actorId,
   action: db.action,
   entityType: db.entityType as any,
@@ -169,7 +169,7 @@ const mapAuditEvent = (db: any): PaymentAuditEvent => ({
 export const paymentRepo: PaymentRepository = {
   async listTransactions(tenantId) {
     const items = await prisma.paymentTransaction.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       include: { retryAttempts: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -179,7 +179,7 @@ export const paymentRepo: PaymentRepository = {
     const item = await prisma.paymentTransaction.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         externalReference: payload.externalReference,
         type: payload.type,
         amount: payload.amount,
@@ -200,7 +200,7 @@ export const paymentRepo: PaymentRepository = {
   },
   async updateTransaction(tenantId, id, patch) {
     const item = await prisma.paymentTransaction.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         status: patch.status,
         approvedBy: patch.approvedBy,
@@ -214,14 +214,14 @@ export const paymentRepo: PaymentRepository = {
 
   async listProviders(tenantId) {
     const items = await prisma.paymentProvider.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { priority: 'asc' },
     });
     return items.map(mapProvider);
   },
   async updateProvider(tenantId, id, patch) {
     const item = await prisma.paymentProvider.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         status: patch.status,
         lastHeartbeatAt: patch.lastHeartbeatAt ? new Date(patch.lastHeartbeatAt) : undefined,
@@ -232,14 +232,14 @@ export const paymentRepo: PaymentRepository = {
 
   async listRoutingPolicies(tenantId) {
     const items = await prisma.paymentRoutingPolicy.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapRoutingPolicy);
   },
   async updateRoutingPolicy(tenantId, id, patch) {
     const item = await prisma.paymentRoutingPolicy.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         enabled: patch.enabled,
         priorities: patch.priorities,
@@ -251,14 +251,14 @@ export const paymentRepo: PaymentRepository = {
 
   async listDevices(tenantId) {
     const items = await prisma.paymentPosDevice.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapPosDevice);
   },
   async updateDevice(tenantId, id, patch) {
     const item = await prisma.paymentPosDevice.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         status: patch.status,
         lastUsedAt: patch.lastUsedAt ? new Date(patch.lastUsedAt) : undefined,
@@ -268,7 +268,7 @@ export const paymentRepo: PaymentRepository = {
   },
   async listDevicePools(tenantId) {
     const items = await prisma.paymentDevicePool.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapDevicePool);
@@ -276,7 +276,7 @@ export const paymentRepo: PaymentRepository = {
 
   async listDisputes(tenantId) {
     const items = await prisma.paymentDispute.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapDispute);
@@ -285,7 +285,7 @@ export const paymentRepo: PaymentRepository = {
     const item = await prisma.paymentDispute.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         paymentId: payload.paymentId,
         reason: payload.reason,
         amount: payload.amount,
@@ -299,7 +299,7 @@ export const paymentRepo: PaymentRepository = {
   },
   async updateDispute(tenantId, id, patch) {
     const item = await prisma.paymentDispute.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         status: patch.status,
         resolution: patch.resolution,
@@ -311,7 +311,7 @@ export const paymentRepo: PaymentRepository = {
 
   async listChargebacks(tenantId) {
     const items = await prisma.paymentChargeback.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapChargeback);
@@ -320,7 +320,7 @@ export const paymentRepo: PaymentRepository = {
     const item = await prisma.paymentChargeback.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         paymentId: payload.paymentId,
         disputeId: payload.disputeId,
         amount: payload.amount,
@@ -331,7 +331,7 @@ export const paymentRepo: PaymentRepository = {
   },
   async updateChargeback(tenantId, id, patch) {
     const item = await prisma.paymentChargeback.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         status: patch.status,
       },
@@ -341,7 +341,7 @@ export const paymentRepo: PaymentRepository = {
 
   async listRefunds(tenantId) {
     const items = await prisma.paymentRefund.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapRefund);
@@ -350,7 +350,7 @@ export const paymentRepo: PaymentRepository = {
     const item = await prisma.paymentRefund.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         paymentId: payload.paymentId,
         type: payload.type,
         amount: payload.amount,
@@ -364,7 +364,7 @@ export const paymentRepo: PaymentRepository = {
   },
   async updateRefund(tenantId, id, patch) {
     const item = await prisma.paymentRefund.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         status: patch.status,
         approvedBy: patch.approvedBy,
@@ -376,7 +376,7 @@ export const paymentRepo: PaymentRepository = {
 
   async listSettlements(tenantId) {
     const items = await prisma.paymentSettlementRecord.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapSettlementRecord);
@@ -385,7 +385,7 @@ export const paymentRepo: PaymentRepository = {
     const item = await prisma.paymentSettlementRecord.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         paymentId: payload.paymentId,
         providerReference: payload.providerReference,
         status: payload.status,
@@ -396,7 +396,7 @@ export const paymentRepo: PaymentRepository = {
   },
   async updateSettlement(tenantId, id, patch) {
     const item = await prisma.paymentSettlementRecord.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         status: patch.status,
         confirmedAt: patch.confirmedAt ? new Date(patch.confirmedAt) : undefined,
@@ -408,7 +408,7 @@ export const paymentRepo: PaymentRepository = {
 
   async listEvidencePacks(tenantId) {
     const items = await prisma.paymentEvidencePack.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapEvidencePack);
@@ -417,7 +417,7 @@ export const paymentRepo: PaymentRepository = {
     const item = await prisma.paymentEvidencePack.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         paymentId: payload.paymentId,
         providerProof: payload.providerProof,
         approvalSignatures: payload.approvalSignatures,
@@ -430,7 +430,7 @@ export const paymentRepo: PaymentRepository = {
 
   async listAuditEvents(tenantId) {
     const items = await prisma.paymentAuditEvent.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapAuditEvent);
@@ -439,7 +439,7 @@ export const paymentRepo: PaymentRepository = {
     const item = await prisma.paymentAuditEvent.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         actorId: payload.actorId,
         action: payload.action,
         entityType: payload.entityType,

@@ -6,7 +6,11 @@ export const hrService = {
   /**
    * List all employees for the tenant
    */
-  async listEmployees(tenantId: string, session: SessionContext, locationId?: string): Promise<Employee[]> {
+  async listEmployees(
+    tenantId: string,
+    session: SessionContext,
+    locationId?: string,
+  ): Promise<Employee[]> {
     const query = locationId ? `?locationId=${locationId}` : "";
     return apiRequest<Employee[]>(`/hr/employees${query}`, "GET", session);
   },
@@ -14,14 +18,26 @@ export const hrService = {
   /**
    * Get a specific employee by ID
    */
-  async getEmployee(tenantId: string, session: SessionContext, employeeId: string): Promise<Employee | null> {
-    return apiRequest<Employee | null>(`/hr/employees/${employeeId}`, "GET", session);
+  async getEmployee(
+    tenantId: string,
+    session: SessionContext,
+    employeeId: string,
+  ): Promise<Employee | null> {
+    return apiRequest<Employee | null>(
+      `/hr/employees/${employeeId}`,
+      "GET",
+      session,
+    );
   },
 
   /**
    * Delete (deactivate) an employee
    */
-  async deleteEmployee(tenantId: string, session: SessionContext, employeeId: string): Promise<{ success: boolean }> {
+  async deleteEmployee(
+    tenantId: string,
+    session: SessionContext,
+    employeeId: string,
+  ): Promise<{ success: boolean }> {
     await apiRequest(`/hr/employees/${employeeId}`, "DELETE", session);
     return { success: true };
   },
@@ -29,14 +45,43 @@ export const hrService = {
   /**
    * Create a new employee
    */
-  async createEmployee(tenantId: string, session: SessionContext, employee: Partial<Employee>): Promise<Employee> {
+  async createEmployee(
+    tenantId: string,
+    session: SessionContext,
+    employee: Partial<Employee>,
+  ): Promise<Employee> {
     return apiRequest<Employee>("/hr/employees", "POST", session, employee);
   },
 
   /**
    * Update an existing employee
    */
-  async updateEmployee(tenantId: string, session: SessionContext, employeeId: string, updates: Partial<Employee>): Promise<Employee> {
-    return apiRequest<Employee>(`/hr/employees/${employeeId}`, "PUT", session, updates);
+  async updateEmployee(
+    tenantId: string,
+    session: SessionContext,
+    employeeId: string,
+    updates: Partial<Employee>,
+  ): Promise<Employee> {
+    return apiRequest<Employee>(
+      `/hr/employees/${employeeId}`,
+      "PUT",
+      session,
+      updates,
+    );
+  },
+
+  /**
+   * List all locations for the tenant
+   */
+  async listLocations(
+    tenantId: string,
+    session: SessionContext,
+  ): Promise<
+    Array<{ id: string; name: string; code: string; address: string }>
+  > {
+    const response = await apiRequest<{
+      data: Array<{ id: string; name: string; code: string; address: string }>;
+    }>(`/hr/locations`, "GET", session);
+    return response.data;
   },
 };

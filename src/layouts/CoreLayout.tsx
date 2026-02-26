@@ -1,12 +1,13 @@
-import { useState } from 'react';
-import type { ElementType } from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { AppSwitcher } from '@/components/shared/AppSwitcher';
-import { OfflineIndicator } from '@/components/shared/OfflineIndicator';
-import { useApp } from '@/contexts/AppContext';
+import { useState } from "react";
+import type { ElementType } from "react";
+import { Outlet, NavLink } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { AppSwitcher } from "@/components/shared/AppSwitcher";
+import { OfflineIndicator } from "@/components/shared/OfflineIndicator";
+import { useApp } from "@/contexts/AppContext";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard,
   ClipboardList,
@@ -30,56 +31,62 @@ import {
   Moon,
   Sun,
   LogOut,
-} from 'lucide-react';
+} from "lucide-react";
 
-type NavItem = { path: string; icon: ElementType; label: string; end?: boolean };
+type NavItem = {
+  path: string;
+  icon: ElementType;
+  label: string;
+  end?: boolean;
+};
 type NavSection = { title: string; items: NavItem[] };
 
 const navSections: NavSection[] = [
   {
-    title: 'WorkSuite',
+    title: "WorkSuite",
     items: [
-      { path: '/core', icon: LayoutDashboard, label: 'Dashboard', end: true },
-      { path: '/core/operations', icon: ClipboardList, label: 'Operations' },
-      { path: '/core/workflow', icon: Inbox, label: 'Workflow' },
-      { path: '/core/tools', icon: Wrench, label: 'WorkTools' },
+      { path: "/core", icon: LayoutDashboard, label: "Dashboard", end: true },
+      { path: "/core/operations", icon: ClipboardList, label: "Operations" },
+      { path: "/core/workflow", icon: Inbox, label: "Workflow" },
+      { path: "/core/tools", icon: Wrench, label: "WorkTools" },
     ],
   },
   {
-    title: 'Management',
+    title: "Management",
     items: [
-      { path: '/core/finance', icon: Wallet, label: 'Finance' },
-      { path: '/core/payment', icon: CreditCard, label: 'Payment' },
-      { path: '/core/procurement', icon: ShoppingCart, label: 'Procurement' },
-      { path: '/core/inventory', icon: Package, label: 'Inventory' },
-      { path: '/core/hr', icon: Users2, label: 'HR' },
-      { path: '/core/it', icon: ShieldCheck, label: 'IT' },
+      { path: "/core/finance", icon: Wallet, label: "Finance" },
+      { path: "/core/payment", icon: CreditCard, label: "Payment" },
+      { path: "/core/procurement", icon: ShoppingCart, label: "Procurement" },
+      { path: "/core/inventory", icon: Package, label: "Inventory" },
+      { path: "/core/hr", icon: Users2, label: "HR" },
+      { path: "/core/it", icon: ShieldCheck, label: "IT" },
     ],
   },
   {
-    title: 'Commerce & Growth',
+    title: "Commerce & Growth",
     items: [
-      { path: '/core/sales', icon: BarChart3, label: 'Sales' },
-      { path: '/core/marketing', icon: Link2, label: 'Marketing' },
+      { path: "/core/sales", icon: BarChart3, label: "Sales" },
+      { path: "/core/marketing", icon: Link2, label: "Marketing" },
     ],
   },
   {
-    title: 'Backbone',
+    title: "Backbone",
     items: [
-      { path: '/core/admin', icon: Shield, label: 'Administration' },
-      { path: '/core/staff', icon: Users, label: 'Staff' },
-      { path: '/core/modules', icon: Puzzle, label: 'Modules' },
-      { path: '/core/reports', icon: BarChart3, label: 'Reports' },
-      { path: '/core/integrations', icon: Link2, label: 'Integrations' },
-      { path: '/core/security', icon: ShieldCheck, label: 'Security' },
-      { path: '/core/settings', icon: Settings, label: 'Settings' },
+      { path: "/core/admin", icon: Shield, label: "Administration" },
+      { path: "/core/staff", icon: Users, label: "Staff" },
+      { path: "/core/modules", icon: Puzzle, label: "Modules" },
+      { path: "/core/reports", icon: BarChart3, label: "Reports" },
+      { path: "/core/integrations", icon: Link2, label: "Integrations" },
+      { path: "/core/security", icon: ShieldCheck, label: "Security" },
+      { path: "/core/settings", icon: Settings, label: "Settings" },
     ],
   },
 ];
 
 export function CoreLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { state, logout, toggleTheme } = useApp();
+  const { state, toggleTheme } = useApp();
+  const { logout } = useAuth();
 
   return (
     <div className="flex h-screen bg-background">
@@ -94,8 +101,8 @@ export function CoreLayout() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed lg:static inset-y-0 left-0 z-50 w-64 bg-sidebar text-sidebar-foreground transform transition-transform duration-200 lg:transform-none',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          "fixed lg:static inset-y-0 left-0 z-50 w-64 bg-sidebar text-sidebar-foreground transform transition-transform duration-200 lg:transform-none",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         )}
       >
         <div className="flex flex-col h-full">
@@ -103,7 +110,10 @@ export function CoreLayout() {
           <div className="flex items-center justify-between p-4 border-b border-sidebar-border">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center">
-                <LayoutDashboard size={18} className="text-sidebar-primary-foreground" />
+                <LayoutDashboard
+                  size={18}
+                  className="text-sidebar-primary-foreground"
+                />
               </div>
               <span className="font-bold text-lg">OpsCore</span>
             </div>
@@ -132,10 +142,10 @@ export function CoreLayout() {
                       end={end}
                       className={({ isActive }) =>
                         cn(
-                          'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                          "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                           isActive
-                            ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
                         )
                       }
                       onClick={() => setSidebarOpen(false)}
@@ -152,7 +162,7 @@ export function CoreLayout() {
           {/* Footer */}
           <div className="p-4 border-t border-sidebar-border space-y-3">
             <OfflineIndicator showText className="text-sidebar-foreground/70" />
-            
+
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
@@ -160,7 +170,11 @@ export function CoreLayout() {
                 className="text-sidebar-foreground/70 hover:bg-sidebar-accent"
                 onClick={toggleTheme}
               >
-                {state.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                {state.theme === "dark" ? (
+                  <Sun size={18} />
+                ) : (
+                  <Moon size={18} />
+                )}
               </Button>
               <Button
                 variant="ghost"

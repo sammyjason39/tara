@@ -30,7 +30,7 @@ export class RetailPublicCustomerController {
     const payload = (request as any).customerAuth;
     const connector = (request as any).connectorScope;
     const customer = await this.authService.getCustomerFromToken(payload);
-    if (payload.tenantId !== connector.companyId) {
+    if (payload.tenantId !== connector.tenantId) {
       throw new ForbiddenException('Tenant mismatch');
     }
     return { customer, tenantId: payload.tenantId };

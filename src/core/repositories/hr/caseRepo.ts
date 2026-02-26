@@ -7,7 +7,7 @@ import { prisma } from "@/core/persistence/database/client";
  */
 const mapToCase = (db: any): HRCase => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   title: db.title,
   type: db.type as CaseType,
   status: db.status as CaseStatus,
@@ -25,7 +25,7 @@ export const caseRepo = {
    */
   async list(tenantId: string): Promise<HRCase[]> {
     const list = await prisma.hRCase.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return list.map(mapToCase);
@@ -36,7 +36,7 @@ export const caseRepo = {
    */
   async get(tenantId: string, caseId: string): Promise<HRCase | undefined> {
     const record = await prisma.hRCase.findFirst({
-      where: { id: caseId, companyId: tenantId },
+      where: { id: caseId, tenantId: tenantId },
     });
     return record ? mapToCase(record) : undefined;
   },
@@ -50,7 +50,7 @@ export const caseRepo = {
   ): Promise<HRCase> {
     const record = await prisma.hRCase.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         employeeId: payload.employeeId,
         departmentId: payload.departmentId,
         title: payload.title,
@@ -80,7 +80,7 @@ export const caseRepo = {
     const updated = await prisma.hRCase.update({
       where: {
         id: caseId,
-        companyId: tenantId,
+        tenantId: tenantId,
       },
       data,
     });

@@ -21,7 +21,7 @@ export class RetailEventsController {
     const event: RetailEvent = {
       ...body,
       scope: {
-        companyId: scope.companyId,
+        tenantId: scope.tenantId,
         branchId: scope.branchId,
         ecommerceId: scope.ecommerceId,
       },

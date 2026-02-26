@@ -7,7 +7,7 @@ import { prisma } from "@/core/persistence/database/client";
  */
 const mapToCycle = (db: any): PerformanceCycle => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   name: db.name,
   status: db.status as ReviewCycleStatus,
   startDate: db.startDate.toISOString().split('T')[0],
@@ -22,7 +22,7 @@ const mapToCycle = (db: any): PerformanceCycle => ({
  */
 const mapToReview = (db: any): PerformanceReview => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   cycleId: db.cycleId,
   employeeId: db.employeeId,
   reviewerId: db.reviewerId,
@@ -39,7 +39,7 @@ export const performanceRepo = {
    */
   async listCycles(tenantId: string): Promise<PerformanceCycle[]> {
     const cycles = await prisma.performanceCycle.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { startDate: 'desc' },
     });
     return cycles.map(mapToCycle);
@@ -51,7 +51,7 @@ export const performanceRepo = {
   ): Promise<PerformanceCycle> {
     const cycle = await prisma.performanceCycle.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         name: payload.name,
         status: payload.status,
         startDate: new Date(payload.startDate),
@@ -75,7 +75,7 @@ export const performanceRepo = {
     if (patch.dueDate) data.dueDate = new Date(patch.dueDate);
 
     const updated = await prisma.performanceCycle.update({
-      where: { id: cycleId, companyId: tenantId },
+      where: { id: cycleId, tenantId: tenantId },
       data,
     });
     return mapToCycle(updated);
@@ -86,7 +86,7 @@ export const performanceRepo = {
    */
   async listReviews(tenantId: string): Promise<PerformanceReview[]> {
     const reviews = await prisma.performanceReview.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return reviews.map(mapToReview);
@@ -98,7 +98,7 @@ export const performanceRepo = {
   ): Promise<PerformanceReview> {
     const review = await prisma.performanceReview.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         cycleId: payload.cycleId,
         employeeId: payload.employeeId,
         reviewerId: payload.reviewerId,

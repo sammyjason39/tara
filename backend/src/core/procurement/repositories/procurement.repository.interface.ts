@@ -27,6 +27,7 @@ export abstract class IProcurementRepository {
   // Additional methods for full migration
   abstract getSupplierBranches(tenantId: string): Promise<any[]>;
   abstract getSupplierProducts(tenantId: string): Promise<any[]>;
+  abstract getSupplierRecommendations(tenantId: string, params: any): Promise<any[]>;
   abstract getDraftPurchaseOrders(tenantId: string): Promise<any[]>;
   abstract getContracts(tenantId: string): Promise<any[]>;
   abstract getAuditEvents(tenantId: string): Promise<any[]>;

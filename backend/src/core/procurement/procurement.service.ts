@@ -52,6 +52,10 @@ export class ProcurementService {
     return this.repository.getSupplierProducts(tenantId);
   }
 
+  async getSupplierRecommendations(tenantId: string, params: any) {
+    return this.repository.getSupplierRecommendations(tenantId, params);
+  }
+
   async getDraftPurchaseOrders(tenantId: string) {
     return this.repository.getDraftPurchaseOrders(tenantId);
   }

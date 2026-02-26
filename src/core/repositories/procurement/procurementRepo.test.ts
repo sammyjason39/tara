@@ -73,7 +73,7 @@ describe('Procurement Repository', () => {
     it('should list suppliers', async () => {
       const mockItems = [{
         id: 'sup-001',
-        companyId: tenantId,
+        tenantId: tenantId,
         name: 'Supplier A',
         taxId: 'TX-001',
         complianceStatus: 'VERIFIED',
@@ -90,7 +90,7 @@ describe('Procurement Repository', () => {
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('sup-001');
       expect(prisma.supplierMaster.findMany).toHaveBeenCalledWith({
-        where: { companyId: tenantId, deletedAt: null },
+        where: { tenantId: tenantId, deletedAt: null },
         orderBy: { createdAt: 'desc' },
       });
     });
@@ -110,7 +110,7 @@ describe('Procurement Repository', () => {
       };
       const mockItem = {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         name: payload.name,
         taxId: payload.taxId,
         complianceStatus: payload.complianceStatus,
@@ -132,7 +132,7 @@ describe('Procurement Repository', () => {
     it('should list requisitions', async () => {
       const mockItems = [{
         id: 'req-001',
-        companyId: tenantId,
+        tenantId: tenantId,
         requesterId: 'emp-001',
         departmentId: 'dept-ops',
         branchCode: 'JKT',
@@ -176,7 +176,7 @@ describe('Procurement Repository', () => {
       };
       const mockItem = {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         requesterId: payload.requesterId,
         departmentId: payload.requesterDept,
         branchCode: payload.branchCode,
@@ -220,7 +220,7 @@ describe('Procurement Repository', () => {
       };
       const mockItem = {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         requisitionId: payload.requisitionId,
         branchCode: payload.branchCode,
         supplierId: payload.supplierId,
@@ -256,7 +256,7 @@ describe('Procurement Repository', () => {
       };
       const mockItem = {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         requisitionId: payload.requisitionId,
         draftPoId: payload.draftPoId,
         supplierId: payload.supplierId,
@@ -289,7 +289,7 @@ describe('Procurement Repository', () => {
       };
       const mockItem = {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         actorId: payload.actorId,
         action: payload.action,
         entityType: payload.entityType,

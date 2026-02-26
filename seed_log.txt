@@ -1,29 +1,20 @@
-Environment variables loaded from .env
-Running seed command `tsx prisma/seed.ts` ...
-[dotenv@17.3.1] injecting env (0) from .env -- tip: ≡ƒñû agentic secret storage: https://dotenvx.com/as2
-≡ƒôí DATABASE_URL in seed script: FOUND (hidden)
-≡ƒî▒ Starting database seed...
-Γ£à Created company: Demo Company A
-Γ£à Created locations: Jakarta Branch Bandung Branch
-Γ£à Created departments: Engineering, Human Resources, Sales, Operations
-Γ¥î Seed failed: PrismaClientKnownRequestError: 
-Invalid `prisma.employee.upsert()` invocation in
-C:\Users\user\Documents\Software-Developer\zenvix-demo\business-flow-suite-v2\prisma\seed.ts:137:27
+node:internal/modules/cjs/loader:1437
+  const err = new Error(`Cannot find module '${request}'`);
+              ^
 
-  134 ];
-  135 
-  136 for (const emp of employees) {
-ΓåÆ 137   await prisma.employee.upsert(
-The column `role_title` does not exist in the current database.
-    at Vn.handleRequestError (C:\Users\user\Documents\Software-Developer\zenvix-demo\business-flow-suite-v2\node_modules\@prisma\client\runtime\library.js:121:7339)
-    at Vn.handleAndLogRequestError (C:\Users\user\Documents\Software-Developer\zenvix-demo\business-flow-suite-v2\node_modules\@prisma\client\runtime\library.js:121:6663)
-    at Vn.request (C:\Users\user\Documents\Software-Developer\zenvix-demo\business-flow-suite-v2\node_modules\@prisma\client\runtime\library.js:121:6370)
-    at async l (C:\Users\user\Documents\Software-Developer\zenvix-demo\business-flow-suite-v2\node_modules\@prisma\client\runtime\library.js:130:9617)
-    at async main (C:\Users\user\Documents\Software-Developer\zenvix-demo\business-flow-suite-v2\prisma\seed.ts:137:5) {
-  code: 'P2022',
-  clientVersion: '6.2.1',
-  meta: { modelName: 'Employee', column: 'role_title' }
+Error: Cannot find module 'C:\Users\user\Documents\Software-Developer\zenvix-demo\business-flow-suite-v2\node_modules\@prisma\client\runtime\library.js'
+    at createEsmNotFoundErr (node:internal/modules/cjs/loader:1437:15)
+    at finalizeEsmResolution (node:internal/modules/cjs/loader:1426:15)
+    at resolveExports (node:internal/modules/cjs/loader:657:14)
+    at Function._findPath (node:internal/modules/cjs/loader:749:31)
+    at node:internal/modules/cjs/loader:1387:27
+    at nextResolveSimple (C:\Users\user\Documents\Software-Developer\zenvix-demo\business-flow-suite-v2\node_modules\tsx\dist\register-D46fvsV_.cjs:4:1004)
+    at C:\Users\user\Documents\Software-Developer\zenvix-demo\business-flow-suite-v2\node_modules\tsx\dist\register-D46fvsV_.cjs:3:2630
+    at C:\Users\user\Documents\Software-Developer\zenvix-demo\business-flow-suite-v2\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1542
+    at resolveTsPaths (C:\Users\user\Documents\Software-Developer\zenvix-demo\business-flow-suite-v2\node_modules\tsx\dist\register-D46fvsV_.cjs:4:760)
+    at C:\Users\user\Documents\Software-Developer\zenvix-demo\business-flow-suite-v2\node_modules\tsx\dist\register-D46fvsV_.cjs:4:1102 {
+  code: 'MODULE_NOT_FOUND',
+  path: 'C:\\Users\\user\\Documents\\Software-Developer\\zenvix-demo\\business-flow-suite-v2\\node_modules\\@prisma\\client'
 }
 
-An error occurred while running the seed command:
-Error: Command failed with exit code 1: tsx prisma/seed.ts
+Node.js v22.17.1

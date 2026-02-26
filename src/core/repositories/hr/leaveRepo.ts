@@ -6,7 +6,7 @@ import { prisma } from "@/core/persistence/database/client";
  */
 const mapToLeave = (db: any): LeaveRequest => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   employeeId: db.employeeId,
   departmentId: db.departmentId || undefined,
   type: db.type as LeaveType,
@@ -27,7 +27,7 @@ export const leaveRepo = {
   async list(tenantId: string): Promise<LeaveRequest[]> {
     const list = await prisma.leaveRequest.findMany({
       where: {
-        companyId: tenantId,
+        tenantId: tenantId,
       },
       orderBy: {
         startDate: 'desc',
@@ -46,7 +46,7 @@ export const leaveRepo = {
   ): Promise<LeaveRequest> {
     const record = await prisma.leaveRequest.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         employeeId: payload.employeeId,
         departmentId: payload.departmentId,
         type: payload.type,
@@ -82,7 +82,7 @@ export const leaveRepo = {
     const updated = await prisma.leaveRequest.update({
       where: {
         id: leaveId,
-        companyId: tenantId,
+        tenantId: tenantId,
       },
       data,
     });

@@ -11,7 +11,7 @@ import { prisma } from "@/core/persistence/database/client";
  */
 const mapToShift = (db: any): Shift => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   name: db.name,
   startTime: db.startTime,
   endTime: db.endTime,
@@ -27,7 +27,7 @@ const mapToShift = (db: any): Shift => ({
  */
 const mapToAssignment = (db: any): ScheduleAssignment => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   employeeId: db.employeeId,
   shiftId: db.shiftId,
   locationId: db.locationId,
@@ -42,7 +42,7 @@ export const schedulingRepo = {
    */
   async listShifts(tenantId: string): Promise<Shift[]> {
     const list = await prisma.shift.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { name: 'asc' },
     });
     return list.map(mapToShift);
@@ -50,7 +50,7 @@ export const schedulingRepo = {
 
   async getShift(tenantId: string, shiftId: string): Promise<Shift | undefined> {
     const record = await prisma.shift.findFirst({
-      where: { id: shiftId, companyId: tenantId },
+      where: { id: shiftId, tenantId: tenantId },
     });
     return record ? mapToShift(record) : undefined;
   },
@@ -60,14 +60,14 @@ export const schedulingRepo = {
    */
   async listAssignments(tenantId: string): Promise<ScheduleAssignment[]> {
     const list = await prisma.scheduleAssignment.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
     });
     return list.map(mapToAssignment);
   },
 
   async getAssignment(tenantId: string, employeeId: string): Promise<ScheduleAssignment | undefined> {
     const record = await prisma.scheduleAssignment.findFirst({
-      where: { employeeId, companyId: tenantId },
+      where: { employeeId, tenantId: tenantId },
     });
     return record ? mapToAssignment(record) : undefined;
   },
@@ -83,7 +83,7 @@ export const schedulingRepo = {
       },
       create: {
         id: request.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         requesterId: request.requesterId,
         targetId: request.targetEmployeeId,
         shiftId: request.shiftId,
@@ -94,11 +94,11 @@ export const schedulingRepo = {
 
   async listSwaps(tenantId: string): Promise<ShiftSwapRequest[]> {
     const list = await prisma.shiftSwapRequest.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
     });
     return list.map((db) => ({
       id: db.id,
-      tenantId: db.companyId,
+      tenantId: db.tenantId,
       requesterId: db.requesterId,
       targetEmployeeId: db.targetId,
       shiftId: db.shiftId,
@@ -120,7 +120,7 @@ export const schedulingRepo = {
       },
       create: {
         id: override.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         employeeId: override.coveringEmployeeId,
         reason: override.reason,
         startDate: new Date(override.date),
@@ -131,11 +131,11 @@ export const schedulingRepo = {
 
   async listOverrides(tenantId: string): Promise<EmergencyOverride[]> {
     const list = await prisma.emergencyOverride.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
     });
     return list.map((db) => ({
       id: db.id,
-      tenantId: db.companyId,
+      tenantId: db.tenantId,
       absentEmployeeId: db.employeeId, // Assuming employeeId in DB is the one being covered?
       coveringEmployeeId: db.employeeId,
       shiftId: "shift-default",

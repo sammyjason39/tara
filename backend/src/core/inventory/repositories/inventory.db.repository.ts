@@ -10,23 +10,23 @@ import {
   InventoryAlert as PrismaInventoryAlert,
   StockMovement as PrismaStockMovement,
   ProductCategory
-} from '../../../generated/client';
+} from '@prisma/client';
 
 @Injectable()
 export class InventoryDbRepository implements IInventoryRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async getDashboard(tenantId: string): Promise<InventoryDashboard> {
-    const totalItems = await this.prisma.product.count({ where: { companyId: tenantId } });
-    const totalLocations = await this.prisma.location.count({ where: { companyId: tenantId } });
-    const totalDepartments = await this.prisma.department.count({ where: { companyId: tenantId } });
+    const totalItems = await this.prisma.product.count({ where: { tenantId: tenantId } });
+    const totalLocations = await this.prisma.location.count({ where: { tenantId: tenantId } });
+    const totalDepartments = await this.prisma.department.count({ where: { tenantId: tenantId } });
     
-    const stockLevels = await this.prisma.stockLevel.findMany({ where: { companyId: tenantId } });
+    const stockLevels = await this.prisma.stockLevel.findMany({ where: { tenantId: tenantId } });
     const totalOnHandQty = stockLevels.reduce((sum: number, level: StockLevel) => sum + level.onHand, 0);
     
     // Valuation logic would need product cost, using basePrice for now
     const products = await this.prisma.product.findMany({ 
-      where: { companyId: tenantId, id: { in: stockLevels.map((s: StockLevel) => s.productId) } } 
+      where: { tenantId: tenantId, id: { in: stockLevels.map((s: StockLevel) => s.productId) } } 
     });
     const productMap = new Map(products.map((p: Product) => [p.id, p]));
     const totalValuation = stockLevels.reduce((sum: number, level: StockLevel) => {
@@ -35,15 +35,15 @@ export class InventoryDbRepository implements IInventoryRepository {
     }, 0);
 
     const pendingAdjustments = await this.prisma.inventoryAdjustment.count({ 
-      where: { companyId: tenantId, status: 'PENDING_APPROVAL' } 
+      where: { tenantId: tenantId, status: 'PENDING_APPROVAL' } 
     });
     
     // Placeholder checks for now
     const lowStockCount = await this.prisma.inventoryAlert.count({
-      where: { companyId: tenantId, type: 'LOW_STOCK', status: 'OPEN' }
+      where: { tenantId: tenantId, type: 'LOW_STOCK', status: 'OPEN' }
     });
     const expiryWarningCount = await this.prisma.inventoryAlert.count({
-      where: { companyId: tenantId, type: 'EXPIRY_WARNING', status: 'OPEN' }
+      where: { tenantId: tenantId, type: 'EXPIRY_WARNING', status: 'OPEN' }
     });
     
     const pendingReceiptSyncs = 0; // Not tracked in DB yet
@@ -63,13 +63,13 @@ export class InventoryDbRepository implements IInventoryRepository {
 
   async getItems(tenantId: string): Promise<InventoryItem[]> {
     const products = await this.prisma.product.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       include: { category: true }
     });
     
     return products.map((p: Product & { category: ProductCategory }) => ({
       id: p.id,
-      tenantId: p.companyId,
+      tenantId: p.tenantId,
       sku: p.sku,
       name: p.name,
       category: p.category.name as any,
@@ -86,18 +86,18 @@ export class InventoryDbRepository implements IInventoryRepository {
   async createItem(tenantId: string, data: CreateItemDto): Promise<InventoryItem> {
     // Find or create category
     let category = await this.prisma.productCategory.findFirst({
-      where: { companyId: tenantId, name: data.category }
+      where: { tenantId: tenantId, name: data.category }
     });
     
     if (!category) {
       category = await this.prisma.productCategory.create({
-        data: { companyId: tenantId, name: data.category }
+        data: { tenantId: tenantId, name: data.category }
       });
     }
 
     const product = await this.prisma.product.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         categoryId: category.id,
         name: data.name,
         sku: data.sku,
@@ -113,7 +113,7 @@ export class InventoryDbRepository implements IInventoryRepository {
 
     return {
       id: product.id,
-      tenantId: product.companyId,
+      tenantId: product.tenantId,
       sku: product.sku,
       name: product.name,
       category: product.category.name as any,
@@ -128,7 +128,7 @@ export class InventoryDbRepository implements IInventoryRepository {
   }
 
   async getBalances(tenantId: string, locationId?: string, departmentId?: string): Promise<StockBalance[]> {
-    const where: any = { companyId: tenantId };
+    const where: any = { tenantId: tenantId };
     if (locationId) where.locationId = locationId;
     if (departmentId) where.departmentId = departmentId;
 
@@ -139,7 +139,7 @@ export class InventoryDbRepository implements IInventoryRepository {
 
     return levels.map((l: StockLevel & { product: Product, location: Location, department: Department | null }) => ({
       id: l.id,
-      tenantId: l.companyId,
+      tenantId: l.tenantId,
       itemId: l.productId,
       locationId: l.locationId,
       departmentId: l.departmentId || undefined,
@@ -153,7 +153,7 @@ export class InventoryDbRepository implements IInventoryRepository {
   }
 
   async getMovements(tenantId: string, itemId?: string): Promise<StockMovement[]> {
-    const where: any = { companyId: tenantId };
+    const where: any = { tenantId: tenantId };
     if (itemId) where.productId = itemId;
 
     const movements = await this.prisma.stockMovement.findMany({
@@ -164,7 +164,7 @@ export class InventoryDbRepository implements IInventoryRepository {
 
     return movements.map((m: PrismaStockMovement) => ({
       id: m.id,
-      tenantId: m.companyId,
+      tenantId: m.tenantId,
       itemId: m.productId,
       movementType: m.type.toLowerCase() as any,
       quantity: m.quantity,
@@ -190,7 +190,7 @@ export class InventoryDbRepository implements IInventoryRepository {
           } 
         },
         create: {
-          companyId: tenantId,
+          tenantId: tenantId,
           locationId: data.locationId,
           departmentId: data.departmentId || null,
           productId: data.itemId,
@@ -206,7 +206,7 @@ export class InventoryDbRepository implements IInventoryRepository {
       // 2. Create movement
       const movement = await tx.stockMovement.create({
         data: {
-          companyId: tenantId,
+          tenantId: tenantId,
           productId: data.itemId,
           toLocationId: data.locationId,
           toDepartmentId: data.departmentId || null,
@@ -220,7 +220,7 @@ export class InventoryDbRepository implements IInventoryRepository {
 
       return {
         id: movement.id,
-        tenantId: movement.companyId,
+        tenantId: movement.tenantId,
         itemId: movement.productId,
         movementType: 'intake',
         quantity: movement.quantity,
@@ -254,7 +254,7 @@ export class InventoryDbRepository implements IInventoryRepository {
     // 2. Create movement
     const movement = await this.prisma.stockMovement.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         productId: data.itemId,
         fromLocationId: data.locationId,
         quantity: data.quantity,
@@ -295,7 +295,7 @@ export class InventoryDbRepository implements IInventoryRepository {
           } 
         },
         create: {
-          companyId: tenantId,
+          tenantId: tenantId,
           locationId: data.toLocationId,
           departmentId: data.toDepartmentId || null,
           productId: data.itemId,
@@ -311,7 +311,7 @@ export class InventoryDbRepository implements IInventoryRepository {
       // Create movement records
       const outMove = await tx.stockMovement.create({
         data: {
-          companyId: tenantId,
+          tenantId: tenantId,
           productId: data.itemId,
           fromLocationId: data.fromLocationId,
           fromDepartmentId: data.fromDepartmentId || null,
@@ -326,7 +326,7 @@ export class InventoryDbRepository implements IInventoryRepository {
 
       return [{
         id: outMove.id,
-        tenantId: outMove.companyId,
+        tenantId: outMove.tenantId,
         itemId: outMove.productId,
         movementType: 'transfer_out',
         quantity: outMove.quantity,
@@ -345,13 +345,13 @@ export class InventoryDbRepository implements IInventoryRepository {
 
   async getAdjustments(tenantId: string): Promise<StockAdjustment[]> {
     const adjs = await this.prisma.inventoryAdjustment.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' }
     });
     
     return adjs.map((a: InventoryAdjustment) => ({
       id: a.id,
-      tenantId: a.companyId,
+      tenantId: a.tenantId,
       itemId: a.itemId,
       locationId: a.locationId,
       departmentId: a.departmentId || undefined,
@@ -369,7 +369,7 @@ export class InventoryDbRepository implements IInventoryRepository {
   async createAdjustment(tenantId: string, data: CreateAdjustmentDto): Promise<StockAdjustment> {
     const adj = await this.prisma.inventoryAdjustment.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         itemId: data.itemId,
         locationId: data.locationId,
         departmentId: data.departmentId || null,
@@ -382,7 +382,7 @@ export class InventoryDbRepository implements IInventoryRepository {
 
     return {
       id: adj.id,
-      tenantId: adj.companyId,
+      tenantId: adj.tenantId,
       itemId: adj.itemId,
       locationId: adj.locationId,
       departmentId: adj.departmentId || undefined,
@@ -398,7 +398,7 @@ export class InventoryDbRepository implements IInventoryRepository {
   async approveAdjustment(tenantId: string, adjustmentId: string, approvedBy: string): Promise<StockAdjustment> {
      return this.prisma.$transaction(async (tx) => {
         const adj = await tx.inventoryAdjustment.update({
-          where: { id: adjustmentId, companyId: tenantId },
+          where: { id: adjustmentId, tenantId: tenantId },
           data: {
             status: 'APPROVED',
             approvedBy,
@@ -415,7 +415,7 @@ export class InventoryDbRepository implements IInventoryRepository {
             } 
           },
           create: {
-            companyId: tenantId,
+            tenantId: tenantId,
             locationId: adj.locationId,
             departmentId: adj.departmentId || null,
             productId: adj.itemId,
@@ -431,7 +431,7 @@ export class InventoryDbRepository implements IInventoryRepository {
         // Add movement log for adjustment
         await tx.stockMovement.create({
           data: {
-            companyId: tenantId,
+            tenantId: tenantId,
             productId: adj.itemId,
             toLocationId: adj.locationId,
             toDepartmentId: adj.departmentId || null,
@@ -444,7 +444,7 @@ export class InventoryDbRepository implements IInventoryRepository {
         
         return {
           id: adj.id,
-          tenantId: adj.companyId,
+          tenantId: adj.tenantId,
           itemId: adj.itemId,
           locationId: adj.locationId,
           departmentId: adj.departmentId || undefined,
@@ -462,13 +462,13 @@ export class InventoryDbRepository implements IInventoryRepository {
 
   async getAlerts(tenantId: string): Promise<InventoryAlert[]> {
      const alerts = await this.prisma.inventoryAlert.findMany({
-       where: { companyId: tenantId },
+       where: { tenantId: tenantId },
        orderBy: { createdAt: 'desc' }
      });
 
      return alerts.map((a: any) => ({
        id: a.id,
-       tenantId: a.companyId,
+       tenantId: a.tenantId,
        alertType: a.type.toLowerCase() as any,
        severity: a.severity.toLowerCase() as any,
        status: a.status.toLowerCase() as any,
@@ -481,12 +481,12 @@ export class InventoryDbRepository implements IInventoryRepository {
 
   async setAlertStatus(tenantId: string, alertId: string, status: InventoryAlert['status']): Promise<InventoryAlert> {
     const alert = await this.prisma.inventoryAlert.update({
-      where: { id: alertId, companyId: tenantId },
+      where: { id: alertId, tenantId: tenantId },
       data: { status }
     });
      return {
        id: alert.id,
-       tenantId: alert.companyId,
+       tenantId: alert.tenantId,
        alertType: alert.type.toLowerCase() as any,
        severity: alert.severity.toLowerCase() as any,
        status: alert.status.toLowerCase() as any,
@@ -498,13 +498,13 @@ export class InventoryDbRepository implements IInventoryRepository {
   }
 
   async getAuditCycles(tenantId: string): Promise<any[]> {
-    return this.prisma.inventoryAuditCycle.findMany({ where: { companyId: tenantId } });
+    return this.prisma.inventoryAuditCycle.findMany({ where: { tenantId: tenantId } });
   }
 
   async createAuditCycle(tenantId: string, data: any): Promise<any> {
     return this.prisma.inventoryAuditCycle.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         ...data
       }
     });
@@ -512,19 +512,19 @@ export class InventoryDbRepository implements IInventoryRepository {
 
   async updateAuditCycle(tenantId: string, id: string, data: any): Promise<any> {
     return this.prisma.inventoryAuditCycle.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data
     });
   }
 
   async getIntegrationEvents(tenantId: string): Promise<any[]> {
-    return this.prisma.inventoryIntegrationEvent.findMany({ where: { companyId: tenantId } });
+    return this.prisma.inventoryIntegrationEvent.findMany({ where: { tenantId: tenantId } });
   }
 
   async createIntegrationEvent(tenantId: string, data: any): Promise<any> {
     return this.prisma.inventoryIntegrationEvent.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         ...data
       }
     });
@@ -532,14 +532,14 @@ export class InventoryDbRepository implements IInventoryRepository {
 
   async deleteItem(tenantId: string, itemId: string): Promise<void> {
     await this.prisma.product.update({
-      where: { id: itemId, companyId: tenantId },
+      where: { id: itemId, tenantId: tenantId },
       data: { status: 'deleted' }
     });
   }
 
   async batchDeleteItems(tenantId: string, itemIds: string[]): Promise<void> {
     await this.prisma.product.updateMany({
-      where: { id: { in: itemIds }, companyId: tenantId },
+      where: { id: { in: itemIds }, tenantId: tenantId },
       data: { status: 'deleted' }
     });
   }
@@ -559,7 +559,7 @@ export class InventoryDbRepository implements IInventoryRepository {
     // This connects to Procurement module. For now, creating a requisition if model exists.
     return (this.prisma as any).procurementRequisition.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         departmentId: data.departmentId,
         employeeId: data.requestedBy,
         reason: data.reason || 'Auto-restock from Inventory',
@@ -575,18 +575,18 @@ export class InventoryDbRepository implements IInventoryRepository {
       for (const itemData of data) {
         // Find or create category
         let category = await tx.productCategory.findFirst({
-          where: { companyId: tenantId, name: itemData.category }
+          where: { tenantId: tenantId, name: itemData.category }
         });
         
         if (!category) {
           category = await tx.productCategory.create({
-            data: { companyId: tenantId, name: itemData.category }
+            data: { tenantId: tenantId, name: itemData.category }
           });
         }
 
         const product = await tx.product.create({
           data: {
-            companyId: tenantId,
+            tenantId: tenantId,
             categoryId: category.id,
             name: itemData.name,
             sku: itemData.sku,
@@ -602,7 +602,7 @@ export class InventoryDbRepository implements IInventoryRepository {
 
         results.push({
           id: product.id,
-          tenantId: product.companyId,
+          tenantId: product.tenantId,
           sku: product.sku,
           name: product.name,
           category: product.category.name as any,

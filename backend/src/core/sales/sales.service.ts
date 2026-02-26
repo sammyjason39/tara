@@ -8,6 +8,7 @@ import { CreateTimelineEventDto } from './dto/create-timeline-event.dto';
 import { MoveOpportunityStageDto } from './dto/move-opportunity-stage.dto';
 import { QuoteDecisionDto } from './dto/quote-decision.dto';
 import { UpdateLeadStatusDto } from './dto/update-lead-status.dto';
+import { SalesNextAction } from './entities/sales-next-action.entity';
 import { ISalesRepository } from './repositories/sales.repository.interface';
 
 @Injectable()
@@ -24,6 +25,10 @@ export class SalesService {
 
   async getExecutiveForecast(tenantId: string) {
     return this.repository.getExecutiveForecast(tenantId);
+  }
+
+  async getNextBestActions(tenantId: string) {
+    return this.repository.getNextBestActions(tenantId);
   }
 
   async getLeads(tenantId: string) {

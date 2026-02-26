@@ -66,7 +66,7 @@ const mapOrderItem = (item: PrismaRetailOrderItem & { product?: { name?: string 
 
 const mapOrder = (order: RetailOrderWithRelations): RetailOrder => ({
   id: order.id,
-  tenantId: order.companyId,
+  tenantId: order.tenantId,
   storeId: order.storeId,
   deviceId: order.deviceId,
   cashierId: order.cashierId,
@@ -98,8 +98,8 @@ async function resolveProductId(
   if (item.sku) {
     const product = await prisma.product.findUnique({
       where: {
-        companyId_sku: {
-          companyId: tenantId,
+        tenantId_sku: {
+          tenantId: tenantId,
           sku: item.sku,
         },
       },
@@ -114,7 +114,7 @@ async function resolveProductId(
   }
 
   const fallback = await prisma.product.findFirst({
-    where: { companyId: tenantId },
+    where: { tenantId: tenantId },
     orderBy: { createdAt: "asc" },
   });
 
@@ -135,7 +135,7 @@ async function ensureCustomerId(
     const existing = await prisma.retailCustomer.findUnique({
       where: { id: customer.id },
     });
-    if (existing && existing.companyId === tenantId) {
+    if (existing && existing.tenantId === tenantId) {
       return existing.id;
     }
   }
@@ -144,8 +144,8 @@ async function ensureCustomerId(
     const normalizedEmail = customer.email.trim().toLowerCase();
     const existingByEmail = await prisma.retailCustomer.findUnique({
       where: {
-        companyId_email: {
-          companyId: tenantId,
+        tenantId_email: {
+          tenantId: tenantId,
           email: normalizedEmail,
         },
       },
@@ -159,8 +159,8 @@ async function ensureCustomerId(
     const normalizedPhone = customer.phone.trim();
     const existingByPhone = await prisma.retailCustomer.findUnique({
       where: {
-        companyId_phone: {
-          companyId: tenantId,
+        tenantId_phone: {
+          tenantId: tenantId,
           phone: normalizedPhone,
         },
       },
@@ -173,7 +173,7 @@ async function ensureCustomerId(
   const created = await prisma.retailCustomer.create({
     data: {
       id: customer.id ?? nextId("rch"),
-      companyId: tenantId,
+      tenantId: tenantId,
       name: customer.name ?? "Retail Guest",
       email: customer.email?.trim().toLowerCase(),
       phone: customer.phone?.trim(),
@@ -186,7 +186,7 @@ async function ensureCustomerId(
 export const retailRepo = {
   async listProducts(tenantId: string): Promise<RetailProductCatalogItem[]> {
     const products = await prisma.product.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       include: {
         category: true,
         stockLevels: true,
@@ -209,7 +209,7 @@ export const retailRepo = {
 
   async listOrders(tenantId: string): Promise<RetailOrder[]> {
     const orders = await prisma.retailOrder.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       include: {
         items: { include: { product: true } },
         customer: true,
@@ -225,7 +225,7 @@ export const retailRepo = {
     payload: CreateRetailOrderPayload,
   ): Promise<RetailOrder> {
     const fallbackProduct = await prisma.product.findFirst({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: "asc" },
     });
     const fallbackProductId = fallbackProduct?.id;
@@ -251,7 +251,7 @@ export const retailRepo = {
     const created = (await prisma.retailOrder.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         storeId: payload.storeId,
         deviceId: payload.deviceId ?? "api-gateway",
         cashierId: payload.cashierId ?? "api-gateway",

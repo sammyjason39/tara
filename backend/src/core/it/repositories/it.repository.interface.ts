@@ -1,9 +1,11 @@
-import { CreateProvisioningRequestDto } from '../dto/create-provisioning-request.dto';
-import { ProvisioningRequest } from '../entities/provisioning-request.entity';
-import { SystemHealth } from '../entities/system-health.entity';
+import { CreateProvisioningRequestDto } from "../dto/create-provisioning-request.dto";
+import { ProvisioningRequest } from "../entities/provisioning-request.entity";
+import { SystemHealth } from "../entities/system-health.entity";
 
 export abstract class IITRepository {
-  abstract getProvisioningRequests(tenantId: string): Promise<ProvisioningRequest[]>;
+  abstract getProvisioningRequests(
+    tenantId: string,
+  ): Promise<ProvisioningRequest[]>;
   abstract createProvisioningRequest(
     tenantId: string,
     dto: CreateProvisioningRequestDto,
@@ -13,6 +15,14 @@ export abstract class IITRepository {
     requestId: string,
     provisionedBy: string,
   ): Promise<ProvisioningRequest>;
+  abstract updateProvisioningRequest(
+    tenantId: string,
+    requestId: string,
+    dto: Partial<CreateProvisioningRequestDto>,
+  ): Promise<ProvisioningRequest>;
+  abstract deleteProvisioningRequest(
+    tenantId: string,
+    requestId: string,
+  ): Promise<void>;
   abstract getSystemHealth(tenantId: string): Promise<SystemHealth[]>;
 }
-

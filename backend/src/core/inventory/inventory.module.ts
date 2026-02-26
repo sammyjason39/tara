@@ -1,13 +1,14 @@
-import { Module } from '@nestjs/common';
-import { PersistenceModule } from '../../persistence/persistence.module';
-import { InventoryController } from './inventory.controller';
-import { InventoryService } from './inventory.service';
-import { InventoryDbRepository } from './repositories/inventory.db.repository';
-import { IInventoryRepository } from './repositories/inventory.repository.interface';
-import { FileProcessingModule } from '../../shared/file-processing/file-processing.module';
+import { Module } from "@nestjs/common";
+import { PersistenceModule } from "../../persistence/persistence.module";
+import { InventoryController } from "./inventory.controller";
+import { InventoryService } from "./inventory.service";
+import { InventoryDbRepository } from "./repositories/inventory.db.repository";
+import { IInventoryRepository } from "./repositories/inventory.repository.interface";
+import { FileProcessingModule } from "../../shared/file-processing/file-processing.module";
+import { AuditModule } from "../../shared/audit/audit.module";
 
 @Module({
-  imports: [PersistenceModule, FileProcessingModule],
+  imports: [PersistenceModule, FileProcessingModule, AuditModule],
   controllers: [InventoryController],
   providers: [
     InventoryService,
@@ -19,4 +20,3 @@ import { FileProcessingModule } from '../../shared/file-processing/file-processi
   exports: [InventoryService],
 })
 export class InventoryModule {}
-

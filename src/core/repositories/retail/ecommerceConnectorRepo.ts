@@ -4,7 +4,7 @@ import type { EcommerceConnector } from "@prisma/client";
 
 export type EcommerceConnectorRecord = Pick<
   EcommerceConnector,
-  "id" | "companyId" | "branchId" | "domain" | "status" | "apiKey"
+  "id" | "tenantId" | "branchId" | "domain" | "status" | "apiKey"
 >;
 
 const hashSecret = (secret: string) =>
@@ -45,7 +45,7 @@ export const ecommerceConnectorRepo = {
 
     return {
       id: match.id,
-      companyId: match.companyId,
+      tenantId: match.tenantId,
       branchId: credentials?.branchId ?? "branch_main",
       domain: credentials?.domain ?? match.name ?? "",
       status: match.status,
@@ -60,7 +60,7 @@ export const ecommerceConnectorRepo = {
       },
       select: {
         id: true,
-        companyId: true,
+        tenantId: true,
         branchId: true,
         domain: true,
         status: true,
@@ -102,7 +102,7 @@ export const ecommerceConnectorRepo = {
 
     return {
       id: match.id,
-      companyId: match.companyId,
+      tenantId: match.tenantId,
       branchId: credentials?.branchId ?? "branch_main",
       domain: credentials?.domain ?? match.name ?? "",
       status: match.status,

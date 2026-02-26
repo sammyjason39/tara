@@ -11,7 +11,7 @@ import { RetailEvent } from "@/core/events/retailEvents";
 export async function appendRetailEvent(event: RetailEvent) {
   const auditEntry = await prisma.auditLog.create({
     data: {
-      companyId: event.scope.companyId,
+      tenantId: event.scope.tenantId,
       module: "retail",
       action: event.type,
       entityType: "event",

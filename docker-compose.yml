@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   postgres:
@@ -29,6 +29,33 @@ services:
       - "5051:80"
     depends_on:
       - postgres
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: zenvix-suite-v2-backend
+    environment:
+      - DATABASE_URL=postgresql://zenvix:zenvix_dev_password@postgres:5432/zenvix_dev?schema=public
+      - PORT=3000
+      - PERSISTENCE_MODE=database
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zenvix-suite-v2-frontend
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend
     restart: unless-stopped
 
 volumes:

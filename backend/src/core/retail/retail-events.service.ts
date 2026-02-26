@@ -8,7 +8,7 @@ type RetailEventActor = {
 };
 
 type RetailEventScope = {
-  companyId: string;
+  tenantId: string;
   branchId?: string;
   ecommerceId?: string;
 };
@@ -29,7 +29,7 @@ export class RetailEventsService {
   async appendEvent(event: RetailEvent) {
     const auditEntry = await this.prisma.auditLog.create({
       data: {
-        companyId: event.scope?.companyId ?? 'tenant-demo',
+        tenantId: event.scope?.tenantId ?? 'tenant-demo',
         module: 'retail',
         action: event.type,
         entityType: 'event',
@@ -69,12 +69,12 @@ export class RetailEventsService {
 
   private async processPaymentSuccess(event: RetailEvent) {
     const payload = event.payload ?? {};
-    const tenantId = payload.tenantId ?? event.scope?.companyId ?? 'tenant-demo';
+    const tenantId = payload.tenantId ?? event.scope?.tenantId ?? 'tenant-demo';
     const orderId = payload.orderId ?? `ord_${Date.now()}`;
     const storeId = payload.storeId ?? event.scope?.branchId ?? 'store-001';
 
     const existing = await this.prisma.retailOrder.findFirst({
-      where: { id: orderId, companyId: tenantId },
+      where: { id: orderId, tenantId: tenantId },
     });
     if (existing) {
       return { action: 'ignored_duplicate', orderId };
@@ -82,7 +82,7 @@ export class RetailEventsService {
 
     const itemsPayload = Array.isArray(payload.items) ? payload.items : [];
     const fallbackProduct = await this.prisma.product.findFirst({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'asc' },
     });
     if (!fallbackProduct) {
@@ -124,7 +124,7 @@ export class RetailEventsService {
     await this.prisma.retailOrder.create({
       data: {
         id: orderId,
-        companyId: tenantId,
+        tenantId: tenantId,
         storeId,
         deviceId: payload.deviceId ?? 'api-gateway',
         cashierId: payload.cashierId ?? event.actor.id,
@@ -159,7 +159,7 @@ export class RetailEventsService {
     if (item.itemId) return item.itemId;
     if (item.sku) {
       const product = await this.prisma.product.findFirst({
-        where: { companyId: tenantId, sku: item.sku },
+        where: { tenantId: tenantId, sku: item.sku },
       });
       if (product) return product.id;
     }

@@ -13,7 +13,7 @@ import type {
 // Mapping functions
 const mapItem = (db: any): InventoryItemMaster => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   sku: db.sku,
   name: db.name,
   category: db.category?.name as any,
@@ -29,7 +29,7 @@ const mapItem = (db: any): InventoryItemMaster => ({
 
 const mapBalance = (db: any): InventoryStockBalance => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   itemId: db.productId,
   locationCode: db.location?.code || db.locationId,
   quantity: db.onHand,
@@ -43,7 +43,7 @@ const mapBalance = (db: any): InventoryStockBalance => ({
 
 const mapMovement = (db: any): InventoryMovement => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   itemId: db.productId,
   type: db.type as any,
   quantity: db.quantity,
@@ -55,7 +55,7 @@ const mapMovement = (db: any): InventoryMovement => ({
 
 const mapAdjustment = (db: any): InventoryAdjustmentRequest => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   itemId: db.itemId,
   locationCode: db.locationCode,
   departmentCode: db.departmentCode || undefined,
@@ -71,7 +71,7 @@ const mapAdjustment = (db: any): InventoryAdjustmentRequest => ({
 
 const mapAuditCycle = (db: any): InventoryAuditCycle => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   locationCode: db.locationCode,
   departmentCode: db.departmentCode || undefined,
   scope: db.scope as any,
@@ -87,7 +87,7 @@ const mapAuditCycle = (db: any): InventoryAuditCycle => ({
 
 const mapAlert = (db: any): InventoryAlert => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   type: db.type as any,
   severity: db.severity as any,
   status: db.status as any,
@@ -99,7 +99,7 @@ const mapAlert = (db: any): InventoryAlert => ({
 
 const mapIntegrationEvent = (db: any): InventoryIntegrationEvent => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   target: db.target as any,
   status: db.status as any,
   eventType: db.eventType,
@@ -112,7 +112,7 @@ const mapIntegrationEvent = (db: any): InventoryIntegrationEvent => ({
 export const inventoryRepo: InventoryRepository = {
   async listItems(tenantId) {
     const items = await prisma.product.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       include: { category: true },
       orderBy: { name: 'asc' },
     });
@@ -120,12 +120,12 @@ export const inventoryRepo: InventoryRepository = {
   },
   async createItem(tenantId, payload) {
     let category = await prisma.productCategory.findFirst({
-      where: { companyId: tenantId, name: payload.category }
+      where: { tenantId: tenantId, name: payload.category }
     });
     if (!category) {
       category = await prisma.productCategory.create({
         data: {
-          companyId: tenantId,
+          tenantId: tenantId,
           name: payload.category,
         }
       });
@@ -134,7 +134,7 @@ export const inventoryRepo: InventoryRepository = {
     const item = await prisma.product.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         categoryId: category.id,
         sku: payload.sku,
         name: payload.name,
@@ -149,7 +149,7 @@ export const inventoryRepo: InventoryRepository = {
   },
   async updateItem(tenantId, id, patch) {
     const item = await prisma.product.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         name: patch.name,
         sku: patch.sku,
@@ -164,28 +164,28 @@ export const inventoryRepo: InventoryRepository = {
   },
   async deleteItem(tenantId, id) {
     await prisma.product.delete({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
     });
     return true;
   },
 
   async listBalances(tenantId) {
     const balances = await prisma.stockLevel.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       include: { location: true },
     });
     return balances.map(mapBalance);
   },
   async createBalance(tenantId, payload) {
     const location = await prisma.location.findFirst({
-        where: { companyId: tenantId, code: payload.locationCode }
+        where: { tenantId: tenantId, code: payload.locationCode }
     });
     if (!location) throw new Error(`Location ${payload.locationCode} not found`);
 
     const item = await prisma.stockLevel.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         locationId: location.id,
         productId: payload.itemId,
         onHand: payload.quantity,
@@ -199,7 +199,7 @@ export const inventoryRepo: InventoryRepository = {
   },
   async updateBalance(tenantId, id, patch) {
     const item = await prisma.stockLevel.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         onHand: patch.quantity,
         reserved: patch.reservedQuantity,
@@ -213,7 +213,7 @@ export const inventoryRepo: InventoryRepository = {
 
   async listMovements(tenantId) {
     const items = await prisma.stockMovement.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapMovement);
@@ -222,7 +222,7 @@ export const inventoryRepo: InventoryRepository = {
     const item = await prisma.stockMovement.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         productId: payload.itemId,
         quantity: payload.quantity,
         type: payload.type,
@@ -237,7 +237,7 @@ export const inventoryRepo: InventoryRepository = {
 
   async listAdjustments(tenantId) {
     const items = await prisma.inventoryAdjustment.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapAdjustment);
@@ -246,7 +246,7 @@ export const inventoryRepo: InventoryRepository = {
     const item = await prisma.inventoryAdjustment.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         itemId: payload.itemId,
         locationCode: payload.locationCode,
         departmentCode: payload.departmentCode,
@@ -260,7 +260,7 @@ export const inventoryRepo: InventoryRepository = {
   },
   async updateAdjustment(tenantId, id, patch) {
     const item = await prisma.inventoryAdjustment.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         status: patch.status,
         approvedBy: patch.approvedBy,
@@ -272,7 +272,7 @@ export const inventoryRepo: InventoryRepository = {
 
   async listAuditCycles(tenantId) {
     const items = await prisma.inventoryAuditCycle.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapAuditCycle);
@@ -281,7 +281,7 @@ export const inventoryRepo: InventoryRepository = {
     const item = await prisma.inventoryAuditCycle.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         locationCode: payload.locationCode,
         departmentCode: payload.departmentCode,
         scope: payload.scope,
@@ -293,7 +293,7 @@ export const inventoryRepo: InventoryRepository = {
   },
   async updateAuditCycle(tenantId, id, patch) {
     const item = await prisma.inventoryAuditCycle.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         status: patch.status,
         closedBy: patch.closedBy,
@@ -307,7 +307,7 @@ export const inventoryRepo: InventoryRepository = {
 
   async listAlerts(tenantId) {
     const items = await prisma.inventoryAlert.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapAlert);
@@ -316,7 +316,7 @@ export const inventoryRepo: InventoryRepository = {
     const item = await prisma.inventoryAlert.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         type: payload.type,
         severity: payload.severity,
         status: payload.status,
@@ -328,7 +328,7 @@ export const inventoryRepo: InventoryRepository = {
   },
   async updateAlert(tenantId, id, patch) {
     const item = await prisma.inventoryAlert.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         status: patch.status,
         acknowledged: patch.status === 'ACKNOWLEDGED',
@@ -339,7 +339,7 @@ export const inventoryRepo: InventoryRepository = {
 
   async listIntegrationEvents(tenantId) {
     const items = await prisma.inventoryIntegrationEvent.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapIntegrationEvent);
@@ -348,7 +348,7 @@ export const inventoryRepo: InventoryRepository = {
     const item = await prisma.inventoryIntegrationEvent.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         target: payload.target,
         status: payload.status,
         eventType: payload.eventType,
@@ -360,7 +360,7 @@ export const inventoryRepo: InventoryRepository = {
   },
   async updateIntegrationEvent(tenantId, id, patch) {
     const item = await prisma.inventoryIntegrationEvent.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         status: patch.status,
       },

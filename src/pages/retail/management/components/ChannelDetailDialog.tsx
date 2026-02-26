@@ -1,5 +1,11 @@
 import React from "react";
-import { Globe, ShoppingBag, AlertCircle, RefreshCw, ShieldOff } from "lucide-react";
+import {
+  Globe,
+  ShoppingBag,
+  AlertCircle,
+  RefreshCw,
+  ShieldOff,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +17,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { CredentialField } from "./SharedUI";
 import { Roles } from "@/core/security/roles";
 import type { ChannelRecord } from "@/core/services/retail/ecommerceHubService";
@@ -90,7 +104,8 @@ export const ChannelDetailDialog = ({
                 {selectedChannel.name || "Channel Setup"}
               </DialogTitle>
               <DialogDescription className="text-slate-300 mt-2 text-sm">
-                View setup details, rotate secrets, and manage sync rules for this connector.
+                View setup details, rotate secrets, and manage sync rules for
+                this connector.
               </DialogDescription>
             </div>
             <Badge
@@ -104,7 +119,10 @@ export const ChannelDetailDialog = ({
             </Badge>
           </div>
           <div className="mt-4 text-[11px] text-slate-300">
-            Record ID: <span className="font-mono text-slate-100">{selectedChannel.id}</span>
+            Record ID:{" "}
+            <span className="font-mono text-slate-100">
+              {selectedChannel.id}
+            </span>
           </div>
         </div>
 
@@ -117,16 +135,30 @@ export const ChannelDetailDialog = ({
               helperText="Scope for this connector."
               copyable
               onCopy={() =>
-                copyCredential(selectedChannel.tenantId ?? session.tenantId, "Tenant ID")
+                copyCredential(
+                  selectedChannel.tenantId ?? session.tenantId,
+                  "Tenant ID",
+                )
               }
             />
             <CredentialField
               label="Branch IDs"
-              value={(selectedChannel as any).branchIds?.join(", ") ?? (selectedChannel as any).branchId ?? branchIds.join(", ")}
+              value={
+                (selectedChannel as any).branchIds?.join(", ") ??
+                (selectedChannel as any).branchId ??
+                branchIds.join(", ")
+              }
               tooltip="Branch IDs identify the physical stores or branches this channel belongs to."
               helperText="Fulfillment branches."
               copyable
-              onCopy={() => copyCredential((selectedChannel as any).branchIds?.join(", ") ?? (selectedChannel as any).branchId ?? branchIds.join(", "), "Branch IDs")}
+              onCopy={() =>
+                copyCredential(
+                  (selectedChannel as any).branchIds?.join(", ") ??
+                    (selectedChannel as any).branchId ??
+                    branchIds.join(", "),
+                  "Branch IDs",
+                )
+              }
             />
             <CredentialField
               label="Channel Client ID"
@@ -144,7 +176,9 @@ export const ChannelDetailDialog = ({
               tooltip="API Key used by your storefront to authenticate with Zenvix."
               helperText="Paste into storefront 'Client Secret'."
               copyable={Boolean(detailClientSecret)}
-              onCopy={() => copyCredential(detailClientSecret, "Storefront API Key")}
+              onCopy={() =>
+                copyCredential(detailClientSecret, "Storefront API Key")
+              }
             />
             <CredentialField
               label="Gateway URL"
@@ -152,68 +186,186 @@ export const ChannelDetailDialog = ({
               tooltip="Gateway URL this is the endpoint your storefront posts events to."
               helperText="Public endpoint."
               copyable
-              onCopy={() => copyCredential(selectedChannel.gatewayUrl ?? gatewayUrl, "Gateway URL")}
+              onCopy={() =>
+                copyCredential(
+                  selectedChannel.gatewayUrl ?? gatewayUrl,
+                  "Gateway URL",
+                )
+              }
             />
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
-                Connector Settings
+                Channel Nexus Control
               </div>
-              <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-widest">
+              <Badge
+                variant="outline"
+                className="text-[9px] font-bold uppercase tracking-widest"
+              >
                 {session.role === Roles.SUPERADMIN
                   ? "SUPERADMIN BYPASS"
                   : approvalStatus === "APPROVED"
-                  ? "APPROVED"
-                  : approvalStatus === "PENDING"
-                  ? "PENDING APPROVAL"
-                  : "APPROVAL REQUIRED"}
+                    ? "APPROVED"
+                    : approvalStatus === "PENDING"
+                      ? "PENDING"
+                      : "LOCKED"}
               </Badge>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-black uppercase text-slate-400">Channel Name</Label>
-                <Input
-                  value={detailName}
-                  onChange={(e) => setDetailName(e.target.value)}
-                  className="h-12 rounded-xl font-bold"
-                  disabled={!canEdit}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs font-black uppercase text-slate-400">
-                  Sync Frequency
-                </Label>
-                <Select
-                  value={detailSyncFreq}
-                  onValueChange={setDetailSyncFreq}
-                  disabled={!canEdit}
+            <Tabs defaultValue="identity" className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger
+                  value="identity"
+                  className="text-[10px] font-black uppercase"
                 >
-                  <SelectTrigger className="h-12 rounded-xl font-bold">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="5min">5 Minutes</SelectItem>
-                    <SelectItem value="15min">15 Minutes</SelectItem>
-                    <SelectItem value="30min">30 Minutes</SelectItem>
-                    <SelectItem value="1h">1 Hour</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+                  Identity
+                </TabsTrigger>
+                <TabsTrigger
+                  value="sync"
+                  className="text-[10px] font-black uppercase"
+                >
+                  Sync Rules
+                </TabsTrigger>
+                <TabsTrigger
+                  value="catalog"
+                  className="text-[10px] font-black uppercase"
+                >
+                  Catalog
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="identity" className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-black uppercase text-slate-400">
+                      Channel Name
+                    </Label>
+                    <Input
+                      value={detailName}
+                      onChange={(e) => setDetailName(e.target.value)}
+                      className="h-12 rounded-xl font-bold"
+                      disabled={!canEdit}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-black uppercase text-slate-400">
+                      Sync Frequency
+                    </Label>
+                    <Select
+                      value={detailSyncFreq}
+                      onValueChange={setDetailSyncFreq}
+                      disabled={!canEdit}
+                    >
+                      <SelectTrigger className="h-12 rounded-xl font-bold">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5min">5 Minutes</SelectItem>
+                        <SelectItem value="15min">15 Minutes</SelectItem>
+                        <SelectItem value="1h">1 Hour</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="sync" className="space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-xl border border-slate-100">
+                  <div>
+                    <div className="text-sm font-black italic">
+                      Auto-Sync Inventory
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
+                      Push stock changes immediately
+                    </div>
+                  </div>
+                  <Switch
+                    checked={detailSettings?.autoSyncStock || false}
+                    onCheckedChange={(val) =>
+                      setDetailSettings({
+                        ...detailSettings,
+                        autoSyncStock: val,
+                      })
+                    }
+                    disabled={!canEdit}
+                  />
+                </div>
+                <div className="flex items-center justify-between p-4 rounded-xl border border-slate-100">
+                  <div>
+                    <div className="text-sm font-black italic">
+                      Overwrite Prices
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
+                      Allow channel-specific pricing levels
+                    </div>
+                  </div>
+                  <Switch
+                    checked={detailSettings?.overwritePrices || false}
+                    onCheckedChange={(val) =>
+                      setDetailSettings({
+                        ...detailSettings,
+                        overwritePrices: val,
+                      })
+                    }
+                    disabled={!canEdit}
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="catalog" className="space-y-4">
+                <Label className="text-xs font-black uppercase text-slate-400 block">
+                  Category Filter
+                </Label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    "Apparel",
+                    "Footwear",
+                    "Accessories",
+                    "Electronics",
+                    "Home & Garden",
+                    "Beauty",
+                  ].map((cat) => {
+                    const isSelected =
+                      detailSettings?.visibleCategories?.includes(cat) ?? false;
+                    return (
+                      <div
+                        key={cat}
+                        onClick={() => {
+                          if (!canEdit) return;
+                          const current =
+                            detailSettings?.visibleCategories || [];
+                          const updated = isSelected
+                            ? current.filter((c: string) => c !== cat)
+                            : [...current, cat];
+                          setDetailSettings({
+                            ...detailSettings,
+                            visibleCategories: updated,
+                          });
+                        }}
+                        className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all ${!canEdit ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${isSelected ? "border-indigo-600 bg-indigo-50 text-indigo-700" : "border-slate-200 text-slate-500 hover:border-slate-300"}`}
+                      >
+                        {cat}
+                      </div>
+                    );
+                  })}
+                </div>
+              </TabsContent>
+            </Tabs>
 
             {!canEdit && (
               <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex flex-col gap-3">
                 <div className="flex items-start gap-2 text-amber-700 text-xs font-semibold">
                   <AlertCircle className="w-4 h-4 mt-0.5" />
                   <div>
-                    <div className="font-bold">Approval required to edit this connector.</div>
+                    <div className="font-bold">
+                      Approval required to edit this connector.
+                    </div>
                     <div className="text-[11px] text-amber-700/80">
                       {approvalStatus === "PENDING"
                         ? `Approval request ${approvalRequestId ?? ""} is pending.`
-                        : "Request IT approval to unlock edits and credential rotation."}
+                        : "Request IT approval to unlock edits."}
                     </div>
                   </div>
                 </div>
@@ -228,37 +380,15 @@ export const ChannelDetailDialog = ({
                 )}
               </div>
             )}
-            
-            <div className="pt-4 border-t border-slate-100">
-               <Label className="text-xs font-black uppercase text-slate-400 block mb-3">Visible Categories Catalog</Label>
-               <div className="flex flex-wrap gap-2">
-                  {["Apparel", "Footwear", "Accessories", "Electronics", "Home & Garden", "Beauty"].map(cat => {
-                     const isSelected = detailSettings?.visibleCategories?.includes(cat) ?? false;
-                     return (
-                        <div 
-                           key={cat}
-                           onClick={() => {
-                              if (!canEdit) return;
-                              const current = detailSettings?.visibleCategories || [];
-                              const updated = isSelected ? current.filter((c: string) => c !== cat) : [...current, cat];
-                              setDetailSettings({ ...detailSettings, visibleCategories: updated });
-                           }}
-                           className={`px-3 py-1.5 rounded-lg border text-[11px] font-bold transition-all ${!canEdit ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} ${isSelected ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'}`}
-                        >
-                           {cat}
-                        </div>
-                     );
-                  })}
-               </div>
-               <p className="text-[10px] text-slate-400 mt-2 font-medium italic">Categories to sync and display on this endpoint.</p>
-            </div>
           </div>
 
           <div className="grid md:grid-cols-3 gap-4">
             <Button
               variant="outline"
               className="h-12 rounded-xl border-slate-200 font-bold gap-2"
-              onClick={() => handleRotateChannel(selectedChannel.id, { showDialog: false })}
+              onClick={() =>
+                handleRotateChannel(selectedChannel.id, { showDialog: false })
+              }
               disabled={!canEdit || rotationLoading === selectedChannel.id}
             >
               <RefreshCw
@@ -294,7 +424,9 @@ export const ChannelDetailDialog = ({
               disabled={!canEdit || isSaving}
               className="h-12 rounded-xl bg-slate-900 text-white font-bold"
             >
-              {isSaving ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : null}
+              {isSaving ? (
+                <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+              ) : null}
               Save Changes
             </Button>
             <Button

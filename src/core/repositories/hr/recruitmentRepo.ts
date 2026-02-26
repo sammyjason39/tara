@@ -6,7 +6,7 @@ import { prisma } from "@/core/persistence/database/client";
  */
 const mapToReq = (db: any): RecruitmentRequisition => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   title: db.title,
   departmentId: db.departmentId || undefined,
   status: db.status as RecruitmentStatus,
@@ -22,7 +22,7 @@ export const recruitmentRepo = {
   async list(tenantId: string): Promise<RecruitmentRequisition[]> {
     const list = await prisma.jobRequisition.findMany({
       where: {
-        companyId: tenantId,
+        tenantId: tenantId,
       },
       orderBy: {
         createdAt: 'desc',
@@ -41,7 +41,7 @@ export const recruitmentRepo = {
   ): Promise<RecruitmentRequisition> {
     const record = await prisma.jobRequisition.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         title: payload.title,
         departmentId: payload.departmentId,
         status: payload.status,
@@ -69,7 +69,7 @@ export const recruitmentRepo = {
     const updated = await prisma.jobRequisition.update({
       where: {
         id: requisitionId,
-        companyId: tenantId,
+        tenantId: tenantId,
       },
       data,
     });

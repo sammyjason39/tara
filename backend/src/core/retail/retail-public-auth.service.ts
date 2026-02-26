@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken';
 
 type ConnectorScope = {
   channelId: string;
-  companyId: string;
+  tenantId: string;
   branchId: string;
   connector?: string | null;
   gatewayUrl?: string | null;
@@ -54,7 +54,7 @@ export class RetailPublicAuthService {
 
     return {
       channelId: channel.id,
-      companyId: channel.companyId,
+      tenantId: channel.tenantId,
       branchId: credentials?.branchId ?? 'branch_main',
       connector: credentials?.connector ?? channel.name ?? null,
       gatewayUrl: credentials?.gatewayUrl ?? null,
@@ -75,7 +75,7 @@ export class RetailPublicAuthService {
     }
 
     const existing = await this.prisma.retailCustomer.findFirst({
-      where: { companyId: tenantId, email: normalizedEmail },
+      where: { tenantId: tenantId, email: normalizedEmail },
     });
     if (existing) {
       throw new ForbiddenException('Email already registered');
@@ -83,7 +83,7 @@ export class RetailPublicAuthService {
 
     const customer = await this.prisma.retailCustomer.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         name: payload.name.trim(),
         email: normalizedEmail,
         phone: payload.phone?.trim() || null,
@@ -103,7 +103,7 @@ export class RetailPublicAuthService {
     });
 
     const tokens = await this.issueTokens(
-      { id: customer.id, companyId: tenantId },
+      { id: customer.id, tenantId: tenantId },
       scope,
       meta,
     );
@@ -119,7 +119,7 @@ export class RetailPublicAuthService {
   ) {
     const normalizedEmail = payload.email.trim().toLowerCase();
     const customer = await this.prisma.retailCustomer.findFirst({
-      where: { companyId: tenantId, email: normalizedEmail },
+      where: { tenantId: tenantId, email: normalizedEmail },
     });
     if (!customer) {
       throw new UnauthorizedException('Invalid credentials');
@@ -163,7 +163,7 @@ export class RetailPublicAuthService {
     });
 
     const tokens = await this.issueTokens(
-      { id: customer.id, companyId: tenantId },
+      { id: customer.id, tenantId: tenantId },
       scope,
       meta,
     );
@@ -190,7 +190,7 @@ export class RetailPublicAuthService {
     }
 
     const customer = await this.prisma.retailCustomer.findFirst({
-      where: { id: session.customerId, companyId: tenantId },
+      where: { id: session.customerId, tenantId: tenantId },
     });
     if (!customer) {
       throw new UnauthorizedException('Invalid session');
@@ -202,7 +202,7 @@ export class RetailPublicAuthService {
     });
 
     const tokens = await this.issueTokens(
-      { id: customer.id, companyId: tenantId },
+      { id: customer.id, tenantId: tenantId },
       scope,
       meta,
     );
@@ -224,7 +224,7 @@ export class RetailPublicAuthService {
 
   async getCustomerFromToken(payload: CustomerAuthPayload) {
     const customer = await this.prisma.retailCustomer.findFirst({
-      where: { id: payload.sub, companyId: payload.tenantId },
+      where: { id: payload.sub, tenantId: payload.tenantId },
     });
     if (!customer) {
       throw new NotFoundException('Customer not found');
@@ -233,14 +233,14 @@ export class RetailPublicAuthService {
   }
 
   private async issueTokens(
-    customer: { id: string; companyId: string },
+    customer: { id: string; tenantId: string },
     scope: ConnectorScope,
     meta: { ip?: string | null; userAgent?: string | null },
   ) {
     const accessToken = jwt.sign(
       {
         sub: customer.id,
-        tenantId: customer.companyId,
+        tenantId: customer.tenantId,
         connectorId: scope.channelId,
         branchId: scope.branchId,
         scope: 'retail.public',
@@ -257,7 +257,7 @@ export class RetailPublicAuthService {
     await this.prisma.retailCustomerSession.create({
       data: {
         customerId: customer.id,
-        companyId: customer.companyId,
+        tenantId: customer.tenantId,
         tokenHash: refreshHash,
         expiresAt,
         ipAddress: meta.ip ?? null,

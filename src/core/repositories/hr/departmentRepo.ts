@@ -8,7 +8,7 @@ export const departmentRepo = {
   async list(tenantId: string): Promise<Department[]> {
     const departments = await prisma.department.findMany({
       where: {
-        companyId: tenantId,
+        tenantId: tenantId,
         deletedAt: null,
       },
       orderBy: {
@@ -16,10 +16,10 @@ export const departmentRepo = {
       },
     });
 
-    // Map DB companyId back to tenantId for frontend compatibility
+    // Map DB tenantId back to tenantId for frontend compatibility
     return departments.map(d => ({
       ...d,
-      tenantId: d.companyId,
+      tenantId: d.tenantId,
       status: d.status as "active" | "inactive",
       createdAt: d.createdAt.toISOString(),
       updatedAt: d.updatedAt.toISOString(),
@@ -41,13 +41,13 @@ export const departmentRepo = {
         description: payload.description,
         status: payload.status,
         headId: payload.headId,
-        companyId: tenantId,
+        tenantId: tenantId,
       },
     });
 
     return {
       ...department,
-      tenantId: department.companyId,
+      tenantId: department.tenantId,
       status: department.status as "active" | "inactive",
       createdAt: department.createdAt.toISOString(),
       updatedAt: department.updatedAt.toISOString(),
@@ -62,7 +62,7 @@ export const departmentRepo = {
     const department = await prisma.department.findFirst({
       where: {
         id,
-        companyId: tenantId,
+        tenantId: tenantId,
         deletedAt: null,
       },
     });
@@ -71,7 +71,7 @@ export const departmentRepo = {
 
     return {
       ...department,
-      tenantId: department.companyId,
+      tenantId: department.tenantId,
       status: department.status as "active" | "inactive",
       createdAt: department.createdAt.toISOString(),
       updatedAt: department.updatedAt.toISOString(),
@@ -86,7 +86,7 @@ export const departmentRepo = {
     await prisma.department.updateMany({
       where: {
         id,
-        companyId: tenantId,
+        tenantId: tenantId,
       },
       data: {
         deletedAt: new Date(),

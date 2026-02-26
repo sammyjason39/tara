@@ -4,7 +4,7 @@ import type { RetailChannel, ChannelType, ChannelStatus } from "@/core/types/ret
 
 export interface EcommerceConnectorRecord {
   id: string;
-  companyId: string;
+  tenantId: string;
   tenantId?: string; // Alias
   branchIds: string[];
   name: string;
@@ -26,8 +26,8 @@ export interface ConnectorCreateResult {
 
 export interface ChannelRecord extends RetailChannel {
   // RetailChannel already has most fields. 
-  // We just ensure companyId/tenantId compatibility.
-  companyId?: string;
+  // We just ensure tenantId/tenantId compatibility.
+  tenantId?: string;
   credentials?: Record<string, unknown> | null;
   integrationCategory: 'HEADLESS' | 'PREMADE' | 'PRESET';
 }

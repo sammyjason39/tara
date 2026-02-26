@@ -56,7 +56,7 @@ describe('Sales Repository', () => {
     it('should list leads', async () => {
       const mockItems = [{
         id: 'lead-001',
-        companyId: tenantId,
+        tenantId: tenantId,
         companyName: 'Nusantara Tech',
         contactName: 'Andi',
         source: 'MARKETING',
@@ -98,7 +98,7 @@ describe('Sales Repository', () => {
       };
       const mockItem = {
         ...payload,
-        companyId: tenantId,
+        tenantId: tenantId,
         potentialValue: 500000,
         slaDueAt: new Date(),
         createdAt: new Date(),
@@ -133,7 +133,7 @@ describe('Sales Repository', () => {
       };
       const mockItem = {
         ...payload,
-        companyId: tenantId,
+        tenantId: tenantId,
         expectedCloseDate: new Date(),
         lastActivityAt: new Date(),
         createdAt: new Date(),
@@ -166,7 +166,7 @@ describe('Sales Repository', () => {
       };
       const mockItem = {
         ...payload,
-        companyId: tenantId,
+        tenantId: tenantId,
         validUntil: new Date(),
         createdAt: new Date(),
         updatedAt: new Date(),

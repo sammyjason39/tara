@@ -23,7 +23,7 @@ export class RetailPublicAuthController {
   private toPublicCustomer(customer: any) {
     return {
       id: customer.id,
-      tenantId: customer.companyId,
+      tenantId: customer.tenantId,
       name: customer.name,
       email: customer.email,
       phone: customer.phone,

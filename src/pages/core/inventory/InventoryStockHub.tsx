@@ -94,14 +94,14 @@ export default function InventoryStockHub() {
 
         // Mode filtering
         if (viewMode === "ecommerce") {
-          const isEcom = balance.locationCode.toLowerCase().includes("ecom") || balance.locationCode.toLowerCase().includes("ec");
+          const isEcom = balance.locationCode?.toLowerCase()?.includes("ecom") || balance.locationCode?.toLowerCase()?.includes("ec");
           if (!isEcom) return false;
         } else if (viewMode === "branch") {
-           const isEcom = balance.locationCode.toLowerCase().includes("ecom") || balance.locationCode.toLowerCase().includes("ec");
+           const isEcom = balance.locationCode?.toLowerCase()?.includes("ecom") || balance.locationCode?.toLowerCase()?.includes("ec");
            if (isEcom && balance.locationCode !== "GLOBAL") return false;
         }
 
-        const searchable = `${item.sku} ${item.name} ${balance.locationCode} ${balance.departmentCode ?? ""}`.toLowerCase();
+        const searchable = `${item.sku} ${item.name} ${balance.locationCode || ""} ${balance.departmentCode || ""}`.toLowerCase();
         const searchMatch = search ? searchable.includes(search.toLowerCase()) : true;
         const moduleMatch = moduleFilter
           ? (item.moduleTags || []).some((tag) => tag.toLowerCase() === moduleFilter.toLowerCase())

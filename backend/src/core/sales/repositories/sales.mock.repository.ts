@@ -16,6 +16,7 @@ import { SalesOrder } from '../entities/sales-order.entity';
 import { SalesQuote } from '../entities/sales-quote.entity';
 import { SalesTask } from '../entities/sales-task.entity';
 import { SalesTimelineEvent } from '../entities/sales-timeline-event.entity';
+import { SalesNextAction } from '../entities/sales-next-action.entity';
 import {
   ISalesRepository,
   SalesDashboard,
@@ -363,6 +364,19 @@ export class SalesMockRepository extends ISalesRepository {
       avgDealCycleDays: 21,
       forecastAccuracy: 91.4,
     };
+  }
+
+  async getNextBestActions(tenantId: string): Promise<SalesNextAction[]> {
+    const store = this.getStore(tenantId);
+    return [
+      {
+        id: this.id('nba'),
+        title: 'Follow up on proposal',
+        detail: 'Acme Retail proposal was sent 3 days ago. Recommended action: call decision maker.',
+        priority: 'P1',
+        opportunityId: store.opportunities[0]?.id,
+      }
+    ];
   }
 
   async getLeads(tenantId: string): Promise<SalesLead[]> {

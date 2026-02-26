@@ -19,7 +19,7 @@ import type {
 // Mapping functions
 const mapSupplierMaster = (db: any): SupplierMaster => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   name: db.name,
   taxId: db.taxId || "",
   complianceStatus: db.complianceStatus as any,
@@ -32,7 +32,7 @@ const mapSupplierMaster = (db: any): SupplierMaster => ({
 
 const mapSupplierBranch = (db: any): SupplierBranch => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   supplierId: db.supplierId,
   branchCode: db.branchCode,
   branchName: db.branchName,
@@ -47,7 +47,7 @@ const mapSupplierBranch = (db: any): SupplierBranch => ({
 
 const mapSupplierProduct = (db: any): SupplierProduct => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   supplierId: db.supplierId,
   branchId: db.branchId,
   sku: db.sku,
@@ -62,7 +62,7 @@ const mapSupplierProduct = (db: any): SupplierProduct => ({
 
 const mapRequisition = (db: any): Requisition => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   requesterId: db.requesterId,
   requesterDept: db.departmentId, 
   branchCode: db.branchCode,
@@ -83,7 +83,7 @@ const mapRequisition = (db: any): Requisition => ({
 
 const mapDraftPO = (db: any): DraftPurchaseOrder => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   requisitionId: db.requisitionId,
   branchCode: db.branchCode,
   supplierId: db.supplierId,
@@ -102,7 +102,7 @@ const mapDraftPO = (db: any): DraftPurchaseOrder => ({
 
 const mapFinalPO = (db: any): FinalPurchaseOrder => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   requisitionId: db.requisitionId,
   draftPoId: db.draftPoId,
   supplierId: db.supplierId,
@@ -119,7 +119,7 @@ const mapFinalPO = (db: any): FinalPurchaseOrder => ({
 
 const mapContract = (db: any): ContractRecord => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   requisitionId: db.requisitionId,
   supplierId: db.supplierId,
   status: db.status as any,
@@ -136,7 +136,7 @@ const mapContract = (db: any): ContractRecord => ({
 
 const mapReceipt = (db: any): ReceiptRecord => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   finalPoId: db.finalPoId,
   supplierId: db.supplierId,
   supplierBranchId: db.supplierBranchId,
@@ -151,7 +151,7 @@ const mapReceipt = (db: any): ReceiptRecord => ({
 
 const mapRatingLog = (db: any): RatingLog => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   supplierId: db.supplierId,
   supplierBranchId: db.supplierBranchId,
   supplierScore: db.supplierScore,
@@ -163,7 +163,7 @@ const mapRatingLog = (db: any): RatingLog => ({
 
 const mapRiskSignal = (db: any): RiskSignal => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   code: db.code as any,
   severity: db.severity as any,
   status: db.status as any,
@@ -175,7 +175,7 @@ const mapRiskSignal = (db: any): RiskSignal => ({
 
 const mapPortalMessage = (db: any): SupplierPortalMessage => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   supplierId: db.supplierId,
   supplierBranchId: db.supplierBranchId,
   direction: db.direction as any,
@@ -189,7 +189,7 @@ const mapPortalMessage = (db: any): SupplierPortalMessage => ({
 
 const mapAuditEvent = (db: any): ProcurementAuditEvent => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   actorId: db.actorId,
   action: db.action,
   entityType: db.entityType as any,
@@ -201,7 +201,7 @@ const mapAuditEvent = (db: any): ProcurementAuditEvent => ({
 export const procurementRepo: ProcurementRepository = {
   async listSupplierMasters(tenantId) {
     const items = await prisma.supplierMaster.findMany({
-      where: { companyId: tenantId, deletedAt: null },
+      where: { tenantId: tenantId, deletedAt: null },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapSupplierMaster);
@@ -210,7 +210,7 @@ export const procurementRepo: ProcurementRepository = {
     const item = await prisma.supplierMaster.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         name: payload.name,
         taxId: payload.taxId,
         complianceStatus: payload.complianceStatus,
@@ -223,7 +223,7 @@ export const procurementRepo: ProcurementRepository = {
   },
   async updateSupplierMaster(tenantId, id, patch) {
     const item = await prisma.supplierMaster.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         name: patch.name,
         taxId: patch.taxId,
@@ -238,7 +238,7 @@ export const procurementRepo: ProcurementRepository = {
 
   async listSupplierBranches(tenantId) {
     const items = await prisma.supplierBranch.findMany({
-      where: { companyId: tenantId, deletedAt: null },
+      where: { tenantId: tenantId, deletedAt: null },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapSupplierBranch);
@@ -247,7 +247,7 @@ export const procurementRepo: ProcurementRepository = {
     const item = await prisma.supplierBranch.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         supplierId: payload.supplierId,
         branchCode: payload.branchCode,
         branchName: payload.branchName,
@@ -262,7 +262,7 @@ export const procurementRepo: ProcurementRepository = {
   },
   async updateSupplierBranch(tenantId, id, patch) {
     const item = await prisma.supplierBranch.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         branchCode: patch.branchCode,
         branchName: patch.branchName,
@@ -278,7 +278,7 @@ export const procurementRepo: ProcurementRepository = {
 
   async listSupplierProducts(tenantId) {
     const items = await prisma.supplierProduct.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { updatedAt: 'desc' },
     });
     return items.map(mapSupplierProduct);
@@ -288,7 +288,7 @@ export const procurementRepo: ProcurementRepository = {
       where: { id: payload.id },
       create: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         supplierId: payload.supplierId,
         branchId: payload.branchId,
         sku: payload.sku,
@@ -314,7 +314,7 @@ export const procurementRepo: ProcurementRepository = {
 
   async listRequisitions(tenantId) {
     const items = await prisma.procurementRequisition.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapRequisition);
@@ -323,7 +323,7 @@ export const procurementRepo: ProcurementRepository = {
     const item = await prisma.procurementRequisition.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         requesterId: payload.requesterId,
         departmentId: payload.requesterDept,
         branchCode: payload.branchCode,
@@ -344,7 +344,7 @@ export const procurementRepo: ProcurementRepository = {
   },
   async updateRequisition(tenantId, id, patch) {
     const item = await prisma.procurementRequisition.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         status: patch.status,
         approvals: patch.approvals as any,
@@ -358,7 +358,7 @@ export const procurementRepo: ProcurementRepository = {
 
   async listDraftPurchaseOrders(tenantId) {
     const items = await prisma.procurementDraftPO.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapDraftPO);
@@ -367,7 +367,7 @@ export const procurementRepo: ProcurementRepository = {
     const item = await prisma.procurementDraftPO.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         requisitionId: payload.requisitionId,
         branchCode: payload.branchCode,
         supplierId: payload.supplierId,
@@ -386,7 +386,7 @@ export const procurementRepo: ProcurementRepository = {
   },
   async updateDraftPurchaseOrder(tenantId, id, patch) {
     const item = await prisma.procurementDraftPO.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         status: patch.status,
         lineItems: patch.lineItems as any,
@@ -401,7 +401,7 @@ export const procurementRepo: ProcurementRepository = {
 
   async listFinalPurchaseOrders(tenantId) {
     const items = await prisma.procurementFinalPO.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapFinalPO);
@@ -410,7 +410,7 @@ export const procurementRepo: ProcurementRepository = {
     const item = await prisma.procurementFinalPO.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         requisitionId: payload.requisitionId,
         draftPoId: payload.draftPoId,
         supplierId: payload.supplierId,
@@ -427,7 +427,7 @@ export const procurementRepo: ProcurementRepository = {
   },
   async updateFinalPurchaseOrder(tenantId, id, patch) {
     const item = await prisma.procurementFinalPO.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         status: patch.status,
         expectedDeliveryDate: patch.expectedDeliveryDate ? new Date(patch.expectedDeliveryDate) : undefined,
@@ -439,7 +439,7 @@ export const procurementRepo: ProcurementRepository = {
 
   async listContracts(tenantId) {
     const items = await prisma.procurementContract.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapContract);
@@ -448,7 +448,7 @@ export const procurementRepo: ProcurementRepository = {
     const item = await prisma.procurementContract.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         requisitionId: payload.requisitionId,
         supplierId: payload.supplierId,
         status: payload.status,
@@ -465,7 +465,7 @@ export const procurementRepo: ProcurementRepository = {
   },
   async updateContract(tenantId, id, patch) {
     const item = await prisma.procurementContract.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         status: patch.status,
         legalReviewedBy: patch.legalReviewedBy,
@@ -482,7 +482,7 @@ export const procurementRepo: ProcurementRepository = {
 
   async listReceipts(tenantId) {
     const items = await prisma.procurementReceipt.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { receivedAt: 'desc' },
     });
     return items.map(mapReceipt);
@@ -491,7 +491,7 @@ export const procurementRepo: ProcurementRepository = {
     const item = await prisma.procurementReceipt.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         finalPoId: payload.finalPoId,
         supplierId: payload.supplierId,
         supplierBranchId: payload.supplierBranchId,
@@ -508,7 +508,7 @@ export const procurementRepo: ProcurementRepository = {
 
   async listRatingLogs(tenantId) {
     const items = await prisma.procurementRatingLog.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapRatingLog);
@@ -517,7 +517,7 @@ export const procurementRepo: ProcurementRepository = {
     const item = await prisma.procurementRatingLog.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         supplierId: payload.supplierId,
         supplierBranchId: payload.supplierBranchId,
         supplierScore: payload.supplierScore,
@@ -531,7 +531,7 @@ export const procurementRepo: ProcurementRepository = {
 
   async listRiskSignals(tenantId) {
     const items = await prisma.procurementRiskSignal.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapRiskSignal);
@@ -540,7 +540,7 @@ export const procurementRepo: ProcurementRepository = {
     const item = await prisma.procurementRiskSignal.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         code: payload.code,
         severity: payload.severity,
         status: payload.status,
@@ -552,7 +552,7 @@ export const procurementRepo: ProcurementRepository = {
   },
   async updateRiskSignal(tenantId, id, patch) {
     const item = await prisma.procurementRiskSignal.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         status: patch.status,
         detail: patch.detail,
@@ -563,7 +563,7 @@ export const procurementRepo: ProcurementRepository = {
 
   async listPortalMessages(tenantId) {
     const items = await prisma.supplierPortalMessage.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapPortalMessage);
@@ -572,7 +572,7 @@ export const procurementRepo: ProcurementRepository = {
     const item = await prisma.supplierPortalMessage.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         supplierId: payload.supplierId,
         supplierBranchId: payload.supplierBranchId,
         direction: payload.direction,
@@ -588,7 +588,7 @@ export const procurementRepo: ProcurementRepository = {
 
   async listAuditEvents(tenantId) {
     const items = await prisma.procurementAuditEvent.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapAuditEvent);
@@ -597,7 +597,7 @@ export const procurementRepo: ProcurementRepository = {
     const item = await prisma.procurementAuditEvent.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         actorId: payload.actorId,
         action: payload.action,
         entityType: payload.entityType,

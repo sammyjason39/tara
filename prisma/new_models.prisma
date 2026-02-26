@@ -5,7 +5,7 @@
 
 model InventoryAdjustment {
   id              String   @id @default(uuid())
-  companyId       String   @map("company_id")
+  tenantId       String   @map("tenant_id")
   itemId          String   @map("item_id")
   locationCode    String   @map("location_code")
   departmentCode  String?  @map("department_code")
@@ -20,15 +20,15 @@ model InventoryAdjustment {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company         Company  @relation(fields: [companyId], references: [id])
+  company         Company  @relation(fields: [tenantId], references: [id])
 
   @@map("inventory_adjustments")
-  @@index([companyId])
+  @@index([tenantId])
 }
 
 model InventoryAuditCycle {
   id              String   @id @default(uuid())
-  companyId       String   @map("company_id")
+  tenantId       String   @map("tenant_id")
   locationCode    String   @map("location_code")
   departmentCode  String?  @map("department_code")
   scope           String   // LOCATION, DEPARTMENT, ITEM
@@ -43,15 +43,15 @@ model InventoryAuditCycle {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company         Company  @relation(fields: [companyId], references: [id])
+  company         Company  @relation(fields: [tenantId], references: [id])
 
   @@map("inventory_audit_cycles")
-  @@index([companyId])
+  @@index([tenantId])
 }
 
 model InventoryAlert {
   id              String   @id @default(uuid())
-  companyId       String   @map("company_id")
+  tenantId       String   @map("tenant_id")
   type            String   // LOW_STOCK, EXPIRY_WARNING, ADJUSTMENT_REQUIRES_APPROVAL
   severity        String   @default("MEDIUM") // LOW, MEDIUM, HIGH
   status          String   @default("OPEN") // OPEN, ACKNOWLEDGED, RESOLVED
@@ -63,15 +63,15 @@ model InventoryAlert {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company         Company  @relation(fields: [companyId], references: [id])
+  company         Company  @relation(fields: [tenantId], references: [id])
 
   @@map("inventory_alerts")
-  @@index([companyId])
+  @@index([tenantId])
 }
 
 model InventoryIntegrationEvent {
   id              String   @id @default(uuid())
-  companyId       String   @map("company_id")
+  tenantId       String   @map("tenant_id")
   target          String   // FINANCE, PROCUREMENT, SALES, PAYMENT, HR, IT
   status          String   @default("SYNCED") // PENDING, SYNCED, FAILED
   eventType       String   @map("event_type")
@@ -82,10 +82,10 @@ model InventoryIntegrationEvent {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company         Company  @relation(fields: [companyId], references: [id])
+  company         Company  @relation(fields: [tenantId], references: [id])
 
   @@map("inventory_integration_events")
-  @@index([companyId])
+  @@index([tenantId])
 }
 
 // ============================================================
@@ -94,7 +94,7 @@ model InventoryIntegrationEvent {
 
 model MarketingCampaign {
   id             String   @id @default(uuid())
-  companyId      String   @map("company_id")
+  tenantId      String   @map("tenant_id")
   name           String
   objective      String   // AWARENESS, LEAD_GEN, CONVERSION, RETENTION
   channelMix     String[] @map("channel_mix")
@@ -112,17 +112,17 @@ model MarketingCampaign {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company        Company    @relation(fields: [companyId], references: [id])
+  company        Company    @relation(fields: [tenantId], references: [id])
   executions     MarketingExecutionRun[]
   attributions   MarketingAttribution[]
 
   @@map("marketing_campaigns")
-  @@index([companyId])
+  @@index([tenantId])
 }
 
 model MarketingExecutionRun {
   id             String   @id @default(uuid())
-  companyId      String   @map("company_id")
+  tenantId      String   @map("tenant_id")
   campaignId     String   @map("campaign_id")
   channel        String   // EMAIL, WHATSAPP, GOOGLE_ADS, META_ADS, LANDING_PAGE, WEBINAR, EVENT
   scheduledAt    DateTime @map("scheduled_at")
@@ -135,17 +135,17 @@ model MarketingExecutionRun {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company        Company    @relation(fields: [companyId], references: [id])
+  company        Company    @relation(fields: [tenantId], references: [id])
   campaign       MarketingCampaign @relation(fields: [campaignId], references: [id])
 
   @@map("marketing_executions")
-  @@index([companyId])
+  @@index([tenantId])
   @@index([campaignId])
 }
 
 model MarketingLead {
   id                  String   @id @default(uuid())
-  companyId           String   @map("company_id")
+  tenantId           String   @map("tenant_id")
   campaignId          String?  @map("campaign_id")
   source              String   // LANDING_PAGE, EMBEDDED_FORM, CHATBOT, WEBINAR, META_LEAD_ADS, GOOGLE_ADS, PARTNER_API
   companyName         String   @map("company_name")
@@ -166,18 +166,18 @@ model MarketingLead {
   updatedAt           DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company             Company  @relation(fields: [companyId], references: [id])
+  company             Company  @relation(fields: [tenantId], references: [id])
   attributions        MarketingAttribution[]
 
   @@map("marketing_leads")
-  @@unique([companyId, dedupKey])
-  @@index([companyId])
+  @@unique([tenantId, dedupKey])
+  @@index([tenantId])
   @@index([status])
 }
 
 model MarketingNurtureWorkflow {
   id             String   @id @default(uuid())
-  companyId      String   @map("company_id")
+  tenantId      String   @map("tenant_id")
   name           String
   trigger        String   // LEAD_CAPTURED, STATUS_CHANGED, FORM_SUBMITTED
   status         String   @default("DRAFT") // DRAFT, ACTIVE, PAUSED
@@ -188,15 +188,15 @@ model MarketingNurtureWorkflow {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company        Company  @relation(fields: [companyId], references: [id])
+  company        Company  @relation(fields: [tenantId], references: [id])
 
   @@map("marketing_workflows")
-  @@index([companyId])
+  @@index([tenantId])
 }
 
 model MarketingConnectedAccount {
   id             String   @id @default(uuid())
-  companyId      String   @map("company_id")
+  tenantId      String   @map("tenant_id")
   provider       String   // GOOGLE, META, MAILCHIMP, HUBSPOT
   accountName    String   @map("account_name")
   status         String   @default("CONNECTED") // CONNECTED, DISCONNECTED, ERROR
@@ -208,15 +208,15 @@ model MarketingConnectedAccount {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company        Company  @relation(fields: [companyId], references: [id])
+  company        Company  @relation(fields: [tenantId], references: [id])
 
   @@map("marketing_accounts")
-  @@index([companyId])
+  @@index([tenantId])
 }
 
 model MarketingAttribution {
   id                String   @id @default(uuid())
-  companyId         String   @map("company_id")
+  tenantId         String   @map("tenant_id")
   campaignId        String   @map("campaign_id")
   leadId            String   @map("lead_id")
   opportunityId     String?  @map("opportunity_id")
@@ -227,19 +227,19 @@ model MarketingAttribution {
   createdAt         DateTime @default(now()) @map("created_at")
 
   // Relations
-  company           Company  @relation(fields: [companyId], references: [id])
+  company           Company  @relation(fields: [tenantId], references: [id])
   campaign          MarketingCampaign @relation(fields: [campaignId], references: [id])
   lead              MarketingLead @relation(fields: [leadId], references: [id])
 
   @@map("marketing_attribution")
-  @@index([companyId])
+  @@index([tenantId])
   @@index([campaignId])
   @@index([leadId])
 }
 
 model MarketingAlert {
   id             String   @id @default(uuid())
-  companyId      String   @map("company_id")
+  tenantId      String   @map("tenant_id")
   type           String   // TOKEN_EXPIRY, CAMPAIGN_FAILURE, HANDOFF_DELAY
   severity       String   @default("MEDIUM") // LOW, MEDIUM, HIGH
   entityType     String   @map("entity_type") // CAMPAIGN, ACCOUNT, LEAD
@@ -251,15 +251,15 @@ model MarketingAlert {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   // Relations
-  company        Company  @relation(fields: [companyId], references: [id])
+  company        Company  @relation(fields: [tenantId], references: [id])
 
   @@map("marketing_alerts")
-  @@index([companyId])
+  @@index([tenantId])
 }
 
 model MarketingAuditEvent {
   id             String   @id @default(uuid())
-  companyId      String   @map("company_id")
+  tenantId      String   @map("tenant_id")
   actorId        String   @map("actor_id")
   action         String
   entityType     String   @map("entity_type")
@@ -269,8 +269,8 @@ model MarketingAuditEvent {
   createdAt      DateTime @default(now()) @map("created_at")
 
   // Relations
-  company        Company  @relation(fields: [companyId], references: [id])
+  company        Company  @relation(fields: [tenantId], references: [id])
 
   @@map("marketing_audit_events")
-  @@index([companyId])
+  @@index([tenantId])
 }

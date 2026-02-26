@@ -1,2 +1,14 @@
 node_modules/
 .env
+dist/
+build/
+*.log
+.db/
+*.txt
+!README.md
+!QUICK_START.md
+!DATABASE_SETUP.md
+backend/dist/
+frontend/dist/
+.DS_Store
+Thumbs.db

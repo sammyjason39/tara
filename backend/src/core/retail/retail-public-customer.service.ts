@@ -1,6 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../persistence/prisma.service';
-import { RetailService } from './retail.service';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { PrismaService } from "../../persistence/prisma.service";
+import { RetailService } from "./retail.service";
 
 @Injectable()
 export class RetailPublicCustomerService {
@@ -14,16 +18,16 @@ export class RetailPublicCustomerService {
       where: { customerId },
       update: {},
       create: {
-        companyId: tenantId,
+        tenantId: tenantId,
         customerId,
-        status: 'active',
+        status: "active",
       },
     });
   }
 
   async buildCartResponse(tenantId: string, customerId: string) {
     const cart = await this.prisma.retailCart.findFirst({
-      where: { companyId: tenantId, customerId },
+      where: { tenantId: tenantId, customerId },
       include: { items: { include: { product: true } } },
     });
 
@@ -37,15 +41,18 @@ export class RetailPublicCustomerService {
       return {
         id: item.id,
         productId: item.productId,
-        sku: item.product?.sku ?? '',
-        name: item.product?.name ?? 'Unknown Item',
+        sku: item.product?.sku ?? "",
+        name: item.product?.name ?? "Unknown Item",
         quantity,
         unitPrice,
         totalPrice: unitPrice * quantity,
       };
     });
 
-    const subtotal = items.reduce((sum: number, item: any) => sum + item.totalPrice, 0);
+    const subtotal = items.reduce(
+      (sum: number, item: any) => sum + item.totalPrice,
+      0,
+    );
     const tax = 0;
     const total = subtotal + tax;
 
@@ -66,22 +73,22 @@ export class RetailPublicCustomerService {
   ) {
     const qty = Number(payload.quantity ?? 1);
     if (!payload.productId && !payload.sku) {
-      throw new BadRequestException('productId or sku is required');
+      throw new BadRequestException("productId or sku is required");
     }
     if (!Number.isFinite(qty) || qty <= 0) {
-      throw new BadRequestException('quantity must be greater than 0');
+      throw new BadRequestException("quantity must be greater than 0");
     }
 
     const product = payload.productId
       ? await this.prisma.product.findFirst({
-          where: { id: String(payload.productId), companyId: tenantId },
+          where: { id: String(payload.productId), tenantId: tenantId },
         })
       : await this.prisma.product.findFirst({
-          where: { companyId: tenantId, sku: String(payload.sku) },
+          where: { tenantId: tenantId, sku: String(payload.sku) },
         });
 
     if (!product) {
-      throw new NotFoundException('Product not found');
+      throw new NotFoundException("Product not found");
     }
 
     const cart = await this.getOrCreateCart(tenantId, customerId);
@@ -115,7 +122,7 @@ export class RetailPublicCustomerService {
     quantity: number,
   ) {
     if (!Number.isFinite(quantity) || quantity < 0) {
-      throw new BadRequestException('quantity must be 0 or greater');
+      throw new BadRequestException("quantity must be 0 or greater");
     }
 
     const cart = await this.getOrCreateCart(tenantId, customerId);
@@ -123,7 +130,7 @@ export class RetailPublicCustomerService {
       where: { id: itemId, cartId: cart.id },
     });
     if (!item) {
-      throw new NotFoundException('Cart item not found');
+      throw new NotFoundException("Cart item not found");
     }
 
     if (quantity === 0) {
@@ -144,7 +151,7 @@ export class RetailPublicCustomerService {
       where: { id: itemId, cartId: cart.id },
     });
     if (!item) {
-      throw new NotFoundException('Cart item not found');
+      throw new NotFoundException("Cart item not found");
     }
     await this.prisma.retailCartItem.delete({ where: { id: item.id } });
     return this.buildCartResponse(tenantId, customerId);
@@ -158,7 +165,7 @@ export class RetailPublicCustomerService {
 
   async buildWishlistResponse(tenantId: string, customerId: string) {
     const wishlist = await this.prisma.retailWishlist.findFirst({
-      where: { companyId: tenantId, customerId },
+      where: { tenantId: tenantId, customerId },
       include: { items: { include: { product: true } } },
     });
 
@@ -169,12 +176,16 @@ export class RetailPublicCustomerService {
     const items = wishlist.items.map((item: any) => ({
       id: item.id,
       productId: item.productId,
-      sku: item.product?.sku ?? '',
-      name: item.product?.name ?? 'Unknown Item',
+      sku: item.product?.sku ?? "",
+      name: item.product?.name ?? "Unknown Item",
       addedAt: item.createdAt.toISOString(),
     }));
 
-    return { id: wishlist.id, items, updatedAt: wishlist.updatedAt.toISOString() };
+    return {
+      id: wishlist.id,
+      items,
+      updatedAt: wishlist.updatedAt.toISOString(),
+    };
   }
 
   async addWishlistItem(
@@ -183,26 +194,26 @@ export class RetailPublicCustomerService {
     payload: { productId?: string; sku?: string },
   ) {
     if (!payload.productId && !payload.sku) {
-      throw new BadRequestException('productId or sku is required');
+      throw new BadRequestException("productId or sku is required");
     }
 
     const product = payload.productId
       ? await this.prisma.product.findFirst({
-          where: { id: String(payload.productId), companyId: tenantId },
+          where: { id: String(payload.productId), tenantId: tenantId },
         })
       : await this.prisma.product.findFirst({
-          where: { companyId: tenantId, sku: String(payload.sku) },
+          where: { tenantId: tenantId, sku: String(payload.sku) },
         });
 
     if (!product) {
-      throw new NotFoundException('Product not found');
+      throw new NotFoundException("Product not found");
     }
 
     const wishlist = await this.prisma.retailWishlist.upsert({
       where: { customerId },
       update: {},
       create: {
-        companyId: tenantId,
+        tenantId: tenantId,
         customerId,
       },
     });
@@ -220,18 +231,22 @@ export class RetailPublicCustomerService {
     return this.buildWishlistResponse(tenantId, customerId);
   }
 
-  async removeWishlistItem(tenantId: string, customerId: string, itemId: string) {
+  async removeWishlistItem(
+    tenantId: string,
+    customerId: string,
+    itemId: string,
+  ) {
     const wishlist = await this.prisma.retailWishlist.findFirst({
-      where: { companyId: tenantId, customerId },
+      where: { tenantId: tenantId, customerId },
     });
     if (!wishlist) {
-      throw new NotFoundException('Wishlist not found');
+      throw new NotFoundException("Wishlist not found");
     }
     const item = await this.prisma.retailWishlistItem.findFirst({
       where: { id: itemId, wishlistId: wishlist.id },
     });
     if (!item) {
-      throw new NotFoundException('Wishlist item not found');
+      throw new NotFoundException("Wishlist item not found");
     }
     await this.prisma.retailWishlistItem.delete({ where: { id: item.id } });
     return this.buildWishlistResponse(tenantId, customerId);
@@ -240,23 +255,27 @@ export class RetailPublicCustomerService {
   async checkout(
     tenantId: string,
     customerId: string,
-    payload: { paymentStatus?: string; paymentMethod?: string; paymentReference?: string },
+    payload: {
+      paymentStatus?: string;
+      paymentMethod?: string;
+      paymentReference?: string;
+    },
   ) {
     const cart = await this.prisma.retailCart.findFirst({
-      where: { companyId: tenantId, customerId },
+      where: { tenantId: tenantId, customerId },
       include: { items: { include: { product: true } } },
     });
 
     if (!cart || cart.items.length === 0) {
-      throw new BadRequestException('Cart is empty');
+      throw new BadRequestException("Cart is empty");
     }
 
     const store = await this.prisma.store.findFirst({
-      where: { companyId: tenantId, deletedAt: null },
-      orderBy: { createdAt: 'asc' },
+      where: { tenantId: tenantId, deletedAt: null },
+      orderBy: { createdAt: "asc" },
     });
     if (!store) {
-      throw new NotFoundException('No store configured');
+      throw new NotFoundException("No store configured");
     }
 
     const items = cart.items.map((item: any) => ({
@@ -270,21 +289,26 @@ export class RetailPublicCustomerService {
       0,
     );
 
-    const paymentStatus = String(payload.paymentStatus ?? 'PENDING');
-    const status = paymentStatus === 'PAID' ? 'paid' : 'pending_payment';
-    const paymentMethod = payload.paymentMethod ?? 'card';
+    const paymentStatus = String(payload.paymentStatus ?? "PENDING");
+    const status = paymentStatus === "PAID" ? "paid" : "pending_payment";
+    const paymentMethod = payload.paymentMethod ?? "card";
     const paymentReference = payload.paymentReference ?? undefined;
 
-    const order = await this.retailService.createOrder(tenantId, store.locationId || '', {
-      storeId: store.id,
-      terminalId: 'api-gateway',
-      customerId: customerId,
-      items,
-      paymentMethod: paymentMethod as any,
-      grandTotal: subtotal,
-    });
+    const order = await this.retailService.createOrder(
+      tenantId,
+      store.locationId || "",
+      {
+        storeId: store.id,
+        terminalId: "api-gateway",
+        customerId: customerId,
+        items,
+        paymentMethod: paymentMethod as any,
+        grandTotal: subtotal,
+      },
+      customerId,
+    );
 
-    if (paymentStatus === 'PAID') {
+    if (paymentStatus === "PAID") {
       await this.retailService.processPayment(tenantId, order.id, {
         amount: Number(order.grand_total),
         method: paymentMethod as any,

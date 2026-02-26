@@ -1,0 +1,29 @@
+services:
+  # Backend Service (NestJS)
+  - type: web
+    name: zenvix-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: node dist/main
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: NODE_ENV
+        value: production
+      - key: PERSISTENCE_MODE
+        value: mock
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ALLOWED_ORIGINS
+        fromContext: frontend_url
+
+  # Frontend Service (Static Site)
+  - type: static
+    name: zenvix-frontend
+    env: static
+    buildCommand: npm install && npm run build
+    publishDir: dist
+    envVars:
+      - key: VITE_API_URL
+        fromContext: backend_url

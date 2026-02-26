@@ -62,7 +62,7 @@ describe('financeRepo', () => {
       expect(result).toHaveLength(1);
       expect(result[0].description).toBe('Laptop');
       expect(prisma.fixedAsset.findMany).toHaveBeenCalledWith({
-        where: { companyId: tenantId },
+        where: { tenantId: tenantId },
       });
     });
   });
@@ -71,7 +71,7 @@ describe('financeRepo', () => {
     it('should create an asset', async () => {
       const payload = { 
           description: 'Laptop', 
-          companyId: tenantId,
+          tenantId: tenantId,
           acquisitionDate: '2024-01-01',
           acquisitionCost: 1000,
           residualValue: 100,

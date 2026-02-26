@@ -6,7 +6,7 @@ import { prisma } from "@/core/persistence/database/client";
  */
 const mapToEmployee = (db: any): Employee => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   userId: db.userId || undefined,
   employeeCode: db.employeeCode,
   firstName: db.firstName,
@@ -36,7 +36,7 @@ export const employeeRepo = {
   async list(tenantId: string): Promise<Employee[]> {
     const employees = await prisma.employee.findMany({
       where: {
-        companyId: tenantId,
+        tenantId: tenantId,
         deletedAt: null,
       },
       include: {
@@ -58,7 +58,7 @@ export const employeeRepo = {
     const dbEmployee = await prisma.employee.findFirst({
       where: {
         id: employeeId,
-        companyId: tenantId,
+        tenantId: tenantId,
         deletedAt: null,
       },
       include: {
@@ -97,13 +97,13 @@ export const employeeRepo = {
     // Fallback to a default location if necessary
     let locId = (payload as any).locationId;
     if (!locId) {
-      const firstLoc = await prisma.location.findFirst({ where: { companyId: tenantId } });
+      const firstLoc = await prisma.location.findFirst({ where: { tenantId: tenantId } });
       locId = firstLoc?.id || "loc-default";
     }
 
     const employee = await prisma.employee.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         locationId: locId,
         departmentId: payload.departmentId,
         firstName: payload.firstName,
@@ -176,7 +176,7 @@ export const employeeRepo = {
     await prisma.employee.update({
       where: {
         id: employeeId,
-        companyId: tenantId,
+        tenantId: tenantId,
       },
       data: {
         deletedAt: new Date(),

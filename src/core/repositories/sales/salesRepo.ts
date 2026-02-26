@@ -14,7 +14,7 @@ import type {
 // Mapping functions
 const mapLead = (db: any): SalesLead => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   companyName: db.companyName,
   contactName: db.contactName,
   contactEmail: db.contactEmail || undefined,
@@ -35,7 +35,7 @@ const mapLead = (db: any): SalesLead => ({
 
 const mapOpportunity = (db: any): SalesOpportunity => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   leadId: db.leadId || undefined,
   accountName: db.accountName,
   ownerId: db.ownerId,
@@ -54,7 +54,7 @@ const mapOpportunity = (db: any): SalesOpportunity => ({
 
 const mapQuote = (db: any): SalesQuote => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   opportunityId: db.opportunityId,
   accountName: db.accountName,
   version: db.version,
@@ -74,7 +74,7 @@ const mapQuote = (db: any): SalesQuote => ({
 
 const mapTimelineEvent = (db: any): SalesTimelineEvent => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   opportunityId: db.opportunityId,
   leadId: db.leadId || undefined,
   channel: db.channel as any,
@@ -87,7 +87,7 @@ const mapTimelineEvent = (db: any): SalesTimelineEvent => ({
 
 const mapTask = (db: any): SalesTask => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   opportunityId: db.opportunityId || undefined,
   leadId: db.leadId || undefined,
   title: db.title,
@@ -103,7 +103,7 @@ const mapTask = (db: any): SalesTask => ({
 
 const mapAlert = (db: any): SalesAlert => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   type: db.type as any,
   severity: db.severity as any,
   entityType: db.entityType as any,
@@ -116,7 +116,7 @@ const mapAlert = (db: any): SalesAlert => ({
 
 const mapOrder = (db: any): SalesOrder => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   opportunityId: db.opportunityId,
   quoteId: db.quoteId || undefined,
   customerName: db.customerName,
@@ -132,7 +132,7 @@ const mapOrder = (db: any): SalesOrder => ({
 
 const mapAuditEvent = (db: any): SalesAuditEvent => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   actorId: db.actorId,
   action: db.action,
   entityType: db.entityType as any,
@@ -144,7 +144,7 @@ const mapAuditEvent = (db: any): SalesAuditEvent => ({
 export const salesRepo: SalesRepository = {
   async listLeads(tenantId) {
     const items = await prisma.salesLead.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapLead);
@@ -153,7 +153,7 @@ export const salesRepo: SalesRepository = {
     const item = await prisma.salesLead.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         companyName: payload.companyName,
         contactName: payload.contactName,
         contactEmail: payload.contactEmail,
@@ -173,7 +173,7 @@ export const salesRepo: SalesRepository = {
   },
   async updateLead(tenantId, id, patch) {
     const item = await prisma.salesLead.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         companyName: patch.companyName,
         contactName: patch.contactName,
@@ -195,7 +195,7 @@ export const salesRepo: SalesRepository = {
 
   async listOpportunities(tenantId) {
     const items = await prisma.salesOpportunity.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { lastActivityAt: 'desc' },
     });
     return items.map(mapOpportunity);
@@ -204,7 +204,7 @@ export const salesRepo: SalesRepository = {
     const item = await prisma.salesOpportunity.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         leadId: payload.leadId,
         accountName: payload.accountName,
         ownerId: payload.ownerId,
@@ -222,7 +222,7 @@ export const salesRepo: SalesRepository = {
   },
   async updateOpportunity(tenantId, id, patch) {
     const item = await prisma.salesOpportunity.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         stage: patch.stage,
         probability: patch.probability,
@@ -239,7 +239,7 @@ export const salesRepo: SalesRepository = {
 
   async listQuotes(tenantId) {
     const items = await prisma.salesQuote.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapQuote);
@@ -248,7 +248,7 @@ export const salesRepo: SalesRepository = {
     const item = await prisma.salesQuote.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         opportunityId: payload.opportunityId,
         accountName: payload.accountName,
         version: payload.version,
@@ -266,7 +266,7 @@ export const salesRepo: SalesRepository = {
   },
   async updateQuote(tenantId, id, patch) {
     const item = await prisma.salesQuote.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         status: patch.status,
         approvalBy: patch.approvalBy,
@@ -283,7 +283,7 @@ export const salesRepo: SalesRepository = {
 
   async listTimelineEvents(tenantId) {
     const items = await prisma.salesTimelineEvent.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapTimelineEvent);
@@ -292,7 +292,7 @@ export const salesRepo: SalesRepository = {
     const item = await prisma.salesTimelineEvent.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         opportunityId: payload.opportunityId,
         leadId: payload.leadId,
         channel: payload.channel,
@@ -307,7 +307,7 @@ export const salesRepo: SalesRepository = {
 
   async listTasks(tenantId) {
     const items = await prisma.salesTask.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { dueAt: 'asc' },
     });
     return items.map(mapTask);
@@ -316,7 +316,7 @@ export const salesRepo: SalesRepository = {
     const item = await prisma.salesTask.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         opportunityId: payload.opportunityId,
         leadId: payload.leadId,
         title: payload.title,
@@ -331,7 +331,7 @@ export const salesRepo: SalesRepository = {
   },
   async updateTask(tenantId, id, patch) {
     const item = await prisma.salesTask.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         status: patch.status,
         priority: patch.priority,
@@ -344,7 +344,7 @@ export const salesRepo: SalesRepository = {
 
   async listAlerts(tenantId) {
     const items = await prisma.salesAlert.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapAlert);
@@ -353,7 +353,7 @@ export const salesRepo: SalesRepository = {
     const item = await prisma.salesAlert.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         type: payload.type,
         severity: payload.severity,
         entityType: payload.entityType,
@@ -366,7 +366,7 @@ export const salesRepo: SalesRepository = {
   },
   async updateAlert(tenantId, id, patch) {
     const item = await prisma.salesAlert.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         acknowledged: patch.acknowledged,
       },
@@ -376,7 +376,7 @@ export const salesRepo: SalesRepository = {
 
   async listOrders(tenantId) {
     const items = await prisma.salesOrder.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapOrder);
@@ -385,7 +385,7 @@ export const salesRepo: SalesRepository = {
     const item = await prisma.salesOrder.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         opportunityId: payload.opportunityId,
         quoteId: payload.quoteId,
         customerName: payload.customerName,
@@ -401,7 +401,7 @@ export const salesRepo: SalesRepository = {
   },
   async updateOrder(tenantId, id, patch) {
     const item = await prisma.salesOrder.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         status: patch.status,
         inventoryCheck: patch.inventoryCheck,
@@ -413,7 +413,7 @@ export const salesRepo: SalesRepository = {
 
   async listAuditEvents(tenantId) {
     const items = await prisma.salesAuditEvent.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map(mapAuditEvent);
@@ -422,7 +422,7 @@ export const salesRepo: SalesRepository = {
     const item = await prisma.salesAuditEvent.create({
       data: {
         id: payload.id,
-        companyId: tenantId,
+        tenantId: tenantId,
         actorId: payload.actorId,
         action: payload.action,
         entityType: payload.entityType,

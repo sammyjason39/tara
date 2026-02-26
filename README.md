@@ -208,9 +208,44 @@ npm run build
 
 ---
 
+## 🚀 Deployment (GitHub & Render)
+
+This project is configured for automated deployment using **Render Blueprints**.
+
+### 1. GitHub Preparation
+
+1. Create a new repository on GitHub.
+2. Ensure `.env` is ignored (already in `.gitignore`).
+3. Use the `.env.example` (root) and `backend/.env.example` as templates for your production settings.
+4. Push the code to your repository.
+
+### 2. Render Deployment
+
+1. Connect your GitHub account to [Render](https://render.com).
+2. Create a new **Blueprint Instance**.
+3. Select this repository. Render will automatically detect `render.yaml`.
+4. Render will provision:
+   - **Backend (Web Service)**: Running on NestJS.
+   - **Frontend (Static Site)**: Running the Vite build.
+
+### 3. Required Environment Variables
+
+After the first build (which may fail due to missing vars), set these in the Render Dashboard:
+
+**Backend Service:**
+
+- `ALLOWED_ORIGINS`: Your Render frontend URL (e.g., `https://zenvix-frontend.onrender.com`).
+- `JWT_SECRET`: A secure random string for signing tokens.
+
+**Frontend Service:**
+
+- `VITE_API_URL`: Your Render backend URL (e.g., `https://zenvix-backend.onrender.com`).
+
+---
+
 ### 👥 Demo Accounts (Development Only)
 
-Email Password Scope
+Email | Password | Scope
 
 ```text
 admin@opscore.com admin123 Core System (Admin)
@@ -228,17 +263,13 @@ cafe.manager@opscore.com cafe123 Cafe Module (Manager)
 The following modules are planned but intentionally excluded from V1:
 
 - **Healthcare** — Clinics, patient flow, medical inventory
-
 - **Manufacturing** — Production lines, BOM, quality control
-
 - **Security** — Surveillance, access control, incident response
 
 These modules will be developed one by one after:
 
 - **Core stability**
-
 - **Configuration engine completion**
-
 - **Cafe & Retail modules reach production maturity**
 
 ---

@@ -36,7 +36,7 @@ export const ChannelListItem = ({
     ch.connector ?? ch.name ?? "";
   
   const resolveChannelTenantId = (ch: ChannelRecord) =>
-    ch.tenantId ?? ch.companyId ?? session.tenantId;
+    ch.tenantId ?? ch.tenantId ?? session.tenantId;
   
   const resolveChannelBranchId = (ch: any) =>
     ch.branchIds?.[0] ?? ch.branchId ?? (ch.credentials as any)?.branchId ?? branchIds[0];

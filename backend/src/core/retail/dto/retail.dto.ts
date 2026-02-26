@@ -1,5 +1,14 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, IsEnum, IsArray, ValidateNested, IsBoolean } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsEnum,
+  IsArray,
+  ValidateNested,
+  IsBoolean,
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
 
 // ============================================================
 // BRANCH (Physical Store) DTOs
@@ -20,12 +29,20 @@ export class CreateStoreDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsEnum(['flagship', 'express', 'kiosk', 'pop-up', 'warehouse'])
+  @IsEnum(["flagship", "express", "kiosk", "pop-up", "warehouse"])
   type: string;
 
   @IsOptional()
   @IsString()
   address?: string;
+
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @IsOptional()
+  @IsString()
+  currency?: string;
 
   @IsOptional()
   @IsString()
@@ -61,7 +78,7 @@ export class UpdateStoreDto {
 
   @IsOptional()
   @IsString()
-  @IsEnum(['flagship', 'express', 'kiosk', 'pop-up', 'warehouse'])
+  @IsEnum(["flagship", "express", "kiosk", "pop-up", "warehouse"])
   type?: string;
 
   @IsOptional()
@@ -110,7 +127,15 @@ export class CreateEcommerceStoreDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsEnum(['shopify', 'woocommerce', 'tokopedia', 'shopee', 'lazada', 'tiktok', 'custom'])
+  @IsEnum([
+    "shopify",
+    "woocommerce",
+    "tokopedia",
+    "shopee",
+    "lazada",
+    "tiktok",
+    "custom",
+  ])
   platform: string;
 
   @IsString()
@@ -179,8 +204,8 @@ export class CreateInventoryPoolDto {
   description?: string;
 
   @IsOptional()
-  @IsEnum(['shared', 'exclusive'])
-  type?: 'shared' | 'exclusive';
+  @IsEnum(["shared", "exclusive"])
+  type?: "shared" | "exclusive";
 }
 
 // ============================================================
@@ -190,7 +215,10 @@ export class CreateInventoryPoolDto {
 class OrderItemDto {
   @IsString()
   @IsNotEmpty()
-  @Transform(({ obj, value }) => value ?? obj.product_id ?? obj.itemId ?? obj.item_id, { toClassOnly: true })
+  @Transform(
+    ({ obj, value }) => value ?? obj.product_id ?? obj.itemId ?? obj.item_id,
+    { toClassOnly: true },
+  )
   productId: string;
 
   @IsNumber()
@@ -211,12 +239,16 @@ export class CreateOrderDto {
 
   @IsString()
   @IsNotEmpty()
-  @Transform(({ obj, value }) => value ?? obj.terminal_id, { toClassOnly: true })
+  @Transform(({ obj, value }) => value ?? obj.terminal_id, {
+    toClassOnly: true,
+  })
   terminalId: string;
 
   @IsOptional()
   @IsString()
-  @Transform(({ obj, value }) => value ?? obj.customer_id, { toClassOnly: true })
+  @Transform(({ obj, value }) => value ?? obj.customer_id, {
+    toClassOnly: true,
+  })
   customerId?: string;
 
   @IsArray()
@@ -226,13 +258,17 @@ export class CreateOrderDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsEnum(['cash', 'card', 'qr', 'wallet'])
-  @Transform(({ obj, value }) => value ?? obj.payment_method, { toClassOnly: true })
-  paymentMethod: 'cash' | 'card' | 'qr' | 'wallet';
+  @IsEnum(["cash", "card", "qr", "wallet"])
+  @Transform(({ obj, value }) => value ?? obj.payment_method, {
+    toClassOnly: true,
+  })
+  paymentMethod: "cash" | "card" | "qr" | "wallet";
 
   @IsNumber()
   @IsNotEmpty()
-  @Transform(({ obj, value }) => value ?? obj.grand_total, { toClassOnly: true })
+  @Transform(({ obj, value }) => value ?? obj.grand_total, {
+    toClassOnly: true,
+  })
   grandTotal: number;
 
   @IsOptional()
@@ -252,19 +288,25 @@ export class OpenShiftDto {
 
   @IsString()
   @IsNotEmpty()
-  @Transform(({ obj, value }) => value ?? obj.terminal_id, { toClassOnly: true })
+  @Transform(({ obj, value }) => value ?? obj.terminal_id, {
+    toClassOnly: true,
+  })
   terminalId: string;
 
   @IsNumber()
   @IsNotEmpty()
-  @Transform(({ obj, value }) => value ?? obj.opening_cash, { toClassOnly: true })
+  @Transform(({ obj, value }) => value ?? obj.opening_cash, {
+    toClassOnly: true,
+  })
   openingCash: number;
 }
 
 export class CloseShiftDto {
   @IsNumber()
   @IsNotEmpty()
-  @Transform(({ obj, value }) => value ?? obj.closing_cash, { toClassOnly: true })
+  @Transform(({ obj, value }) => value ?? obj.closing_cash, {
+    toClassOnly: true,
+  })
   closingCash: number;
 
   @IsOptional()

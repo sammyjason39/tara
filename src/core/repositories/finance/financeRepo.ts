@@ -10,7 +10,7 @@ import type { SettlementRecord, TreasuryTransfer } from "@/core/types/finance/tr
 // --- Mappers ---
 const mapMoneySource = (db: any): MoneySource => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   name: db.name,
   type: db.type as any,
   currency: db.currency as any,
@@ -25,7 +25,7 @@ const mapMoneySource = (db: any): MoneySource => ({
 export const financeRepo: FinanceRepository = {
   // --- Accounts ---
   async listSources(tenantId) {
-    const items = await prisma.moneySource.findMany({ where: { companyId: tenantId } });
+    const items = await prisma.moneySource.findMany({ where: { tenantId: tenantId } });
     return items.map(mapMoneySource);
   },
   async updateSource(tenantId, sourceId, patch) {
@@ -38,10 +38,10 @@ export const financeRepo: FinanceRepository = {
 
   // --- Treasury ---
   async listTransfers(tenantId) {
-    const items = await prisma.treasuryTransfer.findMany({ where: { companyId: tenantId } });
+    const items = await prisma.treasuryTransfer.findMany({ where: { tenantId: tenantId } });
     return items.map(d => ({
       id: d.id,
-      tenantId: d.companyId,
+      tenantId: d.tenantId,
       fromSourceId: d.fromSourceId,
       toSourceId: d.toSourceId,
       amount: d.amount.toNumber(),
@@ -55,7 +55,7 @@ export const financeRepo: FinanceRepository = {
   async createTransfer(tenantId, transfer) {
     const created = await prisma.treasuryTransfer.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         fromSourceId: transfer.fromSourceId,
         toSourceId: transfer.toSourceId,
         amount: transfer.amount,
@@ -69,10 +69,10 @@ export const financeRepo: FinanceRepository = {
 
   // --- Settlements ---
   async listSettlements(tenantId) {
-    const items = await prisma.settlementRecord.findMany({ where: { companyId: tenantId } });
+    const items = await prisma.settlementRecord.findMany({ where: { tenantId: tenantId } });
     return items.map(d => ({
       id: d.id,
-      tenantId: d.companyId,
+      tenantId: d.tenantId,
       sourceId: d.sourceId,
       amount: d.amount.toNumber(),
       currency: d.currency as any,
@@ -85,7 +85,7 @@ export const financeRepo: FinanceRepository = {
   async createSettlement(tenantId, settlement) {
     const created = await prisma.settlementRecord.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         sourceId: settlement.sourceId,
         amount: settlement.amount,
         currency: settlement.currency,
@@ -98,10 +98,10 @@ export const financeRepo: FinanceRepository = {
 
   // --- Payables ---
   async listPayables(tenantId) {
-    const items = await prisma.payable.findMany({ where: { companyId: tenantId } });
+    const items = await prisma.payable.findMany({ where: { tenantId: tenantId } });
     return items.map(d => ({
       id: d.id,
-      tenantId: d.companyId,
+      tenantId: d.tenantId,
       vendorName: d.vendorName,
       amount: d.amount.toNumber(),
       currency: d.currency as any,
@@ -114,7 +114,7 @@ export const financeRepo: FinanceRepository = {
   async createPayable(tenantId, payload) {
     const created = await prisma.payable.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         vendorName: payload.vendorName,
         amount: payload.amount,
         currency: payload.currency,
@@ -131,7 +131,7 @@ export const financeRepo: FinanceRepository = {
     });
     return {
       id: updated.id,
-      tenantId: updated.companyId,
+      tenantId: updated.tenantId,
       vendorName: updated.vendorName,
       amount: updated.amount.toNumber(),
       currency: updated.currency as any,
@@ -144,10 +144,10 @@ export const financeRepo: FinanceRepository = {
 
   // --- Receivables ---
   async listReceivables(tenantId) {
-    const items = await prisma.receivable.findMany({ where: { companyId: tenantId } });
+    const items = await prisma.receivable.findMany({ where: { tenantId: tenantId } });
     return items.map(d => ({
       id: d.id,
-      tenantId: d.companyId,
+      tenantId: d.tenantId,
       customerName: d.customerName,
       amount: d.amount.toNumber(),
       currency: d.currency as any,
@@ -161,7 +161,7 @@ export const financeRepo: FinanceRepository = {
   async createReceivable(tenantId, payload) {
     const created = await prisma.receivable.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         customerName: payload.customerName,
         amount: payload.amount,
         currency: payload.currency,
@@ -179,7 +179,7 @@ export const financeRepo: FinanceRepository = {
     });
     return {
       id: updated.id,
-      tenantId: updated.companyId,
+      tenantId: updated.tenantId,
       customerName: updated.customerName,
       amount: updated.amount.toNumber(),
       currency: updated.currency as any,
@@ -194,12 +194,12 @@ export const financeRepo: FinanceRepository = {
   // --- Ledger ---
   async listJournalEntries(tenantId) {
     const items = await prisma.journalEntry.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       include: { lines: true }
     });
     return items.map(d => ({
       id: d.id,
-      tenantId: d.companyId,
+      tenantId: d.tenantId,
       ref: d.ref || undefined,
       description: d.description,
       status: d.status as any,
@@ -216,7 +216,7 @@ export const financeRepo: FinanceRepository = {
   async createJournalEntry(tenantId, payload) {
     const created = await prisma.journalEntry.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         ref: payload.ref,
         description: payload.description,
         status: payload.status,
@@ -234,7 +234,7 @@ export const financeRepo: FinanceRepository = {
     // Return structured object matching interface
     return {
        id: created.id,
-       tenantId: created.companyId,
+       tenantId: created.tenantId,
        description: created.description,
        status: created.status as any,
        lines: payload.lines,
@@ -255,7 +255,7 @@ export const financeRepo: FinanceRepository = {
      });
      return {
         id: updated.id,
-        tenantId: updated.companyId,
+        tenantId: updated.tenantId,
         description: updated.description,
         status: updated.status as any,
         lines: updated.lines.map(l => ({
@@ -271,10 +271,10 @@ export const financeRepo: FinanceRepository = {
 
   // --- Assets ---
   async listAssets(tenantId) {
-    const items = await prisma.fixedAsset.findMany({ where: { companyId: tenantId } });
+    const items = await prisma.fixedAsset.findMany({ where: { tenantId: tenantId } });
     return items.map(d => ({
         id: d.id,
-        tenantId: d.companyId,
+        tenantId: d.tenantId,
         description: d.description,
         assetClass: d.assetClass as any,
         location: d.location,
@@ -295,7 +295,7 @@ export const financeRepo: FinanceRepository = {
   async createAsset(tenantId, payload) {
      const created = await prisma.fixedAsset.create({
          data: {
-             companyId: tenantId,
+             tenantId: tenantId,
              description: payload.description,
              assetClass: payload.assetClass,
              location: payload.location,
@@ -332,7 +332,7 @@ export const financeRepo: FinanceRepository = {
      });
      return {
         id: updated.id,
-        tenantId: updated.companyId,
+        tenantId: updated.tenantId,
         description: updated.description,
         assetClass: updated.assetClass as any,
         location: updated.location,
@@ -353,10 +353,10 @@ export const financeRepo: FinanceRepository = {
 
   // --- Capex ---
   async listCapexRequests(tenantId) {
-      const items = await prisma.capexRequest.findMany({ where: { companyId: tenantId } });
+      const items = await prisma.capexRequest.findMany({ where: { tenantId: tenantId } });
       return items.map(d => ({
           id: d.id,
-          tenantId: d.companyId,
+          tenantId: d.tenantId,
           assetDescription: d.assetDescription,
           requestedAmount: d.requestedAmount.toNumber(),
           department: d.department,
@@ -374,7 +374,7 @@ export const financeRepo: FinanceRepository = {
   async createCapexRequest(tenantId, payload) {
       const created = await prisma.capexRequest.create({
           data: {
-            companyId: tenantId,
+            tenantId: tenantId,
             assetDescription: payload.assetDescription,
             requestedAmount: payload.requestedAmount,
             department: payload.department,
@@ -400,7 +400,7 @@ export const financeRepo: FinanceRepository = {
      });
      return {
           id: updated.id,
-          tenantId: updated.companyId,
+          tenantId: updated.tenantId,
           assetDescription: updated.assetDescription,
           requestedAmount: updated.requestedAmount.toNumber(),
           department: updated.department,

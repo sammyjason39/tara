@@ -9,20 +9,24 @@ export interface SessionContext {
   token?: string;
 }
 
-export const DEV_SESSION: SessionContext = Object.freeze({
-  userId: "user-demo",
-  tenantId: "comp-demo-a",
-  locationId: "loc-north-01",
-  token: "dev-token-xyz",
-
-  // DEV ACCESS (so Finance renders)
-  role: Roles.SUPERADMIN,
-
-  departmentId: "dept-ops",
-});
+import { useAuth } from "@/contexts/AuthContext";
 
 export function useSession(): SessionContext {
-  return DEV_SESSION;
+  const { session } = useAuth();
+
+  // Return a safe empty session if not loaded to prevent crashes
+  // (App.tsx routing handles actual redirection for unauthorized users)
+  if (!session) {
+    return {
+      userId: "",
+      tenantId: "",
+      locationId: "",
+      role: Roles.SYSTEM,
+      departmentId: "",
+    };
+  }
+
+  return session;
 }
 
 export function ensureTenant(tenantId: string, session: SessionContext): void {

@@ -1,29 +1,77 @@
-import type { LedgerEntry, LedgerBalance, JournalEntry } from "@/core/types/finance/ledger";
-import { financeRepo } from "@/core/repositories/finance/financeRepo";
-
-const repo = financeRepo;
+import type {
+  LedgerEntry,
+  LedgerBalance,
+  JournalEntry,
+} from "@/core/types/finance/ledger";
+import { apiRequest } from "@/core/api/apiClient";
+import type { SessionContext } from "@/core/security/session";
 
 export const ledgerService = {
-  async getEntries(tenantId: string): Promise<JournalEntry[]> {
-    return await repo.listJournalEntries(tenantId);
+  async getEntries(
+    tenantId: string,
+    session?: SessionContext,
+  ): Promise<JournalEntry[]> {
+    return apiRequest<JournalEntry[]>(
+      "/finance/ledger/entries",
+      "GET",
+      session,
+      undefined,
+      tenantId,
+    );
   },
 
-  async createEntry(entry: JournalEntry): Promise<JournalEntry> {
-    return await repo.createJournalEntry(entry.tenantId, entry);
+  async createEntry(
+    entry: JournalEntry,
+    session?: SessionContext,
+  ): Promise<JournalEntry> {
+    return apiRequest<JournalEntry>(
+      "/finance/ledger/entries",
+      "POST",
+      session,
+      entry,
+      entry.tenantId,
+    );
   },
 
-  async updateEntry(entryId: string, updates: Partial<JournalEntry>): Promise<JournalEntry | null> {
-    // We need tenantId from the updates or a lookup; for now use a simple approach
-    const tenantId = updates.tenantId ?? "";
-    return await repo.updateJournalEntry(tenantId, entryId, updates);
+  async updateEntry(
+    entryId: string,
+    updates: Partial<JournalEntry>,
+    session?: SessionContext,
+  ): Promise<JournalEntry | null> {
+    const tenantId = updates.tenantId || "";
+    return apiRequest<JournalEntry>(
+      `/finance/ledger/entries/${entryId}`,
+      "PATCH",
+      session,
+      updates,
+      tenantId,
+    );
   },
 
-  async deleteEntry(_entryId: string): Promise<void> {
-    // Mock repo doesn't support delete yet; no-op
+  async deleteEntry(
+    entryId: string,
+    tenantId: string,
+    session?: SessionContext,
+  ): Promise<void> {
+    return apiRequest<void>(
+      `/finance/ledger/entries/${entryId}`,
+      "DELETE",
+      session,
+      undefined,
+      tenantId,
+    );
   },
 
-  async getBalances(_tenantId: string): Promise<LedgerBalance[]> {
-    // Mock repo doesn't have balances; return empty
-    return [];
+  async getBalances(
+    tenantId: string,
+    session?: SessionContext,
+  ): Promise<LedgerBalance[]> {
+    return apiRequest<LedgerBalance[]>(
+      "/finance/ledger/balances",
+      "GET",
+      session,
+      undefined,
+      tenantId,
+    );
   },
 };

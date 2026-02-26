@@ -15,6 +15,7 @@ import { SalesOrder } from '../entities/sales-order.entity';
 import { SalesQuote } from '../entities/sales-quote.entity';
 import { SalesTask } from '../entities/sales-task.entity';
 import { SalesTimelineEvent } from '../entities/sales-timeline-event.entity';
+import { SalesNextAction } from '../entities/sales-next-action.entity';
 
 export type SalesDashboard = {
   openLeads: number;
@@ -50,6 +51,7 @@ export abstract class ISalesRepository {
   abstract getDashboard(tenantId: string): Promise<SalesDashboard>;
   abstract getManagerMetrics(tenantId: string): Promise<SalesManagerMetrics>;
   abstract getExecutiveForecast(tenantId: string): Promise<SalesExecutiveForecast>;
+  abstract getNextBestActions(tenantId: string): Promise<SalesNextAction[]>;
 
   abstract getLeads(tenantId: string): Promise<SalesLead[]>;
   abstract createLead(tenantId: string, dto: CreateLeadDto): Promise<SalesLead>;

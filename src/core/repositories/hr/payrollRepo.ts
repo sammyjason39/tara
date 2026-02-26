@@ -6,7 +6,7 @@ import { prisma } from "@/core/persistence/database/client";
  */
 const mapToRun = (db: any): PayrollRun => ({
   id: db.id,
-  tenantId: db.companyId,
+  tenantId: db.tenantId,
   periodStart: db.periodStart.toISOString().split('T')[0],
   periodEnd: db.periodEnd.toISOString().split('T')[0],
   status: db.status as PayrollRunStatus,
@@ -27,7 +27,7 @@ export const payrollRepo = {
   async listRuns(tenantId: string): Promise<PayrollRun[]> {
     const runs = await prisma.payrollRun.findMany({
       where: {
-        companyId: tenantId,
+        tenantId: tenantId,
       },
       orderBy: {
         periodStart: 'desc',
@@ -44,7 +44,7 @@ export const payrollRepo = {
     const run = await prisma.payrollRun.findFirst({
       where: {
         id: runId,
-        companyId: tenantId,
+        tenantId: tenantId,
       },
     });
 
@@ -60,7 +60,7 @@ export const payrollRepo = {
   ): Promise<PayrollRun> {
     const run = await prisma.payrollRun.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         periodStart: new Date(payload.periodStart),
         periodEnd: new Date(payload.periodEnd),
         status: payload.status,
@@ -98,7 +98,7 @@ export const payrollRepo = {
     const updated = await prisma.payrollRun.update({
       where: {
         id: runId,
-        companyId: tenantId,
+        tenantId: tenantId,
       },
       data,
     });

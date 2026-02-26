@@ -29,7 +29,7 @@ export class MarketingDbRepository extends IMarketingRepository {
   private mapCampaign(db: any): MarketingCampaign {
     return {
       id: db.id,
-      tenantId: db.companyId,
+      tenantId: db.tenantId,
       name: db.name,
       objective: db.objective as any,
       channelMix: db.channelMix as any,
@@ -50,7 +50,7 @@ export class MarketingDbRepository extends IMarketingRepository {
   private mapExecution(db: any): MarketingExecution {
     return {
       id: db.id,
-      tenantId: db.companyId,
+      tenantId: db.tenantId,
       campaignId: db.campaignId,
       channel: db.channel as any,
       scheduledAt: db.scheduledAt.toISOString(),
@@ -66,7 +66,7 @@ export class MarketingDbRepository extends IMarketingRepository {
   private mapLead(db: any): MarketingLead {
     return {
       id: db.id,
-      tenantId: db.companyId,
+      tenantId: db.tenantId,
       campaignId: db.campaignId,
       source: db.source as any,
       companyName: db.companyName,
@@ -90,11 +90,11 @@ export class MarketingDbRepository extends IMarketingRepository {
   // Implementation
   async getDashboard(tenantId: string): Promise<MarketingDashboard> {
     const [campaigns, leads, executions, accounts, attribution] = await Promise.all([
-      this.prisma.marketingCampaign.findMany({ where: { companyId: tenantId } }),
-      this.prisma.marketingLead.findMany({ where: { companyId: tenantId } }),
-      this.prisma.marketingExecutionRun.findMany({ where: { companyId: tenantId } }),
-      this.prisma.marketingConnectedAccount.findMany({ where: { companyId: tenantId } }),
-      this.prisma.marketingAttribution.findMany({ where: { companyId: tenantId } }),
+      this.prisma.marketingCampaign.findMany({ where: { tenantId: tenantId } }),
+      this.prisma.marketingLead.findMany({ where: { tenantId: tenantId } }),
+      this.prisma.marketingExecutionRun.findMany({ where: { tenantId: tenantId } }),
+      this.prisma.marketingConnectedAccount.findMany({ where: { tenantId: tenantId } }),
+      this.prisma.marketingAttribution.findMany({ where: { tenantId: tenantId } }),
     ]);
 
     const spendToDate = executions.reduce((sum: number, item: any) => sum + Number(item.spend), 0);
@@ -115,7 +115,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getChannelPerformance(tenantId: string): Promise<MarketingChannelPerformance[]> {
     const executions = await this.prisma.marketingExecutionRun.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
     });
 
     const groups = executions.reduce((acc: any, curr: any) => {
@@ -136,7 +136,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getCampaigns(tenantId: string): Promise<MarketingCampaign[]> {
     const items = await this.prisma.marketingCampaign.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map((i: any) => this.mapCampaign(i));
@@ -145,7 +145,7 @@ export class MarketingDbRepository extends IMarketingRepository {
   async createCampaign(tenantId: string, dto: CreateCampaignDto, actorId: string): Promise<MarketingCampaign> {
     const item = await this.prisma.marketingCampaign.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         name: dto.name,
         objective: dto.objective,
         channelMix: dto.channelMix,
@@ -165,7 +165,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async updateCampaignStatus(tenantId: string, id: string, dto: UpdateCampaignStatusDto): Promise<MarketingCampaign> {
     const item = await this.prisma.marketingCampaign.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: { status: dto.status.toUpperCase() },
     });
     return this.mapCampaign(item);
@@ -173,7 +173,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getExecutions(tenantId: string): Promise<MarketingExecution[]> {
     const items = await this.prisma.marketingExecutionRun.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { scheduledAt: 'desc' },
     });
     return items.map((i: any) => this.mapExecution(i));
@@ -182,7 +182,7 @@ export class MarketingDbRepository extends IMarketingRepository {
   async scheduleExecution(tenantId: string, dto: ScheduleExecutionDto): Promise<MarketingExecution> {
     const item = await this.prisma.marketingExecutionRun.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         campaignId: dto.campaignId,
         channel: dto.channel,
         scheduledAt: new Date(dto.scheduledAt),
@@ -197,7 +197,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async runExecution(tenantId: string, id: string, dto: RunExecutionDto): Promise<MarketingExecution> {
     const item = await this.prisma.marketingExecutionRun.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: {
         status: dto.failed ? 'FAILED' : 'COMPLETED',
         leadsGenerated: dto.leadsGenerated,
@@ -209,7 +209,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getLeads(tenantId: string): Promise<MarketingLead[]> {
     const items = await this.prisma.marketingLead.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map((i: any) => this.mapLead(i));
@@ -219,7 +219,7 @@ export class MarketingDbRepository extends IMarketingRepository {
     const dedupKey = `${dto.companyName}-${dto.email || dto.phone || dto.contactName}`.toLowerCase();
     const item = await this.prisma.marketingLead.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         campaignId: dto.campaignId,
         source: dto.source,
         companyName: dto.companyName,
@@ -240,7 +240,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async markLeadHandoffReady(tenantId: string, id: string): Promise<MarketingLead> {
     const item = await this.prisma.marketingLead.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: { status: 'HANDOFF_READY' },
     });
     return this.mapLead(item);
@@ -248,7 +248,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async handoffLeadToSales(tenantId: string, id: string): Promise<MarketingLead> {
     const item = await this.prisma.marketingLead.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: { status: 'HANDOFF_SENT' },
     });
     return this.mapLead(item);
@@ -256,11 +256,11 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getWorkflows(tenantId: string): Promise<MarketingWorkflow[]> {
     const items = await this.prisma.marketingNurtureWorkflow.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
     });
     return items.map((i: any) => ({
       id: i.id,
-      tenantId: i.companyId,
+      tenantId: i.tenantId,
       name: i.name,
       trigger: i.trigger as any,
       status: i.status.toLowerCase() as any,
@@ -274,7 +274,7 @@ export class MarketingDbRepository extends IMarketingRepository {
   async createWorkflow(tenantId: string, dto: CreateWorkflowDto): Promise<MarketingWorkflow> {
     const item = await this.prisma.marketingNurtureWorkflow.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         name: dto.name,
         trigger: dto.trigger,
         status: 'DRAFT',
@@ -283,7 +283,7 @@ export class MarketingDbRepository extends IMarketingRepository {
     });
     return {
       id: item.id,
-      tenantId: item.companyId,
+      tenantId: item.tenantId,
       name: item.name,
       trigger: item.trigger as any,
       status: item.status.toLowerCase() as any,
@@ -296,12 +296,12 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async updateWorkflowStatus(tenantId: string, id: string, dto: UpdateWorkflowStatusDto): Promise<MarketingWorkflow> {
     const item = await this.prisma.marketingNurtureWorkflow.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: { status: dto.status.toUpperCase() },
     });
     return {
       id: item.id,
-      tenantId: item.companyId,
+      tenantId: item.tenantId,
       name: item.name,
       trigger: item.trigger as any,
       status: item.status.toLowerCase() as any,
@@ -314,11 +314,11 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getConnectedAccounts(tenantId: string): Promise<MarketingConnectedAccount[]> {
     const items = await this.prisma.marketingConnectedAccount.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
     });
     return items.map((i: any) => ({
       id: i.id,
-      tenantId: i.companyId,
+      tenantId: i.tenantId,
       provider: i.provider as any,
       accountName: i.accountName,
       status: i.status.toLowerCase() as any,
@@ -333,7 +333,7 @@ export class MarketingDbRepository extends IMarketingRepository {
   async connectAccount(tenantId: string, dto: ConnectAccountDto): Promise<MarketingConnectedAccount> {
     const item = await this.prisma.marketingConnectedAccount.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         provider: dto.provider,
         accountName: dto.accountName,
         status: 'CONNECTED',
@@ -344,7 +344,7 @@ export class MarketingDbRepository extends IMarketingRepository {
     });
     return {
       id: item.id,
-      tenantId: item.companyId,
+      tenantId: item.tenantId,
       provider: item.provider as any,
       accountName: item.accountName,
       status: item.status.toLowerCase() as any,
@@ -358,12 +358,12 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async updateAccountStatus(tenantId: string, id: string, dto: UpdateAccountStatusDto): Promise<MarketingConnectedAccount> {
     const item = await this.prisma.marketingConnectedAccount.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: { status: dto.status.toUpperCase() },
     });
     return {
       id: item.id,
-      tenantId: item.companyId,
+      tenantId: item.tenantId,
       provider: item.provider as any,
       accountName: item.accountName,
       status: item.status.toLowerCase() as any,
@@ -377,12 +377,12 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getAttribution(tenantId: string): Promise<MarketingAttribution[]> {
     const items = await this.prisma.marketingAttribution.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map((i: any) => ({
       id: i.id,
-      tenantId: i.companyId,
+      tenantId: i.tenantId,
       campaignId: i.campaignId,
       leadId: i.leadId,
       opportunityId: i.opportunityId,
@@ -395,12 +395,12 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getAlerts(tenantId: string): Promise<MarketingAlert[]> {
     const items = await this.prisma.marketingAlert.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map((i: any) => ({
       id: i.id,
-      tenantId: i.companyId,
+      tenantId: i.tenantId,
       type: i.type as any,
       severity: i.severity as any,
       entityType: i.entityType as any,
@@ -414,12 +414,12 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async acknowledgeAlert(tenantId: string, id: string): Promise<MarketingAlert> {
     const item = await this.prisma.marketingAlert.update({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
       data: { acknowledged: true },
     });
     return {
       id: item.id,
-      tenantId: item.companyId,
+      tenantId: item.tenantId,
       type: item.type as any,
       severity: item.severity as any,
       entityType: item.entityType as any,
@@ -437,12 +437,12 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getAuditEvents(tenantId: string): Promise<MarketingAuditEvent[]> {
     const items = await this.prisma.marketingAuditEvent.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return items.map((i: any) => ({
       id: i.id,
-      tenantId: i.companyId,
+      tenantId: i.tenantId,
       actorId: i.actorId,
       action: i.action,
       entityType: i.entityType as any,

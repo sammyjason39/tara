@@ -28,7 +28,7 @@ function hashSecret(value: string): string {
 function mapConnector(row: any): EcommerceConnector {
   return {
     id: row.id,
-    companyId: row.companyId,
+    tenantId: row.tenantId,
     branchIds: row.branches?.map((b: any) => b.id) ?? [],
     name: row.name ?? row.domain,
     platform: (row as any).platform ?? 'custom',
@@ -46,7 +46,7 @@ function mapConnector(row: any): EcommerceConnector {
 function mapChannel(row: any): EcommerceChannel {
   return {
     id: row.id,
-    companyId: row.companyId,
+    tenantId: row.tenantId,
     name: row.name,
     type: row.type,
     adapterType: row.adapterType ?? 'CUSTOM',
@@ -71,7 +71,7 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
 
   async listConnectors(tenantId: string): Promise<EcommerceConnector[]> {
     const rows = await this.prisma.ecommerceConnector.findMany({
-      where: { companyId: tenantId, deletedAt: null },
+      where: { tenantId: tenantId, deletedAt: null },
       include: { branches: { select: { id: true } } },
       orderBy: { createdAt: 'desc' },
     });
@@ -80,7 +80,7 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
 
   async getConnector(tenantId: string, id: string): Promise<EcommerceConnector | null> {
     const row = await this.prisma.ecommerceConnector.findFirst({
-      where: { id, companyId: tenantId, deletedAt: null },
+      where: { id, tenantId: tenantId, deletedAt: null },
       include: { branches: { select: { id: true } } },
     });
     return row ? mapConnector(row) : null;
@@ -95,7 +95,7 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
 
     const row = await (this.prisma.ecommerceConnector as any).create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         name: data.name,
         platform: data.platform,
         domain: data.domain,
@@ -162,7 +162,7 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
 
   private async requireConnector(tenantId: string, id: string) {
     const row = await this.prisma.ecommerceConnector.findFirst({
-      where: { id, companyId: tenantId, deletedAt: null },
+      where: { id, tenantId: tenantId, deletedAt: null },
     });
     if (!row) throw new NotFoundException(`EcommerceConnector ${id} not found`);
     return row;
@@ -172,7 +172,7 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
 
   async listChannels(tenantId: string): Promise<EcommerceChannel[]> {
     const rows = await this.prisma.retailChannel.findMany({
-      where: { companyId: tenantId },
+      where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
     return rows.map(mapChannel);
@@ -180,7 +180,7 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
 
   async getChannel(tenantId: string, id: string): Promise<EcommerceChannel | null> {
     const row = await this.prisma.retailChannel.findFirst({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
     });
     return row ? mapChannel(row) : null;
   }
@@ -195,7 +195,7 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
 
     const row = await this.prisma.retailChannel.create({
       data: {
-        companyId: tenantId,
+        tenantId: tenantId,
         name: data.name,
         type: data.type,
         adapterType: data.adapterType ?? 'CUSTOM',
@@ -291,7 +291,7 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
 
   private async requireChannel(tenantId: string, id: string) {
     const row = await this.prisma.retailChannel.findFirst({
-      where: { id, companyId: tenantId },
+      where: { id, tenantId: tenantId },
     });
     if (!row) throw new NotFoundException(`RetailChannel ${id} not found`);
     return row;
