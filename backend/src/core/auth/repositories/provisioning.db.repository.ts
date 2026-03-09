@@ -41,6 +41,7 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
           name: "Headquarters",
           code: "HQ",
           type: "headquarters",
+          address: data.address,
           country: data.country,
           currency: data.currency,
         },

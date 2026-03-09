@@ -9,7 +9,9 @@ import { v4 as uuidv4 } from "uuid";
 @Injectable()
 export class ProvisioningMockRepository implements IProvisioningRepository {
   async provisionTenant(data: ProvisioningData): Promise<ProvisioningResult> {
-    console.log("[MockProvisioning] Provisioning tenant for:", data.name);
+    console.log(
+      `[MockProvisioning] Provisioning tenant for: ${data.name} at ${data.address}`,
+    );
 
     return {
       tenantId: uuidv4(),

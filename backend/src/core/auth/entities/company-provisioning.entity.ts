@@ -11,6 +11,7 @@ export interface ProvisioningData {
   country: string;
   currency: string;
   industry: string;
+  address: string;
   user: {
     firstName: string;
     lastName: string;

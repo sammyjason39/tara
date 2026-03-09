@@ -9,6 +9,7 @@ export default function Onboarding() {
     name: "",
     industry: "retail",
     country: "US",
+    address: "",
   });
   const selectedCountry = getCountry(formData.country);
   const [error, setError] = useState("");
@@ -107,6 +108,24 @@ export default function Onboarding() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700">
+                  Office / HQ Address
+                </label>
+                <div className="mt-1">
+                  <textarea
+                    required
+                    rows={3}
+                    className="block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-shadow"
+                    placeholder="Enter full physical address"
+                    value={formData.address}
+                    onChange={(e) =>
+                      setFormData({ ...formData, address: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
                   Industry
                 </label>
                 <div className="mt-1">
@@ -176,7 +195,7 @@ export default function Onboarding() {
               <div className="pt-4">
                 <button
                   type="button"
-                  disabled={!formData.name}
+                  disabled={!formData.name || !formData.address}
                   onClick={() => setStep(2)}
                   className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
@@ -223,6 +242,11 @@ export default function Onboarding() {
                   <div className="text-gray-500">Regulatory Baseline</div>
                   <div className="col-span-2 font-medium text-gray-900">
                     {selectedCountry?.flag} {selectedCountry?.name}
+                  </div>
+
+                  <div className="text-gray-500">HQ Address</div>
+                  <div className="col-span-2 font-medium text-gray-900 line-clamp-2">
+                    {formData.address}
                   </div>
                 </div>
               </div>

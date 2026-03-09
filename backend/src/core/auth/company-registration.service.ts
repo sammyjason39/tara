@@ -37,6 +37,7 @@ export class CompanyRegistrationService {
       country: dto.country,
       currency: getCurrencyForCountry(dto.country),
       industry: dto.industry,
+      address: dto.address,
       user: {
         firstName: user.firstName,
         lastName: user.lastName,
