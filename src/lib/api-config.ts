@@ -11,14 +11,22 @@ const getApiBaseUrl = () => {
   const envUrl =
     import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
 
-  if (envUrl) {
+  if (envUrl && envUrl !== "") {
     const sanitizedUrl = envUrl.replace(/\/$/, "");
-    console.log("[api-config] Using dynamic API URL:", sanitizedUrl);
+    console.log(
+      "%c[api-config] 🚀 API ROUTING ACTIVE",
+      "background: #10b981; color: white; padding: 2px 4px; border-radius: 4px;",
+      sanitizedUrl,
+    );
     return sanitizedUrl;
   }
 
   // fallback to local proxy path
-  console.log("[api-config] Falling back to local /api proxy");
+  console.warn(
+    "%c[api-config] ⚠️ FALLBACK TO LOCAL PROXY",
+    "background: #f59e0b; color: white; padding: 2px 4px; border-radius: 4px;",
+    "If you are on Vercel, check that VITE_API_URL is set in Settings.",
+  );
   return "/api";
 };
 

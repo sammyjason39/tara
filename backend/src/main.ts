@@ -72,6 +72,8 @@ async function bootstrap() {
       "http://localhost:5173",
       "http://localhost:3000",
       "https://bambusilver.netlify.app",
+      "https://zenvix-demo-vbeta0000001a.vercel.app",
+      /\.railway\.app$/, // Allow all railway subdomains
     ],
     credentials: true,
   });
