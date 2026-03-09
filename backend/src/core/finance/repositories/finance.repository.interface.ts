@@ -22,6 +22,7 @@ import {
   FinanceAlert,
   PayrollEntry,
   FinanceMoneySourceRow,
+  TreasuryTransfer,
 } from "../finance.types";
 
 /**
@@ -50,6 +51,18 @@ export abstract class IFinanceRepository {
 
   // Money Sources
   abstract listMoneySources(tenantId: string): Promise<FinanceMoneySourceRow[]>;
+
+  // Treasury
+  abstract listTransfers(tenantId: string): Promise<TreasuryTransfer[]>;
+  abstract createTransfer(
+    tenantId: string,
+    data: Partial<TreasuryTransfer>,
+  ): Promise<TreasuryTransfer>;
+  abstract reconcileSettlement(
+    tenantId: string,
+    sourceId: string,
+    amount: number,
+  ): Promise<void>;
 
   // Assets
   abstract listAssets(tenantId: string): Promise<Asset[]>;

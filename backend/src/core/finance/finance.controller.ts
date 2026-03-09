@@ -605,6 +605,50 @@ export class FinanceController {
     return { success: true, data };
   }
 
+  // Treasury
+  @Get("treasury/sources")
+  async getTreasurySources(@Req() request: RequestWithTenant) {
+    const { tenantId } = request.tenantContext;
+    const data = await this.financeService.getMoneySources(tenantId);
+    return { success: true, data };
+  }
+
+  @Get("treasury/transfers")
+  async listTreasuryTransfers(@Req() request: RequestWithTenant) {
+    const { tenantId } = request.tenantContext;
+    const data = await this.financeService.listTransfers(tenantId);
+    return { success: true, data };
+  }
+
+  @Post("treasury/transfers")
+  async createTreasuryTransfer(
+    @Req() request: RequestWithTenant,
+    @Body() body: any,
+  ) {
+    const { tenantId, userId } = request.tenantContext;
+    const data = await this.financeService.createTransfer(
+      tenantId,
+      body,
+      userId!,
+    );
+    return { success: true, data };
+  }
+
+  @Post("treasury/reconcile")
+  async reconcileSettlement(
+    @Req() request: RequestWithTenant,
+    @Body() body: { sourceId: string; amount: number },
+  ) {
+    const { tenantId, userId } = request.tenantContext;
+    await this.financeService.reconcileSettlement(
+      tenantId,
+      body.sourceId,
+      body.amount,
+      userId!,
+    );
+    return { success: true };
+  }
+
   // Payments
   @Get("payments")
   async listPayments(@Req() request: RequestWithTenant) {

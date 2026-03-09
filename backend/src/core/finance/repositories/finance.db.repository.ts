@@ -9,9 +9,10 @@ import { CreateTransactionDto } from "../dto/create-transaction.dto";
 import {
   Asset,
   CapexRequest,
-  FinanceMoneySourceRow,
   FinancePaymentRow,
   PaymentRequest,
+  TreasuryTransfer,
+  FinanceMoneySourceRow,
 } from "../finance.types";
 
 @Injectable()
@@ -258,14 +259,118 @@ export class FinanceDbRepository extends FinanceMockRepository {
     const sources = await this.prisma.moneySource.findMany({
       where: { tenantId },
     });
-    return sources.map((s: any) => ({
+
+    const rows = sources.map((s: any) => ({
       id: s.id,
       name: s.name,
       type: s.type,
       currency: s.currency,
       balance: s.balance.toNumber(),
+      pendingSettlement: s.pendingSettlement
+        ? s.pendingSettlement.toNumber()
+        : 0,
       provider: s.provider,
+      lastUpdated: s.lastUpdated.toISOString(),
     }));
+
+    // Industry Module Integration: Aggregate cash from open Retail shifts
+    try {
+      const openShifts = await this.prisma.retailShift.findMany({
+        where: { tenantId, status: "open" },
+        select: { openingCash: true },
+      });
+
+      if (openShifts.length > 0) {
+        const totalRetailCash = openShifts.reduce(
+          (sum: number, shift: any) => sum + shift.openingCash.toNumber(),
+          0,
+        );
+
+        rows.push({
+          id: "retail-float",
+          name: "Retail Floor Cash (Active Shifts)",
+          type: "CASH_REGISTER",
+          currency: "IDR",
+          balance: totalRetailCash,
+          pendingSettlement: 0,
+          provider: "Retail Module",
+          lastUpdated: new Date().toISOString(),
+        });
+      }
+    } catch {
+      // Retail module may not have shifts table yet or no open shifts
+    }
+
+    return rows;
+  }
+
+  // Treasury Transfers
+  async listTransfers(tenantId: string): Promise<TreasuryTransfer[]> {
+    const transfers = await this.prisma.treasuryTransfer.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return transfers.map((t: any) => ({
+      ...t,
+      amount: t.amount.toNumber(),
+    }));
+  }
+
+  async createTransfer(
+    tenantId: string,
+    data: Partial<TreasuryTransfer>,
+  ): Promise<TreasuryTransfer> {
+    const created = await this.prisma.treasuryTransfer.create({
+      data: {
+        tenantId,
+        fromSourceId: data.fromSourceId!,
+        toSourceId: data.toSourceId!,
+        amount: data.amount!,
+        currency: data.currency || "IDR",
+        status: data.status || "PENDING",
+        requestedBy: data.requestedBy || "system",
+      },
+    });
+
+    return {
+      ...created,
+      amount: created.amount.toNumber(),
+    };
+  }
+
+  async reconcileSettlement(
+    tenantId: string,
+    sourceId: string,
+    amount: number,
+  ): Promise<void> {
+    // Update the MoneySource balance and pending settlement
+    const source = await this.prisma.moneySource.findFirst({
+      where: { id: sourceId, tenantId },
+    });
+
+    if (!source) return;
+
+    await this.prisma.moneySource.update({
+      where: { id: sourceId },
+      data: {
+        balance: { increment: amount },
+        pendingSettlement: { decrement: amount },
+        lastUpdated: new Date(),
+      },
+    });
+
+    // Create a record of the reconciliation
+    await this.prisma.settlementRecord.create({
+      data: {
+        tenantId,
+        sourceId,
+        amount,
+        currency: source.currency,
+        status: "COMPLETED",
+        reference: `RECON-${Date.now()}`,
+      },
+    });
   }
 
   // Payments

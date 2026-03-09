@@ -417,6 +417,55 @@ export class FinanceService {
     return this.financeRepository.listMoneySources(tenantId);
   }
 
+  // Treasury
+  async listTransfers(tenantId: string): Promise<any[]> {
+    return this.financeRepository.listTransfers(tenantId);
+  }
+
+  async createTransfer(
+    tenantId: string,
+    data: any,
+    userId: string,
+  ): Promise<any> {
+    const created = await this.financeRepository.createTransfer(tenantId, data);
+    await this.auditService.log({
+      tenantId,
+      userId,
+      module: "FINANCE",
+      action: "CREATE_TREASURY_TRANSFER",
+      entityType: "TREASURY_TRANSFER",
+      entityId: created.id,
+      metadata: {
+        from: created.fromSourceId,
+        to: created.toSourceId,
+        amount: created.amount,
+      },
+    });
+    return created;
+  }
+
+  async reconcileSettlement(
+    tenantId: string,
+    sourceId: string,
+    amount: number,
+    userId: string,
+  ): Promise<void> {
+    await this.financeRepository.reconcileSettlement(
+      tenantId,
+      sourceId,
+      amount,
+    );
+    await this.auditService.log({
+      tenantId,
+      userId,
+      module: "FINANCE",
+      action: "RECONCILE_SETTLEMENT",
+      entityType: "MONEY_SOURCE",
+      entityId: sourceId,
+      metadata: { amount },
+    });
+  }
+
   // Payments
   async listPayments(tenantId: string): Promise<FinancePaymentRow[]> {
     return this.financeRepository.listPayments(tenantId);

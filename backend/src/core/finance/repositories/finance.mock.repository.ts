@@ -23,7 +23,8 @@ import {
   FinanceInsight,
   FinanceAlert,
   PayrollEntry,
-  FinanceMoneySourceRow, // Added this import
+  FinanceMoneySourceRow,
+  TreasuryTransfer,
 } from "../finance.types";
 
 @Injectable()
@@ -45,6 +46,7 @@ export class FinanceMockRepository extends IFinanceRepository {
   private periods: AccountingPeriod[] = [];
   private alerts: FinanceAlert[] = [];
   private payroll: PayrollEntry[] = [];
+  private transfers: TreasuryTransfer[] = [];
   private moneySources: FinanceMoneySourceRow[] = [
     {
       id: "ms-1",
@@ -161,6 +163,48 @@ export class FinanceMockRepository extends IFinanceRepository {
   // Money Sources
   async listMoneySources(tenantId: string): Promise<FinanceMoneySourceRow[]> {
     return this.moneySources;
+  }
+
+  // Treasury
+  async listTransfers(tenantId: string): Promise<TreasuryTransfer[]> {
+    return this.transfers.filter((t: any) => t.tenantId === tenantId);
+  }
+
+  async createTransfer(
+    tenantId: string,
+    data: Partial<TreasuryTransfer>,
+  ): Promise<TreasuryTransfer> {
+    const transfer: TreasuryTransfer = {
+      id: `TR-${Date.now()}`,
+      tenantId,
+      fromSourceId: data.fromSourceId!,
+      toSourceId: data.toSourceId!,
+      amount: data.amount!,
+      currency: data.currency || "IDR",
+      status: data.status || "PENDING",
+      requestedBy: data.requestedBy || "system",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.transfers.push(transfer);
+    return transfer;
+  }
+
+  async reconcileSettlement(
+    tenantId: string,
+    sourceId: string,
+    amount: number,
+  ): Promise<void> {
+    const source = this.moneySources.find((s) => s.id === sourceId);
+    if (source) {
+      source.balance += amount;
+      if (source.pendingSettlement) {
+        source.pendingSettlement = Math.max(
+          0,
+          source.pendingSettlement - amount,
+        );
+      }
+    }
   }
 
   // Assets

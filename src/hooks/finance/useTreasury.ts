@@ -39,43 +39,50 @@ export function useTreasury(tenantId: string, session: SessionContext) {
     }
   }, [session, tenantId]);
 
-  const createTransfer = useCallback(async (payload: {
-    fromSourceId: string;
-    toSourceId: string;
-    amount: number;
-  }) => {
-    setLoading(true);
-    try {
-      const transfer = await financeApiClient.createTransfer(
-        tenantId,
-        session,
-        payload,
-      );
-      setTransfers((prev) => [...prev, transfer]);
-    } catch (err: unknown) {
-      setError(toErrorMessage(err, "Failed to create transfer"));
-    } finally {
-      setLoading(false);
-    }
-  }, [session, tenantId]);
+  const createTransfer = useCallback(
+    async (payload: {
+      fromSourceId: string;
+      toSourceId: string;
+      amount: number;
+      status?: string;
+    }) => {
+      setLoading(true);
+      try {
+        const transfer = await financeApiClient.createTransfer(
+          tenantId,
+          session,
+          payload,
+        );
+        setTransfers((prev) => [...prev, transfer]);
+      } catch (err: unknown) {
+        setError(toErrorMessage(err, "Failed to create transfer"));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [session, tenantId],
+  );
 
-  const reconcileSettlement = useCallback(async (sourceId: string, amount: number) => {
-    setLoading(true);
-    try {
-      await financeApiClient.reconcileSettlement(
-        tenantId,
-        session,
-        sourceId,
-        amount,
-      );
-      // Refresh sources after reconciliation
-      await fetchSources();
-    } catch (err: unknown) {
-      setError(toErrorMessage(err, "Failed to reconcile settlement"));
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchSources, session, tenantId]);
+  const reconcileSettlement = useCallback(
+    async (sourceId: string, amount: number) => {
+      setLoading(true);
+      try {
+        await financeApiClient.reconcileSettlement(
+          tenantId,
+          session,
+          sourceId,
+          amount,
+        );
+        // Refresh sources after reconciliation
+        await fetchSources();
+      } catch (err: unknown) {
+        setError(toErrorMessage(err, "Failed to reconcile settlement"));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fetchSources, session, tenantId],
+  );
 
   useEffect(() => {
     fetchSources();

@@ -62,7 +62,22 @@ export interface FinanceMoneySourceRow {
   type: string;
   currency: string;
   balance: number;
+  pendingSettlement?: number;
   provider?: string | null;
+  lastUpdated?: string;
+}
+
+export interface TreasuryTransfer {
+  id: string;
+  tenantId: string;
+  fromSourceId: string;
+  toSourceId: string;
+  amount: number;
+  currency: string;
+  status: string;
+  requestedBy: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
 export interface AssetDepreciationEntry {

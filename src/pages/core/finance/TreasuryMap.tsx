@@ -23,15 +23,24 @@ import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { useTreasury } from "@/hooks/finance/useTreasury";
 import { logService } from "@/core/services/finance/logService";
+import { Roles, type Role } from "@/core/security/roles";
+import type { MoneySource } from "@/core/types/finance/accounts";
+import type { TreasuryTransfer } from "@/core/types/finance/treasury";
 
 export default function TreasuryMap() {
   const session = useSession();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [reconcileDialogOpen, setReconcileDialogOpen] = useState(false);
-  const [selectedSource, setSelectedSource] = useState<{ id: string; name: string; pending: number } | null>(null);
-  const [selectedAccountDetail, setSelectedAccountDetail] = useState<any | null>(null);
-  const [selectedTransferDetail, setSelectedTransferDetail] = useState<any | null>(null);
+  const [selectedSource, setSelectedSource] = useState<{
+    id: string;
+    name: string;
+    pending: number;
+  } | null>(null);
+  const [selectedAccountDetail, setSelectedAccountDetail] =
+    useState<MoneySource | null>(null);
+  const [selectedTransferDetail, setSelectedTransferDetail] =
+    useState<TreasuryTransfer | null>(null);
   const [reconcileAmount, setReconcileAmount] = useState(0);
   const [fromSource, setFromSource] = useState("");
   const [toSource, setToSource] = useState("");
@@ -43,6 +52,19 @@ export default function TreasuryMap() {
     setStatusMessage(null);
     setErrorMessage(null);
   };
+
+  const isHighLevelRole = useMemo(() => {
+    const role = session.role;
+    return (
+      [
+        Roles.SUPERADMIN,
+        Roles.OWNER,
+        Roles.COMPANY_ADMIN,
+        Roles.FINANCE_ADMIN,
+        Roles.FINANCE_DEPT_HEAD,
+      ] as Role[]
+    ).includes(role as Role);
+  }, [session.role]);
 
   const { sources, transfers, createTransfer, reconcileSettlement } =
     useTreasury(session.tenantId, session);
@@ -62,6 +84,7 @@ export default function TreasuryMap() {
         fromSourceId: fromSource || sources[0]?.id || "",
         toSourceId: toSource || sources[1]?.id || "",
         amount: Number(amount || "0"),
+        status: isHighLevelRole ? "approved" : "pending",
       };
 
       createTransfer(transferRequest);
@@ -70,10 +93,16 @@ export default function TreasuryMap() {
       logService.log(
         session.tenantId,
         session.userId,
-        `Created Transfer: ${JSON.stringify(transferRequest)}`,
+        `${isHighLevelRole ? "Saved" : "Requested"} Transfer: ${JSON.stringify(
+          transferRequest,
+        )}`,
       );
 
-      setStatusMessage(`Transfer of ${Number(amount).toLocaleString()} created successfully.`);
+      setStatusMessage(
+        `Transfer of ${Number(amount).toLocaleString()} ${
+          isHighLevelRole ? "saved" : "requested"
+        } successfully.`,
+      );
       setDialogOpen(false);
     } catch (err) {
       setErrorMessage("Failed to create transfer. Operation aborted.");
@@ -97,7 +126,6 @@ export default function TreasuryMap() {
     }
   };
 
-
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -105,7 +133,9 @@ export default function TreasuryMap() {
         title="Treasury Map"
         subtitle="Real-time cash positioning, liquidity, inter-account transfers, and settlements."
         primaryAction={
-          <Button onClick={() => setDialogOpen(true)}>Create Transfer</Button>
+          <Button onClick={() => setDialogOpen(true)}>
+            {isHighLevelRole ? "Create Transfer" : "Request Transfer"}
+          </Button>
         }
         secondaryActions={
           <Input
@@ -117,7 +147,11 @@ export default function TreasuryMap() {
         }
       />
 
-      <FeedbackAlert message={statusMessage} error={errorMessage} onClear={clearStatus} />
+      <FeedbackAlert
+        message={statusMessage}
+        error={errorMessage}
+        onClear={clearStatus}
+      />
 
       {/* Liquidity Overview */}
       <WorkspacePanel
@@ -247,7 +281,9 @@ export default function TreasuryMap() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Create Transfer</DialogTitle>
+            <DialogTitle>
+              {isHighLevelRole ? "Create Transfer" : "Request Transfer"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <Select value={fromSource} onValueChange={setFromSource}>
@@ -281,7 +317,9 @@ export default function TreasuryMap() {
               onChange={(e) => setAmount(e.target.value)}
               placeholder="Amount"
             />
-            <Button onClick={handleTransfer}>Create and Route</Button>
+            <Button onClick={handleTransfer}>
+              {isHighLevelRole ? "Save Request" : "Submit Request"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -289,7 +327,9 @@ export default function TreasuryMap() {
       <Dialog open={reconcileDialogOpen} onOpenChange={setReconcileDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Reconcile Settlement - {selectedSource?.name}</DialogTitle>
+            <DialogTitle>
+              Reconcile Settlement - {selectedSource?.name}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1">
@@ -303,15 +343,22 @@ export default function TreasuryMap() {
                 Max pending: {selectedSource?.pending.toLocaleString()}
               </p>
             </div>
-            <Button className="w-full" onClick={handleReconcile}>Finalize Reconciliation</Button>
+            <Button className="w-full" onClick={handleReconcile}>
+              Finalize Reconciliation
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
       {/* Account Detail Dialog */}
-      <Dialog open={!!selectedAccountDetail} onOpenChange={() => setSelectedAccountDetail(null)}>
+      <Dialog
+        open={!!selectedAccountDetail}
+        onOpenChange={() => setSelectedAccountDetail(null)}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Account Detail - {selectedAccountDetail?.name}</DialogTitle>
+            <DialogTitle>
+              Account Detail - {selectedAccountDetail?.name}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="grid grid-cols-2 text-sm gap-y-2">
@@ -320,12 +367,19 @@ export default function TreasuryMap() {
               <span className="text-muted-foreground">Type:</span>
               <span>{selectedAccountDetail?.type}</span>
               <span className="text-muted-foreground">Available Balance:</span>
-              <span className="font-bold">{selectedAccountDetail?.balance.toLocaleString()}</span>
+              <span className="font-bold">
+                {selectedAccountDetail?.balance.toLocaleString()}
+              </span>
               <span className="text-muted-foreground">Pending Settlement:</span>
-              <span>{selectedAccountDetail?.pendingSettlement?.toLocaleString() ?? 0}</span>
+              <span>
+                {selectedAccountDetail?.pendingSettlement?.toLocaleString() ??
+                  0}
+              </span>
             </div>
             <div className="border-t pt-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recent Activity</p>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Recent Activity
+              </p>
               <div className="rounded-md border border-dashed p-4 text-center text-xs text-muted-foreground">
                 No recent transactions for this account found.
               </div>
@@ -335,7 +389,10 @@ export default function TreasuryMap() {
       </Dialog>
 
       {/* Transfer Detail Dialog */}
-      <Dialog open={!!selectedTransferDetail} onOpenChange={() => setSelectedTransferDetail(null)}>
+      <Dialog
+        open={!!selectedTransferDetail}
+        onOpenChange={() => setSelectedTransferDetail(null)}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Transfer Audit Trail</DialogTitle>
@@ -349,16 +406,28 @@ export default function TreasuryMap() {
               <span className="text-muted-foreground">To Account:</span>
               <span>{selectedTransferDetail?.toSourceId}</span>
               <span className="text-muted-foreground">Amount:</span>
-              <span className="font-bold text-blue-600">{selectedTransferDetail?.amount.toLocaleString()}</span>
+              <span className="font-bold text-blue-600">
+                {selectedTransferDetail?.amount.toLocaleString()}
+              </span>
               <span className="text-muted-foreground">Status:</span>
-              <span><ApprovalStatusBadge status={selectedTransferDetail?.status.toUpperCase()} /></span>
+              <span>
+                <ApprovalStatusBadge
+                  status={selectedTransferDetail?.status.toUpperCase()}
+                />
+              </span>
             </div>
             <div className="border-t pt-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Workflow History</p>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Workflow History
+              </p>
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between">
-                  <span>Created by {selectedTransferDetail?.requestedBy || "system"}</span>
-                  <span className="text-muted-foreground">{new Date().toLocaleDateString()}</span>
+                  <span>
+                    Created by {selectedTransferDetail?.requestedBy || "system"}
+                  </span>
+                  <span className="text-muted-foreground">
+                    {new Date().toLocaleDateString()}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Routing to Approval Engine</span>
