@@ -29,8 +29,9 @@ COPY nginx.conf /etc/nginx/templates/default.conf.template
 
 EXPOSE 80
 
-# Environment variable for PORT, default to 80
+# Environment variables, defaults for local docker-compose
 ENV PORT=80
+ENV BACKEND_URL=http://backend:3001
 
-# Use envsubst to replace ${PORT} in the config before starting Nginx
-CMD ["/bin/sh", "-c", "envsubst '${PORT}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"]
+# Use envsubst to replace variables in the config before starting Nginx
+CMD ["/bin/sh", "-c", "envsubst '${PORT} ${BACKEND_URL}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"]

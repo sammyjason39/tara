@@ -29,7 +29,8 @@ async function bootstrap() {
     // Standard Health Check at root /
     if (req.url === "/" || req.url === "") {
       return res.status(200).json({
-        status: "alive",
+        status: "backend_alive",
+        message: "Zenvix Platform API Server",
         service: "zenvix-backend",
         mode: process.env.PERSISTENCE_MODE || "mock",
         timestamp: new Date().toISOString(),
