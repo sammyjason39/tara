@@ -6,26 +6,28 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies first for better layer caching
+# Copy prisma schema first
 COPY prisma ./prisma
+
+# Copy backend package files
 COPY backend/package*.json ./backend/
 
+# Install dependencies and generate prisma
 WORKDIR /app/backend
 RUN npm install
-
-# Generate Prisma Client
 RUN npx prisma generate --schema=../prisma/schema.prisma
 
-# Copy source and build
+# Copy the rest of the backend source
+# We stay in /app/backend and copy from the backend source folder in the context
 COPY backend/ .
+
+# Build the application
 RUN npm run build
 
 # Stage 2: Production
 FROM node:20-alpine
 
 WORKDIR /app
-
-# Ensure we use production mode
 ENV NODE_ENV=production
 
 # Copy production dependencies and built assets
@@ -33,7 +35,5 @@ COPY --from=builder /app/backend/package*.json ./
 COPY --from=builder /app/backend/node_modules ./node_modules
 COPY --from=builder /app/backend/dist ./dist
 
-# The app listens on the port defined in .env or 3001 by default
 EXPOSE 3001
-
 CMD ["node", "dist/main"]
