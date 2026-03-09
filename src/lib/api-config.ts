@@ -6,15 +6,19 @@
  */
 
 const getApiBaseUrl = () => {
-  // Check for the environment variable defined in Render/Vite
-  const envUrl = import.meta.env.VITE_API_URL;
+  // Check for the environment variable defined in Render/Vite/Railway
+  // Standardizing on VITE_API_URL, but keeping VITE_API_BASE_URL for compatibility
+  const envUrl =
+    import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL;
 
   if (envUrl) {
-    // Remove trailing slash if present
-    return envUrl.replace(/\/$/, "");
+    const sanitizedUrl = envUrl.replace(/\/$/, "");
+    console.log("[api-config] Using dynamic API URL:", sanitizedUrl);
+    return sanitizedUrl;
   }
 
   // fallback to local proxy path
+  console.log("[api-config] Falling back to local /api proxy");
   return "/api";
 };
 

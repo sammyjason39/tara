@@ -10,6 +10,7 @@ import React, {
 import * as storage from "@/lib/local-storage";
 import { type SessionContext } from "@/core/security/session";
 import { type Role, Roles } from "@/core/security/roles";
+import { apiUrl } from "@/lib/api-config";
 
 interface UserProfile {
   id: string;
@@ -60,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (storedToken) {
       // Validate token and fetch user
-      fetch("/api/auth/me", {
+      fetch(apiUrl("/auth/me"), {
         headers: { Authorization: `Bearer ${storedToken}` },
       })
         .then((res) => res.json())
@@ -126,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (credentials: any) => {
       try {
-        const res = await fetch("/api/auth/login", {
+        const res = await fetch(apiUrl("/auth/login"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(credentials),
@@ -173,7 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerUser = useCallback(async (formData: any) => {
     try {
-      const res = await fetch("/api/auth/register", {
+      const res = await fetch(apiUrl("/auth/register"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -191,7 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (formData: any) => {
       try {
         const token = localStorage.getItem("ZENVIX_TOKEN");
-        const res = await fetch("/api/auth/company/provision", {
+        const res = await fetch(apiUrl("/auth/company/provision"), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -222,7 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(newSession);
 
           // Reload user to get updated userCompanies
-          const meRes = await fetch("/api/auth/me", {
+          const meRes = await fetch(apiUrl("/auth/me"), {
             headers: { Authorization: `Bearer ${token}` },
           });
           const meData = await meRes.json();

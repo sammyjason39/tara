@@ -10,10 +10,17 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, Loader2, FileText, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  Upload,
+  Loader2,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "@/core/security/session";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { apiUrl } from "@/lib/api-config";
 
 interface ImportDialogProps {
   open: boolean;
@@ -23,10 +30,21 @@ interface ImportDialogProps {
   onSuccess: (data: any) => void;
 }
 
-export function ImportDialog({ open, onOpenChange, endpoint, title, onSuccess }: ImportDialogProps) {
+export function ImportDialog({
+  open,
+  onOpenChange,
+  endpoint,
+  title,
+  onSuccess,
+}: ImportDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<{ success: boolean; message: string; count?: number; errors?: any[] } | null>(null);
+  const [results, setResults] = useState<{
+    success: boolean;
+    message: string;
+    count?: number;
+    errors?: any[];
+  } | null>(null);
   const session = useSession();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,11 +62,11 @@ export function ImportDialog({ open, onOpenChange, endpoint, title, onSuccess }:
     formData.append("file", file);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}${endpoint}`, {
+      const response = await fetch(apiUrl(endpoint), {
         method: "POST",
         headers: {
           "x-tenant-id": session.tenantId,
-          "Authorization": `Bearer ${session.token}`,
+          Authorization: `Bearer ${session.token}`,
         },
         body: formData,
       });
@@ -82,19 +100,31 @@ export function ImportDialog({ open, onOpenChange, endpoint, title, onSuccess }:
 
         {results ? (
           <div className="space-y-4">
-            <div className={`flex items-center gap-2 p-3 rounded-md ${results.success ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
-              {results.success ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+            <div
+              className={`flex items-center gap-2 p-3 rounded-md ${results.success ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}
+            >
+              {results.success ? (
+                <CheckCircle2 className="h-5 w-5" />
+              ) : (
+                <AlertCircle className="h-5 w-5" />
+              )}
               <span className="font-medium">{results.message}</span>
             </div>
-            
+
             {results.errors && results.errors.length > 0 && (
               <ScrollArea className="h-48 rounded border p-2">
                 <div className="space-y-2">
                   {results.errors.map((err, i) => (
-                    <div key={i} className="text-xs border-b pb-1 last:border-0 text-red-600">
+                    <div
+                      key={i}
+                      className="text-xs border-b pb-1 last:border-0 text-red-600"
+                    >
                       <p className="font-semibold">Row {err.row}:</p>
                       {err.errors.map((e: any, j: number) => (
-                        <p key={j} className="ml-2">• {e.property}: {Object.values(e.constraints).join(", ")}</p>
+                        <p key={j} className="ml-2">
+                          • {e.property}:{" "}
+                          {Object.values(e.constraints).join(", ")}
+                        </p>
                       ))}
                     </div>
                   ))}
@@ -103,7 +133,9 @@ export function ImportDialog({ open, onOpenChange, endpoint, title, onSuccess }:
             )}
 
             <DialogFooter>
-              <Button variant="outline" onClick={() => setResults(null)}>Try Again</Button>
+              <Button variant="outline" onClick={() => setResults(null)}>
+                Try Again
+              </Button>
               <Button onClick={() => onOpenChange(false)}>Close</Button>
             </DialogFooter>
           </div>
@@ -128,9 +160,15 @@ export function ImportDialog({ open, onOpenChange, endpoint, title, onSuccess }:
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
               <Button onClick={handleUpload} disabled={loading || !file}>
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                {loading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="mr-2 h-4 w-4" />
+                )}
                 {loading ? "Uploading..." : "Import Now"}
               </Button>
             </DialogFooter>
