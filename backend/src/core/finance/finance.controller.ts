@@ -675,7 +675,120 @@ export class FinanceController {
   @Get("alerts")
   async getAlerts(@Req() request: RequestWithTenant) {
     const { tenantId } = request.tenantContext;
-    const data = await this.financeService.getAlerts(tenantId);
-    return { success: true, data };
+    // Real alerts: overdue payables + pending payment requests
+    const alerts: {
+      id: string;
+      title: string;
+      description: string;
+      severity: string;
+      action?: string;
+    }[] = [];
+
+    try {
+      const overdueBills = await this.prisma.payable.findMany({
+        where: {
+          tenantId,
+          dueDate: { lt: new Date() },
+          status: { not: "PAID" },
+        },
+        take: 5,
+        orderBy: { dueDate: "asc" },
+      });
+      for (const b of overdueBills) {
+        alerts.push({
+          id: `overdue-${b.id}`,
+          title: `Overdue Payable: ${b.vendorName}`,
+          description: `Payable for ${b.currency} ${Number(b.amount).toLocaleString()} is overdue since ${new Date(b.dueDate).toLocaleDateString()}`,
+          severity: "high",
+          action: "Pay Now",
+        });
+      }
+    } catch {
+      /* table may not exist */
+    }
+
+    try {
+      const pendingPayments = await this.prisma.paymentTransaction.findMany({
+        where: { tenantId, status: { in: ["SUBMITTED", "PENDING_APPROVAL"] } },
+        take: 5,
+        orderBy: { createdAt: "desc" },
+      });
+      for (const p of pendingPayments) {
+        alerts.push({
+          id: `pending-${p.id}`,
+          title: `Pending Approval: ${p.destination || "Payment Request"}`,
+          description: `${p.currency} ${Number(p.amount).toLocaleString()} awaiting finance approval`,
+          severity: "medium",
+          action: "Review",
+        });
+      }
+    } catch {
+      /* table may not exist */
+    }
+
+    return { success: true, data: alerts };
+  }
+
+  @Get("inbox")
+  async getInbox(@Req() request: RequestWithTenant) {
+    const { tenantId } = request.tenantContext;
+    const inbox: {
+      id: string;
+      entityId: string;
+      entityType: string;
+      status: string;
+      makerDept: string;
+      destinationDept: string;
+      requestedBy: string;
+    }[] = [];
+
+    try {
+      const pendingPayments = await this.prisma.paymentTransaction.findMany({
+        where: { tenantId, status: { in: ["SUBMITTED", "PENDING_APPROVAL"] } },
+        take: 20,
+        orderBy: { createdAt: "desc" },
+      });
+      for (const p of pendingPayments) {
+        inbox.push({
+          id: p.id,
+          entityId: p.id.substring(0, 8).toUpperCase(),
+          entityType: "PAYMENT_REQUEST",
+          status: "PENDING",
+          makerDept: "OPERATIONS",
+          destinationDept: "FINANCE",
+          requestedBy: p.createdBy || "Unknown",
+        });
+      }
+    } catch {
+      /* table may not exist */
+    }
+
+    try {
+      const pendingCapex = await this.prisma.capexRequest.findMany({
+        where: {
+          tenantId,
+          status: {
+            in: ["PENDING", "PENDING_HOD_APPROVAL", "PENDING_CFO_APPROVAL"],
+          },
+        },
+        take: 10,
+        orderBy: { createdAt: "desc" },
+      });
+      for (const c of pendingCapex) {
+        inbox.push({
+          id: c.id,
+          entityId: c.id.substring(0, 8).toUpperCase(),
+          entityType: "CAPEX_REQUEST",
+          status: "PENDING",
+          makerDept: c.department || "OPERATIONS",
+          destinationDept: "FINANCE",
+          requestedBy: c.requestedBy || "Unknown",
+        });
+      }
+    } catch {
+      /* table may not exist */
+    }
+
+    return { success: true, data: inbox };
   }
 }

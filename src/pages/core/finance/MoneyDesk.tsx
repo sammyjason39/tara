@@ -25,7 +25,6 @@ import { FilterBar } from "@/core/tools/FilterBar";
 import { WorkflowRequestCard } from "@/core/tools/WorkflowRequestCard";
 import { ApprovalStatusBadge } from "@/core/tools/ApprovalStatusBadge";
 import { useSession } from "@/core/security/session";
-import { workflowService } from "@/core/services/hr/workflowService";
 import { financeService } from "@/core/services/finance/financeService";
 import { logService } from "@/core/services/finance/logService";
 import type { FinanceAlert } from "@/core/types/finance/assets";
@@ -48,7 +47,9 @@ const PAYMENT_METHODS: PaymentMethod[] = [
 export default function MoneyDesk() {
   const session = useSession();
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<"approvals" | "alerts" | "tasks">("approvals");
+  const [tab, setTab] = useState<"approvals" | "alerts" | "tasks" | "payments">(
+    "approvals",
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<PaymentMethod>("BANK_TRANSFER");
@@ -73,20 +74,26 @@ export default function MoneyDesk() {
   const [selectedAlert, setSelectedAlert] = useState<FinanceAlert | null>(null);
 
   const refreshDesk = useCallback(() => {
-    financeService.getAlerts(session.tenantId, session).then(setAlerts);
-    financeService.getInbox(session.tenantId, session).then(setTasks);
+    financeService
+      .getAlerts(session.tenantId, session)
+      .then(setAlerts)
+      .catch(() => {});
+    financeService
+      .getInbox(session.tenantId, session)
+      .then((inbox) => {
+        setTasks(inbox);
+        // Approvals = inbox items routed to finance that are pending
+        setApprovals(inbox.filter((item) => item.status === "PENDING"));
+      })
+      .catch(() => {});
     financeService
       .getMoneySources(session.tenantId, session)
-      .then(setMoneySources);
+      .then(setMoneySources)
+      .catch(() => {});
     financeService
       .listPayments(session.tenantId, session)
       .then(setPayments)
       .catch(() => {});
-    setApprovals(
-      workflowService
-        .listInbox(session.tenantId, session, "PENDING")
-        .filter((item) => item.destinationDept === "FINANCE"),
-    );
   }, [session]);
 
   useEffect(() => {
@@ -178,53 +185,43 @@ export default function MoneyDesk() {
   };
 
   const approveTask = (workflowId: string) => {
-    try {
-      workflowService.approveRequest(
-        session.tenantId,
-        workflowId,
-        session,
-        "Approved from MoneyDesk",
-      );
-      logService.log(
-        session.tenantId,
-        session.userId,
-        "Workflow approved",
-        workflowId,
-      );
-      setErrorMessage(null);
-      setStatusMessage(`Workflow ${workflowId} approved.`);
-      refreshDesk();
-    } catch (error) {
-      setStatusMessage(null);
-      setErrorMessage(
-        error instanceof Error ? error.message : "Failed to approve workflow.",
-      );
-    }
+    financeService
+      .updatePaymentStatus(session.tenantId, workflowId, "APPROVED", session)
+      .then(() => {
+        logService.log(
+          session.tenantId,
+          session.userId,
+          "Workflow approved",
+          workflowId,
+        );
+        setErrorMessage(null);
+        setStatusMessage(`Workflow ${workflowId} approved.`);
+        refreshDesk();
+      })
+      .catch((error: Error) => {
+        setStatusMessage(null);
+        setErrorMessage(error?.message || "Failed to approve workflow.");
+      });
   };
 
   const rejectTask = (workflowId: string) => {
-    try {
-      workflowService.rejectRequest(
-        session.tenantId,
-        workflowId,
-        session,
-        "Rejected from MoneyDesk",
-      );
-      logService.log(
-        session.tenantId,
-        session.userId,
-        "Workflow rejected",
-        workflowId,
-      );
-      setErrorMessage(null);
-      setStatusMessage(`Workflow ${workflowId} rejected.`);
-      refreshDesk();
-    } catch (error) {
-      setStatusMessage(null);
-      setErrorMessage(
-        error instanceof Error ? error.message : "Failed to reject workflow.",
-      );
-    }
+    financeService
+      .updatePaymentStatus(session.tenantId, workflowId, "REJECTED", session)
+      .then(() => {
+        logService.log(
+          session.tenantId,
+          session.userId,
+          "Workflow rejected",
+          workflowId,
+        );
+        setErrorMessage(null);
+        setStatusMessage(`Workflow ${workflowId} rejected.`);
+        refreshDesk();
+      })
+      .catch((error: Error) => {
+        setStatusMessage(null);
+        setErrorMessage(error?.message || "Failed to reject workflow.");
+      });
   };
 
   return (
@@ -402,38 +399,51 @@ export default function MoneyDesk() {
 
       <WorkspacePanel
         title="Active Records"
-        description="Live table for finance workflows."
+        description="All finance payment transactions — includes internal requests and retail orders."
       >
         <FilterBar searchValue={search} onSearchChange={setSearch} />
-        <DataTableShell total={filteredTasks.length} page={1} pageSize={10}>
+        <DataTableShell total={filteredPayments.length} page={1} pageSize={10}>
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
               <tr>
-                <th className="p-3 text-left">Entity</th>
-                <th className="p-3 text-left">Type</th>
+                <th className="p-3 text-left">Beneficiary</th>
+                <th className="p-3 text-left">Amount</th>
+                <th className="p-3 text-left">Method</th>
                 <th className="p-3 text-left">Status</th>
-                <th className="p-3 text-left">Requested By</th>
+                <th className="p-3 text-left">Date</th>
               </tr>
             </thead>
             <tbody>
-              {filteredTasks.map((task) => (
-                <tr
-                  key={task.id}
-                  className="cursor-pointer border-t hover:bg-muted/50"
-                  onClick={() => setSelectedWorkflow(task)}
-                >
-                  <td className="p-3">{task.entityId}</td>
-                  <td className="p-3 text-muted-foreground">
-                    {task.entityType}
-                  </td>
-                  <td className="p-3">
-                    <ApprovalStatusBadge status={task.status} />
-                  </td>
-                  <td className="p-3 text-muted-foreground">
-                    {task.requestedBy}
+              {filteredPayments.length > 0 ? (
+                filteredPayments.map((p) => (
+                  <tr key={p.id} className="border-t hover:bg-muted/50">
+                    <td className="p-3 font-medium">{p.beneficiary}</td>
+                    <td className="p-3 text-muted-foreground">
+                      {p.currency} {p.amount.toLocaleString()}
+                    </td>
+                    <td className="p-3">
+                      <Badge variant="outline">{p.method}</Badge>
+                    </td>
+                    <td className="p-3">
+                      <ApprovalStatusBadge status={p.status} />
+                    </td>
+                    <td className="p-3 text-muted-foreground text-xs">
+                      {p.scheduledDate
+                        ? new Date(p.scheduledDate).toLocaleDateString()
+                        : "—"}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="p-4 text-center text-muted-foreground"
+                  >
+                    No payment records found.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </DataTableShell>

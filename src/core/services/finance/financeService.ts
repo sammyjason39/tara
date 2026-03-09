@@ -114,6 +114,17 @@ export const financeService = {
     );
   },
 
+  async updatePaymentStatus(
+    tenantId: string,
+    id: string,
+    status: string,
+    session: SessionContext,
+  ): Promise<void> {
+    return apiRequest<void>(`/finance/payments/${id}/status`, "PUT", session, {
+      status,
+    });
+  },
+
   async listAssets(
     tenantId: string,
     session: SessionContext,

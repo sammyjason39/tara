@@ -270,21 +270,53 @@ export class FinanceDbRepository extends FinanceMockRepository {
 
   // Payments
   async listPayments(tenantId: string): Promise<FinancePaymentRow[]> {
-    const payments = await this.prisma.paymentTransaction.findMany({
-      where: { tenantId, type: "PAYMENT_REQUEST" },
+    // Fetch internal payment requests
+    const internalPayments = await this.prisma.paymentTransaction.findMany({
+      where: { tenantId },
       orderBy: { createdAt: "desc" },
+      take: 50,
     });
-    return payments.map((p: any) => ({
+
+    // Fetch retail order payments if applicable
+    let retailPayments: any[] = [];
+    try {
+      retailPayments = await this.prisma.paymentTransaction.findMany({
+        where: { tenantId, type: { in: ["RETAIL_ORDER", "ONLINE_ORDER"] } },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      });
+    } catch {
+      // retail payments may not exist yet
+    }
+
+    const combined = [...internalPayments, ...retailPayments];
+    // Deduplicate by id
+    const seen = new Set<string>();
+    const deduped: any[] = [];
+    for (const p of combined) {
+      if (!seen.has(p.id)) {
+        seen.add(p.id);
+        deduped.push(p);
+      }
+    }
+
+    return deduped.map((p: any) => ({
       id: p.id,
-      beneficiary: p.destination,
+      beneficiary: p.destination || p.type || "Unknown",
       amount: p.amount.toNumber(),
       currency: p.currency,
-      status: p.status as
+      status: (p.status === "SUBMITTED" || p.status === "PENDING_APPROVAL"
+        ? "PENDING_APPROVAL"
+        : p.status === "APPROVED" || p.status === "PROCESSING"
+          ? "PROCESSING"
+          : p.status === "PAID" || p.status === "COMPLETED"
+            ? "COMPLETED"
+            : "FAILED") as
         | "PENDING_APPROVAL"
         | "PROCESSING"
         | "COMPLETED"
         | "FAILED",
-      method: (p.channel as any) || "BANK_TRANSFER",
+      method: (p.channel || "BANK_TRANSFER") as any,
       scheduledDate: p.createdAt.toISOString(),
     }));
   }

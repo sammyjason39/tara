@@ -413,8 +413,10 @@ export class RetailDbRepository implements IRetailRepository {
     ]);
 
     let display_labels = {};
-    const locConfig = configs.find((c) => c.locationId === options?.locationId);
-    const globalConfig = configs.find((c) => c.locationId === null);
+    const locConfig = configs.find(
+      (c: any) => c.locationId === options?.locationId,
+    );
+    const globalConfig = configs.find((c: any) => c.locationId === null);
     if (locConfig) display_labels = locConfig.labels as any;
     else if (globalConfig) display_labels = globalConfig.labels as any;
 
@@ -704,7 +706,7 @@ export class RetailDbRepository implements IRetailRepository {
     quantity: number,
   ): Promise<{ success: boolean; reservationId?: string }> {
     try {
-      return await this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx: any) => {
         const stock = await tx.stockLevel.findFirst({
           where: { tenantId, productId },
           // Multi-location: For now, we take from the first available location
@@ -738,7 +740,7 @@ export class RetailDbRepository implements IRetailRepository {
     productId: string,
     quantity: number,
   ): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: any) => {
       const stock = await tx.stockLevel.findFirst({
         where: { tenantId, productId },
       });
@@ -827,21 +829,21 @@ export class RetailDbRepository implements IRetailRepository {
       totalValue: 0,
     };
 
-    products.forEach((p) => {
+    products.forEach((p: any) => {
       const totalOnHand = p.stockLevels.reduce(
-        (sum, s) => sum + (s.onHand || 0),
+        (sum: number, s: any) => sum + (s.onHand || 0),
         0,
       );
       const totalAvailable = p.stockLevels.reduce(
-        (sum, s) => sum + (s.available || 0),
+        (sum: number, s: any) => sum + (s.available || 0),
         0,
       );
       const minBuffer = p.stockLevels.reduce(
-        (sum, s) => sum + (s.minBuffer || 0),
+        (sum: number, s: any) => sum + (s.minBuffer || 0),
         0,
       );
       const maxCapacity = p.stockLevels.reduce(
-        (sum, s) => sum + (s.maxCapacity || 0),
+        (sum: number, s: any) => sum + (s.maxCapacity || 0),
         0,
       );
 
@@ -1272,7 +1274,7 @@ export class RetailDbRepository implements IRetailRepository {
     orderId: string,
     data: { amount: number; method: string; shiftId?: string },
   ): Promise<any> {
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       // 0. Fetch the order with items
       const order = await tx.retailOrder.findUnique({
         where: { id: orderId, tenantId },
@@ -1389,6 +1391,29 @@ export class RetailDbRepository implements IRetailRepository {
         },
       });
 
+      // 6. Create Finance Payment Transaction for Money Desk Visibility
+      await (tx as any).paymentTransaction.create({
+        data: {
+          tenantId,
+          externalReference: order.id,
+          type: "RETAIL_ORDER",
+          amount: data.amount,
+          currency: (order as any).currency || "IDR",
+          destination: "RETAIL_SALES_ACCOUNT",
+          channel: "POS",
+          idempotencyKey: `payment_pos_${order.id}`,
+          status: "COMPLETED",
+          departmentId,
+          purpose: "Retail Sale",
+          createdBy: "POS_SYSTEM",
+          extraInfo: {
+            orderId: order.id,
+            method: data.method,
+            storeId: order.storeId,
+          } as any,
+        },
+      });
+
       return {
         success: true,
         order_id: completedOrder.id,
@@ -1418,7 +1443,7 @@ export class RetailDbRepository implements IRetailRepository {
     tenantId: string,
     data: { storeId: string; adjustments: any[]; shiftId?: string },
   ): Promise<{ success: boolean }> {
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: any) => {
       const store = await tx.store.findUnique({
         where: { id: data.storeId },
         select: { locationId: true },
@@ -1487,7 +1512,7 @@ export class RetailDbRepository implements IRetailRepository {
       shiftId?: string;
     },
   ): Promise<{ success: boolean }> {
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: any) => {
       const store = await tx.store.findUnique({
         where: { id: data.storeId },
         select: { locationId: true },
