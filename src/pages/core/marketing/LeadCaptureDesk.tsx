@@ -44,8 +44,8 @@ export default function LeadCaptureDesk() {
   const refresh = useCallback(async () => {
     try {
       const [l, c] = await Promise.all([
-        marketingService.listLeads(session.tenantId),
-        marketingService.listCampaigns(session.tenantId),
+        marketingService.listLeads(session.tenantId, session),
+        marketingService.listCampaigns(session.tenantId, session),
       ]);
       setLeads(l);
       setCampaigns(c);

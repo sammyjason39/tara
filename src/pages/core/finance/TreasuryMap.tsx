@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { ArrowRightLeft, Building2, CreditCard, Wallet, Landmark, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -75,6 +76,9 @@ export default function TreasuryMap() {
       ),
     [sources, search],
   );
+
+  const selectedFromSource = useMemo(() => sources.find(s => s.id === (fromSource || sources[0]?.id)), [sources, fromSource]);
+  const selectedToSource = useMemo(() => sources.find(s => s.id === (toSource || sources[1]?.id)), [sources, toSource]);
 
   // Submit inter-account transfer
   const handleTransfer = () => {
@@ -278,47 +282,113 @@ export default function TreasuryMap() {
 
       {/* Transfer Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {isHighLevelRole ? "Create Transfer" : "Request Transfer"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <Select value={fromSource} onValueChange={setFromSource}>
-              <SelectTrigger>
-                <SelectValue placeholder="From source" />
-              </SelectTrigger>
-              <SelectContent>
-                {sources.map((src) => (
-                  <SelectItem key={src.id} value={src.id}>
-                    {src.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden">
+          <div className="grid md:grid-cols-[1fr_2fr]">
+            {/* Left Info Panel */}
+            <div className="bg-muted p-6 flex flex-col justify-between">
+              <div>
+                <ArrowRightLeft className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2">
+                  {isHighLevelRole ? "Treasury Transfer" : "Request Transfer"}
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Move liquidity between corporate accounts, wallets, and retail floats. All movements are strictly audited.
+                </p>
+                <div className="mt-8 space-y-4">
+                  <div className="bg-background p-3 rounded-lg border shadow-sm">
+                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">Source Account</p>
+                    <p className="font-semibold">{selectedFromSource?.name || "Select Account"}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Available: <span className="font-medium text-foreground">Rp {selectedFromSource?.balance?.toLocaleString() || "0"}</span>
+                    </p>
+                  </div>
+                  <div className="flex justify-center -my-2 relative z-10">
+                    <div className="bg-background border rounded-full p-1 drop-shadow-sm">
+                      <ArrowRightLeft className="w-4 h-4 text-muted-foreground rotate-90" />
+                    </div>
+                  </div>
+                  <div className="bg-background p-3 rounded-lg border shadow-sm">
+                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">Destination Account</p>
+                    <p className="font-semibold">{selectedToSource?.name || "Select Account"}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Current: <span className="font-medium text-foreground">Rp {selectedToSource?.balance?.toLocaleString() || "0"}</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-primary/5 p-4 rounded-lg mt-8 border border-primary/10">
+                <p className="text-xs text-primary font-medium flex items-center gap-1.5">
+                  <Info className="w-4 h-4" /> Settlement
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Transfers may require secondary approval scaling dynamically based on your role.
+                </p>
+              </div>
+            </div>
 
-            <Select value={toSource} onValueChange={setToSource}>
-              <SelectTrigger>
-                <SelectValue placeholder="To source" />
-              </SelectTrigger>
-              <SelectContent>
-                {sources.map((src) => (
-                  <SelectItem key={src.id} value={src.id}>
-                    {src.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Right Form Panel */}
+            <div className="p-6">
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block flex items-center gap-1.5">
+                      <Wallet className="w-3 h-3" /> From Source
+                    </label>
+                    <Select value={fromSource || sources[0]?.id} onValueChange={setFromSource}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="From source" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sources.map((src) => (
+                          <SelectItem key={src.id} value={src.id}>
+                            {src.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-            <Input
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Amount"
-            />
-            <Button onClick={handleTransfer}>
-              {isHighLevelRole ? "Save Request" : "Submit Request"}
-            </Button>
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block flex items-center gap-1.5">
+                      <Landmark className="w-3 h-3" /> To Destination
+                    </label>
+                    <Select value={toSource || sources[1]?.id} onValueChange={setToSource}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="To source" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sources.map((src) => (
+                          <SelectItem key={src.id} value={src.id}>
+                            {src.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block">Transfer Amount (IDR)</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-muted-foreground font-medium">Rp</span>
+                    <Input
+                      className="pl-9 text-lg font-medium"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+
+                <div className="border-t pt-4 flex justify-end gap-3 mt-8">
+                  <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                  <Button onClick={handleTransfer} size="lg" className="gap-2">
+                    <ArrowRightLeft className="w-4 h-4" />
+                    {isHighLevelRole ? "Execute Transfer" : "Submit Request"}
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

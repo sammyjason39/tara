@@ -59,9 +59,9 @@ export default function ProcurementRiskCenter() {
       const [sig, aud, leg, goods, sup] = await Promise.all([
         procurementService.listRiskSignals(session.tenantId, session),
         procurementService.listAuditEvents(session.tenantId, session),
-        procurementService.listLegalHandoffs(session.tenantId),
-        procurementService.listGoodsReceiptSyncs(session.tenantId),
-        procurementService.listSupplierAccessProvisioning(session.tenantId),
+        procurementService.listLegalHandoffs(session.tenantId, session),
+        procurementService.listGoodsReceiptSyncs(session.tenantId, session),
+        procurementService.listSupplierAccessProvisioning(session.tenantId, session),
       ]);
       setSignals(sig);
       setAuditEvents(aud);
@@ -73,7 +73,7 @@ export default function ProcurementRiskCenter() {
     } finally {
       setLoading(false);
     }
-  }, [session.tenantId, session]);
+  }, [session]);
 
   useEffect(() => {
     refresh();

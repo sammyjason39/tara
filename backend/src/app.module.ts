@@ -14,6 +14,9 @@ import { RetailModule } from "./core/retail/retail.module";
 import { PersistenceModule } from "./persistence/persistence.module";
 import { AuditModule } from "./shared/audit/audit.module";
 import { AuthModule } from "./core/auth/auth.module";
+import { LoggerModule } from './shared/logger/logger.module';
+import { LicenseModule } from './shared/license/license.module';
+import { CommsModule } from './shared/comms/comms.module';
 import { HealthController } from "./gateway/health.controller";
 
 import { APP_GUARD } from "@nestjs/core";
@@ -41,6 +44,9 @@ import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
         limit: 100, // 100 requests per minute
       },
     ]),
+    LoggerModule,
+    LicenseModule,
+    CommsModule,
     PersistenceModule,
     FinanceModule,
     HRModule,
@@ -56,6 +62,7 @@ import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
     AuditModule,
     AuthModule,
   ],
+
   controllers: [HealthController],
   providers: [
     {

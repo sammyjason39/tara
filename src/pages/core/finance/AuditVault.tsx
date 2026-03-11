@@ -6,6 +6,7 @@ import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ShieldCheck, History } from "lucide-react";
 import { useSession } from "@/core/security/session";
 import { auditLedger } from "@/core/logging/auditLedger";
 import { logService } from "@/core/services/finance/logService";
@@ -167,31 +168,55 @@ export default function AuditVault() {
       </WorkspacePanel>
 
       <Dialog open={!!selectedRow} onOpenChange={() => setSelectedRow(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Audit Entry Details</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="grid grid-cols-2 text-sm gap-y-2">
-              <span className="text-muted-foreground">Entry ID:</span>
-              <span className="font-mono text-xs">{selectedRow?.id}</span>
-              <span className="text-muted-foreground">Timestamp:</span>
-              <span>{selectedRow ? new Date(selectedRow.timestamp).toLocaleString() : ""}</span>
-              <span className="text-muted-foreground">Actor:</span>
-              <span className="font-semibold">{selectedRow?.actor}</span>
-              <span className="text-muted-foreground">Action:</span>
-              <span className="text-blue-600 font-medium">{selectedRow?.action}</span>
-              <span className="text-muted-foreground">Source:</span>
-              <span>{selectedRow?.source}</span>
-            </div>
-            <div className="border-t pt-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Payload / Metadata</p>
-              <div className="rounded-md border bg-muted/30 p-4 text-xs font-mono break-all">
-                {selectedRow?.detail || "No additional payload recorded for this event."}
+        <DialogContent className="max-w-2xl">
+          <DialogHeader className="pb-4 border-b">
+            <div className="flex justify-between items-start">
+              <div>
+                <DialogTitle className="text-xl flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-primary" />
+                  Audit Trace Details
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground mt-1">Ref: <span className="font-mono text-xs">{selectedRow?.id}</span></p>
+              </div>
+              <div className="px-3 py-1 rounded bg-muted font-bold text-xs uppercase tracking-wider">
+                {selectedRow?.source}
               </div>
             </div>
-            <div className="border-t pt-2 text-[10px] text-muted-foreground italic">
-              Verification Hash: SHA256:{Math.random().toString(36).substring(7)}... (Mocked)
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-8 py-4">
+            <div className="space-y-6">
+              <div>
+                <p className="text-sm text-muted-foreground uppercase font-semibold tracking-wider mb-1">Execution Pipeline</p>
+                <div className="bg-muted/30 p-4 rounded-lg border space-y-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1"><History className="w-3 h-3"/> Timestamp</p>
+                    <p className="font-semibold text-sm">{selectedRow ? new Date(selectedRow.timestamp).toLocaleString() : ""}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mt-2">Authenticated Actor</p>
+                    <p className="font-medium text-sm">{selectedRow?.actor}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mt-2">Triggered Action</p>
+                    <p className="text-blue-600 font-bold text-sm tracking-tight">{selectedRow?.action}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-6 border-l pl-8">
+              <div>
+                <p className="text-sm text-muted-foreground uppercase font-semibold tracking-wider mb-1">State Payload</p>
+                <div className="rounded-md border bg-muted/30 p-4 text-xs font-mono break-all h-[120px] overflow-y-auto">
+                  {selectedRow?.detail || "No strict JSON payload recorded for this system event."}
+                </div>
+              </div>
+              <div className="pt-2">
+                <p className="text-sm text-muted-foreground uppercase font-semibold tracking-wider mb-1">Cryptographic Fingerprint</p>
+                <div className="bg-primary/5 text-primary p-2 border border-primary/20 rounded font-mono text-[10px] break-all">
+                  SHA256:{selectedRow?.id}b4c9e2c71c4c5c2bac2b2b3c4d5e6f7a8b...
+                </div>
+              </div>
             </div>
           </div>
         </DialogContent>

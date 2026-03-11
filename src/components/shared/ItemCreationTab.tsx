@@ -15,6 +15,7 @@ type Props = {
   session?: SessionContext;
   tenantId?: string;
   categoryOptions?: { id: string; name: string }[];
+  onSuccess?: () => void;
 };
 
 export const ItemCreationTab: React.FC<Props> = ({
@@ -22,6 +23,7 @@ export const ItemCreationTab: React.FC<Props> = ({
   session,
   tenantId,
   categoryOptions = [],
+  onSuccess,
 }) => {
   const { toast } = useToast();
   const [rows, setRows] = useState<NewItemLine[]>([
@@ -143,6 +145,7 @@ export const ItemCreationTab: React.FC<Props> = ({
             description: "",
           },
         ]);
+        if (onSuccess) onSuccess();
       }
     } catch (error) {
       toast({ title: "Error", description: "Failed to create batch items." });

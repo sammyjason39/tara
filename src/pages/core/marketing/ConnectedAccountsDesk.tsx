@@ -32,7 +32,7 @@ export default function ConnectedAccountsDesk() {
 
   const refresh = useCallback(async () => {
     try {
-      const a = await marketingService.listConnectedAccounts(session.tenantId);
+      const a = await marketingService.listConnectedAccounts(session.tenantId, session);
       setAccounts(a);
     } catch (err) {
       console.error("Failed to fetch connected accounts:", err);

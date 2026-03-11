@@ -13,6 +13,10 @@ export class CreateRequisitionDto {
 
   @IsString()
   @IsNotEmpty()
+  description: string;
+
+  @IsString()
+  @IsNotEmpty()
   requesterDept: string;
 
   @IsString()
@@ -26,6 +30,10 @@ export class CreateRequisitionDto {
   @IsString()
   @IsOptional()
   currency?: "IDR" | "USD";
+
+  @IsString()
+  @IsOptional()
+  category?: string;
 
   @IsString()
   @IsOptional()

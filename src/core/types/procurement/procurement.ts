@@ -51,6 +51,11 @@ export type SupplierMaster = {
   globalRating: number;
   riskTier: RiskTier;
   categories: string[];
+  website?: string;
+  contactPerson?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  address?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -66,6 +71,10 @@ export type SupplierBranch = {
   localRating: number;
   riskTier: RiskTier;
   active: boolean;
+  fullAddress?: string;
+  contactPerson?: string;
+  contactEmail?: string;
+  contactPhone?: string;
   createdAt: string;
   updatedAt: string;
 };

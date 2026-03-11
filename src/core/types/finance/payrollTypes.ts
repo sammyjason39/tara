@@ -11,3 +11,10 @@ export type PayrollEntry = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type PayrollEstimate = {
+  department: string;
+  employeeCount: number;
+  totalGross: number;
+  totalNet: number;
+};

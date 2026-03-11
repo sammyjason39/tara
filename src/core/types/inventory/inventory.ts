@@ -1,4 +1,6 @@
 export type InventoryCategory =
+  | "ITEM"
+  | "SERVICE"
   | "RAW_MATERIAL"
   | "FINISHED_GOOD"
   | "CONSUMABLE"
@@ -50,6 +52,7 @@ export type InventoryItemMaster = {
   qrCode: string;
   moduleTags: string[];
   active: boolean;
+  description?: string;
   retailPrice?: number;
   createdAt: string;
   updatedAt: string;

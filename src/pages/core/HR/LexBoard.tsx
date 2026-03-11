@@ -13,6 +13,8 @@ import { workflowService } from "@/core/services/hr/workflowService";
 import { procurementService } from "@/core/services/procurement/procurementService";
 import { buildTemplatePreview, contractTemplates } from "@/core/tools/docs/TemplateEngine";
 import { DocumentViewer } from "@/core/tools/docs/DocumentViewer";
+import type { ContractRecord, VisaRecord } from "@/core/hr/legal/contractTypes";
+import type { LegalContractHandoff } from "@/core/types/procurement/procurement";
 
 export default function LexBoard() {
   const session = useSession();
@@ -22,21 +24,19 @@ export default function LexBoard() {
   const [search, setSearch] = useState("");
   
   const [compliance, setCompliance] = useState<{
-    contracts: any[];
-    expiringVisas: any[];
+    contracts: ContractRecord[];
+    expiringVisas: VisaRecord[];
     pendingRenewals: number;
   }>({ contracts: [], expiringVisas: [], pendingRenewals: 0 });
   
-  const [procurementHandoffs, setProcurementHandoffs] = useState<any[]>([]);
+  const [procurementHandoffs, setProcurementHandoffs] = useState<LegalContractHandoff[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         const [comp, handoffs] = await Promise.all([
           legalService.getComplianceCases(session.tenantId, session),
-          procurementService.listLegalHandoffs(session.tenantId), // Assuming this is sync for now or we make it async? 
-          // If procurementService is sync, Promise.all wraps it. 
-          // Ideally we check procurementService too.
+          procurementService.listLegalHandoffs(session.tenantId, session),
         ]);
         setCompliance(comp);
         setProcurementHandoffs(handoffs);

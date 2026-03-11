@@ -169,8 +169,8 @@ export default function InventoryAuditLog() {
                               session,
                               cycle.id,
                               {
-                                expectedValue: 1000,
                                 countedValue: 990,
+                                varianceValue: -10,
                               },
                             );
                             refresh();

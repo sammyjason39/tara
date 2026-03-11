@@ -21,6 +21,7 @@ import Onboarding from "./pages/auth/Onboarding";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppProvider } from "@/contexts/AppContext";
 import { BarcodeScannerProvider } from "@/contexts/BarcodeScannerContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import { CoreLayout } from "@/layouts/CoreLayout";
 import { ModuleLayout } from "@/layouts/ModuleLayout";
 import { buildCoreRoutes } from "@/core/runtime/coreRoutes";
@@ -127,11 +128,13 @@ export default function App() {
   return (
     <AuthProvider>
       <AppProvider>
-        <BarcodeScannerProvider>
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-        </BarcodeScannerProvider>
+        <NotificationProvider>
+          <BarcodeScannerProvider>
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </BarcodeScannerProvider>
+        </NotificationProvider>
       </AppProvider>
     </AuthProvider>
   );

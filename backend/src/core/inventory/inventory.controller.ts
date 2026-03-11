@@ -335,23 +335,6 @@ export class InventoryController {
     };
   }
 
-  @Post("batch-intake")
-  async batchIntakeStock(
-    @Req() request: RequestWithTenant,
-    @Body() body: { items: StockIntakeDto[] },
-  ) {
-    const { tenantId: tenant_id, userId } = request.tenantContext;
-    return {
-      success: true,
-      tenant_id,
-      message: "Batch stock intake recorded",
-      data: await this.inventoryService.batchIntakeStock(
-        tenant_id,
-        body.items,
-        userId,
-      ),
-    };
-  }
 
   @Post("transfer")
   async transferStock(
@@ -367,138 +350,6 @@ export class InventoryController {
     };
   }
 
-  @Get("adjustments")
-  async getAdjustments(@Req() request: RequestWithTenant) {
-    const { tenantId: tenant_id } = request.tenantContext;
-    const data = await this.inventoryService.getAdjustments(tenant_id);
-    return { success: true, tenant_id, count: data.length, data };
-  }
-
-  @Post("adjustments")
-  async createAdjustment(
-    @Req() request: RequestWithTenant,
-    @Body() dto: CreateAdjustmentDto,
-  ) {
-    const { tenantId: tenant_id, locationId, userId } = request.tenantContext;
-    if (locationId && !dto.locationId) dto.locationId = locationId;
-    return {
-      success: true,
-      tenant_id,
-      message: "Stock adjustment request created",
-      data: await this.inventoryService.createAdjustment(
-        tenant_id,
-        dto,
-        userId,
-      ),
-    };
-  }
-
-  @Put("adjustments/:id/approve")
-  async approveAdjustment(
-    @Req() request: RequestWithTenant,
-    @Param("id") adjustmentId: string,
-    @Body() body: { approvedBy: string },
-  ) {
-    const { tenantId: tenant_id } = request.tenantContext;
-    return {
-      success: true,
-      tenant_id,
-      message: "Stock adjustment approved",
-      data: await this.inventoryService.approveAdjustment(
-        tenant_id,
-        adjustmentId,
-        body.approvedBy || "system",
-      ),
-    };
-  }
-
-  @Get("alerts")
-  async getAlerts(@Req() request: RequestWithTenant) {
-    const { tenantId: tenant_id } = request.tenantContext;
-    const data = await this.inventoryService.getAlerts(tenant_id);
-    return { success: true, tenant_id, count: data.length, data };
-  }
-
-  @Put("alerts/:id/status")
-  async setAlertStatus(
-    @Req() request: RequestWithTenant,
-    @Param("id") alertId: string,
-    @Body() body: { status: "open" | "acknowledged" | "resolved" },
-  ) {
-    const { tenantId: tenant_id } = request.tenantContext;
-    return {
-      success: true,
-      tenant_id,
-      message: "Alert status updated",
-      data: await this.inventoryService.setAlertStatus(
-        tenant_id,
-        alertId,
-        body.status,
-      ),
-    };
-  }
-
-  @Get("audit-cycles")
-  async getAuditCycles(@Req() request: RequestWithTenant) {
-    const { tenantId: tenant_id } = request.tenantContext;
-    const data = await this.inventoryService.getAuditCycles(tenant_id);
-    return { success: true, tenant_id, count: data.length, data };
-  }
-
-  @Post("audit-cycles")
-  async createAuditCycle(@Req() request: RequestWithTenant, @Body() body: any) {
-    const { tenantId: tenant_id } = request.tenantContext;
-    return {
-      success: true,
-      tenant_id,
-      message: "Audit cycle started",
-      data: await this.inventoryService.createAuditCycle(tenant_id, body),
-    };
-  }
-
-  @Put("audit-cycles/:id")
-  async updateAuditCycle(
-    @Req() request: RequestWithTenant,
-    @Param("id") id: string,
-    @Body() body: any,
-  ) {
-    const { tenantId: tenant_id } = request.tenantContext;
-    return {
-      success: true,
-      tenant_id,
-      message: "Audit cycle updated",
-      data: await this.inventoryService.updateAuditCycle(tenant_id, id, body),
-    };
-  }
-
-  @Get("integration-events")
-  async getIntegrationEvents(@Req() request: RequestWithTenant) {
-    const { tenantId: tenant_id } = request.tenantContext;
-    const data = await this.inventoryService.getIntegrationEvents(tenant_id);
-    return { success: true, tenant_id, count: data.length, data };
-  }
-
-  @Post("scans/low-stock")
-  async runLowStockScan(@Req() request: RequestWithTenant) {
-    const { tenantId: tenant_id } = request.tenantContext;
-    return {
-      success: true,
-      tenant_id,
-      message: "Low stock scan completed",
-      data: await this.inventoryService.runLowStockScan(tenant_id),
-    };
-  }
-
-  @Post("scans/expiry")
-  async runExpiryScan(@Req() request: RequestWithTenant) {
-    const { tenantId: tenant_id } = request.tenantContext;
-    return {
-      success: true,
-      tenant_id,
-      message: "Expiry scan completed",
-      data: await this.inventoryService.runExpiryScan(tenant_id),
-    };
-  }
 
   @Post("consume")
   async consumeStock(@Req() request: RequestWithTenant, @Body() dto: any) {
@@ -512,19 +363,6 @@ export class InventoryController {
     };
   }
 
-  @Post("procurement-request")
-  async requestProcurement(
-    @Req() request: RequestWithTenant,
-    @Body() body: any,
-  ) {
-    const { tenantId: tenant_id } = request.tenantContext;
-    return {
-      success: true,
-      tenant_id,
-      message: "Procurement request created",
-      data: await this.inventoryService.requestProcurement(tenant_id, body),
-    };
-  }
 
   @Get("generate-sku")
   async generateSku(
@@ -639,6 +477,357 @@ export class InventoryController {
         dto,
         userId,
       ),
+    };
+  }
+
+  /**
+   * Procurement Receipt Queue — lists approved Final POs not yet received by inventory.
+   * These appear in the Inventory Receiving screen.
+   */
+  @Get("procurement-receipts")
+  async getProcurementReceiptQueue(@Req() request: RequestWithTenant) {
+    const { tenantId: tenant_id } = request.tenantContext;
+    const finalPOs = await this.prisma.procurementFinalPO.findMany({
+      where: {
+        tenantId: tenant_id,
+        status: { in: ["RELEASED", "APPROVED", "DELIVERED"] },
+      },
+      include: {
+        supplier: { select: { name: true } },
+        supplierBranch: { select: { branchName: true } },
+        requisition: { select: { title: true, category: true } },
+      },
+      orderBy: { issuedAt: "desc" },
+    });
+
+    return {
+      success: true,
+      tenant_id,
+      count: finalPOs.length,
+      data: finalPOs.map((po: any) => ({
+        id: po.id,
+        requisitionId: po.requisitionId,
+        supplierId: po.supplierId,
+        supplierName: po.supplier?.name || "Unknown",
+        supplierBranch: po.supplierBranch?.branchName,
+        title: po.requisition?.title || `PO-${po.id.substring(0, 8)}`,
+        category: po.requisition?.category,
+        status: po.status,
+        totalAmount: po.totalAmount,
+        issuedAt: po.issuedAt,
+        expectedDeliveryDate: po.expectedDeliveryDate,
+      })),
+    };
+  }
+
+  /**
+   * Process a Procurement Receipt — receives a delivered PO into inventory.
+   * Flow: FinalPO → RECEIVED status + create StockMovements (INTAKE) for each item in the PO.
+   */
+  @Post("procurement-receipts/:id/process")
+  async processProcurementReceipt(
+    @Req() request: RequestWithTenant,
+    @Param("id") finalPoId: string,
+    @Body()
+    body: {
+      locationId: string;
+      items: Array<{ sku: string; quantity: number; unitCost?: number }>;
+    },
+  ) {
+    const { tenantId: tenant_id, userId } = request.tenantContext;
+
+    // Update the finalPO status to RECEIVED
+    await this.prisma.procurementFinalPO.update({
+      where: { id: finalPoId, tenantId: tenant_id },
+      data: { status: "RECEIVED" },
+    });
+
+    // Process each item as a stock intake
+    const intakeResults = [];
+    for (const item of body.items || []) {
+      try {
+        const product = await this.prisma.product.findFirst({
+          where: { tenantId: tenant_id, sku: item.sku },
+        });
+        if (!product) continue;
+
+        const result = await this.inventoryService.intakeStock(
+          tenant_id,
+          {
+            itemId: product.id,
+            locationId: body.locationId,
+            quantity: item.quantity,
+            unitCost: item.unitCost || 0,
+            referenceId: `PO-${finalPoId}`,
+            referenceType: "PROCUREMENT_PO",
+          } as any,
+          userId,
+        );
+        intakeResults.push(result);
+      } catch (err) {
+        console.error(`[ProcurementReceipt] Failed intake for SKU ${item.sku}:`, err);
+      }
+    }
+
+    await this.auditService.log({
+      tenantId: tenant_id,
+      userId: userId || "system",
+      module: "INVENTORY",
+      action: "PROCUREMENT_RECEIPT",
+      entityType: "FINAL_PO",
+      entityId: finalPoId,
+      metadata: {
+        locationId: body.locationId,
+        itemCount: body.items?.length || 0,
+        intakeCount: intakeResults.length,
+      },
+    });
+
+    return {
+      success: true,
+      tenant_id,
+      message: `Procurement receipt processed — ${intakeResults.length} items added to inventory`,
+      data: intakeResults,
+    };
+  }
+
+  // ─── Adjustments ────────────────────────────────────────────────
+
+  @Get("adjustments")
+  async getAdjustments(@Req() request: RequestWithTenant) {
+    const { tenantId: tenant_id } = request.tenantContext;
+    const data = await this.inventoryService.getAdjustments(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
+  }
+
+  @Post("adjustments")
+  async createAdjustment(
+    @Req() request: RequestWithTenant,
+    @Body() dto: CreateAdjustmentDto,
+  ) {
+    const { tenantId: tenant_id, userId } = request.tenantContext;
+    const data = await this.inventoryService.createAdjustment(
+      tenant_id,
+      dto,
+      userId,
+    );
+    await this.auditService.log({
+      tenantId: tenant_id,
+      userId: userId || "system",
+      module: "INVENTORY",
+      action: "CREATE_ADJUSTMENT",
+      entityType: "ADJUSTMENT",
+      entityId: (data as any).id || "new",
+      metadata: { delta: dto.requestedDelta, reason: dto.reason },
+    });
+    return { success: true, tenant_id, message: "Adjustment request submitted", data };
+  }
+
+  @Put("adjustments/:id/approve")
+  async approveAdjustment(
+    @Req() request: RequestWithTenant,
+    @Param("id") adjustmentId: string,
+    @Body() body: { approvedBy?: string },
+  ) {
+    const { tenantId: tenant_id, userId } = request.tenantContext;
+    const data = await this.inventoryService.approveAdjustment(
+      tenant_id,
+      adjustmentId,
+      body.approvedBy || userId || "system",
+    );
+    await this.auditService.log({
+      tenantId: tenant_id,
+      userId: userId || "system",
+      module: "INVENTORY",
+      action: "APPROVE_ADJUSTMENT",
+      entityType: "ADJUSTMENT",
+      entityId: adjustmentId,
+    });
+    return { success: true, tenant_id, message: "Adjustment approved", data };
+  }
+
+  // ─── Alerts ─────────────────────────────────────────────────────
+
+  @Get("alerts")
+  async getAlerts(@Req() request: RequestWithTenant) {
+    const { tenantId: tenant_id } = request.tenantContext;
+    const data = await this.inventoryService.getAlerts(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
+  }
+
+  @Put("alerts/:id/status")
+  async setAlertStatus(
+    @Req() request: RequestWithTenant,
+    @Param("id") alertId: string,
+    @Body() body: { status: "open" | "acknowledged" | "resolved" },
+  ) {
+    const { tenantId: tenant_id, userId } = request.tenantContext;
+    const data = await this.inventoryService.setAlertStatus(
+      tenant_id,
+      alertId,
+      body.status,
+    );
+    await this.auditService.log({
+      tenantId: tenant_id,
+      userId: userId || "system",
+      module: "INVENTORY",
+      action: "SET_ALERT_STATUS",
+      entityType: "ALERT",
+      entityId: alertId,
+      metadata: { status: body.status },
+    });
+    return { success: true, tenant_id, data };
+  }
+
+  // ─── Audit Cycles ────────────────────────────────────────────────
+
+  @Get("audit-cycles")
+  async getAuditCycles(@Req() request: RequestWithTenant) {
+    const { tenantId: tenant_id } = request.tenantContext;
+    const data = await this.inventoryService.getAuditCycles(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
+  }
+
+  @Post("audit-cycles")
+  async createAuditCycle(
+    @Req() request: RequestWithTenant,
+    @Body() body: { locationCode: string; departmentCode?: string; scope: string },
+  ) {
+    const { tenantId: tenant_id, userId } = request.tenantContext;
+    const data = await this.inventoryService.createAuditCycle(tenant_id, {
+      ...body,
+      createdBy: userId || "system",
+    });
+    await this.auditService.log({
+      tenantId: tenant_id,
+      userId: userId || "system",
+      module: "INVENTORY",
+      action: "START_AUDIT_CYCLE",
+      entityType: "AUDIT_CYCLE",
+      entityId: (data as any).id || "new",
+      metadata: { locationCode: body.locationCode, scope: body.scope },
+    });
+    return {
+      success: true,
+      tenant_id,
+      message: "Audit cycle started",
+      data,
+    };
+  }
+
+  @Put("audit-cycles/:id")
+  async updateAuditCycle(
+    @Req() request: RequestWithTenant,
+    @Param("id") cycleId: string,
+    @Body() body: { countedValue?: number; varianceValue?: number; status?: string; closedBy?: string },
+  ) {
+    const { tenantId: tenant_id, userId } = request.tenantContext;
+    const data = await this.inventoryService.updateAuditCycle(tenant_id, cycleId, {
+      ...body,
+      closedBy: body.closedBy || userId || "system",
+    });
+    await this.auditService.log({
+      tenantId: tenant_id,
+      userId: userId || "system",
+      module: "INVENTORY",
+      action: "CLOSE_AUDIT_CYCLE",
+      entityType: "AUDIT_CYCLE",
+      entityId: cycleId,
+      metadata: { status: body.status, variance: body.varianceValue },
+    });
+    return { success: true, tenant_id, message: "Audit cycle updated", data };
+  }
+
+  // ─── Integration Events ─────────────────────────────────────────
+
+  @Get("integration-events")
+  async getIntegrationEvents(@Req() request: RequestWithTenant) {
+    const { tenantId: tenant_id } = request.tenantContext;
+    const data = await this.inventoryService.getIntegrationEvents(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
+  }
+
+  // ─── Stock Scans ─────────────────────────────────────────────────
+
+  @Post("scans/low-stock")
+  async runLowStockScan(@Req() request: RequestWithTenant) {
+    const { tenantId: tenant_id, userId } = request.tenantContext;
+    const result = await this.inventoryService.runLowStockScan(tenant_id);
+    await this.auditService.log({
+      tenantId: tenant_id,
+      userId: userId || "system",
+      module: "INVENTORY",
+      action: "LOW_STOCK_SCAN",
+      entityType: "SCAN",
+      entityId: "system",
+      metadata: result,
+    });
+    return { success: true, tenant_id, data: result };
+  }
+
+  @Post("scans/expiry")
+  async runExpiryScan(@Req() request: RequestWithTenant) {
+    const { tenantId: tenant_id, userId } = request.tenantContext;
+    const result = await this.inventoryService.runExpiryScan(tenant_id);
+    await this.auditService.log({
+      tenantId: tenant_id,
+      userId: userId || "system",
+      module: "INVENTORY",
+      action: "EXPIRY_SCAN",
+      entityType: "SCAN",
+      entityId: "system",
+      metadata: result,
+    });
+    return { success: true, tenant_id, data: result };
+  }
+
+  // ─── Batch Intake ────────────────────────────────────────────────
+
+  @Post("batch-intake")
+  async batchIntake(
+    @Req() request: RequestWithTenant,
+    @Body() body: { items: StockIntakeDto[] },
+  ) {
+    const { tenantId: tenant_id, userId } = request.tenantContext;
+    const data = await this.inventoryService.batchIntakeStock(
+      tenant_id,
+      body.items || [],
+      userId,
+    );
+    return {
+      success: true,
+      tenant_id,
+      message: `${data.length} items processed`,
+      data,
+    };
+  }
+
+  // ─── Procurement Request ────────────────────────────────────────
+
+  @Post("procurement-request")
+  async createProcurementRequest(
+    @Req() request: RequestWithTenant,
+    @Body() body: any,
+  ) {
+    const { tenantId: tenant_id, userId } = request.tenantContext;
+    const data = await this.inventoryService.requestProcurement(tenant_id, {
+      ...body,
+      requesterId: userId || body.requesterId,
+    });
+    await this.auditService.log({
+      tenantId: tenant_id,
+      userId: userId || "system",
+      module: "INVENTORY",
+      action: "PROCUREMENT_REQUEST",
+      entityType: "REQUISITION",
+      entityId: (data as any)?.id || "new",
+      metadata: { title: body.title, amount: body.amount },
+    });
+    return {
+      success: true,
+      tenant_id,
+      message: "Procurement request submitted",
+      data,
     };
   }
 }

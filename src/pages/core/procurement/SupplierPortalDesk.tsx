@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
@@ -12,6 +14,7 @@ import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { procurementService } from "@/core/services/procurement/procurementService";
 import type { SupplierPortalMessage, SupplierMaster, SupplierBranch } from "@/core/types/procurement/procurement";
+import { MessageSquare, Send, Paperclip, Building2, Info, ArrowUpRight, ArrowDownLeft, ShieldCheck, Mail } from "lucide-react";
 
 export default function SupplierPortalDesk() {
   const session = useSession();
@@ -145,68 +148,140 @@ export default function SupplierPortalDesk() {
       </WorkspacePanel>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden" aria-describedby="portal-msg-description">
+          <DialogHeader className="sr-only">
             <DialogTitle>Create Supplier Portal Message</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <Select value={supplierId} onValueChange={setSupplierId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Supplier" />
-              </SelectTrigger>
-              <SelectContent>
-                {suppliers.map((supplier) => (
-                  <SelectItem key={supplier.id} value={supplier.id}>
-                    {supplier.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={supplierBranchId} onValueChange={setSupplierBranchId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Supplier Branch" />
-              </SelectTrigger>
-              <SelectContent>
-                {branches
-                  .filter((branch) => (supplierId ? branch.supplierId === supplierId : true))
-                  .map((branch) => (
-                    <SelectItem key={branch.id} value={branch.id}>
-                      {branch.branchCode} - {branch.branchName}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-            <div className="grid gap-3 md:grid-cols-2">
-              <Select value={direction} onValueChange={(value) => setDirection(value as SupplierPortalMessage["direction"])}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Direction" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="OUTBOUND">OUTBOUND</SelectItem>
-                  <SelectItem value="INBOUND">INBOUND</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={type} onValueChange={(value) => setType(value as SupplierPortalMessage["type"])}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="QUOTE">QUOTE</SelectItem>
-                  <SelectItem value="INVOICE">INVOICE</SelectItem>
-                  <SelectItem value="DELIVERY_PROOF">DELIVERY_PROOF</SelectItem>
-                  <SelectItem value="DISPUTE">DISPUTE</SelectItem>
-                  <SelectItem value="GENERAL">GENERAL</SelectItem>
-                </SelectContent>
-              </Select>
+          <div id="portal-msg-description" className="sr-only">Exchange documentation or general messages with a supplier branch. All interactions are logged for audit.</div>
+
+          <div className="grid md:grid-cols-[1fr_2fr]">
+            {/* Left Column: Context */}
+            <div className="bg-muted p-6 flex flex-col justify-between border-r shadow-inner">
+              <div>
+                <MessageSquare className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2">Portal Message</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Secure communication line for document exchange and general collaboration. Every interaction is time-stamped and auditable.
+                </p>
+                <div className="mt-8 space-y-4">
+                  <div className="flex items-start gap-3 text-sm">
+                    <ShieldCheck className="w-4 h-4 text-primary mt-1" />
+                    <div>
+                      <p className="font-medium">Governance Logging</p>
+                      <p className="text-muted-foreground text-[10px]">Messages cannot be deleted or modified once sent to ensure audit integrity.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 text-sm">
+                    <Paperclip className="w-4 h-4 text-primary mt-1" />
+                    <div>
+                      <p className="font-medium">Evidence Capture</p>
+                      <p className="text-muted-foreground text-[10px]">Upload proof of delivery or invoice scans directly to the portal.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-primary/5 p-4 rounded-lg border border-primary/10">
+                <p className="text-xs text-primary font-bold flex items-center gap-1.5 uppercase tracking-wider">
+                  <Info className="w-3.5 h-3.5" /> Portal Status
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Outbound messages are immediately visible to the supplier representative.
+                </p>
+              </div>
             </div>
-            <Textarea placeholder="Content" value={content} onChange={(event) => setContent(event.target.value)} />
-            <Input
-              placeholder="Attachment Name (optional)"
-              value={attachmentName}
-              onChange={(event) => setAttachmentName(event.target.value)}
-            />
-            <div className="flex justify-end gap-2">
-              <Button onClick={createMessage}>Send Message</Button>
+
+            {/* Right Column: Message Form */}
+            <div className="p-6">
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Target Supplier</label>
+                    <Select value={supplierId} onValueChange={setSupplierId}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Select Master" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {suppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Branch/Contact</label>
+                    <Select value={supplierBranchId} onValueChange={setSupplierBranchId}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Select Location" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {branches.filter(b => !supplierId || b.supplierId === supplierId).map(b => (
+                          <SelectItem key={b.id} value={b.id}>{b.branchCode} - {b.branchName}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Direction</label>
+                    <Select value={direction} onValueChange={v => setDirection(v as any)}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="OUTBOUND"><div className="flex items-center gap-2"><ArrowUpRight className="w-3 h-3 text-primary" />Office → Supplier</div></SelectItem>
+                        <SelectItem value="INBOUND"><div className="flex items-center gap-2"><ArrowDownLeft className="w-3 h-3 text-amber-600" />Supplier → Office</div></SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Communication Category</label>
+                    <Select value={type} onValueChange={v => setType(v as any)}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="QUOTE">Quote Exchange</SelectItem>
+                        <SelectItem value="INVOICE">Invoice Submission</SelectItem>
+                        <SelectItem value="DELIVERY_PROOF">Proof of Delivery</SelectItem>
+                        <SelectItem value="DISPUTE">Governance Dispute</SelectItem>
+                        <SelectItem value="GENERAL">General Inquiry</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Message Content</label>
+                  <Textarea 
+                    placeholder="Enter message body or interaction summary..."
+                    className="min-h-[120px] resize-none"
+                    value={content}
+                    onChange={e => setContent(e.target.value)}
+                  />
+                </div>
+
+                <div className="pt-4 border-t">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Attachment Metadata</label>
+                  <div className="relative">
+                    <Paperclip className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="e.g. quote-v1.pdf, signed-invoice.png"
+                      className="pl-10"
+                      value={attachmentName}
+                      onChange={e => setAttachmentName(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-6 border-t mt-4">
+                  <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                  <Button onClick={createMessage} disabled={!supplierId || !supplierBranchId || !content.trim()}>
+                    <Send className="w-4 h-4 mr-2" />
+                    Dispatch Message
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </DialogContent>
@@ -214,4 +289,3 @@ export default function SupplierPortalDesk() {
     </div>
   );
 }
-

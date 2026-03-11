@@ -18,7 +18,7 @@ export default function MarketingAlerts() {
 
   const refresh = useCallback(async () => {
     try {
-      const a = await marketingService.listAlerts(session.tenantId);
+      const a = await marketingService.listAlerts(session.tenantId, session);
       setAlerts(a);
     } catch (err) {
       console.error("Failed to fetch marketing alerts:", err);

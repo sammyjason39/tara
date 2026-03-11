@@ -15,8 +15,8 @@ export default function PaymentAuditVault() {
     const fetchData = async () => {
       try {
         const [eventsData, evidenceData] = await Promise.all([
-          paymentService.listAuditEvents(session.tenantId),
-          paymentService.listEvidencePacks(session.tenantId),
+          paymentService.listAuditEvents(session.tenantId, session),
+          paymentService.listEvidencePacks(session.tenantId, session),
         ]);
         setEvents(eventsData);
         setEvidence(evidenceData);
@@ -25,7 +25,7 @@ export default function PaymentAuditVault() {
       }
     };
     fetchData();
-  }, [session.tenantId]);
+  }, [session]);
 
   return (
     <div className="space-y-6">

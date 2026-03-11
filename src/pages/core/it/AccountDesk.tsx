@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { UserCircle, ShieldCheck, Key } from "lucide-react";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
@@ -231,63 +232,96 @@ export default function AccountDesk() {
       </WorkspacePanel>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden" aria-describedby="account-create-description">
+          <DialogHeader className="sr-only">
             <DialogTitle>Provision New Account</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 pt-2">
-            <Input placeholder="Employee/Supplier ID" id="subject-id" />
-            <Input placeholder="Reason" id="reason" />
-            <Select
-              onValueChange={(val) => ((window as any)._provisionScope = val)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Scope" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="full_portal">Full Portal</SelectItem>
-                <SelectItem value="quote">Quote Only</SelectItem>
-                <SelectItem value="invoice">Invoice Only</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              className="w-full"
-              onClick={async () => {
-                try {
-                  const subjectId = (
-                    document.getElementById("subject-id") as HTMLInputElement
-                  ).value;
-                  const reason = (
-                    document.getElementById("reason") as HTMLInputElement
-                  ).value;
-                  const scope =
-                    (window as any)._provisionScope || "full_portal";
+          <div id="account-create-description" className="sr-only">Request a new user/supplier account.</div>
+          <div className="grid md:grid-cols-[1fr_2fr]">
+            <div className="bg-muted p-6 flex flex-col justify-between">
+              <div>
+                <UserCircle className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2">Provision Account</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Initiate a provisioning request for a new employee or supplier access portal.
+                </p>
+                <div className="mt-8 space-y-4">
+                  <div className="flex items-start gap-3 text-sm">
+                    <div className="mt-0.5"><Key className="w-4 h-4 text-muted-foreground" /></div>
+                    <div>
+                      <p className="font-medium">RBAC Alignment</p>
+                      <p className="text-muted-foreground text-xs">Access bound to scoped roles.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-primary/5 p-4 rounded-lg mt-8 border border-primary/10">
+                <p className="text-xs text-primary font-medium flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4" /> Audit Routing
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Requests follow IT approval flows.
+                </p>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                <Input placeholder="Employee/Supplier ID" id="subject-id" />
+                <Input placeholder="Reason" id="reason" />
+                <Select
+                  onValueChange={(val) => ((window as any)._provisionScope = val)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Scope" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="full_portal">Full Portal</SelectItem>
+                    <SelectItem value="quote">Quote Only</SelectItem>
+                    <SelectItem value="invoice">Invoice Only</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex justify-end gap-3 pt-4 mt-6 border-t">
+                  <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+                  <Button
+                    onClick={async () => {
+                      try {
+                        const subjectId = (
+                          document.getElementById("subject-id") as HTMLInputElement
+                        ).value;
+                        const reason = (
+                          document.getElementById("reason") as HTMLInputElement
+                        ).value;
+                        const scope =
+                          (window as any)._provisionScope || "full_portal";
 
-                  await itService.createProvisioningRequest(
-                    session.tenantId,
-                    session,
-                    {
-                      employeeId: subjectId.startsWith("EMP")
-                        ? subjectId
-                        : undefined,
-                      supplierId: subjectId.startsWith("EMP")
-                        ? undefined
-                        : subjectId,
-                      reason,
-                      scope,
-                    },
-                  );
+                        await itService.createProvisioningRequest(
+                          session.tenantId,
+                          session,
+                          {
+                            employeeId: subjectId.startsWith("EMP")
+                              ? subjectId
+                              : undefined,
+                            supplierId: subjectId.startsWith("EMP")
+                              ? undefined
+                              : subjectId,
+                            reason,
+                            scope,
+                          },
+                        );
 
-                  setCreateOpen(false);
-                  setStatusMessage("Provisioning request sent successfully.");
-                  setVersion((prev) => prev + 1);
-                } catch (err) {
-                  setErrorMessage("Failed to initiate provisioning.");
-                }
-              }}
-            >
-              Provision Account
-            </Button>
+                        setCreateOpen(false);
+                        setStatusMessage("Provisioning request sent successfully.");
+                        setVersion((prev) => prev + 1);
+                      } catch (err) {
+                        setErrorMessage("Failed to initiate provisioning.");
+                      }
+                    }}
+                  >
+                    Provision Account
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -393,64 +427,80 @@ export default function AccountDesk() {
       </Dialog>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden" aria-describedby="account-edit-description">
+          <DialogHeader className="sr-only">
             <DialogTitle>Edit Provisioning Request</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 pt-2">
-            <Input
-              placeholder="Employee/Supplier ID"
-              value={editData.subjectId || ""}
-              onChange={(e) =>
-                setEditData({ ...editData, subjectId: e.target.value })
-              }
-            />
-            <Input
-              placeholder="Reason"
-              value={editData.reason || ""}
-              onChange={(e) =>
-                setEditData({ ...editData, reason: e.target.value })
-              }
-            />
-            <Select
-              value={editData.scope || "full_portal"}
-              onValueChange={(val) => setEditData({ ...editData, scope: val })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Scope" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="full_portal">Full Portal</SelectItem>
-                <SelectItem value="quote">Quote Only</SelectItem>
-                <SelectItem value="invoice">Invoice Only</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              className="w-full"
-              onClick={async () => {
-                try {
-                  const isEmployee = editData.subjectId?.startsWith("EMP");
-                  await itService.updateProvisioningRequest(
-                    session.tenantId,
-                    session,
-                    editData.id,
-                    {
-                      employeeId: isEmployee ? editData.subjectId : undefined,
-                      supplierId: isEmployee ? undefined : editData.subjectId,
-                      reason: editData.reason,
-                      scope: editData.scope,
-                    },
-                  );
-                  setEditOpen(false);
-                  setStatusMessage("Provisioning request updated.");
-                  setVersion((prev) => prev + 1);
-                } catch (err) {
-                  setErrorMessage("Failed to update request.");
-                }
-              }}
-            >
-              Save Changes
-            </Button>
+          <div id="account-edit-description" className="sr-only">Modify an existing account request.</div>
+          <div className="grid md:grid-cols-[1fr_2fr]">
+            <div className="bg-muted p-6 flex flex-col justify-between">
+              <div>
+                <UserCircle className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2">Edit Request</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Update details for an existing provisioning request before approval.
+                </p>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                <Input
+                  placeholder="Employee/Supplier ID"
+                  value={editData.subjectId || ""}
+                  onChange={(e) =>
+                    setEditData({ ...editData, subjectId: e.target.value })
+                  }
+                />
+                <Input
+                  placeholder="Reason"
+                  value={editData.reason || ""}
+                  onChange={(e) =>
+                    setEditData({ ...editData, reason: e.target.value })
+                  }
+                />
+                <Select
+                  value={editData.scope || "full_portal"}
+                  onValueChange={(val) => setEditData({ ...editData, scope: val })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Scope" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="full_portal">Full Portal</SelectItem>
+                    <SelectItem value="quote">Quote Only</SelectItem>
+                    <SelectItem value="invoice">Invoice Only</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex justify-end gap-3 pt-4 mt-6 border-t">
+                  <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+                  <Button
+                    onClick={async () => {
+                      try {
+                        const isEmployee = editData.subjectId?.startsWith("EMP");
+                        await itService.updateProvisioningRequest(
+                          session.tenantId,
+                          session,
+                          editData.id,
+                          {
+                            employeeId: isEmployee ? editData.subjectId : undefined,
+                            supplierId: isEmployee ? undefined : editData.subjectId,
+                            reason: editData.reason,
+                            scope: editData.scope,
+                          },
+                        );
+                        setEditOpen(false);
+                        setStatusMessage("Provisioning request updated.");
+                        setVersion((prev) => prev + 1);
+                      } catch (err) {
+                        setErrorMessage("Failed to update request.");
+                      }
+                    }}
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

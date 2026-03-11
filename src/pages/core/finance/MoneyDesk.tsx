@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { CreditCard, Send, CheckCircle2, Info } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -450,85 +451,163 @@ export default function MoneyDesk() {
       </WorkspacePanel>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Create Payment Request</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <Input
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              placeholder="Amount"
-              type="number"
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <Select
-                value={method}
-                onValueChange={(value) => setMethod(value as PaymentMethod)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Payment Method" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PAYMENT_METHODS.map((paymentMethod) => (
-                    <SelectItem key={paymentMethod} value={paymentMethod}>
-                      {paymentMethod.replace("_", " ")}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={source} onValueChange={setSource}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Source Account" />
-                </SelectTrigger>
-                <SelectContent>
-                  {moneySources.map((ms) => (
-                    <SelectItem key={ms.id} value={ms.id}>
-                      {ms.name} ({ms.currency})
-                    </SelectItem>
-                  ))}
-                  {moneySources.length === 0 && (
-                    <SelectItem value="none" disabled>
-                      No accounts available
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden">
+          <div className="grid md:grid-cols-[1fr_2fr]">
+            {/* Left Info Panel */}
+            <div className="bg-muted p-6 flex flex-col justify-between">
+              <div>
+                <CreditCard className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2">
+                  {isHighLevel ? "Create Payment" : "Request Payment"}
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Initiate outgoing transfers to external beneficiaries, suppliers, or issue reimbursements.
+                </p>
+                <div className="mt-8 space-y-4">
+                  <div className="bg-background p-3 rounded-lg border shadow-sm">
+                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">Source Default</p>
+                    <p className="font-semibold text-sm">
+                      {source ? moneySources.find((s) => s.id === source)?.name : "Main Treasury"}
+                    </p>
+                  </div>
+                  <div className="flex justify-center -my-2 relative z-10">
+                    <div className="bg-background border rounded-full p-1 drop-shadow-sm">
+                      <Send className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div className="bg-background p-3 rounded-lg border shadow-sm">
+                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">Authorization</p>
+                    <p className="font-semibold text-sm flex items-center gap-1">
+                      {isHighLevel ? (
+                        <><CheckCircle2 className="w-4 h-4 text-green-500" /> Direct Processing</>
+                      ) : (
+                        <><Info className="w-4 h-4 text-blue-500" /> Route to Finance HOD</>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-primary/5 p-4 rounded-lg mt-8 border border-primary/10">
+                <p className="text-xs text-primary font-medium flex items-center gap-1.5">
+                  <Info className="w-4 h-4" /> Policy Compliance
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Ensure the purpose aligns with departmental OPEX/CAPEX budgets.
+                </p>
+              </div>
             </div>
 
-            <Input
-              value={destination}
-              onChange={(event) => setDestination(event.target.value)}
-              placeholder="Destination Account / Beneficiary"
-            />
+            {/* Right Form Panel */}
+            <div className="p-6">
+              <div className="space-y-6">
+                <div>
+                  <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block">Payment Amount (IDR)</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-muted-foreground font-medium">Rp</span>
+                    <Input
+                      className="pl-9 text-lg font-medium"
+                      value={amount}
+                      onChange={(event) => setAmount(event.target.value)}
+                      placeholder="0"
+                      type="number"
+                    />
+                  </div>
+                </div>
 
-            <Input
-              value={department}
-              onChange={(event) => setDepartment(event.target.value)}
-              placeholder="Requesting Department ID"
-            />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block">Payment Method</label>
+                    <Select
+                      value={method}
+                      onValueChange={(value) => setMethod(value as PaymentMethod)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Payment Method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PAYMENT_METHODS.map((paymentMethod) => (
+                          <SelectItem key={paymentMethod} value={paymentMethod}>
+                            {paymentMethod.replace("_", " ")}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-            <Textarea
-              value={purpose}
-              onChange={(event) => setPurpose(event.target.value)}
-              placeholder="Purpose of payment"
-            />
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block">Funding Source</label>
+                    <Select value={source} onValueChange={setSource}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Source Account" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {moneySources.map((ms) => (
+                          <SelectItem key={ms.id} value={ms.id}>
+                            {ms.name} ({ms.currency})
+                          </SelectItem>
+                        ))}
+                        {moneySources.length === 0 && (
+                          <SelectItem value="none" disabled>
+                            No accounts available
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-            <Textarea
-              value={extraInfo}
-              onChange={(event) => setExtraInfo(event.target.value)}
-              placeholder='Extra Info (Valid JSON format e.g. {"invoiceId": "123"})'
-              className="font-mono text-xs"
-            />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block">Beneficiary</label>
+                    <Input
+                      value={destination}
+                      onChange={(event) => setDestination(event.target.value)}
+                      placeholder="Name / Account Number"
+                    />
+                  </div>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <Button onClick={() => setDialogOpen(false)} variant="outline">
-                Cancel
-              </Button>
-              <Button onClick={submitPaymentRequest}>
-                {isHighLevel ? "Create Payment" : "Request Approval"}
-              </Button>
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block">Requesting Dept</label>
+                    <Input
+                      value={department}
+                      onChange={(event) => setDepartment(event.target.value)}
+                      placeholder="Department ID (e.g. IT, HR)"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block">Purpose of Payment</label>
+                  <Textarea
+                    value={purpose}
+                    onChange={(event) => setPurpose(event.target.value)}
+                    placeholder="Provide clear justification..."
+                    className="resize-none"
+                    rows={2}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block">Extra Metadata (JSON)</label>
+                  <Textarea
+                    value={extraInfo}
+                    onChange={(event) => setExtraInfo(event.target.value)}
+                    placeholder='{"invoiceId": "INV-1234"}'
+                    className="font-mono text-xs resize-none"
+                    rows={2}
+                  />
+                </div>
+
+                <div className="border-t pt-4 flex justify-end gap-3 mt-4">
+                  <Button onClick={() => setDialogOpen(false)} variant="outline">
+                    Cancel
+                  </Button>
+                  <Button onClick={submitPaymentRequest} className="gap-2">
+                    <Send className="w-4 h-4" />
+                    {isHighLevel ? "Process Payment" : "Submit Request"}
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </DialogContent>

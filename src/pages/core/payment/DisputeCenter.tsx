@@ -23,9 +23,9 @@ export default function DisputeCenter() {
     const fetchData = async () => {
       try {
         const [transactionsData, disputesData, chargebacksData] = await Promise.all([
-          paymentService.listTransactions(session.tenantId),
-          paymentService.listDisputes(session.tenantId),
-          paymentService.listChargebacks(session.tenantId),
+          paymentService.listTransactions(session.tenantId, session),
+          paymentService.listDisputes(session.tenantId, session),
+          paymentService.listChargebacks(session.tenantId, session),
         ]);
         setTransactions(transactionsData);
         setDisputes(disputesData);
@@ -35,7 +35,7 @@ export default function DisputeCenter() {
       }
     };
     fetchData();
-  }, [refreshKey, session.tenantId]);
+  }, [refreshKey, session]);
 
   const eligible = useMemo(() => transactions.filter((item) => item.status === "SETTLED"), [transactions]);
 

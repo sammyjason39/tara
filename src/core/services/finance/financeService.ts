@@ -16,14 +16,39 @@ import type {
   FinanceAlert,
 } from "@/core/types/finance/assets";
 import type {
+  PaymentMethod,
   PaymentRequest,
   FinancePaymentRow,
 } from "@/core/types/finance/payments";
-import { PaymentMethod } from "@/core/types/finance/payments";
 import type {
   ReceivableInvoice,
   FinanceReceivableRow,
 } from "@/core/types/finance/receivables";
+import type {
+  PayableBill,
+  FinancePayableRow,
+} from "@/core/types/finance/payables";
+
+export type {
+  Asset,
+  AssetAuditPack,
+  AssetAuditPackArtifact,
+  AssetCapexInput,
+  AssetDepreciationEntry,
+  AssetEvent,
+  CapexRequest,
+  DepreciationMethod,
+  DisposalType,
+  FinanceCapexBudgetRow,
+  ScheduledDepreciationRunResult,
+  FinanceAlert,
+  PaymentRequest,
+  FinancePaymentRow,
+  ReceivableInvoice,
+  FinanceReceivableRow,
+  PayableBill,
+  FinancePayableRow,
+};
 
 export interface FinanceInvoiceRow {
   id: string;
@@ -33,6 +58,17 @@ export interface FinanceInvoiceRow {
   invoiceDate: string;
   dueDate: string;
   status: "PENDING" | "APPROVED" | "PAID" | "OVERDUE";
+}
+
+export interface FinanceJournalRow {
+  id: string;
+  account: string;
+  type: "DEBIT" | "CREDIT";
+  amount: number;
+  description: string;
+  status: string;
+  createdAt: string;
+  lines?: JournalLineInput[];
 }
 
 export interface AccountingPeriod {
@@ -50,6 +86,136 @@ export interface FinanceInsight {
   category: "PAYMENTS" | "CASHFLOW" | "APPROVALS" | "PERIODS";
   value: string;
   trend: "UP" | "DOWN" | "NEUTRAL";
+}
+
+export interface FinanceDocumentRow {
+  id: string;
+  title: string;
+  type: string;
+  description: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  uploadedAt: string;
+  uploadedBy: string;
+}
+
+export interface FinancePolicyRow {
+  id: string;
+  title: string;
+  type: string;
+  description: string;
+  threshold: number;
+  active: boolean;
+}
+
+export interface CapexBudgetPayload {
+  department: string;
+  totalBudget: number;
+  notes?: string;
+  accountCode?: string;
+}
+
+export interface DepreciationRunPayload {
+  periodStart: string;
+  periodEnd: string;
+  postingDate?: string;
+  cfoSignoff?: boolean;
+}
+
+export interface PostDepreciationPayload {
+  assetId: string;
+  postingDate: string;
+  method?: DepreciationMethod;
+  unitsProduced?: number;
+  cfoSignoff?: boolean;
+}
+
+export interface AssetImpairmentPayload {
+  assetId: string;
+  impairmentAmount: number;
+  reason: string;
+  attachmentDocumentIds: string[];
+}
+
+export interface AssetRevaluationPayload {
+  assetId: string;
+  revaluedAmount: number;
+  reason: string;
+  attachmentDocumentIds: string[];
+}
+
+export interface AssetDisposalPayload {
+  assetId: string;
+  disposalType: DisposalType;
+  proceeds: number;
+  attachmentDocumentIds: string[];
+}
+
+export interface ReceivablePayload {
+  customer: string;
+  amount: number;
+  dueDate: string;
+  invoiceDate?: string;
+  currency?: "IDR" | "USD";
+}
+
+export interface PayablePayload {
+  vendor: string;
+  amount: number;
+  dueDate: string;
+  currency?: string;
+}
+
+export interface InvoiceCapturePayload {
+  vendor: string;
+  amount: number;
+  invoiceDate: string;
+  dueDate: string;
+}
+
+export interface JournalLineInput {
+  accountCode: string;
+  description: string;
+  debit: number;
+  credit: number;
+}
+
+export interface JournalPayload {
+  ref?: string;
+  description: string;
+  status?: string;
+  lines: JournalLineInput[];
+}
+
+export interface PaymentRequestPayload {
+  amount: number;
+  currency?: string;
+  method?:
+    | "QRIS"
+    | "GOPAY"
+    | "OVO"
+    | "DANA"
+    | "SHOPEEPAY"
+    | "BANK_TRANSFER"
+    | "CARD";
+  source?: string;
+  beneficiary: string;
+  departmentId?: string;
+  purpose?: string;
+  extraInfo?: Record<string, unknown>;
+}
+
+export interface TreasuryTransferPayload {
+  sourceId: string;
+  destinationId: string;
+  amount: number;
+  description: string;
+}
+
+export interface PolicyPayload {
+  title: string;
+  type: string;
+  description: string;
+  threshold: number;
 }
 
 export const financeService = {
@@ -164,11 +330,7 @@ export const financeService = {
   async setCapexBudget(
     tenantId: string,
     session: SessionContext,
-    payload: {
-      department: string;
-      totalBudget: number;
-      notes?: string;
-    },
+    payload: CapexBudgetPayload,
   ): Promise<FinanceCapexBudgetRow> {
     return apiRequest<FinanceCapexBudgetRow>(
       "/finance/capex/budgets",
@@ -261,13 +423,7 @@ export const financeService = {
   async postDepreciation(
     tenantId: string,
     session: SessionContext,
-    params: {
-      assetId: string;
-      postingDate: string;
-      method?: DepreciationMethod;
-      unitsProduced?: number;
-      cfoSignoff?: boolean;
-    },
+    params: PostDepreciationPayload,
   ): Promise<AssetDepreciationEntry & { journalEntryId: string }> {
     return apiRequest<AssetDepreciationEntry & { journalEntryId: string }>(
       `/finance/assets/${params.assetId}/depreciation`,
@@ -280,12 +436,7 @@ export const financeService = {
   async runScheduledPeriodDepreciation(
     tenantId: string,
     session: SessionContext,
-    params: {
-      periodStart: string;
-      periodEnd: string;
-      postingDate?: string;
-      cfoSignoff?: boolean;
-    },
+    params: DepreciationRunPayload,
   ): Promise<ScheduledDepreciationRunResult> {
     return apiRequest<ScheduledDepreciationRunResult>(
       "/finance/assets/depreciation/schedule-run",
@@ -298,12 +449,7 @@ export const financeService = {
   async recordAssetImpairment(
     tenantId: string,
     session: SessionContext,
-    params: {
-      assetId: string;
-      impairmentAmount: number;
-      reason: string;
-      attachmentDocumentIds: string[];
-    },
+    params: AssetImpairmentPayload,
   ): Promise<AssetEvent> {
     return apiRequest<AssetEvent>(
       `/finance/assets/${params.assetId}/impairment`,
@@ -316,12 +462,7 @@ export const financeService = {
   async recordAssetRevaluation(
     tenantId: string,
     session: SessionContext,
-    params: {
-      assetId: string;
-      revaluedAmount: number;
-      reason: string;
-      attachmentDocumentIds: string[];
-    },
+    params: AssetRevaluationPayload,
   ): Promise<AssetEvent> {
     return apiRequest<AssetEvent>(
       `/finance/assets/${params.assetId}/revaluation`,
@@ -334,12 +475,7 @@ export const financeService = {
   async disposeAsset(
     tenantId: string,
     session: SessionContext,
-    params: {
-      assetId: string;
-      disposalType: DisposalType;
-      proceeds: number;
-      attachmentDocumentIds: string[];
-    },
+    params: AssetDisposalPayload,
   ): Promise<AssetEvent> {
     return apiRequest<AssetEvent>(
       `/finance/assets/${params.assetId}/disposal`,
@@ -425,13 +561,7 @@ export const financeService = {
   async createReceivable(
     tenantId: string,
     session: SessionContext,
-    payload: {
-      customer: string;
-      amount: number;
-      dueDate: string;
-      invoiceDate?: string;
-      currency?: "IDR" | "USD";
-    },
+    payload: ReceivablePayload,
   ): Promise<ReceivableInvoice> {
     return apiRequest<ReceivableInvoice>(
       "/finance/receivables",
@@ -476,30 +606,21 @@ export const financeService = {
   async capturePayableInvoice(
     tenantId: string,
     session: SessionContext,
-    payload: {
-      vendor: string;
-      amount: number;
-      invoiceDate: string;
-      dueDate: string;
-    },
+    payload: InvoiceCapturePayload,
   ): Promise<FinanceInvoiceRow> {
     return apiRequest<FinanceInvoiceRow>(
-      "/finance/payables/capture",
+      "/finance/payables",
       "POST",
       session,
       payload,
     );
   },
 
+
   async createPayable(
     tenantId: string,
     session: SessionContext,
-    payload: {
-      vendor: string;
-      amount: number;
-      dueDate: string;
-      currency?: string;
-    },
+    payload: PayablePayload,
   ): Promise<FinanceInvoiceRow> {
     // Adapter to capturePayableInvoice
     return this.capturePayableInvoice(tenantId, session, {

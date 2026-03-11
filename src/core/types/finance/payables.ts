@@ -5,7 +5,7 @@ export interface PayableBill {
   amount: number;
   currency: "IDR" | "USD";
   dueDate: string;
-  status: "draft" | "pending" | "approved" | "paid";
+  status: "PENDING" | "APPROVED" | "PAID" | "OVERDUE";
   createdAt: string;
   updatedAt: string;
 }
@@ -17,7 +17,7 @@ export type Payable = {
   amount: number;
   currency: string;
   dueDate: string;
-  status: "pending" | "approved" | "paid" | "overdue";
+  status: "PENDING" | "APPROVED" | "PAID" | "OVERDUE";
   workflowId?: string;
   createdAt: string;
   updatedAt: string;
@@ -30,6 +30,6 @@ export interface FinancePayableRow {
   amount: number;
   currency: string;
   dueDate: string;
-  status: "RECEIVED" | "APPROVED" | "SCHEDULED_FOR_PAYMENT" | "PAID";
+  status: "PENDING" | "APPROVED" | "PAID" | "OVERDUE";
 }
 

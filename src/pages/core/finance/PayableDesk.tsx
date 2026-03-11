@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileText, Calendar, CreditCard, Building2, ArrowUpRight, Info, UploadCloud } from "lucide-react";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
@@ -15,9 +16,9 @@ import { financeApiClient } from "@/core/services/finance/financeApiClient";
 import type { FinancePayableRow } from "@/core/services/finance/financeService";
 import { logService } from "@/core/services/finance/logService";
 
-type PayableTab = "PENDING" | "APPROVED" | "OVERDUE";
+type PayableTab = "PENDING" | "APPROVED" | "PAID" | "OVERDUE";
 
-const TABS: PayableTab[] = ["PENDING", "APPROVED", "OVERDUE"];
+const TABS: PayableTab[] = ["PENDING", "APPROVED", "PAID", "OVERDUE"];
 
 export default function PayableDesk() {
   const session = useSession();
@@ -57,10 +58,17 @@ export default function PayableDesk() {
     const next: Record<PayableTab, FinancePayableRow[]> = {
       PENDING: [],
       APPROVED: [],
+      PAID: [],
       OVERDUE: [],
     };
     filtered.forEach((item) => {
-      next[item.status].push(item);
+      const statusKey = item.status as PayableTab;
+      if (next[statusKey]) {
+        next[statusKey].push(item);
+      } else {
+        // Defensive: default to PENDING if status is unknown/legacy
+        next.PENDING.push(item);
+      }
     });
     return next;
   }, [filtered]);
@@ -145,7 +153,7 @@ export default function PayableDesk() {
                       Approve
                     </Button>
                   ) : null}
-                  {payable.status !== "APPROVED" ? (
+                  {payable.status !== "PAID" ? (
                     <Button size="sm" onClick={() => markPaid(payable.id)}>
                       Mark Paid
                     </Button>
@@ -185,9 +193,9 @@ export default function PayableDesk() {
             <Badge variant="secondary">Needs review</Badge>
           </div>
           <div className="rounded-lg border p-3">
-            <p className="text-xs text-muted-foreground">Approved/Paid</p>
-            <p className="text-lg font-semibold">{grouped.APPROVED.length}</p>
-            <Badge variant="default">Healthy</Badge>
+            <p className="text-xs text-muted-foreground">Settled / Paid</p>
+            <p className="text-lg font-semibold">{grouped.PAID.length}</p>
+            <Badge variant="default">Settled</Badge>
           </div>
           <div className="rounded-lg border p-3">
             <p className="text-xs text-muted-foreground">Overdue</p>
@@ -216,44 +224,154 @@ export default function PayableDesk() {
       </WorkspacePanel>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden" aria-describedby="payable-create-description">
+          <DialogHeader className="sr-only">
             <DialogTitle>Create Payable</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <Input placeholder="Vendor" value={vendor} onChange={(event) => setVendor(event.target.value)} />
-            <Input placeholder="Amount" type="number" value={amount} onChange={(event) => setAmount(event.target.value)} />
-            <Input placeholder="Due date" type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
-            <div className="flex justify-end gap-2">
-              <Button onClick={createPayable}>Create and Route</Button>
+          <div id="payable-create-description" className="sr-only">Form to establish a new accounts payable liability.</div>
+          <div className="grid md:grid-cols-[1fr_2fr]">
+            {/* Left Info Panel */}
+            <div className="bg-muted p-6 flex flex-col justify-between">
+              <div>
+                <ArrowUpRight className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2">Create Payable</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Record outgoing vendor bills. This establishes an Accounts Payable liability awaiting approval.
+                </p>
+                <div className="mt-8 space-y-4">
+                  <div className="flex items-start gap-3 text-sm">
+                    <div className="mt-0.5"><Building2 className="w-4 h-4 text-muted-foreground" /></div>
+                    <div>
+                      <p className="font-medium">Vendor Selection</p>
+                      <p className="text-muted-foreground text-xs">A valid vendor profile is required.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 text-sm">
+                    <div className="mt-0.5"><Calendar className="w-4 h-4 text-muted-foreground" /></div>
+                    <div>
+                      <p className="font-medium">Payment Scheduling</p>
+                      <p className="text-muted-foreground text-xs">Due dates guide treasury disbursements.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-primary/5 p-4 rounded-lg mt-8 border border-primary/10">
+                <p className="text-xs text-primary font-medium flex items-center gap-1.5">
+                  <Info className="w-4 h-4" /> Ledger Sync
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Generates an automatic Expense / Liability journal entry.
+                </p>
+              </div>
+            </div>
+
+            {/* Right Form Panel */}
+            <div className="p-6">
+              <div className="space-y-6">
+                <div>
+                  <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block">Vendor Name</label>
+                  <Input placeholder="e.g., Summit Supplies Ltd." value={vendor} onChange={(event) => setVendor(event.target.value)} />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block">Amount (IDR)</label>
+                    <div className="relative">
+                      <CreditCard className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        className="pl-9"
+                        placeholder="0"
+                        type="number"
+                        value={amount}
+                        onChange={(event) => setAmount(event.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block">Required Due Date</label>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        className="pl-9"
+                        type="date"
+                        value={dueDate}
+                        onChange={(event) => setDueDate(event.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block">Supplier Invoice (Optional)</label>
+                  <div className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors">
+                    <UploadCloud className="h-8 w-8 text-muted-foreground mb-2" />
+                    <p className="text-sm font-medium">Attach Invoice Document</p>
+                    <p className="text-xs text-muted-foreground mt-1">PDF, JPG up to 10MB</p>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                  <Button onClick={createPayable}>Submit for Approval</Button>
+                </div>
+              </div>
             </div>
           </div>
         </DialogContent>
       </Dialog>
       <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Payable Detail</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="grid grid-cols-2 text-sm gap-y-2">
-              <span className="text-muted-foreground">Invoice ID:</span>
-              <span>{selectedItem?.invoiceId}</span>
-              <span className="text-muted-foreground">Vendor:</span>
-              <span className="font-semibold">{selectedItem?.vendor}</span>
-              <span className="text-muted-foreground">Amount:</span>
-              <span className="font-bold">{selectedItem?.amount.toLocaleString()}</span>
-              <span className="text-muted-foreground">Due Date:</span>
-              <span>{selectedItem?.dueDate}</span>
-              <span className="text-muted-foreground">Status:</span>
-              <span><ApprovalStatusBadge status={selectedItem?.status || "PENDING"} /></span>
+        <DialogContent className="max-w-2xl" aria-describedby="payable-detail-description">
+          <div id="payable-detail-description" className="sr-only">Detailed view of the selected payable invoice and settlement workflow.</div>
+          <DialogHeader className="pb-4 border-b">
+            <div className="flex justify-between items-start">
+              <div>
+                <DialogTitle className="text-xl flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Payable Detail
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground mt-1">ID: <span className="font-mono">{selectedItem?.invoiceId}</span></p>
+              </div>
+              <ApprovalStatusBadge status={selectedItem?.status || "PENDING"} />
             </div>
-            <div className="border-t pt-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Settlement Workflow</p>
-              <p className="text-xs text-muted-foreground">
-                Payment scheduled for next cash disbursement run. 
-                VAT compliance verified for this vendor invoice.
-              </p>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-8 py-4">
+            <div className="space-y-6">
+              <div>
+                <p className="text-sm text-muted-foreground uppercase font-semibold tracking-wider mb-1">Vendor</p>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center">
+                    <Building2 className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-lg">{selectedItem?.vendor}</p>
+                    <p className="text-sm text-muted-foreground">Supplier Account</p>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground uppercase font-semibold tracking-wider mb-1">Timeline</p>
+                <div className="bg-muted/30 p-3 rounded-lg border">
+                  <p className="text-xs text-muted-foreground">Due Date</p>
+                  <p className="font-medium text-sm text-rose-600">{selectedItem?.dueDate}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-6 border-l pl-8">
+              <div>
+                <p className="text-sm text-muted-foreground uppercase font-semibold tracking-wider mb-1">Financials</p>
+                <div className="bg-primary/5 p-4 rounded-xl border border-primary/10">
+                  <p className="text-sm font-medium mb-1">Total Due</p>
+                  <p className="text-3xl font-bold tracking-tight">Rp {selectedItem?.amount.toLocaleString()}</p>
+                </div>
+              </div>
+              <div className="border-t pt-4">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Settlement Workflow</p>
+                <p className="text-xs text-muted-foreground">
+                  Payment scheduled for next cash disbursement run. 
+                  VAT compliance verified for this vendor invoice.
+                </p>
+              </div>
             </div>
           </div>
         </DialogContent>

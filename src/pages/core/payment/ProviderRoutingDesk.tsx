@@ -17,8 +17,8 @@ export default function ProviderRoutingDesk() {
     const fetchData = async () => {
       try {
         const [providersData, policiesData] = await Promise.all([
-          paymentService.listProviders(session.tenantId),
-          paymentService.listRoutingPolicies(session.tenantId),
+          paymentService.listProviders(session.tenantId, session),
+          paymentService.listRoutingPolicies(session.tenantId, session),
         ]);
         setProviders(providersData);
         setPolicies(policiesData);
@@ -27,7 +27,7 @@ export default function ProviderRoutingDesk() {
       }
     };
     fetchData();
-  }, [refreshKey, session.tenantId]);
+  }, [refreshKey, session]);
 
   const setProvider = (providerId: PaymentProvider["id"], status: PaymentProvider["status"]) => {
     paymentService.setProviderStatus(session.tenantId, session, providerId, status);

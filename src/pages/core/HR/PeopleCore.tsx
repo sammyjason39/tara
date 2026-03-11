@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { UserCog, Network, Info } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
@@ -519,66 +520,91 @@ export default function PeopleCore() {
       </WorkspacePanel>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden" aria-describedby="workflow-request-description">
+          <DialogHeader className="sr-only">
             <DialogTitle>Create Workflow Request</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <Select
-              value={workflowType}
-              onValueChange={(value) =>
-                setWorkflowType(value as typeof workflowType)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Request type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="PERFORMANCE">Performance</SelectItem>
-                <SelectItem value="PAYROLL">Payroll</SelectItem>
-                <SelectItem value="CONTRACT">Contract</SelectItem>
-                <SelectItem value="TRAINING">Training</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={destinationDept} onValueChange={setDestinationDept}>
-              <SelectTrigger>
-                <SelectValue placeholder="Destination dept" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="HR">HR</SelectItem>
-                <SelectItem value="FINANCE">Finance</SelectItem>
-                <SelectItem value="LEGAL">Legal</SelectItem>
-                <SelectItem value="OPERATIONS">Operations</SelectItem>
-                <SelectItem value="ADMIN">Admin</SelectItem>
-              </SelectContent>
-            </Select>
-            <Textarea
-              placeholder="Notes for approvers"
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-            />
-            <Button
-              onClick={() => {
-                try {
-                  workflowService.createRequest(session.tenantId, session, {
-                    entityType: workflowType,
-                    entityId: employee.id,
-                    makerDept: session.departmentId,
-                    destinationDept,
-                    notes,
-                  });
-                  setStatusMessage(
-                    `Workflow request for ${workflowType} initialized.`,
-                  );
-                  setNotes("");
-                  setDialogOpen(false);
-                } catch (err) {
-                  setErrorMessage("Failed to create workflow request.");
-                }
-              }}
-            >
-              Send to FlowGate
-            </Button>
+          <div id="workflow-request-description" className="sr-only">Form to initiate a new HR workflow case.</div>
+          <div className="grid md:grid-cols-[1fr_2fr]">
+            <div className="bg-muted p-6 flex flex-col justify-between">
+              <div>
+                <Network className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2">Create Workflow Request</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Initiate a structured workflow involving this employee, such as a performance review or contract renewal.
+                </p>
+              </div>
+              <div className="bg-primary/5 p-4 rounded-lg mt-8 border border-primary/10">
+                <p className="text-xs text-primary font-medium flex items-center gap-1.5">
+                  <Info className="w-4 h-4" /> Cross-Department Routing
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Requests are seamlessly routed to destination FlowGates.
+                </p>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                <Select
+                  value={workflowType}
+                  onValueChange={(value) =>
+                    setWorkflowType(value as typeof workflowType)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Request type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PERFORMANCE">Performance</SelectItem>
+                    <SelectItem value="PAYROLL">Payroll</SelectItem>
+                    <SelectItem value="CONTRACT">Contract</SelectItem>
+                    <SelectItem value="TRAINING">Training</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={destinationDept} onValueChange={setDestinationDept}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Destination dept" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="HR">HR</SelectItem>
+                    <SelectItem value="FINANCE">Finance</SelectItem>
+                    <SelectItem value="LEGAL">Legal</SelectItem>
+                    <SelectItem value="OPERATIONS">Operations</SelectItem>
+                    <SelectItem value="ADMIN">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Textarea
+                  placeholder="Notes for approvers"
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                />
+                <div className="flex justify-end pt-4 mt-6 border-t">
+                  <Button variant="outline" onClick={() => setDialogOpen(false)} className="mr-3">Cancel</Button>
+                  <Button
+                    onClick={() => {
+                      try {
+                        workflowService.createRequest(session.tenantId, session, {
+                          entityType: workflowType,
+                          entityId: employee.id,
+                          makerDept: session.departmentId,
+                          destinationDept,
+                          notes,
+                        });
+                        setStatusMessage(
+                          `Workflow request for ${workflowType} initialized.`,
+                        );
+                        setNotes("");
+                        setDialogOpen(false);
+                      } catch (err) {
+                        setErrorMessage("Failed to create workflow request.");
+                      }
+                    }}
+                  >
+                    Send to FlowGate
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -709,89 +735,111 @@ export default function PeopleCore() {
       </Dialog>
 
       <Dialog open={actionOpen} onOpenChange={setActionOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Personnel Action: {actionType}</DialogTitle>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden" aria-describedby="personnel-action-description">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Personnel Action</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-2">
-            {actionType === "MOVE" && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Target Department</label>
-                <Select value={targetDept} onValueChange={setTargetDept}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="HR">HR</SelectItem>
-                    <SelectItem value="FINANCE">Finance</SelectItem>
-                    <SelectItem value="OPERATIONS">Operations</SelectItem>
-                    <SelectItem value="SALES">Sales</SelectItem>
-                    <SelectItem value="IT">IT</SelectItem>
-                  </SelectContent>
-                </Select>
+          <div id="personnel-action-description" className="sr-only">Execute a structural personnel action.</div>
+          <div className="grid md:grid-cols-[1fr_2fr]">
+            <div className="bg-muted p-6 flex flex-col justify-between">
+              <div>
+                <UserCog className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2">Personnel Action: {actionType}</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Apply a structural lifecycle action to this employee record.
+                </p>
               </div>
-            )}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Reason for Action</label>
-              <Textarea
-                placeholder="Required notes for audit and approval chain..."
-                value={actionReason}
-                onChange={(e) => setActionReason(e.target.value)}
-              />
+              <div className="bg-primary/5 p-4 rounded-lg mt-8 border border-primary/10">
+                <p className="text-xs text-primary font-medium flex items-center gap-1.5">
+                  <Info className="w-4 h-4" /> Audit Bound
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Transfers and terminations require a mandatory reason for audit.
+                </p>
+              </div>
             </div>
-            <div className="border-t pt-4">
-              <Button
-                className="w-full"
-                variant={actionType === "TERMINATE" ? "destructive" : "default"}
-                onClick={() => {
-                  try {
-                    if (!actionReason) {
-                      setErrorMessage(
-                        "Reason is required for personnel actions.",
-                      );
-                      return;
-                    }
-                    if (actionType === "MOVE") {
-                      (staffService as any).requestTransfer(
-                        employee.tenantId,
-                        session,
-                        employee.id,
-                        targetDept,
-                        actionReason,
-                      );
-                      setStatusMessage(
-                        `Transfer request for ${employee.fullName} to ${targetDept} initiated.`,
-                      );
-                    } else if (actionType === "REMOVE") {
-                      staffService.updateEmployee(
-                        employee.tenantId,
-                        session,
-                        employee.id,
-                        { status: "inactive" },
-                      );
-                      setStatusMessage(
-                        `${employee.fullName} record deactivated (inactive).`,
-                      );
-                    } else if (actionType === "TERMINATE") {
-                      staffService.requestTermination(
-                        employee.tenantId,
-                        session,
-                        employee.id,
-                        actionReason,
-                      );
-                      setStatusMessage(
-                        `Termination workflow triggered for ${employee.fullName}.`,
-                      );
-                    }
-                    setActionOpen(false);
-                    setActionReason("");
-                  } catch (err: any) {
-                    setErrorMessage(err.message || "Personnel action failed.");
-                  }
-                }}
-              >
-                Submit for Approval
-              </Button>
+            <div className="p-6">
+              <div className="space-y-4">
+                {actionType === "MOVE" && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Target Department</label>
+                    <Select value={targetDept} onValueChange={setTargetDept}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="HR">HR</SelectItem>
+                        <SelectItem value="FINANCE">Finance</SelectItem>
+                        <SelectItem value="OPERATIONS">Operations</SelectItem>
+                        <SelectItem value="SALES">Sales</SelectItem>
+                        <SelectItem value="IT">IT</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Reason for Action</label>
+                  <Textarea
+                    placeholder="Required notes for audit and approval chain..."
+                    value={actionReason}
+                    onChange={(e) => setActionReason(e.target.value)}
+                  />
+                </div>
+                <div className="flex justify-end pt-4 mt-6 border-t gap-3">
+                  <Button variant="outline" onClick={() => setActionOpen(false)}>Cancel</Button>
+                  <Button
+                    variant={actionType === "TERMINATE" ? "destructive" : "default"}
+                    onClick={() => {
+                      try {
+                        if (!actionReason) {
+                          setErrorMessage(
+                            "Reason is required for personnel actions.",
+                          );
+                          return;
+                        }
+                        if (actionType === "MOVE") {
+                          (staffService as any).requestTransfer(
+                            employee.tenantId,
+                            session,
+                            employee.id,
+                            targetDept,
+                            actionReason,
+                          );
+                          setStatusMessage(
+                            `Transfer request for ${employee.fullName} to ${targetDept} initiated.`,
+                          );
+                        } else if (actionType === "REMOVE") {
+                          staffService.updateEmployee(
+                            employee.tenantId,
+                            session,
+                            employee.id,
+                            { status: "inactive" },
+                          );
+                          setStatusMessage(
+                            `${employee.fullName} record deactivated (inactive).`,
+                          );
+                        } else if (actionType === "TERMINATE") {
+                          staffService.requestTermination(
+                            employee.tenantId,
+                            session,
+                            employee.id,
+                            actionReason,
+                          );
+                          setStatusMessage(
+                            `Termination workflow triggered for ${employee.fullName}.`,
+                          );
+                        }
+                        setActionOpen(false);
+                        setActionReason("");
+                      } catch (err: any) {
+                        setErrorMessage(err.message || "Personnel action failed.");
+                      }
+                    }}
+                  >
+                    Submit for Approval
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </DialogContent>

@@ -23,7 +23,7 @@ import { InventoryTable } from "./components/inventory/InventoryTable";
 import { StockOpnameTab } from "./components/inventory/StockOpnameTab";
 import { OpnameEntry } from "./components/inventory/opname/OpnameTable";
 import { MovementsTab, AuditEntry } from "./components/inventory/MovementsTab";
-import { ItemCreationTab } from "./components/inventory/ItemCreationTab";
+import { ItemCreationTab } from "@/components/shared/ItemCreationTab";
 import { StockReportTab } from "./components/inventory/StockReportTab";
 import {
   InventoryMovementDialog,
@@ -37,7 +37,7 @@ import { ProductDetailEditDialog } from "./components/inventory/modals/ProductDe
 import {
   PostekPrintModal,
   PrintItem,
-} from "./components/inventory/PostekPrintModal";
+} from "@/components/shared/PostekPrintModal";
 import { MOVEMENT_META } from "./inventory/inventory.types";
 
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";

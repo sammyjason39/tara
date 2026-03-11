@@ -21,9 +21,9 @@ export default function MarketingAnalytics() {
   const refresh = useCallback(async () => {
     try {
       const [c, ch, a] = await Promise.all([
-        marketingService.listCampaigns(session.tenantId),
-        marketingService.getChannelPerformance(session.tenantId),
-        marketingService.listAttribution(session.tenantId),
+        marketingService.listCampaigns(session.tenantId, session),
+        marketingService.getChannelPerformance(session.tenantId, session),
+        marketingService.listAttribution(session.tenantId, session),
       ]);
       setCampaigns(c);
       setChannelPerformance(ch);

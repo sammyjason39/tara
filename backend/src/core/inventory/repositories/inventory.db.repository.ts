@@ -77,7 +77,12 @@ export class InventoryDbRepository implements IInventoryRepository {
       where: { tenantId: tenantId, type: "EXPIRY_WARNING", status: "OPEN" },
     });
 
-    const pendingReceiptSyncs = 0; // Not tracked in DB yet
+    const pendingReceiptSyncs = await this.prisma.procurementFinalPO.count({
+      where: {
+        tenantId: tenantId,
+        status: { in: ["RELEASED", "APPROVED", "DELIVERED"] },
+      },
+    });
 
     return {
       totalItems,
@@ -94,8 +99,9 @@ export class InventoryDbRepository implements IInventoryRepository {
 
   async getItems(tenantId: string): Promise<InventoryItem[]> {
     const products = await this.prisma.product.findMany({
-      where: { tenantId: tenantId, status: "active" },
+      where: { tenantId: tenantId, status: { not: "deleted" } },
       include: { category: true },
+      orderBy: { createdAt: "desc" },
     });
 
     return products.map((p: Product & { category: ProductCategory }) => ({
@@ -108,6 +114,7 @@ export class InventoryDbRepository implements IInventoryRepository {
       barcode: p.barcode,
       qrCode: p.barcode,
       moduleTags: (p as any).moduleTags || [],
+      departmentId: p.departmentId || undefined,
       active: p.status === "active",
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
@@ -142,6 +149,7 @@ export class InventoryDbRepository implements IInventoryRepository {
         taxRate: data.taxRate ?? 0,
         moduleTags: data.moduleTags ?? [],
         status: data.status || "active",
+        departmentId: data.departmentId || null,
       },
       include: { category: true },
     });
@@ -157,6 +165,7 @@ export class InventoryDbRepository implements IInventoryRepository {
       qrCode: product.barcode,
       moduleTags: (product as any).moduleTags || [],
       active: product.status === "active",
+      departmentId: product.departmentId || undefined,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
     };
@@ -642,15 +651,38 @@ export class InventoryDbRepository implements IInventoryRepository {
   }
 
   async requestProcurement(tenantId: string, data: any): Promise<any> {
-    // This connects to Procurement module. For now, creating a requisition if model exists.
-    return (this.prisma as any).procurementRequisition.create({
+    // Creates a procurement requisition triggered by inventory low-stock
+    // Uses a system user/employee; data should include: departmentId, reason, items[]
+    const departmentId = data.departmentId || null;
+    const requesterId = data.requestedBy || data.requesterId || null;
+
+    // If we don't have departmentId or requesterId, just log and return placeholder
+    if (!departmentId || !requesterId) {
+      console.warn(
+        "[InventoryService] requestProcurement: Missing departmentId or requesterId — skipping PR creation",
+      );
+      return { skipped: true, reason: "Missing departmentId or requesterId" };
+    }
+
+    const totalAmount = (data.items || []).reduce(
+      (sum: number, item: any) =>
+        sum + (item.quantity || 0) * (item.unitPrice || 0),
+      0,
+    );
+
+    return this.prisma.procurementRequisition.create({
       data: {
         tenantId: tenantId,
-        departmentId: data.departmentId,
-        employeeId: data.requestedBy,
-        reason: data.reason || "Auto-restock from Inventory",
+        departmentId,
+        requesterId,
+        branchCode: data.branchCode || "HQ",
+        title: data.title || "Auto-Restock from Inventory",
+        description: data.reason || "Low-stock auto-generated procurement request",
+        category: data.category || "GENERAL",
+        budgetClass: data.budgetClass || "OPEX",
+        amount: totalAmount || 0,
+        currency: data.currency || "IDR",
         status: "DRAFT",
-        // items: data.items // Procurement schema usually has lines
       },
     });
   }
@@ -686,6 +718,7 @@ export class InventoryDbRepository implements IInventoryRepository {
             taxRate: itemData.taxRate ?? 0,
             moduleTags: itemData.moduleTags ?? [],
             status: itemData.status || "active",
+            departmentId: itemData.departmentId || null,
           },
           include: { category: true },
         });
@@ -700,6 +733,7 @@ export class InventoryDbRepository implements IInventoryRepository {
           barcode: product.barcode,
           qrCode: product.barcode,
           moduleTags: (product as any).moduleTags || [],
+          departmentId: product.departmentId || undefined,
           active: product.status === "active",
           createdAt: product.createdAt,
           updatedAt: product.updatedAt,
@@ -772,13 +806,43 @@ export class InventoryDbRepository implements IInventoryRepository {
     tenant_id: string,
     data: CreateMovementRequestDto,
   ): Promise<MovementRequest> {
-    // Basic implementation for now to satisfy interface
-    // In a real system, this would use a dedicated MovementRequest table if it exists in Prisma
-    console.log("Mocking movement request creation in DB repository");
+    // Persist each line as a stock movement record with type MOVEMENT_REQUEST
+    // This is the audit-safe approach until a dedicated MovementRequest table is added
+    const referenceId = `MVR-${Date.now()}`;
+    const movements = await this.prisma.$transaction(async (tx) => {
+      const results = [];
+      for (const line of data.lines) {
+        // Try to find the product by SKU
+        const product = await tx.product.findFirst({
+          where: { tenantId: tenant_id, sku: line.sku },
+        });
+        if (!product) continue; // Skip lines without a matching product
+
+        const mov = await tx.stockMovement.create({
+          data: {
+            tenantId: tenant_id,
+            productId: product.id,
+            fromLocationId: data.sourceLocationId || null,
+            toLocationId: data.requestingLocationId,
+            quantity: line.quantity,
+            type: "MOVEMENT_REQUEST",
+            referenceId,
+            performedBy: "system",
+          },
+        });
+        results.push(mov);
+      }
+      return results;
+    });
+
     return {
-      id: "mov-" + Math.random().toString(36).substr(2, 9),
+      id: referenceId,
       tenant_id,
-      ...data,
+      type: data.type,
+      requestingLocationId: data.requestingLocationId,
+      sourceType: data.sourceType,
+      lines: data.lines,
+      reason: data.reason,
       status: "pending",
       createdAt: new Date(),
       updatedAt: new Date(),

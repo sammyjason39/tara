@@ -2,6 +2,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator backend_client {
+  provider = "prisma-client-js"
+  output   = "../backend/node_modules/.prisma/client"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -113,6 +118,22 @@ model Company {
   treasuryTransfers       TreasuryTransfer[]
   labelConfigs            LabelConfig[]
   productProjections      ProductProjection[]
+  procurementCategories   ProcurementCategory[]
+  systemLogs              SystemLog[]
+  moduleLicenses          ModuleLicense[]
+  moduleLicenseLogs       ModuleLicenseLog[]
+  chatRooms               ChatRoom[]
+  chatMembers             ChatMember[]
+  chatMessages            ChatMessage[]
+  mailAccounts            MailAccount[]
+  mailThreads             MailThread[]
+  mailMessages            MailMessage[]
+  mailLabels              MailLabel[]
+  bulletinPosts           BulletinPost[]
+  bulletinComments        BulletinComment[]
+  bulletinReactions       BulletinReaction[]
+  bulletinCategories      BulletinCategory[]
+  notifications           Notification[]
 
   @@index([status])
   @@map("companies")
@@ -173,6 +194,7 @@ model Location {
   inventoryAdjustments InventoryAdjustment[]
   labelConfigs         LabelConfig[]
   productProjections   ProductProjection[]
+  chatRooms            ChatRoom[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -201,6 +223,8 @@ model Department {
   fromMovements           StockMovement[]          @relation("FromDepartment")
   toMovements             StockMovement[]          @relation("ToDepartment")
   paymentTransactions     PaymentTransaction[]
+  products                Product[]
+  chatRooms               ChatRoom[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -659,6 +683,8 @@ model Product {
   createdAt     DateTime              @default(now()) @map("created_at")
   updatedAt     DateTime              @updatedAt @map("updated_at")
   category      ProductCategory       @relation(fields: [categoryId], references: [id])
+  departmentId  String?               @map("department_id")
+  department    Department?           @relation(fields: [departmentId], references: [id])
   company       Company               @relation(fields: [tenantId], references: [id])
   orderItems    RetailOrderItem[]
   stockLevels   StockLevel[]
@@ -1133,24 +1159,26 @@ model ITSetting {
 
 model AuditLog {
   id         String   @id @default(uuid())
-  tenantId  String   @map("tenant_id")
+  tenantId   String   @map("tenant_id")
+  userId     String   @map("user_id")
   module     String
   action     String
   entityType String   @map("entity_type")
   entityId   String   @map("entity_id")
-  userId     String   @map("user_id")
-  changes    Json?
   metadata   Json?
+  changes    Json?
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  severity   String   @default("INFO")
   createdAt  DateTime @default(now()) @map("created_at")
   company    Company  @relation(fields: [tenantId], references: [id])
-
   @@index([tenantId])
-  @@index([module])
-  @@index([entityType, entityId])
   @@index([userId])
+  @@index([module])
   @@index([createdAt])
   @@map("audit_logs")
 }
+
 
 model MoneySource {
   id                String   @id @default(uuid())
@@ -1327,6 +1355,11 @@ model SupplierMaster {
   complianceStatus       String                   @default("PENDING") @map("compliance_status")
   globalRating           Int                      @default(0) @map("global_rating")
   riskTier               String                   @default("LOW") @map("risk_tier")
+  website                String?
+  contactPerson         String?                  @map("contact_person")
+  contactEmail          String?                  @map("contact_email")
+  contactPhone          String?                  @map("contact_phone")
+  address               String?
   categories             String[]
   createdAt              DateTime                 @default(now()) @map("created_at")
   updatedAt              DateTime                 @updatedAt @map("updated_at")
@@ -1354,6 +1387,10 @@ model SupplierBranch {
   branchCode   String                   @map("branch_code")
   branchName   String                   @map("branch_name")
   location     String
+  fullAddress  String?                  @map("full_address")
+  contactPerson String?                 @map("contact_person")
+  contactEmail  String?                 @map("contact_email")
+  contactPhone  String?                 @map("contact_phone")
   leadTimeDays Int                      @default(0) @map("lead_time_days")
   localRating  Int                      @default(0) @map("local_rating")
   riskTier     String                   @default("LOW") @map("risk_tier")
@@ -1511,6 +1548,21 @@ model ProcurementContract {
   @@index([tenantId])
   @@index([requisitionId])
   @@map("procurement_contracts")
+}
+
+model ProcurementCategory {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  name        String
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  company     Company  @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("procurement_categories")
 }
 
 model ProcurementReceipt {
@@ -2387,4 +2439,498 @@ model AdminRequest {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
   @@map("admin_requests")
+}
+
+// ============================================================
+// FINANCE EXTENSION MODELS
+// ============================================================
+
+model CapexBudget {
+  id              String   @id @default(uuid())
+  tenantId        String   @map("tenant_id")
+  department      String
+  period          String
+  allocatedBudget Decimal  @map("allocated_budget") @db.Decimal(15, 2)
+  committedBudget Decimal  @map("committed_budget") @default(0) @db.Decimal(15, 2)
+  availableBudget Decimal  @map("available_budget") @db.Decimal(15, 2)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, department, period])
+  @@index([tenantId])
+  @@map("capex_budgets")
+}
+
+model AccountingPeriod {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  name      String
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
+  status    String   // OPEN, CLOSED
+  closedAt  DateTime? @map("closed_at")
+  closedBy  String?  @map("closed_by")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([status])
+  @@map("accounting_periods")
+}
+
+model FinanceDocument {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  title       String
+  type        String
+  url         String
+  description String?
+  uploadedBy  String   @map("uploaded_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@map("finance_documents")
+}
+
+model FinancePolicy {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  title       String
+  type        String
+  description String?
+  threshold   Decimal  @db.Decimal(15, 2)
+  active      Boolean  @default(true)
+  createdBy   String   @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantId])
+  @@map("finance_policies")
+}
+
+model FinanceInsight {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  title       String
+  category    String
+  impact      String
+  confidence  Int
+  trend       String
+  actionable  Boolean  @default(false)
+  description String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId])
+  @@map("finance_insights")
+}
+
+model FinanceAlert {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  title       String
+  severity    String
+  status      String   @default("UNRESOLVED")
+  message     String
+  createdAt   DateTime @default(now()) @map("created_at")
+  resolvedAt  DateTime? @map("resolved_at")
+
+  @@index([tenantId])
+  @@index([status])
+  @@map("finance_alerts")
+}
+
+model AssetDepreciationEntry {
+  id               String   @id @default(uuid())
+  tenantId         String   @map("tenant_id")
+  assetId          String   @map("asset_id")
+  period           String
+  date             DateTime
+  depreciationExp  Decimal  @map("depreciation_exp") @db.Decimal(15, 2)
+  accumulatedDep   Decimal  @map("accumulated_dep") @db.Decimal(15, 2)
+  carryingValue    Decimal  @map("carrying_value") @db.Decimal(15, 2)
+  journalRef       String?  @map("journal_ref")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, assetId])
+  @@map("asset_depreciation_entries")
+}
+
+model AssetEvent {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  assetId     String   @map("asset_id")
+  type        String
+  description String
+  date        DateTime
+  recordedBy  String   @map("recorded_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([tenantId, assetId])
+  @@map("asset_events")
+}
+
+model SystemLog {
+  id         String    @id @default(uuid())
+  tenantId   String?   @map("tenant_id")
+  module     String
+  level      String    @default("INFO")
+  event      String
+  message    String
+  payload    Json?
+  errorStack String?   @map("error_stack")
+  requestId  String?   @map("request_id")
+  userId     String?   @map("user_id")
+  ipAddress  String?   @map("ip_address")
+  durationMs Int?      @map("duration_ms")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  company    Company?  @relation(fields: [tenantId], references: [id])
+  @@index([tenantId])
+  @@index([module])
+  @@index([level])
+  @@index([createdAt])
+  @@map("system_logs")
+}
+
+model ModuleDefinition {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  description String?
+  category    String   @default("industry")
+  iconUrl     String?  @map("icon_url")
+  isGlobal    Boolean  @default(false) @map("is_global")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  licenses    ModuleLicense[]
+  @@map("module_definitions")
+}
+
+model ModuleLicense {
+  id           String    @id @default(uuid())
+  tenantId     String    @map("tenant_id")
+  moduleCode   String    @map("module_code")
+  licenseKey   String    @unique @map("license_key")
+  status       String    @default("active")
+  isEnabled    Boolean   @default(true) @map("is_enabled")
+  planType     String    @default("monthly") @map("plan_type")
+  maxSeats     Int?      @map("max_seats")
+  usedSeats    Int       @default(0) @map("used_seats")
+  startDate    DateTime  @map("start_date")
+  endDate      DateTime? @map("end_date")
+  paymentRef   String?   @map("payment_ref")
+  issuedBy     String?   @map("issued_by")
+  issuedAt     DateTime  @default(now()) @map("issued_at")
+  revokedAt    DateTime? @map("revoked_at")
+  revokedBy    String?   @map("revoked_by")
+  revokeReason String?   @map("revoke_reason")
+  notes        String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  company      Company          @relation(fields: [tenantId], references: [id])
+  module       ModuleDefinition @relation(fields: [moduleCode], references: [code])
+  usageLogs    ModuleLicenseLog[]
+  @@unique([tenantId, moduleCode])
+  @@index([tenantId])
+  @@index([status])
+  @@map("module_licenses")
+}
+
+model ModuleLicenseLog {
+  id          String   @id @default(uuid())
+  licenseId   String   @map("license_id")
+  tenantId    String   @map("tenant_id")
+  action      String
+  performedBy String   @map("performed_by")
+  notes       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  license     ModuleLicense @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  company     Company       @relation(fields: [tenantId], references: [id])
+  @@index([licenseId])
+  @@index([tenantId])
+  @@map("module_license_logs")
+}
+
+enum ChatRoomType {
+  DIRECT
+  GROUP
+  DEPARTMENT
+  LOCATION
+  COMPANY
+  ROLE
+}
+
+model ChatRoom {
+  id           String       @id @default(uuid())
+  tenantId     String       @map("tenant_id")
+  name         String?
+  type         ChatRoomType @default(DIRECT)
+  description  String?
+  avatarUrl    String?      @map("avatar_url")
+  departmentId String?      @map("department_id")
+  locationId   String?      @map("location_id")
+  roleScope    String?      @map("role_scope")
+  createdBy    String       @map("created_by")
+  isArchived   Boolean      @default(false) @map("is_archived")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+  deletedAt    DateTime?    @map("deleted_at")
+  company      Company      @relation(fields: [tenantId], references: [id])
+  department   Department?  @relation(fields: [departmentId], references: [id])
+  location     Location?    @relation(fields: [locationId], references: [id])
+  members      ChatMember[]
+  messages     ChatMessage[]
+  @@index([tenantId])
+  @@index([type])
+  @@map("chat_rooms")
+}
+
+model ChatMember {
+  id         String    @id @default(uuid())
+  roomId     String    @map("room_id")
+  tenantId   String    @map("tenant_id")
+  userId     String    @map("user_id")
+  role       String    @default("member")
+  joinedAt   DateTime  @default(now()) @map("joined_at")
+  leftAt     DateTime? @map("left_at")
+  mutedUntil DateTime? @map("muted_until")
+  lastReadAt DateTime? @map("last_read_at")
+  room       ChatRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  company    Company   @relation(fields: [tenantId], references: [id])
+  @@unique([roomId, userId])
+  @@index([tenantId])
+  @@index([userId])
+  @@map("chat_members")
+}
+
+model ChatMessage {
+  id          String    @id @default(uuid())
+  roomId      String    @map("room_id")
+  tenantId    String    @map("tenant_id")
+  senderId    String    @map("sender_id")
+  body        String?
+  type        String    @default("text")
+  attachments Json?
+  refModule   String?   @map("ref_module")
+  refEntityId String?   @map("ref_entity_id")
+  isEdited    Boolean   @default(false) @map("is_edited")
+  editedAt    DateTime? @map("edited_at")
+  deletedAt   DateTime? @map("deleted_at")
+  replyToId   String?   @map("reply_to_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  room        ChatRoom      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  company     Company       @relation(fields: [tenantId], references: [id])
+  replyTo     ChatMessage?  @relation("MessageReply", fields: [replyToId], references: [id])
+  replies     ChatMessage[] @relation("MessageReply")
+  reactions   ChatReaction[]
+  @@index([tenantId])
+  @@index([roomId])
+  @@index([createdAt])
+  @@map("chat_messages")
+}
+
+model ChatReaction {
+  id        String      @id @default(uuid())
+  messageId String      @map("message_id")
+  userId    String      @map("user_id")
+  emoji     String
+  createdAt DateTime    @default(now()) @map("created_at")
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  @@unique([messageId, userId, emoji])
+  @@map("chat_reactions")
+}
+
+model MailAccount {
+  id          String    @id @default(uuid())
+  tenantId    String    @map("tenant_id")
+  userId      String    @map("user_id")
+  address     String
+  type        String    @default("internal")
+  displayName String?   @map("display_name")
+  provider    String?
+  smtpConfig  Json?     @map("smtp_config")
+  isDefault   Boolean   @default(false) @map("is_default")
+  isVerified  Boolean   @default(false) @map("is_verified")
+  status      String    @default("active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  company     Company   @relation(fields: [tenantId], references: [id])
+  sent        MailMessage[]  @relation("SentMail")
+  folders     MailFolder[]
+  @@unique([userId, address])
+  @@index([tenantId])
+  @@map("mail_accounts")
+}
+
+model MailThread {
+  id        String    @id @default(uuid())
+  tenantId  String    @map("tenant_id")
+  subject   String
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  company   Company   @relation(fields: [tenantId], references: [id])
+  messages  MailMessage[]
+  @@index([tenantId])
+  @@map("mail_threads")
+}
+
+model MailMessage {
+  id            String    @id @default(uuid())
+  tenantId      String    @map("tenant_id")
+  threadId      String    @map("thread_id")
+  fromAccountId String    @map("from_account_id")
+  fromAddress   String    @map("from_address")
+  toAddresses   Json      @map("to_addresses")
+  ccAddresses   Json?     @map("cc_addresses")
+  bccAddresses  Json?     @map("bcc_addresses")
+  subject       String
+  bodyHtml      String?   @map("body_html")
+  bodyText      String?   @map("body_text")
+  attachments   Json?
+  status        String    @default("sent")
+  isRead        Boolean   @default(false) @map("is_read")
+  isStarred     Boolean   @default(false) @map("is_starred")
+  sentAt        DateTime? @map("sent_at")
+  receivedAt    DateTime? @map("received_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  deletedAt     DateTime? @map("deleted_at")
+  company       Company     @relation(fields: [tenantId], references: [id])
+  thread        MailThread  @relation(fields: [threadId], references: [id])
+  fromAccount   MailAccount @relation("SentMail", fields: [fromAccountId], references: [id])
+  labels        MailLabel[] @relation("MessageLabels")
+  folderItems   MailFolderItem[]
+  @@index([tenantId])
+  @@index([threadId])
+  @@map("mail_messages")
+}
+
+model MailFolder {
+  id        String   @id @default(uuid())
+  accountId String   @map("account_id")
+  name      String
+  type      String   @default("custom")
+  createdAt DateTime @default(now()) @map("created_at")
+  account   MailAccount    @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  items     MailFolderItem[]
+  @@unique([accountId, name])
+  @@map("mail_folders")
+}
+
+model MailFolderItem {
+  id        String @id @default(uuid())
+  folderId  String @map("folder_id")
+  messageId String @map("message_id")
+  folder    MailFolder  @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  message   MailMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  @@unique([folderId, messageId])
+  @@map("mail_folder_items")
+}
+
+model MailLabel {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+  name     String
+  color    String @default("#6366f1")
+  company  Company      @relation(fields: [tenantId], references: [id])
+  messages MailMessage[] @relation("MessageLabels")
+  @@unique([tenantId, name])
+  @@map("mail_labels")
+}
+
+model BulletinPost {
+  id          String    @id @default(uuid())
+  tenantId    String    @map("tenant_id")
+  authorId    String    @map("author_id")
+  title       String
+  body        String
+  category    String    @default("general")
+  attachments Json?
+  status      String    @default("published")
+  isPinned    Boolean   @default(false) @map("is_pinned")
+  pinOrder    Int?      @map("pin_order")
+  scopeType   String    @default("company")
+  scopeId     String?   @map("scope_id")
+  publishAt   DateTime? @map("publish_at")
+  expiresAt   DateTime? @map("expires_at")
+  viewCount   Int       @default(0) @map("view_count")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  company     Company   @relation(fields: [tenantId], references: [id])
+  comments    BulletinComment[]
+  reactions   BulletinReaction[]
+  reads       BulletinRead[]
+  @@index([tenantId])
+  @@index([status])
+  @@map("bulletin_posts")
+}
+
+model BulletinComment {
+  id        String    @id @default(uuid())
+  postId    String    @map("post_id")
+  tenantId  String    @map("tenant_id")
+  authorId  String    @map("author_id")
+  body      String
+  createdAt DateTime  @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
+  post      BulletinPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  company   Company      @relation(fields: [tenantId], references: [id])
+  @@index([tenantId])
+  @@map("bulletin_comments")
+}
+
+model BulletinReaction {
+  id        String   @id @default(uuid())
+  postId    String   @map("post_id")
+  userId    String   @map("user_id")
+  tenantId  String   @map("tenant_id")
+  type      String   @default("LIKE")
+  createdAt DateTime @default(now()) @map("created_at")
+  post      BulletinPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  company   Company      @relation(fields: [tenantId], references: [id])
+  @@unique([postId, userId, type])
+  @@index([tenantId])
+  @@map("bulletin_reactions")
+}
+
+model BulletinRead {
+  id     String   @id @default(uuid())
+  postId String   @map("post_id")
+  userId String   @map("user_id")
+  readAt DateTime @default(now()) @map("read_at")
+  post   BulletinPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@unique([postId, userId])
+  @@map("bulletin_reads")
+}
+
+model BulletinCategory {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  name      String
+  code      String
+  color     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  company   Company  @relation(fields: [tenantId], references: [id])
+  @@unique([tenantId, code])
+  @@map("bulletin_categories")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  userId    String   @map("user_id")
+  title     String
+  message   String
+  type      String   // INFO, ALERT, CHAT, MAIL, TASK
+  link      String?  // Optional redirection link
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+  company   Company  @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+  @@index([userId, isRead])
+  @@map("notifications")
 }

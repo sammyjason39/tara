@@ -5,7 +5,6 @@ import { IITSettingsRepository } from "./repositories/it-settings.repository.int
 import { ITSettingsMockRepository } from "./repositories/it-settings.mock.repository";
 import { ITSettingsDbRepository } from "./repositories/it-settings.db.repository";
 import { useDbPersistence } from "../../shared/persistence.mode";
-
 @Module({
   controllers: [ITSettingsController],
   providers: [

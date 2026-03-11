@@ -154,7 +154,14 @@ export interface AssetCapexInput {
   assetDescription: string;
   requestedAmount: number;
   department: string;
-  justification: string;
+  justification?: string;
+  projectCode?: string;
+  location?: string;
+  acquisitionDate?: string;
+  usefulLifeYears?: number;
+  residualValue?: number;
+  depreciationMethod?: DepreciationMethod;
+  assetClass?: AssetClass;
 }
 
 export interface AssetAuditPackArtifact {
@@ -175,6 +182,9 @@ export interface ScheduledDepreciationRunResult {
   runId: string;
   postedEntries: number;
   skippedAssetIds: string[];
+  periodStart: string;
+  periodEnd: string;
+  postingDate: string;
 }
 
 export interface FinanceAlert {

@@ -99,10 +99,15 @@ export const inventoryService = {
     session: SessionContext,
     payload: {
       sku: string;
+      barcode?: string;
       name: string;
       category: InventoryItemMaster["category"];
       uom: string;
+      basePrice?: number;
+      description?: string;
       moduleTags: string[];
+      departmentId?: string;
+      status?: string;
     },
   ): Promise<InventoryItemMaster> {
     return apiRequest<InventoryItemMaster>(
@@ -281,18 +286,25 @@ export const inventoryService = {
   },
 
   // Missing implementation for listProcurementReceiptQueue and processProcurementReceipt
-  // These likely need new endpoints or just return empty for now since backend doesn't support them fully yet.
-  // I'll add placeholders to avoid breaking typed callers.
   async listProcurementReceiptQueue(tenantId: string, session: SessionContext) {
-    return Promise.resolve([]);
+    return apiRequest<any[]>("/inventory/procurement-receipts", "GET", session);
   },
 
   async processProcurementReceipt(
     tenantId: string,
     session: SessionContext,
-    payload: any,
+    payload: {
+      finalPoId: string;
+      locationId: string;
+      items: Array<{ sku: string; quantity: number; unitCost?: number }>;
+    },
   ) {
-    return Promise.resolve();
+    return apiRequest<any>(
+      `/inventory/procurement-receipts/${payload.finalPoId}/process`,
+      "POST",
+      session,
+      { locationId: payload.locationId, items: payload.items },
+    );
   },
 
   async deleteItem(tenantId: string, session: SessionContext, itemId: string) {

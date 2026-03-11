@@ -7,6 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
@@ -23,6 +24,8 @@ import { FilterBar } from "@/core/tools/FilterBar";
 import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { inventoryService } from "@/core/services/inventory/inventoryService";
+import { orgService, type Department } from "@/core/services/hr/orgService";
+import { hrService } from "@/core/services/hr/hrService";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -49,15 +52,18 @@ import { AdjustmentDialog } from "./components/AdjustmentDialog";
 import { ExportButton } from "@/components/shared/ExportButton";
 import { ImportDialog } from "@/components/shared/ImportDialog";
 import { Upload } from "lucide-react";
+import { ItemCreationTab } from "@/components/shared/ItemCreationTab";
 
 type ViewMode = "total" | "branch" | "ecommerce";
 
 const ITEM_CATEGORIES = [
   "ITEM",
   "RAW_MATERIAL",
+  "FINISHED_GOOD",
   "SERVICE",
   "CONSUMABLE",
   "ASSET",
+  "SPARE_PART",
 ] as const;
 
 const MODULE_TAG_OPTIONS = [
@@ -71,9 +77,14 @@ export default function InventoryStockHub() {
   const session = useSession();
   const [search, setSearch] = useState("");
   const [moduleFilter, setModuleFilter] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("ALL");
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<InventoryItemMaster[]>([]);
   const [balances, setBalances] = useState<InventoryStockBalance[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [locations, setLocations] = useState<
+    Array<{ id: string; name: string; code: string; address: string; type: string }>
+  >([]);
   const [selectedBalance, setSelectedBalance] = useState<{
     balance: InventoryStockBalance;
     item: InventoryItemMaster;
@@ -92,17 +103,27 @@ export default function InventoryStockHub() {
   const [isNewItemOpen, setIsNewItemOpen] = useState(false);
   const [newItemName, setNewItemName] = useState("");
   const [newItemSku, setNewItemSku] = useState("");
+  const [newItemBarcode, setNewItemBarcode] = useState("");
+  const [newItemPrice, setNewItemPrice] = useState<number>(0);
+  const [newItemDescription, setNewItemDescription] = useState("");
   const [newItemCategory, setNewItemCategory] = useState<string>("ITEM");
+  const [newItemDepartmentId, setNewItemDepartmentId] = useState<string>("");
   const [newItemUom, setNewItemUom] = useState("PCS");
   const [newItemModuleTag, setNewItemModuleTag] = useState("GENERAL");
+  const [newItemStatus, setNewItemStatus] = useState<"pending" | "active">("pending");
   const [isCreating, setIsCreating] = useState(false);
 
   const resetNewItemForm = () => {
     setNewItemName("");
     setNewItemSku("");
+    setNewItemBarcode("");
+    setNewItemPrice(0);
+    setNewItemDescription("");
     setNewItemCategory("ITEM");
+    setNewItemDepartmentId("");
     setNewItemUom("PCS");
     setNewItemModuleTag("GENERAL");
+    setNewItemStatus("pending");
   };
 
   const handleCreateItem = async () => {
@@ -114,20 +135,25 @@ export default function InventoryStockHub() {
     try {
       await inventoryService.createItem(session.tenantId, session, {
         sku: newItemSku.trim() || "",
+        barcode: newItemBarcode.trim() || undefined,
         name: newItemName.trim(),
         category: newItemCategory as InventoryItemMaster["category"],
         uom: newItemUom,
+        basePrice: newItemPrice,
+        description: newItemDescription.trim() || undefined,
         moduleTags: [newItemModuleTag],
+        departmentId: newItemDepartmentId || undefined,
+        status: newItemStatus,
       });
       setStatusMessage(
-        `Item "${newItemName}" created successfully. Pending HOD approval.`,
+        `Item "${newItemName}" created successfully. ${newItemStatus === "pending" ? "Pending HOD approval." : ""}`,
       );
       setIsNewItemOpen(false);
       resetNewItemForm();
       refresh();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setErrorMessage(
-        `Failed to create item: ${err?.message || "Unknown error"}`,
+        `Failed to create item: ${(err as Error)?.message || "Unknown error"}`,
       );
     } finally {
       setIsCreating(false);
@@ -141,19 +167,23 @@ export default function InventoryStockHub() {
 
   const refresh = useCallback(async () => {
     try {
-      const [i, b] = await Promise.all([
+      const [i, b, d, locs] = await Promise.all([
         inventoryService.listItems(session.tenantId, session),
         inventoryService.listBalances(session.tenantId, session),
+        orgService.getOrgMap(session.tenantId, session),
+        hrService.listLocations(session.tenantId, session),
       ]);
       setItems(i);
       setBalances(b);
+      setDepartments(d);
+      setLocations(locs);
     } catch (err) {
       console.error("Failed to fetch inventory stock hub data:", err);
       setErrorMessage("Failed to load inventory data.");
     } finally {
       setLoading(false);
     }
-  }, [session.tenantId]);
+  }, [session]);
 
   useEffect(() => {
     refresh();
@@ -162,6 +192,11 @@ export default function InventoryStockHub() {
   const itemById = useMemo(
     () => Object.fromEntries(items.map((item) => [item.id, item])),
     [items],
+  );
+
+  const locationByCode = useMemo(
+    () => Object.fromEntries(locations.map((loc) => [loc.code, loc])),
+    [locations],
   );
 
   const aggregatedBalances = useMemo(() => {
@@ -188,17 +223,22 @@ export default function InventoryStockHub() {
         const item = itemById[balance.itemId];
         if (!item) return false;
 
+        const locInfo = locationByCode[balance.locationCode || ""];
+        const isEcomLoc =
+          locInfo?.type === "ECOMMERCE" ||
+          balance.locationCode?.toLowerCase()?.includes("ecom") ||
+          balance.locationCode?.toLowerCase()?.includes("ec");
+
+        const hasEcomTag = (item.moduleTags || []).some(
+          (tag) => tag.toUpperCase() === "ECOMMERCE" || tag.toUpperCase() === "RETAIL",
+        );
+
         // Mode filtering
         if (viewMode === "ecommerce") {
-          const isEcom =
-            balance.locationCode?.toLowerCase()?.includes("ecom") ||
-            balance.locationCode?.toLowerCase()?.includes("ec");
-          if (!isEcom) return false;
+          if (!isEcomLoc && !hasEcomTag) return false;
         } else if (viewMode === "branch") {
-          const isEcom =
-            balance.locationCode?.toLowerCase()?.includes("ecom") ||
-            balance.locationCode?.toLowerCase()?.includes("ec");
-          if (isEcom && balance.locationCode !== "GLOBAL") return false;
+          // In branch mode, we show everything that isn't specifically ecom-only
+          if (isEcomLoc && balance.locationCode !== "GLOBAL") return false;
         }
 
         const searchable =
@@ -211,9 +251,15 @@ export default function InventoryStockHub() {
               (tag) => tag.toLowerCase() === moduleFilter.toLowerCase(),
             )
           : true;
-        return searchMatch && moduleMatch;
+        
+        const itemDeptId = (item as Record<string, unknown>).departmentId;
+        const departmentMatch = departmentFilter === "ALL" 
+          ? true 
+          : balance.departmentCode === departmentFilter || itemDeptId === departmentFilter;
+
+        return searchMatch && moduleMatch && departmentMatch;
       }),
-    [aggregatedBalances, itemById, moduleFilter, search, viewMode],
+    [aggregatedBalances, itemById, moduleFilter, search, viewMode, departmentFilter, locationByCode],
   );
 
   const toggleSelect = (id: string) => {
@@ -308,6 +354,17 @@ export default function InventoryStockHub() {
               onChange={(event) => setModuleFilter(event.target.value)}
               className="min-w-[220px]"
             />
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Department: All" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Departments</SelectItem>
+                {departments.map(dept => (
+                  <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         }
       />
@@ -424,7 +481,7 @@ export default function InventoryStockHub() {
       </WorkspacePanel>
       <Dialog
         open={!!selectedBalance}
-        onOpenChange={() => setSelectedBalance(null)}
+        onOpenChange={(open) => { if (!open) setSelectedBalance(null); }}
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -473,7 +530,11 @@ export default function InventoryStockHub() {
                 size="sm"
                 variant="outline"
                 className="gap-2"
-                onClick={() => setIsTransferOpen(true)}
+                onClick={() => {
+                  // Close detail first, then open transfer dialog
+                  setSelectedBalance(null);
+                  setTimeout(() => setIsTransferOpen(true), 50);
+                }}
               >
                 <Send className="h-4 w-4" /> Start Transfer
               </Button>
@@ -481,7 +542,11 @@ export default function InventoryStockHub() {
                 size="sm"
                 variant="outline"
                 className="gap-2"
-                onClick={() => setIsAdjustmentOpen(true)}
+                onClick={() => {
+                  // Close detail first, then open adjustment dialog
+                  setSelectedBalance(null);
+                  setTimeout(() => setIsAdjustmentOpen(true), 50);
+                }}
               >
                 <ArrowRightLeft className="h-4 w-4" /> Adjust Stock
               </Button>
@@ -550,99 +615,24 @@ export default function InventoryStockHub() {
           if (!open) resetNewItemForm();
         }}
       >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create New Item</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="space-y-1">
-              <Label htmlFor="new-item-name">
-                Item Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="new-item-name"
-                placeholder="e.g. Wireless Keyboard Pro"
-                value={newItemName}
-                onChange={(e) => setNewItemName(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="new-item-sku">
-                SKU{" "}
-                <span className="text-muted-foreground text-xs">
-                  (leave blank for auto-generation)
-                </span>
-              </Label>
-              <Input
-                id="new-item-sku"
-                placeholder="e.g. ELEC-WKB-001"
-                value={newItemSku}
-                onChange={(e) => setNewItemSku(e.target.value)}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label>Category</Label>
-                <Select
-                  value={newItemCategory}
-                  onValueChange={setNewItemCategory}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ITEM_CATEGORIES.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="new-item-uom">Unit (UOM)</Label>
-                <Input
-                  id="new-item-uom"
-                  placeholder="PCS, KG, L..."
-                  value={newItemUom}
-                  onChange={(e) => setNewItemUom(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <Label>Module Tag</Label>
-              <Select
-                value={newItemModuleTag}
-                onValueChange={setNewItemModuleTag}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {MODULE_TAG_OPTIONS.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {t}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter className="pt-4">
-            <Button
-              variant="outline"
-              onClick={() => {
+        <DialogContent
+          className="max-w-6xl rounded-[2.5rem] p-0 border-none shadow-2xl bg-slate-50 overflow-hidden h-[90vh] flex flex-col"
+        >
+          <div className="flex-1 overflow-y-auto pt-6 px-1">
+            <ItemCreationTab
+              canWrite={true}
+              session={session}
+              tenantId={session.tenantId}
+              categoryOptions={[
+                { id: "all", name: "All Categories" },
+                ...ITEM_CATEGORIES.map((c) => ({ id: c, name: c })),
+              ]}
+              onSuccess={() => {
                 setIsNewItemOpen(false);
-                resetNewItemForm();
+                refresh();
               }}
-              disabled={isCreating}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleCreateItem} disabled={isCreating}>
-              {isCreating ? "Creating..." : "Create Item"}
-            </Button>
-          </DialogFooter>
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </div>

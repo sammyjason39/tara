@@ -7,11 +7,19 @@ import {
 } from "class-validator";
 
 export enum InventoryCategory {
-  RAW_MATERIAL = "raw_material",
-  FINISHED_GOOD = "finished_good",
-  CONSUMABLE = "consumable",
-  ASSET = "asset",
-  SPARE_PART = "spare_part",
+  ITEM = "ITEM",
+  RAW_MATERIAL = "RAW_MATERIAL",
+  FINISHED_GOOD = "FINISHED_GOOD",
+  SERVICE = "SERVICE",
+  CONSUMABLE = "CONSUMABLE",
+  ASSET = "ASSET",
+  SPARE_PART = "SPARE_PART",
+  // Legacy lowercase values for compatibility
+  raw_material = "raw_material",
+  finished_good = "finished_good",
+  consumable = "consumable",
+  asset = "asset",
+  spare_part = "spare_part",
 }
 
 export class CreateItemDto {
@@ -27,8 +35,10 @@ export class CreateItemDto {
   @IsNotEmpty()
   name: string;
 
-  @IsEnum(InventoryCategory)
-  category: InventoryCategory;
+  @IsString()
+  @IsNotEmpty()
+  category: string;  // Free-form to accept any category name
+
 
   @IsString()
   @IsNotEmpty()
@@ -59,4 +69,8 @@ export class CreateItemDto {
   @IsString()
   @IsOptional()
   status?: string;
+
+  @IsString()
+  @IsOptional()
+  departmentId?: string;
 }

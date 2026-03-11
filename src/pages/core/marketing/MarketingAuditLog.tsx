@@ -17,7 +17,7 @@ export default function MarketingAuditLog() {
 
   const refresh = useCallback(async () => {
     try {
-      const e = await marketingService.listAuditEvents(session.tenantId);
+      const e = await marketingService.listAuditEvents(session.tenantId, session);
       setEvents(e);
     } catch (err) {
       console.error("Failed to fetch marketing audit events:", err);

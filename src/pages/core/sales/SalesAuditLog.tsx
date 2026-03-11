@@ -7,13 +7,13 @@ import { DataTableShell } from "@/core/tools/DataTableShell";
 import { FilterBar } from "@/core/tools/FilterBar";
 import { useSession } from "@/core/security/session";
 import { salesService } from "@/core/services/sales/salesService";
-import type { SalesAuditLogEvent } from "@/core/types/sales/sales";
+import type { SalesAuditEvent } from "@/core/types/sales/sales";
 
 export default function SalesAuditLog() {
   const session = useSession();
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [events, setEvents] = useState<SalesAuditLogEvent[]>([]);
+  const [events, setEvents] = useState<SalesAuditEvent[]>([]);
 
   const refresh = useCallback(async () => {
     try {
@@ -25,7 +25,7 @@ export default function SalesAuditLog() {
     } finally {
       setLoading(false);
     }
-  }, [session.tenantId, session]);
+  }, [session]);
 
   useEffect(() => {
     refresh();

@@ -21,6 +21,7 @@ import {
   FinanceInsight,
   FinanceAlert,
   PayrollEntry,
+  PayrollEstimate,
   FinanceMoneySourceRow,
   TreasuryTransfer,
 } from "../finance.types";
@@ -43,6 +44,7 @@ export abstract class IFinanceRepository {
     tenantId: string,
     data: CreateTransactionDto,
   ): Promise<Transaction>;
+  abstract createJournal(tenantId: string, data: any): Promise<any>;
   abstract getBalance(tenantId: string): Promise<Balance>;
   abstract getTransactionById(
     tenantId: string,
@@ -180,6 +182,15 @@ export abstract class IFinanceRepository {
     tenantId: string,
     entry: Partial<PayrollEntry>,
   ): Promise<PayrollEntry>;
+  abstract estimatePayroll(
+    tenantId: string,
+    period: string,
+  ): Promise<PayrollEstimate[]>;
+  abstract executePayrollRun(
+    tenantId: string,
+    period: string,
+    userId: string,
+  ): Promise<void>;
   abstract updatePayrollEntry(
     tenantId: string,
     id: string,

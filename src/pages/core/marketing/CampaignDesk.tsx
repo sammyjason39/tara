@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Megaphone, ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
@@ -54,7 +55,7 @@ export default function CampaignDesk() {
 
   const refresh = useCallback(async () => {
     try {
-      const c = await marketingService.listCampaigns(session.tenantId);
+      const c = await marketingService.listCampaigns(session.tenantId, session);
       setCampaigns(c);
     } catch (err) {
       console.error("Failed to fetch campaigns:", err);
@@ -286,39 +287,64 @@ export default function CampaignDesk() {
         </DataTableShell>
       </WorkspacePanel>
       <Dialog open={!!selectedCampaign} onOpenChange={() => setSelectedCampaign(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden" aria-describedby="campaign-detail-description">
+          <DialogHeader className="sr-only">
             <DialogTitle>Campaign Details</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="grid grid-cols-2 text-sm gap-y-2">
-              <span className="text-muted-foreground">Campaign ID:</span>
-              <span className="font-mono text-xs">{selectedCampaign?.id}</span>
-              <span className="text-muted-foreground">Name:</span>
-              <span className="font-semibold">{selectedCampaign?.name}</span>
-              <span className="text-muted-foreground">Objective:</span>
-              <span>{selectedCampaign?.objective}</span>
-              <span className="text-muted-foreground">Budget:</span>
-              <span className="font-bold">
-                {selectedCampaign?.budget.toLocaleString()} {selectedCampaign?.currency}
-              </span>
-              <span className="text-muted-foreground">Status:</span>
-              <span>{selectedCampaign?.status}</span>
-              <span className="text-muted-foreground">Owner:</span>
-              <span>{selectedCampaign?.ownerName}</span>
-              <span className="text-muted-foreground">Period:</span>
-              <span>{selectedCampaign?.startDate} to {selectedCampaign?.endDate}</span>
+          <div id="campaign-detail-description" className="sr-only">View comprehensive campaign details and mixed channels.</div>
+          <div className="grid md:grid-cols-[1fr_2fr]">
+            <div className="bg-muted p-6 flex flex-col justify-between">
+              <div>
+                <Megaphone className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2">Campaign Snapshot</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  View orchestration details, target audience, and channel mix for this campaign.
+                </p>
+              </div>
+              <div className="bg-primary/5 p-4 rounded-lg mt-8 border border-primary/10">
+                <p className="text-xs text-primary font-medium flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4" /> Budget Governance
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Budget allocations are strictly enforced during campaign lifecycle.
+                </p>
+              </div>
             </div>
-            <div className="border-t pt-2">
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Audience</p>
-              <p className="text-xs text-muted-foreground">{selectedCampaign?.audience}</p>
-            </div>
-            <div className="border-t pt-2">
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Channel Mix</p>
-              <div className="flex flex-wrap gap-1">
-                {selectedCampaign?.channelMix.map(channel => (
-                  <Badge key={channel} variant="outline" className="text-[10px]">{channel}</Badge>
-                ))}
+            <div className="p-6">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 text-sm gap-y-3">
+                  <span className="text-muted-foreground">Campaign ID:</span>
+                  <span className="font-mono text-xs truncate max-w-[150px]">{selectedCampaign?.id}</span>
+                  <span className="text-muted-foreground">Name:</span>
+                  <span className="font-semibold">{selectedCampaign?.name}</span>
+                  <span className="text-muted-foreground">Objective:</span>
+                  <span>{selectedCampaign?.objective}</span>
+                  <span className="text-muted-foreground">Budget:</span>
+                  <span className="font-bold">
+                    {selectedCampaign?.budget.toLocaleString()} {selectedCampaign?.currency}
+                  </span>
+                  <span className="text-muted-foreground">Status:</span>
+                  <span><Badge variant="outline">{selectedCampaign?.status}</Badge></span>
+                  <span className="text-muted-foreground">Owner:</span>
+                  <span>{selectedCampaign?.ownerName}</span>
+                  <span className="text-muted-foreground">Period:</span>
+                  <span>{selectedCampaign?.startDate} to {selectedCampaign?.endDate}</span>
+                </div>
+                <div className="border-t pt-4 mt-4">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Audience</p>
+                  <p className="text-xs text-muted-foreground bg-muted p-3 rounded-md">{selectedCampaign?.audience}</p>
+                </div>
+                <div className="border-t pt-4 mt-4">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Channel Mix</p>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedCampaign?.channelMix.map(channel => (
+                      <Badge key={channel} variant="secondary" className="text-[10px]">{channel}</Badge>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex justify-end pt-4 mt-6 border-t">
+                  <Button variant="outline" onClick={() => setSelectedCampaign(null)}>Close</Button>
+                </div>
               </div>
             </div>
           </div>

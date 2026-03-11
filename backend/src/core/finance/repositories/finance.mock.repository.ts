@@ -23,6 +23,7 @@ import {
   FinanceInsight,
   FinanceAlert,
   PayrollEntry,
+  PayrollEstimate,
   FinanceMoneySourceRow,
   TreasuryTransfer,
 } from "../finance.types";
@@ -135,6 +136,22 @@ export class FinanceMockRepository extends IFinanceRepository {
     };
     this.transactions.push(txn);
     return txn;
+  }
+
+  async createJournal(tenantId: string, data: any): Promise<any> {
+    const journal = {
+      id: `${tenantId}-jr-${Date.now()}`,
+      tenantId,
+      description: data.description,
+      ref: data.ref,
+      status: "POSTED",
+      createdAt: new Date(),
+      lines: data.lines.map((l: any, i: number) => ({
+        id: `line-${i}`,
+        ...l,
+      })),
+    };
+    return journal;
   }
 
   async getBalance(tenantId: string): Promise<Balance> {
@@ -373,6 +390,7 @@ export class FinanceMockRepository extends IFinanceRepository {
       dueDate: newInv.dueDate,
       status: "DRAFT",
       agingDays: 0,
+      updatedAt: new Date().toISOString(),
     });
     return newInv;
   }
@@ -415,6 +433,7 @@ export class FinanceMockRepository extends IFinanceRepository {
       currency: "USD",
       dueDate: newBill.dueDate,
       status: "RECEIVED",
+      updatedAt: new Date().toISOString(),
     });
     return newBill;
   }
@@ -524,4 +543,33 @@ export class FinanceMockRepository extends IFinanceRepository {
     this.payroll[idx] = { ...this.payroll[idx], ...updates };
     return this.payroll[idx];
   }
+
+  async estimatePayroll(
+    tenantId: string,
+    period: string,
+  ): Promise<PayrollEstimate[]> {
+    return [
+      {
+        department: "Engineering",
+        employeeCount: 5,
+        totalGross: 50000,
+        totalNet: 45000,
+      },
+      {
+        department: "Sales",
+        employeeCount: 5,
+        totalGross: 40000,
+        totalNet: 36000,
+      },
+    ];
+  }
+
+  async executePayrollRun(
+    tenantId: string,
+    period: string,
+    userId: string,
+  ): Promise<void> {
+    // Mock run execution completes instantly without DB errors
+  }
 }
+

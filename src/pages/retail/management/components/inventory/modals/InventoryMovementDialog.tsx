@@ -40,12 +40,12 @@ import { MOVEMENT_META, type MovementType } from "../movementMeta";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import type { PrintItem } from "../PostekPrintModal";
-import { NewItemFormRow, type NewItemLine } from "../NewItemFormRow";
+import type { PrintItem } from "@/components/shared/PostekPrintModal";
+import { NewItemFormRow, type NewItemLine } from "@/components/shared/NewItemFormRow";
 import {
   generateSkuFromCategory,
   generateBarcode,
-} from "../NewItemFormHelpers";
+} from "@/components/shared/NewItemFormHelpers";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 

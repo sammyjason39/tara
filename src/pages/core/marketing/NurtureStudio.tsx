@@ -34,7 +34,7 @@ export default function NurtureStudio() {
 
   const refresh = useCallback(async () => {
     try {
-      const w = await marketingService.listWorkflows(session.tenantId);
+      const w = await marketingService.listWorkflows(session.tenantId, session);
       setWorkflows(w);
     } catch (err) {
       console.error("Failed to fetch nurture workflows:", err);

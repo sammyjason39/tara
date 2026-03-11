@@ -84,10 +84,10 @@ export const hrService = {
     tenantId: string,
     session: SessionContext,
   ): Promise<
-    Array<{ id: string; name: string; code: string; address: string }>
+    Array<{ id: string; name: string; code: string; address: string; type: string }>
   > {
     return apiRequest<
-      Array<{ id: string; name: string; code: string; address: string }>
+      Array<{ id: string; name: string; code: string; address: string; type: string }>
     >(`/hr/locations`, "GET", session);
   },
 };

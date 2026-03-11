@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
@@ -10,6 +12,7 @@ import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { procurementService } from "@/core/services/procurement/procurementService";
 import type { DraftPurchaseOrder, FinalPurchaseOrder, Requisition } from "@/core/types/procurement/procurement";
+import { FileText, ClipboardList, Info, Building2, ShoppingCart, CheckCircle2, DollarSign, Tag, ArrowRight } from "lucide-react";
 
 export default function PoReleaseDesk() {
   const session = useSession();
@@ -276,23 +279,95 @@ export default function PoReleaseDesk() {
       </WorkspacePanel>
 
       <Dialog open={quoteDialogOpen} onOpenChange={setQuoteDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden" aria-describedby="quote-confirm-description">
+          <DialogHeader className="sr-only">
             <DialogTitle>Supplier Quote Confirmation</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <Input
-              placeholder="Quote Reference"
-              value={quoteReference}
-              onChange={(event) => setQuoteReference(event.target.value)}
-            />
-            <Input
-              placeholder="Quote Notes"
-              value={quoteNotes}
-              onChange={(event) => setQuoteNotes(event.target.value)}
-            />
-            <div className="flex justify-end gap-2">
-              <Button onClick={confirmQuote}>Confirm Quote</Button>
+          <div id="quote-confirm-description" className="sr-only">Record the definitive supplier quote reference and any technical/price notes before final PO release.</div>
+
+          <div className="grid md:grid-cols-[1fr_2fr]">
+            {/* Left Column: Context */}
+            <div className="bg-muted p-6 flex flex-col justify-between border-r shadow-inner">
+              <div>
+                <Tag className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2">Quote Confirmation</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Finalize the commercial terms. This step bridge the gap between internal estimates and actual supplier pricing.
+                </p>
+                <div className="mt-8 space-y-4">
+                  <div className="flex items-center gap-3 p-3 bg-background rounded-lg border">
+                    <ShoppingCart className="w-4 h-4 text-primary" />
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Draft PO Reference</p>
+                      <p className="text-xs font-mono">{selectedDraftId}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 text-sm">
+                    <CheckCircle2 className="w-4 h-4 text-primary mt-1" />
+                    <div>
+                      <p className="font-medium text-xs">Validation Required</p>
+                      <p className="text-muted-foreground text-[10px]">Ensure the quoted total aligns with the approved requisition budget.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-primary/5 p-4 rounded-lg border border-primary/10">
+                <p className="text-xs text-primary font-bold flex items-center gap-1.5 uppercase tracking-wider">
+                  <Info className="w-3.5 h-3.5" /> Release Trigger
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Confirmation here moves the sequence to <span className="font-bold">FINAL_APPROVAL_PENDING</span>.
+                </p>
+              </div>
+            </div>
+
+            {/* Right Column: Form */}
+            <div className="p-6">
+              <div className="space-y-6">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Quote Reference Number</label>
+                  <div className="relative">
+                    <FileText className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="e.g. Q-2024-889012"
+                      value={quoteReference}
+                      onChange={e => setQuoteReference(e.target.value)}
+                      className="pl-10 h-10 font-medium"
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1.5 italic">Official reference from the supplier's quotation document.</p>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Negotiation & Technical Notes</label>
+                  <Input 
+                    placeholder="Discounts applied, validity period, payment terms adjustments..."
+                    value={quoteNotes}
+                    onChange={e => setQuoteNotes(e.target.value)}
+                    className="h-10"
+                  />
+                </div>
+
+                <div className="pt-4 border-t">
+                  <div className="p-4 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                    <p className="text-[10px] font-bold uppercase text-amber-600 tracking-widest mb-1 flex items-center gap-1.5">
+                      <DollarSign className="w-3 h-3" /> Integrity Check
+                    </p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      By confirming, you verify that these prices are definitive and reflect the final negotiated agreement.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-6 border-t mt-4">
+                  <Button variant="outline" onClick={() => setQuoteDialogOpen(false)}>Cancel</Button>
+                  <Button onClick={confirmQuote} className="shadow-sm">
+                    Confirm and Route
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </DialogContent>

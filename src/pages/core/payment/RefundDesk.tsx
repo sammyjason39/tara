@@ -31,8 +31,8 @@ export default function RefundDesk() {
     const fetchData = async () => {
       try {
         const [transactionsData, refundsData] = await Promise.all([
-          paymentService.listTransactions(session.tenantId),
-          paymentService.listRefunds(session.tenantId),
+          paymentService.listTransactions(session.tenantId, session),
+          paymentService.listRefunds(session.tenantId, session),
         ]);
         setTransactions(transactionsData);
         setRefunds(refundsData);
@@ -41,7 +41,7 @@ export default function RefundDesk() {
       }
     };
     fetchData();
-  }, [refreshKey, session.tenantId]);
+  }, [refreshKey, session]);
 
   const settledPayments = useMemo(() => transactions.filter((item) => item.status === "SETTLED"), [transactions]);
 

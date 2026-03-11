@@ -7,10 +7,13 @@ export class LedgerEntry {
   tenantId: string;
   locationId?: string;
   amount: number;
-  type: "debit" | "credit";
+  type: "debit" | "credit" | "DEBIT" | "CREDIT" | any;
   description: string;
-  timestamp: Date;
+  timestamp?: Date;
+  createdAt?: string;
   balance: number; // Running balance after this transaction
   category?: string;
+  account?: string;
+  status?: string;
   referenceId?: string; // Link to related transaction/invoice
 }

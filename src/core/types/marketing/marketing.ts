@@ -199,3 +199,10 @@ export type MarketingDashboardMetrics = {
     };
   };
 };
+
+export type ChannelPerformance = {
+  channel: string;
+  leads: number;
+  spend: number;
+  cpl: number;
+};

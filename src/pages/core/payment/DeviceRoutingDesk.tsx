@@ -18,8 +18,8 @@ export default function DeviceRoutingDesk() {
     const fetchData = async () => {
       try {
         const [devicesData, poolsData] = await Promise.all([
-          paymentService.listDevices(session.tenantId),
-          paymentService.listDevicePools(session.tenantId),
+          paymentService.listDevices(session.tenantId, session),
+          paymentService.listDevicePools(session.tenantId, session),
         ]);
         setDevices(devicesData);
         setPools(poolsData);
@@ -36,7 +36,7 @@ export default function DeviceRoutingDesk() {
       }
     };
     fetchData();
-  }, [refreshKey, session.tenantId]);
+  }, [refreshKey, session]);
 
   const setStatus = (deviceId: string, status: PosDevice["status"]) => {
     paymentService.setDeviceStatus(session.tenantId, session, deviceId, status);

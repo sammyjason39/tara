@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/core/ui/PageHeader";
@@ -13,14 +13,14 @@ export default function InsightLayer() {
   const session = useSession();
   const [search, setSearch] = useState("");
   const [reportId, setReportId] = useState<string | null>(null);
-  const metrics = useMemo(
-    () => analyticsService.listMetrics(session.tenantId, session),
-    [session],
-  );
-  const approvals = useMemo(
-    () => workflowService.listRequests(session.tenantId).filter((flow) => flow.status === "PENDING"),
-    [session],
-  );
+  const [metrics, setMetrics] = useState<any[]>([]);
+  const [approvals, setApprovals] = useState<any[]>([]);
+
+  useEffect(() => {
+    analyticsService.listMetrics(session.tenantId, session).then(setMetrics);
+    const flows = workflowService.listRequests(session.tenantId);
+    setApprovals(flows.filter((flow: any) => flow.status === "PENDING"));
+  }, [session]);
 
   return (
     <div className="space-y-6">
@@ -29,8 +29,8 @@ export default function InsightLayer() {
         subtitle="Workforce intelligence with risk and cost forecasting."
         primaryAction={
           <Button
-            onClick={() => {
-              const id = analyticsService.generateReport(session.tenantId, session);
+            onClick={async () => {
+              const id = await analyticsService.generateReport(session.tenantId, session);
               setReportId(id);
             }}
           >

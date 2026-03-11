@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Shield, Settings2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader } from "@/core/ui/PageHeader";
@@ -236,44 +237,90 @@ export default function PolicyManager() {
       </WorkspacePanel>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Create Policy</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <Input
-              placeholder="Title"
-              value={policyForm.title}
-              onChange={(event) => setPolicyForm({ ...policyForm, title: event.target.value })}
-            />
-            <Select value={policyForm.type} onValueChange={(value) => setPolicyForm({ ...policyForm, type: value as PolicyType })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Policy Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="APPROVAL_LIMIT">Approval Limit</SelectItem>
-                <SelectItem value="PAYMENT_RULE">Payment Rule</SelectItem>
-                <SelectItem value="EXPENSE_POLICY">Expense Policy</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input
-              placeholder="Threshold Amount"
-              type="number"
-              value={policyForm.threshold}
-              onChange={(event) =>
-                setPolicyForm({
-                  ...policyForm,
-                  threshold: Number(event.target.value),
-                })
-              }
-            />
-            <Input
-              placeholder="Description"
-              value={policyForm.description}
-              onChange={(event) => setPolicyForm({ ...policyForm, description: event.target.value })}
-            />
-            <div className="flex justify-end gap-2">
-              <Button onClick={savePolicy}>Save Policy</Button>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden">
+          <div className="grid md:grid-cols-[1fr_2fr]">
+            {/* Left Info Panel */}
+            <div className="bg-muted p-6 flex flex-col justify-between border-r">
+              <div>
+                <Shield className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2">Create Policy</DialogTitle>
+                <p className="text-sm text-muted-foreground mb-6">
+                  Establish new financial governance rules, including approval limits, expense policies, and payment routing structures.
+                </p>
+                <div className="space-y-4">
+                  <div className="bg-background p-3 rounded-lg border shadow-sm flex items-center gap-3">
+                    <Settings2 className="w-5 h-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase font-semibold">Active Enforcement</p>
+                      <p className="text-xs">Policies take effect immediately globally.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Form Panel */}
+            <div className="p-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold uppercase text-muted-foreground mb-1 block">Policy Title</label>
+                  <Input
+                    placeholder="e.g. Executive Travel Limit"
+                    value={policyForm.title}
+                    onChange={(event) => setPolicyForm({ ...policyForm, title: event.target.value })}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-muted-foreground mb-1 block">Policy Type</label>
+                    <Select value={policyForm.type} onValueChange={(value) => setPolicyForm({ ...policyForm, type: value as PolicyType })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="APPROVAL_LIMIT">Approval Limit</SelectItem>
+                        <SelectItem value="PAYMENT_RULE">Payment Rule</SelectItem>
+                        <SelectItem value="EXPENSE_POLICY">Expense Policy</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-muted-foreground mb-1 block">Threshold (IDR)</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-muted-foreground font-medium text-sm">Rp</span>
+                      <Input
+                        className="pl-9"
+                        placeholder="0"
+                        type="number"
+                        value={policyForm.threshold || ""}
+                        onChange={(event) =>
+                          setPolicyForm({
+                            ...policyForm,
+                            threshold: Number(event.target.value),
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold uppercase text-muted-foreground mb-1 block">Description</label>
+                  <Input
+                    placeholder="Provide clear justification and scope..."
+                    value={policyForm.description}
+                    onChange={(event) => setPolicyForm({ ...policyForm, description: event.target.value })}
+                  />
+                </div>
+
+                <div className="border-t pt-4 flex justify-end gap-2 mt-4">
+                  <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                  <Button onClick={savePolicy} className="gap-2">
+                    <Shield className="w-4 h-4" /> Enforce Policy
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </DialogContent>

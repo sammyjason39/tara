@@ -5,6 +5,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
@@ -15,6 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
@@ -29,6 +33,7 @@ import type {
   SupplierMaster,
   SupplierBranch,
 } from "@/core/types/procurement/procurement";
+import { ClipboardList, FileText, Info, Building2, MapPin, Tag, Wallet, ShieldCheck, ArrowUpRight, Plus, ShoppingCart, User } from "lucide-react";
 
 export default function PurchaseRequestDesk() {
   const session = useSession();
@@ -60,6 +65,7 @@ export default function PurchaseRequestDesk() {
   const [overview, setOverview] = useState<any>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [categoryList, setCategoryList] = useState<any[]>([]);
 
   const clearStatus = () => {
     setStatusMessage(null);
@@ -69,18 +75,20 @@ export default function PurchaseRequestDesk() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [reqs, pos, m, b, over] = await Promise.all([
+      const [reqs, pos, m, b, over, cats] = await Promise.all([
         procurementService.listRequisitions(session.tenantId, session),
         procurementService.listDraftPurchaseOrders(session.tenantId, session),
         procurementService.listSupplierMasters(session.tenantId, session),
         procurementService.listSupplierBranches(session.tenantId, session),
         procurementService.getOverview(session.tenantId, session),
+        procurementService.listCategories(session.tenantId, session),
       ]);
       setRequisitions(reqs);
       setDraftPos(pos);
       setSuppliers(m);
       setBranches(b);
       setOverview(over);
+      setCategoryList(cats);
     } catch (err) {
       setErrorMessage("Failed to load requisition data.");
     } finally {
@@ -476,140 +484,239 @@ export default function PurchaseRequestDesk() {
       </WorkspacePanel>
 
       <Dialog open={requestDialogOpen} onOpenChange={setRequestDialogOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden" aria-describedby="req-create-description">
+          <DialogHeader className="sr-only">
             <DialogTitle>Create Requisition</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <Input
-              placeholder="Title"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-            />
-            <Textarea
-              placeholder="Description"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-            />
-            <div className="grid gap-3 md:grid-cols-2">
-              <Input
-                placeholder="Category"
-                value={category}
-                onChange={(event) => setCategory(event.target.value)}
-              />
-              <Input
-                placeholder="Branch Code"
-                value={branchCode}
-                onChange={(event) =>
-                  setBranchCode(event.target.value.toUpperCase())
-                }
-              />
-              <Select
-                value={budgetClass}
-                onValueChange={(value) =>
-                  setBudgetClass(value as Requisition["budgetClass"])
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Budget Class" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="OPEX">OPEX</SelectItem>
-                  <SelectItem value="CAPEX">CAPEX</SelectItem>
-                  <SelectItem value="EMERGENCY">EMERGENCY</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input
-                placeholder="Amount"
-                type="number"
-                value={amount}
-                onChange={(event) => setAmount(event.target.value)}
-              />
-              <Select
-                value={contractRequired}
-                onValueChange={(value) =>
-                  setContractRequired(value as "YES" | "NO")
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Contract Required" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="YES">Contract Required</SelectItem>
-                  <SelectItem value="NO">No Contract</SelectItem>
-                </SelectContent>
-              </Select>
+          <div id="req-create-description" className="sr-only">Submit a new internal purchase request for approval and processing.</div>
+          
+          <div className="grid md:grid-cols-[1fr_2fr]">
+            {/* Left Column: Context */}
+            <div className="bg-muted p-6 flex flex-col justify-between border-r shadow-inner">
+              <div>
+                <ClipboardList className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2">Internal Request</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Document your procurement needs. This triggers a multi-stage approval workflow starting with your Department HOD.
+                </p>
+                <div className="mt-8 space-y-4">
+                  <div className="flex items-start gap-3 text-sm">
+                    <ShieldCheck className="w-4 h-4 text-primary mt-1" />
+                    <div>
+                      <p className="font-medium">Governance Check</p>
+                      <p className="text-muted-foreground text-[10px]">Budget availability and contract necessity will be evaluated.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 text-sm">
+                    <Wallet className="w-4 h-4 text-primary mt-1" />
+                    <div>
+                      <p className="font-medium">Budget Controls</p>
+                      <p className="text-muted-foreground text-[10px]">Requests exceeding class thresholds flag a PRICE_SPIKE risk.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-primary/5 p-4 rounded-lg border border-primary/10">
+                <p className="text-xs text-primary font-bold flex items-center gap-1.5 uppercase tracking-wider">
+                  <Info className="w-3.5 h-3.5" /> Department Goal
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Accurate descriptions and categories accelerate the sourcing phase.
+                </p>
+              </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button onClick={createRequisition}>Create and Route</Button>
+
+            {/* Right Column: Form */}
+            <div className="p-6">
+              <div className="space-y-6">
+                <div>
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">What do you need?</label>
+                  <Input
+                    placeholder="Brief title (e.g. Server Maintenance Parts)"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="text-lg font-medium"
+                  />
+                  <Textarea
+                    placeholder="Detailed justification and specifications..."
+                    className="mt-3 min-h-[100px] resize-none"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Category</label>
+                    <Select value={category} onValueChange={setCategory}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categoryList.map(cat => (
+                          <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Branch/Location Code</label>
+                    <Input placeholder="JKT" value={branchCode} onChange={e => setBranchCode(e.target.value.toUpperCase())} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Budget Class</label>
+                    <Select value={budgetClass} onValueChange={v => setBudgetClass(v as any)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="OPEX">OPEX (Operating)</SelectItem>
+                        <SelectItem value="CAPEX">CAPEX (Capital)</SelectItem>
+                        <SelectItem value="EMERGENCY">EMERGENCY</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Estimated Amount</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-xs font-bold text-muted-foreground">IDR</span>
+                      <Input type="number" className="pl-12" value={amount} onChange={e => setAmount(e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block">Contract Governance</label>
+                  <div className="flex gap-4">
+                    <label className={`flex-1 p-3 border rounded-lg cursor-pointer transition-all ${contractRequired === 'YES' ? 'bg-primary/5 border-primary shadow-sm' : 'hover:bg-muted'}`}>
+                      <input type="radio" className="sr-only" checked={contractRequired === 'YES'} onChange={() => setContractRequired('YES')} />
+                      <div className="flex items-center gap-3">
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${contractRequired === 'YES' ? 'border-primary' : ''}`}>
+                          {contractRequired === 'YES' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold">Formal Contract</p>
+                          <p className="text-[10px] text-muted-foreground italic">Legal review required</p>
+                        </div>
+                      </div>
+                    </label>
+                    <label className={`flex-1 p-3 border rounded-lg cursor-pointer transition-all ${contractRequired === 'NO' ? 'bg-primary/5 border-primary shadow-sm' : 'hover:bg-muted'}`}>
+                      <input type="radio" className="sr-only" checked={contractRequired === 'NO'} onChange={() => setContractRequired('NO')} />
+                      <div className="flex items-center gap-3">
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${contractRequired === 'NO' ? 'border-primary' : ''}`}>
+                          {contractRequired === 'NO' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold">Spot Purchase</p>
+                          <p className="text-[10px] text-muted-foreground italic">Fast-track processing</p>
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-6 border-t">
+                  <Button variant="outline" onClick={() => setRequestDialogOpen(false)}>Cancel</Button>
+                  <Button onClick={createRequisition}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Submit Request
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
       <Dialog open={draftDialogOpen} onOpenChange={setDraftDialogOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden" aria-describedby="draft-po-description">
+          <DialogHeader className="sr-only">
             <DialogTitle>Build Draft PO</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <Select value={supplierId} onValueChange={setSupplierId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Supplier" />
-              </SelectTrigger>
-              <SelectContent>
-                {suppliers.map((supplier) => (
-                  <SelectItem key={supplier.id} value={supplier.id}>
-                    {supplier.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={supplierBranchId}
-              onValueChange={setSupplierBranchId}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Supplier Branch" />
-              </SelectTrigger>
-              <SelectContent>
-                {branches
-                  .filter((branch) =>
-                    supplierId ? branch.supplierId === supplierId : true,
-                  )
-                  .map((branch) => (
-                    <SelectItem key={branch.id} value={branch.id}>
-                      {branch.branchCode} - {branch.branchName}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-            <div className="grid gap-3 md:grid-cols-2">
-              <Input
-                placeholder="Line SKU"
-                value={lineSku}
-                onChange={(event) => setLineSku(event.target.value)}
-              />
-              <Input
-                placeholder="Line Description"
-                value={lineDescription}
-                onChange={(event) => setLineDescription(event.target.value)}
-              />
-              <Input
-                placeholder="Quantity"
-                type="number"
-                value={lineQuantity}
-                onChange={(event) => setLineQuantity(event.target.value)}
-              />
-              <Input
-                placeholder="Unit Price"
-                type="number"
-                value={linePrice}
-                onChange={(event) => setLinePrice(event.target.value)}
-              />
+          <div id="draft-po-description" className="sr-only">Convert an approved requisition into a draft purchase order by identifying the preferred supplier and branch.</div>
+
+          <div className="grid md:grid-cols-[1fr_2fr]">
+            <div className="bg-muted p-6 flex flex-col justify-between border-r shadow-inner">
+              <div>
+                <ShoppingCart className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2">Build Purchase Order</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Transform this requirement into a commercial transaction. Identify the validated supplier branch to trigger quoting.
+                </p>
+                <div className="mt-8 space-y-4">
+                  <div className="flex items-center gap-3 p-3 bg-background rounded-lg border">
+                    <Building2 className="w-4 h-4 text-primary" />
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Selected REQ</p>
+                      <p className="text-xs font-mono">{selectedRequisitionId}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button onClick={buildDraftPo}>Create Draft PO</Button>
+
+            <div className="p-6">
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block tracking-wider">Target Supplier Master</label>
+                    <Select value={supplierId} onValueChange={setSupplierId}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Select Validated Supplier" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {suppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block tracking-wider">Fulfillment Branch</label>
+                    <Select value={supplierBranchId} onValueChange={setSupplierBranchId}>
+                      <SelectTrigger className="h-10 text-foreground">
+                        <SelectValue placeholder="Select Location" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {branches.filter(b => !supplierId || b.supplierId === supplierId).map(b => (
+                          <SelectItem key={b.id} value={b.id}>{b.branchCode} - {b.branchName}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-4 border-t">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-primary">Line Item Specifications</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <label className="text-xs font-medium mb-1.5 block text-foreground">SKU / Catalog ID</label>
+                      <Input placeholder="e.g. MOT-8892-IND" value={lineSku} onChange={e => setLineSku(e.target.value)} />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="text-xs font-medium mb-1.5 block text-foreground">Item Description</label>
+                      <Input placeholder="Technical specs, part numbers..." value={lineDescription} onChange={e => setLineDescription(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium mb-1.5 block text-foreground">Quantity</label>
+                      <Input type="number" placeholder="1" value={lineQuantity} onChange={e => setLineQuantity(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium mb-1.5 block text-foreground">Target Unit Price</label>
+                      <Input type="number" placeholder="0" value={linePrice} onChange={e => setLinePrice(e.target.value)} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-6 border-t">
+                  <Button variant="outline" onClick={() => setDraftDialogOpen(false)}>Cancel</Button>
+                  <Button onClick={buildDraftPo}>
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    Build Draft PO
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </DialogContent>
@@ -618,58 +725,80 @@ export default function PurchaseRequestDesk() {
         open={!!selectedRequisition}
         onOpenChange={() => setSelectedRequisition(null)}
       >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Requisition Detail</DialogTitle>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden" aria-describedby="req-detail-description">
+          <div id="req-detail-description" className="sr-only">Comprehensive view of requisition data, governance audit, and approval status.</div>
+          <DialogHeader className="p-6 pb-4 border-b bg-muted/20">
+            <div className="flex justify-between items-start">
+              <div>
+                <DialogTitle className="text-2xl flex items-center gap-2">
+                  <ClipboardList className="h-6 w-6 text-primary" />
+                  {selectedRequisition?.title}
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground mt-1 tracking-widest font-mono uppercase">REQ ID: {selectedRequisition?.id}</p>
+              </div>
+              <Badge variant="outline" className="px-3 py-1 font-bold border-primary/20 text-primary">
+                {selectedRequisition?.amount.toLocaleString()} IDR
+              </Badge>
+            </div>
           </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="grid grid-cols-2 text-sm gap-y-2">
-              <span className="text-muted-foreground">Request ID:</span>
-              <span className="font-mono text-xs">
-                {selectedRequisition?.id}
-              </span>
-              <span className="text-muted-foreground">Title:</span>
-              <span className="font-semibold">
-                {selectedRequisition?.title}
-              </span>
-              <span className="text-muted-foreground">Department:</span>
-              <span>{selectedRequisition?.requesterDept}</span>
-              <span className="text-muted-foreground">Branch:</span>
-              <span>{selectedRequisition?.branchCode}</span>
-              <span className="text-muted-foreground">Category:</span>
-              <span>{selectedRequisition?.category}</span>
-              <span className="text-muted-foreground">Amount:</span>
-              <span className="font-bold">
-                {selectedRequisition?.amount.toLocaleString()}
-              </span>
-              <span className="text-muted-foreground">Status:</span>
-              <span>
-                <ApprovalStatusBadge
-                  status={selectedRequisition?.status ?? ""}
-                />
-              </span>
+
+          <div className="grid grid-cols-2 gap-8 p-6">
+            <div className="space-y-6">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Context & Scope</p>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 rounded-lg bg-background border">
+                    <span className="text-xs font-semibold text-muted-foreground">Department</span>
+                    <span className="text-sm font-bold text-foreground">{selectedRequisition?.requesterDept}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 rounded-lg bg-background border">
+                    <span className="text-xs font-semibold text-muted-foreground">Branch</span>
+                    <span className="text-sm font-bold text-foreground">{selectedRequisition?.branchCode}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 rounded-lg bg-background border">
+                    <span className="text-xs font-semibold text-muted-foreground">Category</span>
+                    <Badge variant="secondary" className="text-[10px]">{selectedRequisition?.category}</Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Justification</p>
+                <div className="p-4 rounded-lg bg-muted/30 border italic text-xs leading-relaxed text-muted-foreground">
+                  {selectedRequisition?.description || "No description provided."}
+                </div>
+              </div>
             </div>
-            <div className="border-t pt-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Description
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {selectedRequisition?.description || "No description provided."}
-              </p>
-            </div>
-            <div className="border-t pt-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Governance Audit
-              </p>
-              <div className="space-y-1 text-[10px] text-muted-foreground">
-                <p>
-                  • Created on {selectedRequisition?.createdAt.slice(0, 10)}
-                </p>
-                <p>• Budget Class: {selectedRequisition?.budgetClass}</p>
-                <p>
-                  • Contract Required:{" "}
-                  {selectedRequisition?.contractRequired ? "YES" : "NO"}
-                </p>
+
+            <div className="space-y-6 border-l pl-8">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Governance Audit</p>
+                <div className="space-y-4">
+                  <div className="p-3 rounded-lg border bg-primary/5 border-primary/10">
+                    <p className="text-[10px] text-primary font-bold uppercase">Approval Vector</p>
+                    <div className="mt-2 text-foreground">
+                      <ApprovalStatusBadge status={selectedRequisition?.status ?? ""} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-2 rounded border text-foreground">
+                      <p className="text-[9px] text-muted-foreground uppercase">Budget Class</p>
+                      <p className="text-xs font-bold">{selectedRequisition?.budgetClass}</p>
+                    </div>
+                    <div className="p-2 rounded border text-foreground">
+                      <p className="text-[9px] text-muted-foreground uppercase">Contract</p>
+                      <p className="text-xs font-bold">{selectedRequisition?.contractRequired ? "REQUIRED" : "NOT REQ"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-foreground">
+                    <User className="w-4 h-4 text-primary" />
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase leading-none mb-1">Created By</p>
+                      <p className="text-xs font-medium">{selectedRequisition?.createdBy || "System"}</p>
+                      <p className="text-[9px] text-muted-foreground">{selectedRequisition?.createdAt.slice(0, 10)}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -50,8 +50,8 @@ export const treasuryService = {
     sourceId: string,
     amount: number,
   ) {
-    return apiRequest<any>(
-      "/finance/treasury/settlements",
+    return apiRequest<void>(
+      "/finance/treasury/reconcile",
       "POST",
       session,
       { sourceId, amount },

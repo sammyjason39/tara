@@ -11,6 +11,8 @@ import helmet from "helmet";
 import { AppModule } from "./app.module";
 
 import { Rfc7807ExceptionFilter } from "./shared/filters/rfc7807.filter";
+import { HttpLogInterceptor } from "./shared/logger/http-log.interceptor";
+import { LoggerService } from "./shared/logger/logger.service";
 
 /**
  * Bootstrap the Zenvix Backend Application
@@ -23,6 +25,9 @@ import { Rfc7807ExceptionFilter } from "./shared/filters/rfc7807.filter";
  */
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  const loggerService = app.get(LoggerService);
+  app.useGlobalInterceptors(new HttpLogInterceptor(loggerService));
 
   // 1. Resilience & Health Check Middleware (Run before prefix)
   app.use((req: any, res: any, next: any) => {
@@ -68,6 +73,7 @@ async function bootstrap() {
   // 3. Normal NestJS CORS (as a fallback)
   app.enableCors({
     origin: [
+      "http://localhost:8081",
       "http://localhost:8080",
       "http://localhost:5173",
       "http://localhost:3000",

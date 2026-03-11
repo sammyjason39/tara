@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { CreditCard, Info, ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
@@ -59,8 +60,8 @@ export default function PaymentExecutionHub() {
     const fetchData = async () => {
       try {
         const [providersData, transactionsData] = await Promise.all([
-          paymentService.listProviders(session.tenantId),
-          paymentService.listTransactions(session.tenantId),
+          paymentService.listProviders(session.tenantId, session),
+          paymentService.listTransactions(session.tenantId, session),
         ]);
         setProviders(providersData);
         setTransactions(transactionsData);
@@ -72,7 +73,7 @@ export default function PaymentExecutionHub() {
       }
     };
     fetchData();
-  }, [refreshKey, session.tenantId]);
+  }, [refreshKey, providerId, session]);
 
   const filtered = useMemo(
     () =>
@@ -274,32 +275,58 @@ export default function PaymentExecutionHub() {
         </table>
       </WorkspacePanel>
       <Dialog open={!!selectedTransaction} onOpenChange={() => setSelectedTransaction(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden" aria-describedby="payment-detail-description">
+          <DialogHeader className="sr-only">
             <DialogTitle>Execution Request Detail</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="grid grid-cols-2 text-sm gap-y-2">
-              <span className="text-muted-foreground">Internal ID:</span>
-              <span className="font-mono text-xs">{selectedTransaction?.id}</span>
-              <span className="text-muted-foreground">Type:</span>
-              <span>{selectedTransaction?.type}</span>
-              <span className="text-muted-foreground">Destination:</span>
-              <span className="font-semibold">{selectedTransaction?.destination}</span>
-              <span className="text-muted-foreground">Amount:</span>
-              <span className="font-bold">{selectedTransaction?.amount.toLocaleString()} {selectedTransaction?.currency}</span>
-              <span className="text-muted-foreground">Channel:</span>
-              <span>{selectedTransaction?.channel}</span>
-              <span className="text-muted-foreground">Status:</span>
-              <span><Badge variant="outline">{selectedTransaction?.status}</Badge></span>
-              <span className="text-muted-foreground">Provider:</span>
-              <span>{selectedTransaction?.providerId || "Not assigned"}</span>
+          <div id="payment-detail-description" className="sr-only">View details of a payment transaction.</div>
+          <div className="grid md:grid-cols-[1fr_2fr]">
+            <div className="bg-muted p-6 flex flex-col justify-between">
+              <div>
+                <CreditCard className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2">Transaction Detail</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  View full execution context, idempotency details, and routing status.
+                </p>
+              </div>
+              <div className="bg-primary/5 p-4 rounded-lg mt-8 border border-primary/10">
+                <p className="text-xs text-primary font-medium flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4" /> Idempotent Record
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Guaranteed safe against double execution.
+                </p>
+              </div>
             </div>
-            <div className="border-t pt-2">
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kernel Metadata</p>
-              <div className="space-y-1 text-[10px] text-muted-foreground">
-                <p>• Created on {selectedTransaction?.createdAt.slice(0, 10)}</p>
-                <p>• Idempotency Key: {selectedTransaction?.id}</p>
+            <div className="p-6">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 text-sm gap-y-3">
+                  <span className="text-muted-foreground">Internal ID:</span>
+                  <span className="font-mono text-xs truncate max-w-[150px]">{selectedTransaction?.id}</span>
+                  <span className="text-muted-foreground">Type:</span>
+                  <span>{selectedTransaction?.type}</span>
+                  <span className="text-muted-foreground">Destination:</span>
+                  <span className="font-semibold">{selectedTransaction?.destination}</span>
+                  <span className="text-muted-foreground">Amount:</span>
+                  <span className="font-bold">{selectedTransaction?.amount.toLocaleString()} {selectedTransaction?.currency}</span>
+                  <span className="text-muted-foreground">Channel:</span>
+                  <span>{selectedTransaction?.channel}</span>
+                  <span className="text-muted-foreground">Status:</span>
+                  <span><Badge variant="outline">{selectedTransaction?.status}</Badge></span>
+                  <span className="text-muted-foreground">Provider:</span>
+                  <span>{selectedTransaction?.providerId || "Not assigned"}</span>
+                </div>
+                <div className="border-t pt-4 mt-4">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kernel Metadata</p>
+                  <div className="space-y-2 text-xs text-muted-foreground bg-muted p-3 rounded-md font-mono">
+                    <p>Created: {selectedTransaction?.createdAt.slice(0, 10)}</p>
+                    <p>Idempotency Key: <span className="truncate max-w-[200px] inline-block align-bottom">{selectedTransaction?.id}</span></p>
+                    <p>Source Entity: {selectedTransaction?.source}</p>
+                  </div>
+                </div>
+                <div className="flex justify-end pt-4 mt-6 border-t">
+                  <Button variant="outline" onClick={() => setSelectedTransaction(null)}>Close</Button>
+                </div>
               </div>
             </div>
           </div>

@@ -8,6 +8,7 @@ import { InventoryDbRepository } from "./repositories/inventory.db.repository";
 import { IInventoryRepository } from "./repositories/inventory.repository.interface";
 import { FileProcessingModule } from "../../shared/file-processing/file-processing.module";
 import { AuditModule } from "../../shared/audit/audit.module";
+import { PrismaService } from "../../persistence/prisma.service";
 
 @Module({
   imports: [PersistenceModule, FileProcessingModule, AuditModule],
@@ -16,6 +17,7 @@ import { AuditModule } from "../../shared/audit/audit.module";
     InventoryService,
     SkuGeneratorService,
     LabelTemplateService,
+    PrismaService,
     {
       provide: IInventoryRepository,
       useClass: InventoryDbRepository,

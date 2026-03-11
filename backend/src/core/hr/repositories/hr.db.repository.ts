@@ -133,12 +133,12 @@ export class HRDbRepository implements IHRRepository {
         email: data.email,
         phone: data.phone,
         managerId: data.managerId,
-        position: data.roleTitle,
+        position: data.roleTitle || "Staff",
         employmentType: data.employmentType,
         baseSalary: data.baseSalary,
         hourlyRate: data.hourlyRate,
-        hireDate: new Date(data.hireDate),
-        status: "active",
+        hireDate: data.hireDate ? new Date(data.hireDate) : new Date(),
+        status: (data.status as string) || "active",
       },
       include: {
         location: true,
@@ -1071,6 +1071,91 @@ export class HRDbRepository implements IHRRepository {
       url: c.url,
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
+    };
+  }
+
+  // ============================================================
+  // TRAINING MANAGEMENT
+  // ============================================================
+
+  async getTrainingPrograms(tenantId: string): Promise<any[]> {
+    const programs = await this.prisma.trainingProgram.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: "desc" },
+    });
+    return programs.map((p) => this.mapTrainingProgram(p));
+  }
+
+  async createTrainingProgram(tenantId: string, data: any): Promise<any> {
+    const program = await this.prisma.trainingProgram.create({
+      data: {
+        tenantId,
+        name: data.name,
+        status: data.status || "active",
+        dueDate: data.dueDate ? new Date(data.dueDate) : null,
+      },
+    });
+    return this.mapTrainingProgram(program);
+  }
+
+  async getTrainingAssignments(tenantId: string): Promise<any[]> {
+    const assignments = await this.prisma.trainingAssignment.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: "desc" },
+    });
+    return assignments.map((a) => this.mapTrainingAssignment(a));
+  }
+
+  async createTrainingAssignment(tenantId: string, data: any): Promise<any> {
+    const assignment = await this.prisma.trainingAssignment.create({
+      data: {
+        tenantId,
+        programId: data.programId,
+        employeeId: data.employeeId,
+        status: data.status || "in_progress",
+        assignedAt: new Date(),
+      },
+    });
+    return this.mapTrainingAssignment(assignment);
+  }
+
+  async updateTrainingAssignment(tenantId: string, id: string, data: any): Promise<any> {
+    const updateData: any = {};
+    if (data.status) updateData.status = data.status;
+    if (data.status === "completed") {
+      updateData.completedAt = new Date();
+    }
+    const assignment = await this.prisma.trainingAssignment.update({
+      where: { id, tenantId },
+      data: updateData,
+    });
+    return this.mapTrainingAssignment(assignment);
+  }
+
+  private mapTrainingProgram(p: any): any {
+    return {
+      id: p.id,
+      tenantId: p.tenantId,
+      name: p.name,
+      status: p.status,
+      completionRate: p.completionRate,
+      dueDate: p.dueDate,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+    };
+  }
+
+  private mapTrainingAssignment(a: any): any {
+    return {
+      id: a.id,
+      tenantId: a.tenantId,
+      programId: a.programId,
+      employeeId: a.employeeId,
+      status: a.status,
+      assignedAt: a.assignedAt,
+      completedAt: a.completedAt,
+      createdAt: a.createdAt,
+      updatedAt: a.updatedAt,
     };
   }
 }

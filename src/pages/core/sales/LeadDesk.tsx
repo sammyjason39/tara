@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Target, ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
@@ -252,36 +253,61 @@ export default function LeadDesk() {
         </DataTableShell>
       </WorkspacePanel>
       <Dialog open={!!selectedLead} onOpenChange={() => setSelectedLead(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden" aria-describedby="lead-detail-description">
+          <DialogHeader className="sr-only">
             <DialogTitle>Lead Detail</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="grid grid-cols-2 text-sm gap-y-2">
-              <span className="text-muted-foreground">Lead ID:</span>
-              <span className="font-mono text-xs">{selectedLead?.id}</span>
-              <span className="text-muted-foreground">Company:</span>
-              <span className="font-semibold">{selectedLead?.companyName}</span>
-              <span className="text-muted-foreground">Contact:</span>
-              <span>{selectedLead?.contactName}</span>
-              <span className="text-muted-foreground">Source:</span>
-              <span>{selectedLead?.source}</span>
-              <span className="text-muted-foreground">Potential Value:</span>
-              <span className="font-bold">
-                {selectedLead?.potentialValue.toLocaleString()} {selectedLead?.currency}
-              </span>
-              <span className="text-muted-foreground">Priority:</span>
-              <span>{selectedLead?.priority}</span>
-              <span className="text-muted-foreground">Status:</span>
-              <span>{selectedLead?.status}</span>
-              <span className="text-muted-foreground">Owner:</span>
-              <span>{selectedLead?.ownerName}</span>
+          <div id="lead-detail-description" className="sr-only">View comprehensive lead context and SLAs.</div>
+          <div className="grid md:grid-cols-[1fr_2fr]">
+            <div className="bg-muted p-6 flex flex-col justify-between">
+              <div>
+                <Target className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2">Lead Snapshot</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Qualification and progression tracking for marketing handoff.
+                </p>
+              </div>
+              <div className="bg-primary/5 p-4 rounded-lg mt-8 border border-primary/10">
+                <p className="text-xs text-primary font-medium flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4" /> SLA Enforced
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Lifecycle transitions are audited for strict response SLAs.
+                </p>
+              </div>
             </div>
-            <div className="border-t pt-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lifecycle Audit</p>
-              <div className="space-y-1 text-xs text-muted-foreground">
-                <p>• Created on {selectedLead?.createdAt?.slice(0, 10)}</p>
-                <p>• Last Activity Profile: High Integrity</p>
+            <div className="p-6">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 text-sm gap-y-3">
+                  <span className="text-muted-foreground">Lead ID:</span>
+                  <span className="font-mono text-xs truncate max-w-[150px]">{selectedLead?.id}</span>
+                  <span className="text-muted-foreground">Company:</span>
+                  <span className="font-semibold">{selectedLead?.companyName}</span>
+                  <span className="text-muted-foreground">Contact:</span>
+                  <span>{selectedLead?.contactName}</span>
+                  <span className="text-muted-foreground">Source:</span>
+                  <span>{selectedLead?.source}</span>
+                  <span className="text-muted-foreground">Potential Value:</span>
+                  <span className="font-bold">
+                    {selectedLead?.potentialValue.toLocaleString()} {selectedLead?.currency}
+                  </span>
+                  <span className="text-muted-foreground">Priority:</span>
+                  <span><Badge variant="outline">{selectedLead?.priority}</Badge></span>
+                  <span className="text-muted-foreground">Status:</span>
+                  <span><Badge variant="outline">{selectedLead?.status}</Badge></span>
+                  <span className="text-muted-foreground">Owner:</span>
+                  <span>{selectedLead?.ownerName}</span>
+                </div>
+                <div className="border-t pt-4 mt-4">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lifecycle Audit</p>
+                  <div className="space-y-2 text-xs text-muted-foreground bg-muted p-3 rounded-md font-mono">
+                    <p>Created on {selectedLead?.createdAt?.slice(0, 10)}</p>
+                    <p>Last Activity Profile: High Integrity</p>
+                  </div>
+                </div>
+                <div className="flex justify-end pt-4 mt-6 border-t">
+                  <Button variant="outline" onClick={() => setSelectedLead(null)}>Close</Button>
+                </div>
               </div>
             </div>
           </div>

@@ -35,6 +35,7 @@ import { BranchGatingGuard } from "../auth/guards/branch-gating.guard";
 import { TenantGuard } from "../../shared/guards/tenant.guard";
 import { RequiredModule } from "../../shared/decorators/required-module.decorator";
 import { isModuleActive } from "../../shared/helpers/module-active.helper";
+import { AuditService } from "../../shared/audit/audit.service";
 
 interface RequestWithTenant extends Request {
   tenantContext: TenantContext;
@@ -53,6 +54,7 @@ export class HRController {
   constructor(
     private readonly hrService: HRService,
     private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
   ) {}
   // ==================== Overview (Module-Aware) ====================
 
@@ -906,6 +908,139 @@ export class HRController {
     return { success: true, tenantId, data: contract };
   }
 
+  // ==================== Payroll Runs Management ====================
+
+  /**
+   * GET /hr/payroll-runs
+   * List all payroll runs for the tenant (tracked as HRCase with type=PAYROLL_RUN)
+   */
+  @Get("payroll-runs")
+  async getPayrollRuns(@Req() request: RequestWithTenant) {
+    const { tenantId } = request.tenantContext;
+    const runs = await this.prisma.hRCase.findMany({
+      where: { tenantId, type: "PAYROLL_RUN" },
+      orderBy: { createdAt: "desc" },
+    });
+    // Map case to payroll run shape
+    const mapped = runs.map((r: any) => {
+      let meta: any = {};
+      try { meta = JSON.parse(r.description || "{}"); } catch {}
+      return { id: r.id, tenantId: r.tenantId, periodStart: meta.periodStart, periodEnd: meta.periodEnd, status: r.status === "OPEN" ? "draft" : r.status === "IN_PROGRESS" ? "pending" : r.status === "CLOSED" ? "approved" : r.status, totalEmployees: meta.totalEmployees ?? 0, totalGrossPay: meta.totalGrossPay ?? 0, totalNetPay: meta.totalNetPay ?? 0, createdAt: r.createdAt, updatedAt: r.updatedAt };
+    });
+    return { success: true, tenantId, data: mapped };
+  }
+
+  /**
+   * POST /hr/payroll-runs
+   * Create a payroll run
+   */
+  @Post("payroll-runs")
+  async createPayrollRun(
+    @Req() request: RequestWithTenant,
+    @Body() body: { periodStart: string; periodEnd: string },
+  ) {
+    const { tenantId, userId } = request.tenantContext;
+    const meta = JSON.stringify({ periodStart: body.periodStart, periodEnd: body.periodEnd, totalEmployees: 0, totalGrossPay: 0, totalNetPay: 0 });
+    const run = await this.prisma.hRCase.create({
+      data: {
+        tenantId,
+        type: "PAYROLL_RUN",
+        title: `Payroll Run: ${body.periodStart} - ${body.periodEnd}|${meta}`,
+        status: "OPEN",
+        priority: "NORMAL",
+        employeeId: userId || "system",
+        ownerId: userId || null,
+      },
+    });
+    await this.auditService.log({ tenantId, userId: userId || "system", module: "hr", action: "CREATE", entityType: "PAYROLL_RUN", entityId: run.id, metadata: { periodStart: body.periodStart, periodEnd: body.periodEnd } });
+    const result = { id: run.id, tenantId, periodStart: body.periodStart, periodEnd: body.periodEnd, status: "draft", totalEmployees: 0, totalGrossPay: 0, totalNetPay: 0, createdAt: run.createdAt };
+    return { success: true, tenantId, data: result };
+  }
+
+  /**
+   * PATCH /hr/payroll-runs/:id/submit
+   * Submit payroll run for approval
+   */
+  @Patch("payroll-runs/:id/submit")
+  async submitPayrollRun(
+    @Req() request: RequestWithTenant,
+    @Param("id") id: string,
+  ) {
+    const { tenantId, userId } = request.tenantContext;
+    const run = await this.prisma.hRCase.update({
+      where: { id },
+      data: { status: "IN_PROGRESS" },
+    });
+    await this.auditService.log({ tenantId, userId: userId || "system", module: "hr", action: "SUBMIT", entityType: "PAYROLL_RUN", entityId: id, metadata: {} });
+    return { success: true, tenantId, data: { ...run, status: "pending" } };
+  }
+
+  /**
+   * PATCH /hr/payroll-runs/:id/approve
+   * Approve a payroll run (Finance Admin/Owner/Superadmin only)
+   */
+  @Patch("payroll-runs/:id/approve")
+  async approvePayrollRun(
+    @Req() request: RequestWithTenant,
+    @Param("id") id: string,
+  ) {
+    const { tenantId, userId, role } = request.tenantContext;
+    const allowed = ["SUPERADMIN", "OWNER", "COMPANY_ADMIN", "FINANCE_ADMIN"].includes(role ?? "");
+    if (!allowed) {
+      return { success: false, message: "Insufficient permissions to approve payroll run." };
+    }
+    const run = await this.prisma.hRCase.update({
+      where: { id },
+      data: { status: "CLOSED" },
+    });
+    await this.auditService.log({ tenantId, userId: userId || "system", module: "hr", action: "APPROVE", entityType: "PAYROLL_RUN", entityId: id, metadata: {} });
+    return { success: true, tenantId, data: { ...run, status: "approved" } };
+  }
+
+  /**
+   * GET /hr/payroll-runs/:id/export
+   * Export journal entries for approved run
+   */
+  @Get("payroll-runs/:id/export")
+  async exportPayrollRun(
+    @Req() request: RequestWithTenant,
+    @Param("id") id: string,
+    @Res() res: Response,
+  ) {
+    const { tenantId, userId } = request.tenantContext;
+    const run = await this.prisma.hRCase.findFirst({ where: { id, tenantId, type: "PAYROLL_RUN" } });
+    if (!run || run.status !== "CLOSED") {
+      res.status(400).json({ success: false, message: "Run not found or not approved." });
+      return;
+    }
+    let meta: any = {};
+    try { const parts = (run as any).title?.split("|"); if (parts?.[1]) meta = JSON.parse(parts[1]); } catch {}
+    const csv = `PayrollRun,${run.id},${meta.periodStart},${meta.periodEnd},${meta.totalGrossPay ?? 0},${meta.totalNetPay ?? 0}\n`;
+    await this.auditService.log({ tenantId, userId: userId || "system", module: "hr", action: "EXPORT", entityType: "PAYROLL_RUN", entityId: id, metadata: {} });
+    res.set({ "Content-Type": "text/csv", "Content-Disposition": `attachment; filename="payroll_${id}.csv"` });
+    res.end(csv);
+  }
+
+  /**
+   * POST /hr/payroll-runs/:id/variance-check
+   * Run variance check on a payroll run
+   */
+  @Post("payroll-runs/:id/variance-check")
+  async varianceCheckPayrollRun(
+    @Req() request: RequestWithTenant,
+    @Param("id") runId: string,
+  ) {
+    const { tenantId } = request.tenantContext;
+    const run = await this.prisma.hRCase.findFirst({ where: { id: runId, tenantId, type: "PAYROLL_RUN" } });
+    if (!run) return { success: false, message: "Payroll run not found." };
+    let meta: any = {};
+    try { const parts = (run as any).title?.split("|"); if (parts?.[1]) meta = JSON.parse(parts[1]); } catch {}
+    const gross = meta.totalGrossPay ?? 0;
+    const net = meta.totalNetPay ?? 0;
+    const varianceScore = gross > 0 ? Math.round(((gross - net) / gross) * 100) : 0;
+    return { success: true, tenantId, data: { runId, varianceScore } };
+  }
+
   // ==================== Location Management ====================
 
   /**
@@ -917,5 +1052,71 @@ export class HRController {
     const { tenantId } = request.tenantContext;
     const locations = await this.hrService.getLocations(tenantId);
     return { success: true, tenantId, data: locations };
+  }
+  // ==================== Training Management ====================
+
+  /**
+   * GET /hr/training/programs
+   * List all training programs
+   */
+  @Get("training/programs")
+  async getTrainingPrograms(@Req() request: RequestWithTenant) {
+    const { tenantId } = request.tenantContext;
+    const programs = await this.hrService.getTrainingPrograms(tenantId);
+    return { success: true, tenantId, data: programs };
+  }
+
+  /**
+   * POST /hr/training/programs
+   * Create a training program
+   */
+  @Post("training/programs")
+  async createTrainingProgram(
+    @Req() request: RequestWithTenant,
+    @Body() dto: any,
+  ) {
+    const { tenantId, userId } = request.tenantContext;
+    const program = await this.hrService.createTrainingProgram(tenantId, dto, userId!);
+    return { success: true, tenantId, data: program };
+  }
+
+  /**
+   * GET /hr/training/assignments
+   * List training assignments
+   */
+  @Get("training/assignments")
+  async getTrainingAssignments(@Req() request: RequestWithTenant) {
+    const { tenantId } = request.tenantContext;
+    const assignments = await this.hrService.getTrainingAssignments(tenantId);
+    return { success: true, tenantId, data: assignments };
+  }
+
+  /**
+   * POST /hr/training/assignments
+   * Create a training assignment
+   */
+  @Post("training/assignments")
+  async createTrainingAssignment(
+    @Req() request: RequestWithTenant,
+    @Body() dto: any,
+  ) {
+    const { tenantId, userId } = request.tenantContext;
+    const assignment = await this.hrService.createTrainingAssignment(tenantId, dto, userId!);
+    return { success: true, tenantId, data: assignment };
+  }
+
+  /**
+   * PATCH /hr/training/assignments/:id
+   * Update a training assignment (e.g. status)
+   */
+  @Patch("training/assignments/:id")
+  async updateTrainingAssignment(
+    @Req() request: RequestWithTenant,
+    @Param("id") id: string,
+    @Body() body: any,
+  ) {
+    const { tenantId, userId } = request.tenantContext;
+    const assignment = await this.hrService.updateTrainingAssignment(tenantId, id, body, userId!);
+    return { success: true, tenantId, data: assignment };
   }
 }

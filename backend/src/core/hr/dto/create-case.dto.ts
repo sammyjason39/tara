@@ -20,4 +20,8 @@ export class CreateCaseDto {
   @IsString()
   @IsOptional()
   priority?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
 }

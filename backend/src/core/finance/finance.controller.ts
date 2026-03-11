@@ -15,6 +15,7 @@ import { Request, Response } from "express";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { FinanceService } from "./finance.service";
 import { CreateTransactionDto } from "./dto/create-transaction.dto";
+import { CreateJournalDto } from "./dto/create-journal.dto";
 import { TenantContext } from "../../gateway/tenant-context.interface";
 import { PrismaService } from "../../persistence/prisma.service";
 import { ModuleStateGuard } from "../auth/guards/module-state.guard";
@@ -250,6 +251,57 @@ export class FinanceController {
     const { tenantId } = request.tenantContext;
     const ledger = await this.financeService.getLedger(tenantId, locationId);
     return { success: true, tenantId, data: ledger };
+  }
+
+  @Get("invoices")
+  async listInvoices(@Req() request: RequestWithTenant) {
+    const { tenantId } = request.tenantContext;
+    const data = await this.financeService.listInvoices(tenantId);
+    return { success: true, tenantId, data };
+  }
+
+  @Get("payroll/entries")
+  async getPayrollEntries(
+    @Req() request: RequestWithTenant,
+    @Query("period") period?: string,
+  ) {
+    const { tenantId } = request.tenantContext;
+    const data = await this.financeService.getPayrollEntries(tenantId, period);
+    return { success: true, tenantId, data };
+  }
+
+  @Get("payroll/estimate")
+  async estimatePayroll(
+    @Req() request: RequestWithTenant,
+    @Query("period") period: string,
+  ) {
+    const { tenantId } = request.tenantContext;
+    const data = await this.financeService.estimatePayroll(tenantId, period);
+    return { success: true, tenantId, data };
+  }
+
+  @Post("payroll/run")
+  async executePayrollRun(
+    @Req() request: RequestWithTenant,
+    @Body("period") period: string,
+  ) {
+    const { tenantId, userId } = request.tenantContext;
+    await this.financeService.executePayrollRun(tenantId, period, userId || "SYSTEM");
+    return { success: true, tenantId };
+  }
+
+  @Post("ledger")
+  async createJournal(
+    @Req() request: RequestWithTenant,
+    @Body() createJournalDto: CreateJournalDto,
+  ) {
+    const { tenantId, userId } = request.tenantContext;
+    const journal = await this.financeService.createJournal(
+      tenantId,
+      createJournalDto,
+      userId!,
+    );
+    return { success: true, tenantId, data: journal };
   }
 
   @Post("transactions")

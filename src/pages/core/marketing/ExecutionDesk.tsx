@@ -42,8 +42,8 @@ export default function ExecutionDesk() {
   const refresh = useCallback(async () => {
     try {
       const [c, e] = await Promise.all([
-        marketingService.listCampaigns(session.tenantId),
-        marketingService.listExecutions(session.tenantId),
+        marketingService.listCampaigns(session.tenantId, session),
+        marketingService.listExecutions(session.tenantId, session),
       ]);
       setCampaigns(c);
       setExecutions(e);

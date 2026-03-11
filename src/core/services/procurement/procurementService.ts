@@ -129,6 +129,18 @@ export const procurementService = {
       session,
     ),
 
+  listCategories: async (tenantId: string, session: SessionContext) =>
+    apiRequest<any[]>("/procurement/categories", "GET", session),
+
+  upsertCategory: async (
+    tenantId: string,
+    session: SessionContext,
+    payload: { id?: string; name: string; description?: string; active?: boolean },
+  ) => apiRequest<any>("/procurement/categories/upsert", "POST", session, payload),
+
+  deleteCategory: async (tenantId: string, session: SessionContext, id: string) =>
+    apiRequest<any>(`/procurement/categories/${id}`, "DELETE", session),
+
   getOverview: async (tenantId: string, session: SessionContext) =>
     apiRequest<any>("/procurement/overview", "GET", session),
 
@@ -184,6 +196,12 @@ export const procurementService = {
       taxId: string;
       categories: string[];
       branchCode: string;
+      website?: string;
+      contactPerson?: string;
+      contactEmail?: string;
+      contactPhone?: string;
+      address?: string;
+      fullAddress?: string; // for the primary branch
     },
   ): Promise<SupplierMaster> {
     ensureTenant(tenantId, session);
@@ -224,6 +242,10 @@ export const procurementService = {
       branchName: string;
       location: string;
       leadTimeDays: number;
+      fullAddress?: string;
+      contactPerson?: string;
+      contactEmail?: string;
+      contactPhone?: string;
     },
   ): Promise<SupplierBranch> {
     ensureTenant(tenantId, session);

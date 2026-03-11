@@ -722,4 +722,53 @@ export class HRService {
   async getLocations(tenantId: string): Promise<any[]> {
     return this.hrRepository.getLocations(tenantId);
   }
+
+  // Training Management
+  async getTrainingPrograms(tenantId: string): Promise<any[]> {
+    return this.hrRepository.getTrainingPrograms(tenantId);
+  }
+
+  async createTrainingProgram(tenantId: string, data: any, userId: string): Promise<any> {
+    const program = await this.hrRepository.createTrainingProgram(tenantId, data);
+    await this.auditService.log({
+      tenantId,
+      userId,
+      module: "hr",
+      action: "CREATE",
+      entityType: "TRAINING_PROGRAM",
+      entityId: program.id,
+    });
+    return program;
+  }
+
+  async getTrainingAssignments(tenantId: string): Promise<any[]> {
+    return this.hrRepository.getTrainingAssignments(tenantId);
+  }
+
+  async createTrainingAssignment(tenantId: string, data: any, userId: string): Promise<any> {
+    const assignment = await this.hrRepository.createTrainingAssignment(tenantId, data);
+    await this.auditService.log({
+      tenantId,
+      userId,
+      module: "hr",
+      action: "CREATE",
+      entityType: "TRAINING_ASSIGNMENT",
+      entityId: assignment.id,
+    });
+    return assignment;
+  }
+
+  async updateTrainingAssignment(tenantId: string, id: string, data: any, userId: string): Promise<any> {
+    const assignment = await this.hrRepository.updateTrainingAssignment(tenantId, id, data);
+    await this.auditService.log({
+      tenantId,
+      userId,
+      module: "hr",
+      action: "UPDATE",
+      entityType: "TRAINING_ASSIGNMENT",
+      entityId: assignment.id,
+    });
+    return assignment;
+  }
 }
+

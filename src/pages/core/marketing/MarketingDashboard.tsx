@@ -39,7 +39,7 @@ export default function MarketingDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [session.tenantId]);
+  }, [session]);
 
   useEffect(() => {
     refresh();

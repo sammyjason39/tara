@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
@@ -12,6 +14,7 @@ import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { procurementService } from "@/core/services/procurement/procurementService";
 import type { SupplierBranch, SupplierMaster, SupplierRecommendation } from "@/core/types/procurement/procurement";
+import { Building2, Globe, User, Mail, Phone, MapPin, Tag, Info, ArrowUpRight, Plus, Trash2 } from "lucide-react";
 
 export default function SupplierDesk() {
   const session = useSession();
@@ -38,6 +41,20 @@ export default function SupplierDesk() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // New Rich Data States
+  const [website, setWebsite] = useState("");
+  const [contactPerson, setContactPerson] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [fullAddress, setFullAddress] = useState("");
+
+  // Category Management States
+  const [categoryList, setCategoryList] = useState<{ id: string; name: string; description?: string }[]>([]);
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatDesc, setNewCatDesc] = useState("");
+
   const clearStatus = () => {
     setStatusMessage(null);
     setErrorMessage(null);
@@ -46,18 +63,20 @@ export default function SupplierDesk() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const [m, b] = await Promise.all([
+      const [m, b, cats] = await Promise.all([
         procurementService.listSupplierMasters(session.tenantId, session),
         procurementService.listSupplierBranches(session.tenantId, session),
+        procurementService.listCategories(session.tenantId, session),
       ]);
       setMasters(m);
       setBranches(b);
+      setCategoryList(cats);
     } catch (err) {
       setErrorMessage("Failed to load supplier data.");
     } finally {
       setLoading(false);
     }
-  }, [session.tenantId, session]);
+  }, [session]);
 
   useEffect(() => {
     refresh();
@@ -98,17 +117,32 @@ export default function SupplierDesk() {
         name,
         taxId,
         categories: categories.split(",").map((item) => item.trim()).filter(Boolean),
-        branchCode: "HQ", // Default branch code for master record logic if required
+        branchCode: "HQ",
+        website,
+        contactPerson,
+        contactEmail,
+        contactPhone,
+        address,
+        fullAddress: address, // Default for primary branch
       });
       setStatusMessage(`Supplier Master "${name}" created and routed for compliance vetting.`);
       setMasterDialogOpen(false);
-      setName("");
-      setTaxId("");
-      setCategories("General");
+      resetMasterForm();
       refresh();
     } catch (err) {
       setErrorMessage("Failed to create supplier master.");
     }
+  };
+
+  const resetMasterForm = () => {
+    setName("");
+    setTaxId("");
+    setCategories("General");
+    setWebsite("");
+    setContactPerson("");
+    setContactEmail("");
+    setContactPhone("");
+    setAddress("");
   };
 
   const createBranch = async () => {
@@ -120,14 +154,50 @@ export default function SupplierDesk() {
         branchName: branchName || `${branchCode} Branch`,
         location,
         leadTimeDays: Number(leadTimeDays || "0"),
+        fullAddress,
+        contactPerson,
+        contactEmail,
+        contactPhone,
       });
       setStatusMessage(`Supplier branch "${branchName || branchCode}" added successfully.`);
       setBranchDialogOpen(false);
-      setBranchName("");
-      setLeadTimeDays("3");
+      resetBranchForm();
       refresh();
     } catch (err) {
       setErrorMessage("Failed to add supplier branch.");
+    }
+  };
+
+  const resetBranchForm = () => {
+    setBranchName("");
+    setLeadTimeDays("3");
+    setFullAddress("");
+    setContactPerson("");
+    setContactEmail("");
+    setContactPhone("");
+  };
+
+  const handleCreateCategory = async () => {
+    if (!newCatName) return;
+    try {
+      await procurementService.upsertCategory(session.tenantId, session, {
+        name: newCatName,
+        description: newCatDesc,
+      });
+      setNewCatName("");
+      setNewCatDesc("");
+      refresh();
+    } catch (err) {
+      setErrorMessage("Failed to create category.");
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    try {
+      await procurementService.deleteCategory(session.tenantId, session, id);
+      refresh();
+    } catch (err) {
+      setErrorMessage("Failed to deactivate category.");
     }
   };
 
@@ -138,10 +208,18 @@ export default function SupplierDesk() {
         subtitle="Supplier master and branch operations with onboarding workflow and recommendation support."
         primaryAction={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setBranchDialogOpen(true)}>
-              Add Supplier Branch
+            <Button variant="outline" onClick={() => setCategoryDialogOpen(true)}>
+              <Tag className="w-4 h-4 mr-2" />
+              Manage Categories
             </Button>
-            <Button onClick={() => setMasterDialogOpen(true)}>Add Supplier Master</Button>
+            <Button variant="outline" onClick={() => setBranchDialogOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Branch
+            </Button>
+            <Button onClick={() => setMasterDialogOpen(true)}>
+              <Building2 className="w-4 h-4 mr-2" />
+              Add Supplier Master
+            </Button>
           </div>
         }
         secondaryActions={
@@ -286,107 +364,417 @@ export default function SupplierDesk() {
       </WorkspacePanel>
 
       <Dialog open={masterDialogOpen} onOpenChange={setMasterDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden" aria-describedby="master-create-description">
+          <DialogHeader className="sr-only">
             <DialogTitle>Create Supplier Master</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <Input placeholder="Supplier Name" value={name} onChange={(event) => setName(event.target.value)} />
-            <Input placeholder="Tax ID" value={taxId} onChange={(event) => setTaxId(event.target.value)} />
-            <Input
-              placeholder="Categories (comma separated)"
-              value={categories}
-              onChange={(event) => setCategories(event.target.value)}
-            />
-            <div className="flex justify-end gap-2">
-              <Button onClick={createMaster}>Create and Route</Button>
+          <div id="master-create-description" className="sr-only">Register a global supplier identity with rich contact profile and tax compliance details.</div>
+          
+          <div className="grid md:grid-cols-[1fr_2fr]">
+            {/* Left Info Panel */}
+            <div className="bg-muted p-6 flex flex-col justify-between border-r">
+              <div>
+                <ArrowUpRight className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2 text-foreground">Supplier Onboarding</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Register a global supplier identity. This triggers automatic compliance vetting and legal compliance tracking.
+                </p>
+                <div className="mt-8 space-y-4">
+                  <div className="flex items-start gap-3 text-sm">
+                    <div className="mt-0.5"><Building2 className="w-4 h-4 text-primary" /></div>
+                    <div>
+                      <p className="font-medium text-foreground">Global Identity</p>
+                      <p className="text-muted-foreground text-xs">Standardizes supplier data across all regions.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 text-sm">
+                    <div className="mt-0.5"><Tag className="w-4 h-4 text-primary" /></div>
+                    <div>
+                      <p className="font-medium text-foreground">Category Mapping</p>
+                      <p className="text-muted-foreground text-xs">Ensures correct recommendation during search.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-primary/5 p-4 rounded-lg mt-8 border border-primary/10">
+                <p className="text-xs text-primary font-medium flex items-center gap-1.5">
+                  <Info className="w-4 h-4" /> Compliance Note
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Tax IDs (NPWP/VAT) are verified against official records before approval.
+                </p>
+              </div>
+            </div>
+
+            {/* Right Form Panel */}
+            <div className="p-6">
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block tracking-wider">Official Supplier Name</label>
+                    <div className="relative">
+                      <Building2 className="absolute left-3 top-2.5 h-4 w-4 text-primary" />
+                      <Input
+                        className="pl-9"
+                        placeholder="e.g. PT. Nusantara Tech Hub"
+                        value={name}
+                        onChange={(event) => setName(event.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block tracking-wider">Tax ID (NPWP)</label>
+                    <Input
+                      placeholder="01.234.567.8-091.000"
+                      value={taxId}
+                      onChange={(event) => setTaxId(event.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block tracking-wider">Website</label>
+                    <div className="relative">
+                      <Globe className="absolute left-3 top-2.5 h-4 w-4 text-primary" />
+                      <Input
+                        className="pl-9"
+                        placeholder="https://www.example.com"
+                        value={website}
+                        onChange={(event) => setWebsite(event.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-2 border-t mt-4">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Contact Profile & Address</p>
+                  <div className="grid grid-cols-2 gap-4 text-foreground">
+                    <div>
+                      <label className="text-xs font-medium mb-1.5 block">Person in Charge</label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input className="pl-9 h-9" placeholder="Full Name" value={contactPerson} onChange={e => setContactPerson(e.target.value)} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium mb-1.5 block">Contact Email</label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input className="pl-9 h-9" placeholder="billing@vendor.com" value={contactEmail} onChange={e => setContactEmail(e.target.value)} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium mb-1.5 block">Contact Phone</label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input className="pl-9 h-9" placeholder="+62 81..." value={contactPhone} onChange={e => setContactPhone(e.target.value)} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium mb-1.5 block">HQ Address</label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input className="pl-9 h-9" placeholder="Street, Building, Floor" value={address} onChange={e => setAddress(e.target.value)} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t">
+                  <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block tracking-wider">Product Categories</label>
+                  <Input
+                    placeholder="Electronics, Machinery (Comma separated)"
+                    value={categories}
+                    onChange={(event) => setCategories(event.target.value)}
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-2 italic flex items-center gap-1">
+                    <Info className="w-3 h-3" /> Tip: Accurate categories improve your recommendation score.
+                  </p>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <Button variant="outline" onClick={() => { setMasterDialogOpen(false); resetMasterForm(); }}>Cancel</Button>
+                  <Button onClick={createMaster}>Create and Route</Button>
+                </div>
+              </div>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
       <Dialog open={branchDialogOpen} onOpenChange={setBranchDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Create Supplier Branch</DialogTitle>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden" aria-describedby="branch-create-description">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Add Supplier Branch</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <Select value={supplierId} onValueChange={setSupplierId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Supplier" />
-              </SelectTrigger>
-              <SelectContent>
-                {masters.map((master) => (
-                  <SelectItem key={master.id} value={master.id}>
-                    {master.name}
-                  </SelectItem>
+          <div id="branch-create-description" className="sr-only">Add a new fulfillment location for an existing supplier master to enable local lead-time tracking.</div>
+          
+          <div className="grid md:grid-cols-[1fr_2fr]">
+            <div className="bg-muted p-6 flex flex-col justify-between border-r shadow-inner">
+              <div>
+                <MapPin className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2 text-foreground">Add Branch</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Expand your supplier's geographical presence to optimize logistics and lead-time calculations.
+                </p>
+                <div className="mt-8 space-y-4">
+                  <div className="flex items-start gap-3 text-sm rounded-lg p-3 bg-background/50 border">
+                    <div className="mt-0.5"><Building2 className="w-4 h-4 text-primary" /></div>
+                    <div>
+                      <p className="font-medium text-foreground">Parent Master</p>
+                      <p className="text-muted-foreground text-[10px]">Inherits global risk profile.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <div className="space-y-6">
+                <div>
+                  <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block tracking-wider">Parent Supplier</label>
+                  <Select value={supplierId} onValueChange={setSupplierId}>
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Identify Supplier Master" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {masters.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block tracking-wider">Branch Code</label>
+                    <Input placeholder="JKT-SBY-01" value={branchCode} onChange={e => setBranchCode(e.target.value.toUpperCase())} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block tracking-wider">Branch Nickname</label>
+                    <Input placeholder="Surabaya East Hub" value={branchName} onChange={e => setBranchName(e.target.value)} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                  <div className="col-span-2">
+                    <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block tracking-wider">Full Fulfillment Address</label>
+                    <Input placeholder="Warehouse B, Industrial Zone 4" value={fullAddress} onChange={e => setFullAddress(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block tracking-wider">Lead Time (Days)</label>
+                    <Input type="number" value={leadTimeDays} onChange={e => setLeadTimeDays(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block tracking-wider">Location City</label>
+                    <Input placeholder="Jakarta" value={location} onChange={e => setLocation(e.target.value)} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                  <div>
+                    <label className="text-xs font-medium mb-1.5 block">Local Contact Name</label>
+                    <Input className="h-9" placeholder="Branch Manager" value={contactPerson} onChange={e => setContactPerson(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium mb-1.5 block">Local Phone</label>
+                    <Input className="h-9" placeholder="+62..." value={contactPhone} onChange={e => setContactPhone(e.target.value)} />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <Button variant="outline" onClick={() => { setBranchDialogOpen(false); resetBranchForm(); }}>Cancel</Button>
+                  <Button onClick={createBranch}>Confirm Addition</Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Tag className="w-5 h-5 text-primary" />
+              Category Management
+            </DialogTitle>
+            <DialogDescription>Define per-company product categories for improved procurement analytics.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div className="rounded-xl border p-4 bg-muted/30">
+              <p className="text-xs font-bold uppercase tracking-widest text-primary mb-3">Add New Category</p>
+              <div className="grid gap-3">
+                <Input placeholder="Category Name (e.g. Raw Materials)" value={newCatName} onChange={e => setNewCatName(e.target.value)} />
+                <Input placeholder="Description (Optional)" value={newCatDesc} onChange={e => setNewCatDesc(e.target.value)} />
+                <Button onClick={handleCreateCategory} className="w-full">
+                  <Plus className="w-4 h-4 mr-2" /> Create Category
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Active Categories</label>
+              <div className="grid gap-2 overflow-y-auto max-h-[300px] pr-2">
+                {categoryList.map(cat => (
+                  <div key={cat.id} className="flex items-center justify-between p-3 rounded-lg border bg-background hover:border-primary/50 transition-colors group">
+                    <div>
+                      <p className="font-semibold text-sm">{cat.name}</p>
+                      <p className="text-xs text-muted-foreground">{cat.description || "No description"}</p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => handleDeleteCategory(cat.id)} className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 ))}
-              </SelectContent>
-            </Select>
-            <Input placeholder="Branch Code" value={branchCode} onChange={(event) => setBranchCode(event.target.value.toUpperCase())} />
-            <Input placeholder="Branch Name" value={branchName} onChange={(event) => setBranchName(event.target.value)} />
-            <Input placeholder="Location" value={location} onChange={(event) => setLocation(event.target.value)} />
-            <Input
-              placeholder="Lead Time (days)"
-              type="number"
-              value={leadTimeDays}
-              onChange={(event) => setLeadTimeDays(event.target.value)}
-            />
-            <div className="flex justify-end gap-2">
-              <Button onClick={createBranch}>Create Branch</Button>
+              </div>
             </div>
           </div>
         </DialogContent>
       </Dialog>
       <Dialog open={!!selectedSupplier} onOpenChange={() => setSelectedSupplier(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Supplier Master Detail</DialogTitle>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden" aria-describedby="master-detail-description">
+          <div id="master-detail-description" className="sr-only">Comprehensive view of supplier compliance, rating, and contact profile.</div>
+          <DialogHeader className="p-6 pb-4 border-b">
+            <div className="flex justify-between items-start">
+              <div>
+                <DialogTitle className="text-2xl flex items-center gap-2">
+                  <Building2 className="h-6 w-6 text-primary" />
+                  {selectedSupplier?.name}
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground mt-1 uppercase tracking-widest font-mono">Tax ID: {selectedSupplier?.taxId}</p>
+              </div>
+              <Badge variant={selectedSupplier?.riskTier === "LOW" ? "default" : "destructive"} className="px-3 py-1">
+                {selectedSupplier?.riskTier} RISK
+              </Badge>
+            </div>
           </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="grid grid-cols-2 text-sm gap-y-2">
-              <span className="text-muted-foreground">Supplier ID:</span>
-              <span className="font-mono text-xs">{selectedSupplier?.id}</span>
-              <span className="text-muted-foreground">Name:</span>
-              <span className="font-semibold">{selectedSupplier?.name}</span>
-              <span className="text-muted-foreground">Tax ID:</span>
-              <span>{selectedSupplier?.taxId}</span>
-              <span className="text-muted-foreground">Categories:</span>
-              <span className="flex flex-wrap gap-1">
-                {selectedSupplier?.categories.map(c => (
-                  <span key={c} className="rounded bg-muted px-1.5 py-0.5 text-[10px]">{c}</span>
-                ))}
-              </span>
-              <span className="text-muted-foreground">Compliance:</span>
-              <span><ApprovalStatusBadge status={selectedSupplier?.complianceStatus ?? ""} /></span>
-              <span className="text-muted-foreground">Rating:</span>
-              <span>{selectedSupplier?.globalRating} / 5</span>
-              <span className="text-muted-foreground">Risk Tier:</span>
-              <span className="font-bold">{selectedSupplier?.riskTier}</span>
+
+          <div className="grid grid-cols-2 gap-8 p-6">
+            <div className="space-y-6">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Compliance & Performance</p>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50 border">
+                    <span className="text-xs font-medium">Status</span>
+                    <ApprovalStatusBadge status={selectedSupplier?.complianceStatus || "PENDING"} />
+                  </div>
+                  <div className="flex justify-between items-center p-3 rounded-lg bg-primary/5 border border-primary/10">
+                    <span className="text-xs font-medium">Platform Rating</span>
+                    <span className="font-bold text-primary">{selectedSupplier?.globalRating} / 100</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Categories</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedSupplier?.categories.map(c => (
+                    <Badge key={c} variant="outline" className="text-[10px] py-0 px-2 font-normal">{c}</Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6 border-l pl-8">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Contact Profile</p>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded bg-muted flex items-center justify-center"><User className="w-4 h-4 text-muted-foreground" /></div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase font-semibold">Rep</p>
+                      <p className="text-sm font-medium">{selectedSupplier?.contactPerson || "-"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded bg-muted flex items-center justify-center"><Mail className="w-4 h-4 text-muted-foreground" /></div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase font-semibold">Email</p>
+                      <p className="text-sm font-medium">{selectedSupplier?.contactEmail || "-"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded bg-muted flex items-center justify-center"><Globe className="w-4 h-4 text-muted-foreground" /></div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase font-semibold">Wesbite</p>
+                      <p className="text-sm font-medium text-primary hover:underline cursor-pointer">{selectedSupplier?.website || "-"}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
       <Dialog open={!!selectedBranch} onOpenChange={() => setSelectedBranch(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Branch Profile Detail</DialogTitle>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden" aria-describedby="branch-detail-description">
+          <div id="branch-detail-description" className="sr-only">Branch fulfillment profile and local rating details.</div>
+          <DialogHeader className="p-6 pb-4 border-b bg-muted/20">
+            <div className="flex justify-between items-start">
+              <div>
+                <DialogTitle className="text-xl flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  {selectedBranch?.branchName}
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground mt-1">CODE: <span className="font-mono tracking-widest">{selectedBranch?.branchCode}</span></p>
+              </div>
+              <Badge variant="outline" className="border-primary/20 text-primary">
+                {selectedBranch?.location}
+              </Badge>
+            </div>
           </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="grid grid-cols-2 text-sm gap-y-2">
-              <span className="text-muted-foreground">Branch Code:</span>
-              <span className="font-bold">{selectedBranch?.branchCode}</span>
-              <span className="text-muted-foreground">Branch Name:</span>
-              <span>{selectedBranch?.branchName}</span>
-              <span className="text-muted-foreground">Location:</span>
-              <span>{selectedBranch?.location}</span>
-              <span className="text-muted-foreground">Lead Time:</span>
-              <span>{selectedBranch?.leadTimeDays} days</span>
-              <span className="text-muted-foreground">Local Rating:</span>
-              <span>{selectedBranch?.localRating} / 5</span>
-              <span className="text-muted-foreground">Risk Tier:</span>
-              <span className="font-bold">{selectedBranch?.riskTier}</span>
+
+          <div className="grid grid-cols-2 gap-8 p-6">
+            <div className="space-y-6 text-foreground">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Logistics Meta</p>
+                <div className="space-y-2">
+                  <div className="p-3 rounded-lg border bg-muted/30">
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Standard Lead Time</p>
+                    <p className="text-lg font-semibold">{selectedBranch?.leadTimeDays} Days</p>
+                  </div>
+                  <div className="p-3 rounded-lg border bg-muted/30">
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Local Quality Rating</p>
+                    <p className="text-lg font-semibold">{selectedBranch?.localRating} / 100</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Full Address</p>
+                <p className="text-sm leading-relaxed text-muted-foreground italic">
+                  {selectedBranch?.fullAddress || "No detailed address provided."}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-6 border-l pl-8">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Local Handoff</p>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <User className="w-4 h-4 text-primary" />
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase">Point of Contact</p>
+                      <p className="text-sm font-medium">{selectedBranch?.contactPerson || "-"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 text-foreground">
+                    <Phone className="w-4 h-4 text-primary" />
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase">Phone</p>
+                      <p className="text-sm font-medium">{selectedBranch?.contactPhone || "-"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 text-foreground">
+                    <Mail className="w-4 h-4 text-primary" />
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase">Email</p>
+                      <p className="text-sm font-medium">{selectedBranch?.contactEmail || "-"}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </DialogContent>

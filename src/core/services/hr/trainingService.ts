@@ -1,6 +1,7 @@
 import type { TrainingAssignment, TrainingProgram } from "@/core/types/hr/training";
 import type { SessionContext } from "@/core/security/session";
 import { Roles } from "@/core/security/roles";
+import { apiRequest } from "@/core/api/apiClient";
 
 const ensureTenantAccess = (tenantId: string, actor: SessionContext) => {
   if (actor.role === Roles.SUPERADMIN) return;
@@ -9,24 +10,24 @@ const ensureTenantAccess = (tenantId: string, actor: SessionContext) => {
 
 export const trainingService = {
   async listPrograms(tenantId: string, actor: SessionContext): Promise<TrainingProgram[]> {
-    // Stub
-    return [
-      { id: "prog-1", tenantId, name: "Onboarding", status: "in_progress", completionRate: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-      { id: "prog-2", tenantId, name: "Compliance", status: "in_progress", completionRate: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-    ];
+    ensureTenantAccess(tenantId, actor);
+    return apiRequest<TrainingProgram[]>("/hr/training/programs", "GET", actor);
   },
 
   async listAssignments(tenantId: string, actor: SessionContext): Promise<TrainingAssignment[]> {
-    // Stub
-    return [];
+    ensureTenantAccess(tenantId, actor);
+    return apiRequest<TrainingAssignment[]>("/hr/training/assignments", "GET", actor);
   },
 
   async getComplianceStatus(tenantId: string, actor: SessionContext) {
+    ensureTenantAccess(tenantId, actor);
+    // Stub for now or fetch and calculate
+    const assignments = await this.listAssignments(tenantId, actor);
     return {
-      assigned: 0,
-      completed: 0,
+      assigned: assignments.length,
+      completed: assignments.filter(a => a.status === 'completed').length,
       overdue: 0,
-      completionRate: 0,
+      completionRate: assignments.length ? (assignments.filter(a => a.status === 'completed').length / assignments.length) * 100 : 0,
     };
   },
 
@@ -35,17 +36,8 @@ export const trainingService = {
     actor: SessionContext,
     payload: { employeeId: string; programId: string; status?: TrainingAssignment["status"] },
   ) {
-    console.log("Assign training", payload);
-    return {
-      id: "assign-stub",
-      tenantId,
-      employeeId: payload.employeeId,
-      programId: payload.programId,
-      status: payload.status ?? "planned",
-      assignedAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    } as TrainingAssignment;
+    ensureTenantAccess(tenantId, actor);
+    return apiRequest<TrainingAssignment>("/hr/training/assignments", "POST", actor, payload);
   },
 
   async createProgram(
@@ -53,14 +45,8 @@ export const trainingService = {
     actor: SessionContext,
     payload: Omit<TrainingProgram, "id" | "tenantId" | "createdAt" | "updatedAt">,
   ) {
-    console.log("Create program", payload);
-    return {
-      id: "prog-stub",
-      tenantId,
-      ...payload,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    } as TrainingProgram;
+    ensureTenantAccess(tenantId, actor);
+    return apiRequest<TrainingProgram>("/hr/training/programs", "POST", actor, payload);
   },
 
   async bulkAssign(
@@ -68,19 +54,32 @@ export const trainingService = {
     actor: SessionContext,
     payload: { employeeIds: string[]; programId: string },
   ) {
-    console.log("Bulk assign", payload);
-    return [];
+    ensureTenantAccess(tenantId, actor);
+    const promises = payload.employeeIds.map(empId =>
+      this.assignTraining(tenantId, actor, { employeeId: empId, programId: payload.programId })
+    );
+    return Promise.all(promises);
   },
 
   async exportCompliance(tenantId: string, actor: SessionContext) {
+    ensureTenantAccess(tenantId, actor);
+    console.log("Export compliance requested, stubbed for now");
     return [];
   },
 
   async requestComplianceReview(tenantId: string, actor: SessionContext, employeeId: string) {
-    return { id: "req-stub", status: "pending" };
+    ensureTenantAccess(tenantId, actor);
+    return apiRequest(`/hr/cases`, "POST", actor, {
+      title: "Compliance Review",
+      type: "COMPLIANCE",
+      priority: "HIGH",
+      employeeId,
+      description: "Triggered from Training Grid",
+    });
   },
 
   async completeTraining(tenantId: string, actor: SessionContext, assignmentId: string) {
-    return { id: assignmentId, status: "completed" } as any;
+    ensureTenantAccess(tenantId, actor);
+    return apiRequest<TrainingAssignment>(`/hr/training/assignments/${assignmentId}`, "PATCH", actor, { status: "completed" });
   },
 };

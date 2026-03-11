@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Laptop, Network, ShieldCheck } from "lucide-react";
 import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { itSettingsService, type ITDevice } from "@/core/services/it/itSettingsService";
@@ -116,49 +117,82 @@ export default function DeviceDesk() {
       </WorkspacePanel>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl p-0 overflow-hidden" aria-describedby="device-create-description">
+          <DialogHeader className="sr-only">
             <DialogTitle>Assign New Device</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 pt-2">
-            <Input placeholder="Device Name" id="reg-device-name" />
-            <Select onValueChange={(val) => (window as any)._regDeviceType = val}>
-              <SelectTrigger>
-                <SelectValue placeholder="Device Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="laptop">Laptop</SelectItem>
-                <SelectItem value="mobile">Mobile</SelectItem>
-                <SelectItem value="iot">IoT / Edge</SelectItem>
-                <SelectItem value="network">Network Gear</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input placeholder="Target Location ID" id="reg-location-id" />
-            <Button
-              className="w-full"
-              onClick={async () => {
-                try {
-                  const deviceName = (document.getElementById("reg-device-name") as HTMLInputElement).value;
-                  const locationId = (document.getElementById("reg-location-id") as HTMLInputElement).value;
-                  const deviceType = (window as any)._regDeviceType || "iot";
+          <div id="device-create-description" className="sr-only">Register a new IT asset.</div>
+          <div className="grid md:grid-cols-[1fr_2fr]">
+            <div className="bg-muted p-6 flex flex-col justify-between">
+              <div>
+                <Laptop className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2">Assign New Device</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Register a physical or logical IT asset to the centralized inventory map.
+                </p>
+                <div className="mt-8 space-y-4">
+                  <div className="flex items-start gap-3 text-sm">
+                    <div className="mt-0.5"><Network className="w-4 h-4 text-muted-foreground" /></div>
+                    <div>
+                      <p className="font-medium">LAN-First Sync</p>
+                      <p className="text-muted-foreground text-xs">Device state syncs via LAN.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-primary/5 p-4 rounded-lg mt-8 border border-primary/10">
+                <p className="text-xs text-primary font-medium flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4" /> Policy Enforcement
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Registered devices are subject to MDM policies.
+                </p>
+              </div>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                <Input placeholder="Device Name" id="reg-device-name" />
+                <Select onValueChange={(val) => ((window as any)._regDeviceType = val)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Device Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="laptop">Laptop</SelectItem>
+                    <SelectItem value="mobile">Mobile</SelectItem>
+                    <SelectItem value="iot">IoT / Edge</SelectItem>
+                    <SelectItem value="network">Network Gear</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input placeholder="Target Location ID" id="reg-location-id" />
+                <div className="flex justify-end gap-3 pt-4 mt-6 border-t">
+                  <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+                  <Button
+                    onClick={async () => {
+                      try {
+                        const deviceName = (document.getElementById("reg-device-name") as HTMLInputElement).value;
+                        const locationId = (document.getElementById("reg-location-id") as HTMLInputElement).value;
+                        const deviceType = (window as any)._regDeviceType || "iot";
 
-                  await itSettingsService.registerDevice(session.tenantId, session, {
-                    deviceName,
-                    deviceType,
-                    locationId,
-                    status: "active",
-                  });
-                  
-                  setCreateOpen(false);
-                  setStatusMessage("Device registered successfully.");
-                  setVersion((prev) => prev + 1);
-                } catch (err) {
-                  setErrorMessage("Failed to register device.");
-                }
-              }}
-            >
-              Register Device
-            </Button>
+                        await itSettingsService.registerDevice(session.tenantId, session, {
+                          deviceName,
+                          deviceType,
+                          locationId,
+                          status: "active",
+                        });
+                        
+                        setCreateOpen(false);
+                        setStatusMessage("Device registered successfully.");
+                        setVersion((prev) => prev + 1);
+                      } catch (err) {
+                        setErrorMessage("Failed to register device.");
+                      }
+                    }}
+                  >
+                    Register Device
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

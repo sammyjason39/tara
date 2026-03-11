@@ -7,6 +7,7 @@ import { CreateMovementRequestDto } from "./dto/create-movement-request.dto";
 import { IInventoryRepository } from "./repositories/inventory.repository.interface";
 import { SkuGeneratorService } from "./sku-generator.service";
 import { AuditService } from "../../shared/audit/audit.service";
+import { PrismaService } from "../../persistence/prisma.service";
 
 @Injectable()
 export class InventoryService {
@@ -14,6 +15,7 @@ export class InventoryService {
     private readonly repository: IInventoryRepository,
     private readonly skuGenerator: SkuGeneratorService,
     private readonly auditService: AuditService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async getDashboard(tenant_id: string) {
@@ -35,10 +37,10 @@ export class InventoryService {
       data.barcode = this.skuGenerator.generateBarcode(tenant_id, data.sku);
     }
 
-    // Default to pending for HOD approval as per user requirement
+    // Default to pending for HOD approval as per user requirement, but allow override if explicitly set
     const itemData = {
       ...data,
-      status: "pending",
+      status: data.status || "pending",
     };
 
     const item = await this.repository.createItem(tenant_id, itemData);
@@ -197,16 +199,55 @@ export class InventoryService {
   }
 
   async runLowStockScan(tenant_id: string) {
-    const balances = await this.repository.getBalances(tenant_id);
-    // Placeholder logic: just return scanned count for now as per mock requirement speed
+    // Query all stock levels and flag those at/below their minBuffer threshold
+    const all = await this.prisma.stockLevel.findMany({
+      where: { tenantId: tenant_id },
+    });
+    const low = all.filter((s) => s.onHand <= s.minBuffer);
+
+    // Create/upsert InventoryAlert for each low stock level found
+    let created = 0;
+    for (const level of low) {
+      const existing = await this.prisma.inventoryAlert.findFirst({
+        where: {
+          tenantId: tenant_id,
+          entityId: level.productId,
+          type: "LOW_STOCK",
+          status: "OPEN",
+        },
+      });
+      if (!existing) {
+        await this.prisma.inventoryAlert.create({
+          data: {
+            tenantId: tenant_id,
+            type: "LOW_STOCK",
+            severity: level.onHand === 0 ? "HIGH" : "MEDIUM",
+            status: "OPEN",
+            entityId: level.productId,
+            message: `Stock level for product ${level.productId} at location ${level.locationId} is at ${level.onHand} (threshold: ${level.minBuffer})`,
+          },
+        });
+        created++;
+      }
+    }
+
     return {
-      scanned: balances.length,
-      lowStockFound: balances.filter((b) => b.quantity <= 50).length,
+      scanned: all.length,
+      lowStockFound: low.length,
+      alertsCreated: created,
     };
   }
 
   async runExpiryScan(tenant_id: string) {
-    return { scanned: 0, expiryFound: 0 };
+    // Return count of currently open expiry-related alerts from DB
+    const openExpiryAlerts = await this.prisma.inventoryAlert.count({
+      where: {
+        tenantId: tenant_id,
+        type: "EXPIRY_WARNING",
+        status: "OPEN",
+      },
+    });
+    return { scanned: 0, expiryFound: openExpiryAlerts };
   }
 
   async deleteItem(tenant_id: string, itemId: string, userId?: string) {

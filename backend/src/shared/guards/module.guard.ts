@@ -31,6 +31,11 @@ export class ModuleGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const tenantId = request.tenantContext?.tenantId;
+    const role = request.tenantContext?.role;
+
+    if (role === "SUPERADMIN") {
+      return true;
+    }
 
     if (!tenantId) {
       throw new ForbiddenException("Tenant context missing");

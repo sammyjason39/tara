@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Info, Calculator, Calendar, PieChart, Coins, TrendingUp } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/core/ui/PageHeader";
@@ -811,132 +812,179 @@ export default function Assets() {
       ) : null}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Create CAPEX Request</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-3 md:grid-cols-2">
-            <Input
-              placeholder="Asset Description"
-              value={capexForm.assetDescription}
-              onChange={(event) =>
-                setCapexForm({ ...capexForm, assetDescription: event.target.value })
-              }
-            />
-            <Select
-              value={capexForm.assetClass}
-              onValueChange={(value) =>
-                setCapexForm({ ...capexForm, assetClass: value as FixedAsset["assetClass"] })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Asset Class" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="LAND">Land</SelectItem>
-                <SelectItem value="BUILDING">Building</SelectItem>
-                <SelectItem value="MACHINERY">Machinery</SelectItem>
-                <SelectItem value="VEHICLE">Vehicle</SelectItem>
-                <SelectItem value="FURNITURE">Furniture</SelectItem>
-                <SelectItem value="EQUIPMENT">Equipment</SelectItem>
-                <SelectItem value="SOFTWARE">Software</SelectItem>
-                <SelectItem value="OTHER">Other</SelectItem>
-              </SelectContent>
-            </Select>
-            <div className="flex flex-col gap-1">
-              <Input
-                placeholder="Requested Amount"
-                type="number"
-                value={capexForm.requestedAmount}
-                onChange={(event) =>
-                  setCapexForm({ ...capexForm, requestedAmount: Number(event.target.value) })
-                }
-              />
-              {selectedDeptBudget && (
-                <p className="text-[10px] text-muted-foreground px-1">
-                  Available Budget: {formatAmount(selectedDeptBudget.availableBudget)}
+        <DialogContent className="max-w-4xl p-0 overflow-hidden">
+          <div className="grid md:grid-cols-[1fr_2fr] h-full">
+            {/* Left Panel: Strategic Information */}
+            <div className="bg-muted p-6 flex flex-col justify-between border-r">
+              <div>
+                <PieChart className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2">Capital Expenditure</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Initiate a strategic investment request. CAPEX requests are routed through departmental workflows and lock designated budgets upon approval.
                 </p>
-              )}
+                
+                <div className="mt-8 space-y-4">
+                  <div className="rounded-lg border bg-background/50 p-4">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5"><Coins className="w-4 h-4" /> Budget Impact</h4>
+                    {selectedDeptBudget ? (
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Available</span>
+                          <span className="font-medium text-emerald-600">{formatAmount(selectedDeptBudget.availableBudget)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-rose-600 font-medium">
+                          <span>Requested</span>
+                          <span>- {formatAmount(capexForm.requestedAmount)}</span>
+                        </div>
+                        <div className="h-px bg-border my-1"></div>
+                        <div className="flex justify-between items-center font-bold">
+                          <span>Remaining Post-Approval</span>
+                          <span>{formatAmount(selectedDeptBudget.availableBudget - capexForm.requestedAmount)}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">Select a department to view budget impact.</p>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-start gap-3 text-sm pt-2">
+                    <div className="mt-0.5"><TrendingUp className="w-4 h-4 text-muted-foreground" /></div>
+                    <div>
+                      <p className="font-medium">Lifecycle Projection</p>
+                      <p className="text-muted-foreground text-xs">Estimated useful life determines the annual depreciation impact on the P&L.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <Select
-              value={capexForm.department}
-              onValueChange={(value) =>
-                setCapexForm({ ...capexForm, department: value })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select Department" />
-              </SelectTrigger>
-              <SelectContent>
-                {capexBudgets.map(b => (
-                  <SelectItem key={b.department} value={b.department}>{b.department}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              placeholder="Project Code (optional)"
-              value={capexForm.projectCode}
-              onChange={(event) =>
-                setCapexForm({ ...capexForm, projectCode: event.target.value })
-              }
-            />
-            <Input
-              placeholder="Location"
-              value={capexForm.location}
-              onChange={(event) =>
-                setCapexForm({ ...capexForm, location: event.target.value })
-              }
-            />
-            <Input
-              placeholder="Acquisition Date"
-              type="date"
-              value={capexForm.acquisitionDate}
-              onChange={(event) =>
-                setCapexForm({ ...capexForm, acquisitionDate: event.target.value })
-              }
-            />
-            <Input
-              placeholder="Useful Life (Years)"
-              type="number"
-              value={capexForm.usefulLifeYears}
-              onChange={(event) =>
-                setCapexForm({ ...capexForm, usefulLifeYears: Number(event.target.value) })
-              }
-            />
-            <Input
-              placeholder="Residual Value"
-              type="number"
-              value={capexForm.residualValue}
-              onChange={(event) =>
-                setCapexForm({ ...capexForm, residualValue: Number(event.target.value) })
-              }
-            />
-            <Select
-              value={capexForm.depreciationMethod}
-              onValueChange={(value) =>
-                setCapexForm({
-                  ...capexForm,
-                  depreciationMethod: value as DepreciationMethod,
-                })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Depreciation Method" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="STRAIGHT_LINE">Straight Line</SelectItem>
-                <SelectItem value="DECLINING_BALANCE">Declining Balance</SelectItem>
-                <SelectItem value="UNIT_OF_PRODUCTION">Unit of Production</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex justify-end">
-            <Button 
-                disabled={!capexForm.department || capexForm.requestedAmount <= 0 || (selectedDeptBudget && capexForm.requestedAmount > selectedDeptBudget.availableBudget)}
-                onClick={createCapex}
-            >
-                Submit CAPEX and Route
-            </Button>
+
+            {/* Right Panel: Data Entry Form */}
+            <div className="p-6 flex flex-col">
+              <div className="flex-1 space-y-6 overflow-y-auto pr-2">
+                
+                <div>
+                  <label className="text-xs font-semibold uppercase text-muted-foreground mb-1 block">Primary Details</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <Input
+                        placeholder="Asset Description (e.g., Office Server Setup)"
+                        value={capexForm.assetDescription}
+                        onChange={(event) => setCapexForm({ ...capexForm, assetDescription: event.target.value })}
+                        className="text-sm font-medium"
+                      />
+                    </div>
+                    <div>
+                      <Select
+                        value={capexForm.assetClass}
+                        onValueChange={(value) => setCapexForm({ ...capexForm, assetClass: value as FixedAsset["assetClass"] })}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Asset Class" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="LAND">Land</SelectItem>
+                          <SelectItem value="BUILDING">Building</SelectItem>
+                          <SelectItem value="MACHINERY">Machinery</SelectItem>
+                          <SelectItem value="VEHICLE">Vehicle</SelectItem>
+                          <SelectItem value="FURNITURE">Furniture</SelectItem>
+                          <SelectItem value="EQUIPMENT">Equipment</SelectItem>
+                          <SelectItem value="SOFTWARE">Software</SelectItem>
+                          <SelectItem value="OTHER">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Input
+                        placeholder="Requested Amount"
+                        type="number"
+                        value={capexForm.requestedAmount || ""}
+                        onChange={(event) => setCapexForm({ ...capexForm, requestedAmount: Number(event.target.value) })}
+                        prefix="¤"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold uppercase text-muted-foreground mb-1 block">Governance & Routing</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Select
+                      value={capexForm.department}
+                      onValueChange={(value) => setCapexForm({ ...capexForm, department: value })}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Sponsor Department" /></SelectTrigger>
+                      <SelectContent>
+                        {capexBudgets.map(b => (
+                          <SelectItem key={b.department} value={b.department}>{b.department}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      placeholder="Project Code (Optional)"
+                      value={capexForm.projectCode}
+                      onChange={(event) => setCapexForm({ ...capexForm, projectCode: event.target.value })}
+                    />
+                    <div className="col-span-2">
+                       <Input
+                        placeholder="Deployment Location / Site"
+                        value={capexForm.location}
+                        onChange={(event) => setCapexForm({ ...capexForm, location: event.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold uppercase text-muted-foreground mb-1 block">Financial Mapping</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="relative">
+                       <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                       <Input
+                        type="date"
+                        className="pl-9"
+                        value={capexForm.acquisitionDate}
+                        onChange={(event) => setCapexForm({ ...capexForm, acquisitionDate: event.target.value })}
+                      />
+                    </div>
+                    <div className="relative">
+                      <Calculator className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Useful Life (Years)"
+                        type="number"
+                        className="pl-9"
+                        value={capexForm.usefulLifeYears || ""}
+                        onChange={(event) => setCapexForm({ ...capexForm, usefulLifeYears: Number(event.target.value) })}
+                      />
+                    </div>
+                    <Input
+                      placeholder="Residual Value / Salvage Quote"
+                      type="number"
+                      value={capexForm.residualValue || ""}
+                      onChange={(event) => setCapexForm({ ...capexForm, residualValue: Number(event.target.value) })}
+                    />
+                    <Select
+                      value={capexForm.depreciationMethod}
+                      onValueChange={(value) => setCapexForm({ ...capexForm, depreciationMethod: value as DepreciationMethod })}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Depreciation Method" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="STRAIGHT_LINE">Straight Line</SelectItem>
+                        <SelectItem value="DECLINING_BALANCE">Declining Balance</SelectItem>
+                        <SelectItem value="UNIT_OF_PRODUCTION">Unit of Production</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t flex justify-end gap-3">
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                <Button 
+                    disabled={!capexForm.department || capexForm.requestedAmount <= 0 || (selectedDeptBudget && capexForm.requestedAmount > selectedDeptBudget.availableBudget)}
+                    onClick={createCapex}
+                >
+                    Submit Request for Approval
+                </Button>
+              </div>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

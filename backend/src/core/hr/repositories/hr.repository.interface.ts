@@ -202,4 +202,11 @@ export abstract class IHRRepository {
 
   // Location Management
   abstract getLocations(tenantId: string): Promise<any[]>;
+
+  // Training Management
+  abstract getTrainingPrograms(tenantId: string): Promise<any[]>;
+  abstract createTrainingProgram(tenantId: string, data: any): Promise<any>;
+  abstract getTrainingAssignments(tenantId: string): Promise<any[]>;
+  abstract createTrainingAssignment(tenantId: string, data: any): Promise<any>;
+  abstract updateTrainingAssignment(tenantId: string, id: string, data: any): Promise<any>;
 }

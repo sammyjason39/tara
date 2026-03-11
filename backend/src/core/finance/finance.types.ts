@@ -123,6 +123,7 @@ export interface FinanceReceivableRow {
   dueDate: string;
   status: "DRAFT" | "SENT" | "OVERDUE" | "PAID" | "DISPUTED";
   agingDays: number;
+  updatedAt: string;
 }
 
 export interface FinancePayableRow {
@@ -133,6 +134,7 @@ export interface FinancePayableRow {
   currency: string;
   dueDate: string;
   status: "RECEIVED" | "APPROVED" | "SCHEDULED_FOR_PAYMENT" | "PAID";
+  updatedAt: string;
 }
 
 export interface FinancePaymentRow {
@@ -202,15 +204,27 @@ export interface FinanceAlert {
 }
 
 export interface PayrollEntry {
-  id: string; // Employee ID
-  name: string;
-  department: string;
-  salary: number; // Base salary
-  bonus: number;
-  deductions: number;
-  netPay: number;
-  status: "PENDING" | "PROCESSED" | "PAID";
+  id: string;
+  tenantId: string;
+  employeeId: string;
+  name?: string;
+  department?: string;
+  period: string; // e.g., "2026-02"
+  baseSalary: number;
+  bonuses?: number;
+  deductions?: number;
+  netSalary: number;
+  status: "PENDING" | "PROCESSED" | "PAID" | "pending" | "approved" | "paid";
   paymentDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PayrollEstimate {
+  department: string;
+  employeeCount: number;
+  totalGross: number;
+  totalNet: number;
 }
 
 export interface ReceivableInvoice {

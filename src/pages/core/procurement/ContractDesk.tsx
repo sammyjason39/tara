@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
@@ -13,6 +15,7 @@ import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { procurementService } from "@/core/services/procurement/procurementService";
 import type { ContractRecord, Requisition, SupplierMaster } from "@/core/types/procurement/procurement";
+import { FileText, ShieldCheck, Signature, ClipboardList, Info, Building2, User } from "lucide-react";
 
 export default function ContractDesk() {
   const session = useSession();
@@ -210,38 +213,108 @@ export default function ContractDesk() {
       </WorkspacePanel>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden" aria-describedby="contract-create-description">
+          <DialogHeader className="sr-only">
             <DialogTitle>Create or Update Contract Packet</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <Select value={requisitionId} onValueChange={setRequisitionId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Requisition" />
-              </SelectTrigger>
-              <SelectContent>
-                {requisitions.map((request) => (
-                  <SelectItem key={request.id} value={request.id}>
-                    {request.id} - {request.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={supplierId} onValueChange={setSupplierId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Supplier" />
-              </SelectTrigger>
-              <SelectContent>
-                {suppliers.map((supplier) => (
-                  <SelectItem key={supplier.id} value={supplier.id}>
-                    {supplier.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Textarea placeholder="Contract Notes" value={notes} onChange={(event) => setNotes(event.target.value)} />
-            <div className="flex justify-end gap-2">
-              <Button onClick={upsertContract}>Save Contract Packet</Button>
+          <div id="contract-create-description" className="sr-only">Initialize or modify a legal packet. This packet must be approved by Legal before any party can sign.</div>
+
+          <div className="grid md:grid-cols-[1fr_2fr]">
+            {/* Left Column: Context & Governance */}
+            <div className="bg-muted p-6 flex flex-col justify-between border-r shadow-inner">
+              <div>
+                <ShieldCheck className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2">Contract Packet</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Secure the legal foundation of this procurement. Packets require mandatory Legal Review followed by tri-party signatures.
+                </p>
+                
+                <div className="mt-8 space-y-4">
+                  <div className="flex items-start gap-3 p-3 bg-background rounded-lg border border-primary/10 shadow-sm transition-all hover:bg-primary/5">
+                    <Building2 className="w-4 h-4 text-primary mt-0.5" />
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-widest">Target Entity</p>
+                      <p className="text-xs font-semibold">{suppliers.find(s => s.id === supplierId)?.name || 'Pending Selection'}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col gap-2">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-1">Required Signers</p>
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      <Badge variant="outline" className="text-[8px] px-1.5 py-0 bg-background border-dashed opacity-50">Supplier Representative</Badge>
+                      <Badge variant="outline" className="text-[8px] px-1.5 py-0 bg-background border-dashed opacity-50">Procurement HOD</Badge>
+                      <Badge variant="outline" className="text-[8px] px-1.5 py-0 bg-background border-dashed opacity-50">Finance HOD</Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-primary/5 p-4 rounded-lg border border-primary/10">
+                <p className="text-xs text-primary font-bold flex items-center gap-1.5 uppercase tracking-wider">
+                  <Info className="w-3.5 h-3.5" /> Compliance Mode
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Once created, the status reverts to <span className="text-amber-600 font-bold">LEGAL_REVIEW</span>. Versioning is automatic.
+                </p>
+              </div>
+            </div>
+
+            {/* Right Column: Identification & Terms */}
+            <div className="p-6">
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block tracking-wider">Source Requisition</label>
+                    <Select value={requisitionId} onValueChange={setRequisitionId}>
+                      <SelectTrigger className="h-10 text-foreground transition-all focus:ring-1 focus:ring-primary/20">
+                        <SelectValue placeholder="Select REQ ID" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {requisitions.map(r => (
+                          <SelectItem key={r.id} value={r.id}>{r.id} - {r.title}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2 block tracking-wider">Selected Supplier</label>
+                    <Select value={supplierId} onValueChange={setSupplierId}>
+                      <SelectTrigger className="h-10 text-foreground transition-all focus:ring-1 focus:ring-primary/20">
+                        <SelectValue placeholder="Select Supplier" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {suppliers.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-4 border-t">
+                  <div className="flex items-center gap-2 mb-1">
+                    <FileText className="w-4 h-4 text-primary" />
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground tracking-wider">Legal Terms & Addenda</label>
+                  </div>
+                  <Textarea 
+                    placeholder="Describe specific terms (Validty, SLA, Payment terms, etc.)..."
+                    className="min-h-[160px] resize-none text-sm p-4 bg-muted/20 focus:bg-background transition-colors"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                  />
+                  <div className="flex gap-4 pt-2">
+                    <div className="flex-1 p-2 rounded border border-dashed text-center text-[10px] text-muted-foreground hover:bg-muted/50 cursor-pointer transition-all">
+                      + Attachments (Coming Soon)
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-6 border-t mt-4">
+                  <Button variant="outline" onClick={() => setDialogOpen(false)} className="hover:bg-muted">Cancel</Button>
+                  <Button onClick={upsertContract} disabled={!requisitionId || !supplierId} className="shadow-sm">
+                    <Signature className="w-4 h-4 mr-2" />
+                    {contracts.some(c => c.requisitionId === requisitionId) ? 'Update Packet' : 'Initialize Packet'}
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </DialogContent>

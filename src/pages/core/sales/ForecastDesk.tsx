@@ -7,13 +7,13 @@ import { DataTableShell } from "@/core/tools/DataTableShell";
 import { FilterBar } from "@/core/tools/FilterBar";
 import { useSession } from "@/core/security/session";
 import { salesService } from "@/core/services/sales/salesService";
-import type { SalesForecast, SalesOpportunity } from "@/core/types/sales/sales";
+import type { SalesExecutiveForecast, SalesOpportunity } from "@/core/types/sales/sales";
 
 export default function ForecastDesk() {
   const session = useSession();
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [forecast, setForecast] = useState<SalesForecast | null>(null);
+  const [forecast, setForecast] = useState<SalesExecutiveForecast | null>(null);
   const [opportunities, setOpportunities] = useState<SalesOpportunity[]>([]);
 
   const refresh = useCallback(async () => {
@@ -30,7 +30,7 @@ export default function ForecastDesk() {
     } finally {
       setLoading(false);
     }
-  }, [session.tenantId, session]);
+  }, [session]);
 
   useEffect(() => {
     refresh();

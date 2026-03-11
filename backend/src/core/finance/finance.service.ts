@@ -7,6 +7,7 @@ import {
   CreateTransactionDto,
   TransactionType,
 } from "./dto/create-transaction.dto";
+import { CreateJournalDto } from "./dto/create-journal.dto";
 import {
   Asset,
   CapexRequest,
@@ -26,6 +27,7 @@ import {
   FinanceInsight,
   FinanceAlert,
   PayrollEntry,
+  PayrollEstimate,
 } from "./finance.types";
 import { AuditService } from "../../shared/audit/audit.service";
 import { FileProcessingService } from "../../shared/file-processing/file-processing.service";
@@ -68,6 +70,57 @@ export class FinanceService {
       },
     });
     return transaction;
+  }
+
+  async createJournal(
+    tenantId: string,
+    data: CreateJournalDto,
+    userId: string,
+  ): Promise<any> {
+    const totalDebits = data.lines.reduce(
+      (sum, line) => sum + Number(line.debit),
+      0,
+    );
+    const totalCredits = data.lines.reduce(
+      (sum, line) => sum + Number(line.credit),
+      0,
+    );
+
+    if (Math.abs(totalDebits - totalCredits) > 0.01) {
+      throw new Error("Journal entry is not balanced (Debits != Credits)");
+    }
+
+    try {
+      const journal = await this.financeRepository.createJournal(
+        tenantId,
+        data,
+      );
+
+      /*
+      await this.auditService.log({
+        tenantId,
+        userId,
+        module: "finance",
+        action: "CREATE",
+        entityType: "JOURNAL_ENTRY",
+        entityId: (journal as any).id,
+        metadata: {
+          description: data.description,
+          linesCount: data.lines.length,
+        },
+      });
+      */
+
+      return journal;
+    } catch (error) {
+      const fs = require("fs");
+      fs.appendFileSync(
+        "finance_error.log",
+        `[${new Date().toISOString()}] Error in createJournal: ${error.stack || error}\n`,
+      );
+      console.error("[FinanceService] Error in createJournal:", error);
+      throw error;
+    }
   }
 
   /**
@@ -551,4 +604,75 @@ export class FinanceService {
   async getAlerts(tenantId: string): Promise<FinanceAlert[]> {
     return this.financeRepository.getAlerts(tenantId);
   }
+
+  // Aggregated Views
+  async listInvoices(tenantId: string): Promise<any[]> {
+    const [payables, receivables] = await Promise.all([
+      this.listPayables(tenantId),
+      this.listReceivables(tenantId),
+    ]);
+
+    const invoiceRows: any[] = [];
+
+    // Map payables to common invoice format
+    payables.forEach((p) => {
+      invoiceRows.push({
+        id: p.id,
+        kind: "PAYABLE",
+        vendor: p.vendorName,
+        amount: p.amount,
+        invoiceDate: p.updatedAt, // Use updatedAt as proxy for invoice date if missing
+        dueDate: p.dueDate,
+        status: p.status,
+      });
+    });
+
+    // Map receivables to common invoice format
+    receivables.forEach((r) => {
+      invoiceRows.push({
+        id: r.id,
+        kind: "RECEIVABLE",
+        vendor: r.customerName,
+        amount: r.amount,
+        invoiceDate: r.updatedAt, // Use updatedAt as proxy for invoice date if missing
+        dueDate: r.dueDate,
+        status: r.status,
+      });
+    });
+
+    return invoiceRows;
+  }
+
+  async getPayrollEntries(
+    tenantId: string,
+    period?: string,
+  ): Promise<PayrollEntry[]> {
+    return this.financeRepository.listPayrollEntries(tenantId, period);
+  }
+
+  async estimatePayroll(
+    tenantId: string,
+    period: string,
+  ): Promise<PayrollEstimate[]> {
+    return this.financeRepository.estimatePayroll(tenantId, period);
+  }
+
+  async executePayrollRun(
+    tenantId: string,
+    period: string,
+    userId: string,
+  ): Promise<void> {
+    await this.financeRepository.executePayrollRun(tenantId, period, userId);
+    
+    await this.auditService.log({
+      tenantId,
+      userId,
+      module: "FINANCE",
+      action: "CREATE",
+      entityType: "PayrollRun",
+      entityId: `PayrollPeriod-${period}`,
+      metadata: { period },
+    });
+  }
 }
+

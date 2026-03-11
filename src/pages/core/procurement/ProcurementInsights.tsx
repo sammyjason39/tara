@@ -42,9 +42,9 @@ export default function ProcurementInsights() {
     try {
       const [ins, leg, goods, sup] = await Promise.all([
         procurementService.getSpendInsights(session.tenantId, session),
-        procurementService.listLegalHandoffs(session.tenantId),
-        procurementService.listGoodsReceiptSyncs(session.tenantId),
-        procurementService.listSupplierAccessProvisioning(session.tenantId),
+        procurementService.listLegalHandoffs(session.tenantId, session),
+        procurementService.listGoodsReceiptSyncs(session.tenantId, session),
+        procurementService.listSupplierAccessProvisioning(session.tenantId, session),
       ]);
       setInsights(ins);
       setLegalHandoffs(leg);
@@ -55,7 +55,7 @@ export default function ProcurementInsights() {
     } finally {
       setLoading(false);
     }
-  }, [session.tenantId, session]);
+  }, [session]);
 
   useEffect(() => {
     refresh();

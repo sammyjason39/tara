@@ -53,7 +53,7 @@ export default function OrgMap() {
     const loadData = async () => {
       try {
         const items = await orgService.getOrgMap(session.tenantId, session);
-        setData(items);
+        setData(items.map(dept => ({ ...dept, headcount: dept.headcount ?? 0 })) as OrgMapDept[]);
       } catch (err) {
         console.error("Failed to load org map", err);
       }

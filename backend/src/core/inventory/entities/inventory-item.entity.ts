@@ -14,6 +14,7 @@ export class InventoryItem {
   qrCode: string;
   moduleTags: string[];
   active: boolean;
+  departmentId?: string;
   createdAt: Date;
   updatedAt: Date;
 }

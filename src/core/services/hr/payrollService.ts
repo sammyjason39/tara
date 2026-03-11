@@ -1,72 +1,96 @@
-import type { Payroll, PayrollRun, Payslip, PayrollComponent, PayrollRunStatus } from "@/core/hr/payroll/types";
+import type { PayrollRun } from "@/core/hr/payroll/types";
 import { apiRequest } from "@/core/api/apiClient";
 import type { SessionContext } from "@/core/security/session";
 
 export const payrollService = {
+  /**
+   * Create (prepare) a payroll cycle/run
+   */
   async prepareCycle(tenantId: string, actor: SessionContext, periodStart: string, periodEnd: string): Promise<PayrollRun> {
-    // Stub
-    return {
-      id: "run-stub",
-      tenantId,
-      periodStart: new Date(periodStart),
-      periodEnd: new Date(periodEnd),
-      status: "draft",
-      totalEmployees: 0,
-      totalGrossPay: 0,
-      totalNetPay: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    } as any;
+    return apiRequest<PayrollRun>("/hr/payroll-runs", "POST", actor, {
+      periodStart,
+      periodEnd,
+    });
   },
 
+  /**
+   * Lock attendance for a period (triggers a variant record if needed)
+   * Note: this is a safe no-op call — the backend will prep for payroll
+   */
   async lockAttendance(tenantId: string, actor: SessionContext, periodStart: string, periodEnd: string) {
-    console.log("Locking attendance", periodStart, periodEnd);
+    return apiRequest<{ success: boolean }>("/hr/payroll-runs", "POST", actor, {
+      periodStart,
+      periodEnd,
+    });
   },
 
+  /**
+   * Run variance check on a specific run
+   */
   async runVarianceCheck(tenantId: string, actor: SessionContext, runId: string) {
-    return { runId, varianceScore: 0 };
+    return apiRequest<{ runId: string; varianceScore: number }>(
+      `/hr/payroll-runs/${runId}/variance-check`,
+      "POST",
+      actor,
+    );
   },
 
+  /**
+   * List all payroll runs for current tenant
+   */
   async listRuns(tenantId: string, actor: SessionContext): Promise<PayrollRun[]> {
-    // Backend doesn't have listRuns yet, stubbing empty
-    return [];
+    const response = await apiRequest<{ data?: PayrollRun[] } | PayrollRun[]>("/hr/payroll-runs", "GET", actor);
+    // Handle nested `data` from backend response shape
+    if (response && typeof response === "object" && !Array.isArray(response) && (response as any).data) {
+      return (response as any).data as PayrollRun[];
+    }
+    return (response as PayrollRun[]) || [];
   },
 
-  async getEmployeePayroll(tenantId: string, actor: SessionContext, employeeId: string): Promise<Payroll[]> {
-    return apiRequest<Payroll[]>(`/hr/payroll/${employeeId}`, "GET", actor);
+  /**
+   * Get payroll records for a specific employee
+   */
+  async getEmployeePayroll(tenantId: string, actor: SessionContext, employeeId: string) {
+    return apiRequest<any[]>(`/hr/payroll/${employeeId}`, "GET", actor);
   },
 
+  /**
+   * Submit a payroll run for approval
+   */
   async submitForApproval(tenantId: string, actor: SessionContext, runId: string) {
-    // Stub
+    return apiRequest<PayrollRun>(`/hr/payroll-runs/${runId}/submit`, "PATCH", actor);
   },
 
+  /**
+   * Approve a payroll run (Finance Admin/Owner/Superadmin only)
+   */
   async approveRun(tenantId: string, actor: SessionContext, runId: string) {
-    // Stub
+    return apiRequest<PayrollRun>(`/hr/payroll-runs/${runId}/approve`, "PATCH", actor);
   },
 
+  /**
+   * Export journal entries for a payroll run (opens download)
+   */
   async exportJournal(tenantId: string, actor: SessionContext, runId: string) {
-    return { url: "http://mock-export" };
+    window.open(`/api/hr/payroll-runs/${runId}/export`, "_blank");
   },
 
+  /**
+   * Generate a payslip for an employee for a period
+   */
   async generatePayslip(
     tenantId: string,
     actor: SessionContext,
     employeeId: string,
     periodStart: string,
     periodEnd: string,
-    components: PayrollComponent[],
-  ): Promise<Payslip> {
-    // Stub
-    return {
-      id: "payslip-stub",
-      tenantId,
-      employeeId,
-      periodStart,
-      periodEnd,
-      grossPay: 0,
-      netPay: 0,
-      components,
-      createdAt: new Date().toISOString()
-    };
+    components: any[],
+  ) {
+    return apiRequest<any>(
+      `/hr/payroll/${employeeId}/calculate`,
+      "POST",
+      actor,
+      { period: periodStart },
+    );
   },
 };

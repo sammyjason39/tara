@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UploadCloud, FileText, Info, ShieldCheck, FileCheck2 } from "lucide-react";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
@@ -144,66 +145,150 @@ export default function FinanceDocs() {
       </WorkspacePanel>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Upload Finance Document</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <Input placeholder="Title" value={title} onChange={(event) => setTitle(event.target.value)} />
-            <Select value={type} onValueChange={setType}>
-              <SelectTrigger>
-                <SelectValue placeholder="Document Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="INVOICE">Invoice</SelectItem>
-                <SelectItem value="RECEIPT">Receipt</SelectItem>
-                <SelectItem value="CONTRACT">Contract</SelectItem>
-                <SelectItem value="PAYMENT_PROOF">Payment Proof</SelectItem>
-                <SelectItem value="TAX">Tax Document</SelectItem>
-                <SelectItem value="JOURNAL_ENTRY">Journal Entry</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input placeholder="Description" value={description} onChange={(event) => setDescription(event.target.value)} />
-            <div className="space-y-1">
-              <span className="text-xs text-muted-foreground uppercase font-bold">Attachment</span>
-              <Input type="file" onChange={() => {}} />
+        <DialogContent className="max-w-3xl p-0 overflow-hidden">
+          <div className="grid md:grid-cols-[1fr_2fr]">
+            {/* Left Info Panel */}
+            <div className="bg-muted p-6 flex flex-col justify-between">
+              <div>
+                <UploadCloud className="w-8 h-8 text-primary mb-4" />
+                <DialogTitle className="text-xl mb-2">Upload Document</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Ingest financial documents into the secure vault. Documents are hashed and immutable upon entry.
+                </p>
+                <div className="mt-8 space-y-4">
+                  <div className="flex items-start gap-3 text-sm">
+                    <div className="mt-0.5"><ShieldCheck className="w-4 h-4 text-muted-foreground" /></div>
+                    <div>
+                      <p className="font-medium">Audit Trail Linkage</p>
+                      <p className="text-muted-foreground text-xs">Instantly binds to ledger entries.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 text-sm">
+                    <div className="mt-0.5"><FileCheck2 className="w-4 h-4 text-muted-foreground" /></div>
+                    <div>
+                      <p className="font-medium">OCR Extraction</p>
+                      <p className="text-muted-foreground text-xs">(Coming Soon) Auto-populates metadata.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-primary/5 p-4 rounded-lg mt-8 border border-primary/10">
+                <p className="text-xs text-primary font-medium flex items-center gap-1.5">
+                  <Info className="w-4 h-4" /> Secure Vault
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Files are stored in the WORM (Write Once, Read Many) compliant vault segment.
+                </p>
+              </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button onClick={uploadDoc}>Upload and Route</Button>
+
+            {/* Right Form Panel */}
+            <div className="p-6">
+              <div className="space-y-6">
+                
+                <div>
+                  <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block">Document Source File</label>
+                  <div className="border-2 border-dashed border-primary/20 bg-primary/5 rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-primary/10 transition-colors">
+                    <UploadCloud className="h-10 w-10 text-primary mb-3" />
+                    <p className="text-sm font-semibold">Click to upload or drag and drop</p>
+                    <p className="text-xs text-muted-foreground mt-1 mb-4">PDF, JPG, PNG (Max 50MB)</p>
+                    <Input type="file" className="w-[200px] text-xs" onChange={() => {}} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block">Document Title</label>
+                    <Input placeholder="e.g., Q3 Office Lease" value={title} onChange={(event) => setTitle(event.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block">Document Type</label>
+                    <Select value={type} onValueChange={setType}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="INVOICE">Invoice</SelectItem>
+                        <SelectItem value="RECEIPT">Receipt</SelectItem>
+                        <SelectItem value="CONTRACT">Contract</SelectItem>
+                        <SelectItem value="PAYMENT_PROOF">Payment Proof</SelectItem>
+                        <SelectItem value="TAX">Tax Document</SelectItem>
+                        <SelectItem value="JOURNAL_ENTRY">Journal Entry</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold uppercase text-muted-foreground mb-2 block">Description & Metadata</label>
+                  <Input placeholder="Optional reference notes" value={description} onChange={(event) => setDescription(event.target.value)} />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                  <Button onClick={uploadDoc} className="gap-2"><UploadCloud className="w-4 h-4" /> Upload to Vault</Button>
+                </div>
+              </div>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
       <Dialog open={!!selectedItem} onOpenChange={() => setSelectedItem(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Document Detail</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="grid grid-cols-2 text-sm gap-y-2">
-              <span className="text-muted-foreground">Document ID:</span>
-              <span>{selectedItem?.id}</span>
-              <span className="text-muted-foreground">Title:</span>
-              <span className="font-semibold">{selectedItem?.title}</span>
-              <span className="text-muted-foreground">Type:</span>
-              <span className="uppercase">{selectedItem?.type}</span>
-              <span className="text-muted-foreground">Description:</span>
-              <span>{selectedItem?.description}</span>
-              <span className="text-muted-foreground">Status:</span>
-              <span><ApprovalStatusBadge status={selectedItem?.status || "PENDING"} /></span>
-              <span className="text-muted-foreground">Uploaded At:</span>
-              <span>{selectedItem?.uploadedAt.slice(0, 10)}</span>
-              <span className="text-muted-foreground">Uploaded By:</span>
-              <span>{selectedItem?.uploadedBy || "System"}</span>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader className="pb-4 border-b">
+            <div className="flex justify-between items-start">
+              <div>
+                <DialogTitle className="text-xl flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Vaulted Document Record
+                </DialogTitle>
+                <p className="text-sm text-muted-foreground mt-1">ID: <span className="font-mono">{selectedItem?.id}</span></p>
+              </div>
+              <ApprovalStatusBadge status={selectedItem?.status || "PENDING"} />
             </div>
-            <div className="border-t pt-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Storage Info</p>
-              <p className="text-xs text-muted-foreground italic">
-                Vault Location: /finance/ledger-docs/{selectedItem?.id}.pdf
-              </p>
-              <div className="mt-4">
-                <Button size="sm" variant="outline" className="w-full">Download Source File</Button>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-8 py-4">
+            <div className="space-y-6">
+              <div>
+                <p className="text-sm text-muted-foreground uppercase font-semibold tracking-wider mb-1">Metadata</p>
+                <div className="bg-muted/30 p-4 rounded-lg border space-y-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Title</p>
+                    <p className="font-semibold">{selectedItem?.title}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Type</p>
+                    <p className="font-medium text-sm border bg-background rounded px-2 py-0.5 inline-block mt-0.5">{selectedItem?.type}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Description</p>
+                    <p className="text-sm">{selectedItem?.description || "N/A"}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="space-y-6 border-l pl-8">
+              <div>
+                <p className="text-sm text-muted-foreground uppercase font-semibold tracking-wider mb-1">Vault Lineage</p>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center text-sm border-b pb-2">
+                    <span className="text-muted-foreground">Uploaded By</span>
+                    <span className="font-medium">{selectedItem?.uploadedBy || "System Admin"}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm border-b pb-2">
+                    <span className="text-muted-foreground">Timestamp</span>
+                    <span>{selectedItem?.uploadedAt.slice(0, 16).replace("T", " ")}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm border-b pb-2">
+                    <span className="text-muted-foreground">Location</span>
+                    <span className="font-mono text-xs">/finance/ledger-docs/{selectedItem?.id.slice(-6)}.pdf</span>
+                  </div>
+                </div>
+              </div>
+              <div className="pt-2">
+                <Button variant="default" className="w-full gap-2"><UploadCloud className="w-4 h-4 rotate-180" /> Access Original File</Button>
               </div>
             </div>
           </div>

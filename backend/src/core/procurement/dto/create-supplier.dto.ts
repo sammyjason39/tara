@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString } from "class-validator";
+import { IsBoolean, IsNotEmpty, IsOptional, IsString } from "class-validator";
 
 export class CreateSupplierDto {
   @IsString()
@@ -16,4 +16,32 @@ export class CreateSupplierDto {
   @IsString()
   @IsNotEmpty()
   branchCode: string;
+
+  @IsString()
+  @IsOptional()
+  website?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  active?: boolean;
+
+  @IsString()
+  @IsOptional()
+  fullAddress?: string;
+
+  @IsString()
+  @IsOptional()
+  contactPerson?: string;
+
+  @IsString()
+  @IsOptional()
+  contactEmail?: string;
+
+  @IsString()
+  @IsOptional()
+  contactPhone?: string;
+
+  @IsString()
+  @IsOptional()
+  address?: string;
 }

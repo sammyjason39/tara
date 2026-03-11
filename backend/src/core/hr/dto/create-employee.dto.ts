@@ -40,6 +40,10 @@ export class CreateEmployeeDto {
   @IsNotEmpty()
   lastName: string;
 
+  @IsString()
+  @IsOptional()
+  fullName?: string;
+
   @IsEmail()
   email: string;
 
@@ -56,15 +60,20 @@ export class CreateEmployeeDto {
   managerId?: string;
 
   @IsString()
-  @IsNotEmpty()
-  roleTitle: string;
+  @IsOptional()
+  roleTitle?: string;
 
   @IsString()
   @IsOptional()
   locationId?: string;
 
   @IsEnum(EmploymentType)
-  employmentType: EmploymentType;
+  @IsOptional()
+  employmentType?: EmploymentType;
+
+  @IsEnum(EmploymentStatus)
+  @IsOptional()
+  status?: EmploymentStatus;
 
   @IsNumber()
   @Min(0)
@@ -77,5 +86,6 @@ export class CreateEmployeeDto {
   hourlyRate?: number;
 
   @IsDateString()
-  hireDate: string;
+  @IsOptional()
+  hireDate?: string;
 }

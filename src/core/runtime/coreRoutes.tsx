@@ -105,6 +105,12 @@ import CalculatorTool from "@/pages/core/tools/CalculatorTool";
 import ExportTool from "@/pages/core/tools/ExportTool";
 import Explorer from "@/pages/core/tools/Explorer";
 import CoreSettings from "@/pages/core/Settings";
+import AuditHub from "@/pages/core/audit/AuditHub";
+import LogHub from "@/pages/core/logs/LogHub";
+import ModuleHub from "@/pages/core/license/ModuleHub";
+import BulletinHub from "@/pages/core/comms/BulletinHub";
+import MailHub from "@/pages/core/comms/MailHub";
+import ChatHub from "@/pages/core/comms/ChatHub";
 
 /**
  * Build Core Routes.
@@ -878,6 +884,65 @@ export function buildCoreRoutes(): JSX.Element[] {
         </ProtectedRoute>
       }
     />,
+
+    <Route
+      key="core-audit"
+      path="audit"
+      element={
+        <ProtectedRoute permission="core.it.access" scope="COMPANY">
+          <AuditHub />
+        </ProtectedRoute>
+      }
+    />,
+    <Route
+      key="core-logs"
+      path="logs"
+      element={
+        <ProtectedRoute permission="core.it.access" scope="COMPANY">
+          <LogHub />
+        </ProtectedRoute>
+      }
+    />,
+    <Route
+      key="core-license"
+      path="license"
+      element={
+        <ProtectedRoute permission="core.it.access" scope="COMPANY">
+          <ModuleHub />
+        </ProtectedRoute>
+      }
+    />,
+    <Route
+      key="core-bulletin"
+      path="bulletin"
+      element={
+        <ProtectedRoute permission="core.it.access" scope="COMPANY">
+          <BulletinHub />
+        </ProtectedRoute>
+      }
+    />,
+    <Route
+      key="core-mail"
+      path="mail"
+      element={
+        <ProtectedRoute permission="core.it.access" scope="COMPANY">
+          <MailHub />
+        </ProtectedRoute>
+      }
+    />,
+    <Route
+      key="core-chat"
+      path="chat"
+      element={
+        <ProtectedRoute permission="core.it.access" scope="COMPANY">
+          <ChatHub />
+        </ProtectedRoute>
+      }
+    />,
+
+
+
+
     ...routes,
   ];
 }
