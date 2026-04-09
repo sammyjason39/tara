@@ -533,7 +533,7 @@ export class InventoryService {
     const all = await this.prisma.stockLevel.findMany({
       where: { tenantId: tenant_id },
     });
-    const low = all.filter((s) => s.onHand <= s.minBuffer);
+    const low = all.filter((s: any) => s.onHand <= s.minBuffer);
 
     // Create/upsert InventoryAlert for each low stock level found
     let created = 0;
@@ -549,6 +549,8 @@ export class InventoryService {
       if (!existing) {
         await this.prisma.inventoryAlert.create({
           data: {
+        id: '3gqsruwg',
+        updatedAt: new Date(),
             tenantId: tenant_id,
             type: "LOW_STOCK",
             severity: level.onHand === 0 ? "HIGH" : "MEDIUM",

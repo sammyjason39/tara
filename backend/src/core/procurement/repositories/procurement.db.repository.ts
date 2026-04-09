@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { PrismaService } from "../../../persistence/prisma.service";
+import { v4 as uuidv4 } from "uuid";
 import { CreateRequisitionDto } from "../dto/create-requisition.dto";
 import { CreateSupplierDto } from "../dto/create-supplier.dto";
 import { CreateSupplierBranchDto } from "../dto/create-supplier-branch.dto";
@@ -26,11 +27,11 @@ import { Supplier } from "../entities/supplier.entity";
 import {
   SupplierMaster,
   ProcurementRequisition,
-  ProcurementFinalPO,
+  ProcurementFinalPo,
   ProcurementRiskSignal,
   SupplierBranch,
   SupplierProduct,
-  ProcurementDraftPO,
+  ProcurementDraftPo,
   ProcurementContract,
   ProcurementAuditEvent,
 } from "@prisma/client";
@@ -53,7 +54,9 @@ export class ProcurementDbRepository extends IProcurementRepository {
     detail = "",
   ): Promise<any> {
     return this.prisma.procurementAuditEvent.create({
-      data: { tenantId, actorId, action, entityType, entityId, detail },
+      data: {
+        id: uuidv4(),
+        tenantId, actorId, action, entityType, entityId, detail },
     });
   }
 
@@ -102,6 +105,8 @@ export class ProcurementDbRepository extends IProcurementRepository {
     } else {
       return this.prisma.procurementCategory.create({
         data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
           ...categoryData,
           tenantId,
         },
@@ -143,6 +148,8 @@ export class ProcurementDbRepository extends IProcurementRepository {
   async createSupplier(tenantId: string, data: CreateSupplierDto): Promise<Supplier> {
     const created = await this.prisma.supplierMaster.create({
       data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
         tenantId,
         name: data.name,
         taxId: data.taxId,
@@ -202,6 +209,8 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
     const created = await this.prisma.supplierBranch.create({
       data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
         tenantId,
         supplierId: data.supplierId,
         branchCode: data.branchCode,
@@ -273,6 +282,8 @@ export class ProcurementDbRepository extends IProcurementRepository {
     } else {
       const created = await this.prisma.supplierProduct.create({
         data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
           tenantId,
           supplierId: data.supplierId,
           branchId: data.branchId,
@@ -298,25 +309,25 @@ export class ProcurementDbRepository extends IProcurementRepository {
         tenantId,
         category: params.category,
         active: true,
-        branch: {
+        supplierBranch: {
           active: true,
           ...(params.branchCode ? { branchCode: params.branchCode } : {}),
         },
       },
-      include: { supplier: true, branch: true },
+      include: { supplierMaster: true, supplierBranch: true },
       take: 10,
     });
     return products.map((p) => ({
       supplierId: p.supplierId,
       branchId: p.branchId,
-      supplierName: p.supplier.name,
-      branchName: p.branch.branchName,
-      branchCode: p.branch.branchCode,
+      supplierName: (p as any).supplierMaster.name,
+      branchName: (p as any).supplierBranch.branchName,
+      branchCode: (p as any).supplierBranch.branchCode,
       category: p.category,
       score: p.qualityScore,
-      riskTier: p.branch.riskTier,
+      riskTier: (p as any).supplierBranch.riskTier,
       unitPrice: Number(p.unitPrice),
-      leadTimeDays: p.branch.leadTimeDays,
+      leadTimeDays: (p as any).supplierBranch.leadTimeDays,
     }));
   }
 
@@ -350,6 +361,8 @@ export class ProcurementDbRepository extends IProcurementRepository {
   async createRequisition(tenantId: string, data: CreateRequisitionDto): Promise<Requisition> {
     const created = await this.prisma.procurementRequisition.create({
       data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
         tenantId,
         requesterId: data.createdBy || "system",
         departmentId: data.requesterDept,
@@ -446,11 +459,11 @@ export class ProcurementDbRepository extends IProcurementRepository {
   // ─── DRAFT PURCHASE ORDERS ────────────────────────────────────────────────────
 
   async getDraftPurchaseOrders(tenantId: string): Promise<any[]> {
-    const drafts = await this.prisma.procurementDraftPO.findMany({
+    const drafts = await this.prisma.procurementDraftPo.findMany({
       where: { tenantId },
       orderBy: { createdAt: "desc" },
     });
-    return drafts.map((d: ProcurementDraftPO) => ({
+    return drafts.map((d: ProcurementDraftPo) => ({
       id: d.id,
       tenantId: d.tenantId,
       requisitionId: d.requisitionId,
@@ -474,8 +487,10 @@ export class ProcurementDbRepository extends IProcurementRepository {
     const totalAmount = data.quotedTotal
       ?? data.lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
 
-    const draft = await this.prisma.procurementDraftPO.create({
+    const draft = await this.prisma.procurementDraftPo.create({
       data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
         tenantId,
         requisitionId: data.requisitionId,
         branchCode: requisition.branchCode,
@@ -512,12 +527,12 @@ export class ProcurementDbRepository extends IProcurementRepository {
   }
 
   async approveDraftByProcurementHod(tenantId: string, draftPoId: string): Promise<any> {
-    const draft = await this.prisma.procurementDraftPO.findUnique({
+    const draft = await this.prisma.procurementDraftPo.findUnique({
       where: { id: draftPoId, tenantId },
     });
     if (!draft) throw new NotFoundException("Draft PO not found");
 
-    const updated = await this.prisma.procurementDraftPO.update({
+    const updated = await this.prisma.procurementDraftPo.update({
       where: { id: draftPoId, tenantId },
       data: { status: "PROCUREMENT_HOD_APPROVED" },
     });
@@ -531,12 +546,12 @@ export class ProcurementDbRepository extends IProcurementRepository {
   }
 
   async confirmSupplierQuote(tenantId: string, draftPoId: string, data: ConfirmQuoteDto): Promise<any> {
-    const draft = await this.prisma.procurementDraftPO.findUnique({
+    const draft = await this.prisma.procurementDraftPo.findUnique({
       where: { id: draftPoId, tenantId },
     });
     if (!draft) throw new NotFoundException("Draft PO not found");
 
-    const updated = await this.prisma.procurementDraftPO.update({
+    const updated = await this.prisma.procurementDraftPo.update({
       where: { id: draftPoId, tenantId },
       data: {
         status: "SUPPLIER_CONFIRMED",
@@ -560,8 +575,10 @@ export class ProcurementDbRepository extends IProcurementRepository {
     });
     if (!requisition) throw new NotFoundException("Requisition not found");
 
-    const po = await this.prisma.procurementFinalPO.create({
+    const po = await this.prisma.procurementFinalPo.create({
       data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
         tenantId,
         requisitionId: requisition.id,
         draftPoId: "auto",
@@ -582,6 +599,8 @@ export class ProcurementDbRepository extends IProcurementRepository {
     const supplier = await this.prisma.supplierMaster.findUnique({ where: { id: data.supplierId } });
     await this.prisma.payable.create({
       data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
         tenantId,
         vendorName: supplier?.name || "Unknown Supplier",
         amount: data.totalAmount,
@@ -606,11 +625,11 @@ export class ProcurementDbRepository extends IProcurementRepository {
   }
 
   async getPurchaseOrders(tenantId: string): Promise<PurchaseOrder[]> {
-    const pos = await this.prisma.procurementFinalPO.findMany({
+    const pos = await this.prisma.procurementFinalPo.findMany({
       where: { tenantId },
       orderBy: { createdAt: "desc" },
     });
-    return pos.map((po: ProcurementFinalPO) => ({
+    return pos.map((po: ProcurementFinalPo) => ({
       id: po.id,
       tenantId: po.tenantId,
       requisitionId: po.requisitionId,
@@ -627,13 +646,13 @@ export class ProcurementDbRepository extends IProcurementRepository {
   // ─── RECEIPTS ─────────────────────────────────────────────────────────────────
 
   async createReceipt(tenantId: string, data: CreateReceiptDto, createdBy: string): Promise<any> {
-    const finalPo = await this.prisma.procurementFinalPO.findUnique({
+    const finalPo = await this.prisma.procurementFinalPo.findUnique({
       where: { id: data.finalPoId, tenantId },
     });
     if (!finalPo) throw new NotFoundException("Final PO not found");
 
     // Update PO status to RECEIVED
-    await this.prisma.procurementFinalPO.update({
+    await this.prisma.procurementFinalPo.update({
       where: { id: data.finalPoId },
       data: { status: "RECEIVED" },
     });
@@ -675,7 +694,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
       status: c.status,
       version: c.version,
       signedBySupplier: c.signedBySupplier,
-      signedByProcurementHod: c.signedByProcurementHod,
+      signedByProcHod: c.signedByProcHod,
       signedByFinanceHod: c.signedByFinanceHod,
       notes: c.notes,
       createdAt: c.createdAt,
@@ -698,7 +717,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
           version: existing.version + 1,
           notes: data.notes || existing.notes,
           signedBySupplier: false,
-          signedByProcurementHod: false,
+          signedByProcHod: false,
           signedByFinanceHod: false,
         },
       });
@@ -707,6 +726,8 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
     const created = await this.prisma.procurementContract.create({
       data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
         tenantId,
         requisitionId: data.requisitionId,
         supplierId: data.supplierId,
@@ -714,7 +735,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
         version: 1,
         notes: data.notes,
         signedBySupplier: false,
-        signedByProcurementHod: false,
+        signedByProcHod: false,
         signedByFinanceHod: false,
         attachmentIds: data.attachmentIds || [],
       },
@@ -749,7 +770,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
     const signPatch: any = {};
     if (data.party === "SUPPLIER") signPatch.signedBySupplier = true;
-    if (data.party === "PROCUREMENT_HOD") signPatch.signedByProcurementHod = true;
+    if (data.party === "PROCUREMENT_HOD") signPatch.signedByProcHod = true;
     if (data.party === "FINANCE_HOD") signPatch.signedByFinanceHod = true;
 
     const updated = await this.prisma.procurementContract.update({
@@ -758,8 +779,8 @@ export class ProcurementDbRepository extends IProcurementRepository {
     });
 
     // If all three signed → status = SIGNED
-    const allSigned = updated.signedBySupplier && updated.signedByProcurementHod && updated.signedByFinanceHod;
-    const anySigned = updated.signedBySupplier || updated.signedByProcurementHod || updated.signedByFinanceHod;
+    const allSigned = updated.signedBySupplier && updated.signedByProcHod && updated.signedByFinanceHod;
+    const anySigned = updated.signedBySupplier || updated.signedByProcHod || updated.signedByFinanceHod;
 
     const finalStatus = allSigned ? "SIGNED" : anySigned ? "PARTIAL_SIGNED" : updated.status;
     const finalContract = await this.prisma.procurementContract.update({
@@ -798,6 +819,8 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
     return this.prisma.procurementRiskSignal.create({
       data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
         tenantId,
         code: data.code,
         severity: data.severity,
@@ -831,6 +854,8 @@ export class ProcurementDbRepository extends IProcurementRepository {
       if (!existing) {
         await this.prisma.procurementRiskSignal.create({
           data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
             tenantId,
             code: "PRICE_SPIKE",
             severity: "HIGH",
@@ -870,6 +895,8 @@ export class ProcurementDbRepository extends IProcurementRepository {
   async createPortalMessage(tenantId: string, data: CreatePortalMessageDto, createdBy: string): Promise<any> {
     const created = await this.prisma.supplierPortalMessage.create({
       data: {
+        id: uuidv4(),
+        
         tenantId,
         supplierId: data.supplierId,
         supplierBranchId: data.supplierBranchId,

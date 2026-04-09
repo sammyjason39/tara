@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { IArPaymentRepository } from './interfaces/ar-payment.repository.interface';
 import { IArPayment, IArPaymentAllocation } from '../domain/ar.interfaces';
 import { v4 as uuid } from 'uuid';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ArPaymentMockRepository implements IArPaymentRepository {
@@ -23,7 +24,7 @@ export class ArPaymentMockRepository implements IArPaymentRepository {
       companyId,
       customerId: data.customerId,
       paymentDate: new Date(),
-      amount: data.amount,
+      amount: new Prisma.Decimal(data.amount || 0),
       paymentMethod: data.paymentMethod,
       reference: data.reference,
       paymentReference: data.paymentReference || `PAY-${Date.now()}`,
@@ -40,7 +41,7 @@ export class ArPaymentMockRepository implements IArPaymentRepository {
       id: uuid(),
       paymentId: data.paymentId,
       invoiceId: data.invoiceId,
-      amountAllocated: data.amount,
+      amountAllocated: new Prisma.Decimal(data.amountAllocated || data.amount || 0),
       idempotencyKey: data.idempotencyKey,
       createdAt: new Date(),
     };
@@ -54,5 +55,9 @@ export class ArPaymentMockRepository implements IArPaymentRepository {
 
   async findAllocationsByInvoice(tenantId: string, companyId: string, invoiceId: string): Promise<IArPaymentAllocation[]> {
     return this.allocations.filter(a => a.invoiceId === invoiceId);
+  }
+
+  async findAllocationsByPayment(tenantId: string, companyId: string, paymentId: string): Promise<IArPaymentAllocation[]> {
+    return this.allocations.filter(a => a.paymentId === paymentId);
   }
 }

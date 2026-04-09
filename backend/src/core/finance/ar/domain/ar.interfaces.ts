@@ -30,6 +30,8 @@ export interface IArInvoice {
   idempotencyKey?: string;
   createdAt: Date;
   updatedAt: Date;
+  lines?: IArInvoiceLine[];
+  allocations?: IArPaymentAllocation[];
 }
 
 export interface IArInvoiceLine {

@@ -15,7 +15,7 @@ export class ArPaymentDbRepository implements IArPaymentRepository {
   async findById(tenantId: string, companyId: string, id: string): Promise<IArPayment | null> {
     const res = await this.db.arPayment.findUnique({
       where: { id },
-      include: { allocations: true }
+      include: { financeArPaymentAllocations: true }
     });
     if (!res) return null;
     return this.mapToDomain(res);
@@ -24,7 +24,7 @@ export class ArPaymentDbRepository implements IArPaymentRepository {
   async findByIdempotencyKey(tenantId: string, companyId: string, key: string): Promise<IArPayment | null> {
     const res = await this.db.arPayment.findFirst({
       where: { tenantId, idempotencyKey: key },
-      include: { allocations: true }
+      include: { financeArPaymentAllocations: true }
     });
     if (!res) return null;
     return this.mapToDomain(res);
@@ -51,6 +51,8 @@ export class ArPaymentDbRepository implements IArPaymentRepository {
   async create(tenantId: string, companyId: string, data: any): Promise<IArPayment> {
     const created = await this.db.arPayment.create({
       data: {
+        
+        updatedAt: new Date(),
         tenantId,
         customerId: data.customerId,
         amount: new Prisma.Decimal(data.amount),
@@ -66,6 +68,8 @@ export class ArPaymentDbRepository implements IArPaymentRepository {
   async createAllocation(tenantId: string, companyId: string, data: any): Promise<IArPaymentAllocation> {
     const created = await this.db.arPaymentAllocation.create({
       data: {
+        
+        
         paymentId: data.paymentId,
         invoiceId: data.invoiceId,
         amountAllocated: new Prisma.Decimal(data.amountAllocated || data.amount),

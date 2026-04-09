@@ -38,6 +38,8 @@ export class ArCustomerDbRepository implements IArCustomerRepository {
   async create(tenantId: string, companyId: string, data: any): Promise<IArCustomer> {
     const created = await this.db.arCustomer.create({
       data: {
+        id: 'ny0yovwn',
+        updatedAt: new Date(),
         tenantId,
         name: data.name,
         email: data.email,

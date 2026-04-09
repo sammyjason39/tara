@@ -90,6 +90,8 @@ export class RetailPublicAuthService {
 
     const customer = await this.prisma.retailCustomer.create({
       data: {
+        id: '7wsfk54f',
+        updatedAt: new Date(),
         tenantId: tenantId,
         name: payload.name.trim(),
         email: normalizedEmail,
@@ -103,6 +105,8 @@ export class RetailPublicAuthService {
     const passwordHash = await bcrypt.hash(passwordValue, 12);
     await this.prisma.retailCustomerAuth.create({
       data: {
+        id: '7jmki1z9',
+        updatedAt: new Date(),
         customerId: customer.id,
         passwordHash,
         passwordUpdatedAt: new Date(),
@@ -268,6 +272,8 @@ export class RetailPublicAuthService {
 
     await this.prisma.retailCustomerSession.create({
       data: {
+        id: 'al4zz5uh',
+        updatedAt: new Date(),
         customerId: customer.id,
         tenantId: customer.tenantId,
         tokenHash: refreshHash,

@@ -1,4 +1,4 @@
-export class StockAdjustment {
+export interface InventoryAdjustment {
   id: string;
   tenant_id: string;
   itemId: string;

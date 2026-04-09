@@ -18,7 +18,7 @@ export class PayrollDbRepository implements IPayrollRepository {
   async findById(tenantId: string, companyId: string, id: string): Promise<PayrollRecord | null> {
     const res = await this.db.payrollLine.findUnique({
       where: { id },
-      include: { payrollRun: true }
+      include: { hrPayrollRun: true }
     });
     if (!res) return null;
     return {
@@ -26,27 +26,27 @@ export class PayrollDbRepository implements IPayrollRepository {
       tenantId: res.tenantId,
       companyId: companyId,
       employeeId: res.employeeId,
-      periodId: res.payrollRun.id, // Align with PayrollRecord
+      periodId: res.hrPayrollRun.id, // Align with PayrollRecord
       baseSalary: res.grossPay,
       netSalary: res.netPay,
-      status: res.payrollRun.status as any,
+      status: res.hrPayrollRun.status as any,
     };
   }
 
   async findAll(tenantId: string, companyId: string, period?: string): Promise<PayrollRecord[]> {
     const list = await this.db.payrollLine.findMany({
       where: { tenantId },
-      include: { payrollRun: true }
+      include: { hrPayrollRun: true }
     });
     return list.map(res => ({
       id: res.id,
       tenantId: res.tenantId,
       companyId: companyId,
       employeeId: res.employeeId,
-      periodId: res.payrollRun.id,
+      periodId: res.hrPayrollRun.id,
       baseSalary: res.grossPay,
       netSalary: res.netPay,
-      status: res.payrollRun.status as any,
+      status: res.hrPayrollRun.status as any,
     }));
   }
 }

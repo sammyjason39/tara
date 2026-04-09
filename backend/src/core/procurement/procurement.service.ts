@@ -200,7 +200,7 @@ export class ProcurementService {
   ) {
     // 1. Update the finalPO status
     const status = data.receiptType === "PARTIAL" ? "PARTIALLY_RECEIVED" : "RECEIVED";
-    await this.prisma.procurementFinalPO.update({
+    await this.prisma.procurementFinalPo.update({
       where: { id: finalPoId, tenantId },
       data: { status },
     });

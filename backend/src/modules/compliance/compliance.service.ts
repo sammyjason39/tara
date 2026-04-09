@@ -95,7 +95,7 @@ export class ComplianceEngineService {
     const employees = await this.prisma.employee.findMany({
       where: { tenantId, status: { in: ['active', 'probation'] } },
       include: {
-        compensation: { select: { baseSalary: true, currency: true } },
+        compensations: { select: { baseSalary: true, currency: true } },
       },
     });
 

@@ -28,7 +28,7 @@ export class AnomalyDetectorService {
 
     if (historicalMovements.length < 5) return false; // Not enough data
 
-    const avg = historicalMovements.reduce((sum, m) => sum + Math.abs(Number(m.quantity)), 0) / historicalMovements.length;
+    const avg = historicalMovements.reduce((sum: number, m: any) => sum + Math.abs(Number(m.quantity)), 0) / historicalMovements.length;
     
     // Threshold: 3x the average
     if (Math.abs(currentQty) > avg * 3) {

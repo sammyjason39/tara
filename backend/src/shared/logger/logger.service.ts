@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../persistence/prisma.service';
 import { LogQueryDto } from './dto/log-query.dto';
@@ -25,6 +26,8 @@ export class LoggerService {
     try {
       await this.prisma.systemLog.create({
         data: {
+        id: uuidv4(),
+        
           tenantId: params.tenantId ?? undefined,
           module: params.module,
           level: params.level,

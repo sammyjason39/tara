@@ -28,6 +28,8 @@ export class PostingRuleDbRepository implements IPostingRuleRepository {
   async createRule(tenantId: string, companyId: string, data: Partial<FinancePostingRule>): Promise<FinancePostingRule> {
     const res = await (this.prisma as any).ledgerPostingRule.create({
       data: {
+        id: 'pc4wa5y9',
+        updated_at: new Date(),
         tenantId,
         companyId,
         eventType: data.eventType || '',

@@ -19,7 +19,7 @@ export class TaxExportService {
       orderBy: { createdAt: 'desc' }
     });
 
-    const reportData = transactions.map(t => ({
+    const reportData = transactions.map((t: any) => ({
       transactionId: t.transactionId,
       type: t.transactionType,
       baseAmount: t.baseAmount,
@@ -33,7 +33,7 @@ export class TaxExportService {
       fiscalPeriodId,
       generatedAt: new Date(),
       data: reportData,
-      totalTax: reportData.reduce((sum, r) => sum + Number(r.taxAmount), 0)
+      totalTax: reportData.reduce((sum: number, r: any) => sum + Number(r.taxAmount), 0)
     };
   }
 
@@ -43,7 +43,7 @@ export class TaxExportService {
   async exportToCSV(tenantId: string, branchId: string, fiscalPeriodId: string) {
     const report = await this.generateTaxReport(tenantId, branchId, fiscalPeriodId);
     let csv = 'TransactionID,Type,BaseAmount,TaxAmount,Date\n';
-    report.data.forEach(r => {
+    report.data.forEach((r: any) => {
       csv += `${r.transactionId},${r.type},${r.baseAmount},${r.taxAmount},${r.date.toISOString()}\n`;
     });
     return csv;

@@ -146,7 +146,7 @@ export class LedgerPostingService {
           previousHash: lastHash || 'GENESIS',
           journalId,
           timestamp,
-          lines: postingLines.map(l => ({
+          lines: postingLines.map((l: { accountId: string; side: PostingSide; amount: Prisma.Decimal }) => ({
             accountId: l.accountId,
             side: l.side,
             amount: l.amount,

@@ -29,6 +29,8 @@ export class AssetDbRepository implements IAssetRepository {
   async save(asset: Asset): Promise<Asset> {
     const created = await this.db.fixedAsset.create({
       data: {
+        id: 'z8lvq6qv',
+        updatedAt: new Date(),
         tenantId: asset.tenantId,
         description: asset.description || asset.name || 'No Description',
         assetClass: asset.assetClass || 'GENERAL',

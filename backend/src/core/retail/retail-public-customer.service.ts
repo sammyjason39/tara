@@ -28,21 +28,21 @@ export class RetailPublicCustomerService {
   async buildCartResponse(tenantId: string, customerId: string) {
     const cart = await this.prisma.retailCart.findFirst({
       where: { tenantId: tenantId, customerId },
-      include: { items: { include: { product: true } } },
+      include: { retailCartItems: { include: { itemMaster: true } } },
     });
 
     if (!cart) {
       return { id: null, items: [], subtotal: 0, tax: 0, total: 0 };
     }
 
-    const items = cart.items.map((item: any) => {
+    const items = cart.retailCartItems.map((item: any) => {
       const unitPrice = Number(item.unitPrice);
       const quantity = Number(item.quantity);
       return {
         id: item.id,
         productId: item.productId,
-        sku: item.product?.sku ?? "",
-        name: item.product?.name ?? "Unknown Item",
+        sku: item.itemMaster?.sku ?? "",
+        name: item.itemMaster?.name ?? "Unknown Item",
         quantity,
         unitPrice,
         totalPrice: unitPrice * quantity,
@@ -80,10 +80,10 @@ export class RetailPublicCustomerService {
     }
 
     const product = payload.productId
-      ? await this.prisma.product.findFirst({
+      ? await this.prisma.itemMaster.findFirst({
           where: { id: String(payload.productId), tenantId: tenantId },
         })
-      : await this.prisma.product.findFirst({
+      : await this.prisma.itemMaster.findFirst({
           where: { tenantId: tenantId, sku: String(payload.sku) },
         });
 
@@ -104,6 +104,8 @@ export class RetailPublicCustomerService {
     } else {
       await this.prisma.retailCartItem.create({
         data: {
+          id: "hgpi7bgw",
+          updatedAt: new Date(),
           cartId: cart.id,
           productId: product.id,
           quantity: qty,
@@ -166,18 +168,18 @@ export class RetailPublicCustomerService {
   async buildWishlistResponse(tenantId: string, customerId: string) {
     const wishlist = await this.prisma.retailWishlist.findFirst({
       where: { tenantId: tenantId, customerId },
-      include: { items: { include: { product: true } } },
+      include: { retailWishlistItems: { include: { itemMaster: true } } },
     });
 
     if (!wishlist) {
       return { id: null, items: [] };
     }
 
-    const items = wishlist.items.map((item: any) => ({
+    const items = wishlist.retailWishlistItems.map((item: any) => ({
       id: item.id,
       productId: item.productId,
-      sku: item.product?.sku ?? "",
-      name: item.product?.name ?? "Unknown Item",
+      sku: item.itemMaster?.sku ?? "",
+      name: item.itemMaster?.name ?? "Unknown Item",
       addedAt: item.createdAt.toISOString(),
     }));
 
@@ -198,10 +200,10 @@ export class RetailPublicCustomerService {
     }
 
     const product = payload.productId
-      ? await this.prisma.product.findFirst({
+      ? await this.prisma.itemMaster.findFirst({
           where: { id: String(payload.productId), tenantId: tenantId },
         })
-      : await this.prisma.product.findFirst({
+      : await this.prisma.itemMaster.findFirst({
           where: { tenantId: tenantId, sku: String(payload.sku) },
         });
 
@@ -224,7 +226,12 @@ export class RetailPublicCustomerService {
 
     if (!existing) {
       await this.prisma.retailWishlistItem.create({
-        data: { wishlistId: wishlist.id, productId: product.id },
+        data: {
+          id: "vc65gmnv",
+          updatedAt: new Date(),
+          wishlistId: wishlist.id,
+          productId: product.id,
+        },
       });
     }
 
@@ -263,10 +270,10 @@ export class RetailPublicCustomerService {
   ) {
     const cart = await this.prisma.retailCart.findFirst({
       where: { tenantId: tenantId, customerId },
-      include: { items: { include: { product: true } } },
+      include: { retailCartItems: { include: { itemMaster: true } } },
     });
 
-    if (!cart || cart.items.length === 0) {
+    if (!cart || cart.retailCartItems.length === 0) {
       throw new BadRequestException("Cart is empty");
     }
 
@@ -278,7 +285,7 @@ export class RetailPublicCustomerService {
       throw new NotFoundException("No store configured");
     }
 
-    const items = cart.items.map((item: any) => ({
+    const items = cart.retailCartItems.map((item: any) => ({
       productId: item.productId,
       quantity: Number(item.quantity),
       unitPrice: Number(item.unitPrice),

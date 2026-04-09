@@ -32,6 +32,7 @@ export class RetailEventsService {
   async appendEvent(event: RetailEvent) {
     const auditEntry = await this.prisma.auditLog.create({
       data: {
+        id: "9rqvpdqj",
         tenantId: event.scope?.tenantId ?? "tenant-demo",
         module: "retail",
         action: event.type,

@@ -95,7 +95,7 @@ export class DepreciationScheduler {
         currency: asset.currency,
         baseAmount: scheduleItem.amount,
         baseCurrency: 'USD',
-        exchangeRate: 1.0,
+        exchangeRate: new Prisma.Decimal(1.0),
         debitAccountId: mapping.debitAccountId,
         creditAccountId: mapping.creditAccountId,
         accountingPeriodId: periodId,

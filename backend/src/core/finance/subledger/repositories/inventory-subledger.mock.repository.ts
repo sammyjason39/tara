@@ -18,9 +18,19 @@ export class InventorySubledgerMockRepository implements IInventorySubledgerRepo
       tenantId: tenant_id,
       status: 'PENDING',
       isSystemGenerated: data.isSystemGenerated ?? true,
+      amount: new Prisma.Decimal(data.amount?.toString() || '0'),
+      qty: new Prisma.Decimal(data.qty?.toString() || '0'),
+      unitCost: new Prisma.Decimal(data.unitCost?.toString() || '0'),
+      currency: data.currency || 'USD',
+      skuId: data.skuId!,
+      locationId: data.locationId!,
+      inventoryTransactionId: data.inventoryTransactionId!,
+      sourceEventId: data.sourceEventId!,
+      postingRequestId: data.postingRequestId!,
+      entryType: data.entryType!,
+      accountingPeriodId: data.accountingPeriodId!,
       createdAt: new Date(),
       updatedAt: new Date(),
-      ...data,
     } as InventorySubledgerEntry;
     
     this.entries.push(entry);
@@ -65,7 +75,14 @@ export class InventorySubledgerMockRepository implements IInventorySubledgerRepo
     const layer: CostLayer = {
       id: uuid(),
       tenantId: tenant_id,
-      ...data,
+      skuId: data.skuId!,
+      locationId: data.locationId!,
+      qty: new Prisma.Decimal(data.qty?.toString() || '0'),
+      remainingQty: new Prisma.Decimal(data.remainingQty?.toString() || data.qty?.toString() || '0'),
+      unitCost: new Prisma.Decimal(data.unitCost?.toString() || '0'),
+      currency: data.currency || 'USD',
+      method: data.method || 'FIFO',
+      sourceEventId: data.sourceEventId!,
       createdAt: new Date(),
     } as CostLayer;
     this.costLayers.push(layer);
@@ -83,8 +100,13 @@ export class InventorySubledgerMockRepository implements IInventorySubledgerRepo
     const snapshot: CostSnapshot = {
       id: uuid(),
       tenantId: tenant_id,
-      ...data,
-      createdAt: new Date(),
+      skuId: data.skuId!,
+      locationId: data.locationId!,
+      totalQty: new Prisma.Decimal(data.totalQty?.toString() || '0'),
+      totalValuation: new Prisma.Decimal(data.totalValuation?.toString() || '0'),
+      avgUnitCost: new Prisma.Decimal(data.avgUnitCost?.toString() || '0'),
+      currency: data.currency || 'USD',
+      snapshotDate: data.snapshotDate || new Date(),
     } as CostSnapshot;
     this.costSnapshots.push(snapshot);
     return snapshot;

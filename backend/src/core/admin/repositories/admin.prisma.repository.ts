@@ -35,6 +35,7 @@ export class AdminPrismaRepository extends IAdminRepository {
     // Record audit event
     await this.prisma.adminAuditEvent.create({
       data: {
+        id: 'j8gxwbda',
         tenantId,
         action: "admin.module.toggle",
         entityType: "module",
@@ -58,6 +59,8 @@ export class AdminPrismaRepository extends IAdminRepository {
   ): Promise<AdminRequest> {
     const created = await this.prisma.adminRequest.create({
       data: {
+        id: 'iuf5ec4b',
+        updatedAt: new Date(),
         tenantId,
         type: dto.type,
         title: dto.title,
@@ -69,6 +72,7 @@ export class AdminPrismaRepository extends IAdminRepository {
     // Audit
     await this.prisma.adminAuditEvent.create({
       data: {
+        id: '9on5a1u1',
         tenantId,
         action: "admin.request.create",
         entityType: "admin_request",
@@ -90,6 +94,7 @@ export class AdminPrismaRepository extends IAdminRepository {
     });
     await this.prisma.adminAuditEvent.create({
       data: {
+        id: 'xoeq1ql2',
         tenantId,
         action: "admin.request.resolve",
         entityType: "admin_request",

@@ -18,10 +18,6 @@ export interface HashInput {
 export class HashingService {
   /**
    * Generates a deterministic SHA-256 hash for a journal entry.
-   * Requirement: STRICT ORDERING of lines and stable serialization.
-   */
-  /**
-   * Generates a deterministic SHA-256 hash for a journal entry.
    * Hardened: Normalizes timestamps to SECONDS to avoid DB truncation drift.
    */
   generateJournalHash(input: HashInput): string {

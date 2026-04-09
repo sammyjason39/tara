@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import {
   Injectable,
   NestInterceptor,
@@ -61,7 +62,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
       .digest('hex');
 
     // 4. Check if key exists
-    const existingEntry = await this.prisma.idempotencyKey.findUnique({
+    const existingEntry = await this.prisma.sysIdempotencyKey.findUnique({
       where: {
         tenantId_key: {
           tenantId,
@@ -91,14 +92,16 @@ export class IdempotencyInterceptor implements NestInterceptor {
       }
       
       // If de-facto expired (beyond 5m grace), we allow the record to be overwritten (by deletion first for unique constraint)
-      await this.prisma.idempotencyKey.delete({
+      await this.prisma.sysIdempotencyKey.delete({
         where: { id: existingEntry.id },
       });
     }
 
     // 5. Store PENDING entry
-    await this.prisma.idempotencyKey.create({
+    await this.prisma.sysIdempotencyKey.create({
       data: {
+        id: uuidv4(),
+        
         tenantId,
         key: idempotencyKey,
         endpoint: url,
@@ -113,7 +116,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap({
         next: async (response) => {
-          await this.prisma.idempotencyKey.update({
+          await this.prisma.sysIdempotencyKey.update({
             where: {
               tenantId_key: {
                 tenantId,
@@ -128,7 +131,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
         },
         error: async (err) => {
           // On failure, remove the key so the user can actually retry the operation
-          await this.prisma.idempotencyKey.delete({
+          await this.prisma.sysIdempotencyKey.delete({
             where: {
               tenantId_key: {
                 tenantId,

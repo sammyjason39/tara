@@ -22,7 +22,7 @@ export class ExplorerService {
       where: { status: 'active' }
     });
 
-    return companies.map((c) => ({
+    return companies.map((c: any) => ({
       id: c.id,
       name: c.name,
       activeHeadcount: c._count.employees,
@@ -43,13 +43,13 @@ export class ExplorerService {
 
     if (compensations.length === 0) return { totalMonthlySpend: 0, count: 0 };
 
-    const total = compensations.reduce((acc, curr) => acc + Number(curr.baseSalary), 0);
+    const total = compensations.reduce((acc: any, curr: any) => acc + Number(curr.baseSalary), 0);
     
     return {
       totalMonthlySpend: total,
       employeeCountWithComp: compensations.length,
       avgSalary: compensations.length > 0 ? total / compensations.length : 0,
-      currencies: Array.from(new Set(compensations.map(c => c.currency))),
+      currencies: Array.from(new Set(compensations.map((c: any) => c.currency))),
     };
   }
 
@@ -75,7 +75,7 @@ export class ExplorerService {
       take: 20,
     });
 
-    return employees.map((e) => ({
+    return employees.map((e: any) => ({
       id: e.id,
       fullName: `${e.firstName} ${e.lastName}`,
       email: e.email,
@@ -101,7 +101,7 @@ export class ExplorerService {
     });
 
     // Group by region/country (simulated)
-    const regions = locations.reduce((acc: any, loc) => {
+    const regions = locations.reduce((acc: any, loc: any) => {
       const region = loc.country || 'Global';
       if (!acc[region]) acc[region] = { staff: 0, cities: [], companies: [] };
       acc[region].staff += loc._count.employees;

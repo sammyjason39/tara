@@ -29,6 +29,8 @@ export class ArCreditMemoDbRepository implements IArCreditMemoRepository {
   async create(tenantId: string, companyId: string, data: any): Promise<IArCreditMemo> {
     const created = await this.db.arCreditMemo.create({
       data: {
+        
+        updatedAt: new Date(),
         tenantId,
         customerId: data.customerId,
         creditAmount: new Prisma.Decimal(data.creditAmount || data.amount),

@@ -31,7 +31,7 @@ export class OutboxWorkerService {
     try {
       const now = new Date();
       // PHASE 1-5: Production Guarded Query
-      const events = await this.prisma.outboxEvent.findMany({
+      const events = await this.prisma.sysOutboxEvent.findMany({
         where: {
           OR: [
             { status: 'PENDING' },
@@ -116,7 +116,7 @@ export class OutboxWorkerService {
         entityType: event.type.split('.')[1]?.toUpperCase() || 'UNKNOWN',
       });
 
-      await this.prisma.outboxEvent.update({
+      await this.prisma.sysOutboxEvent.update({
         where: { id: event.id },
         data: { status: 'PROCESSED', updatedAt: new Date() },
       });
@@ -129,7 +129,7 @@ export class OutboxWorkerService {
 
       this.logger.error(`Failed to process outbox event ${event.id} (Attempt ${nextAttempt}): ${error.message}`);
       
-      await this.prisma.outboxEvent.update({
+      await this.prisma.sysOutboxEvent.update({
         where: { id: event.id },
         data: { 
           status: 'FAILED', 

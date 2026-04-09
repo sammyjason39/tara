@@ -38,22 +38,21 @@ export class JournalReversalService {
       throw new BadRequestException(`Journal ${journalId} not found`);
     }
 
+    if (originalJournal.status === JournalStatus.REVERSED) {
+      throw new BadRequestException(`Journal ${journalId} is already REVERSED.`);
+    }
+
     if (originalJournal.status !== JournalStatus.POSTED) {
       throw new BadRequestException(`Only POSTED journals can be reversed. Current status is ${originalJournal.status}`);
     }
 
     const existingReversal = await this.reversalRepo.findByOriginalJournalId(tenantId, companyId, journalId);
-    if (originalJournal.status === JournalStatus.REVERSED) {
-      throw new BadRequestException(`Journal ${journalId} is already REVERSED.`);
-    }
 
     if (existingReversal) {
       throw new BadRequestException(`Journal ${journalId} has already been reversed by Reversal ID ${existingReversal.id}`);
     }
 
-    if (originalJournal.status !== JournalStatus.POSTED) {
-      throw new BadRequestException(`Only POSTED journals can be reversed. Current status is ${originalJournal.status}`);
-    }
+
 
     const fiscalPeriod = await this.fiscalRepo.findById(tenantId, companyId, originalJournal.fiscalPeriodId);
     if (!fiscalPeriod || 

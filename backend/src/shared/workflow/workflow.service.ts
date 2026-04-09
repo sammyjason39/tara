@@ -25,6 +25,8 @@ export class WorkflowService {
   }) {
     const request = await this.prisma.workflowRequest.create({
       data: {
+        id: 'k0ctrl8m',
+        updatedAt: new Date(),
         tenantId: params.tenantId,
         entityType: params.entityType,
         entityId: params.entityId,
@@ -70,6 +72,8 @@ export class WorkflowService {
     // Audit Log entry
     await this.prisma.workflowAuditEntry.create({
       data: {
+        id: 'n35ogdd9',
+        updatedAt: new Date(),
         tenantId,
         workflowId: id,
         action: 'APPROVE',
@@ -111,6 +115,8 @@ export class WorkflowService {
 
     await this.prisma.workflowAuditEntry.create({
       data: {
+        id: '78l3xc8k',
+        updatedAt: new Date(),
         tenantId,
         workflowId: id,
         action: 'REJECT',

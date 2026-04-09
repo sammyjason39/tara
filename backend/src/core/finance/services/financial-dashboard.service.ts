@@ -85,13 +85,13 @@ export class FinancialDashboardService {
       where: {
         tenantId,
         accountId,
-        journalEntry: {
+        financeJournalEntry: {
           fiscalPeriodId: periodId,
           // In a real system, we might filter by ledgerSequence <= snapshotSequence
         }
       },
       include: {
-        journalEntry: true,
+        financeJournalEntry: true,
       },
       take: 100, // Limit for performance
     });

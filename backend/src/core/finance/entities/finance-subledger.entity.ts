@@ -77,7 +77,7 @@ export class FinanceSubledgerEntry {
   // FX Support
   baseAmount: Prisma.Decimal;        // Value in functional currency
   baseCurrency: string;      // Functional currency (e.g., 'USD')
-  exchangeRate: number;      // Rate used for translation
+  exchangeRate: Prisma.Decimal;      // Rate used for translation
   
   // Double-Entry mapping
   debitAccountId: string;

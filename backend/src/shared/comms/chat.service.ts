@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../persistence/prisma.service';
 import { NotificationGateway } from './notification.gateway';
@@ -32,9 +33,11 @@ export class ChatService {
       if (existing) return existing;
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const room = await tx.chatRoom.create({
         data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
           tenantId: params.tenantId,
           createdBy: params.createdBy,
           type: params.type,
@@ -61,13 +64,13 @@ export class ChatService {
     const rooms = await this.prisma.chatRoom.findMany({
       where: {
         tenantId,
-        members: {
+        chatMembers: {
           some: { userId },
         },
         deletedAt: null,
       },
       include: {
-        members: {
+        chatMembers: {
           include: {
             user: {
               select: {
@@ -81,15 +84,15 @@ export class ChatService {
           }
         },
         _count: {
-          select: { messages: true },
+          select: { commsChatMessages: true },
         },
       },
       orderBy: { updatedAt: 'desc' },
     });
 
-    return rooms.map(room => {
+    return rooms.map((room: any) => {
       if (room.type === "DIRECT" && !room.name) {
-        const other = room.members.find(m => m.userId !== userId);
+        const other = room.members.find((m: any) => m.userId !== userId);
         if (!other?.user) {
           return { ...room, name: "Unknown Contact" };
         }
@@ -117,7 +120,7 @@ export class ChatService {
     // Part 5: Cursor-based message pagination
     const limit = filters.limit ?? 50;
 
-    const messages = await this.prisma.chatMessage.findMany({
+    const messages = await this.prisma.commsChatMessage.findMany({
       where: { 
         roomId, 
         tenantId, 
@@ -127,12 +130,12 @@ export class ChatService {
       orderBy: { createdAt: 'desc' },
       take: limit,
       include: {
-        reactions: true,
+        chatReactions: true,
       }
     });
 
     // Enhance with sender names
-    const items = await Promise.all(messages.map(async (msg) => {
+    const items = await Promise.all(messages.map(async (msg: any) => {
       const user = await this.prisma.user.findUnique({
         where: { id: msg.senderId },
         select: { firstName: true, lastName: true, avatarUrl: true, email: true }
@@ -160,9 +163,11 @@ export class ChatService {
     refModule?: string;
     refEntityId?: string;
   }) {
-    return this.prisma.$transaction(async (tx) => {
-      const message = await tx.chatMessage.create({
+    return this.prisma.$transaction(async (tx: any) => {
+      const message = await tx.commsChatMessage.create({
         data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
           tenantId: params.tenantId,
           roomId: params.roomId,
           senderId: params.senderId,
@@ -244,7 +249,7 @@ export class ChatService {
     });
 
     // Part 7: Mark messages as READ
-    await this.prisma.chatMessage.updateMany({
+    await this.prisma.commsChatMessage.updateMany({
       where: {
         roomId,
         senderId: { not: userId },
@@ -262,7 +267,7 @@ export class ChatService {
     if (status === 'DELIVERED') data.deliveredAt = new Date();
     if (status === 'READ') data.readAt = new Date();
 
-    return this.prisma.chatMessage.update({
+    return this.prisma.commsChatMessage.update({
       where: { id: messageId },
       data
     });

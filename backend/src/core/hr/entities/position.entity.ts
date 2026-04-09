@@ -16,7 +16,7 @@ export class Position {
   updatedAt: Date;
   deletedAt?: Date;
 
-  skills?: any[]; // Position skills
+  positionSkills?: any[]; // Position skills
   department?: any;
   location?: any;
 }

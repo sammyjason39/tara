@@ -140,7 +140,7 @@ export class HRController {
       this.prisma.leaveRequest.count({
         where: { tenantId, status: "PENDING" },
       }),
-      this.prisma.hRCase.count({ where: { tenantId, status: "OPEN" } }),
+      this.prisma.hrCase.count({ where: { tenantId, status: "OPEN" } }),
       this.prisma.jobRequisition.count({ where: { tenantId, status: "OPEN" } }),
     ]);
 
@@ -1091,7 +1091,7 @@ export class HRController {
   @Get("payroll-runs")
   async getPayrollRuns(@Req() request: RequestWithTenant) {
     const { tenantId } = request.tenantContext;
-    const runs = await this.prisma.hRCase.findMany({
+    const runs = await this.prisma.hrCase.findMany({
       where: { tenantId, type: "PAYROLL_RUN" },
       orderBy: { createdAt: "desc" },
     });
@@ -1115,8 +1115,10 @@ export class HRController {
   ) {
     const { tenantId, userId } = request.tenantContext;
     const meta = JSON.stringify({ periodStart: body.periodStart, periodEnd: body.periodEnd, totalEmployees: 0, totalGrossPay: 0, totalNetPay: 0 });
-    const run = await this.prisma.hRCase.create({
+    const run = await this.prisma.hrCase.create({
       data: {
+        id: 'zv404yc3',
+        updatedAt: new Date(),
         tenantId,
         type: "PAYROLL_RUN",
         title: `Payroll Run: ${body.periodStart} - ${body.periodEnd}|${meta}`,
@@ -1141,7 +1143,7 @@ export class HRController {
     @Param("id") id: string,
   ) {
     const { tenantId, userId } = request.tenantContext;
-    const run = await this.prisma.hRCase.update({
+    const run = await this.prisma.hrCase.update({
       where: { id },
       data: { status: "IN_PROGRESS" },
     });
@@ -1163,7 +1165,7 @@ export class HRController {
     if (!allowed) {
       return { success: false, message: "Insufficient permissions to approve payroll run." };
     }
-    const run = await this.prisma.hRCase.update({
+    const run = await this.prisma.hrCase.update({
       where: { id },
       data: { status: "CLOSED" },
     });
@@ -1182,7 +1184,7 @@ export class HRController {
     @Res() res: Response,
   ) {
     const { tenantId, userId } = request.tenantContext;
-    const run = await this.prisma.hRCase.findFirst({ where: { id, tenantId, type: "PAYROLL_RUN" } });
+    const run = await this.prisma.hrCase.findFirst({ where: { id, tenantId, type: "PAYROLL_RUN" } });
     if (!run || run.status !== "CLOSED") {
       res.status(400).json({ success: false, message: "Run not found or not approved." });
       return;
@@ -1205,7 +1207,7 @@ export class HRController {
     @Param("id") runId: string,
   ) {
     const { tenantId } = request.tenantContext;
-    const run = await this.prisma.hRCase.findFirst({ where: { id: runId, tenantId, type: "PAYROLL_RUN" } });
+    const run = await this.prisma.hrCase.findFirst({ where: { id: runId, tenantId, type: "PAYROLL_RUN" } });
     if (!run) return { success: false, message: "Payroll run not found." };
     let meta: any = {};
     try { const parts = (run as any).title?.split("|"); if (parts?.[1]) meta = JSON.parse(parts[1]); } catch {}
@@ -1578,6 +1580,8 @@ export class HRController {
     const { tenantId } = request.tenantContext;
     const scenario = await this.prisma.budgetScenario.create({
       data: {
+        id: 'ol2p9h2a',
+        updatedAt: new Date(),
         tenantId,
         ...dto,
       },
@@ -1598,7 +1602,7 @@ export class HRController {
     const plans = await this.prisma.headcountPlan.findMany({
       where: {
         scenarioId: id,
-        scenario: { tenantId },
+        tenantId,
       },
       orderBy: { plannedHireDate: "asc" },
     });
@@ -1623,6 +1627,8 @@ export class HRController {
 
     const plan = await this.prisma.headcountPlan.create({
       data: {
+        id: 'wzeaebyt',
+        updatedAt: new Date(),
         tenantId,
         scenarioId: dto.scenarioId,
         departmentId: dto.departmentId,
@@ -1693,6 +1699,8 @@ export class HRController {
     const { tenantId } = request.tenantContext;
     const rate = await this.prisma.exchangeRate.create({
       data: {
+        id: 'igf45np9',
+        updatedAt: new Date(),
         tenantId,
         fromCurrency: data.fromCurrency,
         toCurrency: data.toCurrency,

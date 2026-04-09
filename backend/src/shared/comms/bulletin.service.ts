@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../persistence/prisma.service';
 
@@ -17,6 +18,8 @@ export class BulletinService {
   }) {
     return this.prisma.bulletinPost.create({
       data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
         tenantId: params.tenantId,
         authorId: params.authorId,
         title: params.title,
@@ -53,12 +56,12 @@ export class BulletinService {
         include: {
           _count: {
             select: { 
-              reactions: true, 
-              comments: true,
-              reads: true 
+              bulletinReactions: true, 
+              bulletinComments: true,
+              bulletinReads: true 
             }
           },
-          reactions: {
+          bulletinReactions: {
             select: { type: true, userId: true }
           }
         },
@@ -69,14 +72,14 @@ export class BulletinService {
     ]);
 
     // Map to include counts by type
-    const enrichedData = data.map(post => {
-      const likes = post.reactions.filter(r => r.type === 'LIKE').length;
-      const dislikes = post.reactions.filter(r => r.type === 'DISLIKE').length;
+    const enrichedData = (data as any[]).map(post => {
+      const likes = post.bulletinReactions.filter((r: any) => r.type === 'LIKE').length;
+      const dislikes = post.bulletinReactions.filter((r: any) => r.type === 'DISLIKE').length;
       return {
         ...post,
         likesCount: likes,
         dislikesCount: dislikes,
-        commentsCount: post._count.comments,
+        commentsCount: post._count.bulletinComments,
       };
     });
 
@@ -87,14 +90,14 @@ export class BulletinService {
     const post = await this.prisma.bulletinPost.findFirst({
       where: { id, tenantId, deletedAt: null },
       include: {
-        comments: {
+        bulletinComments: {
           orderBy: { createdAt: 'desc' },
         },
-        reactions: {
+        bulletinReactions: {
           select: { type: true, userId: true }
         },
         _count: {
-          select: { reactions: true, reads: true, comments: true },
+          select: { bulletinReactions: true, bulletinReads: true, bulletinComments: true },
         },
       },
     });
@@ -103,9 +106,9 @@ export class BulletinService {
 
     return {
       ...post,
-      likesCount: post.reactions.filter(r => r.type === 'LIKE').length,
-      dislikesCount: post.reactions.filter(r => r.type === 'DISLIKE').length,
-      commentsCount: post._count.comments,
+      likesCount: post.bulletinReactions.filter((r: any) => r.type === 'LIKE').length,
+      dislikesCount: post.bulletinReactions.filter((r: any) => r.type === 'DISLIKE').length,
+      commentsCount: post._count.bulletinComments,
     };
   }
 
@@ -117,6 +120,8 @@ export class BulletinService {
   }) {
     return this.prisma.bulletinComment.create({
       data: {
+        id: uuidv4(),
+        
         tenantId: params.tenantId,
         postId: params.postId,
         authorId: params.authorId,
@@ -156,6 +161,8 @@ export class BulletinService {
     // New reaction
     return this.prisma.bulletinReaction.create({
       data: {
+        id: uuidv4(),
+        
         postId: params.postId,
         userId: params.userId,
         tenantId: params.tenantId,

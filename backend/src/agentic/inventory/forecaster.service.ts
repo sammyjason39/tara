@@ -26,7 +26,7 @@ export class ForecasterService {
       },
     });
 
-    const totalConsumed = movements.reduce((sum, m) => sum + Math.abs(Number(m.quantity)), 0);
+    const totalConsumed = movements.reduce((sum: number, m: any) => sum + Math.abs(Number(m.quantity)), 0);
     const averageDailyDemand = totalConsumed / daysWindow;
 
     this.logger.debug(`Forecast for Product ${productId} at Location ${locationId}: ${averageDailyDemand.toFixed(2)} units/day`);

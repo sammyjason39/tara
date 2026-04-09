@@ -1,6 +1,7 @@
 import { LedgerIntegrityService } from './ledger-integrity.service';
 import { ReconciliationService } from './reconciliation.service';
 import { PostingMonitoringService } from './posting-monitoring.service';
+import { HashingService } from '../utils/hashing.service';
 import { AccountBalanceMockRepository } from '../repositories/account-balance.mock.repository';
 import { JournalMockRepository } from '../repositories/journal.mock.repository';
 import { AccountBalanceSnapshotMockRepository } from '../repositories/account-balance-snapshot.mock.repository';
@@ -18,6 +19,7 @@ async function verifyHardening() {
   const uow = new MockUnitOfWork();
   const ledgerRepo = { createPosting: async () => ({ id: 'P1' }), checkIdempotency: async () => false, createIdempotency: async () => {} }; // Partial Mock
   const auditService = { log: async () => {} }; // Partial Mock
+  const hashingService = new HashingService();
 
   const reconService = new ReconciliationService(
     journalRepo as any,
@@ -33,7 +35,8 @@ async function verifyHardening() {
     auditService as any,
     reconService,
     uow as any,
-    monitor
+    monitor,
+    hashingService
   );
 
   const tenantId = 'TENANT_1';

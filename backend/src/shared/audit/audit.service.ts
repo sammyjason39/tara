@@ -1,5 +1,6 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { PrismaService } from '../../persistence/prisma.service';
+import { v4 as uuidv4 } from 'uuid';
 import { createHash } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -97,14 +98,14 @@ export class AuditService implements OnModuleDestroy {
       // 1. Fix 1: Transaction Isolation & Fix 2: Explicit Locking
       // Fetch last hash with FOR UPDATE to prevent race conditions in chain
       const lastLogs: any[] = await tx.$queryRaw`
-        SELECT hash_chain FROM audit_logs 
+        SELECT hashChain FROM audit_logs 
         WHERE tenant_id = ${params.tenantId} 
         ORDER BY created_at DESC 
         LIMIT 1 
         FOR UPDATE
       `;
 
-      const previousHash = lastLogs.length > 0 ? lastLogs[0].hash_chain : 'GENESIS';
+      const previousHash = lastLogs.length > 0 ? lastLogs[0].hashChain : 'GENESIS';
 
       // 2. Compute current hash
       const logData = JSON.stringify({
@@ -119,6 +120,7 @@ export class AuditService implements OnModuleDestroy {
 
       const result = await tx.auditLog.create({
         data: {
+          id: uuidv4(),
           tenantId: params.tenantId,
           userId: params.userId,
           module: params.module,
@@ -144,8 +146,9 @@ export class AuditService implements OnModuleDestroy {
       // 3. Fix 5: Audit Anchoring (Every 100 records)
       const count = await tx.auditLog.count({ where: { tenantId: params.tenantId } });
       if (count % 100 === 0) {
-        const anchor = await tx.auditAnchor.create({
+        const anchor = await tx.auditHashAnchor.create({
           data: {
+            id: uuidv4(),
             tenantId: params.tenantId,
             anchorHash: currentHash,
             recordCount: count,
@@ -174,7 +177,7 @@ export class AuditService implements OnModuleDestroy {
         return await execute(injectedTx);
       }
 
-      return await this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx: any) => {
         return await execute(tx);
       }, {
         isolationLevel: 'Serializable', // Fix 1: Isolation Guarantee
@@ -311,7 +314,7 @@ export class AuditService implements OnModuleDestroy {
    * Step 2: Public Anchor Publishing (Public Trust Layer)
    */
   async getPublicAnchors(limit: number = 20) {
-    return this.prisma.auditAnchor.findMany({
+    return this.prisma.auditHashAnchor.findMany({
       orderBy: { anchoredAt: 'desc' },
       take: limit,
       select: {

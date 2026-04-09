@@ -55,18 +55,19 @@ export class BankIngestionService {
     // Create Statement Header and Lines
     return this.prisma.bankStatement.create({
       data: {
+        id: 'gkge9aym',
         tenantId,
         bankAccountId,
         statementDate: earliestDate,
         openingBalance: new Prisma.Decimal(0), // Placeholder
         closingBalance: totalValuation,
         status: 'PROCESSING',
-        transactions: {
+        financeBankTransactions: {
           create: transactions,
         },
       },
       include: {
-        transactions: true,
+        financeBankTransactions: true,
       },
     });
   }

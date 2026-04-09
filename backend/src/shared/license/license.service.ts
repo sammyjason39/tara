@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../persistence/prisma.service';
 
@@ -42,7 +43,7 @@ export class LicenseService {
     return this.prisma.moduleLicense.findMany({
       where: { tenantId, status: 'active' },
       include: {
-        module: true,
+        moduleDefinition: true,
       },
     });
   }
@@ -56,7 +57,7 @@ export class LicenseService {
         tenantId_moduleCode: { tenantId, moduleCode },
       },
       include: {
-        module: true,
+        moduleDefinition: true,
       },
     });
 
@@ -83,6 +84,8 @@ export class LicenseService {
     // Audit the action
     await this.prisma.moduleLicenseLog.create({
       data: {
+        id: uuidv4(),
+        
         licenseId: license.id,
         tenantId,
         action: enabled ? 'ENABLE_MODULE' : 'DISABLE_MODULE',

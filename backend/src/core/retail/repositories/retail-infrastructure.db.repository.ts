@@ -65,7 +65,7 @@ export class RetailInfrastructureDbRepository implements IRetailInfrastructureRe
   async listLoadBalancers(tenantId: string): Promise<RetailLoadBalancer[]> {
     const lbs = await this.prisma.retailLoadBalancer.findMany({
       where: { tenantId: tenantId },
-      include: { nodes: true },
+      include: { retailGatewayNodes: true },
       orderBy: { name: "asc" },
     });
     return lbs.map(this.mapLoadBalancer);
@@ -77,7 +77,7 @@ export class RetailInfrastructureDbRepository implements IRetailInfrastructureRe
   ): Promise<RetailLoadBalancer | null> {
     const lb = await this.prisma.retailLoadBalancer.findFirst({
       where: { id: lbId, tenantId: tenantId },
-      include: { nodes: true },
+      include: { retailGatewayNodes: true },
     });
     return lb ? this.mapLoadBalancer(lb) : null;
   }
@@ -88,13 +88,15 @@ export class RetailInfrastructureDbRepository implements IRetailInfrastructureRe
   ): Promise<RetailLoadBalancer> {
     const lb = await this.prisma.retailLoadBalancer.create({
       data: {
+        id: 'hgop1jun',
+        updatedAt: new Date(),
         tenantId: tenantId,
         name: data.name,
         virtualIp: data.virtualIp,
         algorithm: data.algorithm || "ROUND_ROBIN",
         status: "ONLINE",
       },
-      include: { nodes: true },
+      include: { retailGatewayNodes: true },
     });
     return this.mapLoadBalancer(lb);
   }
@@ -111,7 +113,7 @@ export class RetailInfrastructureDbRepository implements IRetailInfrastructureRe
         ...(data.status && { status: data.status }),
         ...(data.algorithm && { algorithm: data.algorithm }),
       },
-      include: { nodes: true },
+      include: { retailGatewayNodes: true },
     });
     return this.mapLoadBalancer(lb);
   }
@@ -148,7 +150,7 @@ export class RetailInfrastructureDbRepository implements IRetailInfrastructureRe
       status: l.status as any,
       created_at: l.createdAt,
       updated_at: l.updatedAt,
-      nodes: l.nodes?.map(this.mapNode),
+      nodes: l.retailGatewayNodes?.map(this.mapNode),
     };
   }
 }

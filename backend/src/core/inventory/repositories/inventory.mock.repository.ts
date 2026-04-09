@@ -5,7 +5,7 @@ import {
   InventoryItem,
   StockBalance,
   StockMovement,
-  StockAdjustment,
+  InventoryAdjustment,
   InventoryAlert,
   MovementRequest,
   CreateItemDto,
@@ -99,17 +99,17 @@ export class InventoryMockRepository implements IInventoryRepository {
     return this.items.some((i) => i.tenant_id === tenant_id && i.sku === sku);
   }
 
-  async getAdjustments(tenant_id: string): Promise<StockAdjustment[]> {
+  async getAdjustments(tenant_id: string): Promise<InventoryAdjustment[]> {
     return this.adjustments.filter((a) => a.tenant_id === tenant_id);
   }
 
-  async createAdjustment(tenant_id: string, data: CreateAdjustmentDto, tx?: any): Promise<StockAdjustment> {
+  async createAdjustment(tenant_id: string, data: CreateAdjustmentDto, tx?: any): Promise<InventoryAdjustment> {
     const adj = { id: "adj-" + Math.random(), tenant_id, ...data, status: "pending", createdAt: new Date() };
     this.adjustments.push(adj);
     return adj as any;
   }
 
-  async approveAdjustment(tenant_id: string, id: string, approvedBy: string): Promise<StockAdjustment> {
+  async approveAdjustment(tenant_id: string, id: string, approvedBy: string): Promise<InventoryAdjustment> {
     const adj = this.adjustments.find((a) => a.id === id);
     if (adj) adj.status = "approved";
     return adj as any;

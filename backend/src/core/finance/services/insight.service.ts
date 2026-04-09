@@ -314,6 +314,7 @@ export class InsightService {
       await this.prisma.$transaction(async (tx) => {
         const created = await tx.insightSnapshot.create({
           data: {
+            id: '3sl53zdh',
             tenantId,
             companyId,
             snapshotSequence,

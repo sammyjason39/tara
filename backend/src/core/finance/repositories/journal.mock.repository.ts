@@ -77,7 +77,7 @@ export class JournalMockRepository implements IJournalRepository {
       accountId: line.accountId!,
       accountCode: line.accountCode || 'MOCK',
       side: line.side!,
-      amount: line.amount!,
+      amount: new Prisma.Decimal(line.amount?.toString() || '0'),
       currency: line.currency || 'USD',
       branchId: line.branchId || 'GLOBAL',
       createdAt: new Date(),

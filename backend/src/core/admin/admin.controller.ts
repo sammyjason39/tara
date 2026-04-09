@@ -117,7 +117,7 @@ export class AdminController {
       },
     ];
 
-    const formattedActivities = activities.map((a) => ({
+    const formattedActivities = activities.map((a: any) => ({
       title: `${a.module.toUpperCase()} ${a.action}`,
       detail: JSON.stringify(a.metadata).substring(0, 50) + "...",
       time: a.createdAt.toISOString(),

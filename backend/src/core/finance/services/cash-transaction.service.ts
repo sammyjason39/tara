@@ -65,7 +65,7 @@ export class CashTransactionService {
         currency: transaction.currency,
         baseAmount: new Prisma.Decimal(transaction.amount),
         baseCurrency: 'USD',
-        exchangeRate: 1.0,
+        exchangeRate: new Prisma.Decimal(1.0),
         debitAccountId: mapping.debitAccountId,
         creditAccountId: mapping.creditAccountId,
         accountingPeriodId: currentPeriodId,

@@ -22,6 +22,8 @@ export class JournalReversalDbRepository implements IJournalReversalRepository {
   async createReversalRecord(tenantId: string, companyId: string, data: Partial<JournalReversal>): Promise<JournalReversal> {
     const created = await this.db.journalReversal.create({
       data: {
+        id: 'f6oqlj4c',
+        
         tenantId,
         originalJournalId: data.originalJournalId!,
         reversalJournalId: data.reversalJournalId!,

@@ -30,7 +30,7 @@ export class SchedulingService {
     }
 
     const eventReferenceId = `EVT-HR-SCHED-NEW-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const schedule = await this.hrRepository.createWorkSchedule(tenantId, data, tx);
 
       // 1. Audit Logging
@@ -63,7 +63,7 @@ export class SchedulingService {
 
   async createWorkShift(tenantId: string, data: any, userId: string) {
     const eventReferenceId = `EVT-HR-SHIFT-NEW-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       // Logic: Ensure schedule exists and is not approved (unless forced)
       const schedule = await this.hrRepository.getWorkSchedules(tenantId, data.locationId);
       const targetSchedule = schedule.find(s => s.id === data.scheduleId);
@@ -92,7 +92,7 @@ export class SchedulingService {
 
   async approveSchedule(tenantId: string, scheduleId: string, userId: string) {
     const eventReferenceId = `EVT-HR-SCHED-APP-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const schedule = await this.hrRepository.approveWorkSchedule(tenantId, scheduleId, userId, tx);
 
       // 1. Audit Logging

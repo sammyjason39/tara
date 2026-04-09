@@ -41,11 +41,11 @@ export class SalesDbRepository implements ISalesRepository {
     ]);
 
     const pipelineValue = opportunities.reduce(
-      (sum, op) => sum + Number(op.amount),
+      (sum: number, op: any) => sum + Number(op.amount),
       0,
     );
     const weightedValue = opportunities.reduce(
-      (sum, op) => sum + Number(op.amount) * (op.probability / 100),
+      (sum: number, op: any) => sum + Number(op.amount) * (op.probability / 100),
       0,
     );
 
@@ -68,11 +68,11 @@ export class SalesDbRepository implements ISalesRepository {
     return {
       totalReps: 5,
       openPipeline: opportunities.reduce(
-        (sum, op) => sum + Number(op.amount),
+        (sum: number, op: any) => sum + Number(op.amount),
         0,
       ),
       weightedForecast: opportunities.reduce(
-        (sum, op) => sum + Number(op.amount) * (op.probability / 100),
+        (sum: number, op: any) => sum + Number(op.amount) * (op.probability / 100),
         0,
       ),
       stalledDeals: 2,
@@ -106,6 +106,8 @@ export class SalesDbRepository implements ISalesRepository {
   async createLead(tenantId: string, dto: CreateLeadDto): Promise<SalesLead> {
     return this.prisma.salesLead.create({
       data: {
+        id: 'pw28wagj',
+        updatedAt: new Date(),
         tenantId,
         ...dto,
         amount: dto.potentialValue, // Map potentialValue if needed or use schema field
@@ -137,6 +139,8 @@ export class SalesDbRepository implements ISalesRepository {
 
     return this.prisma.salesOpportunity.create({
       data: {
+        id: '3hwpa82g',
+        updatedAt: new Date(),
         tenantId,
         leadId,
         accountName: lead.companyName,
@@ -161,6 +165,8 @@ export class SalesDbRepository implements ISalesRepository {
   ): Promise<SalesOpportunity> {
     return this.prisma.salesOpportunity.create({
       data: {
+        id: '1n82ax4i',
+        updatedAt: new Date(),
         tenantId,
         ...dto,
       } as any,
@@ -191,6 +197,8 @@ export class SalesDbRepository implements ISalesRepository {
     if (dto.result === "won") {
       return this.prisma.salesOrder.create({
         data: {
+        id: 'k6yujvxm',
+        updatedAt: new Date(),
           tenantId,
           opportunityId,
           customerName: result.accountName,
@@ -213,6 +221,8 @@ export class SalesDbRepository implements ISalesRepository {
   ): Promise<SalesQuote> {
     return this.prisma.salesQuote.create({
       data: {
+        id: 'c7ms6sin',
+        updatedAt: new Date(),
         tenantId,
         ...dto,
       } as any,
@@ -253,6 +263,8 @@ export class SalesDbRepository implements ISalesRepository {
   ): Promise<SalesTimelineEvent> {
     return this.prisma.salesTimelineEvent.create({
       data: {
+        id: 'r7o3tw1n',
+        updatedAt: new Date(),
         tenantId,
         ...dto,
       } as any,
@@ -266,6 +278,8 @@ export class SalesDbRepository implements ISalesRepository {
   async createTask(tenantId: string, dto: CreateTaskDto): Promise<SalesTask> {
     return this.prisma.salesTask.create({
       data: {
+        id: 't8rtxr3e',
+        updatedAt: new Date(),
         tenantId,
         ...dto,
       } as any,

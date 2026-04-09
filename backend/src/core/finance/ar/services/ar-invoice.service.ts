@@ -96,7 +96,7 @@ export class ArInvoiceService {
         currency: 'USD', // Simplified
         baseAmount: invoice.totalAmount,
         baseCurrency: 'USD',
-        exchangeRate: 1.0,
+        exchangeRate: new Prisma.Decimal(1.0),
         debitAccountId: mapping.debitAccountId,
         creditAccountId: mapping.creditAccountId,
         accountingPeriodId: currentPeriodId,

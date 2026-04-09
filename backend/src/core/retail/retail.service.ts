@@ -326,7 +326,7 @@ export class RetailService {
   }
 
   async findProductBySku(tenantId: string, sku: string): Promise<any> {
-    return this.prisma.product.findFirst({
+    return this.prisma.itemMaster.findFirst({
       where: {
         tenantId,
         sku,

@@ -11,6 +11,7 @@ import {
   PaymentEvidencePack as PrismaEvidencePack,
   PaymentAuditEvent as PrismaAuditEvent,
 } from "@prisma/client";
+import { v4 as uuidv4 } from "uuid";
 import { PrismaService } from "../../../persistence/prisma.service";
 import { AttachDisputeEvidenceDto } from "../dto/attach-dispute-evidence.dto";
 import { CreateDisputeDto } from "../dto/create-dispute.dto";
@@ -81,6 +82,8 @@ export class PaymentDbRepository implements IPaymentRepository {
   ) {
     await this.prisma.paymentAuditEvent.create({
       data: {
+        id: uuidv4(),
+        
         tenantId: tenantId,
         actorId,
         action,
@@ -159,7 +162,7 @@ export class PaymentDbRepository implements IPaymentRepository {
   async getTransactions(tenantId: string): Promise<PaymentTransaction[]> {
     const txs = await this.prisma.paymentTransaction.findMany({
       where: { tenantId: tenantId },
-      include: { retryAttempts: true },
+      include: { paymentRetryAttempts: true },
       orderBy: { createdAt: "desc" },
     });
     return txs.map((tx: PrismaTransaction) => this.mapTransaction(tx));
@@ -183,6 +186,8 @@ export class PaymentDbRepository implements IPaymentRepository {
 
     const created = await this.prisma.paymentTransaction.create({
       data: {
+        id: uuidv4(),
+        
         tenantId: tenantId,
         externalReference: dto.externalReference,
         type: dto.type,
@@ -320,7 +325,7 @@ export class PaymentDbRepository implements IPaymentRepository {
         where: { id: paymentId },
         data: {
           status: "FAILED",
-          retryAttempts: {
+          paymentRetryAttempts: {
             create: {
               tenantId: tenantId,
               attempt: 1,
@@ -344,6 +349,8 @@ export class PaymentDbRepository implements IPaymentRepository {
     // Create Settlement
     const settlement = await this.prisma.paymentSettlement.create({
       data: {
+        id: uuidv4(),
+        
         tenantId: tenantId,
         paymentId: paymentId,
         providerReference: `${payment.providerId}-${Date.now()}`,
@@ -356,7 +363,7 @@ export class PaymentDbRepository implements IPaymentRepository {
       data: {
         status: "SETTLEMENT_PENDING",
         settlementId: settlement.id,
-        retryAttempts: {
+        paymentRetryAttempts: {
           create: {
             tenantId: tenantId,
             attempt: 1,
@@ -398,6 +405,8 @@ export class PaymentDbRepository implements IPaymentRepository {
 
     const evidence = await this.prisma.paymentEvidencePack.create({
       data: {
+        id: uuidv4(),
+        
         tenantId: tenantId,
         paymentId: paymentId,
         providerProof: settlement.providerReference,
@@ -595,6 +604,8 @@ export class PaymentDbRepository implements IPaymentRepository {
   ): Promise<PaymentRefund> {
     const created = await this.prisma.paymentRefund.create({
       data: {
+        id: uuidv4(),
+        
         tenantId: tenantId,
         paymentId: dto.paymentId,
         type: dto.type,
@@ -676,6 +687,8 @@ export class PaymentDbRepository implements IPaymentRepository {
   ): Promise<PaymentDispute> {
     const created = await this.prisma.paymentDispute.create({
       data: {
+        id: uuidv4(),
+        
         tenantId: tenantId,
         paymentId: dto.paymentId,
         amount: dto.amount,
@@ -769,6 +782,8 @@ export class PaymentDbRepository implements IPaymentRepository {
 
     const chargeback = await this.prisma.paymentChargeback.create({
       data: {
+        id: uuidv4(),
+        
         tenantId: tenantId,
         paymentId: updated.paymentId,
         disputeId: updated.id,
@@ -873,7 +888,7 @@ export class PaymentDbRepository implements IPaymentRepository {
       channel: t.channel as any,
       idempotencyKey: t.idempotencyKey,
       status: t.status as any,
-      retryAttempts: (t as any).retryAttempts || [],
+      retryAttempts: (t as any).paymentRetryAttempts || [],
       settlementId: t.settlementId || undefined,
       evidencePackId: t.evidencePackId || undefined,
       ledgerSyncTriggeredAt: t.ledgerSyncTriggeredAt || undefined,

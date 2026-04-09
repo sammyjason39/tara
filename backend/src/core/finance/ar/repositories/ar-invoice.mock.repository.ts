@@ -49,7 +49,10 @@ export class ArInvoiceMockRepository implements IArInvoiceRepository {
     const createdLines = lines.map(l => ({
       id: uuid(),
       invoiceId,
-      ...l
+      description: l.description,
+      quantity: new Prisma.Decimal(l.quantity || 0),
+      unitPrice: new Prisma.Decimal(l.unitPrice || 0),
+      total: new Prisma.Decimal(l.total || 0),
     }));
     this.lines.push(...createdLines);
     return createdLines;

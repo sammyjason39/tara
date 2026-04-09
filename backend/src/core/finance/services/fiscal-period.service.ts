@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Inject } from '@nestjs/common';
 import { IFiscalPeriodRepository } from '../repositories/interfaces/fiscal.repository.interface';
 import { IJournalRepository } from '../repositories/interfaces/journal.repository.interface';
 import { FiscalPeriodStatus } from '../domain/finance.constants';

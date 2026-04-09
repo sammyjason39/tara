@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { ITProvisioningRequest, ITSystemHealth, Device as PrismaDevice, DeviceEvent as PrismaDeviceEvent } from "@prisma/client";
+import type { ItProvisioningRequest, ItSystemHealth, ItDevice as PrismaDevice, ItDeviceEvent as PrismaDeviceEvent } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../../persistence/prisma.service";
 import { CreateProvisioningRequestDto } from "../dto/create-provisioning-request.dto";
 import { ProvisioningRequest } from "../entities/provisioning-request.entity";
@@ -17,11 +18,11 @@ export class ITDbRepository extends IITRepository {
   async getProvisioningRequests(
     tenantId: string,
   ): Promise<ProvisioningRequest[]> {
-    const requests = await this.prisma.iTProvisioningRequest.findMany({
+    const requests = await this.prisma.itProvisioningRequest.findMany({
       where: { tenantId: tenantId },
     });
 
-    return requests.map((r: ITProvisioningRequest) => ({
+    return requests.map((r: ItProvisioningRequest) => ({
       id: r.id,
       tenantId: r.tenantId,
       employeeId: r.employeeId || undefined,
@@ -71,8 +72,10 @@ export class ITDbRepository extends IITRepository {
       finalSupplierId = sup.id;
     }
 
-    const created = await this.prisma.iTProvisioningRequest.create({
+    const created = await this.prisma.itProvisioningRequest.create({
       data: {
+        
+        updatedAt: new Date(),
         tenantId: tenantId,
         employeeId: finalEmployeeId,
         supplierId: finalSupplierId,
@@ -108,7 +111,7 @@ export class ITDbRepository extends IITRepository {
     requestId: string,
     provisionedBy: string,
   ): Promise<ProvisioningRequest> {
-    const updated = await this.prisma.iTProvisioningRequest.update({
+    const updated = await this.prisma.itProvisioningRequest.update({
       where: { id: requestId, tenantId: tenantId },
       data: {
         status: "PROVISIONED",
@@ -165,7 +168,7 @@ export class ITDbRepository extends IITRepository {
       updateData.reason = fallbackReason;
     }
 
-    const updated = await this.prisma.iTProvisioningRequest.update({
+    const updated = await this.prisma.itProvisioningRequest.update({
       where: { id: requestId, tenantId: tenantId },
       data: updateData,
     });
@@ -191,22 +194,24 @@ export class ITDbRepository extends IITRepository {
     tenantId: string,
     requestId: string,
   ): Promise<void> {
-    await this.prisma.iTProvisioningRequest.delete({
+    await this.prisma.itProvisioningRequest.delete({
       where: { id: requestId, tenantId: tenantId },
     });
   }
 
   // Devices (NEW)
   async getDevices(tenantId: string): Promise<Device[]> {
-    const devices = await this.prisma.device.findMany({
+    const devices = await this.prisma.itDevice.findMany({
       where: { tenantId },
     });
-    return devices.map((d) => this.mapToDevice(d));
+    return devices.map((d: any) => this.mapToDevice(d));
   }
 
   async createDevice(tenantId: string, dto: CreateDeviceDto): Promise<Device> {
-    const created = await this.prisma.device.create({
+    const created = await this.prisma.itDevice.create({
       data: {
+        
+        
         tenantId,
         name: dto.name,
         type: dto.type,
@@ -225,7 +230,7 @@ export class ITDbRepository extends IITRepository {
     deviceId: string,
     dto: Partial<CreateDeviceDto>,
   ): Promise<Device> {
-    const updated = await this.prisma.device.update({
+    const updated = await this.prisma.itDevice.update({
       where: { id: deviceId, tenantId },
       data: dto as any,
     });
@@ -233,7 +238,7 @@ export class ITDbRepository extends IITRepository {
   }
 
   async getDevice(tenantId: string, deviceId: string): Promise<Device | null> {
-    const device = await this.prisma.device.findUnique({
+    const device = await this.prisma.itDevice.findUnique({
       where: { id: deviceId, tenantId },
     });
     return device ? this.mapToDevice(device) : null;
@@ -241,20 +246,22 @@ export class ITDbRepository extends IITRepository {
 
   // Device Events (NEW)
   async getDeviceEvents(tenantId: string): Promise<DeviceEvent[]> {
-    const events = await this.prisma.deviceEvent.findMany({
+    const events = await this.prisma.itDeviceEvent.findMany({
       where: { tenantId },
       orderBy: { createdAt: "desc" },
       take: 100,
     });
-    return events.map((e) => this.mapToDeviceEvent(e));
+    return events.map((e: any) => this.mapToDeviceEvent(e));
   }
 
   async createDeviceEvent(
     tenantId: string,
     dto: CreateDeviceEventDto,
   ): Promise<DeviceEvent> {
-    const created = await this.prisma.deviceEvent.create({
+    const created = await this.prisma.itDeviceEvent.create({
       data: {
+        
+        
         tenantId,
         deviceId: dto.deviceId,
         eventType: dto.eventType,
@@ -294,7 +301,7 @@ export class ITDbRepository extends IITRepository {
   }
 
   async getSystemHealth(tenantId: string): Promise<SystemHealth[]> {
-    const health = await this.prisma.iTSystemHealth.findMany({
+    const health = await this.prisma.itSystemHealth.findMany({
       where: { tenantId },
     });
     return health.map(h => ({
@@ -308,7 +315,7 @@ export class ITDbRepository extends IITRepository {
   }
 
   async getProvisioningStats(tenantId: string): Promise<any> {
-    const counts = await this.prisma.iTProvisioningRequest.groupBy({
+    const counts = await this.prisma.itProvisioningRequest.groupBy({
       by: ['status'],
       where: { tenantId },
       _count: true,

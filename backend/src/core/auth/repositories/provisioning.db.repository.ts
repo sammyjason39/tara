@@ -15,6 +15,8 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
       // Create Company
       const company = await tx.company.create({
         data: {
+        id: 'dz1ew011',
+        updatedAt: new Date(),
           name: data.name,
           code: `CMP-${Date.now().toString().slice(-6)}`,
           status: "active",
@@ -27,6 +29,8 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
       // Map User to Company as OWNER
       await tx.userCompany.create({
         data: {
+        id: 'dv0bhsgk',
+        updatedAt: new Date(),
           userId: data.userId,
           tenantId: company.id,
           role: "OWNER",
@@ -37,6 +41,8 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
       // Create HQ Location
       const location = await tx.location.create({
         data: {
+        id: 'c74b543z',
+        updatedAt: new Date(),
           tenantId: company.id,
           name: "Headquarters",
           code: "HQ",
@@ -50,6 +56,8 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
       // Create Default Department
       const department = await tx.department.create({
         data: {
+        id: '4utnd1ir',
+        updatedAt: new Date(),
           tenantId: company.id,
           name: "Executive",
           code: "EXEC",
@@ -60,6 +68,8 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
       // Create Employee Record for the User
       await tx.employee.create({
         data: {
+        id: 'xmle2x2e',
+        updatedAt: new Date(),
           tenantId: company.id,
           locationId: location.id,
           departmentId: department.id,
@@ -81,6 +91,8 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
       for (const moduleKey of coreModules) {
         await tx.adminModuleStatus.create({
           data: {
+        id: '2w2swik9',
+        updatedAt: new Date(),
             tenantId: company.id,
             moduleKey,
             enabled: true,

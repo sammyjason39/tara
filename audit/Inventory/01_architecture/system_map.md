@@ -1,21 +1,24 @@
-# Inventory Module Architecture Map
+# Architecture Map - Inventory Department
 
-## 1. Component Overview
-The Inventory module is a core part of the Zenvix enterprise suite, responsible for stock management, reservations, transfers, and integration with Procurement and Sales.
+## Core Components
 
-## 2. Layered Architecture
-- **API Boundary**: `InventoryController` (REST API).
-- **Service Layer**: `InventoryService` (Business logic coordination, Event emission).
-- **Domain Layer**: `SkuGeneratorService`, `LabelTemplateService`.
-- **Persistence Layer**: `InventoryDbRepository` (Prisma-based DAO).
-- **Database**: `StockLevel`, `StockMovement`, `Product`, `StockReservation`, `StockAdjustment`, `InventoryPool`.
+| Component | Responsibility | Base File |
+| --- | --- | --- |
+| **Controller** | API Gateway, Input Validation, Tenant Scoping | `inventory.controller.ts` |
+| **Service** | Orchestration, Business Rules, Event Emission | `inventory.service.ts` |
+| **Repository** | Data Persistence, ACID Transactions, Row Locking | `inventory.db.repository.ts` |
+| **SKU Engine** | Automated SKU and Barcode Generation | `sku-generator.service.ts` |
+| **Label Engine** | ZPL and HTML Label Generation | `label-template.service.ts` |
 
-## 3. Key Interactions
-- **Procurement Integration**: `InventoryService.requestProcurement` creates requisitions for low stock.
-- **Sales Integration**: `InventoryController.getDashboard` checks `Retail` module state for store-specific inventory.
-- **Worker/Event Layer**: Uses `EventBusService` to publish `STOCK_MOVEMENT_CREATED`, `STOCK_RESERVED`, etc.
+## Data Flow
+1. **API Request** → `InventoryController` (Auth/Tenant/Module Guards)
+2. **Business Logic** → `InventoryService` (Role Validation / Multi-step Logic)
+3. **Audit Trail** → `AuditService.log` (Synchronous logging of intent)
+4. **Data Persistence** → `InventoryDbRepository` (SQL Transaction / Locking)
+5. **Event Emission** → `EventBusService.publish` (Asynchronous notification)
 
-## 4. Security & Isolation
-- **Tenant Isolation**: Enforced via `TenantInterceptor` and `TenantGuard`.
-- **RBAC**: Multi-tier role system (`MANAGER`, `SUPERVISOR`).
-- **Data Integrity**: Uses SQL `FOR UPDATE` locks in critical repository methods.
+## Integration Points
+- **Retail Module**: Real-time stock decrement on sales.
+- **Procurement Module**: Stock intake on receipt of goods.
+- **Finance Module**: Inventory valuation and ledger adjustments.
+- **IT Module**: Asset tracking for hardware devices.

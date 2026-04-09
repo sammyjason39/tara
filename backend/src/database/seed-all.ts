@@ -7,18 +7,20 @@ async function main() {
 
   // 1. Seed Companies
   const companies = [
-    { id: "tenant-001", name: "Zenvix HQ", code: "ZX-HQ", status: "active" },
+    { id: "tenant-001", name: "Zenvix HQ", code: "ZX-HQ", status: "active", updatedAt: new Date() },
     {
       id: "tenant-002",
       name: "Zenvix Retail",
       code: "ZX-RT",
       status: "active",
+      updatedAt: new Date(),
     },
     {
       id: "comp-demo-a",
       name: "Demo Corp A",
       code: "DEMO-A",
       status: "active",
+      updatedAt: new Date(),
     },
   ];
 
@@ -236,7 +238,7 @@ async function main() {
   ];
 
   for (const dev of devices) {
-    await prisma.device.upsert({
+    await prisma.itDevice.upsert({
       where: { id: dev.id },
       update: dev,
       create: dev,
@@ -263,7 +265,7 @@ async function main() {
   ];
 
   for (const set of itSettings) {
-    await prisma.iTSetting.upsert({
+    await prisma.itSettings.upsert({
       // Corrected to iTSetting
       where: { id: set.id },
       update: set,

@@ -80,11 +80,11 @@ export class ITController {
 
       const [totalPosDevices, onlinePosDevices, offlinePosDevices] =
         await Promise.all([
-          this.prisma.device.count({ where: posDeviceWhere }),
-          this.prisma.device.count({
+          this.prisma.itDevice.count({ where: posDeviceWhere }),
+          this.prisma.itDevice.count({
             where: { ...posDeviceWhere, status: "ONLINE" },
           }),
-          this.prisma.device.count({
+          this.prisma.itDevice.count({
             where: { ...posDeviceWhere, status: "OFFLINE" },
           }),
         ]);

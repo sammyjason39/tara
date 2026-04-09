@@ -3,7 +3,7 @@ import { IArPaymentRepository } from '../repositories/interfaces/ar-payment.repo
 import { IArInvoiceRepository } from '../repositories/interfaces/ar-invoice.repository.interface';
 import { LedgerPostingService } from '../../services/ledger-posting.service';
 import { CreatePaymentDto, AllocatePaymentDto } from '../dto/ar.dto';
-import { IArPayment } from '../domain/ar.interfaces';
+import { IArPayment, IArPaymentAllocation } from '../domain/ar.interfaces';
 import { v4 as uuid } from 'uuid';
 import { ArInvoiceStatus, AR_EVENT_TYPES } from '../domain/ar.constants';
 import { FiscalPeriodService } from '../../services/fiscal-period.service';
@@ -161,10 +161,10 @@ export class ArPaymentService {
 
   private async getTotalAllocated(tenantId: string, companyId: string, paymentId: string): Promise<Prisma.Decimal> {
     const allocations = await this.paymentRepo.findAllocationsByPayment(tenantId, companyId, paymentId);
-    return allocations.reduce((sum, a) => sum.add(new Prisma.Decimal(a.amountAllocated)), new Prisma.Decimal(0));
+    return allocations.reduce((sum: Prisma.Decimal, a: IArPaymentAllocation) => sum.add(a.amountAllocated), new Prisma.Decimal(0));
   }
 
-  async refundPayment(tenantId: string, companyId: string, paymentId: string, amount: number): Promise<void> {
+  async refundPayment(tenantId: string, companyId: string, paymentId: string, amount: Prisma.Decimal | number): Promise<void> {
     const payment = await this.paymentRepo.findById(tenantId, companyId, paymentId);
     if (!payment) throw new NotFoundException('Payment not found');
 

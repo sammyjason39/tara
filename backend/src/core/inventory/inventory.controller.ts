@@ -76,7 +76,7 @@ export class InventoryController {
         where: { tenantId: tenant_id, type: "STORE" },
         select: { id: true },
       });
-      const storeIds = activeStores.map((s) => s.id);
+      const storeIds = activeStores.map((s: any) => s.id);
 
       const storeInventoryAgg = await this.prisma.stockLevel.aggregate({
         where: { tenantId: tenant_id, locationId: { in: storeIds } },

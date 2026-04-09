@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../persistence/prisma.service';
 import { NotificationService } from './notification.service';
@@ -24,6 +25,8 @@ export class MailService {
     if (!account) {
       account = await this.prisma.mailAccount.create({
         data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
           tenantId,
           userId,
           address: `${userId.split('-')[0]}@zenvix.internal`,
@@ -75,7 +78,7 @@ export class MailService {
         skip,
         take: limit,
         include: {
-          fromAccount: true,
+          mailAccount: true,
         }
       }),
       this.prisma.mailMessage.count({ where }),
@@ -102,6 +105,8 @@ export class MailService {
     if (!account) {
       account = await this.prisma.mailAccount.create({
         data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
           tenantId: params.tenantId,
           userId: params.userId,
           address: `${params.userId.split('-')[0]}@zenvix.internal`,
@@ -115,6 +120,8 @@ export class MailService {
     // 2. Create Thread
     const thread = await this.prisma.mailThread.create({
       data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
         tenantId: params.tenantId,
         subject: params.subject,
       },
@@ -123,6 +130,8 @@ export class MailService {
     // 3. Create Message
     const message = await this.prisma.mailMessage.create({
       data: {
+        id: uuidv4(),
+        
         tenantId: params.tenantId,
         threadId: thread.id,
         fromAccountId: account.id,

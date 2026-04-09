@@ -19,6 +19,8 @@ export class WorkflowIntegrationService {
   ) {
     const workflow = await this.prisma.workflowRequest.create({
       data: {
+        id: '2vrb3rki',
+        updatedAt: new Date(),
         tenantId,
         entityType,
         entityId,

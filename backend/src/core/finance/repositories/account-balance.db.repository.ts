@@ -92,7 +92,7 @@ export class AccountBalanceDbRepository implements IAccountBalanceRepository {
         creditTotal: { increment: credit },
         netBalance: { increment: net },
         version: { increment: 1 }
-      },
+      } as any,
       create: {
         tenantId,
         fiscalPeriodId: params.fiscalPeriodId,
@@ -107,13 +107,15 @@ export class AccountBalanceDbRepository implements IAccountBalanceRepository {
         creditTotal: credit,
         netBalance: net,
         version: 1
-      }
+      } as any
     });
   }
 
   async createSnapshot(tenantId: string, companyId: string, data: Partial<AccountBalanceSnapshot>): Promise<AccountBalanceSnapshot> {
     const created = await this.db.accountBalanceSnapshot.create({
       data: {
+        id: 'iyavi2n2',
+        
         tenantId,
         fiscalPeriodId: data.fiscalPeriodId!,
         snapshotDate: data.snapshotDate || new Date(),

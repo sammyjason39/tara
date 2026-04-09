@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { APVendorBill, BillStatus } from '../domain/ap.interfaces';
 import { PostingGatewayService } from './posting-gateway.service';
 import { FiscalPeriodService } from './fiscal-period.service';
@@ -83,7 +84,7 @@ export class APBillService {
         currency: bill.currency,
         baseAmount: bill.totalAmount, // Minimal FX - assumes functional currency for now
         baseCurrency: 'USD',
-        exchangeRate: 1.0,
+        exchangeRate: new Prisma.Decimal(1.0),
         debitAccountId: mapping.debitAccountId,
         creditAccountId: mapping.creditAccountId,
         accountingPeriodId: currentPeriodId,

@@ -11,19 +11,37 @@ export class InventorySubledgerDbRepository implements IInventorySubledgerReposi
   constructor(private readonly prisma: PrismaService) {}
 
   private mapToEntity(dbEntry: any): InventorySubledgerEntry {
-    const metadata = (dbEntry.metadata as any) || {};
     return {
       id: dbEntry.id,
       tenantId: dbEntry.tenantId,
+      inventoryTransactionId: dbEntry.inventoryTransactionId,
       sourceEventId: dbEntry.sourceEventId,
+      postingRequestId: dbEntry.postingRequestId,
       entryType: dbEntry.entryType as any,
       status: dbEntry.status as any,
-      isSystemGenerated: dbEntry.isSystemGenerated,
+      amount: new Prisma.Decimal(dbEntry.amount.toString()),
+      currency: dbEntry.currency,
+      qty: new Prisma.Decimal(dbEntry.qty.toString()),
+      unitCost: new Prisma.Decimal(dbEntry.unitCost.toString()),
+      baseAmount: dbEntry.baseAmount ? new Prisma.Decimal(dbEntry.baseAmount.toString()) : undefined,
+      baseCurrency: dbEntry.baseCurrency,
+      exchangeRate: dbEntry.exchangeRate ? new Prisma.Decimal(dbEntry.exchangeRate.toString()) : undefined,
+      debitAccountId: dbEntry.debitAccountId,
+      creditAccountId: dbEntry.creditAccountId,
+      glJournalId: dbEntry.glJournalId,
       postedAt: dbEntry.postedAt,
+      accountingPeriodId: dbEntry.accountingPeriodId,
+      postedPeriodId: dbEntry.postedPeriodId,
+      skuId: dbEntry.skuId,
+      locationId: dbEntry.locationId,
+      isSystemGenerated: dbEntry.isSystemGenerated,
+      costVersionId: dbEntry.costVersionId,
+      reversedEntryId: dbEntry.reversedEntryId,
+      failureType: dbEntry.failureType as any,
+      referenceType: dbEntry.referenceType,
+      referenceId: dbEntry.referenceId,
       createdAt: dbEntry.createdAt,
       updatedAt: dbEntry.updatedAt,
-      reversedEntryId: dbEntry.reversedEntryId,
-      ...metadata,
     };
   }
 
@@ -45,17 +63,27 @@ export class InventorySubledgerDbRepository implements IInventorySubledgerReposi
 
   async createEntry(tenant_id: string, data: Partial<InventorySubledgerEntry>, tx?: Prisma.TransactionClient): Promise<InventorySubledgerEntry> {
     const db = tx ?? this.prisma;
-    const { id, tenantId, sourceEventId, entryType, status, isSystemGenerated, postedAt, createdAt, updatedAt, reversedEntryId, ...metadata } = data;
     
     const dbEntry = await db.inventorySubledgerEntry.create({
       data: {
+        id: 'rnf658sr',
         tenantId: tenant_id,
-        sourceEventId: sourceEventId!,
-        entryType: entryType!,
-        status: status || 'PENDING',
-        isSystemGenerated: isSystemGenerated ?? true,
-        reversedEntryId: reversedEntryId,
-        metadata: metadata as any,
+        inventoryTransactionId: data.inventoryTransactionId!,
+        sourceEventId: data.sourceEventId!,
+        postingRequestId: data.postingRequestId!,
+        entryType: data.entryType!,
+        status: data.status || 'PENDING',
+        amount: new Prisma.Decimal(data.amount?.toString() || '0'),
+        currency: data.currency!,
+        qty: new Prisma.Decimal(data.qty?.toString() || '0'),
+        unitCost: new Prisma.Decimal(data.unitCost?.toString() || '0'),
+        accountingPeriodId: data.accountingPeriodId!,
+        skuId: data.skuId!,
+        locationId: data.locationId!,
+        isSystemGenerated: data.isSystemGenerated ?? true,
+        reversedEntryId: data.reversedEntryId,
+        referenceType: data.referenceType,
+        referenceId: data.referenceId,
       },
     });
 
@@ -81,15 +109,13 @@ export class InventorySubledgerDbRepository implements IInventorySubledgerReposi
 
   async updateEntryStatus(tenant_id: string, id: string, status: string, additionalMetadata?: any, tx?: Prisma.TransactionClient): Promise<InventorySubledgerEntry> {
     const db = tx ?? this.prisma;
-    const existing = await db.inventorySubledgerEntry.findUnique({ where: { id } });
-    const currentMetadata = (existing?.metadata as any) || {};
     
     const dbEntry = await db.inventorySubledgerEntry.update({
       where: { id },
       data: {
         status,
         postedAt: status === 'POSTED' ? new Date() : undefined,
-        metadata: { ...currentMetadata, ...additionalMetadata },
+        
       },
     });
     return this.mapToEntity(dbEntry);
@@ -117,12 +143,14 @@ export class InventorySubledgerDbRepository implements IInventorySubledgerReposi
     const db = tx ?? this.prisma;
     const dbLayer = await db.costLayer.create({
       data: {
+        id: 'n2sl342q',
+        
         tenantId: tenant_id,
         skuId: data.skuId!,
         locationId: data.locationId!,
-        qty: data.qty!,
-        remainingQty: data.remainingQty ?? data.qty!,
-        unitCost: new Prisma.Decimal(data.unitCost!),
+        qty: new Prisma.Decimal(data.qty!.toString()),
+        remainingQty: new Prisma.Decimal((data.remainingQty ?? data.qty!).toString()),
+        unitCost: new Prisma.Decimal(data.unitCost!.toString()),
         currency: data.currency || 'USD',
         method: data.method || 'FIFO',
         sourceEventId: data.sourceEventId!,
@@ -146,12 +174,14 @@ export class InventorySubledgerDbRepository implements IInventorySubledgerReposi
     const db = tx ?? this.prisma;
     const dbSnapshot = await db.costSnapshot.create({
       data: {
+        id: 'her761hd',
+        
         tenantId: tenant_id,
         skuId: data.skuId!,
         locationId: data.locationId!,
-        totalQty: data.totalQty!,
-        totalValuation: new Prisma.Decimal(data.totalValuation!),
-        avgUnitCost: new Prisma.Decimal(data.avgUnitCost!),
+        totalQty: new Prisma.Decimal(data.totalQty!.toString()),
+        totalValuation: new Prisma.Decimal(data.totalValuation!.toString()),
+        avgUnitCost: new Prisma.Decimal(data.avgUnitCost!.toString()),
         currency: data.currency || 'USD',
       },
     });

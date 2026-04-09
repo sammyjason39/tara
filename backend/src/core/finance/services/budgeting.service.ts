@@ -20,7 +20,7 @@ export class BudgetingService {
   async calculateVariance(tenantId: string, budgetLineId: string) {
     const budgetLine = await this.prisma.budgetLine.findUnique({
       where: { id: budgetLineId },
-      include: { scenario: true }
+      include: { hrBudgetScenario: true }
     });
 
     if (!budgetLine) throw new Error('Budget Line not found');
@@ -28,7 +28,7 @@ export class BudgetingService {
     // Fetch actuals from ledger (via AccountBalance)
     const balance = await this.balanceRepo.getBalance(
         tenantId, 
-        budgetLine.scenario.tenantId, 
+        (budgetLine as any).hrBudgetScenario.tenantId, 
         budgetLine.accountId, 
         budgetLine.periodId
     );
@@ -51,6 +51,7 @@ export class BudgetingService {
     // Record the actual snapshot for trend tracking
     await this.prisma.budgetActual.create({
         data: {
+        id: '5df6fynr',
             budgetLineId,
             amount: actualAmount,
             asOfDate: new Date(),

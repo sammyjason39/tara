@@ -99,10 +99,10 @@ export class MarketingDbRepository extends IMarketingRepository {
           where: { tenantId: tenantId },
         }),
         this.prisma.marketingLead.findMany({ where: { tenantId: tenantId } }),
-        this.prisma.marketingExecutionRun.findMany({
+        this.prisma.marketingExecution.findMany({
           where: { tenantId: tenantId },
         }),
-        this.prisma.marketingConnectedAccount.findMany({
+        this.prisma.marketingAccount.findMany({
           where: { tenantId: tenantId },
         }),
         this.prisma.marketingAttribution.findMany({
@@ -144,7 +144,7 @@ export class MarketingDbRepository extends IMarketingRepository {
   async getChannelPerformance(
     tenantId: string,
   ): Promise<MarketingChannelPerformance[]> {
-    const executions = await this.prisma.marketingExecutionRun.findMany({
+    const executions = await this.prisma.marketingExecution.findMany({
       where: { tenantId: tenantId },
     });
 
@@ -182,6 +182,8 @@ export class MarketingDbRepository extends IMarketingRepository {
   ): Promise<MarketingCampaign> {
     const item = await this.prisma.marketingCampaign.create({
       data: {
+        id: '30f50s4a',
+        updatedAt: new Date(),
         tenantId: tenantId,
         name: dto.name,
         objective: dto.objective,
@@ -213,7 +215,7 @@ export class MarketingDbRepository extends IMarketingRepository {
   }
 
   async getExecutions(tenantId: string): Promise<MarketingExecution[]> {
-    const items = await this.prisma.marketingExecutionRun.findMany({
+    const items = await this.prisma.marketingExecution.findMany({
       where: { tenantId: tenantId },
       orderBy: { scheduledAt: "desc" },
     });
@@ -224,8 +226,10 @@ export class MarketingDbRepository extends IMarketingRepository {
     tenantId: string,
     dto: ScheduleExecutionDto,
   ): Promise<MarketingExecution> {
-    const item = await this.prisma.marketingExecutionRun.create({
+    const item = await this.prisma.marketingExecution.create({
       data: {
+        id: 'x4fyl78q',
+        updatedAt: new Date(),
         tenantId: tenantId,
         campaignId: dto.campaignId,
         channel: dto.channel,
@@ -244,7 +248,7 @@ export class MarketingDbRepository extends IMarketingRepository {
     id: string,
     dto: RunExecutionDto,
   ): Promise<MarketingExecution> {
-    const item = await this.prisma.marketingExecutionRun.update({
+    const item = await this.prisma.marketingExecution.update({
       where: { id, tenantId: tenantId },
       data: {
         status: dto.failed ? "FAILED" : "COMPLETED",
@@ -271,6 +275,8 @@ export class MarketingDbRepository extends IMarketingRepository {
       `${dto.companyName}-${dto.email || dto.phone || dto.contactName}`.toLowerCase();
     const item = await this.prisma.marketingLead.create({
       data: {
+        id: 'b6fcz6j7',
+        updatedAt: new Date(),
         tenantId: tenantId,
         campaignId: dto.campaignId,
         source: dto.source,
@@ -313,7 +319,7 @@ export class MarketingDbRepository extends IMarketingRepository {
   }
 
   async getWorkflows(tenantId: string): Promise<MarketingWorkflow[]> {
-    const items = await this.prisma.marketingNurtureWorkflow.findMany({
+    const items = await this.prisma.marketingWorkflow.findMany({
       where: { tenantId: tenantId },
     });
     return items.map((i: any) => ({
@@ -333,8 +339,10 @@ export class MarketingDbRepository extends IMarketingRepository {
     tenantId: string,
     dto: CreateWorkflowDto,
   ): Promise<MarketingWorkflow> {
-    const item = await this.prisma.marketingNurtureWorkflow.create({
+    const item = await this.prisma.marketingWorkflow.create({
       data: {
+        id: 'v77e462a',
+        updatedAt: new Date(),
         tenantId: tenantId,
         name: dto.name,
         trigger: dto.trigger,
@@ -360,7 +368,7 @@ export class MarketingDbRepository extends IMarketingRepository {
     id: string,
     dto: UpdateWorkflowStatusDto,
   ): Promise<MarketingWorkflow> {
-    const item = await this.prisma.marketingNurtureWorkflow.update({
+    const item = await this.prisma.marketingWorkflow.update({
       where: { id, tenantId: tenantId },
       data: { status: dto.status.toUpperCase() },
     });
@@ -380,7 +388,7 @@ export class MarketingDbRepository extends IMarketingRepository {
   async getConnectedAccounts(
     tenantId: string,
   ): Promise<MarketingConnectedAccount[]> {
-    const items = await this.prisma.marketingConnectedAccount.findMany({
+    const items = await this.prisma.marketingAccount.findMany({
       where: { tenantId: tenantId },
     });
     return items.map((i: any) => ({
@@ -401,8 +409,10 @@ export class MarketingDbRepository extends IMarketingRepository {
     tenantId: string,
     dto: ConnectAccountDto,
   ): Promise<MarketingConnectedAccount> {
-    const item = await this.prisma.marketingConnectedAccount.create({
+    const item = await this.prisma.marketingAccount.create({
       data: {
+        id: 'e7imhqu6',
+        updatedAt: new Date(),
         tenantId: tenantId,
         provider: dto.provider,
         accountName: dto.accountName,
@@ -431,7 +441,7 @@ export class MarketingDbRepository extends IMarketingRepository {
     id: string,
     dto: UpdateAccountStatusDto,
   ): Promise<MarketingConnectedAccount> {
-    const item = await this.prisma.marketingConnectedAccount.update({
+    const item = await this.prisma.marketingAccount.update({
       where: { id, tenantId: tenantId },
       data: { status: dto.status.toUpperCase() },
     });

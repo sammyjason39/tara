@@ -67,7 +67,7 @@ export class AuditCertificationService {
     this.logger.log(`Initiating Period Seal for Snapshot: ${snapshotId}`, correlationId);
 
     // STEP 1: Check existing certification by (tenantId, snapshotId)
-    const existing = await this.prisma.financialCertification.findUnique({
+    const existing = await this.prisma.financeCertification.findUnique({
       where: {
         tenantId_snapshotId: {
           tenantId,
@@ -141,7 +141,7 @@ export class AuditCertificationService {
     // STEP 4: Persist with id = certificationHash in TRANSACTION
     try {
       await this.prisma.$transaction(async (tx) => {
-        const created = await tx.financialCertification.create({
+        const created = await tx.financeCertification.create({
           data: {
             id: certificationHash,
             tenantId,
@@ -162,7 +162,7 @@ export class AuditCertificationService {
     } catch (err) {
       if (err.code === 'P2002') {
         this.logger.warn(`[CONCURRENCY] FinancialCertification unique constraint caught for snapshot ${snapshotId}. Falling back to fetch.`, correlationId);
-        const lateExisting = await this.prisma.financialCertification.findUnique({
+        const lateExisting = await this.prisma.financeCertification.findUnique({
           where: {
             tenantId_snapshotId: {
               tenantId,
@@ -184,7 +184,7 @@ export class AuditCertificationService {
 
 
   async getCertification(id: string): Promise<FinancialCertificationPack | null> {
-    const cert = await this.prisma.financialCertification.findUnique({ where: { id } });
+    const cert = await this.prisma.financeCertification.findUnique({ where: { id } });
     return cert ? (cert.payload as unknown as FinancialCertificationPack) : null;
   }
 
@@ -192,7 +192,7 @@ export class AuditCertificationService {
    * Cryptographic Integrity Verification for Certifications
    */
   async verifyCertification(id: string): Promise<{ valid: boolean; reason?: string; expectedHash: string; actualHash: string }> {
-    const cert = await this.prisma.financialCertification.findUnique({ where: { id } });
+    const cert = await this.prisma.financeCertification.findUnique({ where: { id } });
     if (!cert) throw new Error('Certification not found');
 
     const actualHash = this.sha256(this.stableSerialize(cert.payload));

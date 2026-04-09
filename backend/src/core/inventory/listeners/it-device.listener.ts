@@ -33,7 +33,7 @@ export class ITDeviceListener implements OnModuleInit {
     this.lastScans.set(scanKey, now);
 
     // 1. Resolve Product by Barcode or SKU
-    const product = await this.prisma.product.findFirst({
+    const itemMaster = await this.prisma.itemMaster.findFirst({
         where: {
             tenantId,
             OR: [
@@ -43,7 +43,7 @@ export class ITDeviceListener implements OnModuleInit {
         }
     });
 
-    if (!product) {
+    if (!itemMaster) {
         console.warn(`[ITDeviceListener] Product not found for code: ${code}`);
         return;
     }
@@ -52,7 +52,7 @@ export class ITDeviceListener implements OnModuleInit {
     await this.inventoryService.intakeStock(
         tenantId,
         {
-          itemId: product.id,
+          itemId: itemMaster.id,
           locationId: locationId || 'SCAN_LOCATION',
           quantity: 1, // Default scan quantity
           referenceId: eventId, // Standardized: referenceId = deviceEventId

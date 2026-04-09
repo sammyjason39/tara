@@ -89,7 +89,7 @@ export class HRService {
     userId?: string,
   ): Promise<Employee> {
     const eventReferenceId = `EVT-HR-EMP-NEW-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const employee = await this.hrRepository.createEmployee(tenantId, data, tx);
       
       // 1. Audit Logging (Transactional)
@@ -146,7 +146,7 @@ export class HRService {
     data?: any,
   ): Promise<Employee> {
     const eventReferenceId = `EVT-HR-EMP-HIRE-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const employee = await this.hrRepository.hireCandidate(tenantId, candidateId, data || {}, tx);
       
       // 1. Audit Logging (Transactional)
@@ -202,7 +202,7 @@ export class HRService {
     userId?: string,
   ): Promise<Employee> {
     const eventReferenceId = `EVT-HR-EMP-UPD-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       // Fetch before state for high-fidelity audit
       const beforeState = await this.hrRepository.getEmployeeById(tenantId, employeeId);
       
@@ -263,7 +263,7 @@ export class HRService {
     userId?: string,
   ): Promise<Employee> {
     const eventReferenceId = `EVT-HR-EMP-DEACT-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const beforeState = await this.hrRepository.getEmployeeById(tenantId, employeeId);
       
       const employee = await this.hrRepository.deactivateEmployee(
@@ -326,7 +326,7 @@ export class HRService {
     userId?: string,
   ): Promise<Employee> {
     const eventReferenceId = `EVT-HR-EMP-PROM-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const beforeState = await this.hrRepository.getEmployeeById(tenantId, employeeId);
       const employee = await this.hrRepository.promoteEmployee(tenantId, employeeId, data, tx);
       
@@ -380,7 +380,7 @@ export class HRService {
     userId?: string,
   ): Promise<Employee> {
     const eventReferenceId = `EVT-HR-EMP-XFER-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const beforeState = await this.hrRepository.getEmployeeById(tenantId, employeeId);
       const employee = await this.hrRepository.transferEmployee(tenantId, employeeId, data, tx);
       
@@ -445,7 +445,7 @@ export class HRService {
     userId?: string,
   ): Promise<Employee> {
     const eventReferenceId = `EVT-HR-EMP-SUSP-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const beforeState = await this.hrRepository.getEmployeeById(tenantId, employeeId);
       const employee = await this.hrRepository.suspendEmployee(tenantId, employeeId, reason, tx);
       
@@ -603,7 +603,7 @@ export class HRService {
     userId?: string,
   ): Promise<Attendance> {
     const eventReferenceId = `EVT-HR-ATT-IN-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const attendance = await this.hrRepository.clockIn(
         tenantId,
         employeeId,
@@ -649,7 +649,7 @@ export class HRService {
     userId?: string,
   ): Promise<Attendance> {
     const eventReferenceId = `EVT-HR-ATT-OUT-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const attendance = await this.hrRepository.clockOut(tenantId, employeeId, tx);
 
       // 1. Audit Logging (Transactional)
@@ -709,7 +709,7 @@ export class HRService {
     userId?: string,
   ): Promise<LeaveRequest> {
     const eventReferenceId = `EVT-HR-LEAVE-NEW-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const request = await this.hrRepository.createLeaveRequest(tenantId, data, tx);
       if (userId) {
         await this.auditService.log({
@@ -753,7 +753,7 @@ export class HRService {
     userId?: string,
   ): Promise<LeaveRequest> {
     const eventReferenceId = `EVT-HR-LEAVE-APP-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const beforeState = await this.hrRepository.getLeaveRequestById(tenantId, requestId);
       const request = await this.hrRepository.approveLeaveRequest(
         tenantId,
@@ -823,7 +823,7 @@ export class HRService {
     userId?: string,
   ): Promise<LeaveRequest> {
     const eventReferenceId = `EVT-HR-LEAVE-REJ-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const beforeState = await this.hrRepository.getLeaveRequestById(tenantId, requestId);
       const request = await this.hrRepository.rejectLeaveRequest(
         tenantId,
@@ -916,7 +916,7 @@ export class HRService {
     userId?: string,
   ): Promise<Payroll> {
     const eventReferenceId = `EVT-HR-PAY-CALC-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const payroll = await this.hrRepository.calculatePayroll(
         tenantId,
         employeeId,
@@ -1153,7 +1153,7 @@ export class HRService {
 
   async createCandidate(tenantId: string, data: any, userId?: string): Promise<Candidate> {
     const eventReferenceId = `EVT-HR-CAND-NEW-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const candidate = await this.hrRepository.createCandidate(tenantId, data, tx);
       
       // 1. Audit Logging (Transactional)
@@ -1210,7 +1210,7 @@ export class HRService {
     userId?: string,
   ): Promise<Candidate> {
     const eventReferenceId = `EVT-HR-CAND-CONV-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const lead = await this.hrRepository.getTalentLeadById(tenantId, leadId);
       if (!lead) throw new Error("Lead not found");
 
@@ -1273,7 +1273,7 @@ export class HRService {
 
   async updatePosition(tenantId: string, id: string, data: any, userId?: string): Promise<Position> {
     const eventReferenceId = `EVT-HR-POS-UPD-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const beforeState = await this.hrRepository.getPositionById(tenantId, id);
       const position = await this.hrRepository.updatePosition(tenantId, id, data, tx);
       
@@ -1324,7 +1324,7 @@ export class HRService {
 
   async updateCompensation(tenantId: string, employeeId: string, data: any, userId?: string): Promise<Compensation> {
     const eventReferenceId = `EVT-HR-COMP-UPD-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       const beforeState = await this.hrRepository.getCompensation(tenantId, employeeId);
       const compensation = await this.hrRepository.updateCompensation(tenantId, employeeId, data, tx);
       

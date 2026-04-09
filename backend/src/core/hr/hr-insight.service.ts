@@ -35,8 +35,10 @@ export class HRInsightService implements OnModuleInit {
 
   private async handleFinanceContext(event: DomainEvent) {
     const { tenantId, payload } = event;
-    await this.prisma.hRContextSnapshot.create({
+    await this.prisma.hrContextSnapshot.create({
       data: {
+
+
         tenantId,
         metricType: 'FINANCE_PAYROLL_REF',
         timeWindow: 'MONTHLY',
@@ -70,7 +72,7 @@ export class HRInsightService implements OnModuleInit {
 
       // --- SUPPRESSION & CROSS-MODULE ---
       if (isAnomaly) {
-        const financeContext = await this.prisma.hRContextSnapshot.findFirst({
+        const financeContext = await this.prisma.hrContextSnapshot.findFirst({
           where: { 
             tenantId, 
             metricType: 'FINANCE_PAYROLL_REF',
@@ -86,7 +88,7 @@ export class HRInsightService implements OnModuleInit {
 
       // --- PHASE 4: QUALITY CONTROL (Deduplication & Cooldown) ---
       if (isAnomaly) {
-        const recentRec = await this.prisma.hRRecommendation.findFirst({
+        const recentRec = await this.prisma.hrRecommendation.findFirst({
           where: { 
             tenantId, 
             message: { contains: 'payroll deviation' },
@@ -101,8 +103,10 @@ export class HRInsightService implements OnModuleInit {
       }
 
       // --- PERSISTENCE ---
-      const insight = await this.prisma.hRInsight.create({
+      const insight = await this.prisma.hrInsight.create({
         data: {
+
+
           tenantId,
           type: 'PAYROLL',
           summary: `Payroll analysis for ${period}. Deviation: ${diffPercent.toFixed(2)}%.`,
@@ -136,10 +140,12 @@ export class HRInsightService implements OnModuleInit {
             await hook.beforeRecommendation?.(tenantId, insight.id, recData);
           }
 
-          await this.prisma.hRRecommendation.create({ data: recData });
+          await this.prisma.hrRecommendation.create({ data: recData });
 
           // Notification for stakeholders
           await this.notificationService.createNotification({
+
+
             tenantId,
             userId: 'SYSTEM',
             title: `AI Alert: Payroll Deviation`,
@@ -152,8 +158,10 @@ export class HRInsightService implements OnModuleInit {
       }
 
       // Update baseline
-      await this.prisma.hRContextSnapshot.create({
+      await this.prisma.hrContextSnapshot.create({
         data: {
+
+
           tenantId,
           metricType: 'PAYROLL',
           timeWindow: 'MONTHLY',
@@ -173,7 +181,7 @@ export class HRInsightService implements OnModuleInit {
     const floor = 15;
     const cap = 50;
     
-    const recentFeedback = await this.prisma.hRRecommendationFeedback.findMany({
+    const recentFeedback = await this.prisma.hrRecommendationFeedback.findMany({
       where: { tenantId, actionTaken: 'REJECTED' },
       take: 5,
       orderBy: { timestamp: 'desc' },
@@ -204,7 +212,7 @@ export class HRInsightService implements OnModuleInit {
     
     // Heuristic 1: Multi-Clock detection (Anomalous pattern)
     if (eventType === EVENT_NAMES.CLOCK_IN) {
-      const recentClockIns = await this.prisma.attendanceRecord.count({
+      const recentClockIns = await this.prisma.hrAttendanceRecord.count({
         where: {
           tenantId,
           employeeId: payload.employeeId,
@@ -213,8 +221,10 @@ export class HRInsightService implements OnModuleInit {
       });
 
       if (recentClockIns > 1) {
-        await this.prisma.hRSystemAlert.create({
+        await this.prisma.hrSystemAlert.create({
           data: {
+
+
             tenantId,
             type: 'ATTENDANCE_ANOMALY',
             severity: 'LOW',
@@ -241,8 +251,10 @@ export class HRInsightService implements OnModuleInit {
       });
 
       if (employee && employee.locationId !== payload.locationId) {
-        await this.prisma.hRSystemAlert.create({
+        await this.prisma.hrSystemAlert.create({
           data: {
+
+
             tenantId,
             type: 'LOCATION_MISMATCH',
             severity: 'MEDIUM',
@@ -263,8 +275,10 @@ export class HRInsightService implements OnModuleInit {
     });
 
     if (shifts.length < 5) { // Hypothetical floor for a location
-      await this.prisma.hRRecommendation.create({
+      await this.prisma.hrRecommendation.create({
         data: {
+
+
           tenantId,
           message: `Low coverage detected for newly approved schedule ${payload.scheduleId}. Consider adding more shifts.`,
           priority: 'MEDIUM',
@@ -277,7 +291,7 @@ export class HRInsightService implements OnModuleInit {
   }
 
   private async getAdjustedBaseline(tenantId: string): Promise<number> {
-    const snapshot = await this.prisma.hRContextSnapshot.findFirst({
+    const snapshot = await this.prisma.hrContextSnapshot.findFirst({
       where: { tenantId, metricType: 'PAYROLL' },
       orderBy: { createdAt: 'desc' },
     });
@@ -288,7 +302,7 @@ export class HRInsightService implements OnModuleInit {
    * Drift Detection: Compare long-term baseline (90d) vs short-term baseline (30d)
    */
   private async detectDrift(tenantId: string, currentValue: number) {
-    const longTermSnapshot = await this.prisma.hRContextSnapshot.findFirst({
+    const longTermSnapshot = await this.prisma.hrContextSnapshot.findFirst({
       where: { 
         tenantId, 
         metricType: 'PAYROLL',
@@ -302,8 +316,10 @@ export class HRInsightService implements OnModuleInit {
       const drift = ((currentValue - longTermVal) / longTermVal) * 100;
       
       if (Math.abs(drift) > 15) {
-        await this.prisma.hRSystemAlert.create({
+        await this.prisma.hrSystemAlert.create({
           data: {
+
+
             tenantId,
             type: 'DRIFT',
             severity: 'MEDIUM',

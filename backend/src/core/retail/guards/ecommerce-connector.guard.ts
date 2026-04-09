@@ -87,15 +87,15 @@ export class EcommerceConnectorGuard implements CanActivate {
 
       const connector = await this.prisma.ecommerceConnector.findFirst({
         where: { apiKey: apiKeyHash, deletedAt: null, status: "active" },
-        include: { branches: { select: { id: true } } },
+        include: { stores: { select: { id: true } } },
       });
 
       if (connector) {
         scope = {
           ecommerceId: connector.id,
           tenantId: connector.tenantId,
-          branchId: connector.branches[0]?.id || "branch_main",
-          branchIds: connector.branches.map((b) => b.id),
+          branchId: connector.stores[0]?.id || "branch_main",
+          branchIds: connector.stores.map((b: any) => b.id),
           inventoryPoolId: connector.inventoryPoolId,
           domain: connector.domain,
           status: connector.status,

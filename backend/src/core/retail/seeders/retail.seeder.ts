@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { v4 as uuidv4 } from "uuid";
 import { PrismaService } from "../../../persistence/prisma.service";
 
 @Injectable()
@@ -25,6 +26,7 @@ export class RetailSeeder {
             name: "Zenvix Demo Corp",
             code: "ZDX",
             industry: "retail",
+            updatedAt: new Date(),
           },
         });
       }
@@ -57,6 +59,7 @@ export class RetailSeeder {
           },
           update: { enabled: true, updatedBy: "system" },
           create: {
+            id: uuidv4(),
             tenantId: this.TENANT_ID,
             moduleKey,
             enabled: true,
@@ -76,6 +79,8 @@ export class RetailSeeder {
         this.logger.log("Creating default branch location...");
         location = await this.prisma.location.create({
           data: {
+            id: "42txt9cs",
+            updatedAt: new Date(),
             tenantId: this.TENANT_ID,
             name: "Grand Indonesia Flagship",
             code: "GI-001",
@@ -93,6 +98,8 @@ export class RetailSeeder {
         this.logger.log("Creating default store...");
         store = await this.prisma.store.create({
           data: {
+            id: "u62hbe93",
+            updatedAt: new Date(),
             tenantId: this.TENANT_ID,
             locationId: location.id,
             name: "GI Flagship Store",
@@ -211,7 +218,7 @@ export class RetailSeeder {
       ];
 
       for (const prodData of productsData) {
-        const product = await this.prisma.product.upsert({
+        const product = await this.prisma.itemMaster.upsert({
           where: {
             tenantId_sku: { tenantId: this.TENANT_ID, sku: prodData.sku },
           },
@@ -249,6 +256,8 @@ export class RetailSeeder {
         } else {
           await this.prisma.stockLevel.create({
             data: {
+              id: "fsgavby6",
+              updatedAt: new Date(),
               tenantId: this.TENANT_ID,
               locationId: location.id,
               productId: product.id,
@@ -437,6 +446,8 @@ export class RetailSeeder {
         if (!deptId) {
           const dept = await this.prisma.department.create({
             data: {
+              id: "8ggcr0m3",
+              updatedAt: new Date(),
               tenantId: this.TENANT_ID,
               name: "Retail Operations",
               code: "RET-OPS",
@@ -446,6 +457,8 @@ export class RetailSeeder {
         }
         cashier = await this.prisma.employee.create({
           data: {
+            id: "l8euqfqy",
+            updatedAt: new Date(),
             tenantId: this.TENANT_ID,
             locationId: location.id,
             departmentId: deptId,
@@ -528,7 +541,7 @@ export class RetailSeeder {
         });
 
         for (const item of orderDef.items) {
-          const product = await this.prisma.product.findUnique({
+          const product = await this.prisma.itemMaster.findUnique({
             where: {
               tenantId_sku: { tenantId: this.TENANT_ID, sku: item.productSku },
             },
@@ -541,6 +554,8 @@ export class RetailSeeder {
           }
           await this.prisma.retailOrderItem.create({
             data: {
+              id: "kr8b4xgx",
+              
               tenantId: this.TENANT_ID,
               orderId: order.id,
               productId: product.id,

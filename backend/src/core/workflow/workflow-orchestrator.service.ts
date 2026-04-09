@@ -129,7 +129,7 @@ export class WorkflowOrchestratorService implements OnModuleInit {
 
     const instance = await this.prisma.workflowInstance.findUnique({
       where: { correlationId },
-      include: { definition: true }
+      include: { workflowDefinition: true }
     });
 
     if (!instance || instance.status !== 'IN_PROGRESS') {
@@ -160,7 +160,7 @@ export class WorkflowOrchestratorService implements OnModuleInit {
   }
 
   private async validateTransition(instance: any, eventType: string): Promise<{ valid: boolean; step?: any; error?: string }> {
-    const steps = instance.definition.steps as any[];
+    const steps = instance.workflowDefinition.steps as any[];
     const currentStep = steps.find(s => s.state === instance.currentState);
     
     if (!currentStep) {
@@ -209,7 +209,7 @@ export class WorkflowOrchestratorService implements OnModuleInit {
   async getWorkflowInstance(correlationId: string) {
     return this.prisma.workflowInstance.findUnique({
       where: { correlationId },
-      include: { definition: true }
+      include: { workflowDefinition: true }
     });
   }
 
@@ -223,7 +223,7 @@ export class WorkflowOrchestratorService implements OnModuleInit {
   async getWorkflowWithEvents(correlationId: string) {
     const instance = await this.prisma.workflowInstance.findUnique({
       where: { correlationId },
-      include: { definition: true }
+      include: { workflowDefinition: true }
     });
 
     if (!instance) return null;

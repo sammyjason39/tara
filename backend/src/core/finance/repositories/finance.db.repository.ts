@@ -44,7 +44,7 @@ export class FinanceDbRepository implements IFinanceRepository {
         tenantId,
       },
       include: {
-        lines: true,
+        financeJournalLines: true,
       },
       orderBy: {
         createdAt: "desc",
@@ -54,7 +54,7 @@ export class FinanceDbRepository implements IFinanceRepository {
     // Flatten journal entries into ledger entries
     const ledger: LedgerEntry[] = [];
     for (const entry of journalEntries) {
-      for (const line of entry.lines) {
+      for (const line of (entry as any).financeJournalLines) {
         ledger.push({
           id: line.id,
           tenantId: entry.tenantId,
@@ -90,13 +90,16 @@ export class FinanceDbRepository implements IFinanceRepository {
     // 1. Create Journal Entry (Production Grade Ledger)
     const journalEntry = await db.journalEntry.create({
       data: {
+        id: 'b9dlcagj',
         tenantId,
         ref: data.referenceId || `TXN-${Date.now()}`,
         description: data.description || "POS Sales Transaction",
         fiscalPeriodId: "FISCAL_AUTO",
         postingDate: new Date(),
+        journalType: 'SALES',
         status: "POSTED",
-        lines: {
+        updatedAt: new Date(),
+        financeJournalLines: {
           create: [
             {
               tenantId,
@@ -112,7 +115,7 @@ export class FinanceDbRepository implements IFinanceRepository {
         },
       },
       include: {
-        lines: true,
+        financeJournalLines: true,
       },
     });
 
@@ -141,13 +144,17 @@ export class FinanceDbRepository implements IFinanceRepository {
     const execute = async (contextTx: Prisma.TransactionClient) => {
       const journalEntry = await contextTx.journalEntry.create({
         data: {
+        id: 'tuwzi9q7',
+        
           tenantId,
           ref: data.ref || `MAN-${Date.now()}`,
           description: data.description,
           fiscalPeriodId: "FISCAL_AUTO",
           postingDate: new Date(),
+          journalType: 'MANUAL',
           status: "POSTED",
-          lines: {
+          updatedAt: new Date(),
+          financeJournalLines: {
             create: data.lines.map((line) => ({
               tenantId,
               accountId: (line as any).accountId || "ACC-UNKNOWN",
@@ -161,7 +168,7 @@ export class FinanceDbRepository implements IFinanceRepository {
           },
         },
         include: {
-          lines: true,
+          financeJournalLines: true,
         },
       });
 
@@ -185,7 +192,7 @@ export class FinanceDbRepository implements IFinanceRepository {
     // Get journal line aggregates
     const lines = await this.prisma.journalLine.findMany({
       where: {
-        journalEntry: {
+        financeJournalEntry: {
           tenantId,
         },
       },
@@ -238,6 +245,8 @@ export class FinanceDbRepository implements IFinanceRepository {
     const db = tx ?? this.prisma;
     const created = await db.fixedAsset.create({
       data: {
+        id: 'imipin42',
+        
         tenantId,
         description: asset.description!,
         assetClass: asset.assetClass!,
@@ -250,6 +259,7 @@ export class FinanceDbRepository implements IFinanceRepository {
         residualValue: asset.residualValue!,
         status: asset.status || "ACTIVE",
         carryingValue: asset.acquisitionCost!,
+        updatedAt: new Date(),
       },
     });
     return this.mapAsset(created);
@@ -299,6 +309,8 @@ export class FinanceDbRepository implements IFinanceRepository {
     const db = tx ?? this.prisma;
     const created = await db.capexRequest.create({
       data: {
+        id: 'h8di94dr',
+        
         tenantId,
         assetDescription: request.assetDescription!,
         requestedAmount: request.requestedAmount!,
@@ -306,6 +318,7 @@ export class FinanceDbRepository implements IFinanceRepository {
         projectCode: request.projectCode,
         requestedBy: request.requesterId!,
         status: request.status || "PENDING",
+        updatedAt: new Date(),
       },
     });
     return this.mapCapexRequest(created);
@@ -398,6 +411,8 @@ export class FinanceDbRepository implements IFinanceRepository {
     const db = tx ?? this.prisma;
     const created = await db.treasuryTransfer.create({
       data: {
+        id: 'dvo8b3q1',
+        
         tenantId,
         fromSourceId: data.fromSourceId!,
         toSourceId: data.toSourceId!,
@@ -405,6 +420,7 @@ export class FinanceDbRepository implements IFinanceRepository {
         currency: data.currency || "IDR",
         status: data.status || "PENDING",
         requestedBy: data.requestedBy || "system",
+        updatedAt: new Date(),
       },
     });
 
@@ -440,6 +456,8 @@ export class FinanceDbRepository implements IFinanceRepository {
     // Create a record of the reconciliation
     await db.settlementRecord.create({
       data: {
+        id: 'cw3d8c14',
+        
         tenantId,
         sourceId,
         amount,
@@ -511,6 +529,8 @@ export class FinanceDbRepository implements IFinanceRepository {
     const db = tx ?? this.prisma;
     const created = await db.paymentTransaction.create({
       data: {
+        id: 'asbppus0',
+        
         tenantId,
         idempotencyKey: `pay-req-${Date.now()}-${Math.random().toString(36).substring(7)}`,
         type: "PAYMENT_REQUEST",
@@ -588,6 +608,8 @@ export class FinanceDbRepository implements IFinanceRepository {
     const execute = async (contextTx: Prisma.TransactionClient) => {
       const rec = await contextTx.receivable.create({
         data: {
+        id: 'bueoy15b',
+        
           tenantId,
           customerName: invoice.customer!,
           amount: invoice.amount!,
@@ -640,6 +662,8 @@ export class FinanceDbRepository implements IFinanceRepository {
     const execute = async (contextTx: Prisma.TransactionClient) => {
       const pay = await contextTx.payable.create({
         data: {
+        id: 'pk0ncnwn',
+        
           tenantId,
           vendorName: bill.vendor!,
           amount: bill.amount!,
@@ -651,13 +675,16 @@ export class FinanceDbRepository implements IFinanceRepository {
 
       await contextTx.journalEntry.create({
         data: {
+        id: 'bxr4ivv4',
+        
           tenantId,
           ref: `PAY-${pay.id.substring(0, 8)}`,
           description: `Bill received from ${bill.vendor}`,
           fiscalPeriodId: "FISCAL_AUTO",
           postingDate: new Date(),
+          journalType: "PURCHASE",
           status: "POSTED",
-          lines: {
+          financeJournalLines: {
             create: [
               {
                 tenantId,
@@ -708,10 +735,10 @@ export class FinanceDbRepository implements IFinanceRepository {
     const lines = await this.prisma.payrollLine.findMany({
       where: {
         tenantId,
-        payrollRun: period ? { periodEnd: { gte: new Date(period) } } : undefined, // Simplification
+        hrPayrollRun: period ? { periodEnd: { gte: new Date(period) } } : undefined, // Simplification
       },
       include: {
-        payrollRun: true,
+        hrPayrollRun: true,
       },
       orderBy: { createdAt: "desc" },
     });
@@ -720,10 +747,10 @@ export class FinanceDbRepository implements IFinanceRepository {
       id: line.id,
       tenantId: line.tenantId,
       employeeId: line.employeeId,
-      period: line.payrollRun.periodEnd.toISOString().substring(0, 7),
+      period: (line as any).hrPayrollRun.periodEnd.toISOString().substring(0, 7),
       baseSalary: line.grossPay,
       netSalary: line.netPay,
-      status: line.payrollRun.status as any,
+      status: (line as any).hrPayrollRun.status as any,
       createdAt: line.createdAt.toISOString(),
       updatedAt: line.updatedAt.toISOString(),
       name: undefined,
@@ -741,22 +768,24 @@ export class FinanceDbRepository implements IFinanceRepository {
       where: { tenantId, status: "active" },
       include: { 
         department: true,
-        compensation: true
+        compensations: true
       },
     });
 
     const estimatesMap = new Map<string, PayrollEstimate>();
 
     for (const emp of employees) {
-      const deptName = emp.department?.name || "Unassigned";
+      const deptName = (emp as any).departments?.name || "Unassigned";
       
       let gross = 0;
-      if (emp.compensation) {
-        gross = Number(emp.compensation.baseSalary);
+      const comp = (emp as any).compensations;
+      
+      if (comp) {
+        gross = Number(comp.baseSalary);
         
         // Add allowances
-        if (emp.compensation.allowances) {
-          const allowances = emp.compensation.allowances as any[];
+        if (comp.allowances) {
+          const allowances = comp.allowances as any[];
           if (Array.isArray(allowances)) {
             allowances.forEach(a => {
               if (a.amount) gross += Number(a.amount);
@@ -765,8 +794,8 @@ export class FinanceDbRepository implements IFinanceRepository {
         }
 
         // Add bonuses
-        if (emp.compensation.bonuses) {
-          const bonuses = emp.compensation.bonuses as any[];
+        if (comp.bonuses) {
+          const bonuses = comp.bonuses as any[];
           if (Array.isArray(bonuses)) {
             bonuses.forEach(b => {
               if (b.amount) gross += Number(b.amount);
@@ -808,7 +837,7 @@ export class FinanceDbRepository implements IFinanceRepository {
     const db = tx ?? this.prisma;
     const employees = await db.employee.findMany({
       where: { tenantId, status: "active" },
-      include: { compensation: true }
+      include: { compensations: true }
     });
 
     if (employees.length === 0) {
@@ -820,12 +849,12 @@ export class FinanceDbRepository implements IFinanceRepository {
 
     const linesData = employees.map((emp) => {
       let gross = 0;
-      if (emp.compensation) {
-        gross = Number(emp.compensation.baseSalary);
-        
+      const comp = (emp as any).compensations;
+      if (comp) {
+        gross = Number(comp.baseSalary);
         // Add allowances
-        if (emp.compensation.allowances) {
-          const allowances = emp.compensation.allowances as any[];
+        if (comp.allowances) {
+          const allowances = comp.allowances as any[];
           if (Array.isArray(allowances)) {
             allowances.forEach(a => {
               if (a.amount) gross += Number(a.amount);
@@ -834,8 +863,8 @@ export class FinanceDbRepository implements IFinanceRepository {
         }
 
         // Add bonuses
-        if (emp.compensation.bonuses) {
-          const bonuses = emp.compensation.bonuses as any[];
+        if (comp.bonuses) {
+          const bonuses = comp.bonuses as any[];
           if (Array.isArray(bonuses)) {
             bonuses.forEach(b => {
               if (b.amount) gross += Number(b.amount);
@@ -867,6 +896,8 @@ export class FinanceDbRepository implements IFinanceRepository {
       // 1. Create the PayrollRun
       const run = await tx.payrollRun.create({
         data: {
+        id: 'pdgchkw6',
+        
           tenantId,
           periodStart: periodDate,
           periodEnd: periodEnd,
@@ -875,7 +906,7 @@ export class FinanceDbRepository implements IFinanceRepository {
           totalEmployees: employees.length,
           totalGrossPay: totalGross,
           totalNetPay: totalNet,
-          lines: {
+          payrollLines: {
             create: linesData,
           },
         },
@@ -884,13 +915,15 @@ export class FinanceDbRepository implements IFinanceRepository {
       // 2. Create the Ledger Journal Entry for the Payroll Run
       await tx.journalEntry.create({
         data: {
+        id: '8rhsc9nk',
+        
           tenantId,
           fiscalPeriodId: period, 
           postingDate: new Date(),
           description: `Payroll posting for ${period}`,
           ref: `PAY-${period}-${run.id.substring(0, 8)}`,
           status: "POSTED",
-          lines: {
+          financeJournalLines: {
             create: [
               {
                 tenantId,
@@ -936,14 +969,14 @@ export class FinanceDbRepository implements IFinanceRepository {
   async getTransactionById(tenantId: string, transactionId: string): Promise<Transaction | null> {
     const journalEntry = await this.prisma.journalEntry.findFirst({
       where: { id: transactionId, tenantId },
-      include: { lines: true }
+      include: { financeJournalLines: true }
     });
     if (!journalEntry) return null;
     return {
       id: journalEntry.id,
       tenantId: journalEntry.tenantId,
       locationId: "default",
-      amount: journalEntry.lines.length > 0 ? (journalEntry.lines[0].debit.gt(0) ? journalEntry.lines[0].debit : journalEntry.lines[0].credit) : new Prisma.Decimal(0),
+      amount: (journalEntry as any).financeJournalLines.length > 0 ? ((journalEntry as any).financeJournalLines[0].debit.gt(0) ? (journalEntry as any).financeJournalLines[0].debit : (journalEntry as any).financeJournalLines[0].credit) : new Prisma.Decimal(0),
       type: "debit",
       description: journalEntry.description || "",
       category: "GENERAL",
@@ -978,14 +1011,17 @@ export class FinanceDbRepository implements IFinanceRepository {
         allocatedBudget: budget.allocatedBudget,
         committedBudget: budget.committedBudget,
         availableBudget: budget.availableBudget,
+        updatedAt: new Date(),
       },
       create: {
+        id: '9qshn9f0',
         tenantId,
         department: budget.department,
         period: budget.fiscalYear,
         allocatedBudget: budget.allocatedBudget,
         committedBudget: budget.committedBudget,
         availableBudget: budget.availableBudget,
+        updatedAt: new Date(),
       }
     });
   }
@@ -1013,6 +1049,7 @@ export class FinanceDbRepository implements IFinanceRepository {
     const db = tx ?? this.prisma;
     const created = await db.assetDepreciationEntry.create({
       data: {
+        id: 'k07ukedo',
         tenantId,
         assetId: entry.assetId!,
         period: entry.postingDate?.substring(0, 7) || "2026-02",
@@ -1020,7 +1057,7 @@ export class FinanceDbRepository implements IFinanceRepository {
         depreciationExp: entry.amount!,
         accumulatedDep: entry.accumulatedDepreciation!,
         carryingValue: entry.carryingValue!,
-        journalRef: entry.journalEntryId
+        journalRef: entry.journalEntryId,
       }
     });
     return {
@@ -1057,12 +1094,13 @@ export class FinanceDbRepository implements IFinanceRepository {
     const db = tx ?? this.prisma;
     const created = await db.assetEvent.create({
       data: {
+        id: '6of5cre2',
         tenantId,
         assetId: event.assetId!,
         type: event.type!,
         description: event.reason || "Event generated",
         date: new Date(event.createdAt || new Date()),
-        recordedBy: event.approvedBy || "system"
+        recordedBy: event.approvedBy || "system",
       }
     });
     return {
@@ -1097,7 +1135,7 @@ export class FinanceDbRepository implements IFinanceRepository {
     const db = tx ?? this.prisma;
     const updated = await db.receivable.update({
       where: { id, tenantId },
-      data: { status: updates.status, amount: updates.amount, dueDate: updates.dueDate ? new Date(updates.dueDate) : undefined }
+      data: { status: updates.status, amount: updates.amount, dueDate: updates.dueDate ? new Date(updates.dueDate) : undefined, updatedAt: new Date() }
     });
     return {
       id: updated.id,
@@ -1112,7 +1150,7 @@ export class FinanceDbRepository implements IFinanceRepository {
     const db = tx ?? this.prisma;
     const updated = await db.payable.update({
       where: { id, tenantId },
-      data: { status: updates.status, amount: updates.amount, dueDate: updates.dueDate ? new Date(updates.dueDate) : undefined }
+      data: { status: updates.status, amount: updates.amount, dueDate: updates.dueDate ? new Date(updates.dueDate) : undefined, updatedAt: new Date() }
     });
     return {
       id: updated.id,
@@ -1137,16 +1175,18 @@ export class FinanceDbRepository implements IFinanceRepository {
     }));
   }
 
-  async createDocument(tenantId: string, doc: Partial<FinanceDocumentRow>, tx?: Prisma.TransactionClient): Promise<FinanceDocumentRow> {
+  async createDocument(tenantId: string, data: any, tx?: Prisma.TransactionClient): Promise<FinanceDocumentRow> {
     const db = tx ?? this.prisma;
     const created = await db.financeDocument.create({
       data: {
+        id: 'm1v72483',
         tenantId,
-        title: doc.title || "Document",
-        type: doc.type || "PDF",
-        url: doc.url || "#",
-        description: "",
-        uploadedBy: "system"
+        title: data.title,
+        type: data.type,
+        url: data.url,
+        description: data.description || '',
+        uploadedBy: data.uploadedBy,
+        updatedAt: new Date(),
       }
     });
     return {

@@ -17,7 +17,7 @@ export class PrePostingValidator {
     }
 
     // 3. Amount Integrity Check
-    if (!entry.amount || entry.amount <= 0) {
+    if (!entry.amount || entry.amount.lte(0)) {
       return { valid: false, error: 'Invalid amount: must be positive and non-zero' };
     }
 

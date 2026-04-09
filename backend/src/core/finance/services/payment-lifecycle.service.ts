@@ -39,6 +39,7 @@ export class PaymentLifecycleService {
   }) {
     return this.prisma.paymentTransaction.create({
       data: {
+        id: '1yhg2ft9',
         tenantId: params.tenantId,
         amount: params.amount,
         currency: params.currency,
@@ -88,6 +89,7 @@ export class PaymentLifecycleService {
           // AR Allocation
           await tx.arPaymentAllocation.create({
             data: {
+              id: 'gx0ni7wk',
               paymentId: payment.id,
               invoiceId: alloc.entityId,
               amountAllocated: alloc.amount,
@@ -102,6 +104,7 @@ export class PaymentLifecycleService {
           // AP Allocation
           await tx.apPaymentAllocation.create({
             data: {
+              id: 'czsp0wav',
               paymentId: payment.id,
               billId: alloc.entityId,
               amountAllocated: alloc.amount,

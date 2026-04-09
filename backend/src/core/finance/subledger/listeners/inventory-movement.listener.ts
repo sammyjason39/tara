@@ -3,6 +3,7 @@ import { EventBusService, DomainEvent } from "../../../../shared/events/event-bu
 import { IInventorySubledgerRepository } from '../repositories/interfaces/inventory-subledger.repository.interface';
 import { CostingEngineService } from '../costing-engine.service';
 import { v4 as uuid } from 'uuid';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class InventoryMovementListener implements OnModuleInit {
@@ -53,8 +54,8 @@ export class InventoryMovementListener implements OnModuleInit {
         skuId: payload.skuId,
         locationId: payload.locationId,
         qty,
-        unitCost: payload.provisionalCost || 0,
-        amount: (payload.provisionalCost || 0) * Math.abs(qty),
+        unitCost: new Prisma.Decimal((payload.provisionalCost || 0).toString()),
+        amount: new Prisma.Decimal((payload.provisionalCost || 0).toString()).mul(Math.abs(qty)),
         currency: payload.currency || 'USD',
         accountingPeriodId: 'PERIOD-2026-03', // TODO: Resolve from date
         isSystemGenerated: true,

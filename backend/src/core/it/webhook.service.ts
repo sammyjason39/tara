@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../../persistence/prisma.service";
+import { v4 as uuidv4 } from "uuid";
 
 @Injectable()
 export class WebhookService {
@@ -37,6 +38,7 @@ export class WebhookService {
         
         await this.prisma.systemLog.create({
           data: {
+        id: uuidv4(),
             tenantId,
             module: "IT",
             level: "INFO",
@@ -50,6 +52,7 @@ export class WebhookService {
         
         await this.prisma.systemLog.create({
           data: {
+        id: uuidv4(),
             tenantId,
             module: "IT",
             level: "ERROR",

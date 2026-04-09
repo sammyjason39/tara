@@ -29,7 +29,7 @@ function mapConnector(row: any): EcommerceConnector {
   return {
     id: row.id,
     tenantId: row.tenantId,
-    branchIds: row.branches?.map((b: any) => b.id) ?? [],
+    branchIds: row.stores?.map((b: any) => b.id) ?? [],
     name: row.name ?? row.domain,
     platform: (row as any).platform ?? "custom",
     domain: row.domain,
@@ -72,7 +72,7 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
   async listConnectors(tenantId: string): Promise<EcommerceConnector[]> {
     const rows = await this.prisma.ecommerceConnector.findMany({
       where: { tenantId: tenantId, deletedAt: null },
-      include: { branches: { select: { id: true } } },
+      include: { stores: { select: { id: true } } },
       orderBy: { createdAt: "desc" },
     });
     return rows.map(mapConnector);
@@ -84,7 +84,7 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
   ): Promise<EcommerceConnector | null> {
     const row = await this.prisma.ecommerceConnector.findFirst({
       where: { id, tenantId: tenantId, deletedAt: null },
-      include: { branches: { select: { id: true } } },
+      include: { stores: { select: { id: true } } },
     });
     return row ? mapConnector(row) : null;
   }
@@ -98,6 +98,8 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
 
     const row = await (this.prisma.ecommerceConnector as any).create({
       data: {
+        id: '54vga3aq',
+        updatedAt: new Date(),
         tenantId: tenantId,
         name: data.name,
         platform: data.platform,
@@ -106,11 +108,11 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
         status: "active",
         inventoryPoolId: data.inventoryPoolId,
         settings: (data.settings ?? {}) as any,
-        branches: data.branchIds?.length
+        stores: data.branchIds?.length
           ? { connect: data.branchIds.map((id) => ({ id })) }
           : undefined,
       },
-      include: { branches: { select: { id: true } } },
+      include: { stores: { select: { id: true } } },
     });
     return { connector: mapConnector(row), plainApiKey };
   }
@@ -133,12 +135,12 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
           inventoryPoolId: data.inventoryPoolId,
         }),
         ...(data.branchIds !== undefined && {
-          branches: {
+          stores: {
             set: data.branchIds.map((id) => ({ id })),
           },
         }),
       },
-      include: { branches: { select: { id: true } } },
+      include: { stores: { select: { id: true } } },
     });
     return mapConnector(row);
   }
@@ -203,6 +205,8 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
 
     const row = await this.prisma.retailChannel.create({
       data: {
+        id: '10qxf1m4',
+        updatedAt: new Date(),
         tenantId: tenantId,
         name: data.name,
         type: data.type,

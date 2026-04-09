@@ -35,5 +35,5 @@ export async function getActiveModuleKeys(
     where: { tenantId, enabled: true },
     select: { moduleKey: true },
   });
-  return statuses.map((s) => s.moduleKey);
+  return (statuses as any[]).map((s) => s.moduleKey as string);
 }

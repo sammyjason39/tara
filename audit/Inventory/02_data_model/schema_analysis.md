@@ -1,25 +1,42 @@
-# Inventory Data Model Validation
+# Schema Analysis - Inventory Department
 
-## 1. Model: StockLevel [CRITICAL]
-- **Risk ID**: INV-MODEL-001
-- **Field**: `onHand`, `available`, `reserved`, `inTransit`
-- **Type**: `Float`
-- **Finding**: Using `Float` for primary stock quantities in an enterprise system is a high-risk pattern. Rounding errors in bulk transfers or fractional UOMs (e.g., kilograms) can lead to silent inventory drift.
-- **Hardening Requirement**: Convert to `Decimal(20, 8)` or higher precision.
+## Core Tables
 
-## 2. Model: StockMovement
-- **Risk ID**: INV-MODEL-002
-- **Constraint**: `@@unique([tenantId, referenceId, productId, type])`
-- **Finding**: This is a strong idempotency key. However, the `referenceId` generation in the repository (`INTAKE-${Date.now()}`) partially defeats this by introducing non-determinism in some flows.
-- **Hardening Requirement**: Enforce unique `idempotencyKey` provided by the client layer.
+### 1. item_masters
+Central registry for all inventoried items/services.
+- **PK**: `id` (String/UUID)
+- **Tenant Scoping**: `tenant_id`
+- **Identity**: `sku` (Unique), `barcode` (Unique)
+- **Financials**: `base_price` (Decimal 15,2), `tax_rate` (Decimal 5,2)
+- **Integration**: `module_tags` (String[]), `type` (Enum: ITEM, SERVICE, RAW_MATERIAL)
 
-## 3. Model: StockAdjustment
-- **Risk ID**: INV-MODEL-003
-- **Field**: `requestedDelta`
-- **Type**: `Float`
-- **Finding**: Matches `StockLevel` risk. Financial reconciliation of adjustments will be inconsistent due to floating point arithmetic.
+### 2. stock_levels
+Current state of stock at a specific location/department.
+- **PK**: `id`
+- **Identity**: Unique constraint on `[location_id, product_id, department_id]`.
+- **Quantities**: `on_hand`, `reserved`, `available`, `in_transit` (Stored as **Float**).
+- **Triggers**: `min_buffer` for auto-replenishment.
 
-## 4. Model: StockReservation
-- **Risk ID**: INV-MODEL-004
-- **Index**: `@@index([tenantId, productId, locationId])`
-- **Finding**: Good index for performance, but lacks a `status` index which is critical for background cleanup of expired reservations.
+### 3. stock_movements
+Immutable ledger of all stock changes.
+- **PK**: `id`
+- **Types**: `INTAKE`, `OUT`, `TRANSFER_IN`, `TRANSFER_OUT`, `ADJUSTMENT_PLUS`, `ADJUSTMENT_MINUS`.
+- **Traceability**: `reference_id`, `reference_type`, `performed_by`.
+- **Grouping**: `transfer_group_id` for multi-step transfers.
+
+### 4. stock_reservations
+Soft-locking mechanism for committed but unconsumed stock.
+- **PK**: `id`
+- **Lifecycle**: `expires_at` determines when a reservation is automatically released.
+- **Status**: `PENDING`, `CONFIRMED`, `CANCELLED`.
+
+## Inventory Lifecycle Tables
+- `inventory_adjustments`: Formal requests for stock reconciliation.
+- `inventory_audit_cycles`: Cycle counting orchestration and variance tracking.
+- `inventory_pools`: Virtual grouping of stock for omni-channel distribution.
+- `cost_layers` & `cost_snapshots`: FIFO/LIFO/Weighted Average cost tracking.
+
+## Observations
+- **Multi-Tenancy**: Every table contains `tenant_id` and is indexed for horizontal scaling.
+- **Data Types**: Inconsistency detected between `amount` (Decimal) and `quantity` (Float).
+- **Audit Consistency**: `stock_movements` acts as the source of truth for the `stock_levels` cache.

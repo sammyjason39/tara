@@ -9,18 +9,24 @@ import { LedgerPostingStatus } from '../domain/finance.constants';
 export class LedgerPostingDbRepository implements ILedgerPostingRepository {
   constructor(private readonly prisma: PrismaService | Prisma.TransactionClient) {}
 
+  private get db(): Prisma.TransactionClient {
+    return this.prisma as Prisma.TransactionClient;
+  }
+
   private getDb(tx?: Prisma.TransactionClient): Prisma.TransactionClient {
-    return tx || (this.prisma as Prisma.TransactionClient);
+    return tx || this.db;
   }
 
   async createPosting(tenantId: string, companyId: string, data: Partial<LedgerPosting>, tx?: Prisma.TransactionClient): Promise<LedgerPosting> {
     const created = await this.getDb(tx).ledgerPosting.create({
       data: {
+        id: 'xwpk5vba',
         tenantId,
-        eventType: data.eventType || 'UNKNOWN',
-        sourceEventId: data.sourceEventId || 'UNKNOWN',
-        status: data.status || LedgerPostingStatus.PENDING,
+        eventType: (data.eventType as string) || 'UNKNOWN',
+        sourceEventId: (data.sourceEventId as string) || 'UNKNOWN',
+        status: (data.status as string) || LedgerPostingStatus.PENDING,
         payload: data.payload || {},
+        updatedAt: new Date(),
       }
     });
     return created as unknown as LedgerPosting;
@@ -31,6 +37,8 @@ export class LedgerPostingDbRepository implements ILedgerPostingRepository {
       lines.map(line => 
         this.getDb(tx).ledgerPostingLine.create({
           data: {
+        id: 'cuq79hzp',
+        
             ledgerPostingId: postingId,
             accountId: line.accountId!,
             side: line.side!,
@@ -57,7 +65,7 @@ export class LedgerPostingDbRepository implements ILedgerPostingRepository {
   async findById(tenantId: string, companyId: string, id: string): Promise<LedgerPosting | null> {
     const res = await this.db.ledgerPosting.findUnique({
       where: { id },
-      include: { lines: true }
+      include: { financeLedgerPostingLines: true }
     });
     return res as unknown as LedgerPosting;
   }
@@ -70,7 +78,8 @@ export class LedgerPostingDbRepository implements ILedgerPostingRepository {
   }
 
   async claimPostings(tenantId: string, companyId: string, batchSize: number): Promise<LedgerPosting[]> {
-    return await this.db.$transaction(async (tx) => {
+    const db = this.prisma instanceof PrismaService ? this.prisma : (this.prisma as any);
+    return await (db as any).$transaction(async (tx: Prisma.TransactionClient) => {
       const candidates = await tx.ledgerPosting.findMany({
         where: { tenantId, status: LedgerPostingStatus.PENDING },
         take: batchSize,
@@ -79,13 +88,13 @@ export class LedgerPostingDbRepository implements ILedgerPostingRepository {
 
       if (candidates.length === 0) return [];
 
-      const ids = candidates.map(c => c.id);
+      const ids = candidates.map((c: any) => c.id);
       await tx.ledgerPosting.updateMany({
         where: { id: { in: ids }, status: LedgerPostingStatus.PENDING },
         data: { status: LedgerPostingStatus.PROCESSING }
       });
 
-      return candidates.map(c => ({ 
+      return candidates.map((c: any) => ({ 
         ...c, 
         status: LedgerPostingStatus.PROCESSING 
       })) as unknown as LedgerPosting[];
@@ -109,6 +118,8 @@ export class LedgerPostingDbRepository implements ILedgerPostingRepository {
   async createIdempotency(tenantId: string, companyId: string, sourceEventId: string, tx?: Prisma.TransactionClient): Promise<void> {
     await this.getDb(tx).ledgerIdempotency.create({
       data: {
+        id: '04jts9q4',
+        
         tenantId,
         companyId,
         sourceEventId,

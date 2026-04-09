@@ -6,7 +6,7 @@ import {
   InventoryItem,
   StockBalance,
   StockMovement,
-  StockAdjustment,
+  InventoryAdjustment,
   CreateItemDto,
   StockIntakeDto,
   TransferStockDto,
@@ -17,16 +17,17 @@ import {
   CreateAgenticEventDto,
   AgenticEvent,
 } from "./inventory.repository.interface";
+import { v4 as uuidv4 } from "uuid";
 import {
-  Product,
+  ProductCategory,
   Location,
   Department,
   StockLevel,
-  StockAdjustment as PrismaStockAdjustment,
+  InventoryAdjustment as PrismaInventoryAdjustment,
   InventoryAlert as PrismaInventoryAlert,
   StockMovement as PrismaStockMovement,
-  ProductCategory,
   AgenticEvent as PrismaAgenticEvent,
+  ItemMaster,
 } from "@prisma/client";
 
 @Injectable()
@@ -34,7 +35,7 @@ export class InventoryDbRepository implements IInventoryRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async getDashboard(tenantId: string): Promise<InventoryDashboard> {
-    const totalItems = await this.prisma.product.count({
+    const totalItems = await this.prisma.itemMaster.count({
       where: { tenantId: tenantId },
     });
     const totalLocations = await this.prisma.location.count({
@@ -53,13 +54,13 @@ export class InventoryDbRepository implements IInventoryRepository {
     );
 
     // Valuation logic would need product cost, using basePrice for now
-    const products = await this.prisma.product.findMany({
+    const products = await this.prisma.itemMaster.findMany({
       where: {
         tenantId: tenantId,
         id: { in: stockLevels.map((s: StockLevel) => s.productId) },
       },
     });
-    const productMap = new Map(products.map((p: Product) => [p.id, p]));
+    const productMap = new Map(products.map((p: ItemMaster) => [p.id, p]));
     const totalValuation = stockLevels.reduce(
       (sum: number, level: StockLevel) => {
         const product = productMap.get(level.productId);
@@ -68,7 +69,7 @@ export class InventoryDbRepository implements IInventoryRepository {
       0,
     );
 
-    const pendingAdjustments = await this.prisma.stockAdjustment.count({
+    const pendingAdjustments = await this.prisma.inventoryAdjustment.count({
       where: { tenantId: tenantId, status: "PENDING_APPROVAL" },
     });
 
@@ -80,7 +81,7 @@ export class InventoryDbRepository implements IInventoryRepository {
       where: { tenantId: tenantId, type: "EXPIRY_WARNING", status: "OPEN" },
     });
 
-    const pendingReceiptSyncs = await this.prisma.procurementFinalPO.count({
+    const pendingReceiptSyncs = await this.prisma.procurementFinalPo.count({
       where: {
         tenantId: tenantId,
         status: { in: ["RELEASED", "APPROVED", "DELIVERED"] },
@@ -101,18 +102,18 @@ export class InventoryDbRepository implements IInventoryRepository {
   }
 
   async getItems(tenantId: string): Promise<InventoryItem[]> {
-    const products = await this.prisma.product.findMany({
+    const products = await this.prisma.itemMaster.findMany({
       where: { tenantId: tenantId, status: { not: "deleted" } },
-      include: { category: true },
+      include: { productCategory: true },
       orderBy: { createdAt: "desc" },
     });
 
-    return products.map((p: Product & { category: ProductCategory }) => ({
+    return (products as any[]).map((p) => ({
       id: p.id,
       tenant_id: p.tenantId,
       sku: p.sku,
       name: p.name,
-      category: p.category.name as any,
+      category: p.productCategory.name as any,
       uom: p.unit,
       barcode: p.barcode,
       qrCode: p.barcode,
@@ -135,17 +136,24 @@ export class InventoryDbRepository implements IInventoryRepository {
 
     if (!category) {
       category = await this.prisma.productCategory.create({
-        data: { tenantId: tenantId, name: data.category },
+        data: {
+          id: uuidv4(),
+          updatedAt: new Date(),
+          tenantId: tenantId,
+          name: data.category 
+        },
       });
     }
 
-    const product = await this.prisma.product.create({
+    const product = await this.prisma.itemMaster.create({
       data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
         tenantId: tenantId,
         categoryId: category.id,
         name: data.name,
         sku: data.sku,
-        barcode: data.sku, // Defaulting barcode to sku if not provided
+        barcode: data.sku,
         description: data.description ?? null,
         unit: data.uom ?? "unit",
         basePrice: data.basePrice ?? 0,
@@ -154,7 +162,7 @@ export class InventoryDbRepository implements IInventoryRepository {
         status: data.status || "active",
         departmentId: data.departmentId || null,
       },
-      include: { category: true },
+      include: { productCategory: true },
     });
 
     return {
@@ -162,7 +170,7 @@ export class InventoryDbRepository implements IInventoryRepository {
       tenant_id: product.tenantId,
       sku: product.sku,
       name: product.name,
-      category: product.category.name as any,
+      category: (product as any).productCategory.name as any,
       uom: product.unit,
       barcode: product.barcode,
       qrCode: product.barcode,
@@ -185,13 +193,13 @@ export class InventoryDbRepository implements IInventoryRepository {
 
     const levels = await this.prisma.stockLevel.findMany({
       where,
-      include: { product: true, location: true, department: true },
+      include: { itemMaster: true, location: true, department: true },
     });
 
     return levels.map(
       (
         l: StockLevel & {
-          product: Product;
+          itemMaster: any;
           location: Location;
           department: Department | null;
         },
@@ -204,7 +212,7 @@ export class InventoryDbRepository implements IInventoryRepository {
         quantity: l.onHand,
         reservedQuantity: l.reserved,
         inTransitQuantity: l.inTransit,
-        avgUnitCost: Number(l.product.basePrice || 0),
+        avgUnitCost: Number(l.itemMaster.basePrice || 0),
         reorderPoint: l.minBuffer,
         safetyStock: l.minBuffer,
         updatedAt: l.updatedAt,
@@ -253,6 +261,8 @@ export class InventoryDbRepository implements IInventoryRepository {
       if (!level) {
         level = await tx.stockLevel.create({
           data: {
+            id: uuidv4(),
+            updatedAt: new Date(),
             tenantId: tenantId,
             locationId: data.locationId,
             departmentId: data.departmentId || null,
@@ -274,9 +284,11 @@ export class InventoryDbRepository implements IInventoryRepository {
       // 2. Create movement
       const movement = await tx.stockMovement.create({
         data: {
+          id: uuidv4(),
+          updatedAt: new Date(),
           tenantId: tenantId,
           productId: data.itemId,
-          locationId: data.locationId, // Mandatory locationId
+          locationId: data.locationId, 
           toLocationId: data.locationId,
           toDepartmentId: data.departmentId || null,
           quantity: data.quantity,
@@ -326,6 +338,8 @@ export class InventoryDbRepository implements IInventoryRepository {
       // 3. Create movement
       const movement = await tx.stockMovement.create({
         data: {
+        id: uuidv4(),
+          updatedAt: new Date(),
           tenantId: tenantId,
           productId: data.itemId,
           locationId: data.locationId, // Mandatory locationId
@@ -388,6 +402,7 @@ export class InventoryDbRepository implements IInventoryRepository {
       // 3. Create movement records
       const outMove = await tx.stockMovement.create({
         data: {
+          id: uuidv4(),
           tenantId: tenantId,
           productId: data.itemId,
           locationId: data.fromLocationId, // Mandatory locationId
@@ -405,6 +420,7 @@ export class InventoryDbRepository implements IInventoryRepository {
 
       const inMove = await tx.stockMovement.create({
         data: {
+          id: uuidv4(),
           tenantId: tenantId,
           productId: data.itemId,
           locationId: data.toLocationId, // Mandatory locationId
@@ -424,13 +440,13 @@ export class InventoryDbRepository implements IInventoryRepository {
     });
   }
 
-  async getAdjustments(tenantId: string): Promise<StockAdjustment[]> {
-    const adjs = await this.prisma.stockAdjustment.findMany({
+  async getAdjustments(tenantId: string): Promise<InventoryAdjustment[]> {
+    const adjs = await this.prisma.inventoryAdjustment.findMany({
       where: { tenantId: tenantId },
       orderBy: { createdAt: "desc" },
     });
 
-    return adjs.map((a: PrismaStockAdjustment) => ({
+    return adjs.map((a: PrismaInventoryAdjustment) => ({
       id: a.id,
       tenant_id: a.tenantId,
       itemId: a.itemId,
@@ -451,10 +467,12 @@ export class InventoryDbRepository implements IInventoryRepository {
     tenantId: string,
     data: CreateAdjustmentDto,
     providedTx?: any
-  ): Promise<StockAdjustment> {
+  ): Promise<InventoryAdjustment> {
     const db = providedTx || this.prisma;
-    const adj = await db.stockAdjustment.create({
+    const adj = await db.inventoryAdjustment.create({
       data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
         tenantId: tenantId,
         itemId: data.itemId,
         locationId: data.locationId,
@@ -485,9 +503,9 @@ export class InventoryDbRepository implements IInventoryRepository {
     tenantId: string,
     adjustmentId: string,
     approvedBy: string,
-  ): Promise<StockAdjustment> {
+  ): Promise<InventoryAdjustment> {
     return this.prisma.$transaction(async (tx) => {
-      const adj = await tx.stockAdjustment.update({
+      const adj = await tx.inventoryAdjustment.update({
         where: { id: adjustmentId, tenantId: tenantId },
         data: {
           status: "APPROVED",
@@ -521,6 +539,7 @@ export class InventoryDbRepository implements IInventoryRepository {
       // Add movement log for adjustment
       await tx.stockMovement.create({
         data: {
+          id: uuidv4(),
           tenantId: tenantId,
           productId: adj.itemId,
           locationId: adj.locationId,
@@ -602,6 +621,8 @@ export class InventoryDbRepository implements IInventoryRepository {
   async createAuditCycle(tenantId: string, data: any): Promise<any> {
     return this.prisma.inventoryAuditCycle.create({
       data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
         tenantId: tenantId,
         ...data,
       },
@@ -628,6 +649,8 @@ export class InventoryDbRepository implements IInventoryRepository {
   async createIntegrationEvent(tenantId: string, data: any): Promise<any> {
     return this.prisma.inventoryIntegrationEvent.create({
       data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
         tenantId: tenantId,
         ...data,
       },
@@ -635,21 +658,21 @@ export class InventoryDbRepository implements IInventoryRepository {
   }
 
   async deleteItem(tenantId: string, itemId: string): Promise<void> {
-    await this.prisma.product.update({
+    await this.prisma.itemMaster.update({
       where: { id: itemId, tenantId: tenantId },
       data: { status: "deleted" },
     });
   }
 
   async batchDeleteItems(tenantId: string, itemIds: string[]): Promise<void> {
-    await this.prisma.product.updateMany({
+    await this.prisma.itemMaster.updateMany({
       where: { id: { in: itemIds }, tenantId: tenantId },
       data: { status: "deleted" },
     });
   }
 
   async itemExistsBySku(tenantId: string, sku: string): Promise<boolean> {
-    const count = await this.prisma.product.count({
+    const count = await this.prisma.itemMaster.count({
       where: { tenantId: tenantId, sku: sku },
     });
     return count > 0;
@@ -691,6 +714,8 @@ export class InventoryDbRepository implements IInventoryRepository {
 
     return this.prisma.procurementRequisition.create({
       data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
         tenantId: tenantId,
         departmentId,
         requesterId,
@@ -720,12 +745,19 @@ export class InventoryDbRepository implements IInventoryRepository {
 
         if (!category) {
           category = await tx.productCategory.create({
-            data: { tenantId: tenantId, name: itemData.category },
+            data: {
+              id: uuidv4(),
+              updatedAt: new Date(),
+              tenantId: tenantId,
+              name: itemData.category 
+            },
           });
         }
 
-        const product = await tx.product.create({
+        const product = await tx.itemMaster.create({
           data: {
+            id: uuidv4(),
+            updatedAt: new Date(),
             tenantId: tenantId,
             categoryId: category.id,
             name: itemData.name,
@@ -739,7 +771,7 @@ export class InventoryDbRepository implements IInventoryRepository {
             status: itemData.status || "active",
             departmentId: itemData.departmentId || null,
           },
-          include: { category: true },
+          include: { productCategory: true },
         });
 
         results.push({
@@ -747,7 +779,7 @@ export class InventoryDbRepository implements IInventoryRepository {
           tenant_id: product.tenantId,
           sku: product.sku,
           name: product.name,
-          category: product.category.name as any,
+          category: (product as any).productCategory.name as any,
           uom: product.unit,
           barcode: product.barcode,
           qrCode: product.barcode,
@@ -763,12 +795,12 @@ export class InventoryDbRepository implements IInventoryRepository {
   }
 
   async getNextSequence(tenantId: string, category: string): Promise<number> {
-    const count = await this.prisma.product.count({
-      where: {
-        tenantId,
-        category: { name: category },
-      },
-    });
+        const count = await this.prisma.itemMaster.count({
+          where: {
+            tenantId,
+            productCategory: { name: category },
+          },
+        });
     return count + 1;
   }
 
@@ -777,10 +809,10 @@ export class InventoryDbRepository implements IInventoryRepository {
     itemId: string,
     status: string,
   ): Promise<InventoryItem> {
-    const product = await this.prisma.product.update({
+    const product = await this.prisma.itemMaster.update({
       where: { id: itemId, tenantId },
       data: { status },
-      include: { category: true },
+      include: { productCategory: true },
     });
 
     return {
@@ -788,7 +820,7 @@ export class InventoryDbRepository implements IInventoryRepository {
       tenant_id: product.tenantId,
       sku: product.sku,
       name: product.name,
-      category: product.category.name as any,
+      category: (product as any).productCategory.name as any,
       uom: product.unit,
       barcode: product.barcode,
       qrCode: product.barcode,
@@ -800,17 +832,17 @@ export class InventoryDbRepository implements IInventoryRepository {
   }
 
   async getPendingItems(tenantId: string): Promise<InventoryItem[]> {
-    const products = await this.prisma.product.findMany({
+    const products = await this.prisma.itemMaster.findMany({
       where: { tenantId, status: "pending" },
-      include: { category: true },
+      include: { productCategory: true },
     });
 
-    return products.map((p) => ({
+    return (products as any[]).map((p) => ({
       id: p.id,
       tenant_id: p.tenantId,
       sku: p.sku,
       name: p.name,
-      category: p.category.name as any,
+      category: p.productCategory.name as any,
       uom: p.unit,
       barcode: p.barcode,
       qrCode: p.barcode,
@@ -825,8 +857,10 @@ export class InventoryDbRepository implements IInventoryRepository {
     tenant_id: string,
     data: CreateMovementRequestDto,
   ): Promise<MovementRequest> {
-    const request = await this.prisma.movementRequest.create({
+    const request = await this.prisma.inventoryMovementRequest.create({
       data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
         tenantId: tenant_id,
         productId: data.productId,
         fromLocationId: data.fromLocationId,
@@ -856,10 +890,10 @@ export class InventoryDbRepository implements IInventoryRepository {
     tenant_id: string,
     category: string,
   ): Promise<string | null> {
-    const product = await this.prisma.product.findFirst({
+    const product = await this.prisma.itemMaster.findFirst({
       where: {
         tenantId: tenant_id,
-        category: { name: category },
+        productCategory: { name: category },
       },
       orderBy: { sku: "desc" },
     });
@@ -872,7 +906,7 @@ export class InventoryDbRepository implements IInventoryRepository {
   // --- Financial-Grade Hardening ---
 
   private async getLock(tx: any, tenantId: string, productId: string, locationId: string) {
-    const rows = await tx.$queryRaw`
+    const rows: any[] = await tx.$queryRaw`
       SELECT id, on_hand AS "onHand", reserved, available, in_transit AS "inTransit"
       FROM stock_levels 
       WHERE tenant_id = ${tenantId} 
@@ -912,6 +946,8 @@ export class InventoryDbRepository implements IInventoryRepository {
       // Formal Reservation Record
       await t.stockReservation.create({
         data: {
+          id: uuidv4(),
+          updatedAt: new Date(),
           tenantId: tenant_id,
           productId,
           locationId,
@@ -925,6 +961,7 @@ export class InventoryDbRepository implements IInventoryRepository {
 
       await t.stockMovement.create({
         data: {
+        id: uuidv4(),
           tenantId: tenant_id,
           productId,
           locationId,
@@ -980,6 +1017,7 @@ export class InventoryDbRepository implements IInventoryRepository {
 
       await t.stockMovement.create({
         data: {
+        id: uuidv4(),
           tenantId: tenant_id,
           productId,
           locationId,
@@ -1035,6 +1073,7 @@ export class InventoryDbRepository implements IInventoryRepository {
 
       await t.stockMovement.create({
         data: {
+        id: uuidv4(),
           tenantId: tenant_id,
           productId,
           locationId,
@@ -1099,6 +1138,7 @@ export class InventoryDbRepository implements IInventoryRepository {
 
       return t.stockMovement.create({
         data: {
+        id: uuidv4(),
           tenantId: tenant_id,
           productId,
           locationId: fromLocationId,
@@ -1143,6 +1183,7 @@ export class InventoryDbRepository implements IInventoryRepository {
 
       return t.stockMovement.create({
         data: {
+        id: uuidv4(),
           tenantId: tenant_id,
           productId,
           locationId: toLocationId,
@@ -1213,7 +1254,7 @@ export class InventoryDbRepository implements IInventoryRepository {
   }
 
   async findProductByCode(tenantId: string, code: string): Promise<any | null> {
-    return this.prisma.product.findFirst({
+    return this.prisma.itemMaster.findFirst({
       where: {
         tenantId,
         OR: [{ barcode: code }, { sku: code }],
@@ -1228,6 +1269,7 @@ export class InventoryDbRepository implements IInventoryRepository {
   ): Promise<AgenticEvent> {
     const event = await this.prisma.agenticEvent.create({
       data: {
+        id: uuidv4(),
         tenantId,
         eventType: data.eventType,
         entityId: data.entityId,

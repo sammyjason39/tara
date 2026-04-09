@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../persistence/prisma.service';
@@ -69,25 +70,25 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
           ]
         },
         take: 100, // Process in batches
-        include: { event: true }, // Include DomainEvent to read aggregateId
+        include: { domainEvents: true }, // Include DomainEvent to read aggregateId
         orderBy: { createdAt: 'asc' } // Preserve strict chronological ordering
       });
 
       // Group by aggregateId (or NULL) to enforce strict sequential processing per-aggregate
       const aggregateGroups = new Map<string, typeof pendingDeliveries>();
-      for (const d of pendingDeliveries) {
-        const key = d.event.aggregateId || `NO_AGGREGATE_${d.id}`; // If no aggregate, they run freely
+      for (const d of pendingDeliveries as any[]) {
+        const key = d.eventId.aggregateId || `NO_AGGREGATE_${d.id}`; // If no aggregate, they run freely
         if (!aggregateGroups.has(key)) aggregateGroups.set(key, []);
         aggregateGroups.get(key)!.push(d);
       }
 
       // Process aggregates concurrently, but within the SAME aggregate, sequentially
       await Promise.all(
-        Array.from(aggregateGroups.entries()).map(async ([_groupKey, groupDeliveries]) => {
+        Array.from(aggregateGroups.entries() as any).map(async ([_groupKey, groupDeliveries]: [any, any[]]) => {
           for (const delivery of groupDeliveries) {
             const sub = this.subscriptions.find(s => s.handlerName === delivery.handlerName);
             if (!sub) continue; 
-            await this.executeHandler(delivery.event.id, delivery.event as any, sub);
+            await this.executeHandler(delivery.domainEvents.id, delivery.domainEvents as any, sub);
           }
         })
       );
@@ -99,20 +100,20 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
           status: 'PROCESSING',
           processingStartedAt: { lt: timeoutThreshold }
         },
-        include: { deliveries: true }
+        include: { eventDeliveries: true }
       });
 
       for (const event of stuckEvents) {
         this.logger.warn(`Recovering stuck event ${event.id} (stuck in PROCESSING since ${event.processingStartedAt})`);
         // We move it to FAILED to allow the standard retry logic to pick up the deliveries
-        await this.prisma.$transaction(async (tx) => {
+        await this.prisma.$transaction(async (tx: any) => {
           await tx.domainEvent.update({
             where: { id: event.id },
             data: { status: 'FAILED' }
           });
           // Also fail any deliveries that are still in PROCESSING for this event
           await tx.eventDelivery.updateMany({
-            where: { eventId: event.id, status: 'PROCESSING' },
+            where: { eventId: event.id, status: 'PROCESSING', tenantId: event.tenantId },
             data: { status: 'FAILED', lastError: 'PROCESSING_TIMEOUT_RECOVERY' }
           });
         });
@@ -199,6 +200,8 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
         // 2. Persist event to the Event Store
         const domainEventRecord = await tx.domainEvent.create({
           data: {
+        id: uuidv4(),
+        updatedAt: new Date(),
             tenantId: event.tenantId,
             eventType: event.eventType,
             sourceModule: event.sourceModule,
@@ -235,7 +238,7 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
       // We perform DomainEvent insertion and EventDelivery tracking in one transaction
       const record = injectedTx 
         ? await execute(injectedTx)
-        : await this.prisma.$transaction(async (tx) => await execute(tx));
+        : await this.prisma.$transaction(async (tx: any) => await execute(tx));
 
       // 4. Attach generated ID for immediate listener execution wrapper
       (event as any).id = record.id;
@@ -305,7 +308,7 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
         );
 
         await Promise.race([
-          this.prisma.$transaction(async (tx) => {
+          this.prisma.$transaction(async (tx: any) => {
             const transactionalEvent: DomainEvent = { ...event, tx };
             await sub.callback(transactionalEvent);
             await tx.eventDelivery.update({
@@ -411,7 +414,7 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
 
     this.logger.log(`Replaying event ${eventId} (${event.eventType})`);
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: any) => {
       // 1. Reset parent status
       await tx.domainEvent.update({
         where: { id: eventId },
@@ -432,7 +435,7 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
   async getFailedEvents() {
     return this.prisma.domainEvent.findMany({
       where: { status: 'FAILED' },
-      include: { deliveries: { where: { status: 'DLQ' } } },
+      include: { eventDeliveries: { where: { status: 'DLQ' } } },
       orderBy: { createdAt: 'desc' }
     });
   }
@@ -451,16 +454,16 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
   async getEventChain(correlationId: string) {
     const events = await this.prisma.domainEvent.findMany({
       where: { correlationId },
-      include: { deliveries: true },
+      include: { eventDeliveries: true },
       orderBy: { createdAt: 'asc' }
     });
 
-    return events.map(e => ({
+    return events.map((e: any) => ({
       eventId: e.id,
       eventType: e.eventType,
       status: e.status,
       createdAt: e.createdAt,
-      deliveries: e.deliveries.map(d => ({
+      deliveries: e.eventDeliveries.map((d: any) => ({
         handler: d.handlerName,
         status: d.status,
         attempts: d.attempts,

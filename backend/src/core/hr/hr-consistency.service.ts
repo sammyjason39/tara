@@ -28,7 +28,7 @@ export class HRConsistencyService {
 
       // 2. Fetch Finance Ledger Totals for 'PAYROLL' category
       // Mocking ledger access via context snapshot or generic query
-      const ledgerEntry = await this.prisma.hRContextSnapshot.findFirst({
+      const ledgerEntry = await this.prisma.hrContextSnapshot.findFirst({
         where: { 
           tenantId, 
           metricType: 'FINANCE_PAYROLL_REF',
@@ -49,7 +49,7 @@ export class HRConsistencyService {
       if (discrepancy > 1.0) {
         this.logger.error(`[AI_CONSISTENCY] CRITICAL: Payroll discrepancy detected for tenant ${tenantId}. HR: ${hrTotal}, Ledger: ${ledgerTotal}.`);
         
-        await this.prisma.hRSystemAlert.create({
+        await this.prisma.hrSystemAlert.create({
           data: {
             tenantId,
             type: 'CONSISTENCY',

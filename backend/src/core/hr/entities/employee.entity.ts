@@ -37,6 +37,7 @@ export class Employee {
   documentsMetadata?: any;
   hireDate: Date;
   terminationDate?: Date;
+  hrEmployeeSkills?: any[];
   createdAt: Date;
   updatedAt: Date;
 }

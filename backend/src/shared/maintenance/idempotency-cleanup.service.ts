@@ -16,7 +16,7 @@ export class IdempotencyCleanupService {
       const now = new Date(); // Added 'now' variable
       // PHASE 2: Short grace period (5 minutes) to avoid collisions with in-flight retries
       const gracePeriodThreshold = new Date(now.getTime() - 5 * 60 * 1000);
-      const result = await this.prisma.idempotencyKey.deleteMany({
+      const result = await this.prisma.sysIdempotencyKey.deleteMany({
         where: {
           expiresAt: {
             lt: gracePeriodThreshold,

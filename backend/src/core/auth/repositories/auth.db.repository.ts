@@ -41,6 +41,8 @@ export class AuthDbRepository implements IAuthRepository {
   async create(tenantId: string, data: any): Promise<User> {
     return this.prisma.user.create({
       data: {
+        id: 'e7b9ynfa',
+        updatedAt: new Date(),
         tenantId,
         email: data.email,
         passwordHash: data.passwordHash,

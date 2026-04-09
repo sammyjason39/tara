@@ -15,6 +15,8 @@ export class LedgerEventLogDbRepository implements ILedgerEventLogRepository {
   async create(tenantId: string, companyId: string, data: any): Promise<LedgerEventLog> {
     const created = await this.db.ledgerEventLog.create({
       data: {
+        id: 'radzh1s1',
+        updatedAt: new Date(),
         tenantId,
         companyId, // Correctly including companyId
         eventType: data.eventType,

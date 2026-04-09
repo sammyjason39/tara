@@ -19,21 +19,21 @@ export class HRMetricService {
   async refreshMetrics(tenantId: string) {
     try {
       // 1. Calculate Anomaly Detection Rate (Insights with anomaly / total)
-      const totalInsights = await this.prisma.hRInsight.count({ where: { tenantId } });
-      const anomalyInsights = await this.prisma.hRInsight.count({ 
+      const totalInsights = await this.prisma.hrInsight.count({ where: { tenantId } });
+      const anomalyInsights = await this.prisma.hrInsight.count({ 
         where: { tenantId, metadata: { path: ['diffPercent'], gte: 20 } } 
       });
       const anomalyRate = totalInsights > 0 ? (anomalyInsights / totalInsights) * 100 : 0;
 
       // 2. Calculate False Positive Rate (via Rejections)
-      const recommendations = await this.prisma.hRRecommendation.count({ where: { tenantId } });
-      const rejections = await this.prisma.hRRecommendationFeedback.count({ 
+      const recommendations = await this.prisma.hrRecommendation.count({ where: { tenantId } });
+      const rejections = await this.prisma.hrRecommendationFeedback.count({ 
         where: { tenantId, actionTaken: 'REJECTED' } 
       });
       const falsePositiveRate = recommendations > 0 ? (rejections / recommendations) * 100 : 0;
 
       // 3. Persist Metrics
-      await this.prisma.hRSystemMetrics.createMany({
+      await this.prisma.hrSystemMetric.createMany({
         data: [
           { tenantId, metricName: 'ANOMALY_RATE', value: anomalyRate },
           { tenantId, metricName: 'FALSE_POSITIVE_RATE', value: falsePositiveRate },

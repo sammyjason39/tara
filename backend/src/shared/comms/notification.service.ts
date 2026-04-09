@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../persistence/prisma.service';
 
@@ -17,6 +18,8 @@ export class NotificationService {
   }) {
     return this.prisma.notification.create({
       data: {
+        id: uuidv4(),
+        
         tenantId: params.tenantId,
         userId: params.userId,
         title: params.title,
@@ -105,11 +108,11 @@ export class NotificationService {
       this.prisma.chatRoom.findMany({
         where: {
           tenantId,
-          members: { some: { userId } },
+          chatMembers: { some: { userId } },
           deletedAt: null
         },
         include: {
-          members: { where: { userId } }
+          chatMembers: { where: { userId } }
         }
       })
     ]);

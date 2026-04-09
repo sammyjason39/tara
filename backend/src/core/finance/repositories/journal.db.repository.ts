@@ -75,6 +75,7 @@ export class JournalDbRepository implements IJournalRepository {
   async createEntry(ctx: LedgerPostingContext, entry: Partial<JournalEntry>): Promise<JournalEntry> {
     const created = await this.db.journalEntry.create({
       data: {
+        
         tenantId: ctx.tenantId,
         ref: entry.ref!,
         fiscalPeriodId: entry.fiscalPeriodId!,
@@ -88,6 +89,7 @@ export class JournalDbRepository implements IJournalRepository {
         previousHash: entry.previousHash,
         entryHash: entry.entryHash,
         ledgerSequence: entry.ledgerSequence ? BigInt(entry.ledgerSequence) : undefined,
+        updatedAt: new Date(),
       }
     });
     return this.mapToDomain(created);
@@ -98,6 +100,7 @@ export class JournalDbRepository implements IJournalRepository {
       lines.map(line => 
         this.db.journalLine.create({
           data: {
+        
             tenantId: ctx.tenantId,
             journalEntryId: entryId,
             accountId: line.accountId!,
@@ -130,7 +133,7 @@ export class JournalDbRepository implements IJournalRepository {
     const lines = await this.db.journalLine.findMany({
       where: {
         tenantId,
-        journalEntry: {
+        financeJournalEntry: {
           fiscalPeriodId: periodId,
           postingDate: { gte: startDate, lte: endDate },
           status: 'POSTED'

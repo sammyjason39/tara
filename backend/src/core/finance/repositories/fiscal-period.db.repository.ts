@@ -70,6 +70,8 @@ export class FiscalPeriodDbRepository implements IFiscalPeriodRepository {
   async createPeriod(tenantId: string, companyId: string, data: Partial<FinanceFiscalPeriod>): Promise<FinanceFiscalPeriod> {
     const created = await this.db.fiscalPeriod.create({
       data: {
+        id: 'bj15i9qd',
+        updatedAt: new Date(),
         tenantId,
         name: data.id || '', 
         startDate: data.startDate || new Date(),

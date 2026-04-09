@@ -1,4 +1,4 @@
-import { Module, Global, OnModuleInit, Logger, forwardRef } from '@nestjs/common';
+import { Module, Global, OnModuleInit, Logger, forwardRef, Inject } from '@nestjs/common';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { assertFinanceExecutionSafety, getFinanceExecutionMode, FinanceExecutionMode } from './utils/finance-safety.utils';
 import { FinanceController } from './finance.controller';

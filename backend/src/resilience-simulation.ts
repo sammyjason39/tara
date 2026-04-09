@@ -20,6 +20,7 @@ async function simulate() {
         name: 'Simulation Corp',
         code: 'SIM-' + Date.now(),
         status: 'active',
+        updatedAt: new Date(),
       }
     });
     console.log(`Created new simulation tenant: ${company.id}`);
@@ -28,7 +29,7 @@ async function simulate() {
   console.log(`Using tenantId: ${tenantId}`);
 
   // 1. Cleanup old events
-  await prisma.outboxEvent.deleteMany({ where: { tenantId } });
+  await prisma.sysOutboxEvent.deleteMany({ where: { tenantId } });
 
   console.log('Step 1: Simulating Event Storm (100 Mixed Priority Events)...');
   const events = [];
@@ -61,18 +62,18 @@ async function simulate() {
     });
   }
 
-  await prisma.outboxEvent.createMany({ data: events });
+  await prisma.sysOutboxEvent.createMany({ data: events });
 
   console.log('Step 2: Running Worker (Priority & Backpressure Check)...');
   await worker.handleOutbox();
 
-  const processed = await prisma.outboxEvent.findMany({
+  const processed = await prisma.sysOutboxEvent.findMany({
     where: { tenantId, status: 'PROCESSED' },
     orderBy: { updatedAt: 'asc' },
   });
 
   console.log(`Processed: ${processed.length} events.`);
-  const highPriorityProcessed = processed.filter(e => e.type.includes('payroll'));
+  const highPriorityProcessed = processed.filter((e: any) => e.type.includes('payroll'));
   console.log(`High Priority Processed: ${highPriorityProcessed.length}`);
 
   // 3. Trigger Degradation
@@ -89,7 +90,7 @@ async function simulate() {
       // lastError and nextRetryAt will be updated by worker if we run it, but we can seed it
     });
   }
-  await prisma.outboxEvent.createMany({ data: failedEvents });
+  await prisma.sysOutboxEvent.createMany({ data: failedEvents });
 
   console.log('Step 4: Waiting for Event Sweep (30s interval)...');
   await new Promise(resolve => setTimeout(resolve, 35000));

@@ -6,7 +6,7 @@ import { CreateMovementRequestDto } from "../dto/create-movement-request.dto";
 import { CreateAgenticEventDto } from "../dto/create-agentic-event.dto";
 import { InventoryAlert } from "../entities/inventory-alert.entity";
 import { InventoryItem } from "../entities/inventory-item.entity";
-import { StockAdjustment } from "../entities/stock-adjustment.entity";
+import { InventoryAdjustment } from "../entities/inventory-adjustment.entity";
 import { StockBalance } from "../entities/stock-balance.entity";
 import { StockMovement } from "../entities/stock-movement.entity";
 import { MovementRequest } from "../entities/movement-request.entity";
@@ -21,7 +21,7 @@ export {
   CreateAgenticEventDto,
   InventoryAlert,
   InventoryItem,
-  StockAdjustment,
+  InventoryAdjustment,
   StockBalance,
   StockMovement,
   MovementRequest,
@@ -67,17 +67,17 @@ export abstract class IInventoryRepository {
     tenant_id: string,
     data: TransferStockDto,
   ): Promise<StockMovement[]>;
-  abstract getAdjustments(tenant_id: string): Promise<StockAdjustment[]>;
+  abstract getAdjustments(tenant_id: string): Promise<InventoryAdjustment[]>;
   abstract createAdjustment(
     tenant_id: string,
     data: CreateAdjustmentDto,
     tx?: any
-  ): Promise<StockAdjustment>;
+  ): Promise<InventoryAdjustment>;
   abstract approveAdjustment(
     tenant_id: string,
     adjustmentId: string,
     approvedBy: string,
-  ): Promise<StockAdjustment>;
+  ): Promise<InventoryAdjustment>;
   abstract getAlerts(tenant_id: string): Promise<InventoryAlert[]>;
   abstract setAlertStatus(
     tenant_id: string,

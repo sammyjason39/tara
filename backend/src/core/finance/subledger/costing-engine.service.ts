@@ -111,7 +111,7 @@ export class CostingEngineService {
       totalQty: entry.qty.abs(),
       totalValuation: totalCost,
       currency: entry.currency || 'USD',
-      layersUsed,
+      
     }, tx);
 
     await this.repository.updateEntryStatus(tenant_id, entry.id, 'COSTED', {

@@ -22,7 +22,7 @@ import {
 import { createHash } from "crypto";
 import {
   Store,
-  Product,
+  ItemMaster,
   RetailOrder as PrismaOrder,
   RetailOrderItem as PrismaOrderItem,
   RetailShift as PrismaShift,
@@ -105,6 +105,8 @@ export class RetailDbRepository implements IRetailRepository {
         ) {
           const newLocation = await tx.location.create({
             data: {
+              id: "q5ysumfj",
+              updatedAt: new Date(),
               tenantId: tenantId,
               name: data.name,
               code: data.code,
@@ -119,6 +121,8 @@ export class RetailDbRepository implements IRetailRepository {
 
         const store = await tx.store.create({
           data: {
+            id: "ytqd1z2s",
+            updatedAt: new Date(),
             tenantId: tenantId,
             locationId: finalLocationId,
             name: data.name,
@@ -214,6 +218,8 @@ export class RetailDbRepository implements IRetailRepository {
   ): Promise<any> {
     return this.prisma.inventoryPool.create({
       data: {
+        id: "1syr0gfz",
+        updatedAt: new Date(),
         tenantId: tenantId,
         name: data.name,
         description: data.description,
@@ -228,7 +234,7 @@ export class RetailDbRepository implements IRetailRepository {
   ): Promise<any | null> {
     return this.prisma.inventoryPool.findFirst({
       where: { id: poolId, tenantId: tenantId, deletedAt: null },
-      include: { stock: { include: { product: true } } },
+      include: { inventoryPoolStock: { include: { itemMaster: true } } },
     });
   }
 
@@ -249,12 +255,12 @@ export class RetailDbRepository implements IRetailRepository {
   ): Promise<any[]> {
     const where: any = { tenantId: tenantId, deletedAt: null };
     if (storeId) {
-      where.branches = { some: { id: storeId } };
+      where.stores = { some: { id: storeId } };
     }
 
     const stores = await this.prisma.ecommerceConnector.findMany({
       where,
-      include: { branches: { select: { id: true, name: true, code: true } } },
+      include: { stores: { select: { id: true, name: true, code: true } } },
       orderBy: { createdAt: "desc" },
     });
     return stores.map((s: any) => this.mapEcommerceStore(s));
@@ -266,7 +272,7 @@ export class RetailDbRepository implements IRetailRepository {
   ): Promise<any | null> {
     const store = await this.prisma.ecommerceConnector.findFirst({
       where: { id: storeId, tenantId: tenantId, deletedAt: null },
-      include: { branches: { select: { id: true, name: true, code: true } } },
+      include: { stores: { select: { id: true, name: true, code: true } } },
     });
     return store ? this.mapEcommerceStore(store) : null;
   }
@@ -280,6 +286,8 @@ export class RetailDbRepository implements IRetailRepository {
 
     const store = await this.prisma.ecommerceConnector.create({
       data: {
+        id: "b4l93fc7",
+        updatedAt: new Date(),
         tenantId: tenantId,
         name: data.name,
         platform: data.platform,
@@ -289,11 +297,11 @@ export class RetailDbRepository implements IRetailRepository {
         managerId: data.managerId,
         settings: data.settings as any,
         status: "active",
-        branches: data.branchIds?.length
+        stores: data.branchIds?.length
           ? { connect: data.branchIds.map((id) => ({ id })) }
           : undefined,
       },
-      include: { branches: { select: { id: true, name: true, code: true } } },
+      include: { stores: { select: { id: true, name: true, code: true } } },
     });
 
     // Return the store but with the RAW key once so the user can save it
@@ -318,7 +326,7 @@ export class RetailDbRepository implements IRetailRepository {
         managerId: data.managerId,
         settings: data.settings as any,
       },
-      include: { branches: { select: { id: true, name: true, code: true } } },
+      include: { stores: { select: { id: true, name: true, code: true } } },
     });
     return this.mapEcommerceStore(store);
   }
@@ -337,7 +345,7 @@ export class RetailDbRepository implements IRetailRepository {
   ): Promise<void> {
     await this.prisma.ecommerceConnector.update({
       where: { id: ecommerceId, tenantId: tenantId },
-      data: { branches: { connect: { id: branchId } } },
+      data: { stores: { connect: { id: branchId } } },
     });
   }
 
@@ -348,7 +356,7 @@ export class RetailDbRepository implements IRetailRepository {
   ): Promise<void> {
     await this.prisma.ecommerceConnector.update({
       where: { id: ecommerceId, tenantId: tenantId },
-      data: { branches: { disconnect: { id: branchId } } },
+      data: { stores: { disconnect: { id: branchId } } },
     });
   }
 
@@ -410,15 +418,19 @@ export class RetailDbRepository implements IRetailRepository {
     }
 
     const [total, products, configs] = await this.prisma.$transaction([
-      this.prisma.product.count({
+      this.prisma.itemMaster.count({
         where,
       }),
-      this.prisma.product.findMany({
+      this.prisma.itemMaster.findMany({
         where,
         orderBy: { [orderField]: orderDir },
         skip,
         take: pageSize,
-        include: { category: true, stockLevels: true, projections: true },
+        include: {
+          productCategory: true,
+          stockLevels: true,
+          productProjections: true,
+        },
       }),
       this.prisma.labelConfig.findMany({
         where: { tenantId, moduleType: "RETAIL" },
@@ -446,7 +458,7 @@ export class RetailDbRepository implements IRetailRepository {
     tenantId: string,
     productId: string,
   ): Promise<RetailProduct | null> {
-    const product = await this.prisma.product.findFirst({
+    const product = await this.prisma.itemMaster.findFirst({
       where: { id: productId, tenantId: tenantId },
     });
     return product ? this.mapProduct(product) : null;
@@ -459,7 +471,7 @@ export class RetailDbRepository implements IRetailRepository {
     locationId?: string,
   ): Promise<RetailProduct> {
     const txOperations: any[] = [
-      this.prisma.product.update({
+      this.prisma.itemMaster.update({
         where: { id: productId, tenantId: tenantId },
         data: {
           name: data.name,
@@ -518,6 +530,8 @@ export class RetailDbRepository implements IRetailRepository {
         txOperations.push(
           this.prisma.stockLevel.create({
             data: {
+              id: "up3v34kp",
+              updatedAt: new Date(),
               tenantId,
               locationId,
               productId,
@@ -533,9 +547,9 @@ export class RetailDbRepository implements IRetailRepository {
     await this.prisma.$transaction(txOperations);
 
     // Re-fetch with all necessary fields for mapProduct logic
-    const fullProduct = await this.prisma.product.findUnique({
+    const fullProduct = await this.prisma.itemMaster.findUnique({
       where: { id: productId },
-      include: { category: true, stockLevels: true, projections: true },
+      include: { productCategory: true, stockLevels: true, productProjections: true },
     });
 
     if (!fullProduct) throw new Error("Product re-fetch failed");
@@ -568,7 +582,7 @@ export class RetailDbRepository implements IRetailRepository {
 
     // 2. Find the highest sequence already used for this prefix on this date
     const pattern = `${prefix}-${dateStr}-%`;
-    const latest = await this.prisma.product.findFirst({
+    const latest = await this.prisma.itemMaster.findFirst({
       where: {
         tenantId,
         sku: { startsWith: `${prefix}-${dateStr}-` },
@@ -588,7 +602,7 @@ export class RetailDbRepository implements IRetailRepository {
     // 4. Build candidate SKU and verify uniqueness (retry on collision)
     for (let attempt = 0; attempt < 5; attempt++) {
       const candidateSku = `${prefix}-${dateStr}-${String(seq + attempt).padStart(4, "0")}`;
-      const existing = await this.prisma.product.findUnique({
+      const existing = await this.prisma.itemMaster.findUnique({
         where: { tenantId_sku: { tenantId, sku: candidateSku } },
         select: { id: true },
       });
@@ -614,8 +628,8 @@ export class RetailDbRepository implements IRetailRepository {
     const orders = await this.prisma.retailOrder.findMany({
       where,
       include: {
-        items: { include: { product: true } },
-        customer: true,
+        retailOrderItems: { include: { itemMaster: true } },
+        retailCustomer: true,
       },
       orderBy: { createdAt: "desc" },
       take: 100,
@@ -624,7 +638,9 @@ export class RetailDbRepository implements IRetailRepository {
     return orders.map(
       (
         o: PrismaOrder & {
-          items: (PrismaOrderItem & { product: Product | null })[];
+          retailOrderItems: (PrismaOrderItem & {
+            itemMaster: ItemMaster | null;
+          })[];
         },
       ) => this.mapOrder(o),
     );
@@ -637,8 +653,8 @@ export class RetailDbRepository implements IRetailRepository {
     const order = await this.prisma.retailOrder.findFirst({
       where: { id: orderId, tenantId: tenantId },
       include: {
-        items: { include: { product: true } },
-        customer: true,
+        retailOrderItems: { include: { itemMaster: true } },
+        retailCustomer: true,
       },
     });
     return order ? this.mapOrder(order) : null;
@@ -654,7 +670,7 @@ export class RetailDbRepository implements IRetailRepository {
 
     const itemsData = await Promise.all(
       data.items.map(async (item) => {
-        const product = await this.prisma.product.findUnique({
+        const product = await this.prisma.itemMaster.findUnique({
           where: { id: item.productId },
         });
         if (!product) throw new Error(`Product ${item.productId} not found`);
@@ -675,6 +691,8 @@ export class RetailDbRepository implements IRetailRepository {
 
     const order = await this.prisma.retailOrder.create({
       data: {
+        id: "81dj4g20",
+        updatedAt: new Date(),
         tenantId: tenantId,
         storeId: data.storeId,
         deviceId: data.terminalId || undefined,
@@ -685,11 +703,11 @@ export class RetailDbRepository implements IRetailRepository {
         tax: Number(data.grandTotal) - subtotal,
         totalAmount: data.grandTotal,
         paymentMethod: data.paymentMethod,
-        items: { create: itemsData },
+        retailOrderItems: { create: itemsData },
       } as any,
-      include: { 
-        items: { include: { product: true } },
-        store: true 
+      include: {
+        retailOrderItems: { include: { itemMaster: true } },
+        store: true,
       },
     });
 
@@ -708,7 +726,7 @@ export class RetailDbRepository implements IRetailRepository {
         status,
         ...(metadata?.tax_total !== undefined && { tax: metadata.tax_total }),
       },
-      include: { items: { include: { product: true } } },
+      include: { retailOrderItems: { include: { itemMaster: true } } },
     });
     return this.mapOrder(order);
   }
@@ -817,7 +835,7 @@ export class RetailDbRepository implements IRetailRepository {
       ];
     }
 
-    const products = await this.prisma.product.findMany({
+    const products = await this.prisma.itemMaster.findMany({
       where,
       select: {
         basePrice: true,
@@ -906,6 +924,8 @@ export class RetailDbRepository implements IRetailRepository {
   ): Promise<RetailShift> {
     const shift = await this.prisma.retailShift.create({
       data: {
+        id: "s84p52tc",
+        updatedAt: new Date(),
         tenantId: tenantId,
         storeId: data.storeId,
         employeeId,
@@ -1053,6 +1073,8 @@ export class RetailDbRepository implements IRetailRepository {
 
     const channel = await this.prisma.retailChannel.create({
       data: {
+        id: "4m6cguof",
+        updatedAt: new Date(),
         tenantId: tenantId,
         name: data.name,
         type: data.type,
@@ -1200,7 +1222,7 @@ export class RetailDbRepository implements IRetailRepository {
   async listDevices(tenantId: string, storeId?: string): Promise<any[]> {
     const where: any = { tenantId: tenantId };
     if (storeId) where.storeId = storeId;
-    const devices = await this.prisma.pOSDevice.findMany({
+    const devices = await this.prisma.posDevice.findMany({
       where,
       orderBy: { createdAt: "desc" },
     });
@@ -1275,7 +1297,7 @@ export class RetailDbRepository implements IRetailRepository {
     tenantId: string,
     deviceId: string,
   ): Promise<{ success: boolean }> {
-    await this.prisma.pOSDevice.update({
+    await this.prisma.posDevice.update({
       where: { id: deviceId, tenantId: tenantId },
       data: { updatedAt: new Date() },
     });
@@ -1295,7 +1317,7 @@ export class RetailDbRepository implements IRetailRepository {
       // 0. Fetch the order with items
       const order = await tx.retailOrder.findUnique({
         where: { id: orderId, tenantId },
-        include: { items: true, store: true },
+        include: { retailOrderItems: true, store: true },
       });
 
       if (!order) throw new Error("Order not found");
@@ -1303,15 +1325,17 @@ export class RetailDbRepository implements IRetailRepository {
       const locationId = order.store?.locationId || "default";
 
       // 1. Ensure a Retail department exists
-      let dept = await tx.department.findFirst({
+      let dept = await tx.departments.findFirst({
         where: { tenantId, code: "RET" },
       });
       if (!dept) {
-        dept = await tx.department.findFirst({ where: { tenantId } });
+        dept = await tx.departments.findFirst({ where: { tenantId } });
       }
       if (!dept) {
-        dept = await tx.department.create({
+        dept = await tx.departments.create({
           data: {
+            id: "xsplpxei",
+            updated_at: new Date(),
             tenantId,
             name: "Retail Operations",
             code: "RET",
@@ -1341,8 +1365,10 @@ export class RetailDbRepository implements IRetailRepository {
         });
 
         // Record Stock Movement
-        const move = await tx.stockMovement.create({
+        const move = await tx.stock_movements.create({
           data: {
+            id: "yahy4nhc",
+            updated_at: new Date(),
             tenantId,
             productId: item.productId,
             fromLocationId: locationId,
@@ -1358,7 +1384,7 @@ export class RetailDbRepository implements IRetailRepository {
       }
 
       // 3. Mark Order as Paid
-      await tx.retailOrder.update({
+      await tx.retail_orders.update({
         where: { id: orderId },
         data: {
           status: "paid",
@@ -1368,7 +1394,7 @@ export class RetailDbRepository implements IRetailRepository {
 
       // 4. Update Shift Totals
       if (data.shiftId) {
-        await tx.retailShift.update({
+        await tx.retail_shifts.update({
           where: { id: data.shiftId, tenantId },
           data: {
             expectedCash: {
@@ -1381,6 +1407,8 @@ export class RetailDbRepository implements IRetailRepository {
       // 5. Finance Ledger Entry
       await tx.journalEntry.create({
         data: {
+          id: "ed1z2mud",
+          updated_at: new Date(),
           tenantId,
           ref: `POS-${Date.now()}-${order.id.slice(-6)}`,
           description: `POS Sales Transaction (${data.method})`,
@@ -1417,6 +1445,8 @@ export class RetailDbRepository implements IRetailRepository {
       // 6. Create Finance Payment Transaction for Money Desk Visibility
       await (tx as any).paymentTransaction.create({
         data: {
+          id: "turw2vtk",
+          updated_at: new Date(),
           tenantId,
           externalReference: order.id,
           type: "RETAIL_ORDER",
@@ -1468,7 +1498,7 @@ export class RetailDbRepository implements IRetailRepository {
     data: { storeId: string; adjustments: any[]; shiftId?: string },
   ): Promise<{ success: boolean }> {
     await this.prisma.$transaction(async (tx: any) => {
-      const store = await tx.store.findUnique({
+      const store = await tx.stores.findUnique({
         where: { id: data.storeId },
         select: { locationId: true },
       });
@@ -1498,6 +1528,8 @@ export class RetailDbRepository implements IRetailRepository {
         } else {
           await tx.stockLevel.create({
             data: {
+              id: "8ylu9vbw",
+              updated_at: new Date(),
               tenantId,
               locationId: store.locationId,
               productId: adj.productId,
@@ -1510,8 +1542,10 @@ export class RetailDbRepository implements IRetailRepository {
         }
 
         // Log movement
-        await tx.stockMovement.create({
+        await tx.stock_movements.create({
           data: {
+            id: "lqcmo8bd",
+            updated_at: new Date(),
             tenantId,
             productId: adj.productId,
             toLocationId: store.locationId,
@@ -1537,7 +1571,7 @@ export class RetailDbRepository implements IRetailRepository {
     },
   ): Promise<{ success: boolean }> {
     await this.prisma.$transaction(async (tx: any) => {
-      const store = await tx.store.findUnique({
+      const store = await tx.stores.findUnique({
         where: { id: data.storeId },
         select: { locationId: true },
       });
@@ -1566,6 +1600,8 @@ export class RetailDbRepository implements IRetailRepository {
         } else {
           await tx.stockLevel.create({
             data: {
+              id: "z545xer1",
+              updated_at: new Date(),
               tenantId,
               locationId: store.locationId,
               productId: item.productId,
@@ -1577,8 +1613,10 @@ export class RetailDbRepository implements IRetailRepository {
         }
 
         // Log movement
-        await tx.stockMovement.create({
+        await tx.stock_movements.create({
           data: {
+            id: "i57izojy",
+            updated_at: new Date(),
             tenantId,
             productId: item.productId,
             toLocationId: store.locationId,
@@ -1604,7 +1642,7 @@ export class RetailDbRepository implements IRetailRepository {
   ): Promise<any | null> {
     return this.prisma.retailCustomer.findFirst({
       where: { tenantId: tenantId, email },
-      include: { auth: true },
+      include: { retailCustomerAuth: true },
     });
   }
 
@@ -1614,18 +1652,20 @@ export class RetailDbRepository implements IRetailRepository {
   ): Promise<any | null> {
     return this.prisma.retailCustomer.findFirst({
       where: { tenantId: tenantId, id: customerId },
-      include: { auth: true },
+      include: { retailCustomerAuth: true },
     });
   }
 
   async createCustomer(tenantId: string, data: any): Promise<any> {
     return this.prisma.retailCustomer.create({
       data: {
+        id: "7shag4rn",
+        updatedAt: new Date(),
         tenantId: tenantId,
         name: data.name,
         email: data.email,
         phone: data.phone,
-        auth: data.passwordHash
+        retailCustomerAuth: data.passwordHash
           ? {
               create: {
                 passwordHash: data.passwordHash,
@@ -1659,6 +1699,8 @@ export class RetailDbRepository implements IRetailRepository {
   async createCustomerSession(tenantId: string, data: any): Promise<any> {
     return this.prisma.retailCustomerSession.create({
       data: {
+        id: "cmcaplzt",
+        updatedAt: new Date(),
         tenantId: tenantId,
         customerId: data.customerId,
         tokenHash: data.tokenHash,
@@ -1698,13 +1740,19 @@ export class RetailDbRepository implements IRetailRepository {
   async getCart(tenantId: string, customerId: string): Promise<any | null> {
     return this.prisma.retailCart.findFirst({
       where: { tenantId: tenantId, customerId },
-      include: { items: { include: { product: true } } },
+      include: { retailCartItems: { include: { itemMaster: true } } },
     });
   }
 
   async createCart(tenantId: string, customerId: string): Promise<any> {
     return this.prisma.retailCart.create({
-      data: { tenantId: tenantId, customerId, status: "active" },
+      data: {
+        id: "pn8zwr3m",
+        updatedAt: new Date(),
+        tenantId: tenantId,
+        customerId,
+        status: "active",
+      },
     });
   }
 
@@ -1745,7 +1793,7 @@ export class RetailDbRepository implements IRetailRepository {
   async getWishlist(tenantId: string, customerId: string): Promise<any | null> {
     return this.prisma.retailWishlist.findFirst({
       where: { tenantId: tenantId, customerId },
-      include: { items: { include: { product: true } } },
+      include: { retailWishlistItems: { include: { itemMaster: true } } },
     });
   }
   // Duplicate getWishlist removed
@@ -1768,7 +1816,12 @@ export class RetailDbRepository implements IRetailRepository {
     });
     if (existing) return existing;
     return this.prisma.retailWishlistItem.create({
-      data: { wishlistId, productId },
+      data: {
+        id: "nzxaoeab",
+        updatedAt: new Date(),
+        wishlistId,
+        productId,
+      },
     });
   }
 
@@ -1787,6 +1840,7 @@ export class RetailDbRepository implements IRetailRepository {
   async logEvent(tenantId: string, data: any): Promise<any> {
     return this.prisma.auditLog.create({
       data: {
+        id: "qw3sfnn1",
         tenantId: tenantId,
         module: "retail",
         action: data.type,
@@ -1849,7 +1903,7 @@ export class RetailDbRepository implements IRetailRepository {
       status: s.status,
       inventoryPoolId: s.inventoryPoolId,
       managerId: s.managerId,
-      branches: s.branches ?? [],
+      branches: s.stores ?? [],
       settings: s.settings,
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
@@ -1878,12 +1932,12 @@ export class RetailDbRepository implements IRetailRepository {
     let customDesc = p.description || "";
     let customPrice = Number(p.basePrice);
 
-    if (p.projections && p.projections.length > 0) {
-      const locProj = p.projections.find(
+    if (p.productProjections && p.productProjections.length > 0) {
+      const locProj = p.productProjections.find(
         (proj: any) =>
           proj.locationId === locationId && proj.moduleType === "RETAIL",
       );
-      const globalProj = p.projections.find(
+      const globalProj = p.productProjections.find(
         (proj: any) => proj.locationId === null && proj.moduleType === "RETAIL",
       );
       const activeProj = locProj || globalProj;
@@ -1904,7 +1958,7 @@ export class RetailDbRepository implements IRetailRepository {
       name: customName,
       description: customDesc,
       categoryId: p.categoryId,
-      categoryName: p.category?.name,
+      categoryName: p.productCategory?.name,
       basePrice: customPrice,
       currency: "IDR",
       prices: [{ amount: customPrice, currency: "IDR" }],

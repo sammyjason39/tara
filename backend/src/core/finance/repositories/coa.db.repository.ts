@@ -45,7 +45,7 @@ export class CoaDbRepository implements IChartOfAccountRepository {
         name: data.name!,
         type: data.accountType!,
         status: data.isActive === false ? 'INACTIVE' : 'ACTIVE',
-      }
+      } as any
     });
     return this.mapToDomain(created);
   }

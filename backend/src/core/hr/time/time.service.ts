@@ -23,7 +23,7 @@ export class TimeAndAttendanceService {
 
   async requestLeave(tenantId: string, employeeId: string, dto: { type: string, startDate: Date, endDate: Date, reason?: string, totalDays?: number }): Promise<LeaveRequest> {
     const eventReferenceId = `EVT-HR-LEAVE-REQ-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       this.logger.log(`Leave requested by employee ${employeeId}`);
       
       const request = await this.hrRepository.createLeaveRequest(tenantId, {
@@ -51,7 +51,7 @@ export class TimeAndAttendanceService {
 
   async approveLeave(tenantId: string, leaveId: string, approverId: string, notes?: string): Promise<void> {
     const eventReferenceId = `EVT-HR-LEAVE-APP-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       this.logger.log(`Leave ${leaveId} approved by ${approverId}`);
       
       await this.hrRepository.approveLeaveRequest(tenantId, leaveId, approverId, notes, tx);
@@ -74,7 +74,7 @@ export class TimeAndAttendanceService {
 
   async clockIn(tenantId: string, employeeId: string, locationId: string): Promise<Attendance> {
     const eventReferenceId = `EVT-HR-ATT-IN-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       this.logger.log(`Employee ${employeeId} clocked in`);
 
       const record = await this.hrRepository.clockIn(tenantId, employeeId, locationId, undefined, undefined, undefined, tx);
@@ -95,7 +95,7 @@ export class TimeAndAttendanceService {
 
   async clockOut(tenantId: string, employeeId: string): Promise<void> {
     const eventReferenceId = `EVT-HR-ATT-OUT-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       this.logger.log(`Employee ${employeeId} clocked out`);
       
       await this.hrRepository.clockOut(tenantId, employeeId, tx);
@@ -118,7 +118,7 @@ export class TimeAndAttendanceService {
 
   async assignShift(tenantId: string, employeeId: string, shiftId: string, locationId: string, date: string): Promise<void> {
     const eventReferenceId = `EVT-HR-SHIFT-ASN-${Date.now()}`;
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       this.logger.log(`Assigning shift ${shiftId} to employee ${employeeId} at ${locationId} for date ${date}`);
       
       await this.hrRepository.assignShift(tenantId, employeeId, shiftId, locationId, date, tx);
