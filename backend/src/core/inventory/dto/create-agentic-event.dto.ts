@@ -3,15 +3,15 @@ import { IsString, IsNotEmpty, IsObject } from "class-validator";
 export class CreateAgenticEventDto {
   @IsString()
   @IsNotEmpty()
-  eventType: string;
+  event_type: string;
 
   @IsString()
   @IsNotEmpty()
-  entityId: string;
+  entity_id: string;
 
   @IsString()
   @IsNotEmpty()
-  entityType: string;
+  entity_type: string;
 
   @IsObject()
   @IsNotEmpty()

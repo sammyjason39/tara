@@ -13,9 +13,9 @@ export class EmployeeCreatedListener {
   }
 
   private async handle(event: DomainEvent) {
-    if (event.eventType !== EVENT_NAMES.EMPLOYEE_CREATED) return;
+    if (event.event_type !== EVENT_NAMES.EMPLOYEE_CREATED) return;
 
-    this.logger.log(`[Automation] Triggered for ${event.eventType} on entity ${event.entityId}`);
+    this.logger.log(`[Automation] Triggered for ${event.event_type} on entity ${event.entity_id}`);
 
     // Action 1: IT Provisioning
     await this.provisionITRecords(event);
@@ -28,19 +28,19 @@ export class EmployeeCreatedListener {
   }
 
   private async provisionITRecords(event: DomainEvent) {
-    this.logger.log(`→ Action: IT Provisioning (Azure AD / Workspace) for ${event.entityId}`);
+    this.logger.log(`→ Action: IT Provisioning (Azure AD / Workspace) for ${event.entity_id}`);
     // DEV_MOCK_MODE: Simulate external API call
     return Promise.resolve();
   }
 
   private async createPayrollProfile(event: DomainEvent) {
-    this.logger.log(`→ Action: Payroll profile creation for ${event.entityId}`);
+    this.logger.log(`→ Action: Payroll profile creation for ${event.entity_id}`);
     // DEV_MOCK_MODE: Simulate internal service call
     return Promise.resolve();
   }
 
   private async registerCompliance(event: DomainEvent) {
-    this.logger.log(`→ Action: Compliance registration for ${event.entityId}`);
+    this.logger.log(`→ Action: Compliance registration for ${event.entity_id}`);
     // DEV_MOCK_MODE: Simulate rule engine assignment
     return Promise.resolve();
   }

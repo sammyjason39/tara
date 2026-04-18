@@ -45,55 +45,55 @@ export class FinanceController {
   // --- Chart of Accounts ---
   @Get('coa')
   async getCoa(@TenantCtx() ctx: TenantContext) {
-    return this.coaService.getHierarchy(ctx.tenantId, ctx.companyId);
+    return this.coaService.getHierarchy(ctx.tenant_id, ctx.company_id);
   }
 
   @Post('coa')
   @Roles(UserRole.ADMIN, UserRole.OWNER)
   async createCoa(@TenantCtx() ctx: TenantContext, @Body() dto: CreateCOADto) {
-    return this.coaService.createAccount(ctx.tenantId, ctx.companyId, dto, ctx.userId || 'SYSTEM');
+    return this.coaService.createAccount(ctx.tenant_id, ctx.company_id, dto, ctx.user_id || 'SYSTEM');
   }
 
   @Patch('coa/:id')
   @Roles(UserRole.ADMIN, UserRole.OWNER)
   async updateCoa(@TenantCtx() ctx: TenantContext, @Param('id') id: string, @Body() dto: UpdateCOADto) {
-    return this.coaService.updateAccount(ctx.tenantId, ctx.companyId, id, dto, ctx.userId || 'SYSTEM');
+    return this.coaService.updateAccount(ctx.tenant_id, ctx.company_id, id, dto, ctx.user_id || 'SYSTEM');
   }
 
   @Delete('coa/:id')
   @Roles(UserRole.ADMIN, UserRole.OWNER)
   async deleteCoa(@TenantCtx() ctx: TenantContext, @Param('id') id: string) {
-    return this.coaService.deleteAccount(ctx.tenantId, ctx.companyId, id, ctx.userId || 'SYSTEM');
+    return this.coaService.deleteAccount(ctx.tenant_id, ctx.company_id, id, ctx.user_id || 'SYSTEM');
   }
 
   // --- Fiscal Periods ---
   @Get('fiscal-years')
   async getFiscalYears(@TenantCtx() ctx: TenantContext) {
-    return this.fiscalService.listYears(ctx.tenantId, ctx.companyId);
+    return this.fiscalService.listYears(ctx.tenant_id, ctx.company_id);
   }
 
   @Post('fiscal-periods/:id/lock')
   @Roles(UserRole.ADMIN, UserRole.OWNER, UserRole.SUPERADMIN)
   async transitionPeriod(@TenantCtx() ctx: TenantContext, @Param('id') id: string, @Body() dto: UpdateFiscalPeriodDto) {
-    return this.fiscalService.transitionStatus(ctx.tenantId, ctx.companyId, id, dto.status, ctx.userId || 'SYSTEM');
+    return this.fiscalService.transitionStatus(ctx.tenant_id, ctx.company_id, id, dto.status, ctx.user_id || 'SYSTEM');
   }
 
   // --- Posting Rules ---
   @Get('posting-rules')
   async getRules(@TenantCtx() ctx: TenantContext) {
-    return this.ruleService.listRules(ctx.tenantId, ctx.companyId);
+    return this.ruleService.listRules(ctx.tenant_id, ctx.company_id);
   }
 
   @Post('posting-rules')
   @Roles(UserRole.ADMIN, UserRole.OWNER)
   async createRule(@TenantCtx() ctx: TenantContext, @Body() dto: CreatePostingRuleDto) {
-    return this.ruleService.createRule(ctx.tenantId, ctx.companyId, dto, ctx.userId || 'SYSTEM');
+    return this.ruleService.createRule(ctx.tenant_id, ctx.company_id, dto, ctx.user_id || 'SYSTEM');
   }
 
   @Post('posting-rules/:id/activate')
   @Roles(UserRole.ADMIN, UserRole.OWNER)
   async activateRule(@TenantCtx() ctx: TenantContext, @Param('id') id: string) {
-    return this.ruleService.activateRule(ctx.tenantId, ctx.companyId, id, ctx.userId || 'SYSTEM');
+    return this.ruleService.activateRule(ctx.tenant_id, ctx.company_id, id, ctx.user_id || 'SYSTEM');
   }
 
   // --- Ledger Engine ---
@@ -101,8 +101,8 @@ export class FinanceController {
   @Roles(UserRole.ADMIN, UserRole.OWNER, UserRole.SUPERADMIN)
   async processEvent(@TenantCtx() ctx: TenantContext, @Body() envelope: any) {
     // Envelope context is now secondary to the secure TenantCtx
-    const targetCompanyId = envelope.companyId || ctx.companyId;
-    return this.ledgerService.processEvent(ctx.tenantId, targetCompanyId, envelope.id || envelope.postingId);
+    const targetCompanyId = envelope.company_id || ctx.company_id;
+    return this.ledgerService.processEvent(ctx.tenant_id, targetCompanyId, envelope.id || envelope.postingId);
   }
 
   // --- Auditable Flux & Reversals ---
@@ -110,11 +110,11 @@ export class FinanceController {
   @Roles(UserRole.ADMIN, UserRole.OWNER, UserRole.SUPERADMIN)
   async reverseJournal(@TenantCtx() ctx: TenantContext, @Param('id') id: string, @Body() body: { reason: string }) {
     return this.reversalService.reverseJournal(
-      ctx.tenantId,
-      ctx.companyId,
+      ctx.tenant_id,
+      ctx.company_id,
       id,
       body.reason || 'Manual reversal',
-      ctx.userId || 'SYSTEM'
+      ctx.user_id || 'SYSTEM'
     );
   }
 }

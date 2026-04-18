@@ -1,15 +1,15 @@
 export class SalesTask {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   opportunityId?: string;
-  leadId?: string;
+  lead_id?: string;
   title: string;
-  ownerId: string;
-  ownerName: string;
+  owner_id: string;
+  owner_name: string;
   status: "pending" | "in_progress" | "done" | "overdue";
   priority: "low" | "medium" | "high" | "urgent";
   dueAt: Date;
   completedAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

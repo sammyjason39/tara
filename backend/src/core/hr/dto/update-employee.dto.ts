@@ -15,11 +15,11 @@ import { EmploymentStatus, EmploymentType } from "./create-employee.dto";
 export class UpdateEmployeeDto {
   @IsString()
   @IsOptional()
-  firstName?: string;
+  first_name?: string;
 
   @IsString()
   @IsOptional()
-  lastName?: string;
+  last_name?: string;
 
   @IsString()
   @IsOptional()
@@ -27,23 +27,23 @@ export class UpdateEmployeeDto {
 
   @IsString()
   @IsOptional()
-  fullName?: string;
+  full_name?: string;
 
   @IsString()
   @IsOptional()
-  departmentId?: string;
+  department_id?: string;
 
   @IsString()
   @IsOptional()
-  managerId?: string;
+  manager_id?: string;
 
   @IsString()
   @IsOptional()
-  roleTitle?: string;
+  role_title?: string;
 
   @IsString()
   @IsOptional()
-  locationId?: string;
+  location_id?: string;
 
   @IsString()
   @IsOptional()
@@ -51,22 +51,22 @@ export class UpdateEmployeeDto {
 
   @IsString()
   @IsOptional()
-  employmentType?: string;
+  employment_type?: string;
 
   @IsNumber()
   @Min(0)
   @IsOptional()
-  baseSalary?: number;
+  base_salary?: number;
 
   @IsNumber()
   @Min(0)
   @IsOptional()
-  hourlyRate?: number;
+  hourly_rate?: number;
 
   @IsOptional()
-  documentsMetadata?: any;
+  documents_metadata?: any;
 
   @IsDateString()
   @IsOptional()
-  terminationDate?: string;
+  termination_date?: string;
 }

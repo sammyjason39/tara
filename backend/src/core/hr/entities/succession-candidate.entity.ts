@@ -1,13 +1,13 @@
 export class SuccessionCandidate {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   planId: string;
-  employeeId: string;
+  employee_id: string;
   readiness: string;
   readinessScore: number;
   riskOfLoss: string;
   impactOfLoss: string;
   skillGaps: string[];
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

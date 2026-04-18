@@ -67,12 +67,12 @@ export class LedgerInvariantService {
 
   /**
    * Verify the current journal properly links to the previous journal.
-   * Uses ledgerSequence (not createdAt) for deterministic ordering.
+   * Uses ledgerSequence (not created_at) for deterministic ordering.
    * O(1) — only fetches 2 journal records.
    */
   async validatePreviousHashLink(
-    tenantId: string,
-    companyId: string,
+    tenant_id: string,
+    company_id: string,
     currentJournal: JournalEntry,
   ): Promise<InvariantResult> {
     if (currentJournal.ledgerSequence <= 1) {
@@ -87,8 +87,8 @@ export class LedgerInvariantService {
 
     // Fetch previous journal by ledgerSequence
     const prevJournal = await this.journalRepo.findBySequence(
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       currentJournal.ledgerSequence - 1,
     );
 
@@ -113,9 +113,9 @@ export class LedgerInvariantService {
    * Full trial balance: SUM(all debits) must equal SUM(all credits) for a tenant.
    * O(n journals). Run ONLY in hourly integrity auditor — not on hot path.
    */
-  async validateTrialBalance(tenantId: string, companyId: string): Promise<InvariantResult> {
-    this.logger.debug(`[LedgerInvariant] Running trial balance for Tenant ${tenantId} Company ${companyId}`);
-    const journals = await this.journalRepo.findAllOrderedByDate(tenantId, companyId);
+  async validateTrialBalance(tenant_id: string, company_id: string): Promise<InvariantResult> {
+    this.logger.debug(`[LedgerInvariant] Running trial balance for Tenant ${tenant_id} Company ${company_id}`);
+    const journals = await this.journalRepo.findAllOrderedByDate(tenant_id, company_id);
 
     let totalDebit = new Prisma.Decimal(0);
     let totalCredit = new Prisma.Decimal(0);
@@ -146,8 +146,8 @@ export class LedgerInvariantService {
    * O(n postings per key). Run ONLY in hourly integrity auditor.
    */
   async validateSequenceOrdering(
-    tenantId: string,
-    companyId: string,
+    tenant_id: string,
+    company_id: string,
     sequenceKey: string,
   ): Promise<InvariantResult> {
     this.logger.debug(

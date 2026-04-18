@@ -7,58 +7,58 @@ import { User } from "../entities/user.entity";
 export class AuthDbRepository implements IAuthRepository {
   constructor(private prisma: PrismaService) {}
 
-  async findByEmail(tenantId: string, email: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
+  async findByEmail(tenant_id: string, email: string): Promise<User | null> {
+    return this.prisma.users.findUnique({
       where: {
-        tenantId_email: {
-          tenantId,
+        tenant_id_email: {
+          tenant_id: tenant_id,
           email,
         },
       },
       include: {
-        userCompanies: {
+        user_companies: {
           include: {
-            company: true,
+            companies: true,
           },
         },
       },
     }) as any;
   }
 
-  async findById(_tenantId: string, id: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
+  async findById(_tenant_id: string, id: string): Promise<User | null> {
+    return this.prisma.users.findUnique({
       where: { id },
       include: {
-        userCompanies: {
+        user_companies: {
           include: {
-            company: true,
+            companies: true,
           },
         },
       },
     }) as any;
   }
 
-  async create(tenantId: string, data: any): Promise<User> {
-    return this.prisma.user.create({
+  async create(tenant_id: string, data: any): Promise<User> {
+    return this.prisma.users.create({
       data: {
         id: 'e7b9ynfa',
-        updatedAt: new Date(),
-        tenantId,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
         email: data.email,
-        passwordHash: data.passwordHash,
-        firstName: data.firstName,
-        lastName: data.lastName,
+        password_hash: data.password_hash,
+        first_name: data.first_name,
+        last_name: data.last_name,
         phone: data.phone,
       },
     }) as any;
   }
 
   async update(
-    _tenantId: string,
+    _tenant_id: string,
     id: string,
     data: Partial<User>,
   ): Promise<User> {
-    return this.prisma.user.update({
+    return this.prisma.users.update({
       where: { id },
       data: data as any,
     }) as any;

@@ -22,18 +22,18 @@ export class CertifiedReportingController {
     @TenantCtx() ctx: TenantContext,
     @Param('snapshotId') snapshotId: string,
     @Body('fiscalPeriodId') fiscalPeriodId: string,
-    @Query('companyId') companyId: string,
+    @Query('company_id') company_id: string,
   ) {
-    const targetCompanyId = companyId || ctx.companyId;
-    const correlationId = `seal-${Date.now()}`;
+    const targetCompanyId = company_id || ctx.company_id;
+    const correlation_id = `seal-${Date.now()}`;
 
     return this.auditCertificationService.sealPeriod({
-      tenantId: ctx.tenantId,
-      companyId: targetCompanyId,
+      tenant_id: ctx.tenant_id,
+      company_id: targetCompanyId,
       snapshotId,
       fiscalPeriodId,
-      userId: ctx.userId || 'anonymous',
-      correlationId
+      user_id: ctx.user_id || 'anonymous',
+      correlation_id
     });
   }
 

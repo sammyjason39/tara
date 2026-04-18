@@ -5,16 +5,16 @@ import { LedgerPostingService } from './ledger-posting.service';
 
 export interface ReplayResult {
   eventId: string;
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   status: 'REQUEUED' | 'SKIPPED_IDEMPOTENT' | 'NOT_FOUND' | 'INVALID_STATE';
   at: Date;
   detail: string;
 }
 
 export interface BulkReplayResult {
-  tenantId: string;
-  companyId?: string;
+  tenant_id: string;
+  company_id?: string;
   total: number;
   requeued: number;
   skipped: number;
@@ -48,20 +48,20 @@ export class LedgerDlqReplayService {
    * Resets retryCount and re-enqueues as PENDING.
    */
   async replayFailedEvent(
-    tenantId: string,
-    companyId: string,
+    tenant_id: string,
+    company_id: string,
     eventId: string,
   ): Promise<ReplayResult> {
-    const posting = await this.ledgerRepo.findById(tenantId, companyId, eventId);
+    const posting = await this.ledgerRepo.findById(tenant_id, company_id, eventId);
 
     if (!posting) {
       return {
         eventId,
-        tenantId,
-        companyId,
+        tenant_id,
+        company_id,
         status: 'NOT_FOUND',
         at: new Date(),
-        detail: `Posting ${eventId} not found for tenant ${tenantId}`,
+        detail: `Posting ${eventId} not found for tenant ${tenant_id}`,
       };
     }
 
@@ -74,8 +74,8 @@ export class LedgerDlqReplayService {
     if (!replayableStatuses.includes(posting.status)) {
       return {
         eventId,
-        tenantId,
-        companyId,
+        tenant_id,
+        company_id,
         status: 'INVALID_STATE',
         at: new Date(),
         detail: `Posting ${eventId} is in status '${posting.status}' — only FAILED/FAILED_TERMINAL events can be replayed`,
@@ -84,8 +84,8 @@ export class LedgerDlqReplayService {
 
     // Idempotency check: if already processed, skip
     const alreadyProcessed = await this.ledgerRepo.checkIdempotency(
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       posting.sourceEventId,
     );
 
@@ -95,8 +95,8 @@ export class LedgerDlqReplayService {
       );
       return {
         eventId,
-        tenantId,
-        companyId,
+        tenant_id,
+        company_id,
         status: 'SKIPPED_IDEMPOTENT',
         at: new Date(),
         detail: `sourceEventId '${posting.sourceEventId}' already has an idempotency record — skipped to prevent double-processing`,
@@ -104,16 +104,16 @@ export class LedgerDlqReplayService {
     }
 
     // Reset and re-enqueue
-    await this.ledgerRepo.updateStatus(tenantId, companyId, eventId, LedgerPostingStatus.PENDING, 0);
+    await this.ledgerRepo.updateStatus(tenant_id, company_id, eventId, LedgerPostingStatus.PENDING, 0);
 
     this.logger.log(
-      `[DLQ Replay] Re-queued posting ${eventId} (sourceEventId=${posting.sourceEventId}) for tenant ${tenantId}`,
+      `[DLQ Replay] Re-queued posting ${eventId} (sourceEventId=${posting.sourceEventId}) for tenant ${tenant_id}`,
     );
 
     return {
       eventId,
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       status: 'REQUEUED',
       at: new Date(),
       detail: `Posting reset to PENDING with retryCount=0. Will be picked up by LedgerWorkerService on next poll.`,
@@ -125,19 +125,19 @@ export class LedgerDlqReplayService {
    * dryRun=true returns counts without writing any changes.
    */
   async replayTenantDLQ(
-    tenantId: string,
-    companyId: string,
+    tenant_id: string,
+    company_id: string,
     options: { dryRun: boolean } = { dryRun: false },
   ): Promise<BulkReplayResult> {
     const failedTerminal = await this.ledgerRepo.findByStatus(
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       LedgerPostingStatus.FAILED_TERMINAL,
     );
 
     const result: BulkReplayResult = {
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       total: failedTerminal.length,
       requeued: 0,
       skipped: 0,
@@ -148,7 +148,7 @@ export class LedgerDlqReplayService {
 
     if (options.dryRun) {
       this.logger.log(
-        `[DLQ Replay] DRY RUN for tenant ${tenantId}: found ${failedTerminal.length} FAILED_TERMINAL events`,
+        `[DLQ Replay] DRY RUN for tenant ${tenant_id}: found ${failedTerminal.length} FAILED_TERMINAL events`,
       );
       result.requeued = failedTerminal.length; // projected count in dry-run
       return result;
@@ -156,7 +156,7 @@ export class LedgerDlqReplayService {
 
     for (const posting of failedTerminal) {
       try {
-        const replayResult = await this.replayFailedEvent(tenantId, companyId, posting.id);
+        const replayResult = await this.replayFailedEvent(tenant_id, company_id, posting.id);
         if (replayResult.status === 'REQUEUED') result.requeued++;
         else if (replayResult.status === 'SKIPPED_IDEMPOTENT') result.skipped++;
         else result.failed.push(`${posting.id}: ${replayResult.detail}`);
@@ -166,7 +166,7 @@ export class LedgerDlqReplayService {
     }
 
     this.logger.log(
-      `[DLQ Replay] Tenant ${tenantId} — total=${result.total} requeued=${result.requeued} skipped=${result.skipped} failed=${result.failed.length}`,
+      `[DLQ Replay] Tenant ${tenant_id} — total=${result.total} requeued=${result.requeued} skipped=${result.skipped} failed=${result.failed.length}`,
     );
 
     return result;

@@ -15,38 +15,38 @@ export class PayrollDbRepository implements IPayrollRepository {
     return this.prisma as Prisma.TransactionClient;
   }
 
-  async findById(tenantId: string, companyId: string, id: string): Promise<PayrollRecord | null> {
-    const res = await this.db.payrollLine.findUnique({
+  async findById(tenant_id: string, company_id: string, id: string): Promise<PayrollRecord | null> {
+    const res = await this.db.payroll_lines.findUnique({
       where: { id },
-      include: { hrPayrollRun: true }
+      include: { hr_payroll_runs: true }
     });
     if (!res) return null;
     return {
       id: res.id,
-      tenantId: res.tenantId,
-      companyId: companyId,
-      employeeId: res.employeeId,
-      periodId: res.hrPayrollRun.id, // Align with PayrollRecord
-      baseSalary: res.grossPay,
-      netSalary: res.netPay,
-      status: res.hrPayrollRun.status as any,
+      tenant_id: res.tenant_id,
+      company_id: company_id,
+      employee_id: res.employee_id,
+      periodId: res.hr_payroll_runs.id, // Align with PayrollRecord
+      baseSalary: res.gross_pay,
+      netSalary: res.net_pay,
+      status: res.hr_payroll_runs.status as any,
     };
   }
 
-  async findAll(tenantId: string, companyId: string, period?: string): Promise<PayrollRecord[]> {
-    const list = await this.db.payrollLine.findMany({
-      where: { tenantId },
-      include: { hrPayrollRun: true }
+  async findAll(tenant_id: string, company_id: string, period?: string): Promise<PayrollRecord[]> {
+    const list = await this.db.payroll_lines.findMany({
+      where: { tenant_id: tenant_id },
+      include: { hr_payroll_runs: true }
     });
-    return list.map(res => ({
+    return list.map((res: any) => ({
       id: res.id,
-      tenantId: res.tenantId,
-      companyId: companyId,
-      employeeId: res.employeeId,
-      periodId: res.hrPayrollRun.id,
-      baseSalary: res.grossPay,
-      netSalary: res.netPay,
-      status: res.hrPayrollRun.status as any,
+      tenant_id: res.tenant_id,
+      company_id: company_id,
+      employee_id: res.employee_id,
+      periodId: res.hr_payroll_runs.id,
+      baseSalary: res.gross_pay,
+      netSalary: res.net_pay,
+      status: res.hr_payroll_runs.status as any,
     }));
   }
 }

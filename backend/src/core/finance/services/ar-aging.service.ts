@@ -8,15 +8,15 @@ export class ARAgingService {
   /**
    * Groups a list of invoices into aging buckets based on their due dates.
    */
-  calculateAging(customerId: string, invoices: ARInvoice[]): ARAgingBucket {
+  calculateAging(customer_id: string, invoices: ARInvoice[]): ARAgingBucket {
     const now = new Date();
     const bucket: ARAgingBucket = {
-      customerId,
+      customer_id,
       bucket0_30: 0,
       bucket31_60: 0,
       bucket61_90: 0,
       bucket91_plus: 0,
-      updatedAt: now,
+      updated_at: now,
     };
 
     for (const inv of invoices) {

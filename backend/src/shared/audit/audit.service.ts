@@ -6,33 +6,34 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 export interface AuditLogParams {
-  tenantId: string;
-  userId: string;
+  tenant_id: string;
+  user_id: string;
   module: string;
   action: string;
-  entityType: string;
-  entityId: string;
+  entity_type: string;
+  entity_id: string;
   metadata?: any;
   changes?: any;
-  beforeState?: any;
-  afterState?: any;
-  ipAddress?: string;
-  userAgent?: string;
+  before_state?: any;
+  after_state?: any;
+  ip_address?: string;
+  user_agent?: string;
+  device_model?: string;
   severity?: 'INFO' | 'WARN' | 'CRITICAL';
-  idempotencyKey?: string;
-  correlationId?: string;
-  eventReferenceId?: string;
+  idempotency_key?: string;
+  correlation_id?: string;
+  event_reference_id?: string;
 }
 
 export interface AuditQueryDto {
   module?: string;
   action?: string;
-  userId?: string;
-  entityType?: string;
-  entityId?: string;
+  user_id?: string;
+  entity_type?: string;
+  entity_id?: string;
   severity?: string;
-  startDate?: string;
-  endDate?: string;
+  start_date?: string;
+  end_date?: string;
   page?: number;
   limit?: number;
 }
@@ -72,18 +73,17 @@ export class AuditService implements OnModuleDestroy {
     this.verificationInterval = setInterval(async () => {
       console.log('[AuditService] Starting continuous self-verification...');
       try {
-        const tenants = await this.prisma.auditLog.findMany({
-          distinct: ['tenantId'],
-          select: { tenantId: true },
+        const tenants = await this.prisma.audit_logs.findMany({
+          distinct: ['tenant_id'],
+          select: { tenant_id: true },
         });
 
-        for (const { tenantId } of tenants) {
+        for (const { tenant_id: tenant_id } of (tenants as any[])) {
           // Verify last 200 records
-          const result = await this.verifyChain(tenantId); 
+          const result = await this.verifyChain(tenant_id); 
           if (!result.valid) {
-            console.error(`[AUDIT_ELITE_CRITICAL] Chain corruption detected for tenant ${tenantId}!`, result);
+            console.error(`[AUDIT_ELITE_CRITICAL] Chain corruption detected for tenant ${tenant_id}!`, result);
             this.metrics.chainVerificationFailures++;
-            // In a real system, trigger NotificationService here
           }
         }
       } catch (err) {
@@ -93,13 +93,13 @@ export class AuditService implements OnModuleDestroy {
   }
 
   async log(params: AuditLogParams, injectedTx?: any) {
-    const startTime = Date.now();
+    const start_time = Date.now();
     const execute = async (tx: any) => {
       // 1. Fix 1: Transaction Isolation & Fix 2: Explicit Locking
       // Fetch last hash with FOR UPDATE to prevent race conditions in chain
       const lastLogs: any[] = await tx.$queryRaw`
         SELECT hashChain FROM audit_logs 
-        WHERE tenant_id = ${params.tenantId} 
+        WHERE tenant_id = ${params.tenant_id} 
         ORDER BY created_at DESC 
         LIMIT 1 
         FOR UPDATE
@@ -109,11 +109,11 @@ export class AuditService implements OnModuleDestroy {
 
       // 2. Compute current hash
       const logData = JSON.stringify({
-        tenantId: params.tenantId,
-        userId: params.userId,
+        tenant_id: params.tenant_id,
+        user_id: params.user_id,
         action: params.action,
-        entityId: params.entityId,
-        correlationId: params.correlationId,
+        entity_id: params.entity_id,
+        correlation_id: params.correlation_id,
         previousHash,
       });
       const currentHash = createHash('sha256').update(logData).digest('hex');
@@ -121,52 +121,56 @@ export class AuditService implements OnModuleDestroy {
       const result = await tx.auditLog.create({
         data: {
           id: uuidv4(),
-          tenantId: params.tenantId,
-          userId: params.userId,
+          updated_at: new Date(),
+          tenant_id: params.tenant_id,
+          user_id: params.user_id,
           module: params.module,
           action: params.action,
-          entityType: params.entityType,
-          entityId: params.entityId,
+          entity_type: params.entity_type,
+          entity_id: params.entity_id,
           metadata: params.metadata ?? {},
           changes: params.changes ?? {},
-          beforeState: params.beforeState ?? undefined,
-          afterState: params.afterState ?? undefined,
-          sourceModule: params.module,
-          ipAddress: params.ipAddress ?? undefined,
-          userAgent: params.userAgent ?? undefined,
+          before_state: params.before_state ?? undefined,
+          after_state: params.after_state ?? undefined,
+          source_module: params.module,
+          ip_address: params.ip_address ?? undefined,
+          user_agent: params.user_agent ?? undefined,
+          device_model: params.device_model ?? undefined,
           severity: params.severity ?? 'INFO',
-          idempotencyKey: params.idempotencyKey ?? undefined,
-          correlationId: params.correlationId ?? undefined,
-          eventReferenceId: params.eventReferenceId ?? undefined,
-          hashChain: currentHash,
-          previousHash,
+          idempotency_key: params.idempotency_key ?? undefined,
+          correlation_id: params.correlation_id ?? undefined,
+          event_reference_id: params.event_reference_id ?? undefined,
+          hash_chain: currentHash,
+          previous_hash: previousHash,
         },
       });
 
       // 3. Fix 5: Audit Anchoring (Every 100 records)
-      const count = await tx.auditLog.count({ where: { tenantId: params.tenantId } });
+      const count = await tx.auditLog.count({ where: { tenant_id: params.tenant_id } });
       if (count % 100 === 0) {
         const anchor = await tx.auditHashAnchor.create({
           data: {
             id: uuidv4(),
-            tenantId: params.tenantId,
-            anchorHash: currentHash,
-            recordCount: count,
+            updated_at: new Date(),
+            tenant_id: params.tenant_id,
+            anchor_hash: currentHash,
+            record_count: count,
+            anchored_at: new Date(),
           },
         });
         
         // Step 2: External Anchor Publishing
         this.publishAnchorExternal(anchor);
-        console.log(`[AuditService] Anchor recorded for tenant ${params.tenantId} at record ${count}`);
+        console.log(`[AuditService] Anchor recorded for tenant ${params.tenant_id} at record ${count}`);
       }
 
       // 4. Severity Model Escalation
       if (params.severity === 'CRITICAL') {
-        console.error(`[AUDIT_CRITICAL] ${params.action} on ${params.entityType}:${params.entityId} by user ${params.userId}`);
+        console.error(`[AUDIT_CRITICAL] ${params.action} on ${params.entity_type}:${params.entity_id} by user ${params.user_id}`);
       }
 
       // Track Latency
-      this.metrics.auditWriteLatency.push(Date.now() - startTime);
+      this.metrics.auditWriteLatency.push(Date.now() - start_time);
       if (this.metrics.auditWriteLatency.length > 1000) this.metrics.auditWriteLatency.shift();
 
       return result;
@@ -185,7 +189,7 @@ export class AuditService implements OnModuleDestroy {
     } catch (error: any) {
       this.metrics.auditFailureRate++;
       if (error.code === 'P2002') {
-        console.warn(`[AuditService] Duplicate idempotencyKey detected for ${params.idempotencyKey}. Skipping.`);
+        console.warn(`[AuditService] Duplicate idempotency_key detected for ${params.idempotency_key}. Skipping.`);
         return null; 
       }
 
@@ -194,33 +198,33 @@ export class AuditService implements OnModuleDestroy {
     }
   }
 
-  async query(tenantId: string, filters: AuditQueryDto) {
+  async query(tenant_id: string, filters: AuditQueryDto) {
     const page = filters.page ?? 1;
     const limit = Math.min(filters.limit ?? 50, 200);
     const skip = (page - 1) * limit;
 
-    const where: any = { tenantId };
+    const where: any = { tenant_id };
     if (filters.module) where.module = filters.module;
     if (filters.action) where.action = filters.action;
-    if (filters.userId) where.userId = filters.userId;
-    if (filters.entityType) where.entityType = filters.entityType;
-    if (filters.entityId) where.entityId = filters.entityId;
+    if (filters.user_id) where.user_id = filters.user_id;
+    if (filters.entity_type) where.entity_type = filters.entity_type;
+    if (filters.entity_id) where.entity_id = filters.entity_id;
     if (filters.severity) where.severity = filters.severity;
 
-    if (filters.startDate || filters.endDate) {
-      where.createdAt = {};
-      if (filters.startDate) where.createdAt.gte = new Date(filters.startDate);
-      if (filters.endDate) where.createdAt.lte = new Date(filters.endDate);
+    if (filters.start_date || filters.end_date) {
+      where.created_at = {};
+      if (filters.start_date) where.created_at.gte = new Date(filters.start_date);
+      if (filters.end_date) where.created_at.lte = new Date(filters.end_date);
     }
 
     const [data, total] = await Promise.all([
-      this.prisma.auditLog.findMany({
+      this.prisma.audit_logs.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
         skip,
         take: limit,
       }),
-      this.prisma.auditLog.count({ where }),
+      this.prisma.audit_logs.count({ where }),
     ]);
 
     return { data, total, page, limit };
@@ -229,23 +233,23 @@ export class AuditService implements OnModuleDestroy {
   /**
    * Step 1: Audit Chain Verification API (Read-only)
    */
-  async verifyChain(tenantId: string, fromTimestamp?: Date) {
-    const logs = await this.prisma.auditLog.findMany({
+  async verifyChain(tenant_id: string, fromTimestamp?: Date) {
+    const logs = await this.prisma.audit_logs.findMany({
       where: {
-        tenantId,
-        createdAt: fromTimestamp ? { gte: fromTimestamp } : undefined,
+        tenant_id: tenant_id,
+        created_at: fromTimestamp ? { gte: fromTimestamp } : undefined,
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { created_at: 'asc' },
     });
 
     let lastHash = 'GENESIS';
     if (fromTimestamp) {
-      const prevLog = await this.prisma.auditLog.findFirst({
-        where: { tenantId, createdAt: { lt: fromTimestamp } },
-        orderBy: { createdAt: 'desc' },
-        select: { hashChain: true },
+      const prevLog = await this.prisma.audit_logs.findFirst({
+        where: { tenant_id: tenant_id, created_at: { lt: fromTimestamp } },
+        orderBy: { created_at: 'desc' },
+        select: { hash_chain: true },
       });
-      lastHash = prevLog?.hashChain || 'GENESIS';
+      lastHash = (prevLog as any)?.hash_chain || 'GENESIS';
     }
 
     let checkedRecords = 0;
@@ -254,16 +258,16 @@ export class AuditService implements OnModuleDestroy {
       const expectedPrevHash = lastHash;
       
       const logData = JSON.stringify({
-        tenantId: log.tenantId,
-        userId: log.userId,
+        tenant_id: log.tenant_id,
+        user_id: log.user_id,
         action: log.action,
-        entityId: log.entityId,
-        correlationId: log.correlationId,
+        entity_id: log.entity_id,
+        correlation_id: log.correlation_id,
         previousHash: expectedPrevHash,
       });
       const recomputedHash = createHash('sha256').update(logData).digest('hex');
 
-      if (log.previousHash !== expectedPrevHash || log.hashChain !== recomputedHash) {
+      if (log.previous_hash !== expectedPrevHash || log.hash_chain !== recomputedHash) {
         this.metrics.chainVerificationFailures++;
         return {
           valid: false,
@@ -272,12 +276,12 @@ export class AuditService implements OnModuleDestroy {
             id: log.id,
             action: log.action,
             expectedPrevHash,
-            actualPrevHash: log.previousHash,
+            actualPrevHash: log.previous_hash,
           },
           lastValidHash: expectedPrevHash,
         };
       }
-      lastHash = log.hashChain!;
+      lastHash = log.hash_chain!;
     }
 
     return {
@@ -291,7 +295,7 @@ export class AuditService implements OnModuleDestroy {
    * Step 2: External Anchor Publishing (Multi-Region Replication)
    */
   private publishAnchorExternal(anchor: any) {
-    const entry = `${anchor.anchoredAt.toISOString()} | ${anchor.tenantId} | ${anchor.anchorHash}\n`;
+    const entry = `${anchor.anchoredAt.toISOString()} | ${anchor.tenant_id} | ${anchor.anchorHash}\n`;
     
     // Primary local log
     try {
@@ -314,14 +318,14 @@ export class AuditService implements OnModuleDestroy {
    * Step 2: Public Anchor Publishing (Public Trust Layer)
    */
   async getPublicAnchors(limit: number = 20) {
-    return this.prisma.auditHashAnchor.findMany({
-      orderBy: { anchoredAt: 'desc' },
+    return this.prisma.audit_hash_anchors.findMany({
+      orderBy: { anchored_at: 'desc' },
       take: limit,
       select: {
-        tenantId: true,
-        anchorHash: true,
-        anchoredAt: true,
-        recordCount: true,
+        tenant_id: true,
+        anchor_hash: true,
+        anchored_at: true,
+        record_count: true,
       },
     });
   }

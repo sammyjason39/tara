@@ -7,7 +7,7 @@ export class UpdatePerformanceGoalDto {
 
   @IsString()
   @IsNotEmpty()
-  employeeId: string;
+  employee_id: string;
 
   @IsString()
   @IsNotEmpty()

@@ -11,44 +11,44 @@ export class AdminService {
     private readonly auditService: AuditService,
   ) {}
 
-  async getModuleStatuses(tenantId: string) {
-    return this.repository.getModuleStatuses(tenantId);
+  async getModuleStatuses(tenant_id: string) {
+    return this.repository.getModuleStatuses(tenant_id);
   }
 
-  async toggleModule(tenantId: string, dto: ToggleModuleDto, actorId?: string) {
-    const result = await this.repository.toggleModule(tenantId, dto);
-    if (actorId) {
+  async toggleModule(tenant_id: string, dto: ToggleModuleDto, actor_id?: string) {
+    const result = await this.repository.toggleModule(tenant_id, dto);
+    if (actor_id) {
       await this.auditService.log({
-        tenantId,
-        userId: actorId,
+        tenant_id,
+        user_id: actor_id,
         module: "admin",
         action: "TOGGLE_MODULE",
-        entityType: "MODULE",
-        entityId: dto.moduleKey,
+        entity_type: "MODULE",
+        entity_id: dto.moduleKey,
         metadata: { status: dto.enabled ? "enabled" : "disabled" },
       });
     }
     return result;
   }
 
-  async getRequests(tenantId: string) {
-    return this.repository.getRequests(tenantId);
+  async getRequests(tenant_id: string) {
+    return this.repository.getRequests(tenant_id);
   }
 
   async createRequest(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateAdminRequestDto,
-    actorId?: string,
+    actor_id?: string,
   ) {
-    const request = await this.repository.createRequest(tenantId, dto);
-    if (actorId) {
+    const request = await this.repository.createRequest(tenant_id, dto);
+    if (actor_id) {
       await this.auditService.log({
-        tenantId,
-        userId: actorId,
+        tenant_id,
+        user_id: actor_id,
         module: "admin",
         action: "CREATE",
-        entityType: "ADMIN_REQUEST",
-        entityId: request.id,
+        entity_type: "ADMIN_REQUEST",
+        entity_id: request.id,
         metadata: { type: dto.type, title: dto.title },
       });
     }
@@ -56,27 +56,27 @@ export class AdminService {
   }
 
   async resolveRequest(
-    tenantId: string,
-    requestId: string,
+    tenant_id: string,
+    request_id: string,
     resolvedBy: string,
   ) {
     const request = await this.repository.resolveRequest(
-      tenantId,
-      requestId,
+      tenant_id,
+      request_id,
       resolvedBy,
     );
     await this.auditService.log({
-      tenantId,
-      userId: resolvedBy,
+      tenant_id,
+      user_id: resolvedBy,
       module: "admin",
       action: "RESOLVE",
-      entityType: "ADMIN_REQUEST",
-      entityId: requestId,
+      entity_type: "ADMIN_REQUEST",
+      entity_id: request_id,
     });
     return request;
   }
 
-  async getAuditEvents(tenantId: string) {
-    return this.repository.getAuditEvents(tenantId);
+  async getAuditEvents(tenant_id: string) {
+    return this.repository.getAuditEvents(tenant_id);
   }
 }

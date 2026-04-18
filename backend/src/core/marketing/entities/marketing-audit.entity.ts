@@ -1,9 +1,9 @@
 export class MarketingAuditEvent {
   id: string;
-  tenantId: string;
-  actorId: string;
+  tenant_id: string;
+  actor_id: string;
   action: string;
-  entityType:
+  entity_type:
     | "campaign"
     | "execution"
     | "lead"
@@ -11,7 +11,7 @@ export class MarketingAuditEvent {
     | "account"
     | "attribution"
     | "alert";
-  entityId: string;
+  entity_id: string;
   detail: string;
-  createdAt: Date;
+  created_at: Date;
 }

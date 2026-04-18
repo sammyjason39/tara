@@ -11,7 +11,7 @@ import {
  * ────────────────────
  * Issues and validates HMAC-SHA256 signed posting context tokens.
  *
- * Token payload format: `<uuid>.<tenantId>.<issuedAtMs>`
+ * Token payload format: `<uuid>.<tenant_id>.<issuedAtMs>`
  * Token: HMAC_SHA256(LEDGER_SIGNING_SECRET, tokenPayload)
  *
  * DEV_MOCK_MODE: falls back to a default secret if env var not set.
@@ -38,19 +38,19 @@ export class PostingContextFactory {
    * Issue a new HMAC-signed posting context for a tenant and company.
    * Must only be called from LedgerPostingService.
    */
-  static issue(tenantId: string, companyId: string): LedgerPostingContext {
+  static issue(tenant_id: string, company_id: string): LedgerPostingContext {
     const nonce = uuid();
     const issuedAt = new Date();
     const expiresAt = new Date(issuedAt.getTime() + PostingContextFactory.TTL_MS);
 
-    const tokenPayload = `${nonce}.${tenantId}.${companyId}.${issuedAt.getTime()}`;
+    const tokenPayload = `${nonce}.${tenant_id}.${company_id}.${issuedAt.getTime()}`;
     const token = PostingContextFactory.sign(tokenPayload);
 
     return {
       token,
       tokenPayload,
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       originService: PostingContextFactory.ORIGIN_SERVICE,
       issuedAt,
       expiresAt,

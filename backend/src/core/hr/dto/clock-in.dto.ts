@@ -7,11 +7,11 @@ import { IsString, IsNotEmpty, IsOptional } from "class-validator";
 export class ClockInDto {
   @IsString()
   @IsNotEmpty()
-  employeeId: string;
+  employee_id: string;
 
   @IsString()
   @IsOptional()
-  locationId?: string;
+  location_id?: string;
 
   @IsString()
   @IsOptional()

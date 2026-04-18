@@ -1,6 +1,6 @@
 export class PaymentDevice {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   location: string;
   deviceCode: string;
   approved: boolean;
@@ -11,10 +11,10 @@ export class PaymentDevice {
 
 export class PaymentDevicePool {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   location: string;
   primaryDeviceId: string;
   fallbackDeviceIds: string[];
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

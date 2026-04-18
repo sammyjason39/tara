@@ -13,27 +13,27 @@ export class ITService {
     private readonly eventBus: EventBusService,
   ) {}
 
-  async getProvisioningRequests(tenantId: string) {
-    return this.repository.getProvisioningRequests(tenantId);
+  async getProvisioningRequests(tenant_id: string) {
+    return this.repository.getProvisioningRequests(tenant_id);
   }
 
   async createProvisioningRequest(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateProvisioningRequestDto,
-    userId?: string,
+    user_id?: string,
   ) {
     const request = await this.repository.createProvisioningRequest(
-      tenantId,
+      tenant_id,
       dto,
     );
-    if (userId) {
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "it",
         action: "CREATE",
-        entityType: "PROVISIONING_REQUEST",
-        entityId: request.id,
+        entity_type: "PROVISIONING_REQUEST",
+        entity_id: request.id,
         metadata: { ...dto },
       });
     }
@@ -41,24 +41,24 @@ export class ITService {
   }
 
   async markProvisioned(
-    tenantId: string,
-    requestId: string,
+    tenant_id: string,
+    request_id: string,
     provisionedBy: string,
-    userId?: string,
+    user_id?: string,
   ) {
     const request = await this.repository.markProvisioned(
-      tenantId,
-      requestId,
+      tenant_id,
+      request_id,
       provisionedBy,
     );
-    if (userId) {
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "it",
         action: "PROVISION",
-        entityType: "PROVISIONING_REQUEST",
-        entityId: requestId,
+        entity_type: "PROVISIONING_REQUEST",
+        entity_id: request_id,
         metadata: { provisionedBy },
       });
     }
@@ -66,24 +66,24 @@ export class ITService {
   }
 
   async updateProvisioningRequest(
-    tenantId: string,
-    requestId: string,
+    tenant_id: string,
+    request_id: string,
     dto: Partial<CreateProvisioningRequestDto>,
-    userId?: string,
+    user_id?: string,
   ) {
     const request = await this.repository.updateProvisioningRequest(
-      tenantId,
-      requestId,
+      tenant_id,
+      request_id,
       dto,
     );
-    if (userId) {
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "it",
         action: "UPDATE",
-        entityType: "PROVISIONING_REQUEST",
-        entityId: requestId,
+        entity_type: "PROVISIONING_REQUEST",
+        entity_id: request_id,
         metadata: { ...dto },
       });
     }
@@ -91,38 +91,38 @@ export class ITService {
   }
 
   async deleteProvisioningRequest(
-    tenantId: string,
-    requestId: string,
-    userId?: string,
+    tenant_id: string,
+    request_id: string,
+    user_id?: string,
   ) {
-    await this.repository.deleteProvisioningRequest(tenantId, requestId);
-    if (userId) {
+    await this.repository.deleteProvisioningRequest(tenant_id, request_id);
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "it",
         action: "DELETE",
-        entityType: "PROVISIONING_REQUEST",
-        entityId: requestId,
+        entity_type: "PROVISIONING_REQUEST",
+        entity_id: request_id,
       });
     }
   }
 
   // Devices (NEW)
-  async getDevices(tenantId: string) {
-    return this.repository.getDevices(tenantId);
+  async getDevices(tenant_id: string) {
+    return this.repository.getDevices(tenant_id);
   }
 
-  async createDevice(tenantId: string, dto: CreateDeviceDto, userId?: string) {
-    const device = await this.repository.createDevice(tenantId, dto);
-    if (userId) {
+  async createDevice(tenant_id: string, dto: CreateDeviceDto, user_id?: string) {
+    const device = await this.repository.createDevice(tenant_id, dto);
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "it",
         action: "CREATE",
-        entityType: "DEVICE",
-        entityId: device.id,
+        entity_type: "DEVICE",
+        entity_id: device.id,
         metadata: { ...dto },
       });
     }
@@ -130,20 +130,20 @@ export class ITService {
   }
 
   async updateDevice(
-    tenantId: string,
-    deviceId: string,
+    tenant_id: string,
+    device_id: string,
     dto: Partial<CreateDeviceDto>,
-    userId?: string,
+    user_id?: string,
   ) {
-    const device = await this.repository.updateDevice(tenantId, deviceId, dto);
-    if (userId) {
+    const device = await this.repository.updateDevice(tenant_id, device_id, dto);
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "it",
         action: "UPDATE",
-        entityType: "DEVICE",
-        entityId: deviceId,
+        entity_type: "DEVICE",
+        entity_id: device_id,
         metadata: { ...dto },
       });
     }
@@ -151,20 +151,20 @@ export class ITService {
   }
 
   // Device Events (NEW)
-  async getDeviceEvents(tenantId: string) {
-    return this.repository.getDeviceEvents(tenantId);
+  async getDeviceEvents(tenant_id: string) {
+    return this.repository.getDeviceEvents(tenant_id);
   }
 
-  async createDeviceEvent(tenantId: string, dto: CreateDeviceEventDto) {
-    const event = await this.repository.createDeviceEvent(tenantId, dto);
+  async createDeviceEvent(tenant_id: string, dto: CreateDeviceEventDto) {
+    const event = await this.repository.createDeviceEvent(tenant_id, dto);
 
     // Publish to EventBus for Inventory/Retail to consume
     await this.eventBus.publish({
-      eventType: "DEVICE_EVENT_CREATED",
-      tenantId: event.tenantId,
-      entityId: event.id,
-      entityType: "DEVICE_EVENT",
-      sourceModule: "it",
+      event_type: "DEVICE_EVENT_CREATED",
+      tenant_id: event.tenant_id,
+      entity_id: event.id,
+      entity_type: "DEVICE_EVENT",
+      source_module: "it",
       payload: event.payload,
     });
 
@@ -172,15 +172,15 @@ export class ITService {
   }
 
   // Misc
-  async getSystemHealth(tenantId: string) {
-    return this.repository.getSystemHealth(tenantId);
+  async getSystemHealth(tenant_id: string) {
+    return this.repository.getSystemHealth(tenant_id);
   }
 
-  async getMonitoringStats(tenantId: string) {
-    return this.repository.getProvisioningStats(tenantId);
+  async getMonitoringStats(tenant_id: string) {
+    return this.repository.getProvisioningStats(tenant_id);
   }
 
-  async getAuditLogs(tenantId: string, requestId?: string) {
-    return this.repository.getAuditLogs(tenantId, requestId);
+  async getAuditLogs(tenant_id: string, request_id?: string) {
+    return this.repository.getAuditLogs(tenant_id, request_id);
   }
 }

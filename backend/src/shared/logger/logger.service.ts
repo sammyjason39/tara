@@ -4,17 +4,17 @@ import { PrismaService } from '../../persistence/prisma.service';
 import { LogQueryDto } from './dto/log-query.dto';
 
 export interface LogParams {
-  tenantId?: string;
+  tenant_id?: string;
   module: string;
   level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' | 'FATAL';
   event: string;
   message: string;
   payload?: any;
   errorStack?: string;
-  requestId?: string;
-  correlationId?: string;
-  userId?: string;
-  ipAddress?: string;
+  request_id?: string;
+  correlation_id?: string;
+  user_id?: string;
+  ip_address?: string;
   durationMs?: number;
 }
 
@@ -24,21 +24,22 @@ export class LoggerService {
 
   async log(params: LogParams): Promise<void> {
     try {
-      await this.prisma.systemLog.create({
+      await this.prisma.system_logs.create({
         data: {
+          updated_at: new Date(),
         id: uuidv4(),
         
-          tenantId: params.tenantId ?? undefined,
+          tenant_id: params.tenant_id ?? undefined,
           module: params.module,
           level: params.level,
           event: params.event,
           message: params.message,
           payload: params.payload ?? undefined,
-          errorStack: params.errorStack ?? undefined,
-          requestId: params.requestId ?? undefined,
-          userId: params.userId ?? undefined,
-          ipAddress: params.ipAddress ?? undefined,
-          durationMs: params.durationMs ?? undefined,
+          error_stack: params.errorStack ?? undefined,
+          request_id: params.request_id ?? undefined,
+          user_id: params.user_id ?? undefined,
+          ip_address: params.ip_address ?? undefined,
+          duration_ms: params.durationMs ?? undefined,
         },
       });
     } catch {
@@ -46,30 +47,30 @@ export class LoggerService {
     }
   }
 
-  async query(tenantId: string, filters: LogQueryDto) {
+  async query(tenant_id: string, filters: LogQueryDto) {
     const page = filters.page ?? 1;
     const limit = Math.min(filters.limit ?? 50, 200);
     const skip = (page - 1) * limit;
 
-    const where: any = { tenantId };
+    const where: any = { tenant_id };
     if (filters.module) where.module = filters.module;
     if (filters.level) where.level = filters.level;
     if (filters.event) where.event = { contains: filters.event, mode: 'insensitive' };
-    if (filters.userId) where.userId = filters.userId;
-    if (filters.startDate || filters.endDate) {
-      where.createdAt = {};
-      if (filters.startDate) where.createdAt.gte = new Date(filters.startDate);
-      if (filters.endDate) where.createdAt.lte = new Date(filters.endDate);
+    if (filters.user_id) where.user_id = filters.user_id;
+    if (filters.start_date || filters.end_date) {
+      where.created_at = {};
+      if (filters.start_date) where.created_at.gte = new Date(filters.start_date);
+      if (filters.end_date) where.created_at.lte = new Date(filters.end_date);
     }
 
     const [data, total] = await Promise.all([
-      this.prisma.systemLog.findMany({
+      this.prisma.system_logs.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
         skip,
         take: limit,
       }),
-      this.prisma.systemLog.count({ where }),
+      this.prisma.system_logs.count({ where }),
     ]);
 
     return { data, total, page, limit };
@@ -78,8 +79,8 @@ export class LoggerService {
   async prune(olderThanDays: number): Promise<number> {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - olderThanDays);
-    const result = await this.prisma.systemLog.deleteMany({
-      where: { createdAt: { lt: cutoff } },
+    const result = await this.prisma.system_logs.deleteMany({
+      where: { created_at: { lt: cutoff } },
     });
     return result.count;
   }

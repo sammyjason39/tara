@@ -16,12 +16,12 @@ export class APPaymentService {
 
     // Map to UFPG Event
     const postingRequest = {
-        requestId: `AP-PAY-${payment.id}`,
-        tenantId: payment.tenantId,
-        companyId: payment.companyId,
-        sourceModule: 'ACCOUNTS_PAYABLE',
+        request_id: `AP-PAY-${payment.id}`,
+        tenant_id: payment.tenant_id,
+        company_id: payment.company_id,
+        source_module: 'ACCOUNTS_PAYABLE',
         sourceEventId: payment.id,
-        eventType: 'VENDOR_PAYMENT_CREATED',
+        event_type: 'VENDOR_PAYMENT_CREATED',
         eventVersion: '1.0.0',
         schemaVersion: '2026-Q1',
         payload: {
@@ -30,7 +30,7 @@ export class APPaymentService {
           currency: payment.currency,
           fiscalPeriodId: '2026-03',
         },
-        createdAt: new Date(),
+        created_at: new Date(),
     };
 
     const result = await this.gateway.postEvent(postingRequest as any);

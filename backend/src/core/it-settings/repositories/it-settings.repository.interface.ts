@@ -4,20 +4,20 @@ import { RegisterDeviceDto } from "../dto/register-device.dto";
 import { UpdateSettingDto } from "../dto/update-setting.dto";
 
 export abstract class IITSettingsRepository {
-  abstract getDevices(tenantId: string, locationId?: string): Promise<Device[]>;
+  abstract getDevices(tenant_id: string, location_id?: string): Promise<Device[]>;
   abstract registerDevice(
-    tenantId: string,
+    tenant_id: string,
     data: RegisterDeviceDto,
   ): Promise<Device>;
   abstract updateDeviceStatus(
-    tenantId: string,
-    deviceId: string,
+    tenant_id: string,
+    device_id: string,
     status: string,
   ): Promise<Device>;
-  abstract getSettings(tenantId: string, category?: string): Promise<Setting[]>;
-  abstract getSetting(tenantId: string, key: string): Promise<Setting | null>;
+  abstract getSettings(tenant_id: string, category?: string): Promise<Setting[]>;
+  abstract getSetting(tenant_id: string, key: string): Promise<Setting | null>;
   abstract updateSetting(
-    tenantId: string,
+    tenant_id: string,
     key: string,
     data: UpdateSettingDto,
   ): Promise<Setting>;

@@ -25,12 +25,17 @@ export type AssetStatus =
 
 export interface AssetCategory {
   id: string;
+  tenant_id: string;
+  company_id: string;
+  code?: string;
   name: string;
+  description?: string;
   depreciationMethod: 'STRAIGHT_LINE' | 'DECLINING_BALANCE';
   usefulLifeMonths: number;
   defaultAssetAccountId: string;
   defaultAccumulatedDepreciationAccountId: string;
   defaultDepreciationExpenseAccountId: string;
+  is_active?: boolean;
   // Legacy fields
   assetClass?: string;
 }
@@ -40,15 +45,15 @@ export interface AssetBookValue {
   grossCost: Prisma.Decimal;
   accumulatedDepreciation: Prisma.Decimal;
   netBookValue: Prisma.Decimal;
-  updatedAt: Date;
+  updated_at: Date;
 }
 
 export interface Asset {
   id: string;
-  tenantId: string;
-  companyId: string;
-  branchId: string;
-  categoryId: string;
+  tenant_id: string;
+  company_id: string;
+  branch_id: string;
+  category_id: string;
   name: string;
   acquisitionCost: Prisma.Decimal;
   acquisitionDate: Date;

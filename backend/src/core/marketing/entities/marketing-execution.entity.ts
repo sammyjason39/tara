@@ -1,6 +1,6 @@
 export class MarketingExecution {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   campaignId: string;
   channel:
     | "meta_ads"
@@ -15,6 +15,6 @@ export class MarketingExecution {
   leadsGenerated: number;
   spend: number;
   notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

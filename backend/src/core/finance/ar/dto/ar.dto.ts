@@ -22,7 +22,7 @@ export class CreateCustomerDto {
 
 export class CreateInvoiceDto {
   @IsString()
-  customerId: string;
+  customer_id: string;
 
   @IsString()
   invoiceNumber: string;
@@ -36,23 +36,23 @@ export class CreateInvoiceDto {
 
   @Min(0)
   @Transform(({ value }) => value?.toString())
-  totalAmount: Prisma.Decimal;
+  total_amount: Prisma.Decimal;
 
   @IsOptional()
   @IsString()
-  idempotencyKey?: string;
+  idempotency_key?: string;
 }
 
 export class CreatePaymentDto {
   @IsString()
-  customerId: string;
+  customer_id: string;
 
   @Min(0)
   @Transform(({ value }) => value?.toString())
   amount: Prisma.Decimal;
 
   @IsString()
-  paymentMethod: string;
+  payment_method: string;
 
   @IsOptional()
   @IsString()
@@ -60,7 +60,7 @@ export class CreatePaymentDto {
 
   @IsOptional()
   @IsString()
-  idempotencyKey?: string;
+  idempotency_key?: string;
 }
 
 export class AllocatePaymentDto {
@@ -76,7 +76,7 @@ export class AllocatePaymentDto {
 
   @IsOptional()
   @IsString()
-  idempotencyKey?: string;
+  idempotency_key?: string;
 }
 
 export class CreateRefundDto {
@@ -92,7 +92,7 @@ export class CreateRefundDto {
 
   @IsOptional()
   @IsString()
-  idempotencyKey?: string;
+  idempotency_key?: string;
 }
 
 export class VoidInvoiceDto {

@@ -12,11 +12,11 @@ export interface IInventorySubledgerRepository {
   lockEntry(tenant_id: string, id: string, tx?: Prisma.TransactionClient): Promise<InventorySubledgerEntry>;
 
   // Cost Layer Management
-  getCostLayers(tenant_id: string, skuId: string, locationId: string, tx?: Prisma.TransactionClient): Promise<CostLayer[]>;
+  getCostLayers(tenant_id: string, skuId: string, location_id: string, tx?: Prisma.TransactionClient): Promise<CostLayer[]>;
   createCostLayer(tenant_id: string, data: Partial<CostLayer>, tx?: Prisma.TransactionClient): Promise<CostLayer>;
   updateCostLayer(tenant_id: string, id: string, data: Partial<CostLayer>, tx?: Prisma.TransactionClient): Promise<CostLayer>;
   createCostSnapshot(tenant_id: string, data: Partial<CostSnapshot>, tx?: Prisma.TransactionClient): Promise<CostSnapshot>;
   
   // Valuation
-  getCurrentValuation(tenant_id: string, skuId: string, locationId: string, tx?: Prisma.TransactionClient): Promise<{ unitCost: Prisma.Decimal; currency: string; method: string }>;
+  getCurrentValuation(tenant_id: string, skuId: string, location_id: string, tx?: Prisma.TransactionClient): Promise<{ unitCost: Prisma.Decimal; currency: string; method: string }>;
 }

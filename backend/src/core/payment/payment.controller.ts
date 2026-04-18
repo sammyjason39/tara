@@ -44,7 +44,7 @@ export class PaymentController {
     private readonly prisma: PrismaService,
   ) {}
 
-  private actorId(request: RequestWithTenant) {
+  private actor_id(request: RequestWithTenant) {
     const value = request.headers["x-actor-id"];
     return typeof value === "string" && value.trim().length > 0
       ? value
@@ -53,16 +53,16 @@ export class PaymentController {
 
   @Get("dashboard")
   async getDashboard(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const dashboardData = await this.paymentService.getDashboard(tenantId);
+    const { tenant_id } = request.tenantContext;
+    const dashboardData = await this.paymentService.getDashboard(tenant_id);
 
     const moduleContributions: any = {};
-    if (await isModuleActive(this.prisma, tenantId, "retail")) {
-      const activeDevices = await this.prisma.paymentPosDevice.count({
-        where: { tenantId, status: "ONLINE" },
+    if (await isModuleActive(this.prisma, tenant_id, "retail")) {
+      const activeDevices = await this.prisma.payment_pos_devices.count({
+        where: { tenant_id: tenant_id, status: "ONLINE" },
       });
-      const totalDisputes = await this.prisma.paymentDispute.count({
-        where: { tenantId, status: "OPEN" },
+      const totalDisputes = await this.prisma.payment_disputes.count({
+        where: { tenant_id: tenant_id, status: "OPEN" },
       });
       moduleContributions.retail = {
         activeDevices,
@@ -72,7 +72,7 @@ export class PaymentController {
 
     return {
       success: true,
-      tenantId,
+      tenant_id,
       data: {
         ...dashboardData,
         moduleContributions,
@@ -82,9 +82,9 @@ export class PaymentController {
 
   @Get("transactions")
   async getTransactions(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.paymentService.getTransactions(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.paymentService.getTransactions(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Post("transactions")
@@ -92,15 +92,15 @@ export class PaymentController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreatePaymentTransactionDto,
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Payment request created",
       data: await this.paymentService.createTransaction(
-        tenantId,
+        tenant_id,
         dto,
-        this.actorId(request),
+        this.actor_id(request),
       ),
     };
   }
@@ -110,15 +110,15 @@ export class PaymentController {
     @Req() request: RequestWithTenant,
     @Param("id") paymentId: string,
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Payment approved",
       data: await this.paymentService.approveTransaction(
-        tenantId,
+        tenant_id,
         paymentId,
-        this.actorId(request),
+        this.actor_id(request),
       ),
     };
   }
@@ -128,15 +128,15 @@ export class PaymentController {
     @Req() request: RequestWithTenant,
     @Param("id") paymentId: string,
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Payment rejected",
       data: await this.paymentService.rejectTransaction(
-        tenantId,
+        tenant_id,
         paymentId,
-        this.actorId(request),
+        this.actor_id(request),
       ),
     };
   }
@@ -147,16 +147,16 @@ export class PaymentController {
     @Param("id") paymentId: string,
     @Body() dto: RoutePaymentDto,
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Provider selected",
       data: await this.paymentService.routeTransaction(
-        tenantId,
+        tenant_id,
         paymentId,
         dto,
-        this.actorId(request),
+        this.actor_id(request),
       ),
     };
   }
@@ -167,16 +167,16 @@ export class PaymentController {
     @Param("id") paymentId: string,
     @Body() dto: ExecutePaymentDto,
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Execution processed",
       data: await this.paymentService.executeTransaction(
-        tenantId,
+        tenant_id,
         paymentId,
         dto,
-        this.actorId(request),
+        this.actor_id(request),
       ),
     };
   }
@@ -186,24 +186,24 @@ export class PaymentController {
     @Req() request: RequestWithTenant,
     @Param("id") paymentId: string,
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Settlement confirmed",
       data: await this.paymentService.settleTransaction(
-        tenantId,
+        tenant_id,
         paymentId,
-        this.actorId(request),
+        this.actor_id(request),
       ),
     };
   }
 
   @Get("providers")
   async getProviders(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.paymentService.getProviders(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.paymentService.getProviders(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Put("providers/:id/status")
@@ -212,30 +212,30 @@ export class PaymentController {
     @Param("id") providerId: string,
     @Body() dto: UpdateProviderStatusDto,
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Provider status updated",
       data: await this.paymentService.updateProviderStatus(
-        tenantId,
+        tenant_id,
         providerId,
         dto,
-        this.actorId(request),
+        this.actor_id(request),
       ),
     };
   }
 
   @Post("providers/health-sweep")
   async runProviderHealthSweep(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     const data = await this.paymentService.runProviderHealthSweep(
-      tenantId,
-      this.actorId(request),
+      tenant_id,
+      this.actor_id(request),
     );
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Provider health sweep completed",
       count: data.length,
       data,
@@ -244,50 +244,50 @@ export class PaymentController {
 
   @Get("routing-policies")
   async getRoutingPolicies(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.paymentService.getRoutingPolicies(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.paymentService.getRoutingPolicies(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Get("devices")
   async getDevices(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.paymentService.getDevices(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.paymentService.getDevices(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Get("device-pools")
   async getDevicePools(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.paymentService.getDevicePools(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.paymentService.getDevicePools(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Put("devices/:id/status")
   async updateDeviceStatus(
     @Req() request: RequestWithTenant,
-    @Param("id") deviceId: string,
+    @Param("id") device_id: string,
     @Body() dto: UpdateDeviceStatusDto,
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Device status updated",
       data: await this.paymentService.updateDeviceStatus(
-        tenantId,
-        deviceId,
+        tenant_id,
+        device_id,
         dto,
-        this.actorId(request),
+        this.actor_id(request),
       ),
     };
   }
 
   @Get("refunds")
   async getRefunds(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.paymentService.getRefunds(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.paymentService.getRefunds(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Post("refunds")
@@ -295,15 +295,15 @@ export class PaymentController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreateRefundDto,
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Refund requested",
       data: await this.paymentService.createRefund(
-        tenantId,
+        tenant_id,
         dto,
-        this.actorId(request),
+        this.actor_id(request),
       ),
     };
   }
@@ -313,15 +313,15 @@ export class PaymentController {
     @Req() request: RequestWithTenant,
     @Param("id") refundId: string,
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Refund approved",
       data: await this.paymentService.approveRefund(
-        tenantId,
+        tenant_id,
         refundId,
-        this.actorId(request),
+        this.actor_id(request),
       ),
     };
   }
@@ -331,24 +331,24 @@ export class PaymentController {
     @Req() request: RequestWithTenant,
     @Param("id") refundId: string,
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Refund executed",
       data: await this.paymentService.executeRefund(
-        tenantId,
+        tenant_id,
         refundId,
-        this.actorId(request),
+        this.actor_id(request),
       ),
     };
   }
 
   @Get("disputes")
   async getDisputes(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.paymentService.getDisputes(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.paymentService.getDisputes(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Post("disputes")
@@ -356,15 +356,15 @@ export class PaymentController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreateDisputeDto,
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Dispute opened",
       data: await this.paymentService.createDispute(
-        tenantId,
+        tenant_id,
         dto,
-        this.actorId(request),
+        this.actor_id(request),
       ),
     };
   }
@@ -375,16 +375,16 @@ export class PaymentController {
     @Param("id") disputeId: string,
     @Body() dto: AttachDisputeEvidenceDto,
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Evidence attached",
       data: await this.paymentService.attachDisputeEvidence(
-        tenantId,
+        tenant_id,
         disputeId,
         dto,
-        this.actorId(request),
+        this.actor_id(request),
       ),
     };
   }
@@ -395,16 +395,16 @@ export class PaymentController {
     @Param("id") disputeId: string,
     @Body() dto: ProgressDisputeDto,
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Dispute stage updated",
       data: await this.paymentService.progressDispute(
-        tenantId,
+        tenant_id,
         disputeId,
         dto,
-        this.actorId(request),
+        this.actor_id(request),
       ),
     };
   }
@@ -415,45 +415,45 @@ export class PaymentController {
     @Param("id") disputeId: string,
     @Body() dto: ResolveDisputeDto,
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Dispute resolved",
       data: await this.paymentService.resolveDispute(
-        tenantId,
+        tenant_id,
         disputeId,
         dto,
-        this.actorId(request),
+        this.actor_id(request),
       ),
     };
   }
 
   @Get("chargebacks")
   async getChargebacks(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.paymentService.getChargebacks(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.paymentService.getChargebacks(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Get("settlements")
   async getSettlements(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.paymentService.getSettlements(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.paymentService.getSettlements(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Get("evidence-packs")
   async getEvidencePacks(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.paymentService.getEvidencePacks(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.paymentService.getEvidencePacks(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Get("audit-events")
   async getAuditEvents(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.paymentService.getAuditEvents(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.paymentService.getAuditEvents(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 }

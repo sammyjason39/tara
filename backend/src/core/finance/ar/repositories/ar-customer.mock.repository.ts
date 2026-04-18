@@ -9,38 +9,38 @@ import { Prisma } from '@prisma/client';
 export class ArCustomerMockRepository implements IArCustomerRepository {
   private customers: IArCustomer[] = [];
 
-  async findById(tenantId: string, companyId: string, id: string): Promise<IArCustomer | null> {
-    return this.customers.find(c => c.tenantId === tenantId && c.companyId === companyId && c.id === id) || null;
+  async findById(tenant_id: string, company_id: string, id: string): Promise<IArCustomer | null> {
+    return this.customers.find((c: any) => c.tenant_id === tenant_id && c.company_id === company_id && c.id === id) || null;
   }
 
-  async findAll(tenantId: string, companyId: string): Promise<IArCustomer[]> {
-    return this.customers.filter(c => c.tenantId === tenantId && c.companyId === companyId);
+  async findAll(tenant_id: string, company_id: string): Promise<IArCustomer[]> {
+    return this.customers.filter((c: any) => c.tenant_id === tenant_id && c.company_id === company_id);
   }
 
-  async create(tenantId: string, companyId: string, data: any): Promise<IArCustomer> {
+  async create(tenant_id: string, company_id: string, data: any): Promise<IArCustomer> {
     const customer: IArCustomer = {
       id: uuid(),
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       name: data.name,
       email: data.email,
       phone: data.phone,
       creditLimit: new Prisma.Decimal(data.creditLimit || 0),
       currentBalance: new Prisma.Decimal(0),
       status: 'ACTIVE',
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
     };
     this.customers.push(customer);
     return customer;
   }
 
-  async update(tenantId: string, companyId: string, id: string, data: any): Promise<IArCustomer> {
-    const customer = await this.findById(tenantId, companyId, id);
+  async update(tenant_id: string, company_id: string, id: string, data: any): Promise<IArCustomer> {
+    const customer = await this.findById(tenant_id, company_id, id);
     if (!customer) throw new Error('Customer not found');
     
     Object.assign(customer, data);
-    customer.updatedAt = new Date();
+    customer.updated_at = new Date();
     return customer;
   }
 }

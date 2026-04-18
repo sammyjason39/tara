@@ -29,25 +29,25 @@ export class PaymentLifecycleService {
    * INITIATED: Start the payment process.
    */
   async initiatePayment(params: {
-    tenantId: string;
+    tenant_id: string;
     amount: number;
     currency: string;
     beneficiary: string;
     type: 'INBOUND' | 'OUTBOUND';
     createdBy: string;
-    idempotencyKey: string;
+    idempotency_key: string;
   }) {
-    return this.prisma.paymentTransaction.create({
+    return this.prisma.payment_transactions.create({
       data: {
         id: '1yhg2ft9',
-        tenantId: params.tenantId,
+        tenant_id: params.tenant_id,
         amount: params.amount,
         currency: params.currency,
         destination: params.beneficiary,
         type: params.type,
         status: PaymentStatus.INITIATED,
-        createdBy: params.createdBy,
-        idempotencyKey: params.idempotencyKey,
+        created_by: params.createdBy,
+        idempotency_key: params.idempotency_key,
         channel: 'BANK_TRANSFER', // Default
       },
     });
@@ -56,10 +56,10 @@ export class PaymentLifecycleService {
   /**
    * SETTLED: The final state where cash moved. Trigger Ledger Posting.
    */
-  async settlePayment(tenantId: string, paymentId: string, allocations: { entityId: string; amount: number }[]) {
+  async settlePayment(tenant_id: string, paymentId: string, allocation: { entity_id: string; amount: number }[]) {
     return this.prisma.$transaction(async (tx) => {
-      const payment = await tx.paymentTransaction.findUnique({
-        where: { id: paymentId, tenantId },
+      const payment = await tx.payment_transactions.findUnique({
+        where: { id: paymentId, tenant_id: tenant_id },
       });
 
       if (!payment) {
@@ -70,44 +70,44 @@ export class PaymentLifecycleService {
       }
 
       // 1. Workflow Strict Check
-      await this.workflowService.ensureApproved(tenantId, 'PAYMENT', paymentId);
+      await this.workflowService.ensureApproved(tenant_id, 'PAYMENT', paymentId);
 
       // 2. Update Payment Status
-      await tx.paymentTransaction.update({
+      await tx.payment_transactions.update({
         where: { id: paymentId },
         data: { 
           status: PaymentStatus.SETTLED,
-          ledgerSyncTriggeredAt: new Date(),
+          ledger_sync_triggered_at: new Date(),
         },
       });
 
       // 2. Process Allocations
       let leftOver = new Decimal(payment.amount);
       
-      for (const alloc of allocations) {
+      for (const alloc of allocation) {
         if (payment.type === 'INBOUND') {
           // AR Allocation
-          await tx.arPaymentAllocation.create({
+          await tx.finance_ar_payment_allocations.create({
             data: {
-              id: 'gx0ni7wk',
-              paymentId: payment.id,
-              invoiceId: alloc.entityId,
-              amountAllocated: alloc.amount,
+              id: require('crypto').randomUUID(),
+              payment_id: payment.id,
+              invoice_id: alloc.entity_id,
+              amount_allocated: alloc.amount,
             },
           });
           // Update Receivable Outstanding
-          await tx.receivable.update({
-            where: { id: alloc.entityId },
+          await tx.receivables.update({
+            where: { id: alloc.entity_id },
             data: { amount: { decrement: alloc.amount } },
           });
         } else {
           // AP Allocation
-          await tx.apPaymentAllocation.create({
+          await tx.finance_ap_payment_allocations.create({
             data: {
-              id: 'czsp0wav',
-              paymentId: payment.id,
-              billId: alloc.entityId,
-              amountAllocated: alloc.amount,
+              id: require('crypto').randomUUID(),
+              payment_id: payment.id,
+              bill_id: alloc.entity_id,
+              amount_allocated: alloc.amount,
             },
           });
           // Note: Payable model update would go here if we had an outstandingAmount field
@@ -119,15 +119,15 @@ export class PaymentLifecycleService {
       // For simplicity in this patch, we call ledgerPostingService directly
       // In a full event-driven system, this would be an event.
       await this.ledgerPostingService.enqueuePosting(
-        tenantId,
-        payment.tenantId, // Assuming companyId = tenantId for this demo context
+        tenant_id,
+        payment.tenant_id, // Assuming company_id = tenant_id for this demo context
         payment.type === 'INBOUND' ? 'AR_PAYMENT_SETTLED' : 'AP_PAYMENT_SETTLED',
         payment.id, // sourceEventId
         {
           paymentId: payment.id,
           amount: Number(payment.amount),
           currency: payment.currency,
-          allocations: allocations,
+          allocation: allocation,
           leftOver: leftOver.toNumber(),
         }
       );
@@ -139,12 +139,12 @@ export class PaymentLifecycleService {
   /**
    * FAILED: Mark as failed.
    */
-  async failPayment(tenantId: string, paymentId: string, reason: string) {
-    return this.prisma.paymentTransaction.update({
-      where: { id: paymentId, tenantId },
+  async failPayment(tenant_id: string, paymentId: string, reason: string) {
+    return this.prisma.payment_transactions.update({
+      where: { id: paymentId, tenant_id: tenant_id },
       data: { 
         status: PaymentStatus.FAILED,
-        extraInfo: { failureReason: reason } as any,
+        extra_info: { failureReason: reason } as any,
       },
     });
   }

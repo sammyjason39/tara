@@ -34,23 +34,23 @@ export class ProjectionRebuildService {
     private readonly coaRepo: IChartOfAccountRepository,
   ) {}
 
-  async rebuildProjections(tenantId: string, companyId: string): Promise<void> {
-    this.logger.log(`Starting projection rebuild for tenant ${tenantId}, company ${companyId}...`);
+  async rebuildProjections(tenant_id: string, company_id: string): Promise<void> {
+    this.logger.log(`Starting projection rebuild for tenant ${tenant_id}, company ${company_id}...`);
 
     // 1. Reset all projection tables
     await Promise.all([
-      this.balanceRepo.reset(tenantId, companyId),
-      this.trialBalanceRepo.reset(tenantId, companyId),
-      this.glRepo.reset(tenantId, companyId),
-      this.statementRepo.reset(tenantId, companyId),
-      this.checkpointRepo.reset(tenantId, companyId),
+      this.balanceRepo.reset(tenant_id, company_id),
+      this.trialBalanceRepo.reset(tenant_id, company_id),
+      this.glRepo.reset(tenant_id, company_id),
+      this.statementRepo.reset(tenant_id, company_id),
+      this.checkpointRepo.reset(tenant_id, company_id),
     ]);
 
     let fromSeq = 1;
     let totalJournals = 0;
 
     // 2. Check for latest snapshot for hydration acceleration
-    const latestSnapshot = await this.snapshotRepo.findLatest(tenantId, companyId);
+    const latestSnapshot = await this.snapshotRepo.findLatest(tenant_id, company_id);
     if (latestSnapshot && latestSnapshot.compressedTrialBalanceState) {
       this.logger.log(`Found snapshot at sequence ${latestSnapshot.snapshotSequence}. Hydrating Trial Balance...`);
       
@@ -58,8 +58,8 @@ export class ProjectionRebuildService {
         const tbState = JSON.parse(latestSnapshot.compressedTrialBalanceState);
         for (const accountState of tbState) {
           await this.trialBalanceRepo.update(
-            tenantId, 
-            companyId,
+            tenant_id, 
+            company_id,
             accountState.accountId, 
             accountState.fiscalPeriodId, // Should be in snapshot state
             accountState.accountCategory,
@@ -69,7 +69,7 @@ export class ProjectionRebuildService {
         }
         
         fromSeq = (latestSnapshot.snapshotSequence || 0) + 1;
-        await this.checkpointRepo.upsert(tenantId, companyId, 'ALL_PROJECTIONS', latestSnapshot.snapshotSequence || 0);
+        await this.checkpointRepo.upsert(tenant_id, company_id, 'ALL_PROJECTIONS', latestSnapshot.snapshotSequence || 0);
         this.logger.log(`Hydration complete. Replaying journals from sequence ${fromSeq}...`);
       } catch (err) {
         this.logger.error(`Failed to hydrate from snapshot: ${err.message}. Falling back to full rebuild.`);
@@ -79,7 +79,7 @@ export class ProjectionRebuildService {
 
     // 3. Streaming Batch Processing (Fast-Forward)
     while (true) {
-      const journals = await this.journalRepo.findBySequenceRange(tenantId, companyId, fromSeq, fromSeq + this.BATCH_SIZE - 1);
+      const journals = await this.journalRepo.findBySequenceRange(tenant_id, company_id, fromSeq, fromSeq + this.BATCH_SIZE - 1);
       
       if (journals.length === 0) break;
 
@@ -95,8 +95,8 @@ export class ProjectionRebuildService {
             fiscalPeriodId: journal.fiscalPeriodId,
             accountId: line.accountId,
             currency: line.currency,
-            branchId: line.dimensionBranchId || line.branchId || '',
-            locationId: line.locationId || '',
+            branch_id: line.dimensionBranchId || line.branch_id || '',
+            location_id: line.location_id || '',
             departmentId: line.dimensionDepartmentId || line.departmentId,
             costCenterId: line.dimensionCostCenterId || line.costCenterId,
             projectId: line.dimensionProjectId || line.projectId,
@@ -109,20 +109,20 @@ export class ProjectionRebuildService {
           const currency = line.currency || 'USD';
           
           // Area 1: Atomic increment for rebuild precision
-          await this.balanceRepo.incrementBalance(tenantId, companyId, balanceParams, {
+          await this.balanceRepo.incrementBalance(tenant_id, company_id, balanceParams, {
             debit: isDebit ? amount : undefined,
             credit: isCredit ? amount : undefined,
             net: isDebit ? amount : amount.negated(),
           });
 
           // Fetch category
-          const acc = await this.coaRepo.findById(tenantId, companyId, line.accountId);
+          const acc = await this.coaRepo.findById(tenant_id, company_id, line.accountId);
           const category = acc?.accountType || 'UNKNOWN';
 
           // Update Trial Balance Projection
           await this.trialBalanceRepo.update(
-            tenantId, 
-            companyId,
+            tenant_id, 
+            company_id,
             line.accountId, 
             journal.fiscalPeriodId,
             category,
@@ -131,12 +131,12 @@ export class ProjectionRebuildService {
           );
 
           // Update General Ledger Projection (Incremental Running Balance & Dimensions)
-          const latestRunningBal = await this.glRepo.getLatestRunningBalance(tenantId, companyId, line.accountId);
+          const latestRunningBal = await this.glRepo.getLatestRunningBalance(tenant_id, company_id, line.accountId);
           const newRunningBal = latestRunningBal.plus(isDebit ? amount : amount.negated());
           
           await this.glRepo.append({
-            tenantId,
-            companyId,
+            tenant_id,
+            company_id,
             accountId: line.accountId,
             journalId: journal.id,
             ledgerSequence: journal.ledgerSequence,
@@ -150,8 +150,8 @@ export class ProjectionRebuildService {
 
           // Update Account Statement Projection (with Dimensions)
           await this.statementRepo.append({
-            tenantId,
-            companyId,
+            tenant_id,
+            company_id,
             accountId: line.accountId,
             ledgerSequence: journal.ledgerSequence,
             journalId: journal.id,
@@ -166,13 +166,13 @@ export class ProjectionRebuildService {
         }
         
         totalJournals++;
-        await this.checkpointRepo.upsert(tenantId, companyId, 'ALL_PROJECTIONS', journal.ledgerSequence);
+        await this.checkpointRepo.upsert(tenant_id, company_id, 'ALL_PROJECTIONS', journal.ledgerSequence);
       }
 
       fromSeq += this.BATCH_SIZE;
-      this.logger.log(`Processed ${totalJournals} journals since start/snapshot for tenant ${tenantId}...`);
+      this.logger.log(`Processed ${totalJournals} journals since start/snapshot for tenant ${tenant_id}...`);
     }
 
-    this.logger.log(`Projection rebuild completed for tenant ${tenantId}. Total journals processed in this run: ${totalJournals}`);
+    this.logger.log(`Projection rebuild completed for tenant ${tenant_id}. Total journals processed in this run: ${totalJournals}`);
   }
 }

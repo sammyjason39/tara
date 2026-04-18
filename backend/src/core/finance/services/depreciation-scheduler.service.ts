@@ -35,8 +35,8 @@ export class DepreciationScheduler {
     };
 
     const currentPeriodId = await this.fiscalPeriodService.validatePeriodOpenForPosting(
-      assets[0]?.tenantId || 'DEFAULT', 
-      assets[0]?.companyId || 'DEFAULT', 
+      assets[0]?.tenant_id || 'DEFAULT', 
+      assets[0]?.company_id || 'DEFAULT', 
       'SYS_AUTO', 
       'SYSTEM'
     );
@@ -69,8 +69,8 @@ export class DepreciationScheduler {
   async runDepreciation(scheduleItem: DepreciationSchedule, asset: Asset, periodId: string, runId: string): Promise<void> {
     // 1. Resolve Accounting Mapping
     const mapping = await this.mappingService.resolveAccounts(
-        asset.tenantId,
-        asset.companyId,
+        asset.tenant_id,
+        asset.company_id,
         SubledgerEntryType.ASSET_DEPRECIATION,
         'ASSET_RUN'
     );
@@ -81,9 +81,9 @@ export class DepreciationScheduler {
     // Micro-Hardened with Source Module, Direction, and FX context
     const subledgerEntry: Partial<FinanceSubledgerEntry> = {
         id: uuid(),
-        tenantId: asset.tenantId,
-        companyId: asset.companyId,
-        sourceModule: 'ASSET_MANAGEMENT',
+        tenant_id: asset.tenant_id,
+        company_id: asset.company_id,
+        source_module: 'ASSET_MANAGEMENT',
         referenceType: 'ASSET_RUN',
         referenceId: runId,
         referenceLineId: asset.id,
@@ -100,19 +100,19 @@ export class DepreciationScheduler {
         creditAccountId: mapping.creditAccountId,
         accountingPeriodId: periodId,
         effectiveDate: new Date(), // Business date (Audit Hardening)
-        createdAt: new Date(),
+        created_at: new Date(),
     };
 
     // 3. Map to UFPG Event (POSTING)
     subledgerEntry.status = SubledgerEntryStatus.POSTING;
 
     const postingRequest = {
-        requestId: postingRequestId,
-        tenantId: asset.tenantId,
-        companyId: asset.companyId,
-        sourceModule: subledgerEntry.sourceModule,
+        request_id: postingRequestId,
+        tenant_id: asset.tenant_id,
+        company_id: asset.company_id,
+        source_module: subledgerEntry.source_module,
         sourceEventId: scheduleItem.id,
-        eventType: SubledgerEntryType.ASSET_DEPRECIATION,
+        event_type: SubledgerEntryType.ASSET_DEPRECIATION,
         payload: {
           assetId: asset.id,
           amount: scheduleItem.amount,
@@ -125,7 +125,7 @@ export class DepreciationScheduler {
           fiscalPeriodId: periodId,
           runId,
         },
-        createdAt: new Date(),
+        created_at: new Date(),
     };
 
     const result = await this.gateway.postEvent(postingRequest as any);

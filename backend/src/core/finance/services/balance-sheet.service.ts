@@ -10,8 +10,8 @@ export class BalanceSheetService {
     private readonly trialBalanceRepo: ITrialBalanceProjectionRepository,
   ) {}
 
-  async generate(tenantId: string, companyId: string, fiscalPeriodId: string, dimensions?: Record<string, string>): Promise<any> {
-    const tbRows = await this.trialBalanceRepo.findAll(tenantId, companyId, fiscalPeriodId);
+  async generate(tenant_id: string, company_id: string, fiscalPeriodId: string, dimensions?: Record<string, string>): Promise<any> {
+    const tbRows = await this.trialBalanceRepo.findAll(tenant_id, company_id, fiscalPeriodId);
 
     let totalAssets = new Prisma.Decimal(0);
     let totalLiabilities = new Prisma.Decimal(0);
@@ -41,13 +41,13 @@ export class BalanceSheetService {
     const imbalance = totalAssets.minus(totalLiabilities.plus(totalEquity));
     
     if (!imbalance.isZero()) {
-      console.warn(`[BALANCE_SHEET] Invariant violation for tenant ${tenantId}: A(${totalAssets.toString()}) != L(${totalLiabilities.toString()}) + E(${totalEquity.toString()}). Gap: ${imbalance.toString()}`);
+      console.warn(`[BALANCE_SHEET] Invariant violation for tenant ${tenant_id}: A(${totalAssets.toString()}) != L(${totalLiabilities.toString()}) + E(${totalEquity.toString()}). Gap: ${imbalance.toString()}`);
     }
 
     return {
       reportType: 'BALANCE_SHEET',
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       fiscalPeriodId,
       generatedAt: new Date(),
       summary: {

@@ -17,22 +17,22 @@ export class ReportingController {
   @Get('trends')
   async getTrendReport(
     @TenantCtx() ctx: TenantContext,
-    @Query('companyId') companyId: string,
+    @Query('company_id') company_id: string,
     @Query('periodIds') periodIds: string[],
     @Query('metric') metric: 'REVENUE' | 'NET_PROFIT' | 'EXPENSE' = 'REVENUE',
   ) {
-    const targetCompanyId = companyId || ctx.companyId;
-    return this.reportingEngineService.getTrendReport(ctx.tenantId, targetCompanyId, periodIds, metric);
+    const targetCompanyId = company_id || ctx.company_id;
+    return this.reportingEngineService.getTrendReport(ctx.tenant_id, targetCompanyId, periodIds, metric);
   }
 
   @Get('consolidated')
   async getConsolidatedReport(
     @TenantCtx() ctx: TenantContext,
-    @Query('companyId') companyId: string,
+    @Query('company_id') company_id: string,
     @Query('fiscalPeriodId') fiscalPeriodId: string,
     @Query('type') type: 'PROFIT_LOSS' | 'BALANCE_SHEET',
   ) {
-    const targetCompanyId = companyId || ctx.companyId;
-    return this.consolidationReportService.getConsolidatedReport(ctx.tenantId, targetCompanyId, type, fiscalPeriodId);
+    const targetCompanyId = company_id || ctx.company_id;
+    return this.consolidationReportService.getConsolidatedReport(ctx.tenant_id, targetCompanyId, type, fiscalPeriodId);
   }
 }

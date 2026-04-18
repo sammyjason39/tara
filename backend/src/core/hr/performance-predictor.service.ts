@@ -7,14 +7,14 @@ export class PerformancePredictorService {
 
   constructor(private readonly repository: IHRRepository) {}
 
-  async forecastPerformance(tenantId: string, employeeId: string) {
-    this.logger.log(`Forecasting performance for employee ${employeeId}`);
+  async forecastPerformance(tenant_id: string, employee_id: string) {
+    this.logger.log(`Forecasting performance for employee ${employee_id}`);
     
     // 1. Get historical ratings
-    const history = await this.repository.getEmployeePerformanceHistory(tenantId, employeeId);
+    const history = await this.repository.getEmployeePerformanceHistory(tenant_id, employee_id);
     if (history.length === 0) {
       return {
-        employeeId,
+        employee_id,
         forecastedRating: 3.0, // Baseline
         confidence: 0.5,
         trend: 'STABLE',
@@ -37,7 +37,7 @@ export class PerformancePredictorService {
     }
 
     return {
-      employeeId,
+      employee_id,
       forecastedRating: parseFloat(forecastedRating.toFixed(1)),
       confidence: Math.min(0.9, 0.4 + (history.length * 0.1)),
       trend,
@@ -47,18 +47,18 @@ export class PerformancePredictorService {
     };
   }
 
-  async calculateGoalProbability(tenantId: string, goalId: string) {
+  async calculateGoalProbability(tenant_id: string, goalId: string) {
     this.logger.log(`Calculating probability for goal ${goalId}`);
     
-    const goal = await this.repository.getGoalById(tenantId, goalId);
+    const goal = await this.repository.getGoalById(tenant_id, goalId);
     if (!goal) throw new Error("Goal not found");
 
     if (goal.status === 'COMPLETED') return { probability: 100, status: 'DONE' };
     
     // 1. Calculate time remaining vs progress
     const now = new Date();
-    const totalDuration = goal.targetDate.getTime() - goal.createdAt.getTime();
-    const timeElapsed = now.getTime() - goal.createdAt.getTime();
+    const totalDuration = goal.targetDate.getTime() - goal.created_at.getTime();
+    const timeElapsed = now.getTime() - goal.created_at.getTime();
     const timeRemaining = goal.targetDate.getTime() - now.getTime();
     
     if (timeRemaining <= 0 && goal.progress < 100) {
@@ -86,14 +86,14 @@ export class PerformancePredictorService {
     };
   }
 
-  async recommendInterventions(tenantId: string, employeeId: string) {
-    this.logger.log(`Generating performance interventions for ${employeeId}`);
+  async recommendInterventions(tenant_id: string, employee_id: string) {
+    this.logger.log(`Generating performance interventions for ${employee_id}`);
     
-    const forecast = await this.forecastPerformance(tenantId, employeeId);
-    const goals = await this.repository.getEmployeeGoals(tenantId, employeeId);
+    const forecast = await this.forecastPerformance(tenant_id, employee_id);
+    const goals = await this.repository.getEmployeeGoals(tenant_id, employee_id);
     const atRiskGoals = await Promise.all(
       goals.filter(g => g.status === 'IN_PROGRESS')
-           .map(async g => this.calculateGoalProbability(tenantId, g.id))
+           .map(async g => this.calculateGoalProbability(tenant_id, g.id))
     ).then(res => res.filter(r => r.isAtRisk));
 
     const interventions = [];

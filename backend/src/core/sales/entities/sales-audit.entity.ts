@@ -1,9 +1,9 @@
 export class SalesAuditEvent {
   id: string;
-  tenantId: string;
-  actorId: string;
+  tenant_id: string;
+  actor_id: string;
   action: string;
-  entityType:
+  entity_type:
     | "lead"
     | "opportunity"
     | "quote"
@@ -11,7 +11,7 @@ export class SalesAuditEvent {
     | "task"
     | "order"
     | "alert";
-  entityId: string;
+  entity_id: string;
   detail: string;
-  createdAt: Date;
+  created_at: Date;
 }

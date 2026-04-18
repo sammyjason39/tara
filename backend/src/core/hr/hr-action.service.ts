@@ -17,15 +17,15 @@ export class HRActionService {
   /**
    * Hook to trigger a formal audit of a specific entity.
    */
-  async triggerAudit(tenantId: string, entityType: string, entityId: string, reason: string) {
-    this.logger.log(`[ACTION_HOOK] Triggering audit for ${entityType}:${entityId}. Reason: ${reason}`);
+  async triggerAudit(tenant_id: string, entity_type: string, entity_id: string, reason: string) {
+    this.logger.log(`[ACTION_HOOK] Triggering audit for ${entity_type}:${entity_id}. Reason: ${reason}`);
     // Future implementation: Create an AuditTask or TaskRecord
   }
 
   /**
    * Hook to notify administrators about an anomaly or recommendation.
    */
-  async notifyAdmin(tenantId: string, message: string, priority: string = 'MEDIUM') {
+  async notifyAdmin(tenant_id: string, message: string, priority: string = 'MEDIUM') {
     this.logger.log(`[ACTION_HOOK] Notifying admin (Priority: ${priority}): ${message}`);
     // Future implementation: Push notification via Comms module
   }
@@ -33,7 +33,7 @@ export class HRActionService {
   /**
    * Hook to request human approval for a suggested correction.
    */
-  async requestApproval(tenantId: string, actionType: string, payload: any) {
+  async requestApproval(tenant_id: string, actionType: string, payload: any) {
     this.logger.log(`[ACTION_HOOK] Requesting approval for action [${actionType}]`);
     // Future implementation: Create a WorkflowInstance with 'APPROVAL' status
   }

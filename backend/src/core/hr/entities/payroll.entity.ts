@@ -4,12 +4,12 @@
  */
 export class Payroll {
   id: string;
-  tenantId: string;
-  employeeId: string;
+  tenant_id: string;
+  employee_id: string;
   period: string; // YYYY-MM format
-  baseSalary: number;
-  hoursWorked?: number;
-  hourlyRate?: number;
+  base_salary: number;
+  hours_worked?: number;
+  hourly_rate?: number;
   overtimeHours?: number;
   overtimeRate?: number;
   bonuses?: number;
@@ -18,6 +18,6 @@ export class Payroll {
   netPay: number;
   status: "draft" | "approved" | "paid";
   paidAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

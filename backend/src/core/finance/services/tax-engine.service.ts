@@ -6,14 +6,14 @@ export interface TaxCalculationResult {
   taxRateId: string;
   name: string;
   baseAmount: Prisma.Decimal;
-  taxAmount: Prisma.Decimal;
+  tax_amount: Prisma.Decimal;
   accountCode: string;
 }
 
 export interface ITaxStrategy {
   calculate(params: {
-    tenantId: string;
-    branchId?: string;
+    tenant_id: string;
+    branch_id?: string;
     amount: Prisma.Decimal;
     transactionType: 'AR_INVOICE' | 'AP_BILL';
   }): Promise<TaxCalculationResult[]>;
@@ -28,13 +28,13 @@ export class TaxEngineService {
     @Inject('TAX_STRATEGIES') private strategies: Map<string, ITaxStrategy>
   ) {}
 
-  async calculateTax(tenantId: string, branchId: string | undefined, country: string, amount: Prisma.Decimal, transactionType: 'AR_INVOICE' | 'AP_BILL') {
+  async calculateTax(tenant_id: string, branch_id: string | undefined, country: string, amount: Prisma.Decimal, transactionType: 'AR_INVOICE' | 'AP_BILL') {
     const strategy = this.strategies.get(country);
     if (!strategy) {
       this.logger.warn(`No tax strategy for country ${country}. Skipping.`);
       return [];
     }
-    return strategy.calculate({ tenantId, branchId, amount, transactionType });
+    return strategy.calculate({ tenant_id, branch_id, amount, transactionType });
   }
 }
 
@@ -45,8 +45,8 @@ export class TaxEngineService {
  */
 export class IndonesiaTaxStrategy implements ITaxStrategy {
   async calculate(params: {
-    tenantId: string;
-    branchId?: string;
+    tenant_id: string;
+    branch_id?: string;
     amount: Prisma.Decimal;
     transactionType: 'AR_INVOICE' | 'AP_BILL';
   }): Promise<TaxCalculationResult[]> {
@@ -55,13 +55,13 @@ export class IndonesiaTaxStrategy implements ITaxStrategy {
     
     // 1. PPN (VAT) 11%
     const ppnRate = new Prisma.Decimal(0.11);
-    const taxAmount = amount.times(ppnRate).toDecimalPlaces(4);
+    const tax_amount = amount.times(ppnRate).toDecimalPlaces(4);
     
     results.push({
       taxRateId: 'ID-PPN-11',
       name: 'PPN 11%',
       baseAmount: amount,
-      taxAmount: taxAmount,
+      tax_amount: tax_amount,
       accountCode: params.transactionType === 'AR_INVOICE' ? '2111-PPN-OUT' : '1151-PPN-IN',
     });
 
@@ -72,7 +72,7 @@ export class IndonesiaTaxStrategy implements ITaxStrategy {
         taxRateId: 'ID-PPH-23',
         name: 'PPh 23 (Services)',
         baseAmount: amount,
-        taxAmount: amount.times(pphRate).toDecimalPlaces(4),
+        tax_amount: amount.times(pphRate).toDecimalPlaces(4),
         accountCode: '2112-PPH-PAYABLE',
       });
     }

@@ -35,8 +35,8 @@ export class WorkflowController {
 
   @Get("list")
   async listRequests(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    return this.workflowService.listAll(tenantId);
+    const { tenant_id } = request.tenantContext;
+    return this.workflowService.listAll(tenant_id);
   }
 
   @Post("request")
@@ -44,19 +44,19 @@ export class WorkflowController {
     @Req() request: RequestWithTenant,
     @Body()
     body: {
-      entityType: string;
-      entityId: string;
-      makerDept: string;
-      destinationDept: string;
+      entity_type: string;
+      entity_id: string;
+      maker_dept: string;
+      destination_dept: string;
       notes?: string;
       metadata?: any;
     },
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return this.workflowService.createRequest({
-      tenantId,
+      tenant_id,
       ...body,
-      requestedBy: userId || "system",
+      requested_by: user_id || "system",
     });
   }
 
@@ -65,8 +65,8 @@ export class WorkflowController {
     @Req() request: RequestWithTenant,
     @Query("dept") dept: string,
   ) {
-    const { tenantId } = request.tenantContext;
-    return this.workflowService.listInbox(tenantId, dept);
+    const { tenant_id } = request.tenantContext;
+    return this.workflowService.listInbox(tenant_id, dept);
   }
 
   @Post(":id/approve")
@@ -75,8 +75,8 @@ export class WorkflowController {
     @Req() request: RequestWithTenant,
     @Body("notes") notes?: string,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    return this.workflowService.approveRequest(tenantId, id, userId || "system", notes);
+    const { tenant_id, user_id } = request.tenantContext;
+    return this.workflowService.approveRequest(tenant_id, id, user_id || "system", notes);
   }
 
   @Post(":id/reject")
@@ -85,7 +85,7 @@ export class WorkflowController {
     @Req() request: RequestWithTenant,
     @Body("notes") notes?: string,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    return this.workflowService.rejectRequest(tenantId, id, userId || "system", notes);
+    const { tenant_id, user_id } = request.tenantContext;
+    return this.workflowService.rejectRequest(tenant_id, id, user_id || "system", notes);
   }
 }

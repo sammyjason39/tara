@@ -1,5 +1,5 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { ItDevice as PrismaDevice, ItSettings as PrismaITSetting } from "@prisma/client";
+import { Injectable } from "@nestjs/common";
+import { it_devices as PrismaDevice, it_settings as PrismaITSetting } from "@prisma/client";
 import { v4 as uuidv4 } from "uuid";
 import { PrismaService } from "../../../persistence/prisma.service";
 import { RegisterDeviceDto } from "../dto/register-device.dto";
@@ -14,46 +14,47 @@ export class ITSettingsDbRepository extends IITSettingsRepository {
     super();
   }
 
-  async getDevices(tenantId: string, locationId?: string): Promise<Device[]> {
-    const devices = await this.prisma.itDevice.findMany({
+  async getDevices(tenant_id: string, location_id?: string): Promise<Device[]> {
+    const devices = await this.prisma.it_devices.findMany({
       where: {
-        tenantId: tenantId,
-        ...(locationId ? { locationId } : {}),
+        tenant_id: tenant_id,
+        ...(location_id ? { location_id } : {}),
       },
     });
 
     return devices.map((d: PrismaDevice) => ({
       id: d.id,
-      tenantId: d.tenantId,
-      locationId: d.locationId || "",
+      tenant_id: d.tenant_id,
+      location_id: d.location_id || "",
       deviceType: d.type as any,
       deviceName: d.name,
-      ipAddress: (d.metadata as any)?.ipAddress || undefined,
+      ip_address: (d.metadata as any)?.ip_address || undefined,
       macAddress: (d.metadata as any)?.macAddress || undefined,
       status: d.status.toLowerCase() as any,
-      lastSeen: d.createdAt, // d.updatedAt might be better, but d.createdAt is safe
+      lastSeen: d.created_at, // d.updated_at might be better, but d.created_at is safe
       metadata: (d.metadata as any) || {},
-      createdAt: d.createdAt,
-      updatedAt: d.createdAt,
+      created_at: d.created_at,
+      updated_at: d.created_at,
     }));
   }
 
   async registerDevice(
-    tenantId: string,
+    tenant_id: string,
     data: RegisterDeviceDto,
   ): Promise<Device> {
-    const created = await this.prisma.itDevice.create({
+    const created = await this.prisma.it_devices.create({
       data: {
+          updated_at: new Date(),
         id: uuidv4(),
 
-        tenantId: tenantId,
-        locationId: data.locationId,
+        tenant_id: tenant_id,
+        location_id: data.location_id,
         type: data.deviceType,
         name: data.deviceName,
         connection: "LAN",
         status: "ONLINE",
         metadata: {
-          ipAddress: data.ipAddress,
+          ip_address: data.ip_address,
           macAddress: data.macAddress,
         },
       },
@@ -61,120 +62,120 @@ export class ITSettingsDbRepository extends IITSettingsRepository {
 
     return {
       id: created.id,
-      tenantId: created.tenantId,
-      locationId: created.locationId || "",
+      tenant_id: created.tenant_id,
+      location_id: created.location_id || "",
       deviceType: created.type as any,
       deviceName: created.name,
-      ipAddress: (created.metadata as any)?.ipAddress || undefined,
+      ip_address: (created.metadata as any)?.ip_address || undefined,
       macAddress: (created.metadata as any)?.macAddress || undefined,
       status: "online",
-      lastSeen: created.createdAt,
+      lastSeen: created.created_at,
       metadata: (created.metadata as any) || {},
-      createdAt: created.createdAt,
-      updatedAt: created.createdAt,
+      created_at: created.created_at,
+      updated_at: created.created_at,
     };
   }
 
   async updateDeviceStatus(
-    tenantId: string,
-    deviceId: string,
+    tenant_id: string,
+    device_id: string,
     status: string,
   ): Promise<Device> {
-    const updated = await this.prisma.itDevice.update({
-      where: { id: deviceId, tenantId: tenantId },
+    const updated = await this.prisma.it_devices.update({
+      where: { id: device_id, tenant_id: tenant_id },
       data: { status },
     });
 
     return {
       id: updated.id,
-      tenantId: updated.tenantId,
-      locationId: updated.locationId || "",
+      tenant_id: updated.tenant_id,
+      location_id: updated.location_id || "",
       deviceType: updated.type as any,
       deviceName: updated.name,
-      ipAddress: (updated.metadata as any)?.ipAddress || undefined,
+      ip_address: (updated.metadata as any)?.ip_address || undefined,
       macAddress: (updated.metadata as any)?.macAddress || undefined,
       status: updated.status.toLowerCase() as any,
-      lastSeen: updated.createdAt,
+      lastSeen: updated.created_at,
       metadata: (updated.metadata as any) || {},
-      createdAt: updated.createdAt,
-      updatedAt: updated.createdAt,
+      created_at: updated.created_at,
+      updated_at: updated.created_at,
     };
   }
 
-  async getSettings(tenantId: string, category?: string): Promise<Setting[]> {
-    const settings = await this.prisma.itSettings.findMany({
+  async getSettings(tenant_id: string, category?: string): Promise<Setting[]> {
+    const settings = await this.prisma.it_settings.findMany({
       where: {
-        tenantId: tenantId,
+        tenant_id: tenant_id,
         ...(category ? { category } : {}),
       },
     });
 
     return settings.map((s: PrismaITSetting) => ({
       id: s.id,
-      tenantId: s.tenantId,
+      tenant_id: s.tenant_id,
       key: s.key,
       value: s.value,
       category: s.category as any,
-      isPublic: s.isPublic,
+      isPublic: s.is_public,
       description: s.description || undefined,
-      createdAt: s.createdAt,
-      updatedAt: s.updatedAt,
+      created_at: s.created_at,
+      updated_at: s.updated_at,
     }));
   }
 
-  async getSetting(tenantId: string, key: string): Promise<Setting | null> {
-    const setting = await this.prisma.itSettings.findUnique({
-      where: { tenantId_key: { tenantId: tenantId, key } },
+  async getSetting(tenant_id: string, key: string): Promise<Setting | null> {
+    const setting = await this.prisma.it_settings.findUnique({
+      where: { tenant_id_key: { tenant_id: tenant_id, key } },
     });
 
     if (!setting) return null;
 
     return {
       id: setting.id,
-      tenantId: setting.tenantId,
+      tenant_id: setting.tenant_id,
       key: setting.key,
       value: setting.value,
       category: setting.category as any,
-      isPublic: setting.isPublic,
+      isPublic: setting.is_public,
       description: setting.description || undefined,
-      createdAt: setting.createdAt,
-      updatedAt: setting.updatedAt,
+      created_at: setting.created_at,
+      updated_at: setting.updated_at,
     };
   }
 
   async updateSetting(
-    tenantId: string,
+    tenant_id: string,
     key: string,
     data: UpdateSettingDto,
   ): Promise<Setting> {
-    const updated = await this.prisma.itSettings.upsert({
-      where: { tenantId_key: { tenantId: tenantId, key } },
+    const updated = await this.prisma.it_settings.upsert({
+      where: { tenant_id_key: { tenant_id: tenant_id, key } },
       update: {
         value: data.value,
         category: data.category,
-        isPublic: data.isPublic,
+        is_public: data.isPublic,
         description: data.description,
       },
       create: {
-        tenantId: tenantId,
+        tenant_id: tenant_id,
         key,
         value: data.value,
         category: data.category || "general",
-        isPublic: data.isPublic || false,
+        is_public: data.isPublic || false,
         description: data.description,
       },
     });
 
     return {
       id: updated.id,
-      tenantId: updated.tenantId,
+      tenant_id: updated.tenant_id,
       key: updated.key,
       value: updated.value,
       category: updated.category as any,
-      isPublic: updated.isPublic,
+      isPublic: updated.is_public,
       description: updated.description || undefined,
-      createdAt: updated.createdAt,
-      updatedAt: updated.updatedAt,
+      created_at: updated.created_at,
+      updated_at: updated.updated_at,
     };
   }
 }

@@ -11,31 +11,31 @@ export class SuccessionService {
     private readonly analyticsService: AnalyticsService,
   ) {}
 
-  async getPlans(tenantId: string) {
-    return this.repository.getSuccessionPlans(tenantId);
+  async getPlans(tenant_id: string) {
+    return this.repository.getSuccessionPlans(tenant_id);
   }
 
-  async getPlan(tenantId: string, positionId: string) {
-    return this.repository.getSuccessionPlan(tenantId, positionId);
+  async getPlan(tenant_id: string, position_id: string) {
+    return this.repository.getSuccessionPlan(tenant_id, position_id);
   }
 
-  async createPlan(tenantId: string, data: any) {
-    return this.repository.createSuccessionPlan(tenantId, data);
+  async createPlan(tenant_id: string, data: any) {
+    return this.repository.createSuccessionPlan(tenant_id, data);
   }
 
-  async getModelSuccession(tenantId: string, positionId: string) {
-    this.logger.log(`Modeling succession for position ${positionId}`);
+  async getModelSuccession(tenant_id: string, position_id: string) {
+    this.logger.log(`Modeling succession for position ${position_id}`);
 
     const [position, result] = await Promise.all([
-      this.repository.getPositions(tenantId).then(pos => pos.find(p => p.id === positionId)),
-      this.repository.getEmployees(tenantId, undefined, 1, 1000),
+      this.repository.getPositions(tenant_id).then(pos => pos.find(p => p.id === position_id)),
+      this.repository.getEmployees(tenant_id, undefined, 1, 1000),
     ]);
 
     if (!position) throw new Error("Position not found");
 
     // Filter potential candidates (one grade below, high performance)
     // In a real system, we'd look at job grades. Here we'll simulate by matching department.
-    const departmentLevelEmployees = result.data.filter(e => e.departmentId === position.departmentId);
+    const departmentLevelEmployees = result.data.filter(e => e.department_id === position.department_id);
     
     // Simulate scoring logic
     const candidates = departmentLevelEmployees.map(e => {
@@ -45,9 +45,9 @@ export class SuccessionService {
       else if (score < 70) readiness = "READY_3_PLUS_YEARS";
 
       return {
-        employeeId: e.id,
-        name: e.firstName + " " + e.lastName,
-        currentRole: e.jobTitle,
+        employee_id: e.id,
+        name: e.first_name + " " + e.last_name,
+        currentRole: e.job_title,
         readinessScore: score,
         readiness,
         skillGaps: ["Leadership", "Budgeting"].slice(0, Math.floor(Math.random() * 3)),
@@ -57,22 +57,22 @@ export class SuccessionService {
     return candidates.sort((a, b) => b.readinessScore - a.readinessScore);
   }
 
-  async assessBenchStrength(tenantId: string, departmentId?: string) {
-    return this.repository.getBenchStrength(tenantId, departmentId);
+  async assessBenchStrength(tenant_id: string, department_id?: string) {
+    return this.repository.getBenchStrength(tenant_id, department_id);
   }
 
-  async nominateSuccessor(tenantId: string, data: any) {
-    this.logger.log(`Nominating successor ${data.employeeId} for plan ${data.planId}`);
+  async nominateSuccessor(tenant_id: string, data: any) {
+    this.logger.log(`Nominating successor ${data.employee_id} for plan ${data.planId}`);
     
     // Check flight risk from AnalyticsService for better decision support
-    const risks = await this.analyticsService.getFlightRisks(tenantId);
-    const candidateRisk = risks.find(r => r.employeeId === data.employeeId);
+    const risks = await this.analyticsService.getFlightRisks(tenant_id);
+    const candidateRisk = risks.find(r => r.employee_id === data.employee_id);
     
     const candidateData = {
       ...data,
       riskOfLoss: candidateRisk?.riskScore > 0.7 ? "HIGH" : (candidateRisk?.riskScore > 0.4 ? "MEDIUM" : "LOW"),
     };
 
-    return this.repository.addSuccessionCandidate(tenantId, candidateData);
+    return this.repository.addSuccessionCandidate(tenant_id, candidateData);
   }
 }

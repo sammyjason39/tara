@@ -27,13 +27,13 @@ export class JournalReversalService {
   ) {}
 
   async reverseJournal(
-    tenantId: string, 
-    companyId: string,
+    tenant_id: string, 
+    company_id: string,
     journalId: string, 
     reason: string, 
-    requestedBy: string
+    requested_by: string
   ): Promise<string> {
-    const originalJournal = await this.journalRepo.findById(tenantId, companyId, journalId);
+    const originalJournal = await this.journalRepo.findById(tenant_id, company_id, journalId);
     if (!originalJournal) {
       throw new BadRequestException(`Journal ${journalId} not found`);
     }
@@ -46,7 +46,7 @@ export class JournalReversalService {
       throw new BadRequestException(`Only POSTED journals can be reversed. Current status is ${originalJournal.status}`);
     }
 
-    const existingReversal = await this.reversalRepo.findByOriginalJournalId(tenantId, companyId, journalId);
+    const existingReversal = await this.reversalRepo.findByOriginalJournalId(tenant_id, company_id, journalId);
 
     if (existingReversal) {
       throw new BadRequestException(`Journal ${journalId} has already been reversed by Reversal ID ${existingReversal.id}`);
@@ -54,7 +54,7 @@ export class JournalReversalService {
 
 
 
-    const fiscalPeriod = await this.fiscalRepo.findById(tenantId, companyId, originalJournal.fiscalPeriodId);
+    const fiscalPeriod = await this.fiscalRepo.findById(tenant_id, company_id, originalJournal.fiscalPeriodId);
     if (!fiscalPeriod || 
         fiscalPeriod.status === FiscalPeriodStatus.HARD_LOCK || 
         fiscalPeriod.status === FiscalPeriodStatus.CLOSED) {
@@ -68,12 +68,12 @@ export class JournalReversalService {
 
     return await this.uow.execute(async () => {
       // Issue HMAC posting context for reversal
-      const postingCtx = (await import('../domain/posting-context-factory')).PostingContextFactory.issue(tenantId, companyId);
+      const postingCtx = (await import('../domain/posting-context-factory')).PostingContextFactory.issue(tenant_id, company_id);
 
       // 1. Create the Reversal Journal
       const reversalJournal = await this.journalRepo.createEntry(postingCtx, {
-        tenantId,
-        companyId,
+        tenant_id,
+        company_id,
         fiscalPeriodId: originalJournal.fiscalPeriodId,
         postingDate: new Date(),
         status: JournalStatus.POSTED,
@@ -81,15 +81,15 @@ export class JournalReversalService {
       });
 
       // 2. Transpose Lines (Debit -> Credit, Credit -> Debit)
-      const reversalLines = originalLines.map(line => ({
+      const reversalLines = originalLines.map((line: any) => ({
         accountId: line.accountId,
         side: line.side === PostingSide.DEBIT ? PostingSide.CREDIT : PostingSide.DEBIT,
         amount: line.amount,
         currency: line.currency,
-        branchId: line.branchId,
+        branch_id: line.branch_id,
         dimensionBranchId: line.dimensionBranchId,
         dimensionChannelId: line.dimensionChannelId,
-        locationId: line.locationId,
+        location_id: line.location_id,
         departmentId: line.departmentId,
         costCenterId: line.costCenterId,
         projectId: line.projectId,
@@ -102,30 +102,30 @@ export class JournalReversalService {
 
       // 3. Update Balances
       for (const line of reversalLines) {
-        await this.updateAccountBalance(tenantId, companyId, originalJournal.fiscalPeriodId, line);
+        await this.updateAccountBalance(tenant_id, company_id, originalJournal.fiscalPeriodId, line);
       }
 
       // 4. Create Trace Record
-      await this.reversalRepo.createReversalRecord(tenantId, companyId, {
+      await this.reversalRepo.createReversalRecord(tenant_id, company_id, {
         originalJournalId: originalJournal.id,
         reversalJournalId: reversalJournal.id,
         reversalReason: reason,
-        requestedBy,
+        requested_by,
       });
 
       // 5. Update Original Journal Status
-      await this.journalRepo.updateStatus(tenantId, companyId, originalJournal.id, JournalStatus.REVERSED);
+      await this.journalRepo.updateStatus(tenant_id, company_id, originalJournal.id, JournalStatus.REVERSED);
 
       // 6. Audit Logging
       if (this.auditService?.log) {
         await this.auditService.log({
-          tenantId,
-          userId: requestedBy || 'SYSTEM',
+          tenant_id,
+          user_id: requested_by || 'SYSTEM',
           module: 'FINANCE',
           action: 'REVERSE_JOURNAL',
-          entityType: 'JournalEntry',
-          entityId: originalJournal.id,
-          metadata: { companyId, reversalJournalId: reversalJournal.id, reason, requestedBy },
+          entity_type: 'JournalEntry',
+          entity_id: originalJournal.id,
+          metadata: { company_id, reversalJournalId: reversalJournal.id, reason, requested_by },
         });
       }
 
@@ -134,13 +134,13 @@ export class JournalReversalService {
     });
   }
 
-  private async updateAccountBalance(tenantId: string, companyId: string, fiscalPeriodId: string, line: any): Promise<void> {
+  private async updateAccountBalance(tenant_id: string, company_id: string, fiscalPeriodId: string, line: any): Promise<void> {
     const params = {
       fiscalPeriodId,
       accountId: line.accountId,
       currency: line.currency,
-      branchId: line.dimensionBranchId || line.branchId || '',
-      locationId: line.locationId || '',
+      branch_id: line.dimensionBranchId || line.branch_id || '',
+      location_id: line.location_id || '',
       departmentId: line.dimensionDepartmentId || line.departmentId,
       costCenterId: line.dimensionCostCenterId || line.costCenterId,
       projectId: line.dimensionProjectId || line.projectId,
@@ -151,7 +151,7 @@ export class JournalReversalService {
     const amount = new Prisma.Decimal(line.amount);
     
     // Area 1: Perform atomic increment via repository
-    await this.balanceRepo.incrementBalance(tenantId, companyId, params, {
+    await this.balanceRepo.incrementBalance(tenant_id, company_id, params, {
       debit: isDebit ? amount : undefined,
       credit: !isDebit ? amount : undefined,
       net: isDebit ? amount : amount.negated(),

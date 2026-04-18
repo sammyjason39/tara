@@ -8,13 +8,13 @@ export class ScalingService {
    * Resolves the partition shard for a given tenant.
    * Based on the Partition Strategy: PARTITION defined in schema.prisma.
    */
-  resolveShard(tenantId: string): string {
+  resolveShard(tenant_id: string): string {
     // Simple sharding logic (e.g., hash-based or range-based)
     const shards = ['SHARD_A', 'SHARD_B', 'SHARD_C'];
-    const charCodeSum = tenantId.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    const charCodeSum = tenant_id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
     const shard = shards[charCodeSum % shards.length];
     
-    this.logger.log(`Resolved shard ${shard} for tenant ${tenantId}`);
+    this.logger.log(`Resolved shard ${shard} for tenant ${tenant_id}`);
     return shard;
   }
 
@@ -27,7 +27,7 @@ export class ScalingService {
     return {
       ...payload,
       _sealedBoundary: true,
-      _partitionKey: this.resolveShard(payload.tenantId),
+      _partitionKey: this.resolveShard(payload.tenant_id),
       originalSeal: seal
     };
   }

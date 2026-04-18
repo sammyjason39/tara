@@ -18,7 +18,7 @@ class PostingRuleLineDto {
 export class CreatePostingRuleDto {
   @IsString()
   @IsNotEmpty()
-  eventType: string;
+  event_type: string;
 
   @IsString()
   @IsOptional()

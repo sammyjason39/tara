@@ -1,6 +1,6 @@
 export class PriceVersion {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   skuId: string;
   ruleId: string;
   baseCost: number;
@@ -8,5 +8,5 @@ export class PriceVersion {
   currency: string;
   effectiveFrom: Date;
   isCurrent: boolean;
-  createdAt: Date;
+  created_at: Date;
 }

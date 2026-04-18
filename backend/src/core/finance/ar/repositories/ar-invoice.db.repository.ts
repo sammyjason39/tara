@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
+import { randomUUID } from "crypto";
 import { PrismaService } from "../../../../persistence/prisma.service";
 import { IArInvoiceRepository } from "./interfaces/ar-invoice.repository.interface";
 import { IArInvoice, IArInvoiceLine } from "../domain/ar.interfaces";
@@ -16,128 +17,164 @@ export class ArInvoiceDbRepository implements IArInvoiceRepository {
   }
 
   async findById(
-    tenantId: string,
-    companyId: string,
+    tenant_id: string,
+    company_id: string,
     id: string,
   ): Promise<IArInvoice | null> {
-    const res = await this.db.arInvoice.findUnique({
+    const res = await this.db.finance_ar_invoices.findUnique({
       where: { id },
-      include: { financeArInvoiceLines: true },
+      include: { finance_ar_invoice_lines: true },
     });
-    return res as unknown as IArInvoice;
+    if (!res) return null;
+    return this.mapToDomain(res);
   }
 
   async findByNumber(
-    tenantId: string,
-    companyId: string,
+    tenant_id: string,
+    company_id: string,
     invoiceNumber: string,
   ): Promise<IArInvoice | null> {
-    const res = await this.db.arInvoice.findUnique({
-      where: { tenantId_invoiceNumber: { tenantId, invoiceNumber } },
-      include: { financeArInvoiceLines: true },
+    const res = await this.db.finance_ar_invoices.findUnique({
+      where: { tenant_id_invoice_number: { tenant_id: tenant_id, invoice_number: invoiceNumber } },
+      include: { finance_ar_invoice_lines: true },
     });
-    return res as unknown as IArInvoice;
+    if (!res) return null;
+    return this.mapToDomain(res);
   }
 
   async findByIdempotencyKey(
-    tenantId: string,
-    companyId: string,
+    tenant_id: string,
+    company_id: string,
     key: string,
   ): Promise<IArInvoice | null> {
-    const res = await this.db.arInvoice.findUnique({
-      where: { tenantId_idempotencyKey: { tenantId, idempotencyKey: key } },
-      include: { financeArInvoiceLines: true },
+    const res = await this.db.finance_ar_invoices.findUnique({
+      where: { tenant_id_idempotency_key: { tenant_id: tenant_id, idempotency_key: key } },
+      include: { finance_ar_invoice_lines: true },
     });
-    return res as unknown as IArInvoice;
+    if (!res) return null;
+    return this.mapToDomain(res);
   }
 
   async findAll(
-    tenantId: string,
-    companyId: string,
-    customerId?: string,
+    tenant_id: string,
+    company_id: string,
+    customer_id?: string,
   ): Promise<IArInvoice[]> {
-    const list = await this.db.arInvoice.findMany({
-      where: { tenantId, customerId },
-      include: { financeArInvoiceLines: true },
+    const list = await this.db.finance_ar_invoices.findMany({
+      where: { tenant_id: tenant_id, customer_id: customer_id },
+      include: { finance_ar_invoice_lines: true },
     });
-    return list as unknown as IArInvoice[];
+    return list.map((item: any) => this.mapToDomain(item));
   }
 
   async create(
-    tenantId: string,
-    companyId: string,
+    tenant_id: string,
+    company_id: string,
     data: any,
   ): Promise<IArInvoice> {
-    const created = await this.db.arInvoice.create({
+    const created = await this.db.finance_ar_invoices.create({
       data: {
-        
-        updatedAt: new Date(),
-        tenantId,
-        customerId: data.customerId,
-        invoiceNumber: data.invoiceNumber,
+        id: data.id || randomUUID(),
+        tenant_id: tenant_id,
+        customer_id: data.customer_id,
+        invoice_number: data.invoiceNumber,
         status: ArInvoiceStatus.DRAFT,
         currency: data.currency || "USD",
-        totalAmount: new Prisma.Decimal(data.totalAmount),
-        outstandingAmount: new Prisma.Decimal(data.totalAmount),
-        idempotencyKey: data.idempotencyKey,
+        total_amount: new Prisma.Decimal(data.total_amount),
+        outstanding_amount: new Prisma.Decimal(data.total_amount),
+        idempotency_key: data.idempotency_key,
+        created_at: new Date(),
+        updated_at: new Date(),
+        due_date: data.dueDate ? new Date(data.dueDate) : undefined,
       },
     });
-    return created as unknown as IArInvoice;
+    return this.mapToDomain(created);
   }
 
   async createLines(
-    tenantId: string,
-    companyId: string,
+    tenant_id: string,
+    company_id: string,
     invoiceId: string,
     lines: any[],
   ): Promise<IArInvoiceLine[]> {
     const createdLines = await Promise.all(
-      lines.map((line) =>
-        this.db.arInvoiceLine.create({
+      lines.map((line: any) =>
+        this.db.finance_ar_invoice_lines.create({
           data: {
-            
-            invoiceId,
+            id: randomUUID(),
+            invoice_id: invoiceId,
             description: line.description,
             quantity: new Prisma.Decimal(line.quantity),
-            unitPrice: new Prisma.Decimal(line.unitPrice),
+            unit_price: new Prisma.Decimal(line.unit_price),
             total: new Prisma.Decimal(line.total),
           },
         }),
       ),
     );
-    return createdLines as unknown as IArInvoiceLine[];
+    return createdLines.map((line: any) => this.mapLineToDomain(line));
   }
 
   async updateStatus(
-    tenantId: string,
-    companyId: string,
+    tenant_id: string,
+    company_id: string,
     id: string,
     status: ArInvoiceStatus,
     outstandingAmount?: Prisma.Decimal,
     tx?: Prisma.TransactionClient,
   ): Promise<IArInvoice> {
     const targetDb = tx || this.db;
-    const updated = await targetDb.arInvoice.update({
+    const updated = await targetDb.finance_ar_invoices.update({
       where: { id },
       data: {
         status: status as any,
-        outstandingAmount: outstandingAmount
+        outstanding_amount: outstandingAmount
           ? new Prisma.Decimal(outstandingAmount.toString())
           : undefined,
-        issueDate: status === ArInvoiceStatus.ISSUED ? new Date() : undefined,
+        issue_date: status === ArInvoiceStatus.ISSUED ? new Date() : undefined,
+        updated_at: new Date(),
       },
+      include: { finance_ar_invoice_lines: true },
     });
-    return updated as unknown as IArInvoice;
+    return this.mapToDomain(updated);
   }
 
   async getLines(
-    tenantId: string,
-    companyId: string,
+    tenant_id: string,
+    company_id: string,
     invoiceId: string,
   ): Promise<IArInvoiceLine[]> {
-    const list = await this.db.arInvoiceLine.findMany({
-      where: { invoiceId },
+    const list = await this.db.finance_ar_invoice_lines.findMany({
+      where: { invoice_id: invoiceId },
     });
-    return list as unknown as IArInvoiceLine[];
+    return list.map((line: any) => this.mapLineToDomain(line));
+  }
+
+  private mapToDomain(item: any): IArInvoice {
+    return {
+      id: item.id,
+      tenant_id: item.tenant_id,
+      company_id: item.tenant_id,
+      customer_id: item.customer_id,
+      invoiceNumber: item.invoice_number,
+      status: item.status,
+      currency: item.currency,
+      issueDate: item.issue_date,
+      dueDate: item.due_date,
+      total_amount: item.total_amount,
+      outstandingAmount: item.outstanding_amount,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+      lines: item.financeArInvoiceLine ? item.finance_ar_invoice_lines.map((l: any) => this.mapLineToDomain(l)) : [],
+    } as unknown as IArInvoice;
+  }
+
+  private mapLineToDomain(line: any): IArInvoiceLine {
+    return {
+      id: line.id,
+      description: line.description,
+      quantity: line.quantity,
+      unit_price: line.unit_price,
+      total: line.total,
+    } as unknown as IArInvoiceLine;
   }
 }

@@ -7,22 +7,22 @@ import { v4 as uuid } from 'uuid';
 export class ArCreditMemoMockRepository implements IArCreditMemoRepository {
   private creditMemos: IArCreditMemo[] = [];
 
-  async create(tenantId: string, companyId: string, data: any): Promise<IArCreditMemo> {
+  async create(tenant_id: string, company_id: string, data: any): Promise<IArCreditMemo> {
     const creditMemo: IArCreditMemo = {
       id: uuid(),
-      tenantId,
-      companyId,
-      customerId: data.customerId,
+      tenant_id,
+      company_id,
+      customer_id: data.customer_id,
       creditAmount: data.creditAmount,
       reason: data.reason,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
     };
     this.creditMemos.push(creditMemo);
     return creditMemo;
   }
 
-  async findAll(tenantId: string, companyId: string, customerId?: string): Promise<IArCreditMemo[]> {
-    return this.creditMemos.filter(c => c.tenantId === tenantId && c.companyId === companyId && (!customerId || c.customerId === customerId));
+  async findAll(tenant_id: string, company_id: string, customer_id?: string): Promise<IArCreditMemo[]> {
+    return this.creditMemos.filter((c: any) => c.tenant_id === tenant_id && c.company_id === company_id && (!customer_id || c.customer_id === customer_id));
   }
 }

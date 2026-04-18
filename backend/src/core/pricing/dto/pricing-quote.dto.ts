@@ -1,6 +1,6 @@
 export class PricingQuoteDto {
   skuId: string;
-  locationId: string;
+  location_id: string;
   baseCost: number;
   salesPrice: number;
   ruleId: string;

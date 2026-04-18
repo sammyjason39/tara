@@ -39,39 +39,39 @@ async function verifyHardening() {
     hashingService
   );
 
-  const tenantId = 'TENANT_1';
-  const companyId = 'COMP_1';
+  const tenant_id = 'TENANT_1';
+  const company_id = 'COMP_1';
   const accountId = 'ACC_CASH';
   const currency = 'USD';
   const fiscalPeriodId = 'PER_2024_01';
 
   console.log('1. Verifying Multi-Currency Isolation...');
-  await balanceRepo.incrementBalance(tenantId, companyId, {
+  await balanceRepo.incrementBalance(tenant_id, company_id, {
     accountId,
     currency,
     fiscalPeriodId,
-    branchId: 'BR1',
-    locationId: 'LOC1'
+    branch_id: 'BR1',
+    location_id: 'LOC1'
   }, { net: new Prisma.Decimal(100) });
 
   const usdBalance = await balanceRepo.findBalance({
-    tenantId,
-    companyId,
+    tenant_id,
+    company_id,
     fiscalPeriodId,
     accountId,
     currency,
-    branchId: 'BR1',
-    locationId: 'LOC1'
+    branch_id: 'BR1',
+    location_id: 'LOC1'
   });
 
   const eurBalance = await balanceRepo.findBalance({
-    tenantId,
-    companyId,
+    tenant_id,
+    company_id,
     fiscalPeriodId,
     accountId,
     currency: 'EUR',
-    branchId: 'BR1',
-    locationId: 'LOC1'
+    branch_id: 'BR1',
+    location_id: 'LOC1'
   });
   
   if (usdBalance?.netBalance.equals(100) && !eurBalance) {
@@ -81,12 +81,12 @@ async function verifyHardening() {
   }
 
   console.log('2. Verifying Auditable Self-Healing...');
-  await integrityService.autoRepairBalance(tenantId, companyId, fiscalPeriodId, accountId, currency, {
-    branchId: 'BR1',
-    locationId: 'LOC1'
+  await integrityService.autoRepairBalance(tenant_id, company_id, fiscalPeriodId, accountId, currency, {
+    branch_id: 'BR1',
+    location_id: 'LOC1'
   });
   
-  const journals = await journalRepo.findAllOrderedByDate(tenantId, companyId);
+  const journals = await journalRepo.findAllOrderedByDate(tenant_id, company_id);
   const adjJournal = journals.find(j => j.journalType === JournalType.SYSTEM_ADJUSTMENT);
   
   if (adjJournal && adjJournal.description?.includes('Original: 100, Corrected: 0')) {

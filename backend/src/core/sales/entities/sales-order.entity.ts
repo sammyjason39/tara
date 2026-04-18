@@ -1,6 +1,6 @@
 export class SalesOrder {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   opportunityId: string;
   quoteId?: string;
   customerName: string;
@@ -10,6 +10,6 @@ export class SalesOrder {
   inventoryCheck: "available" | "partial" | "unavailable";
   financeInvoiceId?: string;
   createdBy: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

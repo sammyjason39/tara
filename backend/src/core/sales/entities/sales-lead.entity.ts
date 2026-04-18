@@ -1,15 +1,15 @@
 export class SalesLead {
   id: string;
-  tenantId: string;
-  companyName: string;
-  contactName: string;
-  contactEmail?: string;
+  tenant_id: string;
+  company_name: string;
+  contact_name: string;
+  contact_email?: string;
   contactPhone?: string;
   source: "marketing" | "referral" | "inbound" | "outbound" | "partner";
-  ownerId: string;
-  ownerName: string;
+  owner_id: string;
+  owner_name: string;
   score: number;
-  potentialValue: number;
+  potential_value: number;
   currency: "IDR" | "USD";
   priority: "low" | "medium" | "high" | "urgent";
   status:
@@ -19,8 +19,8 @@ export class SalesLead {
     | "qualified"
     | "disqualified"
     | "converted";
-  slaDueAt: Date;
+  sla_due_at: Date;
   firstResponseAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

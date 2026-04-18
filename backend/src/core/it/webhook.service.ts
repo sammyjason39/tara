@@ -12,9 +12,9 @@ export class WebhookService {
    * Dispatches a webhook request asynchronously with retry logic
    * @param url The destination URL
    * @param payload The data to send
-   * @param tenantId For context
+   * @param tenant_id For context
    */
-  async dispatch(url: string, payload: any, tenantId: string): Promise<void> {
+  async dispatch(url: string, payload: any, tenant_id: string): Promise<void> {
     const maxRetries = 3;
     let attempt = 0;
 
@@ -25,7 +25,7 @@ export class WebhookService {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-Tenant-ID": tenantId,
+            "X-Tenant-ID": tenant_id,
           },
           body: JSON.stringify(payload),
         });
@@ -36,10 +36,11 @@ export class WebhookService {
 
         this.logger.log(`Webhook dispatched successfully to ${url} on attempt ${attempt}`);
         
-        await this.prisma.systemLog.create({
+        await this.prisma.system_logs.create({
           data: {
+          updated_at: new Date(),
         id: uuidv4(),
-            tenantId,
+            tenant_id: tenant_id,
             module: "IT",
             level: "INFO",
             event: "webhook.success",
@@ -50,10 +51,11 @@ export class WebhookService {
       } catch (error) {
         this.logger.error(`Webhook attempt ${attempt} failed for ${url}: ${error.message}`);
         
-        await this.prisma.systemLog.create({
+        await this.prisma.system_logs.create({
           data: {
+          updated_at: new Date(),
         id: uuidv4(),
-            tenantId,
+            tenant_id: tenant_id,
             module: "IT",
             level: "ERROR",
             event: "webhook.failure",

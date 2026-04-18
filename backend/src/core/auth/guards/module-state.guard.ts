@@ -36,7 +36,7 @@ export class ModuleStateGuard implements CanActivate {
 
     const tenantContext = request.tenantContext;
 
-    if (!tenantContext || !tenantContext.tenantId) {
+    if (!tenantContext || !tenantContext.tenant_id) {
       // Let TenantInterceptor handle missing tenant, or block if missing
       return true;
     }
@@ -46,13 +46,13 @@ export class ModuleStateGuard implements CanActivate {
       return true;
     }
 
-    const tenantId = tenantContext.tenantId;
+    const tenant_id = tenantContext.tenant_id;
 
-    const moduleStatus = await this.prisma.adminModuleStatus.findUnique({
+    const moduleStatus = await this.prisma.admin_module_statuses.findUnique({
       where: {
-        tenantId_moduleKey: {
-          tenantId,
-          moduleKey: requiredModule,
+        tenant_id_module_key: {
+          tenant_id: tenant_id,
+          module_key: requiredModule,
         },
       },
     });

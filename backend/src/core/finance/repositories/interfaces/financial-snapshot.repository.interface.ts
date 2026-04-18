@@ -1,6 +1,6 @@
 import { FinancialSnapshot } from '../../domain/finance.interfaces';
 
 export interface IFinancialSnapshotRepository {
-  create(tenantId: string, companyId: string, data: Partial<FinancialSnapshot>): Promise<FinancialSnapshot>;
-  findLatest(tenantId: string, companyId: string): Promise<FinancialSnapshot | null>;
+  create(tenant_id: string, company_id: string, data: Partial<FinancialSnapshot>): Promise<FinancialSnapshot>;
+  findLatest(tenant_id: string, company_id: string): Promise<FinancialSnapshot | null>;
 }

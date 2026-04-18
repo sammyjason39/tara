@@ -1,12 +1,12 @@
 export class AgenticEvent {
   id: string;
-  tenantId: string;
-  eventType: string;
-  entityId: string;
-  entityType: string;
+  tenant_id: string;
+  event_type: string;
+  entity_id: string;
+  entity_type: string;
   payload: any;
   status: string;
   processedAt?: Date;
   errorMsg?: string;
-  createdAt: Date;
+  created_at: Date;
 }

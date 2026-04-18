@@ -1,13 +1,13 @@
 export class Contract {
   id: string;
-  tenantId: string;
-  employeeId?: string;
+  tenant_id: string;
+  employee_id?: string;
   title: string;
   type: string;
   status: "active" | "draft" | "expired" | "terminated";
-  startDate: Date;
-  endDate?: Date;
+  start_date: Date;
+  end_date?: Date;
   url?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

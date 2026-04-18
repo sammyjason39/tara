@@ -23,21 +23,21 @@ export class RetailPublicAuthController {
   private toPublicCustomer(customer: any) {
     return {
       id: customer.id,
-      tenantId: customer.tenantId,
+      tenant_id: customer.tenant_id,
       name: customer.name,
       email: customer.email,
       phone: customer.phone,
       tier: customer.tier,
       points: customer.points,
-      createdAt: customer.createdAt?.toISOString?.() ?? customer.createdAt,
-      updatedAt: customer.updatedAt?.toISOString?.() ?? customer.updatedAt,
+      created_at: customer.created_at?.toISOString?.() ?? customer.created_at,
+      updated_at: customer.updated_at?.toISOString?.() ?? customer.updated_at,
     };
   }
 
   @Post("register")
   @UseGuards(ChannelCredentialsGuard)
   async register(@Req() request: Request, @Body() body: any) {
-    const { tenantId } = (request as any).tenantContext;
+    const { tenant_id } = (request as any).tenantContext;
     const scope = (request as any).connectorScope;
     const { name, email, password, phone } = body ?? {};
     if (!name || !email || !password) {
@@ -45,10 +45,10 @@ export class RetailPublicAuthController {
     }
 
     const result = await this.authService.registerCustomer(
-      tenantId,
+      tenant_id,
       scope,
       { name, email, password, phone },
-      { ip: request.ip, userAgent: request.headers["user-agent"] ?? null },
+      { ip: request.ip, user_agent: request.headers["user-agent"] ?? null },
     );
 
     return {
@@ -65,7 +65,7 @@ export class RetailPublicAuthController {
   @Post("login")
   @UseGuards(ChannelCredentialsGuard)
   async login(@Req() request: Request, @Body() body: any) {
-    const { tenantId } = (request as any).tenantContext;
+    const { tenant_id } = (request as any).tenantContext;
     const scope = (request as any).connectorScope;
     const { email, password } = body ?? {};
     if (!email || !password) {
@@ -73,10 +73,10 @@ export class RetailPublicAuthController {
     }
 
     const result = await this.authService.loginCustomer(
-      tenantId,
+      tenant_id,
       scope,
       { email, password },
-      { ip: request.ip, userAgent: request.headers["user-agent"] ?? null },
+      { ip: request.ip, user_agent: request.headers["user-agent"] ?? null },
     );
 
     return {
@@ -97,7 +97,7 @@ export class RetailPublicAuthController {
     @Body() body: any,
     @Headers("x-refresh-token") headerToken?: string,
   ) {
-    const { tenantId } = (request as any).tenantContext;
+    const { tenant_id } = (request as any).tenantContext;
     const scope = (request as any).connectorScope;
     const refreshToken = body?.refreshToken ?? headerToken;
     if (!refreshToken) {
@@ -105,10 +105,10 @@ export class RetailPublicAuthController {
     }
 
     const tokens = await this.authService.refreshTokens(
-      tenantId,
+      tenant_id,
       scope,
       refreshToken,
-      { ip: request.ip, userAgent: request.headers["user-agent"] ?? null },
+      { ip: request.ip, user_agent: request.headers["user-agent"] ?? null },
     );
 
     return {

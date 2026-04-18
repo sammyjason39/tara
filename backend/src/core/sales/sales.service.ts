@@ -19,124 +19,124 @@ export class SalesService {
     private readonly auditService: AuditService,
   ) {}
 
-  async getDashboard(tenantId: string) {
-    return this.repository.getDashboard(tenantId);
+  async getDashboard(tenant_id: string) {
+    return this.repository.getDashboard(tenant_id);
   }
 
-  async getManagerMetrics(tenantId: string) {
-    return this.repository.getManagerMetrics(tenantId);
+  async getManagerMetrics(tenant_id: string) {
+    return this.repository.getManagerMetrics(tenant_id);
   }
 
-  async getExecutiveForecast(tenantId: string) {
-    return this.repository.getExecutiveForecast(tenantId);
+  async getExecutiveForecast(tenant_id: string) {
+    return this.repository.getExecutiveForecast(tenant_id);
   }
 
-  async getNextBestActions(tenantId: string) {
-    return this.repository.getNextBestActions(tenantId);
+  async getNextBestActions(tenant_id: string) {
+    return this.repository.getNextBestActions(tenant_id);
   }
 
-  async getLeads(tenantId: string) {
-    return this.repository.getLeads(tenantId);
+  async getLeads(tenant_id: string) {
+    return this.repository.getLeads(tenant_id);
   }
 
-  async createLead(tenantId: string, dto: CreateLeadDto, userId?: string) {
-    const lead = await this.repository.createLead(tenantId, dto);
-    if (userId) {
+  async createLead(tenant_id: string, dto: CreateLeadDto, user_id?: string) {
+    const lead = await this.repository.createLead(tenant_id, dto);
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "sales",
         action: "CREATE",
-        entityType: "LEAD",
-        entityId: lead.id,
-        metadata: { name: dto.contactName, company: dto.companyName },
+        entity_type: "LEAD",
+        entity_id: lead.id,
+        metadata: { name: dto.contact_name, companies: dto.company_name },
       });
     }
     return lead;
   }
 
   async updateLeadStatus(
-    tenantId: string,
-    leadId: string,
+    tenant_id: string,
+    lead_id: string,
     dto: UpdateLeadStatusDto,
-    userId?: string,
+    user_id?: string,
   ) {
-    const lead = await this.repository.updateLeadStatus(tenantId, leadId, dto);
-    if (userId) {
+    const lead = await this.repository.updateLeadStatus(tenant_id, lead_id, dto);
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "sales",
         action: "UPDATE_STATUS",
-        entityType: "LEAD",
-        entityId: leadId,
+        entity_type: "LEAD",
+        entity_id: lead_id,
         metadata: { status: dto.status },
       });
     }
     return lead;
   }
 
-  async convertLead(tenantId: string, leadId: string, actorId: string) {
+  async convertLead(tenant_id: string, lead_id: string, actor_id: string) {
     const opportunity = await this.repository.convertLead(
-      tenantId,
-      leadId,
-      actorId,
+      tenant_id,
+      lead_id,
+      actor_id,
     );
     await this.auditService.log({
-      tenantId,
-      userId: actorId,
+      tenant_id,
+      user_id: actor_id,
       module: "sales",
       action: "CONVERT",
-      entityType: "LEAD",
-      entityId: leadId,
+      entity_type: "LEAD",
+      entity_id: lead_id,
       metadata: { opportunityId: opportunity.id },
     });
     return opportunity;
   }
 
-  async getOpportunities(tenantId: string) {
-    return this.repository.getOpportunities(tenantId);
+  async getOpportunities(tenant_id: string) {
+    return this.repository.getOpportunities(tenant_id);
   }
 
   async createOpportunity(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateOpportunityDto,
-    userId?: string,
+    user_id?: string,
   ) {
-    const opportunity = await this.repository.createOpportunity(tenantId, dto);
-    if (userId) {
+    const opportunity = await this.repository.createOpportunity(tenant_id, dto);
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "sales",
         action: "CREATE",
-        entityType: "OPPORTUNITY",
-        entityId: opportunity.id,
-        metadata: { title: dto.accountName, value: dto.amount },
+        entity_type: "OPPORTUNITY",
+        entity_id: opportunity.id,
+        metadata: { title: dto.account_name, value: dto.amount },
       });
     }
     return opportunity;
   }
 
   async moveOpportunityStage(
-    tenantId: string,
+    tenant_id: string,
     opportunityId: string,
     dto: MoveOpportunityStageDto,
-    userId?: string,
+    user_id?: string,
   ) {
     const opportunity = await this.repository.moveOpportunityStage(
-      tenantId,
+      tenant_id,
       opportunityId,
       dto,
     );
-    if (userId) {
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "sales",
         action: "MOVE_STAGE",
-        entityType: "OPPORTUNITY",
-        entityId: opportunityId,
+        entity_type: "OPPORTUNITY",
+        entity_id: opportunityId,
         metadata: { stage: dto.stage },
       });
     }
@@ -144,44 +144,44 @@ export class SalesService {
   }
 
   async closeOpportunity(
-    tenantId: string,
+    tenant_id: string,
     opportunityId: string,
     dto: CloseOpportunityDto,
-    userId?: string,
+    user_id?: string,
   ) {
     const opportunity = await this.repository.closeOpportunity(
-      tenantId,
+      tenant_id,
       opportunityId,
       dto,
     );
-    if (userId) {
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "sales",
         action: "CLOSE",
-        entityType: "OPPORTUNITY",
-        entityId: opportunityId,
+        entity_type: "OPPORTUNITY",
+        entity_id: opportunityId,
         metadata: { status: dto.result, reason: dto.reason },
       });
     }
     return opportunity;
   }
 
-  async getQuotes(tenantId: string) {
-    return this.repository.getQuotes(tenantId);
+  async getQuotes(tenant_id: string) {
+    return this.repository.getQuotes(tenant_id);
   }
 
-  async createQuote(tenantId: string, dto: CreateQuoteDto, userId?: string) {
-    const quote = await this.repository.createQuote(tenantId, dto);
-    if (userId) {
+  async createQuote(tenant_id: string, dto: CreateQuoteDto, user_id?: string) {
+    const quote = await this.repository.createQuote(tenant_id, dto);
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "sales",
         action: "CREATE",
-        entityType: "QUOTE",
-        entityId: quote.id,
+        entity_type: "QUOTE",
+        entity_id: quote.id,
         metadata: {
           opportunityId: dto.opportunityId,
           amount: dto.amount,
@@ -191,124 +191,124 @@ export class SalesService {
     return quote;
   }
 
-  async submitQuote(tenantId: string, quoteId: string, userId?: string) {
-    const quote = await this.repository.submitQuote(tenantId, quoteId);
-    if (userId) {
+  async submitQuote(tenant_id: string, quoteId: string, user_id?: string) {
+    const quote = await this.repository.submitQuote(tenant_id, quoteId);
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "sales",
         action: "SUBMIT",
-        entityType: "QUOTE",
-        entityId: quoteId,
+        entity_type: "QUOTE",
+        entity_id: quoteId,
       });
     }
     return quote;
   }
 
   async decideQuote(
-    tenantId: string,
+    tenant_id: string,
     quoteId: string,
     dto: QuoteDecisionDto,
-    userId?: string,
+    user_id?: string,
   ) {
-    const quote = await this.repository.decideQuote(tenantId, quoteId, dto);
-    if (userId) {
+    const quote = await this.repository.decideQuote(tenant_id, quoteId, dto);
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "sales",
         action: "DECIDE",
-        entityType: "QUOTE",
-        entityId: quoteId,
+        entity_type: "QUOTE",
+        entity_id: quoteId,
         metadata: { approved: dto.approved },
       });
     }
     return quote;
   }
 
-  async getTimeline(tenantId: string) {
-    return this.repository.getTimeline(tenantId);
+  async getTimeline(tenant_id: string) {
+    return this.repository.getTimeline(tenant_id);
   }
 
   async createTimelineEvent(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateTimelineEventDto,
-    userId?: string,
+    user_id?: string,
   ) {
-    const event = await this.repository.createTimelineEvent(tenantId, dto);
-    if (userId) {
+    const event = await this.repository.createTimelineEvent(tenant_id, dto);
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "sales",
         action: "CREATE_EVENT",
-        entityType: "TIMELINE",
-        entityId: event.id,
+        entity_type: "TIMELINE",
+        entity_id: event.id,
         metadata: { channel: dto.channel, summary: dto.summary },
       });
     }
     return event;
   }
 
-  async getTasks(tenantId: string) {
-    return this.repository.getTasks(tenantId);
+  async getTasks(tenant_id: string) {
+    return this.repository.getTasks(tenant_id);
   }
 
-  async createTask(tenantId: string, dto: CreateTaskDto, userId?: string) {
-    const task = await this.repository.createTask(tenantId, dto);
-    if (userId) {
+  async createTask(tenant_id: string, dto: CreateTaskDto, user_id?: string) {
+    const task = await this.repository.createTask(tenant_id, dto);
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "sales",
         action: "CREATE",
-        entityType: "TASK",
-        entityId: task.id,
+        entity_type: "TASK",
+        entity_id: task.id,
         metadata: { title: dto.title, dueAt: dto.dueAt },
       });
     }
     return task;
   }
 
-  async completeTask(tenantId: string, taskId: string, userId?: string) {
-    const task = await this.repository.completeTask(tenantId, taskId);
-    if (userId) {
+  async completeTask(tenant_id: string, taskId: string, user_id?: string) {
+    const task = await this.repository.completeTask(tenant_id, taskId);
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "sales",
         action: "COMPLETE",
-        entityType: "TASK",
-        entityId: taskId,
+        entity_type: "TASK",
+        entity_id: taskId,
       });
     }
     return task;
   }
 
-  async getOrders(tenantId: string) {
-    return this.repository.getOrders(tenantId);
+  async getOrders(tenant_id: string) {
+    return this.repository.getOrders(tenant_id);
   }
 
-  async getAlerts(tenantId: string) {
-    return this.repository.getAlerts(tenantId);
+  async getAlerts(tenant_id: string) {
+    return this.repository.getAlerts(tenant_id);
   }
 
-  async runSlaSweep(tenantId: string, actorId: string) {
-    const alerts = await this.repository.runSlaSweep(tenantId, actorId);
+  async runSlaSweep(tenant_id: string, actor_id: string) {
+    const alerts = await this.repository.runSlaSweep(tenant_id, actor_id);
     await this.auditService.log({
-      tenantId,
-      userId: actorId,
+      tenant_id,
+      user_id: actor_id,
       module: "sales",
       action: "RUN_SLA_SWEEP",
-      entityType: "SYSTEM",
-      entityId: "sla-engine",
+      entity_type: "SYSTEM",
+      entity_id: "sla-engine",
       metadata: { alertsFound: alerts.length },
     });
     return alerts;
   }
 
-  async getAuditEvents(tenantId: string) {
-    return this.repository.getAuditEvents(tenantId);
+  async getAuditEvents(tenant_id: string) {
+    return this.repository.getAuditEvents(tenant_id);
   }
 }

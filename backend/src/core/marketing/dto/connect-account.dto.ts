@@ -7,7 +7,7 @@ export class ConnectAccountDto {
 
   @IsString()
   @IsNotEmpty()
-  accountName: string;
+  account_name: string;
 
   @IsArray()
   scopes: string[];

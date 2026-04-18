@@ -16,14 +16,14 @@ export class CommsController {
   // Bulletin Endpoints
   @Get('bulletin')
   async getBulletins(@Req() req: any, @Query() filters: any) {
-    const tenantId = req.tenantContext?.tenantId;
-    return this.bulletinService.getPosts(tenantId, filters);
+    const tenant_id = req.tenantContext?.tenant_id;
+    return this.bulletinService.getPosts(tenant_id, filters);
   }
 
   @Get('bulletin/:id')
   async getBulletinDetail(@Req() req: any, @Param('id') id: string) {
-    const tenantId = req.tenantContext?.tenantId;
-    return this.bulletinService.getPostById(tenantId, id);
+    const tenant_id = req.tenantContext?.tenant_id;
+    return this.bulletinService.getPostById(tenant_id, id);
   }
 
   @Post('bulletin')
@@ -31,21 +31,21 @@ export class CommsController {
     const context = req.tenantContext;
     return this.bulletinService.createPost({
       ...body,
-      tenantId: context.tenantId,
-      authorId: context.userId,
+      tenant_id: context.tenant_id,
+      authorId: context.user_id,
     });
   }
 
   @Patch('bulletin/:id')
   async updateBulletin(@Req() req: any, @Param('id') id: string, @Body() body: any) {
-    const tenantId = req.tenantContext?.tenantId;
-    return this.bulletinService.updatePost(tenantId, id, body);
+    const tenant_id = req.tenantContext?.tenant_id;
+    return this.bulletinService.updatePost(tenant_id, id, body);
   }
 
   @Delete('bulletin/:id')
   async deleteBulletin(@Req() req: any, @Param('id') id: string) {
-    const tenantId = req.tenantContext?.tenantId;
-    return this.bulletinService.deletePost(tenantId, id);
+    const tenant_id = req.tenantContext?.tenant_id;
+    return this.bulletinService.deletePost(tenant_id, id);
   }
 
   @Post('bulletin/:id/react')
@@ -53,8 +53,8 @@ export class CommsController {
     const context = req.tenantContext;
     return this.bulletinService.toggleReaction({
       postId: id,
-      tenantId: context.tenantId,
-      userId: context.userId,
+      tenant_id: context.tenant_id,
+      user_id: context.user_id,
       type: body.type || 'LIKE',
     });
   }
@@ -64,8 +64,8 @@ export class CommsController {
     const context = req.tenantContext;
     return this.bulletinService.addComment({
       postId: id,
-      tenantId: context.tenantId,
-      authorId: context.userId,
+      tenant_id: context.tenant_id,
+      authorId: context.user_id,
       body: body.body,
     });
   }
@@ -73,39 +73,39 @@ export class CommsController {
   // Bulletin Categories
   @Get('bulletin-categories')
   async getBulletinCategories(@Req() req: any) {
-    const tenantId = req.tenantContext?.tenantId;
-    return this.bulletinService.getCategories(tenantId);
+    const tenant_id = req.tenantContext?.tenant_id;
+    return this.bulletinService.getCategories(tenant_id);
   }
 
   @Post('bulletin-categories')
   async createBulletinCategory(@Req() req: any, @Body() body: any) {
-    const tenantId = req.tenantContext?.tenantId;
-    return this.bulletinService.createCategory(tenantId, body);
+    const tenant_id = req.tenantContext?.tenant_id;
+    return this.bulletinService.createCategory(tenant_id, body);
   }
 
   @Patch('bulletin-categories/:id')
   async updateBulletinCategory(@Req() req: any, @Param('id') id: string, @Body() body: any) {
-    const tenantId = req.tenantContext?.tenantId;
-    return this.bulletinService.updateCategory(tenantId, id, body);
+    const tenant_id = req.tenantContext?.tenant_id;
+    return this.bulletinService.updateCategory(tenant_id, id, body);
   }
 
   @Delete('bulletin-categories/:id')
   async deleteBulletinCategory(@Req() req: any, @Param('id') id: string) {
-    const tenantId = req.tenantContext?.tenantId;
-    return this.bulletinService.deleteCategory(tenantId, id);
+    const tenant_id = req.tenantContext?.tenant_id;
+    return this.bulletinService.deleteCategory(tenant_id, id);
   }
 
   // Mail Endpoints
   @Get('mail/messages')
   async getMailMessages(@Req() req: any, @Query('folder') folder: string, @Query() filters: any) {
     const context = req.tenantContext;
-    return this.mailService.getMessages(context.tenantId, context.userId, folder || 'inbox', filters);
+    return this.mailService.getMessages(context.tenant_id, context.user_id, folder || 'inbox', filters);
   }
 
   @Get('mail/accounts')
   async getMailAccounts(@Req() req: any) {
     const context = req.tenantContext;
-    return this.mailService.getMailAccounts(context.tenantId, context.userId);
+    return this.mailService.getMailAccounts(context.tenant_id, context.user_id);
   }
 
   @Post('mail/send')
@@ -113,60 +113,60 @@ export class CommsController {
     const context = req.tenantContext;
     return this.mailService.sendMail({
       ...body,
-      tenantId: context.tenantId,
-      userId: context.userId,
+      tenant_id: context.tenant_id,
+      user_id: context.user_id,
     });
   }
 
   @Patch('mail/:id/star')
   async toggleMailStar(@Req() req: any, @Param('id') id: string) {
-    const tenantId = req.tenantContext?.tenantId;
-    return this.mailService.toggleStar(tenantId, id);
+    const tenant_id = req.tenantContext?.tenant_id;
+    return this.mailService.toggleStar(tenant_id, id);
   }
 
   @Patch('mail/:id/read')
   async markMailAsRead(@Req() req: any, @Param('id') id: string) {
-    const tenantId = req.tenantContext?.tenantId;
-    return this.mailService.markAsRead(tenantId, id);
+    const tenant_id = req.tenantContext?.tenant_id;
+    return this.mailService.markAsRead(tenant_id, id);
   }
 
   @Delete('mail/:id')
   async deleteMail(@Req() req: any, @Param('id') id: string) {
-    const tenantId = req.tenantContext?.tenantId;
-    return this.mailService.deleteMail(tenantId, id);
+    const tenant_id = req.tenantContext?.tenant_id;
+    return this.mailService.deleteMail(tenant_id, id);
   }
 
   @Patch('mail/:id/restore')
   async restoreMail(@Req() req: any, @Param('id') id: string) {
-    const tenantId = req.tenantContext?.tenantId;
-    return this.mailService.restoreMail(tenantId, id);
+    const tenant_id = req.tenantContext?.tenant_id;
+    return this.mailService.restoreMail(tenant_id, id);
   }
 
   // Chat Endpoints
   @Get('chat/rooms')
   async getChatRooms(@Req() req: any) {
     const context = req.tenantContext;
-    return this.chatService.getRooms(context.tenantId, context.userId);
+    return this.chatService.getRooms(context.tenant_id, context.user_id);
   }
 
   @Get('chat/rooms/:roomId/messages')
   async getChatMessages(@Req() req: any, @Param('roomId') roomId: string, @Query() filters: any) {
-    const tenantId = req.tenantContext?.tenantId;
-    return this.chatService.getMessages(tenantId, roomId, filters);
+    const tenant_id = req.tenantContext?.tenant_id;
+    return this.chatService.getMessages(tenant_id, roomId, filters);
   }
 
   @Post('chat/rooms')
   async createChatRoom(@Req() req: any, @Body() body: any) {
     const context = req.tenantContext;
-    const memberUserIds = body.memberUserIds || [context.userId];
-    if (!memberUserIds.includes(context.userId)) {
-      memberUserIds.push(context.userId);
+    const memberUserIds = body.memberUserIds || [context.user_id];
+    if (!memberUserIds.includes(context.user_id)) {
+      memberUserIds.push(context.user_id);
     }
     
     return this.chatService.createRoom({
       ...body,
-      tenantId: context.tenantId,
-      createdBy: context.userId,
+      tenant_id: context.tenant_id,
+      createdBy: context.user_id,
       memberUserIds,
     });
   }
@@ -175,24 +175,24 @@ export class CommsController {
   @Get('notifications')
   async getNotifications(@Req() req: any, @Query() filters: any) {
     const context = req.tenantContext;
-    return this.notificationService.getNotifications(context.tenantId, context.userId, filters);
+    return this.notificationService.getNotifications(context.tenant_id, context.user_id, filters);
   }
 
   @Patch('notifications/:id/read')
   async markNotificationRead(@Req() req: any, @Param('id') id: string) {
     const context = req.tenantContext;
-    return this.notificationService.markAsRead(context.tenantId, id);
+    return this.notificationService.markAsRead(context.tenant_id, id);
   }
 
   @Post('notifications/read-all')
   async markAllNotificationsRead(@Req() req: any) {
     const context = req.tenantContext;
-    return this.notificationService.markAllAsRead(context.tenantId, context.userId);
+    return this.notificationService.markAllAsRead(context.tenant_id, context.user_id);
   }
 
   @Get('notifications/counts')
   async getUnreadCounts(@Req() req: any) {
     const context = req.tenantContext;
-    return this.notificationService.getUnreadCounts(context.tenantId, context.userId);
+    return this.notificationService.getUnreadCounts(context.tenant_id, context.user_id);
   }
 }

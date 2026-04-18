@@ -28,16 +28,16 @@ export class ITSettingsController {
   @Get("devices")
   async getDevices(
     @Req() request: RequestWithTenant,
-    @Query("locationId") locationId?: string,
+    @Query("location_id") location_id?: string,
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     const devices = await this.itSettingsService.getDevices(
-      tenantId,
-      locationId,
+      tenant_id,
+      location_id,
     );
     return {
       success: true,
-      tenantId,
+      tenant_id,
       count: devices.length,
       data: devices,
     };
@@ -48,15 +48,15 @@ export class ITSettingsController {
     @Req() request: RequestWithTenant,
     @Body() registerDeviceDto: RegisterDeviceDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const device = await this.itSettingsService.registerDevice(
-      tenantId,
+      tenant_id,
       registerDeviceDto,
-      userId,
+      user_id,
     );
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Device registered successfully",
       data: device,
     };
@@ -65,19 +65,19 @@ export class ITSettingsController {
   @Put("devices/:id/status")
   async updateDeviceStatus(
     @Req() request: RequestWithTenant,
-    @Param("id") deviceId: string,
+    @Param("id") device_id: string,
     @Body() body: { status: string },
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const device = await this.itSettingsService.updateDeviceStatus(
-      tenantId,
-      deviceId,
+      tenant_id,
+      device_id,
       body.status,
-      userId,
+      user_id,
     );
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Device status updated",
       data: device,
     };
@@ -88,14 +88,14 @@ export class ITSettingsController {
     @Req() request: RequestWithTenant,
     @Query("category") category?: string,
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     const settings = await this.itSettingsService.getSettings(
-      tenantId,
+      tenant_id,
       category,
     );
     return {
       success: true,
-      tenantId,
+      tenant_id,
       count: settings.length,
       data: settings,
     };
@@ -106,19 +106,19 @@ export class ITSettingsController {
     @Req() request: RequestWithTenant,
     @Param("key") key: string,
   ) {
-    const { tenantId } = request.tenantContext;
-    const setting = await this.itSettingsService.getSetting(tenantId, key);
+    const { tenant_id } = request.tenantContext;
+    const setting = await this.itSettingsService.getSetting(tenant_id, key);
     if (!setting) {
       return {
         success: false,
-        tenantId,
+        tenant_id,
         message: "Setting not found",
         data: null,
       };
     }
     return {
       success: true,
-      tenantId,
+      tenant_id,
       data: setting,
     };
   }
@@ -129,16 +129,16 @@ export class ITSettingsController {
     @Param("key") key: string,
     @Body() updateSettingDto: UpdateSettingDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const setting = await this.itSettingsService.updateSetting(
-      tenantId,
+      tenant_id,
       key,
       updateSettingDto,
-      userId,
+      user_id,
     );
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Setting updated successfully",
       data: setting,
     };

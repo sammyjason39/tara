@@ -14,7 +14,7 @@ export class LedgerEventLogArchiveMockRepository implements ILedgerEventLogArchi
     this.archives.push(...newEntries);
   }
 
-  async findAll(tenantId: string): Promise<LedgerEventLogArchive[]> {
-    return this.archives.filter(a => a.tenantId === tenantId);
+  async findAll(tenant_id: string): Promise<LedgerEventLogArchive[]> {
+    return this.archives.filter(a => a.tenant_id === tenant_id);
   }
 }

@@ -10,41 +10,41 @@ export class TaxExportService {
   /**
    * Generates a tax report for a specific period and branch.
    */
-  async generateTaxReport(tenantId: string, branchId: string, fiscalPeriodId: string) {
-    const transactions = await this.prisma.transactionTax.findMany({
+  async generateTaxReport(tenant_id: string, branch_id: string, fiscalPeriodId: string) {
+    const transactions = await this.prisma.finance_transaction_taxes.findMany({
       where: { 
-          tenantId,
-          // In a real system, we would join with Invoice/Bill to check branchId
+          tenant_id,
+          // In a real system, we would join with Invoice/Bill to check branch_id
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { created_at: 'desc' }
     });
 
     const reportData = transactions.map((t: any) => ({
-      transactionId: t.transactionId,
+      transaction_id: t.transaction_id,
       type: t.transactionType,
       baseAmount: t.baseAmount,
-      taxAmount: t.taxAmount,
-      date: t.createdAt
+      tax_amount: t.tax_amount,
+      date: t.created_at
     }));
 
     return {
-      tenantId,
-      branchId,
+      tenant_id,
+      branch_id,
       fiscalPeriodId,
       generatedAt: new Date(),
       data: reportData,
-      totalTax: reportData.reduce((sum: number, r: any) => sum + Number(r.taxAmount), 0)
+      totalTax: reportData.reduce((sum: number, r: any) => sum + Number(r.tax_amount), 0)
     };
   }
 
   /**
    * Mock Export to CSV (Simulated)
    */
-  async exportToCSV(tenantId: string, branchId: string, fiscalPeriodId: string) {
-    const report = await this.generateTaxReport(tenantId, branchId, fiscalPeriodId);
+  async exportToCSV(tenant_id: string, branch_id: string, fiscalPeriodId: string) {
+    const report = await this.generateTaxReport(tenant_id, branch_id, fiscalPeriodId);
     let csv = 'TransactionID,Type,BaseAmount,TaxAmount,Date\n';
     report.data.forEach((r: any) => {
-      csv += `${r.transactionId},${r.type},${r.baseAmount},${r.taxAmount},${r.date.toISOString()}\n`;
+      csv += `${r.transaction_id},${r.type},${r.baseAmount},${r.tax_amount},${r.date.toISOString()}\n`;
     });
     return csv;
   }

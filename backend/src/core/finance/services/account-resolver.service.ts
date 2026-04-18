@@ -14,7 +14,7 @@ export class AccountResolverService {
    * Resolves a GL Account ID from an expression or metadata.
    * Example expression: 'payload.category.revenueAccount'
    */
-  async resolve(tenantId: string, companyId: string, expression: string, payload: any): Promise<string> {
+  async resolve(tenant_id: string, company_id: string, expression: string, payload: any): Promise<string> {
     // 1. Check if expression is a direct account ID (simplest case)
     if (this.isUuid(expression)) {
       return expression;

@@ -11,36 +11,36 @@ export class RevRecScheduler {
    * Hardened with Prisma.Decimal and "Penny Slop" correction.
    */
   async createSchedule(params: {
-    tenantId: string;
-    companyId: string;
+    tenant_id: string;
+    company_id: string;
     contractId: string;
-    totalAmount: Prisma.Decimal;
+    total_amount: Prisma.Decimal;
     currency: string;
-    startDate: Date;
-    endDate: Date;
+    start_date: Date;
+    end_date: Date;
     deferredAccountId: string;
     revenueAccountId: string;
   }): Promise<RevRecSchedule> {
-    const { startDate, endDate, totalAmount } = params;
+    const { start_date, end_date, total_amount } = params;
     
     // Calculate months difference
-    const months = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth()) + 1;
+    const months = (end_date.getFullYear() - start_date.getFullYear()) * 12 + (end_date.getMonth() - start_date.getMonth()) + 1;
     
     // Precision linear division
-    const monthlyAmount = totalAmount.div(months).toDecimalPlaces(4, Prisma.Decimal.ROUND_HALF_UP);
+    const monthlyAmount = total_amount.div(months).toDecimalPlaces(4, Prisma.Decimal.ROUND_HALF_UP);
 
     const periods: RecognitionPeriod[] = [];
     let runningTotal = new Prisma.Decimal(0);
 
     for (let i = 0; i < months; i++) {
-        const periodDate = new Date(startDate);
-        periodDate.setMonth(startDate.getMonth() + i);
+        const periodDate = new Date(start_date);
+        periodDate.setMonth(start_date.getMonth() + i);
 
         let amount = monthlyAmount;
 
-        // Adjust for "Penny Slop" in the final period to ensure sum exactly matches totalAmount
+        // Adjust for "Penny Slop" in the final period to ensure sum exactly matches total_amount
         if (i === months - 1) {
-            amount = totalAmount.minus(runningTotal);
+            amount = total_amount.minus(runningTotal);
         } else {
             runningTotal = runningTotal.plus(amount);
         }
@@ -59,7 +59,7 @@ export class RevRecScheduler {
       periods,
     };
 
-    this.logger.log(`Created precision RevRec Schedule for Contract ${params.contractId} [Sum: ${totalAmount}] [Periods: ${months}]`);
+    this.logger.log(`Created precision RevRec Schedule for Contract ${params.contractId} [Sum: ${total_amount}] [Periods: ${months}]`);
     return schedule;
   }
 }

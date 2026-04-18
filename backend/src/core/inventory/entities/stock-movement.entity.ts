@@ -1,7 +1,7 @@
 export class StockMovement {
   id: string;
   tenant_id: string;
-  itemId: string;
+  item_id: string;
   movementType:
     | "intake"
     | "deduction"
@@ -19,5 +19,5 @@ export class StockMovement {
   referenceType?: string;
   referenceId?: string;
   createdBy: string;
-  createdAt: Date;
+  created_at: Date;
 }

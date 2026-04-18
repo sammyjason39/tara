@@ -28,15 +28,15 @@ import { CreateTaskDto } from "../dto/create-task.dto";
 export class SalesDbRepository implements ISalesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getDashboard(tenantId: string): Promise<SalesDashboard> {
+  async getDashboard(tenant_id: string): Promise<SalesDashboard> {
     const [leads, opportunities, quotes, alerts] = await Promise.all([
-      this.prisma.salesLead.count({ where: { tenantId, status: "NEW" } }),
-      this.prisma.salesOpportunity.findMany({ where: { tenantId } }),
-      this.prisma.salesQuote.count({
-        where: { tenantId, status: "PENDING_APPROVAL" },
+      this.prisma.sales_leads.count({ where: { tenant_id: tenant_id, status: "NEW" } }),
+      this.prisma.sales_opportunities.findMany({ where: { tenant_id: tenant_id } }),
+      this.prisma.sales_quotes.count({
+        where: { tenant_id: tenant_id, status: "PENDING_APPROVAL" },
       }),
-      this.prisma.salesAlert.count({
-        where: { tenantId, acknowledged: false },
+      this.prisma.sales_alerts.count({
+        where: { tenant_id: tenant_id, acknowledged: false },
       }),
     ]);
 
@@ -61,9 +61,9 @@ export class SalesDbRepository implements ISalesRepository {
     };
   }
 
-  async getManagerMetrics(tenantId: string): Promise<SalesManagerMetrics> {
-    const opportunities = await this.prisma.salesOpportunity.findMany({
-      where: { tenantId },
+  async getManagerMetrics(tenant_id: string): Promise<SalesManagerMetrics> {
+    const opportunities = await this.prisma.sales_opportunities.findMany({
+      where: { tenant_id: tenant_id },
     });
     return {
       totalReps: 5,
@@ -82,7 +82,7 @@ export class SalesDbRepository implements ISalesRepository {
   }
 
   async getExecutiveForecast(
-    tenantId: string,
+    tenant_id: string,
   ): Promise<SalesExecutiveForecast> {
     return {
       openPipelineValue: 500000000,
@@ -95,217 +95,249 @@ export class SalesDbRepository implements ISalesRepository {
     };
   }
 
-  async getNextBestActions(tenantId: string): Promise<any[]> {
+  async getNextBestActions(tenant_id: string): Promise<any[]> {
     return [];
   }
 
-  async getLeads(tenantId: string): Promise<SalesLead[]> {
-    return this.prisma.salesLead.findMany({ where: { tenantId } }) as any;
+  async getSalesAnalytics(tenant_id: string): Promise<any> {
+    return {};
   }
 
-  async createLead(tenantId: string, dto: CreateLeadDto): Promise<SalesLead> {
-    return this.prisma.salesLead.create({
+  async getForecast(tenant_id: string): Promise<any> {
+    return {};
+  }
+
+  async getPipelineVelocity(tenant_id: string): Promise<any> {
+    return {};
+  }
+
+  async getSLAPerformance(tenant_id: string): Promise<any> {
+    return {};
+  }
+
+  async getLeads(tenant_id: string): Promise<SalesLead[]> {
+    return this.prisma.sales_leads.findMany({ where: { tenant_id: tenant_id } }) as any;
+  }
+
+  async createLead(tenant_id: string, dto: CreateLeadDto, tx?: any): Promise<SalesLead> {
+    return (tx || this.prisma).sales_leads.create({
       data: {
         id: 'pw28wagj',
-        updatedAt: new Date(),
-        tenantId,
+        updated_at: new Date(),
+        tenant_id,
         ...dto,
-        amount: dto.potentialValue, // Map potentialValue if needed or use schema field
-        slaDueAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // Default 24h SLA
+        amount: dto.potential_value, // Map potential_value if needed or use schema field
+        sla_due_at: new Date(Date.now() + 24 * 60 * 60 * 1000), // Default 24h SLA
       } as any,
     }) as any;
   }
 
   async updateLeadStatus(
-    tenantId: string,
-    leadId: string,
+    tenant_id: string,
+    lead_id: string,
     dto: UpdateLeadStatusDto,
   ): Promise<SalesLead> {
-    return this.prisma.salesLead.update({
-      where: { id: leadId },
+    return this.prisma.sales_leads.update({
+      where: { id: lead_id },
       data: { status: dto.status },
     }) as any;
   }
 
   async convertLead(
-    tenantId: string,
-    leadId: string,
-    actorId: string,
+    tenant_id: string,
+    lead_id: string,
+    actor_id: string,
   ): Promise<SalesOpportunity> {
-    const lead = await this.prisma.salesLead.findUnique({
-      where: { id: leadId },
+    const lead = await this.prisma.sales_leads.findUnique({
+      where: { id: lead_id },
     });
     if (!lead) throw new NotFoundException("Lead not found");
 
-    return this.prisma.salesOpportunity.create({
+    return this.prisma.sales_opportunities.create({
       data: {
         id: '3hwpa82g',
-        updatedAt: new Date(),
-        tenantId,
-        leadId,
-        accountName: lead.companyName,
-        ownerId: lead.ownerId,
-        ownerName: lead.ownerName,
-        amount: lead.potentialValue,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        lead_id: lead_id,
+        account_name: lead.company_name,
+        owner_id: lead.owner_id,
+        owner_name: lead.owner_name,
+        amount: lead.potential_value,
         currency: lead.currency,
-        expectedCloseDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        expected_close_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       },
     }) as any;
   }
 
-  async getOpportunities(tenantId: string): Promise<SalesOpportunity[]> {
-    return this.prisma.salesOpportunity.findMany({
-      where: { tenantId },
+  async getOpportunities(tenant_id: string): Promise<SalesOpportunity[]> {
+    return this.prisma.sales_opportunities.findMany({
+      where: { tenant_id: tenant_id },
     }) as any;
   }
 
   async createOpportunity(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateOpportunityDto,
+    tx?: any
   ): Promise<SalesOpportunity> {
-    return this.prisma.salesOpportunity.create({
+    return (tx || this.prisma).sales_opportunities.create({
       data: {
         id: '1n82ax4i',
-        updatedAt: new Date(),
-        tenantId,
+        updated_at: new Date(),
+        tenant_id,
         ...dto,
       } as any,
     }) as any;
   }
 
   async moveOpportunityStage(
-    tenantId: string,
+    tenant_id: string,
     opportunityId: string,
     dto: MoveOpportunityStageDto,
   ): Promise<SalesOpportunity> {
-    return this.prisma.salesOpportunity.update({
+    return this.prisma.sales_opportunities.update({
       where: { id: opportunityId },
       data: { stage: dto.stage },
     }) as any;
   }
 
   async closeOpportunity(
-    tenantId: string,
+    tenant_id: string,
     opportunityId: string,
     dto: CloseOpportunityDto,
   ): Promise<SalesOpportunity | SalesOrder> {
-    const result = await this.prisma.salesOpportunity.update({
+    const result = await this.prisma.sales_opportunities.update({
       where: { id: opportunityId },
       data: { stage: dto.result === "won" ? "CLOSED_WON" : "CLOSED_LOST" },
     });
 
     if (dto.result === "won") {
-      return this.prisma.salesOrder.create({
+      return this.prisma.sales_orders.create({
         data: {
         id: 'k6yujvxm',
-        updatedAt: new Date(),
-          tenantId,
-          opportunityId,
-          customerName: result.accountName,
+        updated_at: new Date(),
+          tenant_id: tenant_id,
+          opportunity_id: opportunityId,
+          customer_name: result.account_name,
           amount: result.amount,
           currency: result.currency,
-          createdBy: "system",
+          created_by: "system",
         },
       }) as any;
     }
     return result as any;
   }
 
-  async getQuotes(tenantId: string): Promise<SalesQuote[]> {
-    return this.prisma.salesQuote.findMany({ where: { tenantId } }) as any;
+  async getQuotes(tenant_id: string): Promise<SalesQuote[]> {
+    return this.prisma.sales_quotes.findMany({ where: { tenant_id: tenant_id } }) as any;
   }
 
   async createQuote(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateQuoteDto,
   ): Promise<SalesQuote> {
-    return this.prisma.salesQuote.create({
+    return this.prisma.sales_quotes.create({
       data: {
         id: 'c7ms6sin',
-        updatedAt: new Date(),
-        tenantId,
+        updated_at: new Date(),
+        tenant_id,
         ...dto,
       } as any,
     }) as any;
   }
 
-  async submitQuote(tenantId: string, quoteId: string): Promise<SalesQuote> {
-    return this.prisma.salesQuote.update({
+  async submitQuote(tenant_id: string, quoteId: string): Promise<SalesQuote> {
+    return this.prisma.sales_quotes.update({
       where: { id: quoteId },
       data: { status: "PENDING_APPROVAL" },
     }) as any;
   }
 
   async decideQuote(
-    tenantId: string,
+    tenant_id: string,
     quoteId: string,
     dto: QuoteDecisionDto,
   ): Promise<SalesQuote> {
-    return this.prisma.salesQuote.update({
+    return this.prisma.sales_quotes.update({
       where: { id: quoteId },
       data: {
         status: dto.approved ? "APPROVED" : "REJECTED",
-        approvalBy: "manager",
-        approvalAt: new Date(),
+        approval_by: "manager",
+        approval_at: new Date(),
       },
     }) as any;
   }
 
-  async getTimeline(tenantId: string): Promise<SalesTimelineEvent[]> {
-    return this.prisma.salesTimelineEvent.findMany({
-      where: { tenantId },
+  async getTimeline(tenant_id: string): Promise<SalesTimelineEvent[]> {
+    return this.prisma.sales_timeline_events.findMany({
+      where: { tenant_id: tenant_id },
     }) as any;
   }
 
   async createTimelineEvent(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateTimelineEventDto,
   ): Promise<SalesTimelineEvent> {
-    return this.prisma.salesTimelineEvent.create({
+    return this.prisma.sales_timeline_events.create({
       data: {
         id: 'r7o3tw1n',
-        updatedAt: new Date(),
-        tenantId,
+        updated_at: new Date(),
+        tenant_id,
         ...dto,
       } as any,
     }) as any;
   }
 
-  async getTasks(tenantId: string): Promise<SalesTask[]> {
-    return this.prisma.salesTask.findMany({ where: { tenantId } }) as any;
+  async getTasks(tenant_id: string): Promise<SalesTask[]> {
+    return this.prisma.sales_tasks.findMany({ where: { tenant_id: tenant_id } }) as any;
   }
 
-  async createTask(tenantId: string, dto: CreateTaskDto): Promise<SalesTask> {
-    return this.prisma.salesTask.create({
+  async createTask(tenant_id: string, dto: CreateTaskDto): Promise<SalesTask> {
+    return this.prisma.sales_tasks.create({
       data: {
         id: 't8rtxr3e',
-        updatedAt: new Date(),
-        tenantId,
+        updated_at: new Date(),
+        tenant_id,
         ...dto,
       } as any,
     }) as any;
   }
 
-  async completeTask(tenantId: string, taskId: string): Promise<SalesTask> {
-    return this.prisma.salesTask.update({
+  async getDeals(tenant_id: string): Promise<any[]> {
+    return this.prisma.sales_opportunities.findMany({ where: { tenant_id } });
+  }
+
+  async createDeal(tenant_id: string, dto: any, tx?: any): Promise<any> {
+    return (tx || this.prisma).sales_opportunities.create({
+      data: {
+        id: `DEAL-${Date.now()}`,
+        updated_at: new Date(),
+        tenant_id,
+        ...dto,
+      },
+    });
+  }
+
+  async completeTask(tenant_id: string, taskId: string): Promise<SalesTask> {
+    return this.prisma.sales_tasks.update({
       where: { id: taskId },
-      data: { status: "COMPLETED", completedAt: new Date() },
+      data: { status: "COMPLETED", completed_at: new Date() },
     }) as any;
   }
 
-  async getOrders(tenantId: string): Promise<SalesOrder[]> {
-    return this.prisma.salesOrder.findMany({ where: { tenantId } }) as any;
+  async getOrders(tenant_id: string): Promise<SalesOrder[]> {
+    return this.prisma.sales_orders.findMany({ where: { tenant_id: tenant_id } }) as any;
   }
 
-  async getAlerts(tenantId: string): Promise<SalesAlert[]> {
-    return this.prisma.salesAlert.findMany({ where: { tenantId } }) as any;
+  async getAlerts(tenant_id: string): Promise<SalesAlert[]> {
+    return this.prisma.sales_alerts.findMany({ where: { tenant_id: tenant_id } }) as any;
   }
 
-  async runSlaSweep(tenantId: string, actorId: string): Promise<SalesAlert[]> {
+  async runSlaSweep(tenant_id: string, actor_id: string): Promise<SalesAlert[]> {
     return [];
   }
 
-  async getAuditEvents(tenantId: string): Promise<SalesAuditEvent[]> {
-    return this.prisma.salesAuditEvent.findMany({ where: { tenantId } }) as any;
+  async getAuditEvents(tenant_id: string): Promise<SalesAuditEvent[]> {
+    return this.prisma.sales_audit_events.findMany({ where: { tenant_id: tenant_id } }) as any;
   }
 }

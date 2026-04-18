@@ -4,7 +4,7 @@ export class TrendConsistencyRule implements InsightRule {
   readonly type = 'CONSISTENT_DECLINE';
 
   evaluate(context: InsightContext): Insight[] {
-    const { cashflow, historicalSnapshots, snapshotSequence, tenantId, companyId } = context;
+    const { cashflow, historicalSnapshots, snapshotSequence, tenant_id, company_id } = context;
 
     if (historicalSnapshots.length < 3) {
       return [];
@@ -44,8 +44,8 @@ export class TrendConsistencyRule implements InsightRule {
           coreInputs
         },
         supportingData: { variance, baseline, currentBalance },
-        tenantId,
-        companyId,
+        tenant_id,
+        company_id,
         snapshotSequence
       }];
     }

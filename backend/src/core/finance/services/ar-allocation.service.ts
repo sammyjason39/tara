@@ -26,8 +26,8 @@ export class ARAllocationService {
 
     // 1. Resolve Accounting Mapping for ALLOCATION
     const mapping = await this.mappingService.resolveAccounts(
-        payment.tenantId,
-        payment.companyId,
+        payment.tenant_id,
+        payment.company_id,
         SubledgerEntryType.AR_ALLOCATION,
         'ALLOCATION'
     );
@@ -49,12 +49,12 @@ export class ARAllocationService {
 
     // 4. Trigger Financial Event (POSTING)
     const postingRequest = {
-        requestId: postingRequestId,
-        tenantId: payment.tenantId,
-        companyId: payment.companyId,
-        sourceModule: 'ACCOUNTS_RECEIVABLE',
+        request_id: postingRequestId,
+        tenant_id: payment.tenant_id,
+        company_id: payment.company_id,
+        source_module: 'ACCOUNTS_RECEIVABLE',
         sourceEventId: allocation.id,
-        eventType: SubledgerEntryType.AR_ALLOCATION,
+        event_type: SubledgerEntryType.AR_ALLOCATION,
         payload: {
           paymentId: payment.id,
           invoiceId: invoice.id,
@@ -64,7 +64,7 @@ export class ARAllocationService {
           creditAccountId: mapping.creditAccountId,
           fiscalPeriodId: 'SYS_AUTO', // Real app resolves this
         },
-        createdAt: new Date(),
+        created_at: new Date(),
     };
 
     const result = await this.gateway.postEvent(postingRequest as any);

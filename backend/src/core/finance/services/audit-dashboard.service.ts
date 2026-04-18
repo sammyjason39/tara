@@ -16,10 +16,10 @@ export class AuditDashboardService {
   /**
    * Verifies the entire ledger chain for a company.
    */
-  async verifyLedgerIntegrity(tenantId: string, companyId: string) {
-    const journals = await this.prisma.journalEntry.findMany({
-      where: { tenantId },
-      orderBy: { postingDate: 'desc' },
+  async verifyLedgerIntegrity(tenant_id: string, company_id: string) {
+    const journals = await this.prisma.finance_journal_entries.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { posting_date: 'desc' },
       take: 20
     });
 
@@ -27,21 +27,21 @@ export class AuditDashboardService {
     let previousHash = 'GENESIS';
 
     for (const journal of journals) {
-      const isChainValid = journal.previousHash === previousHash;
+      const isChainValid = journal.previous_hash === previousHash;
       // In production, we would also re-calculate entryHash from lines
       verificationResults.push({
         journalId: journal.id,
         status: isChainValid ? 'VERIFIED' : 'TAMPERED',
-        hash: journal.entryHash,
+        hash: journal.entry_hash,
       });
-      previousHash = journal.entryHash || 'GENESIS';
+      previousHash = journal.entry_hash || 'GENESIS';
     }
 
     return {
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       totalEntries: journals.length,
-      integrityRatio: verificationResults.filter(r => r.status === 'VERIFIED').length / journals.length,
+      integrityRatio: verificationResults.filter((r: any) => r.status === 'VERIFIED').length / journals.length,
       chainResults: verificationResults
     };
   }
@@ -49,21 +49,21 @@ export class AuditDashboardService {
   /**
    * Proves a specific report's authenticity.
    */
-  async proveReport(tenantId: string, reportId: string, providedHash: string) {
+  async proveReport(tenant_id: string, reportId: string, providedHash: string) {
     // 1. Fetch the snapshot for the report
-    const snapshot = await this.prisma.insightSnapshot.findFirst({
+    const snapshot = await this.prisma.finance_insight_snapshots.findFirst({
         where: { id: reportId }
     });
 
     if (!snapshot) return { result: 'NOT_FOUND' };
 
     // 2. The snapshot's own record is used to verify the provided hash
-    const isValid = snapshot.forecastHash === providedHash; // Simulation using forecastHash field
+    const isValid = snapshot.forecast_hash === providedHash; // Simulation using forecastHash field
 
     return {
       reportId,
       verified: isValid,
-      timestamp: snapshot.createdAt
+      timestamp: snapshot.created_at
     };
   }
 }

@@ -39,22 +39,22 @@ export class ProcurementMockRepository extends IProcurementRepository {
     this.seed("tenant-002");
   }
 
-  private seed(tenantId: string): void {
+  private seed(tenant_id: string): void {
     this.suppliers.push({
-      id: `${tenantId}-sup-1`,
-      tenantId,
+      id: `${tenant_id}-sup-1`,
+      tenant_id,
       name: "Nusantara Industrial Supply",
       taxId: "NPWP-01.234.567.8-091.000",
       category: "machinery",
       branchCode: "JKT",
       complianceStatus: "verified",
       rating: 88,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
     });
     this.requisitions.push({
-      id: `${tenantId}-req-1`,
-      tenantId,
+      id: `${tenant_id}-req-1`,
+      tenant_id,
       title: "Packaging line motor replacement",
       description: "Emergency replacement of motor for line 3",
       category: "Machinery",
@@ -67,19 +67,19 @@ export class ProcurementMockRepository extends IProcurementRepository {
       approvals: {},
       contractRequired: false,
       createdBy: "user-demo",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
     });
     this.categories.push({
-      id: `${tenantId}-cat-1`,
-      tenantId,
+      id: `${tenant_id}-cat-1`,
+      tenant_id,
       name: "Machinery",
       description: "Heavy industrial equipment",
       active: true,
     });
     this.categories.push({
-      id: `${tenantId}-cat-2`,
-      tenantId,
+      id: `${tenant_id}-cat-2`,
+      tenant_id,
       name: "Office Supplies",
       description: "General office consumables",
       active: true,
@@ -87,50 +87,50 @@ export class ProcurementMockRepository extends IProcurementRepository {
   }
 
   // Suppliers
-  async getSuppliers(tenantId: string): Promise<Supplier[]> {
-    return this.suppliers.filter((item) => item.tenantId === tenantId);
+  async getSuppliers(tenant_id: string): Promise<Supplier[]> {
+    return this.suppliers.filter((item) => item.tenant_id === tenant_id);
   }
 
-  async createSupplier(tenantId: string, data: CreateSupplierDto): Promise<Supplier> {
+  async createSupplier(tenant_id: string, data: CreateSupplierDto): Promise<Supplier> {
     const created: Supplier = {
-      id: `${tenantId}-sup-${this.suppliers.length + 1}`,
-      tenantId,
+      id: `${tenant_id}-sup-${this.suppliers.length + 1}`,
+      tenant_id,
       name: data.name,
       taxId: data.taxId,
       category: data.category,
       branchCode: data.branchCode.toUpperCase(),
       complianceStatus: "pending",
       rating: 70,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
     };
     this.suppliers.push(created);
     return created;
   }
 
   // Supplier Branches
-  async getSupplierBranches(tenantId: string): Promise<any[]> {
+  async getSupplierBranches(tenant_id: string): Promise<any[]> {
     return [];
   }
 
-  async createSupplierBranch(tenantId: string, data: CreateSupplierBranchDto): Promise<any> {
-    return { id: "mock-branch-id", ...data, localRating: 70, riskTier: "medium", createdAt: new Date() };
+  async createSupplierBranch(tenant_id: string, data: CreateSupplierBranchDto): Promise<any> {
+    return { id: "mock-branch-id", ...data, localRating: 70, riskTier: "medium", created_at: new Date() };
   }
 
   // Supplier Products
-  async getSupplierProducts(tenantId: string): Promise<any[]> {
+  async getSupplierProducts(tenant_id: string): Promise<any[]> {
     return [];
   }
 
-  async upsertSupplierProduct(tenantId: string, data: UpsertSupplierProductDto): Promise<any> {
-    return { id: data.id || "mock-product-id", ...data, createdAt: new Date() };
+  async upsertSupplierProduct(tenant_id: string, data: UpsertSupplierProductDto): Promise<any> {
+    return { id: data.id || "mock-product-id", ...data, created_at: new Date() };
   }
 
   // Supplier Recommendations
-  async getSupplierRecommendations(tenantId: string, params: any): Promise<any[]> {
+  async getSupplierRecommendations(tenant_id: string, params: any): Promise<any[]> {
     const recommendations = [];
     const filtered = this.suppliers.filter(
-      (s) => s.tenantId === tenantId && s.category === params.category,
+      (s) => s.tenant_id === tenant_id && s.category === params.category,
     );
     for (const supplier of filtered) {
       recommendations.push({
@@ -144,14 +144,14 @@ export class ProcurementMockRepository extends IProcurementRepository {
   }
 
   // Requisitions
-  async getRequisitions(tenantId: string): Promise<Requisition[]> {
-    return this.requisitions.filter((item) => item.tenantId === tenantId);
+  async getRequisitions(tenant_id: string): Promise<Requisition[]> {
+    return this.requisitions.filter((item) => item.tenant_id === tenant_id);
   }
 
-  async createRequisition(tenantId: string, data: CreateRequisitionDto): Promise<Requisition> {
+  async createRequisition(tenant_id: string, data: CreateRequisitionDto): Promise<Requisition> {
     const created: Requisition = {
-      id: `${tenantId}-req-${this.requisitions.length + 1}`,
-      tenantId,
+      id: `${tenant_id}-req-${this.requisitions.length + 1}`,
+      tenant_id,
       title: data.title,
       description: data.description,
       category: data.category || "General",
@@ -164,152 +164,152 @@ export class ProcurementMockRepository extends IProcurementRepository {
       approvals: {},
       contractRequired: false,
       createdBy: data.createdBy || "system",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
     };
     this.requisitions.push(created);
     return created;
   }
 
-  async approveRequesterHod(tenantId: string, requisitionId: string): Promise<Requisition> {
+  async approveRequesterHod(tenant_id: string, requisitionId: string): Promise<Requisition> {
     const requisition = this.requisitions.find(
-      (item) => item.tenantId === tenantId && item.id === requisitionId,
+      (item) => item.tenant_id === tenant_id && item.id === requisitionId,
     );
     if (!requisition) throw new NotFoundException("Requisition not found");
     requisition.status = "APPROVED_REQUESTER_HOD";
-    requisition.updatedAt = new Date();
+    requisition.updated_at = new Date();
     return requisition;
   }
 
-  async approveFinal(tenantId: string, requisitionId: string, data: ApproveFinalDto): Promise<Requisition> {
+  async approveFinal(tenant_id: string, requisitionId: string, data: ApproveFinalDto): Promise<Requisition> {
     const requisition = this.requisitions.find(
-      (item) => item.tenantId === tenantId && item.id === requisitionId,
+      (item) => item.tenant_id === tenant_id && item.id === requisitionId,
     );
     if (!requisition) throw new NotFoundException("Requisition not found");
     requisition.status = "FINAL_APPROVED";
-    requisition.updatedAt = new Date();
+    requisition.updated_at = new Date();
     return requisition;
   }
 
   // Draft POs
-  async getDraftPurchaseOrders(tenantId: string): Promise<any[]> {
+  async getDraftPurchaseOrders(tenant_id: string): Promise<any[]> {
     return [];
   }
 
-  async createDraftPurchaseOrder(tenantId: string, data: CreateDraftPoDto, createdBy: string): Promise<any> {
-    return { id: "mock-draft-id", ...data, status: "DRAFT", createdAt: new Date() };
+  async createDraftPurchaseOrder(tenant_id: string, data: CreateDraftPoDto, createdBy: string): Promise<any> {
+    return { id: "mock-draft-id", ...data, status: "DRAFT", created_at: new Date() };
   }
 
-  async approveDraftByProcurementHod(tenantId: string, draftPoId: string): Promise<any> {
-    return { id: draftPoId, status: "PROCUREMENT_HOD_APPROVED", updatedAt: new Date() };
+  async approveDraftByProcurementHod(tenant_id: string, draftPoId: string): Promise<any> {
+    return { id: draftPoId, status: "PROCUREMENT_HOD_APPROVED", updated_at: new Date() };
   }
 
-  async confirmSupplierQuote(tenantId: string, draftPoId: string, data: ConfirmQuoteDto): Promise<any> {
-    return { id: draftPoId, status: "SUPPLIER_CONFIRMED", ...data, updatedAt: new Date() };
+  async confirmSupplierQuote(tenant_id: string, draftPoId: string, data: ConfirmQuoteDto): Promise<any> {
+    return { id: draftPoId, status: "SUPPLIER_CONFIRMED", ...data, updated_at: new Date() };
   }
 
   // Purchase Orders (Final)
-  async releasePurchaseOrder(tenantId: string, data: ReleasePoDto): Promise<PurchaseOrder> {
+  async releasePurchaseOrder(tenant_id: string, data: ReleasePoDto): Promise<PurchaseOrder> {
     const po: PurchaseOrder = {
-      id: `${tenantId}-po-${this.purchaseOrders.length + 1}`,
-      tenantId,
+      id: `${tenant_id}-po-${this.purchaseOrders.length + 1}`,
+      tenant_id,
       requisitionId: data.requisitionId,
       supplierId: data.supplierId,
       branchCode: "HQ",
-      totalAmount: data.totalAmount,
+      total_amount: data.total_amount,
       status: "released",
       issuedAt: new Date(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
     };
     this.purchaseOrders.push(po);
     return po;
   }
 
-  async getPurchaseOrders(tenantId: string): Promise<PurchaseOrder[]> {
-    return this.purchaseOrders.filter((item) => item.tenantId === tenantId);
+  async getPurchaseOrders(tenant_id: string): Promise<PurchaseOrder[]> {
+    return this.purchaseOrders.filter((item) => item.tenant_id === tenant_id);
   }
 
   // Receipts
-  async createReceipt(tenantId: string, data: CreateReceiptDto, createdBy: string): Promise<any> {
-    return { id: "mock-receipt-id", ...data, createdAt: new Date() };
+  async createReceipt(tenant_id: string, data: CreateReceiptDto, createdBy: string): Promise<any> {
+    return { id: "mock-receipt-id", ...data, created_at: new Date() };
   }
 
   // Contracts
-  async getContracts(tenantId: string): Promise<any[]> {
+  async getContracts(tenant_id: string): Promise<any[]> {
     return [];
   }
 
-  async createContract(tenantId: string, data: CreateContractDto, createdBy: string): Promise<any> {
-    return { id: "mock-contract-id", ...data, status: "LEGAL_REVIEW", version: 1, createdAt: new Date() };
+  async createContract(tenant_id: string, data: CreateContractDto, createdBy: string): Promise<any> {
+    return { id: "mock-contract-id", ...data, status: "LEGAL_REVIEW", version: 1, created_at: new Date() };
   }
 
-  async approveLegalContract(tenantId: string, contractId: string): Promise<any> {
-    return { id: contractId, status: "LEGAL_APPROVED", updatedAt: new Date() };
+  async approveLegalContract(tenant_id: string, contractId: string): Promise<any> {
+    return { id: contractId, status: "LEGAL_APPROVED", updated_at: new Date() };
   }
 
-  async signContract(tenantId: string, contractId: string, data: SignContractDto): Promise<any> {
-    return { id: contractId, status: "SIGNED", party: data.party, updatedAt: new Date() };
+  async signContract(tenant_id: string, contractId: string, data: SignContractDto): Promise<any> {
+    return { id: contractId, status: "SIGNED", party: data.party, updated_at: new Date() };
   }
 
   // Risk Management
-  async getRiskSignals(tenantId: string): Promise<ProcurementRisk[]> {
-    return this.risks.filter((item) => item.tenantId === tenantId);
+  async getRiskSignals(tenant_id: string): Promise<ProcurementRisk[]> {
+    return this.risks.filter((item) => item.tenant_id === tenant_id);
   }
 
-  async runRiskScan(tenantId: string): Promise<ProcurementRisk[]> {
-    return this.getRiskSignals(tenantId);
+  async runRiskScan(tenant_id: string): Promise<ProcurementRisk[]> {
+    return this.getRiskSignals(tenant_id);
   }
 
-  async createRiskSignal(tenantId: string, data: CreateRiskSignalDto): Promise<any> {
+  async createRiskSignal(tenant_id: string, data: CreateRiskSignalDto): Promise<any> {
     const risk: ProcurementRisk = {
-      id: `${tenantId}-risk-${this.risks.length + 1}`,
-      tenantId,
+      id: `${tenant_id}-risk-${this.risks.length + 1}`,
+      tenant_id,
       code: data.code as any,
       severity: data.severity as any,
       status: "open",
-      entityId: data.entityId,
+      entity_id: data.entity_id,
       detail: data.detail || "",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
     };
     this.risks.push(risk);
     return risk;
   }
 
-  async updateRiskSignalStatus(tenantId: string, riskSignalId: string, status: string): Promise<any> {
-    return { id: riskSignalId, status, updatedAt: new Date() };
+  async updateRiskSignalStatus(tenant_id: string, riskSignalId: string, status: string): Promise<any> {
+    return { id: riskSignalId, status, updated_at: new Date() };
   }
 
   // Portal Messages
-  async getPortalMessages(tenantId: string): Promise<any[]> {
+  async getPortalMessages(tenant_id: string): Promise<any[]> {
     return [];
   }
 
-  async createPortalMessage(tenantId: string, data: CreatePortalMessageDto, createdBy: string): Promise<any> {
-    return { id: "mock-portal-msg-id", ...data, createdAt: new Date() };
+  async createPortalMessage(tenant_id: string, data: CreatePortalMessageDto, createdBy: string): Promise<any> {
+    return { id: "mock-portal-msg-id", ...data, created_at: new Date() };
   }
 
   // Audit Events
-  async getAuditEvents(tenantId: string): Promise<any[]> {
+  async getAuditEvents(tenant_id: string): Promise<any[]> {
     return [];
   }
 
-  async createAuditEvent(tenantId: string, actorId: string, action: string, entityType: string, entityId: string, detail?: string): Promise<any> {
-    return { id: "mock-audit-id", tenantId, actorId, action, entityType, entityId, detail, createdAt: new Date() };
+  async createAuditEvent(tenant_id: string, actor_id: string, action: string, entity_type: string, entity_id: string, detail?: string): Promise<any> {
+    return { id: "mock-audit-id", tenant_id, actor_id, action, entity_type, entity_id, detail, created_at: new Date() };
   }
 
   // Spend Insights
-  async getSpendInsights(tenantId: string): Promise<any[]> {
+  async getSpendInsights(tenant_id: string): Promise<any[]> {
     return [];
   }
 
-  async getCategories(tenantId: string): Promise<any[]> {
-    return this.categories.filter((c) => c.tenantId === tenantId && c.active);
+  async getCategories(tenant_id: string): Promise<any[]> {
+    return this.categories.filter((c) => c.tenant_id === tenant_id && c.active);
   }
 
   async upsertCategory(
-    tenantId: string,
+    tenant_id: string,
     data: CreateProcurementCategoryDto | UpdateProcurementCategoryDto,
   ): Promise<any> {
     if ("id" in data && data.id) {
@@ -321,7 +321,7 @@ export class ProcurementMockRepository extends IProcurementRepository {
     }
     const created = {
       id: `cat-${Math.random().toString(36).substr(2, 9)}`,
-      tenantId,
+      tenant_id,
       ...(data as any),
       active: (data as any).active ?? true,
     };
@@ -329,7 +329,7 @@ export class ProcurementMockRepository extends IProcurementRepository {
     return created;
   }
 
-  async deleteCategory(tenantId: string, id: string): Promise<any> {
+  async deleteCategory(tenant_id: string, id: string): Promise<any> {
     const idx = this.categories.findIndex((c) => c.id === id);
     if (idx !== -1) {
       this.categories[idx].active = false;

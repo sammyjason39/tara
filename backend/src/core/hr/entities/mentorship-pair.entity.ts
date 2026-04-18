@@ -1,14 +1,14 @@
 export class MentorshipPair {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   mentorId: string;
   menteeId: string;
   status: string; // ACTIVE, COMPLETED, TERMINATED
-  startDate: Date;
-  endDate?: Date;
+  start_date: Date;
+  end_date?: Date;
   focusSkills: string[];
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 
   mentor?: any;
   mentee?: any;

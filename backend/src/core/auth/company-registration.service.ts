@@ -25,22 +25,22 @@ export class CompanyRegistrationService {
       throw new UnauthorizedException("Invalid token");
     }
 
-    const userId = decoded.sub;
+    const user_id = decoded.sub;
 
-    const user = await this.authRepo.findById("system", userId);
+    const user = await this.authRepo.findById("system", user_id);
     if (!user) throw new UnauthorizedException("User not found");
 
     // 2. Perform Tenant Provisioning via Repository
     return await this.provisioningRepo.provisionTenant({
-      userId,
+      user_id,
       name: dto.name,
       country: dto.country,
       currency: getCurrencyForCountry(dto.country),
       industry: dto.industry,
       address: dto.address,
       user: {
-        firstName: user.firstName,
-        lastName: user.lastName,
+        first_name: user.first_name,
+        last_name: user.last_name,
         email: user.email,
         phone: user.phone,
       },

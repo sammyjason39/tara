@@ -9,8 +9,8 @@ export class ConsolidatedSnapshotMockRepository {
     this.snapshots.push(snapshot);
   }
 
-  async findLatest(tenantId: string, groupId: string): Promise<ConsolidatedFinancialSnapshot | null> {
-    const filtered = this.snapshots.filter(s => s.tenantId === tenantId && s.groupId === groupId);
+  async findLatest(tenant_id: string, groupId: string): Promise<ConsolidatedFinancialSnapshot | null> {
+    const filtered = this.snapshots.filter(s => s.tenant_id === tenant_id && s.groupId === groupId);
     if (filtered.length === 0) return null;
     return filtered.sort((a, b) => (b.projectionCheckpointSequence || 0) - (a.projectionCheckpointSequence || 0))[0];
   }

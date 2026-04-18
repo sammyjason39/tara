@@ -3,7 +3,7 @@ import { IsString, IsNotEmpty } from 'class-validator';
 export class EnrollTrainingDto {
   @IsString()
   @IsNotEmpty()
-  employeeId: string;
+  employee_id: string;
 
   @IsString()
   @IsNotEmpty()

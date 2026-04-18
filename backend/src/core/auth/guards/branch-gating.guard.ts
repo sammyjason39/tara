@@ -35,7 +35,7 @@ export class BranchGatingGuard implements CanActivate {
 
     const tenantContext = request.tenantContext;
 
-    if (!tenantContext || !tenantContext.tenantId) {
+    if (!tenantContext || !tenantContext.tenant_id) {
       return true; // tenantInterceptor handles if required
     }
 
@@ -44,8 +44,8 @@ export class BranchGatingGuard implements CanActivate {
       return true;
     }
 
-    const storeCount = await this.prisma.store.count({
-      where: { tenantId: tenantContext.tenantId },
+    const storeCount = await this.prisma.stores.count({
+      where: { tenant_id: tenantContext.tenant_id },
     });
 
     if (storeCount < 1) {

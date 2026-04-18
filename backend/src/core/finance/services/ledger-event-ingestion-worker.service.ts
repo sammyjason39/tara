@@ -42,7 +42,7 @@ export class LedgerEventIngestionWorker {
       }
 
       // Process independent events concurrently
-      await Promise.allSettled(independentEvents.map(event => this.ingestEvent(event)));
+      await Promise.allSettled(independentEvents.map((event: any) => this.ingestEvent(event)));
 
       // Process grouped events sequentially per group
       for (const [key, group] of groupedEvents.entries()) {
@@ -63,9 +63,9 @@ export class LedgerEventIngestionWorker {
   private async ingestEvent(event: any): Promise<void> {
     // 1. Convert to LedgerPosting
     await this.ledgerPostingService.enqueuePosting(
-      event.tenantId,
-      event.companyId || 'COMP_DEFAULT',
-      event.eventType,
+      event.tenant_id,
+      event.company_id || 'COMP_DEFAULT',
+      event.event_type,
       event.id,
       event.payload,
       event.sequenceKey,

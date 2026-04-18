@@ -57,7 +57,7 @@ export class MerkleTreeBuilder {
 
   /**
    * Generate the proof path (sibling hashes) for a leaf at the given index.
-   * Returns an array of { sibling, position: 'left'|'right' } tuples.
+   * Returns an array of { sibling, positions: 'left'|'right' } tuples.
    */
   static getProof(
     tree: MerkleTree,

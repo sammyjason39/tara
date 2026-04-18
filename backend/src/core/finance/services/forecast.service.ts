@@ -84,7 +84,7 @@ export class ForecastService {
    */
   private stableSerialize(obj: any): string {
     if (obj === null || typeof obj !== 'object') return JSON.stringify(obj);
-    if (Array.isArray(obj)) return '[' + obj.map(item => this.stableSerialize(item)).join(',') + ']';
+    if (Array.isArray(obj)) return '[' + obj.map((item: any) => this.stableSerialize(item)).join(',') + ']';
     const keys = Object.keys(obj).sort();
     return '{' + keys.map(k => `${JSON.stringify(k)}:${this.stableSerialize(obj[k])}`).join(',') + '}';
   }
@@ -93,8 +93,8 @@ export class ForecastService {
    * Orchestrate 90-day Forecast
    */
   async getForecast(params: {
-    tenantId: string;
-    companyId: string;
+    tenant_id: string;
+    company_id: string;
     snapshotId?: string;
     horizonDays?: number;
     scenario?: {
@@ -102,11 +102,11 @@ export class ForecastService {
         expenseMultiplier?: number;
     };
   }): Promise<ForecastOutput> {
-    const { tenantId, companyId, snapshotId, horizonDays = 90, scenario } = params;
+    const { tenant_id, company_id, snapshotId, horizonDays = 90, scenario } = params;
 
     const cashflow = await this.cashflowService.getCashflow({
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       snapshotId,
       scenario: scenario ? {
           revenueMultiplier: scenario.revenueMultiplier,
@@ -115,15 +115,15 @@ export class ForecastService {
       } : undefined
     });
 
-    const historicalSnapshots = await this.prisma.accountBalanceSnapshot.findMany({
-      where: { tenantId, company: { id: companyId } },
-      orderBy: { createdAt: 'desc' },
+    const historicalSnapshots = await this.prisma.finance_account_balance_snapshots.findMany({
+      where: { tenant_id: tenant_id, companies: { id: company_id } },
+      orderBy: { created_at: 'desc' },
       take: 6,
     });
 
     const context: ForecastContext = {
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       snapshotSequence: cashflow.snapshotSequence,
       historicalSnapshots,
       cashflowBaseline: cashflow,

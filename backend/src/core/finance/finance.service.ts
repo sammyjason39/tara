@@ -42,28 +42,28 @@ export class FinanceService {
   ) {}
 
   async getLedger(
-    tenantId: string,
-    locationId?: string,
+    tenant_id: string,
+    location_id?: string,
   ): Promise<LedgerEntry[]> {
-    return this.financeRepository.getLedger(tenantId, locationId);
+    return this.financeRepository.getLedger(tenant_id, location_id);
   }
 
   async createTransaction(
-    tenantId: string,
+    tenant_id: string,
     data: CreateTransactionDto,
-    userId: string,
+    user_id: string,
   ): Promise<Transaction> {
     const transaction = await this.financeRepository.createTransaction(
-      tenantId,
+      tenant_id,
       data,
     );
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "finance",
       action: "CREATE",
-      entityType: "TRANSACTION",
-      entityId: transaction.id,
+      entity_type: "TRANSACTION",
+      entity_id: transaction.id,
       metadata: {
         amount: data.amount,
         type: data.type,
@@ -74,9 +74,9 @@ export class FinanceService {
   }
 
   async createJournal(
-    tenantId: string,
+    tenant_id: string,
     data: CreateJournalDto,
-    userId: string,
+    user_id: string,
   ): Promise<any> {
     const totalDebits = data.lines.reduce(
       (sum, line) => sum + Number(line.debit),
@@ -93,18 +93,18 @@ export class FinanceService {
 
     try {
       const journal = await this.financeRepository.createJournal(
-        tenantId,
+        tenant_id,
         data,
       );
 
       /*
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "finance",
         action: "CREATE",
-        entityType: "JOURNAL_ENTRY",
-        entityId: (journal as any).id,
+        entity_type: "JOURNAL_ENTRY",
+        entity_id: (journal as any).id,
         metadata: {
           description: data.description,
           linesCount: data.lines.length,
@@ -128,10 +128,10 @@ export class FinanceService {
    * Bulk import transactions from file (CSV/Excel)
    */
   async importTransactions(
-    tenantId: string,
+    tenant_id: string,
     buffer: Buffer,
     fileType: "csv" | "xlsx",
-    userId: string,
+    user_id: string,
   ): Promise<{ imported: number; errors: any[] }> {
     const { data, errors } =
       fileType === "csv"
@@ -150,7 +150,7 @@ export class FinanceService {
 
     let importedCount = 0;
     for (const transactionData of data) {
-      await this.createTransaction(tenantId, transactionData, userId);
+      await this.createTransaction(tenant_id, transactionData, user_id);
       importedCount++;
     }
 
@@ -160,8 +160,8 @@ export class FinanceService {
   /**
    * Export General Ledger to Excel
    */
-  async exportLedger(tenantId: string, userId: string): Promise<Buffer> {
-    const ledger = await this.getLedger(tenantId);
+  async exportLedger(tenant_id: string, user_id: string): Promise<Buffer> {
+    const ledger = await this.getLedger(tenant_id);
 
     const columns = [
       { header: "ID", key: "id", width: 10 },
@@ -174,62 +174,62 @@ export class FinanceService {
     ];
 
     return this.fileProcessingService.generateExcel(ledger, columns, {
-      traceId: `FIN-${tenantId}-${userId}-${Date.now()}`,
+      traceId: `FIN-${tenant_id}-${user_id}-${Date.now()}`,
       watermark: { text: "ZENVIX INTERNAL" },
     });
   }
 
-  async getBalance(tenantId: string): Promise<Balance> {
-    return this.financeRepository.getBalance(tenantId);
+  async getBalance(tenant_id: string): Promise<Balance> {
+    return this.financeRepository.getBalance(tenant_id);
   }
 
   async getTransactionById(
-    tenantId: string,
-    transactionId: string,
+    tenant_id: string,
+    transaction_id: string,
   ): Promise<Transaction | null> {
-    return this.financeRepository.getTransactionById(tenantId, transactionId);
+    return this.financeRepository.getTransactionById(tenant_id, transaction_id);
   }
 
   // Assets
-  async listAssets(tenantId: string): Promise<Asset[]> {
-    return this.financeRepository.listAssets(tenantId);
+  async listAssets(tenant_id: string): Promise<Asset[]> {
+    return this.financeRepository.listAssets(tenant_id);
   }
 
   async createAsset(
-    tenantId: string,
+    tenant_id: string,
     asset: Partial<Asset>,
-    userId: string,
+    user_id: string,
   ): Promise<Asset> {
-    const created = await this.financeRepository.createAsset(tenantId, asset);
+    const created = await this.financeRepository.createAsset(tenant_id, asset);
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "FINANCE",
       action: "CREATE_ASSET",
-      entityType: "FIXED_ASSET",
-      entityId: created.id,
+      entity_type: "FIXED_ASSET",
+      entity_id: created.id,
       metadata: { description: created.description },
     });
     return created;
   }
 
   async updateAssetStatus(
-    tenantId: string,
+    tenant_id: string,
     id: string,
     status: string,
-    userId: string,
+    user_id: string,
   ): Promise<Asset | null> {
-    const updated = await this.financeRepository.updateAsset(tenantId, id, {
+    const updated = await this.financeRepository.updateAsset(tenant_id, id, {
       status: status as any,
     });
     if (updated) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "FINANCE",
         action: "UPDATE_ASSET_STATUS",
-        entityType: "FIXED_ASSET",
-        entityId: id,
+        entity_type: "FIXED_ASSET",
+        entity_id: id,
         changes: { status },
       });
     }
@@ -237,13 +237,13 @@ export class FinanceService {
   }
 
   async capitalizeAsset(
-    tenantId: string,
+    tenant_id: string,
     assetId: string,
     capitalizationDate: string,
-    userId: string,
+    user_id: string,
   ): Promise<Asset | null> {
     const updated = await this.financeRepository.updateAsset(
-      tenantId,
+      tenant_id,
       assetId,
       {
         status: "ACTIVE",
@@ -252,12 +252,12 @@ export class FinanceService {
     );
     if (updated) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "FINANCE",
         action: "CAPITALIZE_ASSET",
-        entityType: "FIXED_ASSET",
-        entityId: assetId,
+        entity_type: "FIXED_ASSET",
+        entity_id: assetId,
         changes: { status: "ACTIVE", capitalizationDate },
       });
     }
@@ -265,49 +265,49 @@ export class FinanceService {
   }
 
   // Capex
-  async listCapexRequests(tenantId: string): Promise<CapexRequest[]> {
-    return this.financeRepository.listCapexRequests(tenantId);
+  async listCapexRequests(tenant_id: string): Promise<CapexRequest[]> {
+    return this.financeRepository.listCapexRequests(tenant_id);
   }
 
   async createCapexRequest(
-    tenantId: string,
+    tenant_id: string,
     request: Partial<CapexRequest>,
-    userId: string,
+    user_id: string,
   ): Promise<CapexRequest> {
     const created = await this.financeRepository.createCapexRequest(
-      tenantId,
+      tenant_id,
       request,
     );
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "FINANCE",
       action: "CREATE_CAPEX_REQUEST",
-      entityType: "CAPEX_REQUEST",
-      entityId: created.id,
+      entity_type: "CAPEX_REQUEST",
+      entity_id: created.id,
       metadata: { amount: created.requestedAmount },
     });
     return created;
   }
 
-  async listCapexBudgets(tenantId: string): Promise<FinanceCapexBudgetRow[]> {
-    return this.financeRepository.listCapexBudgets(tenantId);
+  async listCapexBudgets(tenant_id: string): Promise<FinanceCapexBudgetRow[]> {
+    return this.financeRepository.listCapexBudgets(tenant_id);
   }
 
   async setCapexBudget(
-    tenantId: string,
+    tenant_id: string,
     budget: FinanceCapexBudgetRow,
   ): Promise<void> {
-    return this.financeRepository.setCapexBudget(tenantId, budget);
+    return this.financeRepository.setCapexBudget(tenant_id, budget);
   }
 
   async approveCapexRequest(
-    tenantId: string,
+    tenant_id: string,
     id: string,
-    userId: string,
+    user_id: string,
   ): Promise<CapexRequest | null> {
     const updated = await this.financeRepository.updateCapexRequest(
-      tenantId,
+      tenant_id,
       id,
       {
         status: "APPROVED",
@@ -315,12 +315,12 @@ export class FinanceService {
     );
     if (updated) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "FINANCE",
         action: "APPROVE_CAPEX_REQUEST",
-        entityType: "CAPEX_REQUEST",
-        entityId: id,
+        entity_type: "CAPEX_REQUEST",
+        entity_id: id,
         changes: { status: "APPROVED" },
       });
     }
@@ -328,12 +328,12 @@ export class FinanceService {
   }
 
   async rejectCapexRequest(
-    tenantId: string,
+    tenant_id: string,
     id: string,
-    userId: string,
+    user_id: string,
   ): Promise<CapexRequest | null> {
     const updated = await this.financeRepository.updateCapexRequest(
-      tenantId,
+      tenant_id,
       id,
       {
         status: "REJECTED",
@@ -341,12 +341,12 @@ export class FinanceService {
     );
     if (updated) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "FINANCE",
         action: "REJECT_CAPEX_REQUEST",
-        entityType: "CAPEX_REQUEST",
-        entityId: id,
+        entity_type: "CAPEX_REQUEST",
+        entity_id: id,
         changes: { status: "REJECTED" },
       });
     }
@@ -355,31 +355,31 @@ export class FinanceService {
 
   // Depreciation
   async listAssetDepreciationEntries(
-    tenantId: string,
+    tenant_id: string,
     assetId?: string,
   ): Promise<AssetDepreciationEntry[]> {
     return this.financeRepository.listAssetDepreciationEntries(
-      tenantId,
+      tenant_id,
       assetId,
     );
   }
 
   async createDepreciationEntry(
-    tenantId: string,
+    tenant_id: string,
     entry: Partial<AssetDepreciationEntry>,
   ): Promise<AssetDepreciationEntry> {
-    return this.financeRepository.createDepreciationEntry(tenantId, entry);
+    return this.financeRepository.createDepreciationEntry(tenant_id, entry);
   }
 
   async runScheduledPeriodDepreciation(
-    tenantId: string,
+    tenant_id: string,
     periodStart: string,
     periodEnd: string,
   ): Promise<any> {
     // Mock logic: just create one entry for first asset
-    const assets = await this.listAssets(tenantId);
+    const assets = await this.listAssets(tenant_id);
     if (assets.length > 0) {
-      await this.createDepreciationEntry(tenantId, {
+      await this.createDepreciationEntry(tenant_id, {
         assetId: assets[0].id,
         amount: new Prisma.Decimal(100),
         postingDate: periodEnd,
@@ -396,99 +396,99 @@ export class FinanceService {
 
   // Events
   async listAssetEvents(
-    tenantId: string,
+    tenant_id: string,
     assetId?: string,
   ): Promise<AssetEvent[]> {
-    return this.financeRepository.listAssetEvents(tenantId, assetId);
+    return this.financeRepository.listAssetEvents(tenant_id, assetId);
   }
 
   async createAssetEvent(
-    tenantId: string,
+    tenant_id: string,
     event: Partial<AssetEvent>,
   ): Promise<AssetEvent> {
-    return this.financeRepository.createAssetEvent(tenantId, event);
+    return this.financeRepository.createAssetEvent(tenant_id, event);
   }
 
   async getAssetAuditPack(
-    tenantId: string,
+    tenant_id: string,
     assetId: string,
   ): Promise<AssetAuditPack> {
-    return this.financeRepository.getAssetAuditPack(tenantId, assetId);
+    return this.financeRepository.getAssetAuditPack(tenant_id, assetId);
   }
 
   // Receivables
-  async listReceivables(tenantId: string): Promise<FinanceReceivableRow[]> {
-    return this.financeRepository.listReceivables(tenantId);
+  async listReceivables(tenant_id: string): Promise<FinanceReceivableRow[]> {
+    return this.financeRepository.listReceivables(tenant_id);
   }
 
   async createReceivable(
-    tenantId: string,
+    tenant_id: string,
     invoice: Partial<ReceivableInvoice>,
   ): Promise<ReceivableInvoice> {
-    return this.financeRepository.createReceivable(tenantId, invoice);
+    return this.financeRepository.createReceivable(tenant_id, invoice);
   }
 
-  async markReceivableReceived(tenantId: string, id: string): Promise<void> {
-    await this.financeRepository.updateReceivable(tenantId, id, {
+  async markReceivableReceived(tenant_id: string, id: string): Promise<void> {
+    await this.financeRepository.updateReceivable(tenant_id, id, {
       status: "PAID",
     });
   }
 
-  async sendReceivableReminder(tenantId: string, id: string): Promise<void> {
+  async sendReceivableReminder(tenant_id: string, id: string): Promise<void> {
     // Mock email sending
     console.log(`Sending reminder for invoice ${id}`);
   }
 
   // Payables
-  async listPayables(tenantId: string): Promise<FinancePayableRow[]> {
-    return this.financeRepository.listPayables(tenantId);
+  async listPayables(tenant_id: string): Promise<FinancePayableRow[]> {
+    return this.financeRepository.listPayables(tenant_id);
   }
 
   async createPayable(
-    tenantId: string,
+    tenant_id: string,
     bill: Partial<PayableBill>,
   ): Promise<PayableBill> {
-    return this.financeRepository.createPayable(tenantId, bill);
+    return this.financeRepository.createPayable(tenant_id, bill);
   }
 
   async approvePayable(
-    tenantId: string,
+    tenant_id: string,
     id: string,
   ): Promise<PayableBill | null> {
-    return this.financeRepository.updatePayable(tenantId, id, {
+    return this.financeRepository.updatePayable(tenant_id, id, {
       status: "APPROVED",
     });
   }
 
-  async markPayablePaid(tenantId: string, id: string): Promise<void> {
-    await this.financeRepository.updatePayable(tenantId, id, {
+  async markPayablePaid(tenant_id: string, id: string): Promise<void> {
+    await this.financeRepository.updatePayable(tenant_id, id, {
       status: "PAID",
     });
   }
 
   // Money Sources
-  async getMoneySources(tenantId: string) {
-    return this.financeRepository.listMoneySources(tenantId);
+  async getMoneySources(tenant_id: string) {
+    return this.financeRepository.listMoneySources(tenant_id);
   }
 
   // Treasury
-  async listTransfers(tenantId: string): Promise<any[]> {
-    return this.financeRepository.listTransfers(tenantId);
+  async listTransfers(tenant_id: string): Promise<any[]> {
+    return this.financeRepository.listTransfers(tenant_id);
   }
 
   async createTransfer(
-    tenantId: string,
+    tenant_id: string,
     data: any,
-    userId: string,
+    user_id: string,
   ): Promise<any> {
-    const created = await this.financeRepository.createTransfer(tenantId, data);
+    const created = await this.financeRepository.createTransfer(tenant_id, data);
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "FINANCE",
       action: "CREATE_TREASURY_TRANSFER",
-      entityType: "TREASURY_TRANSFER",
-      entityId: created.id,
+      entity_type: "TREASURY_TRANSFER",
+      entity_id: created.id,
       metadata: {
         from: created.fromSourceId,
         to: created.toSourceId,
@@ -499,36 +499,36 @@ export class FinanceService {
   }
 
   async reconcileSettlement(
-    tenantId: string,
+    tenant_id: string,
     sourceId: string,
     amount: number,
-    userId: string,
+    user_id: string,
   ): Promise<void> {
     await this.financeRepository.reconcileSettlement(
-      tenantId,
+      tenant_id,
       sourceId,
       amount,
     );
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "FINANCE",
       action: "RECONCILE_SETTLEMENT",
-      entityType: "MONEY_SOURCE",
-      entityId: sourceId,
+      entity_type: "MONEY_SOURCE",
+      entity_id: sourceId,
       metadata: { amount },
     });
   }
 
   // Payments
-  async listPayments(tenantId: string): Promise<FinancePaymentRow[]> {
-    return this.financeRepository.listPayments(tenantId);
+  async listPayments(tenant_id: string): Promise<FinancePaymentRow[]> {
+    return this.financeRepository.listPayments(tenant_id);
   }
 
   async createPaymentRequest(
-    tenantId: string,
+    tenant_id: string,
     request: Partial<PaymentRequest>,
-    userId: string,
+    user_id: string,
     userRole: string,
   ): Promise<PaymentRequest> {
     const isHighLevelRole = ["OWNER", "FINANCE_HOD", "ADMIN"].includes(
@@ -545,17 +545,17 @@ export class FinanceService {
     }
 
     const created = await this.financeRepository.createPaymentRequest(
-      tenantId,
+      tenant_id,
       request,
     );
 
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "FINANCE",
       action: "CREATE_PAYMENT_REQUEST",
-      entityType: "PAYMENT_TRANSACTION",
-      entityId: created.id,
+      entity_type: "PAYMENT_TRANSACTION",
+      entity_id: created.id,
       metadata: {
         amount: created.amount,
         destination: created.beneficiary,
@@ -569,48 +569,48 @@ export class FinanceService {
   }
 
   async updatePaymentStatus(
-    tenantId: string,
+    tenant_id: string,
     id: string,
     status: string,
   ): Promise<void> {
-    return this.financeRepository.updatePaymentStatus(tenantId, id, status);
+    return this.financeRepository.updatePaymentStatus(tenant_id, id, status);
   }
 
   // Documents
-  async listDocuments(tenantId: string): Promise<FinanceDocumentRow[]> {
-    return this.financeRepository.listDocuments(tenantId);
+  async listDocuments(tenant_id: string): Promise<FinanceDocumentRow[]> {
+    return this.financeRepository.listDocuments(tenant_id);
   }
 
   async createDocument(
-    tenantId: string,
+    tenant_id: string,
     doc: Partial<FinanceDocumentRow>,
   ): Promise<FinanceDocumentRow> {
-    return this.financeRepository.createDocument(tenantId, doc);
+    return this.financeRepository.createDocument(tenant_id, doc);
   }
 
   // Policies
-  async listPolicies(tenantId: string): Promise<FinancePolicyRow[]> {
-    return this.financeRepository.listPolicies(tenantId);
+  async listPolicies(tenant_id: string): Promise<FinancePolicyRow[]> {
+    return this.financeRepository.listPolicies(tenant_id);
   }
 
-  async listPeriods(tenantId: string): Promise<AccountingPeriod[]> {
-    return this.financeRepository.listPeriods(tenantId);
+  async listPeriods(tenant_id: string): Promise<AccountingPeriod[]> {
+    return this.financeRepository.listPeriods(tenant_id);
   }
 
   // Insights
-  async getInsights(tenantId: string): Promise<FinanceInsight[]> {
-    return this.financeRepository.getInsights(tenantId);
+  async getInsights(tenant_id: string): Promise<FinanceInsight[]> {
+    return this.financeRepository.getInsights(tenant_id);
   }
 
-  async getAlerts(tenantId: string): Promise<FinanceAlert[]> {
-    return this.financeRepository.getAlerts(tenantId);
+  async getAlerts(tenant_id: string): Promise<FinanceAlert[]> {
+    return this.financeRepository.getAlerts(tenant_id);
   }
 
   // Aggregated Views
-  async listInvoices(tenantId: string): Promise<any[]> {
+  async listInvoices(tenant_id: string): Promise<any[]> {
     const [payables, receivables] = await Promise.all([
-      this.listPayables(tenantId),
-      this.listReceivables(tenantId),
+      this.listPayables(tenant_id),
+      this.listReceivables(tenant_id),
     ]);
 
     const invoiceRows: any[] = [];
@@ -622,20 +622,20 @@ export class FinanceService {
         kind: "PAYABLE",
         vendor: p.vendorName,
         amount: p.amount,
-        invoiceDate: p.updatedAt, // Use updatedAt as proxy for invoice date if missing
+        invoiceDate: p.updated_at, // Use updated_at as proxy for invoice date if missing
         dueDate: p.dueDate,
         status: p.status,
       });
     });
 
     // Map receivables to common invoice format
-    receivables.forEach((r) => {
+    receivables.forEach((r: any) => {
       invoiceRows.push({
         id: r.id,
         kind: "RECEIVABLE",
         vendor: r.customerName,
         amount: r.amount,
-        invoiceDate: r.updatedAt, // Use updatedAt as proxy for invoice date if missing
+        invoiceDate: r.updated_at, // Use updated_at as proxy for invoice date if missing
         dueDate: r.dueDate,
         status: r.status,
       });
@@ -645,33 +645,33 @@ export class FinanceService {
   }
 
   async getPayrollEntries(
-    tenantId: string,
+    tenant_id: string,
     period?: string,
   ): Promise<PayrollEntry[]> {
-    return this.financeRepository.listPayrollEntries(tenantId, period);
+    return this.financeRepository.listPayrollEntries(tenant_id, period);
   }
 
   async estimatePayroll(
-    tenantId: string,
+    tenant_id: string,
     period: string,
   ): Promise<PayrollEstimate[]> {
-    return this.financeRepository.estimatePayroll(tenantId, period);
+    return this.financeRepository.estimatePayroll(tenant_id, period);
   }
 
   async executePayrollRun(
-    tenantId: string,
+    tenant_id: string,
     period: string,
-    userId: string,
+    user_id: string,
   ): Promise<void> {
-    await this.financeRepository.executePayrollRun(tenantId, period, userId);
+    await this.financeRepository.executePayrollRun(tenant_id, period, user_id);
     
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "FINANCE",
       action: "CREATE",
-      entityType: "PayrollRun",
-      entityId: `PayrollPeriod-${period}`,
+      entity_type: "PayrollRun",
+      entity_id: `PayrollPeriod-${period}`,
       metadata: { period },
     });
   }

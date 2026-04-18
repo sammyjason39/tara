@@ -40,12 +40,12 @@ export class PostingMonitoringService {
     }
   }
 
-  recordReconciliationResult(tenantId: string, companyId: string, accountId: string, journalSum: any, balanceRecord: any, status: 'MATCH' | 'MISMATCH', currency: string) {
+  recordReconciliationResult(tenant_id: string, company_id: string, accountId: string, journalSum: any, balanceRecord: any, status: 'MATCH' | 'MISMATCH', currency: string) {
     if (status === 'MISMATCH') {
       this.metrics.ledger_reconciliation_mismatches++;
       this.metrics.ledger_reconciliation_drift_detected = true;
       const drift = journalSum.minus ? journalSum.minus(balanceRecord).abs().toString() : 'UNKNOWN';
-      this.logger.error(`[CRITICAL_DRIFT_ALERT] Reconciliation mismatch detected for Account ${accountId} (${currency}) in Company ${companyId}. Drift: ${drift}`);
+      this.logger.error(`[CRITICAL_DRIFT_ALERT] Reconciliation mismatch detected for Account ${accountId} (${currency}) in Company ${company_id}. Drift: ${drift}`);
     }
   }
 
@@ -93,7 +93,7 @@ export class PostingMonitoringService {
   /**
    * Triggers a manual notification for DLQ intervention.
    */
-  async notifyOperator(requestId: string, message: string) {
-    this.logger.error(`[ALERT] Operator notified for Request ${requestId}: ${message}`);
+  async notifyOperator(request_id: string, message: string) {
+    this.logger.error(`[ALERT] Operator notified for Request ${request_id}: ${message}`);
   }
 }

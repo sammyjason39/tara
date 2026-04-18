@@ -12,8 +12,8 @@ export type IntelligenceIntegrityHash = {
 
 export type FinancialCertificationPack = {
   certificationId: string; // sha256(snapshotSequence + ledgerHash + rootHash)
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   snapshotSequence: number;
   
   // Ledger Anchor
@@ -33,6 +33,6 @@ export type FinancialCertificationPack = {
   status: 'SEALED' | 'VERIFIED' | 'FAILED';
   metadata: {
     fiscalPeriodId: string;
-    correlationId: string;
+    correlation_id: string;
   };
 };

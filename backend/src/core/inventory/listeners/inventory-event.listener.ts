@@ -16,12 +16,12 @@ export class InventoryEventListener implements OnModuleInit {
   }
 
   private async handleStockInitialized(event: any) {
-    const { tenantId, payload, correlationId, userId } = event;
-    const { sku, locationId, quantity, unitCost } = payload;
+    const { tenant_id, payload, correlation_id, user_id } = event;
+    const { sku, location_id, quantity, unitCost } = payload;
 
     // 1. Resolve product ID from SKU
     // (Assuming the product was created via INVENTORY_ITEM_CREATED listener in Catalog)
-    const product = await (this.inventoryService as any).repository.findProductByCode(tenantId, sku);
+    const product = await (this.inventoryService as any).repository.findProductByCode(tenant_id, sku);
     
     if (!product) {
         console.warn(`[InventoryEventListener] Product not found for SKU: ${sku}. Requeuing or skipping.`);
@@ -30,18 +30,18 @@ export class InventoryEventListener implements OnModuleInit {
 
     // 2. Perform Intake
     await this.inventoryService.intakeStock(
-        tenantId,
+        tenant_id,
         {
-          itemId: product.id,
-          locationId: locationId,
+          item_id: product.id,
+          location_id: location_id,
           quantity: quantity,
           unitCost: unitCost || 0,
           referenceId: `INIT-${sku}`,
           referenceType: 'INITIALIZATION',
         } as any,
-        userId,
+        user_id,
         null,
-        correlationId
+        correlation_id
     );
   }
 }

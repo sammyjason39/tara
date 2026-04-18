@@ -1,6 +1,6 @@
 export class ProcurementRisk {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   code:
     | "price_spike"
     | "approval_bypass"
@@ -8,8 +8,8 @@ export class ProcurementRisk {
     | "supplier_risk";
   severity: "low" | "medium" | "high";
   status: "open" | "acknowledged" | "resolved";
-  entityId: string;
+  entity_id: string;
   detail: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

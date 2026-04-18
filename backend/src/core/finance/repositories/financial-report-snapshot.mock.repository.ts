@@ -10,8 +10,8 @@ export class FinancialReportSnapshotMockRepository {
     this.snapshots.push(snapshot);
   }
 
-  async findLatest(tenantId: string, companyId: string, reportType: string): Promise<FinancialReportSnapshot | null> {
-    const list = this.snapshots.filter(s => s.tenantId === tenantId && s.reportType === reportType);
+  async findLatest(tenant_id: string, company_id: string, reportType: string): Promise<FinancialReportSnapshot | null> {
+    const list = this.snapshots.filter(s => s.tenant_id === tenant_id && s.reportType === reportType);
     if (list.length === 0) return null;
     return list.sort((a, b) => (b.projectionCheckpointSequence || 0) - (a.projectionCheckpointSequence || 0))[0];
   }

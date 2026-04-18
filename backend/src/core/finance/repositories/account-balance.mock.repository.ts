@@ -9,18 +9,18 @@ export class AccountBalanceMockRepository implements IAccountBalanceRepository {
   private snapshots: Map<string, AccountBalanceSnapshot[]> = new Map();
 
   async findBalance(params: {
-    tenantId: string;
-    companyId: string;
+    tenant_id: string;
+    company_id: string;
     fiscalPeriodId: string;
     accountId: string;
     currency: string;
-    branchId: string;
-    locationId: string;
+    branch_id: string;
+    location_id: string;
     departmentId?: string;
     costCenterId?: string;
     projectId?: string;
   }): Promise<AccountBalance | null> {
-    const scopeKey = `${params.tenantId}:${params.companyId}`;
+    const scopeKey = `${params.tenant_id}:${params.company_id}`;
     const list = this.balances.get(scopeKey) || [];
     return list.find(b => 
       b.accountId === params.accountId && 
@@ -29,8 +29,8 @@ export class AccountBalanceMockRepository implements IAccountBalanceRepository {
     ) || null;
   }
 
-  async updateBalance(tenantId: string, companyId: string, data: Partial<AccountBalance>): Promise<void> {
-    const scopeKey = `${tenantId}:${companyId}`;
+  async updateBalance(tenant_id: string, company_id: string, data: Partial<AccountBalance>): Promise<void> {
+    const scopeKey = `${tenant_id}:${company_id}`;
     let list = this.balances.get(scopeKey) || [];
     const index = list.findIndex(b => b.accountId === data.accountId && b.fiscalPeriodId === data.fiscalPeriodId);
 
@@ -39,16 +39,16 @@ export class AccountBalanceMockRepository implements IAccountBalanceRepository {
     } else {
       list.push({
         id: data.id || Math.random().toString(36).substr(2, 9),
-        tenantId,
-        companyId,
+        tenant_id,
+        company_id,
         accountId: data.accountId!,
         currency: data.currency || 'USD',
         fiscalPeriodId: data.fiscalPeriodId!,
         debitTotal: data.debitTotal || new Prisma.Decimal(0),
         creditTotal: data.creditTotal || new Prisma.Decimal(0),
         netBalance: data.netBalance || new Prisma.Decimal(0),
-        branchId: data.branchId || 'MAIN',
-        locationId: data.locationId || 'LOC1',
+        branch_id: data.branch_id || 'MAIN',
+        location_id: data.location_id || 'LOC1',
         version: 1,
         lastUpdatedAt: new Date(),
       });
@@ -56,13 +56,13 @@ export class AccountBalanceMockRepository implements IAccountBalanceRepository {
     this.balances.set(scopeKey, list);
   }
 
-  async incrementBalance(tenantId: string, companyId: string, params: any, delta: any): Promise<void> {
-    const current = await this.findBalance({ tenantId, companyId, ...params });
+  async incrementBalance(tenant_id: string, company_id: string, params: any, delta: any): Promise<void> {
+    const current = await this.findBalance({ tenant_id, company_id, ...params });
     const debit = (current?.debitTotal || new Prisma.Decimal(0)).plus(delta.debit || 0);
     const credit = (current?.creditTotal || new Prisma.Decimal(0)).plus(delta.credit || 0);
     const net = (current?.netBalance || new Prisma.Decimal(0)).plus(delta.net || 0);
 
-    await this.updateBalance(tenantId, companyId, {
+    await this.updateBalance(tenant_id, company_id, {
       ...params,
       debitTotal: debit,
       creditTotal: credit,
@@ -70,14 +70,14 @@ export class AccountBalanceMockRepository implements IAccountBalanceRepository {
     });
   }
 
-  async createSnapshot(tenantId: string, companyId: string, data: Partial<AccountBalanceSnapshot>): Promise<AccountBalanceSnapshot> {
-    const scopeKey = `${tenantId}:${companyId}`;
+  async createSnapshot(tenant_id: string, company_id: string, data: Partial<AccountBalanceSnapshot>): Promise<AccountBalanceSnapshot> {
+    const scopeKey = `${tenant_id}:${company_id}`;
     let list = this.snapshots.get(scopeKey) || [];
     
     const newSnapshot: AccountBalanceSnapshot = {
       id: Math.random().toString(36).substr(2, 9),
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       accountId: data.accountId || 'MOCK-ACC',
       currency: data.currency || 'USD',
       periodId: data.periodId || 'MOCK-PERIOD',
@@ -98,8 +98,8 @@ export class AccountBalanceMockRepository implements IAccountBalanceRepository {
     return newSnapshot;
   }
 
-  async reset(tenantId: string, companyId: string): Promise<void> {
-    const scopeKey = `${tenantId}:${companyId}`;
+  async reset(tenant_id: string, company_id: string): Promise<void> {
+    const scopeKey = `${tenant_id}:${company_id}`;
     this.balances.delete(scopeKey);
     this.snapshots.delete(scopeKey);
   }

@@ -62,7 +62,7 @@ export class InsightService {
       return JSON.stringify(obj);
     }
     if (Array.isArray(obj)) {
-      return '[' + obj.map((item) => this.stableSerialize(item)).join(',') + ']';
+      return '[' + obj.map((item: any) => this.stableSerialize(item)).join(',') + ']';
     }
     const keys = Object.keys(obj).sort();
     return (
@@ -158,21 +158,21 @@ export class InsightService {
    * Main entry point for insight generation
    */
   async getInsights(params: {
-    tenantId: string;
-    companyId: string;
+    tenant_id: string;
+    company_id: string;
     snapshotId?: string;
-    correlationId?: string;
-    userId?: string;
+    correlation_id?: string;
+    user_id?: string;
     forecast?: any;
   }): Promise<Insight[]> {
-    const { tenantId, companyId, snapshotId, correlationId = `insight-${Date.now()}`, userId, forecast } = params;
+    const { tenant_id, company_id, snapshotId, correlation_id = `insight-${Date.now()}`, user_id, forecast } = params;
 
     const cashflow = forecast ? forecast.context?.cashflowBaseline : await this.cashflowService.getCashflow({
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       snapshotId,
-      correlationId,
-      userId,
+      correlation_id,
+      user_id,
     });
 
     // STEP 1 & 2: QUERY DB FIRST (Idempotency Guard)
@@ -180,27 +180,27 @@ export class InsightService {
     const normalizedForecastHash = (forecastHash as string) ?? 'ACTUAL';
     const snapshotSequence = cashflow.snapshotSequence;
 
-    const existing = await this.prisma.insightSnapshot.findUnique({
+    const existing = await this.prisma.finance_insight_snapshots.findUnique({
       where: {
-        tenantId_companyId_snapshotSequence_forecastHash: {
-          tenantId,
-          companyId,
-          snapshotSequence,
-          forecastHash: normalizedForecastHash,
+        tenant_id_company_id_snapshot_sequence_forecast_hash: {
+          tenant_id: tenant_id,
+          company_id: company_id,
+          snapshot_sequence: snapshotSequence,
+          forecast_hash: normalizedForecastHash,
         },
       },
     });
 
     if (existing) {
-      this.logger.log(`[DB] HIT InsightSnapshot id=${existing.id} for sequence ${snapshotSequence}`, correlationId);
+      this.logger.log(`[DB] HIT InsightSnapshot id=${existing.id} for sequence ${snapshotSequence}`, correlation_id);
       return (existing.payload as any) as Insight[];
     }
 
 
 
-    const historicalSnapshots = await this.prisma.accountBalanceSnapshot.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: 'desc' },
+    const historicalSnapshots = await this.prisma.finance_account_balance_snapshots.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { created_at: 'desc' },
       take: 6,
     });
 
@@ -212,14 +212,14 @@ export class InsightService {
     const metrics = this.computeMetrics(diagnosticsCashflow, historicalSnapshots, forecast);
 
     const context: InsightContext = {
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       snapshotSequence: cashflow.snapshotSequence,
       cashflow,
       historicalSnapshots,
       systemLogs: [],
       metrics,
-      correlationId,
+      correlation_id,
     };
     this.deepFreeze(context);
 
@@ -242,11 +242,11 @@ export class InsightService {
 
             validatedInsights.push(insight);
           } catch (valErr) {
-            this.logger.error(`Rule ${rule.type} validation failed: ${valErr.message}`, correlationId);
+            this.logger.error(`Rule ${rule.type} validation failed: ${valErr.message}`, correlation_id);
           }
         }
       } catch (err) {
-        this.logger.error(`Rule ${rule.type} execution failed: ${err.message}`, correlationId);
+        this.logger.error(`Rule ${rule.type} execution failed: ${err.message}`, correlation_id);
       }
     }
 
@@ -312,31 +312,31 @@ export class InsightService {
     // STEP 5: SAVE using TRANSACTION (Atomic write)
     try {
       await this.prisma.$transaction(async (tx) => {
-        const created = await tx.insightSnapshot.create({
+        const created = await tx.finance_insight_snapshots.create({
           data: {
-            id: '3sl53zdh',
-            tenantId,
-            companyId,
-            snapshotSequence,
-            forecastHash: normalizedForecastHash,
-            insightHash,
+            id: crypto.randomUUID(),
+            tenant_id,
+            company_id,
+            snapshot_sequence: snapshotSequence,
+            forecast_hash: normalizedForecastHash,
+            insight_hash: insightHash,
             payload: processed as any,
-            createdAt: new Date(),
+            created_at: new Date(),
           },
         });
-        this.logger.log(`[DB] INSERT InsightSnapshot id=${created.id}`, correlationId);
+        this.logger.log(`[DB] INSERT InsightSnapshot id=${created.id}`, correlation_id);
       });
     } catch (err) {
       // Concurrency Patch: If record was created by a parallel request, return the existing one gracefully
       if (err.code === 'P2002') {
-        this.logger.warn(`[CONCURRENCY] InsightSnapshot unique constraint caught. Falling back to fetch.`, correlationId);
-        const lateExisting = await this.prisma.insightSnapshot.findUnique({
+        this.logger.warn(`[CONCURRENCY] InsightSnapshot unique constraint caught. Falling back to fetch.`, correlation_id);
+        const lateExisting = await this.prisma.finance_insight_snapshots.findUnique({
           where: {
-            tenantId_companyId_snapshotSequence_forecastHash: {
-              tenantId,
-              companyId,
-              snapshotSequence,
-              forecastHash: normalizedForecastHash,
+            tenant_id_company_id_snapshot_sequence_forecast_hash: {
+              tenant_id: tenant_id,
+              company_id: company_id,
+              snapshot_sequence: snapshotSequence,
+              forecast_hash: normalizedForecastHash,
             },
           },
         });
@@ -352,20 +352,20 @@ export class InsightService {
 
     // A5. Audit Extension
     await this.auditService.log({
-      tenantId,
-      userId: userId || 'SYSTEM',
+      tenant_id,
+      user_id: user_id || 'SYSTEM',
       module: 'FINANCE_INSIGHTS',
       action: 'FINANCE_INSIGHT_SNAPSHOT_CREATED',
-      entityType: 'FINANCE_INTELLIGENCE',
-      entityId: companyId,
-      beforeState: { 
+      entity_type: 'FINANCE_INTELLIGENCE',
+      entity_id: company_id,
+      before_state: { 
         snapshotSequence: cashflow.snapshotSequence, 
         insightCount: processed.length,
         forecastHash,
         insightHash,
-        correlationId 
+        correlation_id 
       },
-      correlationId,
+      correlation_id,
     });
 
     return processed;
@@ -375,7 +375,7 @@ export class InsightService {
    * Cryptographic Integrity Verification for Insight Snapshots
    */
   async verifyInsightSnapshot(id: string): Promise<{ valid: boolean; reason?: string; expectedHash: string; actualHash: string }> {
-    const snapshot = await this.prisma.insightSnapshot.findUnique({ where: { id } });
+    const snapshot = await this.prisma.finance_insight_snapshots.findUnique({ where: { id } });
     if (!snapshot) throw new Error('Insight snapshot not found');
 
     const actualHash = crypto
@@ -383,22 +383,22 @@ export class InsightService {
       .update(this.stableSerialize(snapshot.payload))
       .digest('hex');
 
-    const valid = actualHash === snapshot.insightHash;
+    const valid = actualHash === snapshot.insight_hash;
     if (!valid) {
-      this.logger.error(`[INTEGRITY_FAILURE] InsightSnapshot ${id} hash mismatch! Expected: ${snapshot.insightHash}, Actual: ${actualHash}`);
+      this.logger.error(`[INTEGRITY_FAILURE] InsightSnapshot ${id} hash mismatch! Expected: ${snapshot.insight_hash}, Actual: ${actualHash}`);
     }
 
     return {
       valid,
       reason: valid ? undefined : 'HASH_MISMATCH',
-      expectedHash: snapshot.insightHash,
+      expectedHash: snapshot.insight_hash,
       actualHash,
     };
   }
 
 
   async getSnapshotById(id: string): Promise<any> {
-    return this.prisma.insightSnapshot.findUnique({ where: { id } });
+    return this.prisma.finance_insight_snapshots.findUnique({ where: { id } });
   }
 
 
@@ -481,8 +481,8 @@ export class InsightService {
         coreInputs
       },
       supportingData: {},
-      tenantId: 'N/A',
-      companyId: 'N/A',
+      tenant_id: 'N/A',
+      company_id: 'N/A',
       snapshotSequence
     };
   }

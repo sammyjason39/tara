@@ -13,7 +13,7 @@ export class ExplorerService {
    * Get platform-wide headcount breakdown by company
    */
   async getGlobalHeadcount(): Promise<any[]> {
-    const companies = await this.prisma.company.findMany({
+    const companies = await this.prisma.companies.findMany({
       include: {
         _count: {
           select: { employees: { where: { status: "active" } } },
@@ -34,9 +34,9 @@ export class ExplorerService {
    * Get global compensation/payroll spend across all tenants
    */
   async getGlobalCompensationStats(): Promise<any> {
-    const compensations = await this.prisma.compensation.findMany({
+    const compensations = await this.prisma.compensations.findMany({
       select: {
-        baseSalary: true,
+        base_salary: true,
         currency: true,
       },
     });
@@ -59,30 +59,30 @@ export class ExplorerService {
   async globalSearch(query: string): Promise<any[]> {
     if (!query || query.length < 2) return [];
 
-    const employees = await this.prisma.employee.findMany({
+    const employees = await this.prisma.employees.findMany({
       where: {
         OR: [
-          { firstName: { contains: query, mode: "insensitive" } },
-          { lastName: { contains: query, mode: "insensitive" } },
+          { first_name: { contains: query, mode: "insensitive" } },
+          { last_name: { contains: query, mode: "insensitive" } },
           { email: { contains: query, mode: "insensitive" } },
-          { employeeCode: { contains: query, mode: "insensitive" } },
+          { employee_code: { contains: query, mode: "insensitive" } },
         ],
       },
       include: {
-        company: { select: { name: true } },
-        department: { select: { name: true } },
+        companies: { select: { name: true } },
+        departments: { select: { name: true } },
       },
       take: 20,
     });
 
     return employees.map((e: any) => ({
       id: e.id,
-      fullName: `${e.firstName} ${e.lastName}`,
+      fullName: `${e.first_name} ${e.last_name}`,
       email: e.email,
       code: e.employeeCode,
-      tenantId: e.tenantId,
-      companyName: e.company.name,
-      department: e.department?.name || "Unassigned",
+      tenant_id: e.tenant_id,
+      company_name: e.name,
+      departments: e.department?.name || "Unassigned",
       status: e.status
     }));
   }
@@ -91,12 +91,12 @@ export class ExplorerService {
    * Regional readiness heat-map (Platform-wide)
    */
   async getRegionalReadiness(): Promise<any> {
-    const locations = await this.prisma.location.findMany({
+    const locations = await this.prisma.locations.findMany({
       include: {
         _count: {
           select: { employees: { where: { status: 'active' } } }
         },
-        company: { select: { name: true } }
+        companies: { select: { name: true } }
       }
     });
 
@@ -106,7 +106,7 @@ export class ExplorerService {
       if (!acc[region]) acc[region] = { staff: 0, cities: [], companies: [] };
       acc[region].staff += loc._count.employees;
       acc[region].cities.push(loc.name);
-      acc[region].companies.push(loc.company.name);
+      acc[region].companies.push(loc.name);
       return acc;
     }, {});
 

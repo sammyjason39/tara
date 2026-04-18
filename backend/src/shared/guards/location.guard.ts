@@ -16,9 +16,9 @@ import { UserRole } from "../roles";
 export class LocationGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const { tenantId, locationId, role } = request.tenantContext || {};
+    const { tenant_id, location_id, role } = request.tenantContext || {};
 
-    if (!tenantId) {
+    if (!tenant_id) {
       throw new ForbiddenException("Tenant context missing");
     }
 
@@ -33,7 +33,7 @@ export class LocationGuard implements CanActivate {
 
     // 2. Identify target location from request (params take priority over context headers)
     const targetLocationId =
-      request.params.locationId ||
+      request.params.location_id ||
       request.params.id ||
       request.headers["x-location-id"];
 
@@ -45,9 +45,9 @@ export class LocationGuard implements CanActivate {
     }
 
     // 3. Enforce location match for Managers/Members
-    if (locationId && targetLocationId !== locationId) {
+    if (location_id && targetLocationId !== location_id) {
       throw new ForbiddenException(
-        `Access Denied: You are assigned to location '${locationId}' and cannot perform actions for location '${targetLocationId}'.`,
+        `Access Denied: You are assigned to location '${location_id}' and cannot perform actions for location '${targetLocationId}'.`,
       );
     }
 

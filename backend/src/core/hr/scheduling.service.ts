@@ -20,119 +20,119 @@ export class SchedulingService {
     private readonly loggerService: LoggerService,
   ) {}
 
-  async createWorkSchedule(tenantId: string, data: any, userId: string) {
+  async createWorkSchedule(tenant_id: string, data: any, user_id: string) {
     // 0. Validate Location Ownership
-    const location = await this.prisma.location.findFirst({
-      where: { id: data.locationId, tenantId },
+    const location = await this.prisma.locations.findFirst({
+      where: { id: data.location_id, tenant_id: tenant_id },
     });
     if (!location) {
-      throw new Error(`Location ${data.locationId} does not belong to tenant ${tenantId}`);
+      throw new Error(`Location ${data.location_id} does not belong to tenant ${tenant_id}`);
     }
 
-    const eventReferenceId = `EVT-HR-SCHED-NEW-${Date.now()}`;
+    const event_reference_id = `EVT-HR-SCHED-NEW-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      const schedule = await this.hrRepository.createWorkSchedule(tenantId, data, tx);
+      const schedule = await this.hrRepository.createWorkSchedule(tenant_id, data, tx);
 
       // 1. Audit Logging
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "HR",
         action: "CREATE",
-        entityType: "WORK_SCHEDULE",
-        entityId: schedule.id,
-        afterState: schedule,
-        eventReferenceId,
+        entity_type: "WORK_SCHEDULE",
+        entity_id: schedule.id,
+        after_state: schedule,
+        event_reference_id,
       }, tx);
 
       // 2. Domain Event
       await this.eventBus.publish({
-        eventType: "hr.schedule.created.v1",
-        tenantId,
-        entityId: schedule.id,
-        entityType: "WORK_SCHEDULE",
-        sourceModule: "HR",
-        userId,
-        eventReferenceId,
-        payload: { name: schedule.name, locationId: schedule.locationId },
+        event_type: "hr.schedule.created.v1",
+        tenant_id,
+        entity_id: schedule.id,
+        entity_type: "WORK_SCHEDULE",
+        source_module: "HR",
+        user_id,
+        event_reference_id,
+        payload: { name: schedule.name, location_id: schedule.location_id },
       }, tx);
 
       return schedule;
     });
   }
 
-  async createWorkShift(tenantId: string, data: any, userId: string) {
-    const eventReferenceId = `EVT-HR-SHIFT-NEW-${Date.now()}`;
+  async createWorkShift(tenant_id: string, data: any, user_id: string) {
+    const event_reference_id = `EVT-HR-SHIFT-NEW-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
       // Logic: Ensure schedule exists and is not approved (unless forced)
-      const schedule = await this.hrRepository.getWorkSchedules(tenantId, data.locationId);
+      const schedule = await this.hrRepository.getWorkSchedules(tenant_id, data.location_id);
       const targetSchedule = schedule.find(s => s.id === data.scheduleId);
       
       if (targetSchedule && targetSchedule.status === "APPROVED") {
         throw new Error("Cannot add shifts to an approved schedule.");
       }
 
-      const shift = await this.hrRepository.createWorkShift(tenantId, data, tx);
+      const shift = await this.hrRepository.createWorkShift(tenant_id, data, tx);
 
       // 1. Audit Logging
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "HR",
         action: "CREATE",
-        entityType: "WORK_SHIFT",
-        entityId: shift.id,
-        afterState: shift,
-        eventReferenceId,
+        entity_type: "WORK_SHIFT",
+        entity_id: shift.id,
+        after_state: shift,
+        event_reference_id,
       }, tx);
 
       return shift;
     });
   }
 
-  async approveSchedule(tenantId: string, scheduleId: string, userId: string) {
-    const eventReferenceId = `EVT-HR-SCHED-APP-${Date.now()}`;
+  async approveSchedule(tenant_id: string, scheduleId: string, user_id: string) {
+    const event_reference_id = `EVT-HR-SCHED-APP-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      const schedule = await this.hrRepository.approveWorkSchedule(tenantId, scheduleId, userId, tx);
+      const schedule = await this.hrRepository.approveWorkSchedule(tenant_id, scheduleId, user_id, tx);
 
       // 1. Audit Logging
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "HR",
         action: "APPROVE",
-        entityType: "WORK_SCHEDULE",
-        entityId: scheduleId,
-        afterState: schedule,
-        eventReferenceId,
+        entity_type: "WORK_SCHEDULE",
+        entity_id: scheduleId,
+        after_state: schedule,
+        event_reference_id,
       }, tx);
 
       // 2. Domain Event
       await this.eventBus.publish({
-        eventType: "hr.schedule.approved.v1",
-        tenantId,
-        entityId: scheduleId,
-        entityType: "WORK_SCHEDULE",
-        sourceModule: "HR",
-        userId,
-        eventReferenceId,
+        event_type: "hr.schedule.approved.v1",
+        tenant_id,
+        entity_id: scheduleId,
+        entity_type: "WORK_SCHEDULE",
+        source_module: "HR",
+        user_id,
+        event_reference_id,
         payload: { scheduleId },
       }, tx);
 
       // 3. System Alert: Notify all employees in this schedule
-      const shifts = await this.hrRepository.getWorkShifts(tenantId, scheduleId);
-      const employeeIds = [...new Set(shifts.map(s => s.employeeId))];
+      const shifts = await this.hrRepository.getWorkShifts(tenant_id, scheduleId);
+      const employeeIds = [...new Set(shifts.map(s => s.employee_id))];
 
       for (const empId of employeeIds) {
         await this.eventBus.publish({
-          eventType: "HR.SHIFT_ASSIGNED",
-          tenantId,
-          entityId: empId,
-          entityType: "EMPLOYEE",
-          sourceModule: "HR",
-          userId,
-          eventReferenceId,
-          payload: { scheduleId, employeeId: empId },
+          event_type: "HR.SHIFT_ASSIGNED",
+          tenant_id,
+          entity_id: empId,
+          entity_type: "EMPLOYEE",
+          source_module: "HR",
+          user_id,
+          event_reference_id,
+          payload: { scheduleId, employee_id: empId },
         }, tx);
       }
 
@@ -140,11 +140,11 @@ export class SchedulingService {
     });
   }
 
-  async getWorkSchedules(tenantId: string, locationId?: string) {
-    return this.hrRepository.getWorkSchedules(tenantId, locationId);
+  async getWorkSchedules(tenant_id: string, location_id?: string) {
+    return this.hrRepository.getWorkSchedules(tenant_id, location_id);
   }
 
-  async getWorkShifts(tenantId: string, scheduleId?: string, employeeId?: string) {
-    return this.hrRepository.getWorkShifts(tenantId, scheduleId, employeeId);
+  async getWorkShifts(tenant_id: string, scheduleId?: string, employee_id?: string) {
+    return this.hrRepository.getWorkShifts(tenant_id, scheduleId, employee_id);
   }
 }

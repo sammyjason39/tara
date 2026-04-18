@@ -6,21 +6,21 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class LedgerPostingMockRepository implements ILedgerPostingRepository {
-  /** Per-tenant-company postings. Key: `${tenantId}:${companyId}` */
+  /** Per-tenant-company postings. Key: `${tenant_id}:${company_id}` */
   private postings: Map<string, LedgerPosting[]> = new Map();
   private postingLines: Map<string, LedgerPostingLine[]> = new Map();
-  /** Per-tenant-company idempotency. Key: `${tenantId}:${companyId}` */
+  /** Per-tenant-company idempotency. Key: `${tenant_id}:${company_id}` */
   private idempotency: Map<string, string[]> = new Map();
 
-  async createPosting(tenantId: string, companyId: string, data: Partial<LedgerPosting>): Promise<LedgerPosting> {
-    const scopeKey = `${tenantId}:${companyId}`;
+  async createPosting(tenant_id: string, company_id: string, data: Partial<LedgerPosting>): Promise<LedgerPosting> {
+    const scopeKey = `${tenant_id}:${company_id}`;
     const list = this.postings.get(scopeKey) || [];
     const newPosting: LedgerPosting = {
       id: Math.random().toString(36).substr(2, 9),
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       sourceEventId: data.sourceEventId || '',
-      eventType: data.eventType || '',
+      event_type: data.event_type || '',
       status: data.status || LedgerPostingStatus.PENDING,
       sequenceKey: data.sequenceKey,
       sequenceNumber: data.sequenceNumber,
@@ -29,8 +29,8 @@ export class LedgerPostingMockRepository implements ILedgerPostingRepository {
       failureReason: undefined,
       failedAt: undefined,
       payload: data.payload || {},
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
     };
     list.push(newPosting);
     this.postings.set(scopeKey, list);
@@ -45,18 +45,18 @@ export class LedgerPostingMockRepository implements ILedgerPostingRepository {
       accountId: l.accountId || '',
       side: l.side!,
       amount: new Prisma.Decimal(l.amount || 0),
-      branchId: l.branchId || '',
-      locationId: l.locationId || '',
+      branch_id: l.branch_id || '',
+      location_id: l.location_id || '',
       departmentId: l.departmentId,
       costCenterId: l.costCenterId,
       projectId: l.projectId,
-      createdAt: new Date(),
+      created_at: new Date(),
     }));
     this.postingLines.set(postingId, [...list, ...newLines]);
   }
 
-  async updateStatus(tenantId: string, companyId: string, postingId: string, status: LedgerPostingStatus, retryCount?: number, failureReason?: string): Promise<LedgerPosting> {
-    const scopeKey = `${tenantId}:${companyId}`;
+  async updateStatus(tenant_id: string, company_id: string, postingId: string, status: LedgerPostingStatus, retryCount?: number, failureReason?: string): Promise<LedgerPosting> {
+    const scopeKey = `${tenant_id}:${company_id}`;
     const list = this.postings.get(scopeKey) || [];
     const index = list.findIndex(p => p.id === postingId);
     if (index === -1) throw new Error('Posting not found');
@@ -64,7 +64,7 @@ export class LedgerPostingMockRepository implements ILedgerPostingRepository {
     const updated = { 
       ...list[index], 
       status, 
-      updatedAt: new Date() 
+      updated_at: new Date() 
     };
     
     if (retryCount !== undefined) updated.retryCount = retryCount;
@@ -76,26 +76,26 @@ export class LedgerPostingMockRepository implements ILedgerPostingRepository {
     return updated;
   }
 
-  async getDeadLetterPostings(tenantId: string, companyId: string): Promise<LedgerPosting[]> {
-    const list = this.postings.get(`${tenantId}:${companyId}`) || [];
+  async getDeadLetterPostings(tenant_id: string, company_id: string): Promise<LedgerPosting[]> {
+    const list = this.postings.get(`${tenant_id}:${company_id}`) || [];
     return list.filter(p => p.status === LedgerPostingStatus.FAILED_TERMINAL);
   }
 
-  async findPending(tenantId: string, companyId?: string): Promise<LedgerPosting[]> {
-    if (companyId) {
-      const list = this.postings.get(`${tenantId}:${companyId}`) || [];
+  async findPending(tenant_id: string, company_id?: string): Promise<LedgerPosting[]> {
+    if (company_id) {
+      const list = this.postings.get(`${tenant_id}:${company_id}`) || [];
       return list.filter(p => p.status === LedgerPostingStatus.PENDING);
     }
     // Cross-company search
     return Array.from(this.postings.entries())
-      .filter(([key]) => key.startsWith(`${tenantId}:`))
+      .filter(([key]) => key.startsWith(`${tenant_id}:`))
       .map(([, list]) => list)
       .flat()
       .filter(p => p.status === LedgerPostingStatus.PENDING);
   }
 
-  async claimPostings(tenantId: string, companyId: string, batchSize: number): Promise<LedgerPosting[]> {
-    const scopeKey = `${tenantId}:${companyId}`;
+  async claimPostings(tenant_id: string, company_id: string, batchSize: number): Promise<LedgerPosting[]> {
+    const scopeKey = `${tenant_id}:${company_id}`;
     const allPostings = this.postings.get(scopeKey) || [];
     const now = new Date();
     
@@ -142,8 +142,8 @@ export class LedgerPostingMockRepository implements ILedgerPostingRepository {
     return processable;
   }
 
-  async findById(tenantId: string, companyId: string, id: string): Promise<LedgerPosting | null> {
-    const list = this.postings.get(`${tenantId}:${companyId}`) || [];
+  async findById(tenant_id: string, company_id: string, id: string): Promise<LedgerPosting | null> {
+    const list = this.postings.get(`${tenant_id}:${company_id}`) || [];
     return list.find(p => p.id === id) || null;
   }
 
@@ -151,25 +151,25 @@ export class LedgerPostingMockRepository implements ILedgerPostingRepository {
     return this.postingLines.get(postingId) || [];
   }
 
-  async checkIdempotency(tenantId: string, companyId: string, sourceEventId: string): Promise<boolean> {
-    const list = this.idempotency.get(`${tenantId}:${companyId}`) || [];
+  async checkIdempotency(tenant_id: string, company_id: string, sourceEventId: string): Promise<boolean> {
+    const list = this.idempotency.get(`${tenant_id}:${company_id}`) || [];
     return list.includes(sourceEventId);
   }
 
-  async createIdempotency(tenantId: string, companyId: string, sourceEventId: string): Promise<void> {
-    const scopeKey = `${tenantId}:${companyId}`;
+  async createIdempotency(tenant_id: string, company_id: string, sourceEventId: string): Promise<void> {
+    const scopeKey = `${tenant_id}:${company_id}`;
     const list = this.idempotency.get(scopeKey) || [];
     list.push(sourceEventId);
     this.idempotency.set(scopeKey, list);
   }
 
-  async findByStatus(tenantId: string, companyId: string, status: LedgerPostingStatus): Promise<LedgerPosting[]> {
-    const list = this.postings.get(`${tenantId}:${companyId}`) || [];
+  async findByStatus(tenant_id: string, company_id: string, status: LedgerPostingStatus): Promise<LedgerPosting[]> {
+    const list = this.postings.get(`${tenant_id}:${company_id}`) || [];
     return list.filter(p => p.status === status);
   }
 
-  async findStuckProcessing(tenantId: string, companyId: string, threshold: Date): Promise<LedgerPosting[]> {
-    const list = this.postings.get(`${tenantId}:${companyId}`) || [];
-    return list.filter(p => p.status === LedgerPostingStatus.PROCESSING && p.updatedAt && p.updatedAt < threshold);
+  async findStuckProcessing(tenant_id: string, company_id: string, threshold: Date): Promise<LedgerPosting[]> {
+    const list = this.postings.get(`${tenant_id}:${company_id}`) || [];
+    return list.filter(p => p.status === LedgerPostingStatus.PROCESSING && p.updated_at && p.updated_at < threshold);
   }
 }

@@ -1,7 +1,7 @@
 import { ConsolidatedFinancialSnapshot } from '../../domain/finance.interfaces';
 
 export interface IConsolidatedSnapshotRepository {
-  getLatest(tenantId: string, groupId: string, fiscalPeriodId: string): Promise<ConsolidatedFinancialSnapshot | null>;
-  create(tenantId: string, data: Partial<ConsolidatedFinancialSnapshot>): Promise<ConsolidatedFinancialSnapshot>;
-  deleteByPeriod(tenantId: string, groupId: string, fiscalPeriodId: string): Promise<void>;
+  getLatest(tenant_id: string, groupId: string, fiscalPeriodId: string): Promise<ConsolidatedFinancialSnapshot | null>;
+  create(tenant_id: string, data: Partial<ConsolidatedFinancialSnapshot>): Promise<ConsolidatedFinancialSnapshot>;
+  deleteByPeriod(tenant_id: string, groupId: string, fiscalPeriodId: string): Promise<void>;
 }

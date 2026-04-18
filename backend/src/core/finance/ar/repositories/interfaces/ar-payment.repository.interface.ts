@@ -1,11 +1,11 @@
 import { IArPayment, IArPaymentAllocation } from '../../domain/ar.interfaces';
 
 export interface IArPaymentRepository {
-  findById(tenantId: string, companyId: string, id: string): Promise<IArPayment | null>;
-  findByIdempotencyKey(tenantId: string, companyId: string, key: string): Promise<IArPayment | null>;
-  create(tenantId: string, companyId: string, data: any): Promise<IArPayment>;
-  createAllocation(tenantId: string, companyId: string, data: any): Promise<IArPaymentAllocation>;
-  findAllocationByIdempotencyKey(tenantId: string, companyId: string, key: string): Promise<IArPaymentAllocation | null>;
-  findAllocationsByInvoice(tenantId: string, companyId: string, invoiceId: string): Promise<IArPaymentAllocation[]>;
-  findAllocationsByPayment(tenantId: string, companyId: string, paymentId: string): Promise<IArPaymentAllocation[]>;
+  findById(tenant_id: string, company_id: string, id: string): Promise<IArPayment | null>;
+  findByIdempotencyKey(tenant_id: string, company_id: string, key: string): Promise<IArPayment | null>;
+  create(tenant_id: string, company_id: string, data: any): Promise<IArPayment>;
+  createAllocation(tenant_id: string, company_id: string, data: any): Promise<IArPaymentAllocation>;
+  findAllocationByIdempotencyKey(tenant_id: string, company_id: string, key: string): Promise<IArPaymentAllocation | null>;
+  findAllocationsByInvoice(tenant_id: string, company_id: string, invoiceId: string): Promise<IArPaymentAllocation[]>;
+  findAllocationsByPayment(tenant_id: string, company_id: string, paymentId: string): Promise<IArPaymentAllocation[]>;
 }

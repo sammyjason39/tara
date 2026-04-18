@@ -10,21 +10,21 @@ export enum PostingState {
 }
 
 export interface FinancialPostingRequest {
-  requestId: string;
-  tenantId: string;
-  companyId: string;
-  sourceModule: string;
+  request_id: string;
+  tenant_id: string;
+  company_id: string;
+  source_module: string;
   sourceEventId: string;
-  eventType: string;
+  event_type: string;
   eventVersion: string;
   schemaVersion: string;
   payload: any;
   metadata?: Record<string, any>;
-  createdAt: Date;
+  created_at: Date;
 }
 
 export interface FinancialPostingResult {
-  requestId: string;
+  request_id: string;
   status: PostingState;
   journalId?: string;
   ledgerSequence?: number;
@@ -34,13 +34,13 @@ export interface FinancialPostingResult {
 }
 
 export interface PostingContext {
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   transactionCurrency: string;
   baseCurrency: string;
   exchangeRate: number;
-  userId?: string;
-  correlationId?: string;
+  user_id?: string;
+  correlation_id?: string;
 }
 
 export interface StateTransition {
@@ -52,15 +52,15 @@ export interface StateTransition {
 
 export interface PostingAuditLog {
   id: string;
-  requestId: string;
+  request_id: string;
   stateTransitions: StateTransition[];
   fullRequestSnapshot: string; // Base64 or GZIP
   metadata?: Record<string, any>;
-  createdAt: Date;
+  created_at: Date;
 }
 
 export interface FinancialEventRegistry {
-  eventType: string;
+  event_type: string;
   eventVersion: string;
   schemaVersion: string;
   ruleTemplateId: string;

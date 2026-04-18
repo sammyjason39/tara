@@ -21,25 +21,25 @@ export class FinancialIntelligenceController {
   @Get('recommendations')
   async getRecommendations(
     @TenantCtx() ctx: TenantContext,
-    @Query('companyId') companyId: string,
+    @Query('company_id') company_id: string,
     @Query('snapshotId') snapshotId?: string,
   ) {
-    const targetCompanyId = companyId || ctx.companyId;
-    const correlationId = `rec-${Date.now()}`;
+    const targetCompanyId = company_id || ctx.company_id;
+    const correlation_id = `rec-${Date.now()}`;
 
     return this.recommendationService.getRecommendations({
-      tenantId: ctx.tenantId,
-      companyId: targetCompanyId,
+      tenant_id: ctx.tenant_id,
+      company_id: targetCompanyId,
       snapshotId,
-      correlationId,
-      userId: ctx.userId || 'anonymous',
+      correlation_id,
+      user_id: ctx.user_id || 'anonymous',
     });
   }
 
   @Get('cashflow')
   async getCashflow(
     @TenantCtx() ctx: TenantContext,
-    @Query('companyId') companyId: string,
+    @Query('company_id') company_id: string,
     @Query('snapshotId') snapshotId?: string,
     @Query('days') days?: string,
     @Query('minimumSafeCash') minimumSafeCash?: string,
@@ -49,8 +49,8 @@ export class FinancialIntelligenceController {
     @Query('expenseMultiplier') expMult?: string,
     @Query('scenarioDelayDays') sceneDelay?: string,
   ) {
-    const targetCompanyId = companyId || ctx.companyId;
-    const correlationId = `cfo-${Date.now()}`;
+    const targetCompanyId = company_id || ctx.company_id;
+    const correlation_id = `cfo-${Date.now()}`;
 
     const scenario = (revMult || expMult || sceneDelay) ? {
       revenueMultiplier: revMult ? parseFloat(revMult) : undefined,
@@ -59,51 +59,51 @@ export class FinancialIntelligenceController {
     } : undefined;
 
     return this.cashflowService.getCashflow({
-      tenantId: ctx.tenantId,
-      companyId: targetCompanyId,
+      tenant_id: ctx.tenant_id,
+      company_id: targetCompanyId,
       snapshotId,
       days: days ? parseInt(days, 10) : 30,
       minimumSafeCash: minimumSafeCash ? parseFloat(minimumSafeCash) : 0,
       avgDelayDays: avgDelayDays ? parseInt(avgDelayDays, 10) : 7,
       timezone: timezone || 'UTC',
       scenario,
-      correlationId,
-      userId: ctx.userId || 'anonymous',
+      correlation_id,
+      user_id: ctx.user_id || 'anonymous',
     });
   }
 
   @Get('insights')
   async getInsights(
     @TenantCtx() ctx: TenantContext,
-    @Query('companyId') companyId: string,
+    @Query('company_id') company_id: string,
     @Query('snapshotId') snapshotId?: string,
   ) {
-    const targetCompanyId = companyId || ctx.companyId;
-    const correlationId = `insight-${Date.now()}`;
+    const targetCompanyId = company_id || ctx.company_id;
+    const correlation_id = `insight-${Date.now()}`;
 
     return this.insightService.getInsights({
-      tenantId: ctx.tenantId,
-      companyId: targetCompanyId,
+      tenant_id: ctx.tenant_id,
+      company_id: targetCompanyId,
       snapshotId,
-      correlationId,
-      userId: ctx.userId || 'anonymous',
+      correlation_id,
+      user_id: ctx.user_id || 'anonymous',
     });
   }
 
   @Get('forecast')
   async getForecast(
     @TenantCtx() ctx: TenantContext,
-    @Query('companyId') companyId: string,
+    @Query('company_id') company_id: string,
     @Query('snapshotId') snapshotId?: string,
     @Query('horizonDays') horizonDays?: string,
     @Query('revenueMultiplier') revMult?: string,
     @Query('expenseMultiplier') expMult?: string,
   ) {
-    const targetCompanyId = companyId || ctx.companyId;
+    const targetCompanyId = company_id || ctx.company_id;
 
     return this.forecastService.getForecast({
-      tenantId: ctx.tenantId,
-      companyId: targetCompanyId,
+      tenant_id: ctx.tenant_id,
+      company_id: targetCompanyId,
       snapshotId,
       horizonDays: horizonDays ? parseInt(horizonDays, 10) : 90,
       scenario: (revMult || expMult) ? {
@@ -116,26 +116,26 @@ export class FinancialIntelligenceController {
   @Get('predictive-insights')
   async getPredictiveInsights(
     @TenantCtx() ctx: TenantContext,
-    @Query('companyId') companyId: string,
+    @Query('company_id') company_id: string,
     @Query('snapshotId') snapshotId?: string,
     @Query('horizonDays') horizonDays?: string,
   ) {
-    const targetCompanyId = companyId || ctx.companyId;
-    const correlationId = `predict-${Date.now()}`;
+    const targetCompanyId = company_id || ctx.company_id;
+    const correlation_id = `predict-${Date.now()}`;
 
     const forecast = await this.forecastService.getForecast({
-      tenantId: ctx.tenantId,
-      companyId: targetCompanyId,
+      tenant_id: ctx.tenant_id,
+      company_id: targetCompanyId,
       snapshotId,
       horizonDays: horizonDays ? parseInt(horizonDays, 10) : 90,
     });
 
     return this.insightService.getInsights({
-      tenantId: ctx.tenantId,
-      companyId: targetCompanyId,
+      tenant_id: ctx.tenant_id,
+      company_id: targetCompanyId,
       snapshotId,
-      correlationId,
-      userId: ctx.userId || 'anonymous',
+      correlation_id,
+      user_id: ctx.user_id || 'anonymous',
       forecast,
     });
   }

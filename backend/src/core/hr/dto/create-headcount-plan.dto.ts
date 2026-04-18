@@ -2,20 +2,20 @@ import { IsString, IsInt, IsNumber, IsDateString } from "class-validator";
 
 export class CreateHeadcountPlanDto {
   @IsString()
-  scenarioId: string;
+  scenario_id: string;
 
   @IsString()
-  departmentId: string;
+  department_id: string;
 
   @IsString()
-  positionTitle: string;
+  position_title: string;
 
   @IsInt()
-  targetHeadcount: number;
+  target_headcount: number;
 
   @IsNumber()
-  projectedSalary: number;
+  projected_salary: number;
 
   @IsDateString()
-  plannedHireDate: string;
+  planned_hire_date: string;
 }

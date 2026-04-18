@@ -21,48 +21,52 @@ export class TimeAndAttendanceService {
   // LEAVE MANAGEMENT
   // ──────────────────────────────────────────────
 
-  async requestLeave(tenantId: string, employeeId: string, dto: { type: string, startDate: Date, endDate: Date, reason?: string, totalDays?: number }): Promise<LeaveRequest> {
-    const eventReferenceId = `EVT-HR-LEAVE-REQ-${Date.now()}`;
+  async requestLeave(tenant_id: string, employee_id: string, dto: { type: string, start_date: Date, end_date: Date, reason?: string, total_days?: number }): Promise<LeaveRequest> {
+    const event_reference_id = `EVT-HR-LEAVE-REQ-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      this.logger.log(`Leave requested by employee ${employeeId}`);
+      this.logger.log(`Leave requested by employee ${employee_id}`);
       
-      const request = await this.hrRepository.createLeaveRequest(tenantId, {
-        employeeId,
-        leaveType: dto.type as LeaveType,
-        startDate: dto.startDate.toISOString(),
-        endDate: dto.endDate.toISOString(),
+      const employee = await this.hrRepository.getEmployeeById(tenant_id, employee_id);
+      if (!employee) throw new Error("Employee not found");
+
+      const request = await this.hrRepository.createLeaveRequest(tenant_id, {
+        employee_id,
+        department_id: employee.department_id,
+        leave_type: dto.type as LeaveType,
+        start_date: dto.start_date.toISOString(),
+        end_date: dto.end_date.toISOString(),
         reason: dto.reason || 'No reason provided',
-        totalDays: dto.totalDays || 1,
+        total_days: dto.total_days || 1,
       }, tx);
 
       await this.eventBus.publish({
-        eventType: EVENT_NAMES.LEAVE_REQUESTED,
-        tenantId,
-        entityId: employeeId,
-        entityType: "EMPLOYEE",
-        sourceModule: "HR",
-        eventReferenceId,
-        payload: { leaveId: request.id, leaveType: request.leaveType, startDate: request.startDate, endDate: request.endDate },
+        event_type: EVENT_NAMES.LEAVE_REQUESTED,
+        tenant_id,
+        entity_id: employee_id,
+        entity_type: "EMPLOYEE",
+        source_module: "HR",
+        event_reference_id,
+        payload: { leave_id: request.id, leave_type: request.leave_type, start_date: request.start_date, end_date: request.end_date },
       }, tx);
 
       return request;
     });
   }
 
-  async approveLeave(tenantId: string, leaveId: string, approverId: string, notes?: string): Promise<void> {
-    const eventReferenceId = `EVT-HR-LEAVE-APP-${Date.now()}`;
+  async approveLeave(tenant_id: string, leaveId: string, approverId: string, notes?: string): Promise<void> {
+    const event_reference_id = `EVT-HR-LEAVE-APP-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
       this.logger.log(`Leave ${leaveId} approved by ${approverId}`);
       
-      await this.hrRepository.approveLeaveRequest(tenantId, leaveId, approverId, notes, tx);
+      await this.hrRepository.approveLeaveRequest(tenant_id, leaveId, approverId, notes, tx);
 
       await this.eventBus.publish({
-        eventType: EVENT_NAMES.LEAVE_APPROVED,
-        tenantId,
-        entityId: leaveId,
-        entityType: "LEAVE_REQUEST",
-        sourceModule: "HR",
-        eventReferenceId,
+        event_type: EVENT_NAMES.LEAVE_APPROVED,
+        tenant_id,
+        entity_id: leaveId,
+        entity_type: "LEAVE_REQUEST",
+        source_module: "HR",
+        event_reference_id,
         payload: { approverId },
       }, tx);
     });
@@ -72,42 +76,42 @@ export class TimeAndAttendanceService {
   // ATTENDANCE TRACKING
   // ──────────────────────────────────────────────
 
-  async clockIn(tenantId: string, employeeId: string, locationId: string): Promise<Attendance> {
-    const eventReferenceId = `EVT-HR-ATT-IN-${Date.now()}`;
+  async clock_in(tenant_id: string, employee_id: string, location_id: string): Promise<Attendance> {
+    const event_reference_id = `EVT-HR-ATT-IN-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      this.logger.log(`Employee ${employeeId} clocked in`);
+      this.logger.log(`Employee ${employee_id} clocked in`);
 
-      const record = await this.hrRepository.clockIn(tenantId, employeeId, locationId, undefined, undefined, undefined, tx);
+      const record = await this.hrRepository.clock_in(tenant_id, employee_id, location_id, undefined, undefined, undefined, tx);
 
       await this.eventBus.publish({
-        eventType: EVENT_NAMES.CLOCK_IN,
-        tenantId,
-        entityId: employeeId,
-        entityType: "EMPLOYEE",
-        sourceModule: "HR",
-        eventReferenceId,
-        payload: { recordId: record.id, clockInTime: record.clockIn },
+        event_type: EVENT_NAMES.CLOCK_IN,
+        tenant_id,
+        entity_id: employee_id,
+        entity_type: "EMPLOYEE",
+        source_module: "HR",
+        event_reference_id,
+        payload: { record_id: record.id, clock_in_time: record.clock_in },
       }, tx);
 
       return record;
     });
   }
 
-  async clockOut(tenantId: string, employeeId: string): Promise<void> {
-    const eventReferenceId = `EVT-HR-ATT-OUT-${Date.now()}`;
+  async clock_out(tenant_id: string, employee_id: string): Promise<void> {
+    const event_reference_id = `EVT-HR-ATT-OUT-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      this.logger.log(`Employee ${employeeId} clocked out`);
+      this.logger.log(`Employee ${employee_id} clocked out`);
       
-      await this.hrRepository.clockOut(tenantId, employeeId, tx);
+      await this.hrRepository.clock_out(tenant_id, employee_id, tx);
 
       await this.eventBus.publish({
-        eventType: EVENT_NAMES.CLOCK_OUT,
-        tenantId,
-        entityId: employeeId,
-        entityType: "EMPLOYEE",
-        sourceModule: "HR",
-        eventReferenceId,
-        payload: { clockOutTime: new Date() },
+        event_type: EVENT_NAMES.CLOCK_OUT,
+        tenant_id,
+        entity_id: employee_id,
+        entity_type: "EMPLOYEE",
+        source_module: "HR",
+        event_reference_id,
+        payload: { clock_out_time: new Date() },
       }, tx);
     });
   }
@@ -116,21 +120,21 @@ export class TimeAndAttendanceService {
   // SHIFT MANAGEMENT
   // ──────────────────────────────────────────────
 
-  async assignShift(tenantId: string, employeeId: string, shiftId: string, locationId: string, date: string): Promise<void> {
-    const eventReferenceId = `EVT-HR-SHIFT-ASN-${Date.now()}`;
+  async assignShift(tenant_id: string, employee_id: string, shift_id: string, location_id: string, date: string): Promise<void> {
+    const event_reference_id = `EVT-HR-SHIFT-ASN-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      this.logger.log(`Assigning shift ${shiftId} to employee ${employeeId} at ${locationId} for date ${date}`);
+      this.logger.log(`Assigning shift ${shift_id} to employee ${employee_id} at ${location_id} for date ${date}`);
       
-      await this.hrRepository.assignShift(tenantId, employeeId, shiftId, locationId, date, tx);
+      await this.hrRepository.assignShift(tenant_id, employee_id, shift_id, location_id, date, tx);
 
       await this.eventBus.publish({
-        eventType: EVENT_NAMES.SHIFT_ASSIGNED,
-        tenantId,
-        entityId: employeeId,
-        entityType: "EMPLOYEE",
-        sourceModule: "HR",
-        eventReferenceId,
-        payload: { shiftId, locationId, date },
+        event_type: EVENT_NAMES.SHIFT_ASSIGNED,
+        tenant_id,
+        entity_id: employee_id,
+        entity_type: "EMPLOYEE",
+        source_module: "HR",
+        event_reference_id,
+        payload: { shift_id, location_id, date },
       }, tx);
     });
   }

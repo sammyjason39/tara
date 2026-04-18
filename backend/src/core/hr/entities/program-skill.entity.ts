@@ -1,11 +1,11 @@
 export class ProgramSkill {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   programId: string;
-  skillId: string;
+  skill_id: string;
   proficiencyGain: number;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 
   skill?: any;
 }

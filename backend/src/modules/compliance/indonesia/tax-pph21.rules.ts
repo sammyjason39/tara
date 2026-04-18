@@ -60,7 +60,7 @@ export class TaxPph21Rules implements IComplianceRule {
 
   calculate(
     employees: any[],
-    tenantId: string,
+    tenant_id: string,
     period: string,
   ): ComplianceCalculationResult {
     const lineItems: ComplianceLineItem[] = employees.map((emp) => {
@@ -73,12 +73,12 @@ export class TaxPph21Rules implements IComplianceRule {
       const monthlyTax = Math.round(annualTax / 12);
 
       return {
-        employeeId: emp.id,
-        employeeName: `${emp.firstName} ${emp.lastName}`.trim(),
+        employee_id: emp.id,
+        employeeName: `${emp.first_name} ${emp.last_name}`.trim(),
         grossSalary: monthlyGross,
         employeeContribution: monthlyTax,
         employerContribution: 0, // PPh21 is fully employee-borne
-        taxAmount: monthlyTax,
+        tax_amount: monthlyTax,
         netSalary: monthlyGross - monthlyTax,
         notes: `Annual PKP: IDR ${pkp.toLocaleString()} | Annual Tax: IDR ${annualTax.toLocaleString()}`,
       };
@@ -88,11 +88,11 @@ export class TaxPph21Rules implements IComplianceRule {
       country: 'ID',
       module: 'PPH21',
       period,
-      tenantId,
+      tenant_id,
       totalEmployees: employees.length,
       totalDeductions: lineItems.reduce((s, i) => s + i.employeeContribution, 0),
       totalContributions: 0,
-      totalTax: lineItems.reduce((s, i) => s + i.taxAmount, 0),
+      totalTax: lineItems.reduce((s, i) => s + i.tax_amount, 0),
       lineItems,
       ruleVersion: this.version,
       generatedAt: new Date(),

@@ -15,5 +15,5 @@ export class CloseOpportunityDto {
 
   @IsString()
   @IsOptional()
-  actorId?: string;
+  actor_id?: string;
 }

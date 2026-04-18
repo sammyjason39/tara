@@ -38,7 +38,7 @@ export class WpsExporter implements IComplianceExporter {
       lines.push([
         this.EMPLOYER_CODE,
         this.ROUTING_CODE,
-        item.employeeId,
+        item.employee_id,
         `"${item.employeeName}"`,
         item.grossSalary.toFixed(2),
         'AED',
@@ -62,7 +62,7 @@ export class WpsExporter implements IComplianceExporter {
         (item, idx) => `
     <SalaryRecord seq="${idx + 1}">
       <EmployerCode>${this.EMPLOYER_CODE}</EmployerCode>
-      <EmployeeRef>${item.employeeId}</EmployeeRef>
+      <EmployeeRef>${item.employee_id}</EmployeeRef>
       <EmployeeName>${item.employeeName}</EmployeeName>
       <Salary currency="AED">${item.grossSalary.toFixed(2)}</Salary>
       <PersonType>EMP</PersonType>

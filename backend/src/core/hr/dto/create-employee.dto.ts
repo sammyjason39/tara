@@ -29,22 +29,27 @@ export enum EmploymentType {
  */
 export class CreateEmployeeDto {
   @IsString()
-  @IsNotEmpty()
-  employeeCode: string;
+  @IsOptional()
+  id?: string;
 
   @IsString()
   @IsNotEmpty()
-  firstName: string;
+  employee_code: string;
 
   @IsString()
   @IsNotEmpty()
-  lastName: string;
+  first_name: string;
+
+  @IsString()
+  @IsNotEmpty()
+  last_name: string;
 
   @IsString()
   @IsOptional()
-  fullName?: string;
+  full_name?: string;
 
   @IsEmail()
+  @IsNotEmpty()
   email: string;
 
   @IsString()
@@ -53,23 +58,27 @@ export class CreateEmployeeDto {
 
   @IsString()
   @IsNotEmpty()
-  departmentId: string;
+  department_id: string;
 
   @IsString()
   @IsOptional()
-  managerId?: string;
+  manager_id?: string;
 
   @IsString()
   @IsOptional()
-  roleTitle?: string;
+  position?: string;
 
   @IsString()
   @IsOptional()
-  locationId?: string;
+  role_title?: string;
+
+  @IsString()
+  @IsOptional()
+  location_id?: string;
 
   @IsEnum(EmploymentType)
   @IsOptional()
-  employmentType?: EmploymentType;
+  employment_type?: EmploymentType;
 
   @IsEnum(EmploymentStatus)
   @IsOptional()
@@ -78,14 +87,14 @@ export class CreateEmployeeDto {
   @IsNumber()
   @Min(0)
   @IsOptional()
-  baseSalary?: number;
+  base_salary?: number;
 
   @IsNumber()
   @Min(0)
   @IsOptional()
-  hourlyRate?: number;
+  hourly_rate?: number;
 
   @IsDateString()
-  @IsOptional()
-  hireDate?: string;
+  @IsNotEmpty()
+  hire_date: string;
 }

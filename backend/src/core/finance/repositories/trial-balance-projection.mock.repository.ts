@@ -9,15 +9,15 @@ export class TrialBalanceProjectionMockRepository implements ITrialBalanceProjec
   private projections: Map<string, TrialBalanceProjection> = new Map();
 
   async update(
-    tenantId: string, 
-    companyId: string,
+    tenant_id: string, 
+    company_id: string,
     accountId: string, 
     fiscalPeriodId: string, 
     accountCategory: string,
     debit: Prisma.Decimal, 
     credit: Prisma.Decimal
   ): Promise<void> {
-    const key = `${tenantId}:${companyId}:${fiscalPeriodId}:${accountId}`;
+    const key = `${tenant_id}:${company_id}:${fiscalPeriodId}:${accountId}`;
     const existing = this.projections.get(key);
 
     if (existing) {
@@ -27,11 +27,11 @@ export class TrialBalanceProjectionMockRepository implements ITrialBalanceProjec
     } else {
       this.projections.set(key, {
         id: Math.random().toString(36).substr(2, 9),
-        tenantId,
-        companyId,
+        tenant_id,
+        company_id,
         fiscalPeriodId,
         accountId,
-        accountName: 'MOCK',
+        account_name: 'MOCK',
         accountCategory,
         debitTotal: debit,
         creditTotal: credit,
@@ -41,18 +41,18 @@ export class TrialBalanceProjectionMockRepository implements ITrialBalanceProjec
     }
   }
 
-  async getBalance(tenantId: string, companyId: string, accountId: string, fiscalPeriodId: string): Promise<TrialBalanceProjection | null> {
-    const key = `${tenantId}:${companyId}:${fiscalPeriodId}:${accountId}`;
+  async getBalance(tenant_id: string, company_id: string, accountId: string, fiscalPeriodId: string): Promise<TrialBalanceProjection | null> {
+    const key = `${tenant_id}:${company_id}:${fiscalPeriodId}:${accountId}`;
     return this.projections.get(key) || null;
   }
 
-  async findAll(tenantId: string, companyId: string): Promise<TrialBalanceProjection[]> {
-    return Array.from(this.projections.values()).filter(p => p.tenantId === tenantId && p.companyId === companyId);
+  async findAll(tenant_id: string, company_id: string): Promise<TrialBalanceProjection[]> {
+    return Array.from(this.projections.values()).filter(p => p.tenant_id === tenant_id && p.company_id === company_id);
   }
 
-  async reset(tenantId: string, companyId: string): Promise<void> {
+  async reset(tenant_id: string, company_id: string): Promise<void> {
     for (const [key, value] of this.projections.entries()) {
-      if (value.tenantId === tenantId && value.companyId === companyId) {
+      if (value.tenant_id === tenant_id && value.company_id === company_id) {
         this.projections.delete(key);
       }
     }

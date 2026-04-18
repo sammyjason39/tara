@@ -1,15 +1,15 @@
 import { Injectable } from "@nestjs/common";
 import {
-  PaymentTransaction as PrismaTransaction,
-  PaymentProvider as PrismaProvider,
-  PaymentRoutingPolicy as PrismaRoutingPolicy,
-  PaymentPosDevice as PrismaPosDevice,
-  PaymentRefund as PrismaRefund,
-  PaymentDispute as PrismaDispute,
-  PaymentChargeback as PrismaChargeback,
-  PaymentSettlement as PrismaSettlement,
-  PaymentEvidencePack as PrismaEvidencePack,
-  PaymentAuditEvent as PrismaAuditEvent,
+  payment_transactions as PrismaTransaction,
+  payment_providers as PrismaProvider,
+  payment_routing_policies as PrismaRoutingPolicy,
+  payment_pos_devices as PrismaPosDevice,
+  payment_refunds as PrismaRefund,
+  payment_disputes as PrismaDispute,
+  payment_chargebacks as PrismaChargeback,
+  payment_settlements as PrismaSettlement,
+  payment_evidence_packs as PrismaEvidencePack,
+  payment_audit_events as PrismaAuditEvent,
 } from "@prisma/client";
 import { v4 as uuidv4 } from "uuid";
 import { PrismaService } from "../../../persistence/prisma.service";
@@ -73,28 +73,28 @@ export class PaymentDbRepository implements IPaymentRepository {
   }
 
   private async addAudit(
-    tenantId: string,
-    actorId: string,
+    tenant_id: string,
+    actor_id: string,
     action: string,
-    entityType: string,
-    entityId: string,
+    entity_type: string,
+    entity_id: string,
     detail: string,
   ) {
-    await this.prisma.paymentAuditEvent.create({
+    await this.prisma.payment_audit_events.create({
       data: {
         id: uuidv4(),
         
-        tenantId: tenantId,
-        actorId,
+        tenant_id: tenant_id,
+        actor_id: actor_id,
         action,
-        entityType,
-        entityId,
+        entity_type: entity_type,
+        entity_id: entity_id,
         detail,
       },
     });
   }
 
-  async getDashboard(tenantId: string): Promise<PaymentDashboard> {
+  async getDashboard(tenant_id: string): Promise<PaymentDashboard> {
     const now = new Date();
     const startOfDay = new Date(
       now.getFullYear(),
@@ -102,47 +102,47 @@ export class PaymentDbRepository implements IPaymentRepository {
       now.getDate(),
     );
 
-    const settledToday = await this.prisma.paymentTransaction.count({
+    const settledToday = await this.prisma.payment_transactions.count({
       where: {
-        tenantId: tenantId,
+        tenant_id: tenant_id,
         status: "SETTLED",
-        updatedAt: { gte: startOfDay },
+        updated_at: { gte: startOfDay },
       },
     });
 
-    const pendingApprovals = await this.prisma.paymentTransaction.count({
-      where: { tenantId: tenantId, status: "APPROVAL_PENDING" },
+    const pendingApprovals = await this.prisma.payment_transactions.count({
+      where: { tenant_id: tenant_id, status: "APPROVAL_PENDING" },
     });
 
-    const executingPayments = await this.prisma.paymentTransaction.count({
-      where: { tenantId: tenantId, status: "EXECUTING" },
+    const executingPayments = await this.prisma.payment_transactions.count({
+      where: { tenant_id: tenant_id, status: "EXECUTING" },
     });
 
-    const settlementPending = await this.prisma.paymentTransaction.count({
-      where: { tenantId: tenantId, status: "SETTLEMENT_PENDING" },
+    const settlementPending = await this.prisma.payment_transactions.count({
+      where: { tenant_id: tenant_id, status: "SETTLEMENT_PENDING" },
     });
 
-    const failedTransactions = await this.prisma.paymentTransaction.count({
-      where: { tenantId: tenantId, status: "FAILED" },
+    const failedTransactions = await this.prisma.payment_transactions.count({
+      where: { tenant_id: tenant_id, status: "FAILED" },
     });
 
-    const openDisputes = await this.prisma.paymentDispute.count({
+    const openDisputes = await this.prisma.payment_disputes.count({
       where: {
-        tenantId: tenantId,
+        tenant_id: tenant_id,
         status: { notIn: ["RESOLVED", "REJECTED"] },
       },
     });
 
-    const openChargebacks = await this.prisma.paymentChargeback.count({
+    const openChargebacks = await this.prisma.payment_chargebacks.count({
       where: {
-        tenantId: tenantId,
+        tenant_id: tenant_id,
         status: { notIn: ["WON", "LOST"] },
       },
     });
 
-    const refundPending = await this.prisma.paymentRefund.count({
+    const refundPending = await this.prisma.payment_refunds.count({
       where: {
-        tenantId: tenantId,
+        tenant_id: tenant_id,
         status: { notIn: ["SETTLED", "REJECTED", "FAILED"] },
       },
     });
@@ -159,52 +159,52 @@ export class PaymentDbRepository implements IPaymentRepository {
     };
   }
 
-  async getTransactions(tenantId: string): Promise<PaymentTransaction[]> {
-    const txs = await this.prisma.paymentTransaction.findMany({
-      where: { tenantId: tenantId },
-      include: { paymentRetryAttempts: true },
-      orderBy: { createdAt: "desc" },
+  async getTransactions(tenant_id: string): Promise<PaymentTransaction[]> {
+    const txs = await this.prisma.payment_transactions.findMany({
+      where: { tenant_id: tenant_id },
+      include: { payment_retry_attempts: true },
+      orderBy: { created_at: "desc" },
     });
     return txs.map((tx: PrismaTransaction) => this.mapTransaction(tx));
   }
 
   async createTransaction(
-    tenantId: string,
+    tenant_id: string,
     dto: CreatePaymentTransactionDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentTransaction> {
     const key =
-      dto.idempotencyKey ??
+      dto.idempotency_key ??
       this.checksum(
-        `${tenantId}|${dto.type}|${dto.amount}|${dto.destination}|${dto.externalReference ?? ""}`,
+        `${tenant_id}|${dto.type}|${dto.amount}|${dto.destination}|${dto.externalReference ?? ""}`,
       );
 
-    const existing = await this.prisma.paymentTransaction.findUnique({
-      where: { idempotencyKey: key },
+    const existing = await this.prisma.payment_transactions.findUnique({
+      where: { idempotency_key: key },
     });
     if (existing) return this.mapTransaction(existing as PrismaTransaction);
 
-    const created = await this.prisma.paymentTransaction.create({
+    const created = await this.prisma.payment_transactions.create({
       data: {
         id: uuidv4(),
         
-        tenantId: tenantId,
-        externalReference: dto.externalReference,
+        tenant_id: tenant_id,
+        external_reference: dto.externalReference,
         type: dto.type,
         amount: dto.amount,
         currency: dto.currency ?? "IDR",
         destination: dto.destination,
         source: dto.source,
         channel: dto.channel ?? "BANK_TRANSFER",
-        idempotencyKey: key,
+        idempotency_key: key,
         status: "APPROVAL_PENDING",
-        createdBy: actorId,
+        created_by: actor_id,
       },
     });
 
     await this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "request.created",
       "TRANSACTION",
       created.id,
@@ -214,21 +214,21 @@ export class PaymentDbRepository implements IPaymentRepository {
   }
 
   async approveTransaction(
-    tenantId: string,
+    tenant_id: string,
     paymentId: string,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentTransaction> {
-    const updated = await this.prisma.paymentTransaction.update({
-      where: { id: paymentId, tenantId: tenantId },
+    const updated = await this.prisma.payment_transactions.update({
+      where: { id: paymentId, tenant_id: tenant_id },
       data: {
         status: "APPROVED",
-        approvedBy: actorId,
-        approvedAt: new Date(),
+        approved_by: actor_id,
+        approved_at: new Date(),
       },
     });
     await this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "request.approved",
       "TRANSACTION",
       updated.id,
@@ -238,21 +238,21 @@ export class PaymentDbRepository implements IPaymentRepository {
   }
 
   async rejectTransaction(
-    tenantId: string,
+    tenant_id: string,
     paymentId: string,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentTransaction> {
-    const updated = await this.prisma.paymentTransaction.update({
-      where: { id: paymentId, tenantId: tenantId },
+    const updated = await this.prisma.payment_transactions.update({
+      where: { id: paymentId, tenant_id: tenant_id },
       data: {
         status: "REJECTED",
-        approvedBy: actorId,
-        approvedAt: new Date(),
+        approved_by: actor_id,
+        approved_at: new Date(),
       },
     });
     await this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "request.rejected",
       "TRANSACTION",
       updated.id,
@@ -262,21 +262,21 @@ export class PaymentDbRepository implements IPaymentRepository {
   }
 
   async routeTransaction(
-    tenantId: string,
+    tenant_id: string,
     paymentId: string,
     dto: RoutePaymentDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentTransaction> {
-    const payment = await this.prisma.paymentTransaction.findUnique({
-      where: { id: paymentId, tenantId: tenantId },
+    const payment = await this.prisma.payment_transactions.findUnique({
+      where: { id: paymentId, tenant_id: tenant_id },
     });
     if (!payment) throw new Error("Payment not found");
 
     let providerId = dto.providerId;
     if (!providerId) {
       // Simple logic: pick first healthy provider in policy priority
-      const policy = await this.prisma.paymentRoutingPolicy.findFirst({
-        where: { tenantId: tenantId, enabled: true },
+      const policy = await this.prisma.payment_routing_policies.findFirst({
+        where: { tenant_id: tenant_id, enabled: true },
       });
       if (!policy) throw new Error("No active routing policy");
 
@@ -287,17 +287,17 @@ export class PaymentDbRepository implements IPaymentRepository {
 
     if (!providerId) throw new Error("No provider available");
 
-    const updated = await this.prisma.paymentTransaction.update({
+    const updated = await this.prisma.payment_transactions.update({
       where: { id: paymentId },
       data: {
-        providerId: providerId,
+        provider_id: providerId,
         status: "PROVIDER_SELECTED",
       },
     });
 
     await this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "provider.selected",
       "ROUTING",
       updated.id,
@@ -307,13 +307,13 @@ export class PaymentDbRepository implements IPaymentRepository {
   }
 
   async executeTransaction(
-    tenantId: string,
+    tenant_id: string,
     paymentId: string,
     dto: ExecutePaymentDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentTransaction> {
-    const payment = await this.prisma.paymentTransaction.findUnique({
-      where: { id: paymentId, tenantId: tenantId },
+    const payment = await this.prisma.payment_transactions.findUnique({
+      where: { id: paymentId, tenant_id: tenant_id },
     });
     if (!payment) throw new Error("Payment not found");
 
@@ -321,23 +321,23 @@ export class PaymentDbRepository implements IPaymentRepository {
     const success = !dto.forceFail; // Default success
 
     if (!success) {
-      const updated = await this.prisma.paymentTransaction.update({
+      const updated = await this.prisma.payment_transactions.update({
         where: { id: paymentId },
         data: {
           status: "FAILED",
-          paymentRetryAttempts: {
+          payment_retry_attempts: {
             create: {
-              tenantId: tenantId,
+              tenant_id: tenant_id,
               attempt: 1,
               result: "FAILED",
-              providerId: payment.providerId!,
+              provider_id: payment.provider_id!,
             },
           },
         },
       });
       await this.addAudit(
-        tenantId,
-        actorId,
+        tenant_id,
+        actor_id,
         "execution.failed",
         "TRANSACTION",
         updated.id,
@@ -347,87 +347,87 @@ export class PaymentDbRepository implements IPaymentRepository {
     }
 
     // Create Settlement
-    const settlement = await this.prisma.paymentSettlement.create({
+    const settlement = await this.prisma.payment_settlements.create({
       data: {
         id: uuidv4(),
         
-        tenantId: tenantId,
-        paymentId: paymentId,
-        providerReference: `${payment.providerId}-${Date.now()}`,
+        tenant_id: tenant_id,
+        payment_id: paymentId,
+        provider_reference: `${payment.provider_id}-${Date.now()}`,
         status: "PENDING",
       },
     });
 
-    const updated = await this.prisma.paymentTransaction.update({
+    const updated = await this.prisma.payment_transactions.update({
       where: { id: paymentId },
       data: {
         status: "SETTLEMENT_PENDING",
-        settlementId: settlement.id,
-        paymentRetryAttempts: {
+        settlement_id: settlement.id,
+        payment_retry_attempts: {
           create: {
-            tenantId: tenantId,
+            tenant_id: tenant_id,
             attempt: 1,
             result: "SUCCESS",
-            providerId: payment.providerId!,
+            provider_id: payment.provider_id!,
           },
         },
       },
     });
 
     await this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "execution.sent",
       "TRANSACTION",
       updated.id,
-      settlement.providerReference,
+      settlement.provider_reference,
     );
     return this.mapTransaction(updated);
   }
 
   async settleTransaction(
-    tenantId: string,
+    tenant_id: string,
     paymentId: string,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentTransaction> {
-    const payment = await this.prisma.paymentTransaction.findUnique({
-      where: { id: paymentId, tenantId: tenantId },
+    const payment = await this.prisma.payment_transactions.findUnique({
+      where: { id: paymentId, tenant_id: tenant_id },
     });
-    if (!payment?.settlementId) throw new Error("Settlement not found");
+    if (!payment?.settlement_id) throw new Error("Settlement not found");
 
-    const settlement = await this.prisma.paymentSettlement.update({
-      where: { id: payment.settlementId },
+    const settlement = await this.prisma.payment_settlements.update({
+      where: { id: payment.settlement_id },
       data: {
         status: "CONFIRMED",
-        confirmedAt: new Date(),
+        confirmed_at: new Date(),
       },
     });
 
-    const evidence = await this.prisma.paymentEvidencePack.create({
+    const evidence = await this.prisma.payment_evidence_packs.create({
       data: {
         id: uuidv4(),
         
-        tenantId: tenantId,
-        paymentId: paymentId,
-        providerProof: settlement.providerReference,
-        approvalSignatures: [payment.createdBy, actorId],
-        checksum: this.checksum(settlement.providerReference),
+        tenant_id: tenant_id,
+        payment_id: paymentId,
+        provider_proof: settlement.provider_reference,
+        approval_signatures: [payment.created_by, actor_id],
+        checksum: this.checksum(settlement.provider_reference),
         payload: JSON.stringify({ settlementId: settlement.id }),
       },
     });
 
-    const updated = await this.prisma.paymentTransaction.update({
+    const updated = await this.prisma.payment_transactions.update({
       where: { id: paymentId },
       data: {
         status: "SETTLED",
-        evidencePackId: evidence.id,
-        ledgerSyncTriggeredAt: new Date(),
+        evidence_pack_id: evidence.id,
+        ledger_sync_triggered_at: new Date(),
       },
     });
 
     await this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "settlement.confirmed",
       "SETTLEMENT",
       settlement.id,
@@ -436,36 +436,36 @@ export class PaymentDbRepository implements IPaymentRepository {
     return this.mapTransaction(updated);
   }
 
-  async getProviders(tenantId: string): Promise<PaymentProvider[]> {
-    const providers = await this.prisma.paymentProvider.findMany({
-      where: { tenantId: tenantId },
+  async getProviders(tenant_id: string): Promise<PaymentProvider[]> {
+    const providers = await this.prisma.payment_providers.findMany({
+      where: { tenant_id: tenant_id },
     });
     return providers.map((p: PrismaProvider) => ({
       id: p.id,
-      tenantId: p.tenantId,
+      tenant_id: p.tenant_id,
       name: p.name,
       channels: p.channels,
       status: p.status as any,
-      maxAmountPerTxn: Number(p.maxAmountPerTxn),
-      settlementSlaHours: p.settlementSlaHours,
+      max_amount_per_txn: Number(p.max_amount_per_txn),
+      settlement_sla_hours: p.settlement_sla_hours,
       priority: p.priority,
-      lastHeartbeatAt: p.lastHeartbeatAt,
+      lastHeartbeatAt: p.last_heartbeat_at,
     }));
   }
 
   async updateProviderStatus(
-    tenantId: string,
+    tenant_id: string,
     providerId: string,
     dto: UpdateProviderStatusDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentProvider> {
-    const updated = await this.prisma.paymentProvider.update({
-      where: { id: providerId, tenantId: tenantId },
-      data: { status: dto.status, lastHeartbeatAt: new Date() },
+    const updated = await this.prisma.payment_providers.update({
+      where: { id: providerId, tenant_id: tenant_id },
+      data: { status: dto.status, last_heartbeat_at: new Date() },
     });
     await this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "provider.status_changed",
       "ROUTING",
       updated.id,
@@ -473,29 +473,30 @@ export class PaymentDbRepository implements IPaymentRepository {
     );
     return {
       ...updated,
-      tenantId: updated.tenantId,
+      tenant_id: updated.tenant_id,
       status: updated.status as any,
       channels: updated.channels as any,
-      maxAmountPerTxn: Number(updated.maxAmountPerTxn),
+      max_amount_per_txn: Number(updated.max_amount_per_txn),
+      lastHeartbeatAt: updated.last_heartbeat_at,
     };
   }
 
   async runProviderHealthSweep(
-    tenantId: string,
-    actorId: string,
+    tenant_id: string,
+    actor_id: string,
   ): Promise<PaymentProvider[]> {
     // Start transaction or basic update
-    await this.prisma.paymentProvider.updateMany({
-      where: { tenantId: tenantId, status: "DOWN" },
-      data: { status: "DEGRADED", lastHeartbeatAt: new Date() },
+    await this.prisma.payment_providers.updateMany({
+      where: { tenant_id: tenant_id, status: "DOWN" },
+      data: { status: "DEGRADED", last_heartbeat_at: new Date() },
     });
 
-    const providers = await this.prisma.paymentProvider.findMany({
-      where: { tenantId: tenantId },
+    const providers = await this.prisma.payment_providers.findMany({
+      where: { tenant_id: tenant_id },
     });
     await this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "provider.health_sweep",
       "ROUTING",
       "ALL",
@@ -504,52 +505,52 @@ export class PaymentDbRepository implements IPaymentRepository {
 
     return providers.map((p: PrismaProvider) => ({
       id: p.id,
-      tenantId: p.tenantId,
+      tenant_id: p.tenant_id,
       name: p.name,
       channels: p.channels,
       status: p.status as any,
-      maxAmountPerTxn: Number(p.maxAmountPerTxn),
-      settlementSlaHours: p.settlementSlaHours,
+      max_amount_per_txn: Number(p.max_amount_per_txn),
+      settlement_sla_hours: p.settlement_sla_hours,
       priority: p.priority,
-      lastHeartbeatAt: p.lastHeartbeatAt,
+      lastHeartbeatAt: p.last_heartbeat_at,
     }));
   }
 
-  async getRoutingPolicies(tenantId: string): Promise<PaymentRoutingPolicy[]> {
-    const policies = await this.prisma.paymentRoutingPolicy.findMany({
-      where: { tenantId: tenantId },
+  async getRoutingPolicies(tenant_id: string): Promise<PaymentRoutingPolicy[]> {
+    const policies = await this.prisma.payment_routing_policies.findMany({
+      where: { tenant_id: tenant_id },
     });
     return policies.map((p: PrismaRoutingPolicy) => ({
       id: p.id,
-      tenantId: p.tenantId,
+      tenant_id: p.tenant_id,
       name: p.name,
       enabled: p.enabled,
       priorities: p.priorities as string[],
-      fallbackProviders: p.fallbackProviders as string[],
-      maxRetries: p.maxRetries,
-      exponentialBackoffSeconds: p.exponentialBackoffSeconds,
-      createdAt: p.createdAt,
-      updatedAt: p.updatedAt,
+      fallbackProviders: p.fallback_providers as string[],
+      maxRetries: p.max_retries,
+      exponentialBackoffSeconds: p.exponential_backoff_seconds,
+      created_at: p.created_at,
+      updated_at: p.updated_at,
     }));
   }
 
-  async getDevices(tenantId: string): Promise<PaymentDevice[]> {
-    const devices = await this.prisma.paymentPosDevice.findMany({
-      where: { tenantId: tenantId },
+  async getDevices(tenant_id: string): Promise<PaymentDevice[]> {
+    const devices = await this.prisma.payment_pos_devices.findMany({
+      where: { tenant_id: tenant_id },
     });
     return devices.map((d: PrismaPosDevice) => ({
       id: d.id,
-      tenantId: d.tenantId,
-      location: d.locationId,
-      deviceCode: d.deviceCode,
+      tenant_id: d.tenant_id,
+      location: d.location_id,
+      deviceCode: d.device_code,
       approved: d.approved,
       status: d.status as any,
-      providerId: d.providerId,
-      lastUsedAt: d.lastUsedAt || undefined,
+      providerId: d.provider_id,
+      lastUsedAt: d.last_used_at || undefined,
     }));
   }
 
-  async getDevicePools(tenantId: string): Promise<PaymentDevicePool[]> {
+  async getDevicePools(tenant_id: string): Promise<PaymentDevicePool[]> {
     // Pools not yet in schema? Or I missed them.
     // Checking mock: PaymentDevicePool
     // Checking schema: I don't recall PaymentDevicePool in the visible schema parts.
@@ -560,18 +561,18 @@ export class PaymentDbRepository implements IPaymentRepository {
   }
 
   async updateDeviceStatus(
-    tenantId: string,
-    deviceId: string,
+    tenant_id: string,
+    device_id: string,
     dto: UpdateDeviceStatusDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentDevice> {
-    const updated = await this.prisma.paymentPosDevice.update({
-      where: { id: deviceId, tenantId: tenantId },
+    const updated = await this.prisma.payment_pos_devices.update({
+      where: { id: device_id, tenant_id: tenant_id },
       data: { status: dto.status },
     });
     await this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "device.status_changed",
       "DEVICE",
       updated.id,
@@ -580,45 +581,45 @@ export class PaymentDbRepository implements IPaymentRepository {
 
     return {
       id: updated.id,
-      tenantId: updated.tenantId,
-      location: updated.locationId,
-      deviceCode: updated.deviceCode,
+      tenant_id: updated.tenant_id,
+      location: updated.location_id,
+      deviceCode: updated.device_code,
       approved: updated.approved,
       status: updated.status as any,
-      providerId: updated.providerId,
-      lastUsedAt: updated.lastUsedAt || undefined,
+      providerId: updated.provider_id,
+      lastUsedAt: updated.last_used_at || undefined,
     };
   }
 
-  async getRefunds(tenantId: string): Promise<PaymentRefund[]> {
-    const refunds = await this.prisma.paymentRefund.findMany({
-      where: { tenantId: tenantId },
+  async getRefunds(tenant_id: string): Promise<PaymentRefund[]> {
+    const refunds = await this.prisma.payment_refunds.findMany({
+      where: { tenant_id: tenant_id },
     });
     return refunds.map((r: PrismaRefund) => this.mapRefund(r));
   }
 
   async createRefund(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateRefundDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentRefund> {
-    const created = await this.prisma.paymentRefund.create({
+    const created = await this.prisma.payment_refunds.create({
       data: {
         id: uuidv4(),
         
-        tenantId: tenantId,
-        paymentId: dto.paymentId,
+        tenant_id: tenant_id,
+        payment_id: dto.paymentId,
         type: dto.type,
         amount: dto.amount,
         reason: dto.reason,
         status: "REQUESTED",
-        requestedBy: actorId,
-        scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : undefined,
+        requested_by: actor_id,
+        scheduled_at: dto.scheduledAt ? new Date(dto.scheduledAt) : undefined,
       },
     });
     await this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "refund.requested",
       "REFUND",
       created.id,
@@ -628,20 +629,20 @@ export class PaymentDbRepository implements IPaymentRepository {
   }
 
   async approveRefund(
-    tenantId: string,
+    tenant_id: string,
     refundId: string,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentRefund> {
-    const updated = await this.prisma.paymentRefund.update({
-      where: { id: refundId, tenantId: tenantId },
+    const updated = await this.prisma.payment_refunds.update({
+      where: { id: refundId, tenant_id: tenant_id },
       data: {
         status: "APPROVED",
-        approvedBy: actorId,
+        approved_by: actor_id,
       },
     });
     await this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "refund.approved",
       "REFUND",
       updated.id,
@@ -651,55 +652,55 @@ export class PaymentDbRepository implements IPaymentRepository {
   }
 
   async executeRefund(
-    tenantId: string,
+    tenant_id: string,
     refundId: string,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentRefund> {
-    const updated = await this.prisma.paymentRefund.update({
-      where: { id: refundId, tenantId: tenantId },
+    const updated = await this.prisma.payment_refunds.update({
+      where: { id: refundId, tenant_id: tenant_id },
       data: {
         status: "SETTLED",
-        providerReference: `RFD-${Date.now()}`,
+        provider_reference: `RFD-${Date.now()}`,
       },
     });
     await this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "refund.settled",
       "REFUND",
       updated.id,
-      updated.providerReference!,
+      updated.provider_reference!,
     );
     return this.mapRefund(updated);
   }
 
-  async getDisputes(tenantId: string): Promise<PaymentDispute[]> {
-    const disputes = await this.prisma.paymentDispute.findMany({
-      where: { tenantId: tenantId },
+  async getDisputes(tenant_id: string): Promise<PaymentDispute[]> {
+    const disputes = await this.prisma.payment_disputes.findMany({
+      where: { tenant_id: tenant_id },
     });
     return disputes.map((d: PrismaDispute) => this.mapDispute(d));
   }
 
   async createDispute(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateDisputeDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentDispute> {
-    const created = await this.prisma.paymentDispute.create({
+    const created = await this.prisma.payment_disputes.create({
       data: {
         id: uuidv4(),
         
-        tenantId: tenantId,
-        paymentId: dto.paymentId,
+        tenant_id: tenant_id,
+        payment_id: dto.paymentId,
         amount: dto.amount,
         reason: dto.reason,
         status: "OPENED",
-        openedBy: actorId,
+        opened_by: actor_id,
       },
     });
     await this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "dispute.opened",
       "DISPUTE",
       created.id,
@@ -709,19 +710,19 @@ export class PaymentDbRepository implements IPaymentRepository {
   }
 
   async attachDisputeEvidence(
-    tenantId: string,
+    tenant_id: string,
     disputeId: string,
     dto: AttachDisputeEvidenceDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentDispute> {
-    const dispute = await this.prisma.paymentDispute.findUnique({
-      where: { id: disputeId, tenantId: tenantId },
+    const dispute = await this.prisma.payment_disputes.findUnique({
+      where: { id: disputeId, tenant_id: tenant_id },
     });
     if (!dispute) throw new Error("Dispute not found");
 
     const evidence = [...dispute.evidence, dto.evidence];
 
-    const updated = await this.prisma.paymentDispute.update({
+    const updated = await this.prisma.payment_disputes.update({
       where: { id: disputeId },
       data: {
         evidence: evidence,
@@ -729,8 +730,8 @@ export class PaymentDbRepository implements IPaymentRepository {
       },
     });
     await this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "dispute.evidence_attached",
       "DISPUTE",
       updated.id,
@@ -740,24 +741,24 @@ export class PaymentDbRepository implements IPaymentRepository {
   }
 
   async progressDispute(
-    tenantId: string,
+    tenant_id: string,
     disputeId: string,
     dto: ProgressDisputeDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentDispute> {
-    const updated = await this.prisma.paymentDispute.update({
-      where: { id: disputeId, tenantId: tenantId },
+    const updated = await this.prisma.payment_disputes.update({
+      where: { id: disputeId, tenant_id: tenant_id },
       data: {
         status: dto.status,
-        providerCaseId:
+        provider_case_id:
           dto.status === "provider_submitted"
             ? `CASE-${Date.now()}`
             : undefined,
       },
     });
     await this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "dispute.status_changed",
       "DISPUTE",
       updated.id,
@@ -767,34 +768,34 @@ export class PaymentDbRepository implements IPaymentRepository {
   }
 
   async resolveDispute(
-    tenantId: string,
+    tenant_id: string,
     disputeId: string,
     dto: ResolveDisputeDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentDispute> {
-    const updated = await this.prisma.paymentDispute.update({
-      where: { id: disputeId, tenantId: tenantId },
+    const updated = await this.prisma.payment_disputes.update({
+      where: { id: disputeId, tenant_id: tenant_id },
       data: {
         status: "RESOLVED",
         resolution: dto.resolution,
       },
     });
 
-    const chargeback = await this.prisma.paymentChargeback.create({
+    const chargeback = await this.prisma.payment_chargebacks.create({
       data: {
         id: uuidv4(),
         
-        tenantId: tenantId,
-        paymentId: updated.paymentId,
-        disputeId: updated.id,
+        tenant_id: tenant_id,
+        payment_id: updated.payment_id,
+        dispute_id: updated.id,
         amount: updated.amount,
         status: dto.resolution.toLowerCase() as any,
       },
     });
 
     await this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "dispute.resolved",
       "CHARGEBACK",
       chargeback.id,
@@ -803,74 +804,74 @@ export class PaymentDbRepository implements IPaymentRepository {
     return this.mapDispute(updated);
   }
 
-  async getChargebacks(tenantId: string): Promise<PaymentChargeback[]> {
-    const chargebacks = await this.prisma.paymentChargeback.findMany({
-      where: { tenantId: tenantId },
+  async getChargebacks(tenant_id: string): Promise<PaymentChargeback[]> {
+    const chargebacks = await this.prisma.payment_chargebacks.findMany({
+      where: { tenant_id: tenant_id },
     });
     return chargebacks.map((c: PrismaChargeback) => ({
       id: c.id,
-      tenantId: c.tenantId,
-      paymentId: c.paymentId,
-      disputeId: c.disputeId,
+      tenant_id: c.tenant_id,
+      paymentId: c.payment_id,
+      disputeId: c.dispute_id,
       amount: Number(c.amount),
       status: c.status as any,
-      createdAt: c.createdAt,
-      updatedAt: c.updatedAt,
+      created_at: c.created_at,
+      updated_at: c.updated_at,
     }));
   }
 
-  async getSettlements(tenantId: string): Promise<PaymentSettlement[]> {
-    const settlements = await this.prisma.paymentSettlement.findMany({
-      where: { tenantId: tenantId },
+  async getSettlements(tenant_id: string): Promise<PaymentSettlement[]> {
+    const settlements = await this.prisma.payment_settlements.findMany({
+      where: { tenant_id: tenant_id },
     });
     return settlements.map((s: PrismaSettlement) => ({
       id: s.id,
-      tenantId: s.tenantId,
-      paymentId: s.paymentId,
-      providerReference: s.providerReference,
+      tenant_id: s.tenant_id,
+      paymentId: s.payment_id,
+      providerReference: s.provider_reference,
       status: s.status as any,
-      confirmedAt: s.confirmedAt || undefined,
-      retryAttempts: s.retryAttempts
-        ? typeof s.retryAttempts === "string"
-          ? JSON.parse(s.retryAttempts)
-          : s.retryAttempts
+      confirmedAt: s.confirmed_at || undefined,
+      retryAttempts: s.retry_attempts
+        ? typeof s.retry_attempts === "string"
+          ? JSON.parse(s.retry_attempts)
+          : s.retry_attempts
         : [],
-      ledgerSyncTriggeredAt: s.ledgerSyncTriggeredAt || undefined,
-      createdAt: s.createdAt,
-      updatedAt: s.updatedAt,
+      ledgerSyncTriggeredAt: s.ledger_sync_triggered_at || undefined,
+      created_at: s.created_at,
+      updated_at: s.updated_at,
     }));
   }
 
-  async getEvidencePacks(tenantId: string): Promise<PaymentEvidencePack[]> {
-    const packs = await this.prisma.paymentEvidencePack.findMany({
-      where: { tenantId: tenantId },
+  async getEvidencePacks(tenant_id: string): Promise<PaymentEvidencePack[]> {
+    const packs = await this.prisma.payment_evidence_packs.findMany({
+      where: { tenant_id: tenant_id },
     });
     return packs.map((e: PrismaEvidencePack) => ({
       id: e.id,
-      tenantId: e.tenantId,
-      paymentId: e.paymentId,
-      providerProof: e.providerProof,
-      approvalSignatures: e.approvalSignatures,
+      tenant_id: e.tenant_id,
+      paymentId: e.payment_id,
+      providerProof: e.provider_proof,
+      approvalSignatures: e.approval_signatures,
       checksum: e.checksum,
       payload: e.payload,
-      createdAt: e.createdAt,
+      created_at: e.created_at,
     }));
   }
 
-  async getAuditEvents(tenantId: string): Promise<PaymentAuditEvent[]> {
-    const audits = await this.prisma.paymentAuditEvent.findMany({
-      where: { tenantId: tenantId },
-      orderBy: { createdAt: "desc" },
+  async getAuditEvents(tenant_id: string): Promise<PaymentAuditEvent[]> {
+    const audits = await this.prisma.payment_audit_events.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { created_at: "desc" },
     });
     return audits.map((a: PrismaAuditEvent) => ({
       id: a.id,
-      tenantId: a.tenantId,
-      actorId: a.actorId,
+      tenant_id: a.tenant_id,
+      actor_id: a.actor_id,
       action: a.action,
-      entityType: a.entityType as any,
-      entityId: a.entityId,
+      entity_type: a.entity_type as any,
+      entity_id: a.entity_id,
       detail: a.detail,
-      createdAt: a.createdAt,
+      created_at: a.created_at,
     }));
   }
 
@@ -878,60 +879,60 @@ export class PaymentDbRepository implements IPaymentRepository {
   private mapTransaction(t: PrismaTransaction): PaymentTransaction {
     return {
       id: t.id,
-      tenantId: t.tenantId,
-      externalReference: t.externalReference || undefined,
+      tenant_id: t.tenant_id,
+      externalReference: t.external_reference || undefined,
       type: t.type as any,
       amount: Number(t.amount),
       currency: t.currency as any,
       destination: t.destination,
       source: t.source || undefined,
       channel: t.channel as any,
-      idempotencyKey: t.idempotencyKey,
+      idempotency_key: t.idempotency_key,
       status: t.status as any,
       retryAttempts: (t as any).paymentRetryAttempts || [],
-      settlementId: t.settlementId || undefined,
-      evidencePackId: t.evidencePackId || undefined,
-      ledgerSyncTriggeredAt: t.ledgerSyncTriggeredAt || undefined,
-      createdBy: t.createdBy,
-      approvedBy: t.approvedBy || undefined,
-      approvedAt: t.approvedAt || undefined,
-      createdAt: t.createdAt,
-      updatedAt: t.updatedAt,
+      settlementId: t.settlement_id || undefined,
+      evidencePackId: t.evidence_pack_id || undefined,
+      ledgerSyncTriggeredAt: t.ledger_sync_triggered_at || undefined,
+      createdBy: t.created_by,
+      approvedBy: t.approved_by || undefined,
+      approvedAt: t.approved_at || undefined,
+      created_at: t.created_at,
+      updated_at: t.updated_at,
     };
   }
 
   private mapRefund(r: PrismaRefund): PaymentRefund {
     return {
       id: r.id,
-      tenantId: r.tenantId,
-      paymentId: r.paymentId,
+      tenant_id: r.tenant_id,
+      paymentId: r.payment_id,
       type: r.type as any,
       amount: Number(r.amount),
       reason: r.reason,
       status: r.status as any,
-      requestedBy: r.requestedBy,
-      approvedBy: r.approvedBy || undefined,
-      scheduledAt: r.scheduledAt || undefined,
-      providerReference: r.providerReference || undefined,
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
+      requested_by: r.requested_by,
+      approvedBy: r.approved_by || undefined,
+      scheduledAt: r.scheduled_at || undefined,
+      providerReference: r.provider_reference || undefined,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
     };
   }
 
   private mapDispute(d: PrismaDispute): PaymentDispute {
     return {
       id: d.id,
-      tenantId: d.tenantId,
-      paymentId: d.paymentId,
+      tenant_id: d.tenant_id,
+      paymentId: d.payment_id,
       reason: d.reason,
       amount: Number(d.amount),
       status: d.status as any,
-      openedBy: d.openedBy,
+      openedBy: d.opened_by,
       evidence: d.evidence as string[],
-      providerCaseId: d.providerCaseId || undefined,
+      providerCaseId: d.provider_case_id || undefined,
       resolution: (d.resolution as any) || undefined,
-      createdAt: d.createdAt,
-      updatedAt: d.updatedAt,
+      created_at: d.created_at,
+      updated_at: d.updated_at,
     };
   }
 }

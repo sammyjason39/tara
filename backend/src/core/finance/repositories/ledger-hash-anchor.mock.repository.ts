@@ -7,25 +7,25 @@ import { v4 as uuid } from 'uuid';
 export class LedgerHashAnchorMockRepository implements ILedgerHashAnchorRepository {
   private anchors: LedgerHashAnchor[] = [];
 
-  async create(tenantId: string, data: { anchorDate: Date, finalJournalHash: string }): Promise<LedgerHashAnchor> {
+  async create(tenant_id: string, data: { anchorDate: Date, finalJournalHash: string }): Promise<LedgerHashAnchor> {
     const anchor: LedgerHashAnchor = {
       id: uuid(),
-      tenantId,
+      tenant_id,
       anchorDate: data.anchorDate,
       finalJournalHash: data.finalJournalHash,
-      createdAt: new Date(),
+      created_at: new Date(),
     };
     this.anchors.push(anchor);
     return anchor;
   }
 
-  async findLatest(tenantId: string): Promise<LedgerHashAnchor | null> {
-    const tenantAnchors = this.anchors.filter(a => a.tenantId === tenantId);
+  async findLatest(tenant_id: string): Promise<LedgerHashAnchor | null> {
+    const tenantAnchors = this.anchors.filter(a => a.tenant_id === tenant_id);
     if (tenantAnchors.length === 0) return null;
     return tenantAnchors.sort((a, b) => b.anchorDate.getTime() - a.anchorDate.getTime())[0];
   }
 
-  async findByDate(tenantId: string, date: Date): Promise<LedgerHashAnchor | null> {
-    return this.anchors.find(a => a.tenantId === tenantId && a.anchorDate.getTime() === date.getTime()) || null;
+  async findByDate(tenant_id: string, date: Date): Promise<LedgerHashAnchor | null> {
+    return this.anchors.find(a => a.tenant_id === tenant_id && a.anchorDate.getTime() === date.getTime()) || null;
   }
 }

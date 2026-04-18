@@ -12,8 +12,8 @@ export interface ComplianceSuggestion {
 export class ComplianceSuggestionService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async generateSuggestions(tenantId: string): Promise<ComplianceSuggestion[]> {
-    const company = await this.prisma.company.findUnique({ where: { id: tenantId } });
+  async generateSuggestions(tenant_id: string): Promise<ComplianceSuggestion[]> {
+    const company = await this.prisma.companies.findUnique({ where: { id: tenant_id } });
     if (!company) return [];
 
     const suggestions: ComplianceSuggestion[] = [];

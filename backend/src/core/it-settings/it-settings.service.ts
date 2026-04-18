@@ -13,24 +13,24 @@ export class ITSettingsService {
     private readonly auditService: AuditService,
   ) {}
 
-  async getDevices(tenantId: string, locationId?: string): Promise<Device[]> {
-    return this.repository.getDevices(tenantId, locationId);
+  async getDevices(tenant_id: string, location_id?: string): Promise<Device[]> {
+    return this.repository.getDevices(tenant_id, location_id);
   }
 
   async registerDevice(
-    tenantId: string,
+    tenant_id: string,
     data: RegisterDeviceDto,
-    userId?: string,
+    user_id?: string,
   ): Promise<Device> {
-    const device = await this.repository.registerDevice(tenantId, data);
-    if (userId) {
+    const device = await this.repository.registerDevice(tenant_id, data);
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "it-settings",
         action: "REGISTER",
-        entityType: "DEVICE",
-        entityId: device.id,
+        entity_type: "DEVICE",
+        entity_id: device.id,
         metadata: { name: data.deviceName, type: data.deviceType },
       });
     }
@@ -38,53 +38,53 @@ export class ITSettingsService {
   }
 
   async updateDeviceStatus(
-    tenantId: string,
-    deviceId: string,
+    tenant_id: string,
+    device_id: string,
     status: string,
-    userId?: string,
+    user_id?: string,
   ): Promise<Device> {
     const device = await this.repository.updateDeviceStatus(
-      tenantId,
-      deviceId,
+      tenant_id,
+      device_id,
       status,
     );
-    if (userId) {
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "it-settings",
         action: "UPDATE_STATUS",
-        entityType: "DEVICE",
-        entityId: deviceId,
+        entity_type: "DEVICE",
+        entity_id: device_id,
         metadata: { status },
       });
     }
     return device;
   }
 
-  async getSettings(tenantId: string, category?: string): Promise<Setting[]> {
-    return this.repository.getSettings(tenantId, category);
+  async getSettings(tenant_id: string, category?: string): Promise<Setting[]> {
+    return this.repository.getSettings(tenant_id, category);
   }
 
-  async getSetting(tenantId: string, key: string): Promise<Setting | null> {
-    return this.repository.getSetting(tenantId, key);
+  async getSetting(tenant_id: string, key: string): Promise<Setting | null> {
+    return this.repository.getSetting(tenant_id, key);
   }
 
   async updateSetting(
-    tenantId: string,
+    tenant_id: string,
     key: string,
     data: UpdateSettingDto,
-    userId?: string,
+    user_id?: string,
   ): Promise<Setting> {
-    const setting = await this.repository.updateSetting(tenantId, key, data);
-    if (userId) {
+    const setting = await this.repository.updateSetting(tenant_id, key, data);
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "it-settings",
         action: "UPDATE",
-        entityType: "SETTING",
-        entityId: key,
+        entity_type: "SETTING",
+        entity_id: key,
         metadata: { value: data.value, category: data.category },
       });
     }

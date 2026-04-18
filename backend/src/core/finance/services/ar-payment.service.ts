@@ -23,22 +23,22 @@ export class ARPaymentService {
 
     // 2. Trigger Financial Event: PAYMENT_RECEIVED
     const postingRequest = {
-        requestId: `AR-PAY-${payment.id}`,
-        tenantId: payment.tenantId,
-        companyId: payment.companyId,
-        sourceModule: 'ACCOUNTS_RECEIVABLE',
+        request_id: `AR-PAY-${payment.id}`,
+        tenant_id: payment.tenant_id,
+        company_id: payment.company_id,
+        source_module: 'ACCOUNTS_RECEIVABLE',
         sourceEventId: payment.id,
-        eventType: 'PAYMENT_RECEIVED',
+        event_type: 'PAYMENT_RECEIVED',
         eventVersion: '1.0.0',
         schemaVersion: '2026-Q1',
         payload: {
-          customerId: payment.customerId,
+          customer_id: payment.customer_id,
           amount: payment.amount,
           currency: payment.currency,
           exchangeRate: rateInfo.rate,
           fiscalPeriodId: '2026-03',
         },
-        createdAt: new Date(),
+        created_at: new Date(),
     };
 
     const result = await this.gateway.postEvent(postingRequest as any);

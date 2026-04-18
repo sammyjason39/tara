@@ -15,185 +15,185 @@ import { IPaymentRepository } from "./repositories/payment.repository.interface"
 export class PaymentService {
   constructor(private readonly repository: IPaymentRepository) {}
 
-  async getDashboard(tenantId: string) {
-    return this.repository.getDashboard(tenantId);
+  async getDashboard(tenant_id: string) {
+    return this.repository.getDashboard(tenant_id);
   }
 
-  async getTransactions(tenantId: string) {
-    return this.repository.getTransactions(tenantId);
+  async getTransactions(tenant_id: string) {
+    return this.repository.getTransactions(tenant_id);
   }
 
   async createTransaction(
-    tenantId: string,
+    tenant_id: string,
     dto: CreatePaymentTransactionDto,
-    actorId: string,
+    actor_id: string,
   ) {
-    return this.repository.createTransaction(tenantId, dto, actorId);
+    return this.repository.createTransaction(tenant_id, dto, actor_id);
   }
 
   async approveTransaction(
-    tenantId: string,
+    tenant_id: string,
     paymentId: string,
-    actorId: string,
+    actor_id: string,
   ) {
-    return this.repository.approveTransaction(tenantId, paymentId, actorId);
+    return this.repository.approveTransaction(tenant_id, paymentId, actor_id);
   }
 
   async rejectTransaction(
-    tenantId: string,
+    tenant_id: string,
     paymentId: string,
-    actorId: string,
+    actor_id: string,
   ) {
-    return this.repository.rejectTransaction(tenantId, paymentId, actorId);
+    return this.repository.rejectTransaction(tenant_id, paymentId, actor_id);
   }
 
   async routeTransaction(
-    tenantId: string,
+    tenant_id: string,
     paymentId: string,
     dto: RoutePaymentDto,
-    actorId: string,
+    actor_id: string,
   ) {
-    return this.repository.routeTransaction(tenantId, paymentId, dto, actorId);
+    return this.repository.routeTransaction(tenant_id, paymentId, dto, actor_id);
   }
 
   async executeTransaction(
-    tenantId: string,
+    tenant_id: string,
     paymentId: string,
     dto: ExecutePaymentDto,
-    actorId: string,
+    actor_id: string,
   ) {
     return this.repository.executeTransaction(
-      tenantId,
+      tenant_id,
       paymentId,
       dto,
-      actorId,
+      actor_id,
     );
   }
 
   async settleTransaction(
-    tenantId: string,
+    tenant_id: string,
     paymentId: string,
-    actorId: string,
+    actor_id: string,
   ) {
-    return this.repository.settleTransaction(tenantId, paymentId, actorId);
+    return this.repository.settleTransaction(tenant_id, paymentId, actor_id);
   }
 
-  async getProviders(tenantId: string) {
-    return this.repository.getProviders(tenantId);
+  async getProviders(tenant_id: string) {
+    return this.repository.getProviders(tenant_id);
   }
 
   async updateProviderStatus(
-    tenantId: string,
+    tenant_id: string,
     providerId: string,
     dto: UpdateProviderStatusDto,
-    actorId: string,
+    actor_id: string,
   ) {
     return this.repository.updateProviderStatus(
-      tenantId,
+      tenant_id,
       providerId,
       dto,
-      actorId,
+      actor_id,
     );
   }
 
-  async runProviderHealthSweep(tenantId: string, actorId: string) {
-    return this.repository.runProviderHealthSweep(tenantId, actorId);
+  async runProviderHealthSweep(tenant_id: string, actor_id: string) {
+    return this.repository.runProviderHealthSweep(tenant_id, actor_id);
   }
 
-  async getRoutingPolicies(tenantId: string) {
-    return this.repository.getRoutingPolicies(tenantId);
+  async getRoutingPolicies(tenant_id: string) {
+    return this.repository.getRoutingPolicies(tenant_id);
   }
 
-  async getDevices(tenantId: string) {
-    return this.repository.getDevices(tenantId);
+  async getDevices(tenant_id: string) {
+    return this.repository.getDevices(tenant_id);
   }
 
-  async getDevicePools(tenantId: string) {
-    return this.repository.getDevicePools(tenantId);
+  async getDevicePools(tenant_id: string) {
+    return this.repository.getDevicePools(tenant_id);
   }
 
   async updateDeviceStatus(
-    tenantId: string,
-    deviceId: string,
+    tenant_id: string,
+    device_id: string,
     dto: UpdateDeviceStatusDto,
-    actorId: string,
+    actor_id: string,
   ) {
-    return this.repository.updateDeviceStatus(tenantId, deviceId, dto, actorId);
+    return this.repository.updateDeviceStatus(tenant_id, device_id, dto, actor_id);
   }
 
-  async getRefunds(tenantId: string) {
-    return this.repository.getRefunds(tenantId);
+  async getRefunds(tenant_id: string) {
+    return this.repository.getRefunds(tenant_id);
   }
 
-  async createRefund(tenantId: string, dto: CreateRefundDto, actorId: string) {
-    return this.repository.createRefund(tenantId, dto, actorId);
+  async createRefund(tenant_id: string, dto: CreateRefundDto, actor_id: string) {
+    return this.repository.createRefund(tenant_id, dto, actor_id);
   }
 
-  async approveRefund(tenantId: string, refundId: string, actorId: string) {
-    return this.repository.approveRefund(tenantId, refundId, actorId);
+  async approveRefund(tenant_id: string, refundId: string, actor_id: string) {
+    return this.repository.approveRefund(tenant_id, refundId, actor_id);
   }
 
-  async executeRefund(tenantId: string, refundId: string, actorId: string) {
-    return this.repository.executeRefund(tenantId, refundId, actorId);
+  async executeRefund(tenant_id: string, refundId: string, actor_id: string) {
+    return this.repository.executeRefund(tenant_id, refundId, actor_id);
   }
 
-  async getDisputes(tenantId: string) {
-    return this.repository.getDisputes(tenantId);
+  async getDisputes(tenant_id: string) {
+    return this.repository.getDisputes(tenant_id);
   }
 
   async createDispute(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateDisputeDto,
-    actorId: string,
+    actor_id: string,
   ) {
-    return this.repository.createDispute(tenantId, dto, actorId);
+    return this.repository.createDispute(tenant_id, dto, actor_id);
   }
 
   async attachDisputeEvidence(
-    tenantId: string,
+    tenant_id: string,
     disputeId: string,
     dto: AttachDisputeEvidenceDto,
-    actorId: string,
+    actor_id: string,
   ) {
     return this.repository.attachDisputeEvidence(
-      tenantId,
+      tenant_id,
       disputeId,
       dto,
-      actorId,
+      actor_id,
     );
   }
 
   async progressDispute(
-    tenantId: string,
+    tenant_id: string,
     disputeId: string,
     dto: ProgressDisputeDto,
-    actorId: string,
+    actor_id: string,
   ) {
-    return this.repository.progressDispute(tenantId, disputeId, dto, actorId);
+    return this.repository.progressDispute(tenant_id, disputeId, dto, actor_id);
   }
 
   async resolveDispute(
-    tenantId: string,
+    tenant_id: string,
     disputeId: string,
     dto: ResolveDisputeDto,
-    actorId: string,
+    actor_id: string,
   ) {
-    return this.repository.resolveDispute(tenantId, disputeId, dto, actorId);
+    return this.repository.resolveDispute(tenant_id, disputeId, dto, actor_id);
   }
 
-  async getChargebacks(tenantId: string) {
-    return this.repository.getChargebacks(tenantId);
+  async getChargebacks(tenant_id: string) {
+    return this.repository.getChargebacks(tenant_id);
   }
 
-  async getSettlements(tenantId: string) {
-    return this.repository.getSettlements(tenantId);
+  async getSettlements(tenant_id: string) {
+    return this.repository.getSettlements(tenant_id);
   }
 
-  async getEvidencePacks(tenantId: string) {
-    return this.repository.getEvidencePacks(tenantId);
+  async getEvidencePacks(tenant_id: string) {
+    return this.repository.getEvidencePacks(tenant_id);
   }
 
-  async getAuditEvents(tenantId: string) {
-    return this.repository.getAuditEvents(tenantId);
+  async getAuditEvents(tenant_id: string) {
+    return this.repository.getAuditEvents(tenant_id);
   }
 }

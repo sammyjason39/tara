@@ -2,14 +2,14 @@ import { BenefitPlan } from "./benefit-plan.entity";
 
 export class EmployeeBenefit {
   id: string;
-  tenantId: string;
-  employeeId: string;
+  tenant_id: string;
+  employee_id: string;
   planId: string;
-  enrollmentDate: Date;
+  enrollment_date: Date;
   status: string; // ACTIVE, PENDING, CANCELLED
-  coverageAmount?: number;
-  createdAt: Date;
-  updatedAt: Date;
+  coverage_amount?: number;
+  created_at: Date;
+  updated_at: Date;
 
   plan?: BenefitPlan;
 }

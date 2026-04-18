@@ -1,12 +1,12 @@
 export class PaymentRoutingPolicy {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   name: string;
   enabled: boolean;
   priorities: string[];
   fallbackProviders: string[];
   maxRetries: number;
   exponentialBackoffSeconds: number;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

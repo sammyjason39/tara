@@ -10,9 +10,9 @@ export class ProfitLossService {
     private readonly trialBalanceRepo: ITrialBalanceProjectionRepository,
   ) {}
 
-  async generate(tenantId: string, companyId: string, fiscalPeriodId: string, dimensions?: Record<string, string>): Promise<any> {
+  async generate(tenant_id: string, company_id: string, fiscalPeriodId: string, dimensions?: Record<string, string>): Promise<any> {
     // 1. Fetch all TB rows for the period
-    const tbRows = await this.trialBalanceRepo.findAll(tenantId, companyId, fiscalPeriodId);
+    const tbRows = await this.trialBalanceRepo.findAll(tenant_id, company_id, fiscalPeriodId);
 
     // 2. Aggregate Revenue and Expenses (O(1) as rows are pre-calculated)
     let totalRevenue = new Prisma.Decimal(0);
@@ -38,8 +38,8 @@ export class ProfitLossService {
 
     return {
       reportType: 'PROFIT_LOSS',
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       fiscalPeriodId,
       generatedAt: new Date(),
       summary: {

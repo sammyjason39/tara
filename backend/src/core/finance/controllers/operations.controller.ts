@@ -23,18 +23,18 @@ export class OperationsController {
     @TenantCtx() ctx: TenantContext,
     @Query('budgetLineId') budgetLineId: string,
   ) {
-    return this.budgetingService.calculateVariance(ctx.tenantId, budgetLineId);
+    return this.budgetingService.calculateVariance(ctx.tenant_id, budgetLineId);
   }
 
   @Post('workflow/submit')
   @Roles(UserRole.ADMIN, UserRole.OWNER, UserRole.MANAGER)
   async submitForApproval(
     @TenantCtx() ctx: TenantContext,
-    @Body('entityType') entityType: string,
-    @Body('entityId') entityId: string,
+    @Body('entity_type') entity_type: string,
+    @Body('entity_id') entity_id: string,
     @Body('data') data: any,
   ) {
-    return this.workflowIntegrationService.submitForApproval(ctx.tenantId, entityType as any, entityId, ctx.userId || 'anonymous', data);
+    return this.workflowIntegrationService.submitForApproval(ctx.tenant_id, entity_type as any, entity_id, ctx.user_id || 'anonymous', data);
   }
 
   @Post('expense/evaluate')
@@ -44,6 +44,6 @@ export class OperationsController {
     @Body('amount') amount: number,
     @Body('category') category: string,
   ) {
-    return this.expensePolicyService.evaluateExpense(ctx.tenantId, category, amount);
+    return this.expensePolicyService.evaluateExpense(ctx.tenant_id, category, amount);
   }
 }

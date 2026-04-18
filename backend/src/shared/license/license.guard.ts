@@ -16,13 +16,13 @@ export class LicenseGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
-    const tenantId = request.tenantId;
+    const tenant_id = request.tenant_id;
 
-    if (!tenantId) {
-      return false; // Cannot verify license without tenantId
+    if (!tenant_id) {
+      return false; // Cannot verify license without tenant_id
     }
 
-    await this.licenseService.verifyLicense(tenantId, moduleCode);
+    await this.licenseService.verifyLicense(tenant_id, moduleCode);
     return true;
   }
 }

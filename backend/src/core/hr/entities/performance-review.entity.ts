@@ -1,12 +1,12 @@
 export class PerformanceReview {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   cycleId: string;
-  employeeId: string;
+  employee_id: string;
   reviewerId: string;
   status: "pending" | "submitted" | "calibrated" | "approved";
   rating?: number;
   comments?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

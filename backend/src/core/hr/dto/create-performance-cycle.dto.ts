@@ -6,10 +6,10 @@ export class CreatePerformanceCycleDto {
   name: string;
 
   @IsDateString()
-  startDate: string;
+  start_date: string;
 
   @IsDateString()
-  endDate: string;
+  end_date: string;
 
   @IsDateString()
   dueDate: string;

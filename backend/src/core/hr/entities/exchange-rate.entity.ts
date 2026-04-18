@@ -1,10 +1,10 @@
 export class ExchangeRate {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   fromCurrency: string;
   toCurrency: string;
   rate: number;
   effectiveDate: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

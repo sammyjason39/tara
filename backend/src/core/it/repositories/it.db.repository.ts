@@ -1,5 +1,10 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import type { ItProvisioningRequest, ItSystemHealth, ItDevice as PrismaDevice, ItDeviceEvent as PrismaDeviceEvent } from "@prisma/client";
+import {
+  it_provisioning_requests as ItProvisioningRequest,
+  it_system_health as ItSystemHealth,
+  it_devices as PrismaDevice,
+  it_device_events as PrismaDeviceEvent,
+} from "@prisma/client";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../../persistence/prisma.service";
 import { CreateProvisioningRequestDto } from "../dto/create-provisioning-request.dto";
@@ -16,41 +21,41 @@ export class ITDbRepository extends IITRepository {
   }
 
   async getProvisioningRequests(
-    tenantId: string,
+    tenant_id: string,
   ): Promise<ProvisioningRequest[]> {
-    const requests = await this.prisma.itProvisioningRequest.findMany({
-      where: { tenantId: tenantId },
+    const requests = await this.prisma.it_provisioning_requests.findMany({
+      where: { tenant_id: tenant_id },
     });
 
     return requests.map((r: ItProvisioningRequest) => ({
       id: r.id,
-      tenantId: r.tenantId,
-      employeeId: r.employeeId || undefined,
-      supplierId: r.supplierId || undefined,
-      supplierBranchId: r.supplierBranchId || undefined,
+      tenant_id: r.tenant_id,
+      employee_id: r.employee_id || undefined,
+      supplierId: r.supplier_id || undefined,
+      supplierBranchId: r.supplier_branch_id || undefined,
       scope: (r.scope as any) || "full_portal",
       priority: (r as any).priority || "MEDIUM",
       description: (r as any).description || undefined,
       reason: r.reason || "",
       status: r.status.toLowerCase() as any,
-      requestedBy: r.requestedBy,
-      provisionedBy: r.provisionedBy || undefined,
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
+      requested_by: r.requested_by,
+      provisionedBy: r.provisioned_by || undefined,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
     }));
   }
 
   async createProvisioningRequest(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateProvisioningRequestDto,
   ): Promise<ProvisioningRequest> {
-    let finalEmployeeId = dto.employeeId;
+    let finalEmployeeId = dto.employee_id;
     let fallbackReason = dto.reason || "";
 
     if (finalEmployeeId && finalEmployeeId.startsWith("EMP-")) {
-      const emp = await this.prisma.employee.findUnique({
+      const emp = await this.prisma.employees.findUnique({
         where: {
-          tenantId_employeeCode: { tenantId, employeeCode: finalEmployeeId },
+          tenant_id_employee_code: { tenant_id: tenant_id, employee_code: finalEmployeeId },
         },
       });
       if (emp) {
@@ -64,91 +69,91 @@ export class ITDbRepository extends IITRepository {
 
     let finalSupplierId = dto.supplierId;
     if (finalSupplierId && finalSupplierId.startsWith("SUP-")) {
-      const sup = await this.prisma.supplierMaster.findFirst({
-        where: { tenantId, id: { startsWith: finalSupplierId } }, // Mock loose match
+      const sup = await this.prisma.supplier_masters.findFirst({
+        where: { tenant_id: tenant_id, id: { startsWith: finalSupplierId } }, // Mock loose match
       });
       if (!sup)
         throw new NotFoundException(`Supplier ${finalSupplierId} not found`);
       finalSupplierId = sup.id;
     }
 
-    const created = await this.prisma.itProvisioningRequest.create({
+    const created = await this.prisma.it_provisioning_requests.create({
       data: {
         
-        updatedAt: new Date(),
-        tenantId: tenantId,
-        employeeId: finalEmployeeId,
-        supplierId: finalSupplierId,
-        supplierBranchId: dto.supplierBranchId,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        employee_id: finalEmployeeId,
+        supplier_id: finalSupplierId,
+        supplier_branch_id: dto.supplierBranchId,
         scope: dto.scope,
         priority: dto.priority || "MEDIUM",
         description: dto.description,
         reason: fallbackReason,
         status: "REQUESTED",
-        requestedBy: "system", // In real app, this would be from auth
+        requested_by: "system", // In real app, this would be from auth
       },
     });
 
     return {
       id: created.id,
-      tenantId: created.tenantId,
-      employeeId: created.employeeId || undefined,
-      supplierId: created.supplierId || undefined,
-      supplierBranchId: created.supplierBranchId || undefined,
+      tenant_id: created.tenant_id,
+      employee_id: created.employee_id || undefined,
+      supplierId: created.supplier_id || undefined,
+      supplierBranchId: created.supplier_branch_id || undefined,
       scope: (created.scope as any) || "full_portal",
       priority: created.priority || "MEDIUM",
       description: created.description || undefined,
       reason: created.reason || "",
       status: "requested",
-      requestedBy: created.requestedBy,
-      createdAt: created.createdAt,
-      updatedAt: created.updatedAt,
+      requested_by: created.requested_by,
+      created_at: created.created_at,
+      updated_at: created.updated_at,
     };
   }
 
   async markProvisioned(
-    tenantId: string,
-    requestId: string,
+    tenant_id: string,
+    request_id: string,
     provisionedBy: string,
   ): Promise<ProvisioningRequest> {
-    const updated = await this.prisma.itProvisioningRequest.update({
-      where: { id: requestId, tenantId: tenantId },
+    const updated = await this.prisma.it_provisioning_requests.update({
+      where: { id: request_id, tenant_id: tenant_id },
       data: {
         status: "PROVISIONED",
-        provisionedBy,
+        provisioned_by: provisionedBy,
       },
     });
 
     return {
       id: updated.id,
-      tenantId: updated.tenantId,
-      employeeId: updated.employeeId || undefined,
-      supplierId: updated.supplierId || undefined,
-      supplierBranchId: updated.supplierBranchId || undefined,
+      tenant_id: updated.tenant_id,
+      employee_id: updated.employee_id || undefined,
+      supplierId: updated.supplier_id || undefined,
+      supplierBranchId: updated.supplier_branch_id || undefined,
       scope: (updated.scope as any) || "full_portal",
       priority: updated.priority || "MEDIUM",
       description: updated.description || undefined,
       reason: updated.reason || "",
       status: "provisioned",
-      requestedBy: updated.requestedBy,
-      provisionedBy: updated.provisionedBy || undefined,
-      createdAt: updated.createdAt,
-      updatedAt: updated.updatedAt,
+      requested_by: updated.requested_by,
+      provisionedBy: updated.provisioned_by || undefined,
+      created_at: updated.created_at,
+      updated_at: updated.updated_at,
     };
   }
 
   async updateProvisioningRequest(
-    tenantId: string,
-    requestId: string,
+    tenant_id: string,
+    request_id: string,
     dto: Partial<CreateProvisioningRequestDto>,
   ): Promise<ProvisioningRequest> {
-    let finalEmployeeId = dto.employeeId;
+    let finalEmployeeId = dto.employee_id;
     let fallbackReason = dto.reason;
 
     if (finalEmployeeId && finalEmployeeId.startsWith("EMP-")) {
-      const emp = await this.prisma.employee.findUnique({
+      const emp = await this.prisma.employees.findUnique({
         where: {
-          tenantId_employeeCode: { tenantId, employeeCode: finalEmployeeId },
+          tenant_id_employee_code: { tenant_id: tenant_id, employee_code: finalEmployeeId },
         },
       });
       if (emp) {
@@ -163,61 +168,61 @@ export class ITDbRepository extends IITRepository {
 
     // Determine final data
     const updateData: any = { ...dto };
-    if (finalEmployeeId !== dto.employeeId) {
-      updateData.employeeId = finalEmployeeId;
+    if (finalEmployeeId !== dto.employee_id) {
+      updateData.employee_id = finalEmployeeId;
       updateData.reason = fallbackReason;
     }
 
-    const updated = await this.prisma.itProvisioningRequest.update({
-      where: { id: requestId, tenantId: tenantId },
+    const updated = await this.prisma.it_provisioning_requests.update({
+      where: { id: request_id, tenant_id: tenant_id },
       data: updateData,
     });
     return {
       id: updated.id,
-      tenantId: updated.tenantId,
-      employeeId: updated.employeeId || undefined,
-      supplierId: updated.supplierId || undefined,
-      supplierBranchId: updated.supplierBranchId || undefined,
+      tenant_id: updated.tenant_id,
+      employee_id: updated.employee_id || undefined,
+      supplierId: updated.supplier_id || undefined,
+      supplierBranchId: updated.supplier_branch_id || undefined,
       scope: (updated.scope as any) || "full_portal",
       priority: updated.priority || "MEDIUM",
       description: updated.description || undefined,
       reason: updated.reason || "",
       status: updated.status.toLowerCase() as any,
-      requestedBy: updated.requestedBy,
-      provisionedBy: updated.provisionedBy || undefined,
-      createdAt: updated.createdAt,
-      updatedAt: updated.updatedAt,
+      requested_by: updated.requested_by,
+      provisionedBy: updated.provisioned_by || undefined,
+      created_at: updated.created_at,
+      updated_at: updated.updated_at,
     };
   }
 
   async deleteProvisioningRequest(
-    tenantId: string,
-    requestId: string,
+    tenant_id: string,
+    request_id: string,
   ): Promise<void> {
-    await this.prisma.itProvisioningRequest.delete({
-      where: { id: requestId, tenantId: tenantId },
+    await this.prisma.it_provisioning_requests.delete({
+      where: { id: request_id, tenant_id: tenant_id },
     });
   }
 
   // Devices (NEW)
-  async getDevices(tenantId: string): Promise<Device[]> {
-    const devices = await this.prisma.itDevice.findMany({
-      where: { tenantId },
+  async getDevices(tenant_id: string): Promise<Device[]> {
+    const devices = await this.prisma.it_devices.findMany({
+      where: { tenant_id: tenant_id },
     });
     return devices.map((d: any) => this.mapToDevice(d));
   }
 
-  async createDevice(tenantId: string, dto: CreateDeviceDto): Promise<Device> {
-    const created = await this.prisma.itDevice.create({
+  async createDevice(tenant_id: string, dto: CreateDeviceDto): Promise<Device> {
+    const created = await this.prisma.it_devices.create({
       data: {
         
         
-        tenantId,
+        tenant_id: tenant_id,
         name: dto.name,
         type: dto.type,
         connection: dto.connection,
-        locationId: dto.locationId,
-        ownerId: dto.ownerId,
+        location_id: dto.location_id,
+        owner_id: dto.owner_id,
         status: "ONLINE",
         metadata: dto.metadata || {},
       },
@@ -226,45 +231,45 @@ export class ITDbRepository extends IITRepository {
   }
 
   async updateDevice(
-    tenantId: string,
-    deviceId: string,
+    tenant_id: string,
+    device_id: string,
     dto: Partial<CreateDeviceDto>,
   ): Promise<Device> {
-    const updated = await this.prisma.itDevice.update({
-      where: { id: deviceId, tenantId },
+    const updated = await this.prisma.it_devices.update({
+      where: { id: device_id, tenant_id: tenant_id },
       data: dto as any,
     });
     return this.mapToDevice(updated);
   }
 
-  async getDevice(tenantId: string, deviceId: string): Promise<Device | null> {
-    const device = await this.prisma.itDevice.findUnique({
-      where: { id: deviceId, tenantId },
+  async getDevice(tenant_id: string, device_id: string): Promise<Device | null> {
+    const device = await this.prisma.it_devices.findUnique({
+      where: { id: device_id, tenant_id: tenant_id },
     });
     return device ? this.mapToDevice(device) : null;
   }
 
   // Device Events (NEW)
-  async getDeviceEvents(tenantId: string): Promise<DeviceEvent[]> {
-    const events = await this.prisma.itDeviceEvent.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: "desc" },
+  async getDeviceEvents(tenant_id: string): Promise<DeviceEvent[]> {
+    const events = await this.prisma.it_device_events.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { created_at: "desc" },
       take: 100,
     });
     return events.map((e: any) => this.mapToDeviceEvent(e));
   }
 
   async createDeviceEvent(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateDeviceEventDto,
   ): Promise<DeviceEvent> {
-    const created = await this.prisma.itDeviceEvent.create({
+    const created = await this.prisma.it_device_events.create({
       data: {
         
         
-        tenantId,
-        deviceId: dto.deviceId,
-        eventType: dto.eventType,
+        tenant_id: tenant_id,
+        device_id: dto.device_id,
+        event_type: dto.event_type,
         payload: dto.payload,
         processed: dto.processed || false,
       },
@@ -276,54 +281,54 @@ export class ITDbRepository extends IITRepository {
   private mapToDevice(r: PrismaDevice): Device {
     return {
       id: r.id,
-      tenantId: r.tenantId,
+      tenant_id: r.tenant_id,
       name: r.name,
       type: r.type,
       connection: r.connection,
       status: r.status,
-      locationId: r.locationId || undefined,
-      ownerId: r.ownerId || undefined,
+      location_id: r.location_id || undefined,
+      owner_id: r.owner_id || undefined,
       metadata: r.metadata,
-      createdAt: r.createdAt,
+      created_at: r.created_at,
     };
   }
 
   private mapToDeviceEvent(r: PrismaDeviceEvent): DeviceEvent {
     return {
       id: r.id,
-      tenantId: r.tenantId,
-      deviceId: r.deviceId,
-      eventType: r.eventType,
+      tenant_id: r.tenant_id,
+      device_id: r.device_id,
+      event_type: r.event_type,
       payload: r.payload,
       processed: r.processed,
-      createdAt: r.createdAt,
+      created_at: r.created_at,
     };
   }
 
-  async getSystemHealth(tenantId: string): Promise<SystemHealth[]> {
-    const health = await this.prisma.itSystemHealth.findMany({
-      where: { tenantId },
+  async getSystemHealth(tenant_id: string): Promise<SystemHealth[]> {
+    const health = await this.prisma.it_system_health.findMany({
+      where: { tenant_id: tenant_id },
     });
     return health.map(h => ({
       id: h.id,
-      tenantId: h.tenantId,
+      tenant_id: h.tenant_id,
       component: h.component as any,
       status: h.status as any,
-      latencyMs: h.latencyMs,
-      checkedAt: h.checkedAt,
+      latencyMs: h.latency_ms,
+      checkedAt: h.checked_at,
     }));
   }
 
-  async getProvisioningStats(tenantId: string): Promise<any> {
-    const counts = await this.prisma.itProvisioningRequest.groupBy({
+  async getProvisioningStats(tenant_id: string): Promise<any> {
+    const counts = await this.prisma.it_provisioning_requests.groupBy({
       by: ['status'],
-      where: { tenantId },
+      where: { tenant_id: tenant_id },
       _count: true,
     });
     return counts;
   }
 
-  async getAuditLogs(tenantId: string, requestId?: string): Promise<any[]> {
+  async getAuditLogs(tenant_id: string, request_id?: string): Promise<any[]> {
     return []; // Placeholder for now
   }
 }

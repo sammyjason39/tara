@@ -6,13 +6,13 @@ import { Prisma } from '@prisma/client';
  */
 export class Transaction {
   id: string;
-  tenantId: string;
-  locationId?: string;
+  tenant_id: string;
+  location_id?: string;
   amount: Prisma.Decimal;
   type: "debit" | "credit";
   description: string;
   category?: string;
-  createdAt: Date;
+  created_at: Date;
   createdBy?: string; // User ID who created the transaction
   status: "pending" | "approved" | "rejected";
   approvedBy?: string; // User ID who approved (for threshold gates)

@@ -36,14 +36,14 @@ export interface Insight {
   integrityHash?: string;
   supportingData: any;
   accountId?: string;
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   snapshotSequence: number;
 }
 
 export interface InsightContext {
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   snapshotSequence: number;
   cashflow: CashflowOutput;
   historicalSnapshots: any[];
@@ -54,7 +54,7 @@ export interface InsightContext {
     totalCash: number;
     anomalyCount: number;
   };
-  correlationId: string;
+  correlation_id: string;
 }
 
 export interface InsightRule {

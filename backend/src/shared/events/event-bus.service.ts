@@ -5,27 +5,27 @@ import { PrismaService } from '../../persistence/prisma.service';
 import { validateEventPayload } from './event.registry';
 
 export interface DomainEvent {
-  eventType: string;
-  tenantId: string;
-  entityId: string;
-  entityType: string;
-  sourceModule: string;
+  event_type: string;
+  tenant_id: string;
+  entity_id: string;
+  entity_type: string;
+  source_module: string;
   payload: any;
-  userId?: string;
-  correlationId?: string;
-  idempotencyKey?: string;
-  aggregateId?: string;
-  eventReferenceId?: string;
+  user_id?: string;
+  correlation_id?: string;
+  idempotency_key?: string;
+  aggregate_id?: string;
+  event_reference_id?: string;
   status?: string;
-  processingStartedAt?: Date;
+  processing_started_at?: Date;
   version?: number;
-  createdAt?: Date;
-  id?: string; // Persistent ID from Event Store
-  tx?: Prisma.TransactionClient; // Prisma.TransactionClient injected during execution
+  created_at?: Date;
+  id?: string;
+  tx?: Prisma.TransactionClient;
 }
 
 export interface EventSubscription {
-  eventType: string;
+  event_type: string;
   handlerName: string;
   callback: (event: DomainEvent) => Promise<void> | void;
 }
@@ -52,32 +52,32 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Worker method to process pending/failed events.
-   * Enforces sequential execution order per aggregateId.
+   * Enforces sequential execution order per aggregate_id.
    */
   private async sweepPendingEvents() {
     try {
       const now = new Date();
       // Find deliveries that are PENDING or (FAILED and ready to retry)
-      const pendingDeliveries = await this.prisma.eventDelivery.findMany({
+      const pendingDeliveries = await this.prisma.event_deliveries.findMany({
         where: {
           OR: [
             { status: 'PENDING' },
             { 
               status: 'FAILED', 
               attempts: { lt: 5 },
-              nextRetryAt: { lte: now } 
+              next_retry_at: { lte: now } 
             }
           ]
         },
         take: 100, // Process in batches
-        include: { domainEvents: true }, // Include DomainEvent to read aggregateId
-        orderBy: { createdAt: 'asc' } // Preserve strict chronological ordering
+        include: { domain_events: true }, // Include DomainEvent to read aggregate_id
+        orderBy: { created_at: 'asc' } // Preserve strict chronological ordering
       });
 
-      // Group by aggregateId (or NULL) to enforce strict sequential processing per-aggregate
+      // Group by aggregate_id (or NULL) to enforce strict sequential processing per-aggregate
       const aggregateGroups = new Map<string, typeof pendingDeliveries>();
       for (const d of pendingDeliveries as any[]) {
-        const key = d.eventId.aggregateId || `NO_AGGREGATE_${d.id}`; // If no aggregate, they run freely
+        const key = d.eventId.aggregate_id || `NO_AGGREGATE_${d.id}`; // If no aggregate, they run freely
         if (!aggregateGroups.has(key)) aggregateGroups.set(key, []);
         aggregateGroups.get(key)!.push(d);
       }
@@ -95,16 +95,16 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
 
       // --- NEW: Stuck Event Recovery ---
       const timeoutThreshold = new Date(Date.now() - 60000); // 60 seconds
-      const stuckEvents = await this.prisma.domainEvent.findMany({
+      const stuckEvents = await this.prisma.domain_events.findMany({
         where: {
           status: 'PROCESSING',
-          processingStartedAt: { lt: timeoutThreshold }
+          processing_started_at: { lt: timeoutThreshold }
         },
-        include: { eventDeliveries: true }
+        include: { event_deliveries: true }
       });
 
       for (const event of stuckEvents) {
-        this.logger.warn(`Recovering stuck event ${event.id} (stuck in PROCESSING since ${event.processingStartedAt})`);
+        this.logger.warn(`Recovering stuck event ${event.id} (stuck in PROCESSING since ${event.processing_started_at})`);
         // We move it to FAILED to allow the standard retry logic to pick up the deliveries
         await this.prisma.$transaction(async (tx: any) => {
           await tx.domainEvent.update({
@@ -112,8 +112,8 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
             data: { status: 'FAILED' }
           });
           // Also fail any deliveries that are still in PROCESSING for this event
-          await tx.eventDelivery.updateMany({
-            where: { eventId: event.id, status: 'PROCESSING', tenantId: event.tenantId },
+          await tx.event_deliveries.updateMany({
+            where: { eventId: event.id, status: 'PROCESSING', tenant_id: event.tenant_id },
             data: { status: 'FAILED', lastError: 'PROCESSING_TIMEOUT_RECOVERY' }
           });
         });
@@ -121,7 +121,7 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
 
     } catch (err) {
       this.logger.error(`SWEEP_FAILED: ${err.message}`);
-      this.logTrace('SWEEP_FAILED', { eventType: 'SYSTEM_SWEEP', tenantId: 'SYSTEM' } as any, 'SYSTEM', undefined, { error: err.message });
+      this.logTrace('SWEEP_FAILED', { event_type: 'SYSTEM_SWEEP', tenant_id: 'SYSTEM' } as any, 'SYSTEM', undefined, { error: err.message });
     }
   }
 
@@ -133,10 +133,10 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
       timestamp: new Date().toISOString(),
       status,
       eventId: event.id || 'N/A',
-      eventType: event.eventType,
-      correlationId: event.correlationId || 'N/A',
-      aggregateId: event.aggregateId || 'N/A',
-      tenantId: event.tenantId,
+      event_type: event.event_type,
+      correlation_id: event.correlation_id || 'N/A',
+      aggregate_id: event.aggregate_id || 'N/A',
+      tenant_id: event.tenant_id,
       actor,
       durationMs,
       ...metadata,
@@ -151,13 +151,13 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Subscribe to specific domain events.
-   * @param eventType type of event to listen to (e.g. 'PO_RECEIVED')
+   * @param event_type type of event to listen to (e.g. 'PO_RECEIVED')
    * @param handlerName unique identifier for this listener (for idempotency and retries)
    * @param callback function to execute
    */
-  subscribe(eventType: string, handlerName: string, callback: (event: DomainEvent) => Promise<void> | void) {
-    this.subscriptions.push({ eventType, handlerName, callback });
-    this.logger.log(`Registered listener [${handlerName}] for event [${eventType}]`);
+  subscribe(event_type: string, handlerName: string, callback: (event: DomainEvent) => Promise<void> | void) {
+    this.subscriptions.push({ event_type, handlerName, callback });
+    this.logger.log(`Registered listener [${handlerName}] for event [${event_type}]`);
     return () => {
       this.subscriptions = this.subscriptions.filter(s => s.handlerName !== handlerName);
     };
@@ -169,30 +169,30 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
    */
   async publish(event: DomainEvent, injectedTx?: Prisma.TransactionClient) {
     // 0. Default trace fields
-    event.correlationId = event.correlationId || `corr_${Math.random().toString(36).substr(2, 9)}`;
-    event.idempotencyKey = event.idempotencyKey || `idem_${Math.random().toString(36).substr(2, 9)}`;
+    event.correlation_id = event.correlation_id || `corr_${Math.random().toString(36).substr(2, 9)}`;
+    event.idempotency_key = event.idempotency_key || `idem_${Math.random().toString(36).substr(2, 9)}`;
 
-    this.logTrace('PUBLISH_STARTED', event, event.sourceModule);
+    this.logTrace('PUBLISH_STARTED', event, event.source_module);
 
     try {
       // 0. Validate Schema Contract
-      validateEventPayload(event.eventType, event.version ?? 1, event.payload);
+      validateEventPayload(event.event_type, event.version ?? 1, event.payload);
 
-      const matchingSubs = this.subscriptions.filter(s => s.eventType === event.eventType || s.eventType === '*');
+      const matchingSubs = this.subscriptions.filter(s => s.event_type === event.event_type || s.event_type === '*');
 
       const execute = async (tx: any) => {
         // 1. Check idempotency if a key was provided
-        if (event.idempotencyKey) {
+        if (event.idempotency_key) {
           const existing = await tx.domainEvent.findUnique({
             where: {
-              tenantId_idempotencyKey: {
-                tenantId: event.tenantId,
-                idempotencyKey: event.idempotencyKey,
+              tenantId_idempotency_key: {
+                tenant_id: event.tenant_id,
+                idempotency_key: event.idempotency_key,
               }
             }
           });
           if (existing) {
-            this.logTrace('PUBLISH_SKIPPED_IDEMPOTENT', event, event.sourceModule);
+            this.logTrace('PUBLISH_SKIPPED_IDEMPOTENT', event, event.source_module);
             return existing;
           }
         }
@@ -201,18 +201,18 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
         const domainEventRecord = await tx.domainEvent.create({
           data: {
         id: uuidv4(),
-        updatedAt: new Date(),
-            tenantId: event.tenantId,
-            eventType: event.eventType,
-            sourceModule: event.sourceModule,
-            entityType: event.entityType,
-            entityId: event.entityId,
+        updated_at: new Date(),
+            tenant_id: event.tenant_id,
+            event_type: event.event_type,
+            source_module: event.source_module,
+            entity_type: event.entity_type,
+            entity_id: event.entity_id,
             payload: event.payload as any,
-            userId: event.userId ?? null,
-            idempotencyKey: event.idempotencyKey ?? null,
-            correlationId: event.correlationId ?? null,
-            aggregateId: event.aggregateId ?? null,
-            eventReferenceId: event.eventReferenceId ?? null,
+            user_id: event.user_id ?? null,
+            idempotency_key: event.idempotency_key ?? null,
+            correlation_id: event.correlation_id ?? null,
+            aggregate_id: event.aggregate_id ?? null,
+            event_reference_id: event.event_reference_id ?? null,
             status: 'PENDING',
             version: event.version ?? 1,
           },
@@ -220,9 +220,9 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
 
         // 3. Create EventDelivery rows for all matched subscriptions
         if (matchingSubs.length > 0) {
-          await tx.eventDelivery.createMany({
+          await tx.event_deliveries.createMany({
             data: matchingSubs.map(sub => ({
-              tenantId: event.tenantId,
+              tenant_id: event.tenant_id,
               eventId: domainEventRecord.id,
               handlerName: sub.handlerName,
               status: 'PENDING',
@@ -252,7 +252,7 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
 
       return record;
     } catch (error) {
-      this.logTrace('PUBLISH_FAILED', event, event.sourceModule, undefined, { error: error.message });
+      this.logTrace('PUBLISH_FAILED', event, event.source_module, undefined, { error: error.message });
       throw error;
     }
   }
@@ -273,24 +273,24 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
    */
   async executeHandler(eventId: string, event: DomainEvent, sub: EventSubscription) {
     let delivery: any = null;
-    let startTime = Date.now();
+    let start_time = Date.now();
 
     try {
       // 1. Lock delivery
-      delivery = await this.prisma.eventDelivery.update({
+      delivery = await this.prisma.event_deliveries.update({
         where: {
-          tenantId_eventId_handlerName: { tenantId: event.tenantId, eventId, handlerName: sub.handlerName }
+          tenant_id_event_id_handler_name: { tenant_id: event.tenant_id, event_id: eventId, handler_name: sub.handlerName }
         },
         data: { status: 'PROCESSING' }
       });
 
       // 2. Mark parent DomainEvent as PROCESSING
-      await this.prisma.domainEvent.update({
+      await this.prisma.domain_events.update({
         where: { id: eventId },
-        data: { status: 'PROCESSING', processingStartedAt: new Date() }
+        data: { status: 'PROCESSING', processing_started_at: new Date() }
       });
 
-      startTime = Date.now();
+      start_time = Date.now();
 
       // 3. Open a dedicated TX Wrapper for execution atomicity
       // 2. Start trace
@@ -298,9 +298,9 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
 
       try {
         // 3. Mark processing started to allow recovery from stuck states
-        await this.prisma.domainEvent.update({
+        await this.prisma.domain_events.update({
           where: { id: eventId },
-          data: { status: 'PROCESSING', processingStartedAt: new Date() }
+          data: { status: 'PROCESSING', processing_started_at: new Date() }
         });
 
         const timeoutPromise = new Promise((_, reject) => 
@@ -311,15 +311,15 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
           this.prisma.$transaction(async (tx: any) => {
             const transactionalEvent: DomainEvent = { ...event, tx };
             await sub.callback(transactionalEvent);
-            await tx.eventDelivery.update({
+            await tx.event_deliveries.update({
               where: { id: delivery.id },
-              data: { status: 'PROCESSED', updatedAt: new Date() }
+              data: { status: 'PROCESSED', updated_at: new Date() }
             });
           }, { timeout: 15000 }),
           timeoutPromise
         ]);
 
-        const durationMs = Date.now() - startTime;
+        const durationMs = Date.now() - start_time;
         this.logTrace('HANDLER_SUCCESS', event, sub.handlerName, durationMs, { retryCount: delivery.attempts });
         
         // 4. Evaluate and collapse parent state 
@@ -330,15 +330,15 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
       }
 
     } catch (error) {
-      const durationMs = Date.now() - startTime;
+      const durationMs = Date.now() - start_time;
       const retryAttempts = delivery?.attempts ?? 0;
       this.logTrace('HANDLER_FAILED', event, sub.handlerName, durationMs, { retryCount: retryAttempts, error: error.message });
       
       // Failure / Retry logic
       this.logger.error(`Error in event listener [${sub.handlerName}]: ${error.message}`);
       
-      const currentDelivery = await this.prisma.eventDelivery.findUnique({
-        where: { tenantId_eventId_handlerName: { tenantId: event.tenantId, eventId, handlerName: sub.handlerName } }
+      const currentDelivery = await this.prisma.event_deliveries.findUnique({
+        where: { tenant_id_event_id_handler_name: { tenant_id: event.tenant_id, event_id: eventId, handler_name: sub.handlerName } }
       });
 
       if (currentDelivery) {
@@ -347,37 +347,37 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
         
         if (newAttempts >= maxRetries) {
           // Dead Letter Queue
-          await this.prisma.eventDelivery.update({
+          await this.prisma.event_deliveries.update({
             where: { id: currentDelivery.id },
-            data: { status: 'DLQ', attempts: newAttempts, lastError: error.message, updatedAt: new Date() }
+            data: { status: 'DLQ', attempts: newAttempts, last_error: error.message, updated_at: new Date() }
           });
           // Also mark parent parent FAILED permanently 
-          await this.prisma.domainEvent.update({ where: { id: eventId }, data: { status: 'FAILED' }});
+          await this.prisma.domain_events.update({ where: { id: eventId }, data: { status: 'FAILED' }});
           this.logger.error(`Event ${eventId} for [${sub.handlerName}] moved to DEAD LETTER QUEUE (DLQ).`);
 
           // Emit internal failure event for Workflow Engine
           await this.publish({
-            tenantId: event.tenantId,
-            eventType: 'WORKFLOW_STEP_FAILED',
-            entityId: eventId,
-            entityType: 'EVENT_DELIVERY',
-            sourceModule: 'EVENT_BUS',
+            tenant_id: event.tenant_id,
+            event_type: 'WORKFLOW_STEP_FAILED',
+            entity_id: eventId,
+            entity_type: 'EVENT_DELIVERY',
+            source_module: 'EVENT_BUS',
             payload: {
-              originalEventType: event.eventType,
+              originalEventType: event.event_type,
               handlerName: sub.handlerName,
               error: error.message,
-              correlationId: event.correlationId,
+              correlation_id: event.correlation_id,
             },
-            correlationId: event.correlationId || 'root',
+            correlation_id: event.correlation_id || 'root',
           });
         } else {
           // Retry with exponential backoff (2^attempts * 5 seconds)
           const backoffSeconds = Math.pow(2, newAttempts) * 5;
           const nextRetryAt = new Date(Date.now() + backoffSeconds * 1000);
           
-          await this.prisma.eventDelivery.update({
+          await this.prisma.event_deliveries.update({
             where: { id: delivery.id },
-            data: { status: 'FAILED', attempts: newAttempts, lastError: error.message, nextRetryAt, updatedAt: new Date() }
+            data: { status: 'FAILED', attempts: newAttempts, last_error: error.message, next_retry_at: nextRetryAt, updated_at: new Date() }
           });
           this.logger.warn(`Event ${eventId} for [${sub.handlerName}] failed. Retry ${newAttempts}/${maxRetries} scheduled at ${nextRetryAt.toISOString()}`);
         }
@@ -389,11 +389,11 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
    * If all listeners successfully process, mark overall status PROCESSED.
    */
   private async resolveDomainEventIfComplete(eventId: string) {
-    const remainingDeliveries = await this.prisma.eventDelivery.count({
-      where: { eventId, status: { not: 'PROCESSED' } }
+    const remainingDeliveries = await this.prisma.event_deliveries.count({
+      where: { event_id: eventId, status: { not: 'PROCESSED' } }
     });
     if (remainingDeliveries === 0) {
-      await this.prisma.domainEvent.update({
+      await this.prisma.domain_events.update({
         where: { id: eventId },
         data: { status: 'PROCESSED' }
       });
@@ -404,7 +404,7 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
    * Safe replay capability for failed events
    */
   async replayEvent(eventId: string, force: boolean = false) {
-    const event = await this.prisma.domainEvent.findUnique({ where: { id: eventId } });
+    const event = await this.prisma.domain_events.findUnique({ where: { id: eventId } });
     if (!event) throw new Error(`Event ${eventId} not found`);
 
     if (event.status === 'PROCESSED' && !force) {
@@ -412,17 +412,17 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    this.logger.log(`Replaying event ${eventId} (${event.eventType})`);
+    this.logger.log(`Replaying event ${eventId} (${event.event_type})`);
 
     await this.prisma.$transaction(async (tx: any) => {
       // 1. Reset parent status
       await tx.domainEvent.update({
         where: { id: eventId },
-        data: { status: 'PENDING', processingStartedAt: null }
+        data: { status: 'PENDING', processing_started_at: null }
       });
 
       // 2. Reset all deliveries to PENDING
-      await tx.eventDelivery.updateMany({
+      await tx.event_deliveries.updateMany({
         where: { eventId },
         data: { status: 'PENDING', attempts: 0, lastError: null, nextRetryAt: null }
       });
@@ -433,10 +433,10 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
    * Visibility: Query failed events (DLQ)
    */
   async getFailedEvents() {
-    return this.prisma.domainEvent.findMany({
+    return this.prisma.domain_events.findMany({
       where: { status: 'FAILED' },
-      include: { eventDeliveries: { where: { status: 'DLQ' } } },
-      orderBy: { createdAt: 'desc' }
+      include: { event_deliveries: { where: { status: 'DLQ' } } },
+      orderBy: { created_at: 'desc' }
     });
   }
 
@@ -444,25 +444,25 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
    * Visibility: Query deliveries for an event
    */
   async getEventDeliveries(eventId: string) {
-    return this.prisma.eventDelivery.findMany({
-      where: { eventId },
-      orderBy: { createdAt: 'asc' }
+    return this.prisma.event_deliveries.findMany({
+      where: { event_id: eventId },
+      orderBy: { created_at: 'asc' }
     });
   }
 
   // PLATFORM INSPECTION HELPERS
-  async getEventChain(correlationId: string) {
-    const events = await this.prisma.domainEvent.findMany({
-      where: { correlationId },
-      include: { eventDeliveries: true },
-      orderBy: { createdAt: 'asc' }
+  async getEventChain(correlation_id: string) {
+    const events = await this.prisma.domain_events.findMany({
+      where: { correlation_id: correlation_id },
+      include: { event_deliveries: true },
+      orderBy: { created_at: 'asc' }
     });
 
     return events.map((e: any) => ({
       eventId: e.id,
-      eventType: e.eventType,
+      event_type: e.event_type,
       status: e.status,
-      createdAt: e.createdAt,
+      created_at: e.created_at,
       deliveries: e.eventDeliveries.map((d: any) => ({
         handler: d.handlerName,
         status: d.status,

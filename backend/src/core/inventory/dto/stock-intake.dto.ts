@@ -9,11 +9,11 @@ import {
 export class StockIntakeDto {
   @IsString()
   @IsNotEmpty()
-  itemId: string;
+  item_id: string;
 
   @IsString()
   @IsNotEmpty()
-  locationId: string;
+  location_id: string;
 
   @IsString()
   @IsOptional()

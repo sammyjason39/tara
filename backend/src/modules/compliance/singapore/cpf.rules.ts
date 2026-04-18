@@ -27,7 +27,7 @@ export class CpfRules implements IComplianceRule {
 
   calculate(
     employees: any[],
-    tenantId: string,
+    tenant_id: string,
     period: string,
   ): ComplianceCalculationResult {
     const lineItems: ComplianceLineItem[] = employees.map((emp) => {
@@ -38,12 +38,12 @@ export class CpfRules implements IComplianceRule {
       const employerContribution = Math.round(ordinaryWage * this.EMPLOYER_RATE);
 
       return {
-        employeeId: emp.id,
-        employeeName: `${emp.firstName} ${emp.lastName}`.trim(),
+        employee_id: emp.id,
+        employeeName: `${emp.first_name} ${emp.last_name}`.trim(),
         grossSalary,
         employeeContribution,
         employerContribution,
-        taxAmount: 0,
+        tax_amount: 0,
         netSalary: grossSalary - employeeContribution,
         notes:
           grossSalary > this.OW_CEILING
@@ -56,7 +56,7 @@ export class CpfRules implements IComplianceRule {
       country: 'SG',
       module: 'CPF',
       period,
-      tenantId,
+      tenant_id,
       totalEmployees: employees.length,
       totalDeductions: lineItems.reduce((s, i) => s + i.employeeContribution, 0),
       totalContributions: lineItems.reduce((s, i) => s + i.employerContribution, 0),

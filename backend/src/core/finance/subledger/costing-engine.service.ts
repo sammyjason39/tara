@@ -14,7 +14,7 @@ export class CostingEngineService {
     private readonly integration: InventoryAccountingIntegrationService,
   ) {}
 
-  async processEntry(tenant_id: string, entryId: string, tx?: any, correlationId?: string): Promise<void> {
+  async processEntry(tenant_id: string, entryId: string, tx?: any, correlation_id?: string): Promise<void> {
     const entry = await this.repository.getEntryById(tenant_id, entryId, tx);
     
     // Hardening Rule: Process only PENDING entries
@@ -28,9 +28,9 @@ export class CostingEngineService {
       await this.repository.updateEntryStatus(tenant_id, entryId, 'POSTING', undefined, tx); // Mark as transition state
 
       if (entry.entryType === 'PROVISIONAL_ADJUSTMENT') {
-        await this.processInbound(tenant_id, entry, tx, correlationId);
+        await this.processInbound(tenant_id, entry, tx, correlation_id);
       } else if (entry.entryType === 'INVENTORY_ISSUE') {
-        await this.processOutbound(tenant_id, entry, tx, correlationId);
+        await this.processOutbound(tenant_id, entry, tx, correlation_id);
       }
 
     } catch (error) {
@@ -41,24 +41,24 @@ export class CostingEngineService {
     }
   }
 
-  private async processInbound(tenant_id: string, entry: InventorySubledgerEntry, tx?: any, correlationId?: string): Promise<void> {
+  private async processInbound(tenant_id: string, entry: InventorySubledgerEntry, tx?: any, correlation_id?: string): Promise<void> {
     const unitCost = entry.unitCost || new Prisma.Decimal(0);
     
-    const totalAmount = unitCost.mul(entry.qty.abs());
+    const total_amount = unitCost.mul(entry.qty.abs());
     
     const snapshot = await this.repository.createCostSnapshot(tenant_id, {
       skuId: entry.skuId,
-      locationId: entry.locationId,
+      location_id: entry.location_id,
       avgUnitCost: unitCost,
       totalQty: entry.qty.abs(),
-      totalValuation: totalAmount,
+      totalValuation: total_amount,
       currency: entry.currency || 'USD',
     }, tx);
 
     // CRITICAL: Create the actual Cost Layer for future FIFO/LIFO tracking
     await this.repository.createCostLayer(tenant_id, {
       skuId: entry.skuId,
-      locationId: entry.locationId,
+      location_id: entry.location_id,
       qty: entry.qty.abs(),
       remainingQty: entry.qty.abs(),
       unitCost: unitCost,
@@ -69,15 +69,15 @@ export class CostingEngineService {
 
     await this.repository.updateEntryStatus(tenant_id, entry.id, 'COSTED', {
       costVersionId: snapshot.id,
-      amount: totalAmount, // Standardized as positive
+      amount: total_amount, // Standardized as positive
     }, tx);
 
     // Trigger UFPG Integration
-    await this.integration.handleCostFinalized(tenant_id, entry, snapshot, correlationId);
+    await this.integration.handleCostFinalized(tenant_id, entry, snapshot, correlation_id);
   }
 
-  private async processOutbound(tenant_id: string, entry: InventorySubledgerEntry, tx?: any, correlationId?: string): Promise<void> {
-    const layers = await this.repository.getCostLayers(tenant_id, entry.skuId, entry.locationId, tx);
+  private async processOutbound(tenant_id: string, entry: InventorySubledgerEntry, tx?: any, correlation_id?: string): Promise<void> {
+    const layers = await this.repository.getCostLayers(tenant_id, entry.skuId, entry.location_id, tx);
     let remainingToCost = entry.qty.abs();
     let totalCost = new Prisma.Decimal(0);
     const usedLayers: { layerId: string; qty: Prisma.Decimal }[] = [];
@@ -106,7 +106,7 @@ export class CostingEngineService {
 
     const snapshot = await this.repository.createCostSnapshot(tenant_id, {
       skuId: entry.skuId,
-      locationId: entry.locationId,
+      location_id: entry.location_id,
       avgUnitCost: avgUnitCost,
       totalQty: entry.qty.abs(),
       totalValuation: totalCost,
@@ -121,6 +121,6 @@ export class CostingEngineService {
     }, tx);
 
     // Trigger UFPG Integration
-    await this.integration.handleCostFinalized(tenant_id, entry, snapshot, correlationId);
+    await this.integration.handleCostFinalized(tenant_id, entry, snapshot, correlation_id);
   }
 }

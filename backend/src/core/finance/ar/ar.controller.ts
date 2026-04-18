@@ -24,64 +24,64 @@ export class ArController {
 
   @Get('customers')
   async listCustomers(@TenantCtx() ctx: TenantContext) {
-    return this.customerService.listCustomers(ctx.tenantId, ctx.companyId);
+    return this.customerService.listCustomers(ctx.tenant_id, ctx.company_id);
   }
 
   @Post('customers')
   @Roles(UserRole.ADMIN, UserRole.OWNER)
   async createCustomer(@TenantCtx() ctx: TenantContext, @Body() dto: CreateCustomerDto) {
-    return this.customerService.createCustomer(ctx.tenantId, ctx.companyId, dto);
+    return this.customerService.createCustomer(ctx.tenant_id, ctx.company_id, dto);
   }
 
   @Get('invoices')
-  async listInvoices(@TenantCtx() ctx: TenantContext, @Query('customerId') customerId?: string) {
-    return this.invoiceService.listInvoices(ctx.tenantId, ctx.companyId, customerId);
+  async listInvoices(@TenantCtx() ctx: TenantContext, @Query('customer_id') customer_id?: string) {
+    return this.invoiceService.listInvoices(ctx.tenant_id, ctx.company_id, customer_id);
   }
 
   @Post('invoices')
   @Roles(UserRole.ADMIN, UserRole.OWNER)
   async createInvoice(@TenantCtx() ctx: TenantContext, @Body() dto: CreateInvoiceDto) {
-    return this.invoiceService.createInvoice(ctx.tenantId, ctx.companyId, dto);
+    return this.invoiceService.createInvoice(ctx.tenant_id, ctx.company_id, dto);
   }
 
   @Post('invoices/:id/issue')
   @Roles(UserRole.ADMIN, UserRole.OWNER)
   async issueInvoice(@TenantCtx() ctx: TenantContext, @Param('id') id: string) {
-    return this.invoiceService.issueInvoice(ctx.tenantId, ctx.companyId, id);
+    return this.invoiceService.issueInvoice(ctx.tenant_id, ctx.company_id, id);
   }
 
   @Post('invoices/:id/void')
   @Roles(UserRole.ADMIN, UserRole.OWNER)
   async voidInvoice(@TenantCtx() ctx: TenantContext, @Param('id') id: string) {
-    return this.invoiceService.voidInvoice(ctx.tenantId, ctx.companyId, id);
+    return this.invoiceService.voidInvoice(ctx.tenant_id, ctx.company_id, id);
   }
 
   @Post('payments')
   @Roles(UserRole.ADMIN, UserRole.OWNER)
   async receivePayment(@TenantCtx() ctx: TenantContext, @Body() dto: CreatePaymentDto) {
-    return this.paymentService.receivePayment(ctx.tenantId, ctx.companyId, dto);
+    return this.paymentService.receivePayment(ctx.tenant_id, ctx.company_id, dto);
   }
 
   @Post('payments/allocate')
   @Roles(UserRole.ADMIN, UserRole.OWNER)
   async allocatePayment(@TenantCtx() ctx: TenantContext, @Body() dto: AllocatePaymentDto) {
-    return this.paymentService.allocatePayment(ctx.tenantId, ctx.companyId, dto);
+    return this.paymentService.allocatePayment(ctx.tenant_id, ctx.company_id, dto);
   }
 
   @Post('payments/:id/refund')
   @Roles(UserRole.ADMIN, UserRole.OWNER)
   async refundPayment(@TenantCtx() ctx: TenantContext, @Param('id') id: string, @Body('amount') amount: number) {
-    return this.paymentService.refundPayment(ctx.tenantId, ctx.companyId, id, amount);
+    return this.paymentService.refundPayment(ctx.tenant_id, ctx.company_id, id, amount);
   }
 
   @Post('credit-memos')
   @Roles(UserRole.ADMIN, UserRole.OWNER)
   async issueCreditMemo(@TenantCtx() ctx: TenantContext, @Body() data: any) {
-    return this.creditMemoService.issueCreditMemo(ctx.tenantId, ctx.companyId, data);
+    return this.creditMemoService.issueCreditMemo(ctx.tenant_id, ctx.company_id, data);
   }
 
   @Get('reports/aging')
   async getAgingReport(@TenantCtx() ctx: TenantContext) {
-    return this.agingService.getAgingReport(ctx.tenantId, ctx.companyId);
+    return this.agingService.getAgingReport(ctx.tenant_id, ctx.company_id);
   }
 }

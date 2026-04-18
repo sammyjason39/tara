@@ -15,25 +15,25 @@ export class HttpLogInterceptor implements NestInterceptor {
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const req = context.switchToHttp().getRequest();
-    const requestId = uuidv4();
+    const request_id = uuidv4();
     const start = Date.now();
 
-    const tenantId: string | undefined = req.tenantId ?? undefined;
-    const userId: string | undefined = req.user?.userId ?? undefined;
-    const ipAddress: string | undefined = req.ip ?? undefined;
+    const tenant_id: string | undefined = req.tenant_id ?? undefined;
+    const user_id: string | undefined = req.user?.user_id ?? undefined;
+    const ip_address: string | undefined = req.ip ?? undefined;
     const urlParts = (req.url as string)?.split('/').filter(Boolean);
     const module = urlParts?.[0] ?? 'unknown';
 
-    req.requestId = requestId;
+    req.request_id = request_id;
 
     return next.handle().pipe(
       tap(() => {
         this.loggerService.log({
-          tenantId,
-          userId,
-          ipAddress,
+          tenant_id,
+          user_id,
+          ip_address,
           module,
-          requestId,
+          request_id,
           level: 'INFO',
           event: 'HTTP_REQUEST',
           message: `${req.method} ${req.url}`,
@@ -42,11 +42,11 @@ export class HttpLogInterceptor implements NestInterceptor {
       }),
       catchError((err: any) => {
         this.loggerService.log({
-          tenantId,
-          userId,
-          ipAddress,
+          tenant_id,
+          user_id,
+          ip_address,
           module,
-          requestId,
+          request_id,
           level: 'ERROR',
           event: 'HTTP_ERROR',
           message: err?.message ?? 'Unknown error',

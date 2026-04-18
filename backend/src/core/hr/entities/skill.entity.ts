@@ -1,9 +1,9 @@
 export class Skill {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   name: string;
   category: string; // TECHNICAL, SOFT, LEADERSHIP
   description?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

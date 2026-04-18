@@ -4,26 +4,26 @@ export class CashflowDeficitRule implements InsightRule {
   readonly type = 'CASHFLOW_DEFICIT';
 
   evaluate(context: InsightContext): Insight[] {
-    const { cashflow, snapshotSequence, tenantId, companyId } = context;
+    const { cashflow, snapshotSequence, tenant_id, company_id } = context;
 
     // 1. Find Deficit Markers (Temporally ordered)
     const deficitMarkers = cashflow.riskMarkers
       .filter(m => m.type === 'DEFICIT')
-      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+      .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
 
     if (deficitMarkers.length === 0) {
       return [];
     }
 
     const marker = deficitMarkers[0];
-    const deficitDate = marker.startDate;
+    const deficitDate = marker.start_date;
     const snapshotDate = new Date(cashflow.snapshotTimestamp);
-    const startDate = new Date(deficitDate);
+    const start_date = new Date(deficitDate);
 
     // 2. Range-Bound Impact Calculation (Patch 1)
     const relevantProjection = cashflow.projectionDetails.filter(p =>
-      new Date(p.date).getTime() >= new Date(marker.startDate).getTime() &&
-      new Date(p.date).getTime() <= new Date(marker.endDate).getTime()
+      new Date(p.date).getTime() >= new Date(marker.start_date).getTime() &&
+      new Date(p.date).getTime() <= new Date(marker.end_date).getTime()
     );
 
     const minBalance = relevantProjection.length > 0 
@@ -57,7 +57,7 @@ export class CashflowDeficitRule implements InsightRule {
     const magnitudeWeight = totalCash <= 0 ? 1.0 : Math.min(1.0, impactAmount / totalCash);
 
     // 5. Time Horizon & Action Priority
-    const daysToDeficit = Math.ceil((startDate.getTime() - snapshotDate.getTime()) / (1000 * 3600 * 24));
+    const daysToDeficit = Math.ceil((start_date.getTime() - snapshotDate.getTime()) / (1000 * 3600 * 24));
     const timeHorizon = daysToDeficit <= 7 ? 'IMMEDIATE' : (daysToDeficit <= 30 ? 'SHORT_TERM' : 'MID_TERM');
     const urgencyWeight = timeHorizon === 'IMMEDIATE' ? 2.0 : (timeHorizon === 'SHORT_TERM' ? 1.0 : 0);
     const actionPriority = 4.0 + 3.0 + urgencyWeight + magnitudeWeight;
@@ -92,8 +92,8 @@ export class CashflowDeficitRule implements InsightRule {
         coreInputs
       },
       supportingData: {
-        deficitStartDate: marker.startDate,
-        deficitEndDate: marker.endDate,
+        deficitStartDate: marker.start_date,
+        deficitEndDate: marker.end_date,
         deficitDate,
         impactAmount,
         driverScope,
@@ -105,8 +105,8 @@ export class CashflowDeficitRule implements InsightRule {
         } : null
       },
       accountId: selectedDriver?.accountId,
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       snapshotSequence
     }];
   }

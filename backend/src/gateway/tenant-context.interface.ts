@@ -7,24 +7,24 @@ export interface TenantContext {
    * SaaS Tenant ID
    * Required for all operations
    */
-  tenantId: string;
+  tenant_id: string;
 
   /**
    * Company ID (Legal Entity)
    * Required for finance/HR operations
    */
-  companyId: string;
+  company_id: string;
 
   /**
    * Location ID (optional)
    * Used for location-specific operations
    */
-  locationId?: string;
+  location_id?: string;
 
   /**
    * User ID (optional, from x-actor-id)
    */
-  userId?: string;
+  user_id?: string;
 
   /**
    * User Role (optional, from x-user-role)

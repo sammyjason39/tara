@@ -23,7 +23,7 @@ export class ARAccelerationRule implements RecommendationRule {
       id: crypto.createHash('sha256').update(`ACCEL:${target.accountId}`).digest('hex'),
       basedOnInsightId: '',
       type: 'COLLECTION_ACCELERATION',
-      action: `Offer 2% early settlement discount to ${target.accountName} for immediate injection of ${Math.round(target.amount).toLocaleString()}`,
+      action: `Offer 2% early settlement discount to ${target.account_name} for immediate injection of ${Math.round(target.amount).toLocaleString()}`,
       expectedImpact: {
         cashDelta: Math.round(target.amount * 0.98),
         runwayDeltaDays: 45,

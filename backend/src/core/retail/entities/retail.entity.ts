@@ -53,8 +53,8 @@ export interface StoreConfigVersion {
 
 export class RetailStore {
   id: string;
-  tenantId: string;
-  locationId: string;
+  tenant_id: string;
+  location_id: string;
   name: string;
   code: string;
   type: "flagship" | "satellite" | "warehouse";
@@ -64,50 +64,50 @@ export class RetailStore {
   email?: string;
   timezone: string;
   currency: string;
-  taxZone?: string;
-  managerId?: string;
-  inventoryPoolId?: string;
+  tax_zone?: string;
+  manager_id?: string;
+  inventory_pool_id?: string;
 
   // Hierarchical Config
-  operationalConfig?: StoreOperationalConfig;
-  supplyConfig?: StoreSupplyConfig;
-  infrastructureRegistry?: StoreInfrastructureRegistry;
-  channelBinding?: StoreChannelBinding;
+  operational_config?: StoreOperationalConfig;
+  supply_config?: StoreSupplyConfig;
+  infrastructure_registry?: StoreInfrastructureRegistry;
+  channel_binding?: StoreChannelBinding;
   governance?: StoreGovernanceData;
 
   // Versioning
-  configVersion?: StoreConfigVersion;
+  config_version?: StoreConfigVersion;
 
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export class InventoryPool {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   name: string;
   description?: string;
   type: "shared" | "exclusive";
   stock?: InventoryPoolStock[];
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date;
+  created_at: Date;
+  updated_at: Date;
+  deleted_at?: Date;
 }
 
 export class InventoryPoolStock {
   id: string;
-  poolId: string;
-  productId: string;
+  pool_id: string;
+  product_id: string;
   quantity: number;
   reserved: number;
   available: number;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface SEOData {
   title: string;
-  metaDescription: string;
+  meta_description: string;
   keywords: string[];
 }
 
@@ -126,25 +126,25 @@ export interface ProductVariant {
 
 export class RetailProduct {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   sku: string;
   barcode: string;
   name: string;
   description: string;
-  categoryId: string;
-  categoryName?: string;
-  basePrice: number;
+  category_id: string;
+  category_name?: string;
+  base_price: number;
   currency: string;
   prices: MultiCurrencyPrice[];
-  taxRate: number;
+  tax_rate: number;
   unit: string;
   type: "ITEM" | "SERVICE" | "RAW_MATERIAL";
   status: "active" | "discontinued" | "draft";
   variants: ProductVariant[];
   seo?: SEOData;
   metadata?: Record<string, any>;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export type OrderStatus =
@@ -158,52 +158,52 @@ export type OrderStatus =
 
 export class RetailOrder {
   id: string;
-  tenantId: string;
-  locationId: string;
-  storeId: string;
-  terminalId: string;
-  cashierId: string;
-  customerId?: string;
-  customerName?: string;
+  tenant_id: string;
+  location_id: string;
+  store_id: string;
+  terminal_id: string;
+  cashier_id: string;
+  customer_id?: string;
+  customer_name?: string;
   status: OrderStatus;
   items: RetailOrderItem[];
   subtotal: number;
-  taxTotal: number;
-  discountTotal: number;
-  grandTotal: number;
+  tax_total: number;
+  discount_total: number;
+  grand_total: number;
   currency: string;
-  paymentMethod: "cash" | "card" | "qr" | "wallet";
-  paymentStatus: "unpaid" | "paid" | "partial";
-  reservationExpiresAt?: Date;
+  payment_method: "cash" | "card" | "qr" | "wallet";
+  payment_status: "unpaid" | "paid" | "partial";
+  reservation_expires_at?: Date;
   metadata?: Record<string, any>;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export class RetailOrderItem {
-  productId: string;
-  variantId?: string;
+  product_id: string;
+  variant_id?: string;
   sku: string;
   name: string;
   quantity: number;
-  unitPrice: number;
-  taxAmount: number;
-  discountAmount: number;
-  totalPrice: number;
+  unit_price: number;
+  tax_amount: number;
+  discount_amount: number;
+  total_price: number;
 }
 
 export class RetailShift {
   id: string;
-  tenantId: string;
-  locationId: string;
-  storeId: string;
-  employeeId: string;
-  terminalId: string;
-  startTime: Date;
-  endTime?: Date;
-  openingCash: number;
-  closingCash?: number;
-  expectedCash?: number;
+  tenant_id: string;
+  location_id: string;
+  store_id: string;
+  employee_id: string;
+  terminal_id: string;
+  start_time: Date;
+  end_time?: Date;
+  opening_cash: number;
+  closing_cash?: number;
+  expected_cash?: number;
   status: "open" | "closed" | "reconciled";
   notes?: string;
 }

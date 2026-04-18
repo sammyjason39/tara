@@ -9,7 +9,7 @@ export class GeneralLedgerProjectionMockRepository {
     this.projections.push(projection);
   }
 
-  async findByAccount(tenantId: string, companyId: string, accountId: string): Promise<GeneralLedgerProjection[]> {
-    return this.projections.filter(p => p.tenantId === tenantId && p.accountId === accountId);
+  async findByAccount(tenant_id: string, company_id: string, accountId: string): Promise<GeneralLedgerProjection[]> {
+    return this.projections.filter(p => p.tenant_id === tenant_id && p.accountId === accountId);
   }
 }

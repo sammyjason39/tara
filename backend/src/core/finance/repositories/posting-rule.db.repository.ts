@@ -9,30 +9,30 @@ import { PostingRuleStatus } from '../domain/finance.constants';
 export class PostingRuleDbRepository implements IPostingRuleRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findRule(tenantId: string, companyId: string, eventType: string): Promise<FinancePostingRule | null> {
+  async findRule(tenant_id: string, company_id: string, event_type: string): Promise<FinancePostingRule | null> {
     const res = await (this.prisma as any).ledgerPostingRule.findFirst({
-      where: { tenantId, eventType, isActive: true },
+      where: { tenant_id, event_type, isActive: true },
       include: { lines: true }
     });
     return res as unknown as FinancePostingRule;
   }
 
-  async listRules(tenantId: string, companyId: string): Promise<FinancePostingRule[]> {
+  async listRules(tenant_id: string, company_id: string): Promise<FinancePostingRule[]> {
     const list = await (this.prisma as any).ledgerPostingRule.findMany({
-      where: { tenantId },
+      where: { tenant_id },
       include: { lines: true }
     });
     return list as unknown as FinancePostingRule[];
   }
 
-  async createRule(tenantId: string, companyId: string, data: Partial<FinancePostingRule>): Promise<FinancePostingRule> {
+  async createRule(tenant_id: string, company_id: string, data: Partial<FinancePostingRule>): Promise<FinancePostingRule> {
     const res = await (this.prisma as any).ledgerPostingRule.create({
       data: {
         id: 'pc4wa5y9',
         updated_at: new Date(),
-        tenantId,
-        companyId,
-        eventType: data.eventType || '',
+        tenant_id,
+        company_id,
+        event_type: data.event_type || '',
         description: data.description || '',
         status: PostingRuleStatus.ACTIVE,
         isActive: true,
@@ -49,7 +49,7 @@ export class PostingRuleDbRepository implements IPostingRuleRepository {
     return res as unknown as FinancePostingRule;
   }
 
-  async updateStatus(tenantId: string, companyId: string, ruleId: string, status: PostingRuleStatus): Promise<FinancePostingRule> {
+  async updateStatus(tenant_id: string, company_id: string, ruleId: string, status: PostingRuleStatus): Promise<FinancePostingRule> {
     const res = await (this.prisma as any).ledgerPostingRule.update({
       where: { id: ruleId },
       data: { status, isActive: status === PostingRuleStatus.ACTIVE },
@@ -58,19 +58,19 @@ export class PostingRuleDbRepository implements IPostingRuleRepository {
     return res as unknown as FinancePostingRule;
   }
 
-  async findByEventType(tenantId: string, companyId: string, eventType: string): Promise<FinancePostingRule[]> {
+  async findByEventType(tenant_id: string, company_id: string, event_type: string): Promise<FinancePostingRule[]> {
     const list = await (this.prisma as any).ledgerPostingRule.findMany({
-      where: { tenantId, eventType },
+      where: { tenant_id, event_type },
       include: { lines: true }
     });
     return list as unknown as FinancePostingRule[];
   }
 
-  async update(tenantId: string, companyId: string, ruleId: string, data: Partial<FinancePostingRule>): Promise<FinancePostingRule> {
+  async update(tenant_id: string, company_id: string, ruleId: string, data: Partial<FinancePostingRule>): Promise<FinancePostingRule> {
       const res = await (this.prisma as any).ledgerPostingRule.update({
           where: { id: ruleId },
           data: {
-              eventType: data.eventType,
+              event_type: data.event_type,
               description: data.description,
               isActive: data.isActive,
           },

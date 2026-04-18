@@ -2,7 +2,7 @@ import { AccountStatementProjection } from '../../domain/finance.interfaces';
 
 export interface IAccountStatementProjectionRepository {
   append(data: Partial<AccountStatementProjection>): Promise<void>;
-  reset(tenantId: string, companyId: string): Promise<void>;
-  findStatement(tenantId: string, companyId: string, accountId: string, fromSeq: number, toSeq: number): Promise<AccountStatementProjection[]>;
-  findByAccount(tenantId: string, companyId: string, accountId: string): Promise<AccountStatementProjection[]>;
+  reset(tenant_id: string, company_id: string): Promise<void>;
+  findStatement(tenant_id: string, company_id: string, accountId: string, fromSeq: number, toSeq: number): Promise<AccountStatementProjection[]>;
+  findByAccount(tenant_id: string, company_id: string, accountId: string): Promise<AccountStatementProjection[]>;
 }

@@ -12,8 +12,8 @@ export enum TransactionType {
 
 export interface BankAccount {
   id: string;
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   name: string;
   accountNumber: string;
   currency: string;
@@ -24,8 +24,8 @@ export interface BankAccount {
 
 export interface CashTransaction {
   id: string;
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   bankAccountId: string;
   type: TransactionType;
   amount: number;

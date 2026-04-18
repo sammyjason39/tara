@@ -7,7 +7,7 @@ export class CreateTaskDto {
 
   @IsString()
   @IsOptional()
-  leadId?: string;
+  lead_id?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -15,11 +15,11 @@ export class CreateTaskDto {
 
   @IsString()
   @IsOptional()
-  ownerId?: string;
+  owner_id?: string;
 
   @IsString()
   @IsOptional()
-  ownerName?: string;
+  owner_name?: string;
 
   @IsString()
   @IsNotEmpty()

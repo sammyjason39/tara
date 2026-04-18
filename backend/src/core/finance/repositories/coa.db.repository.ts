@@ -12,35 +12,35 @@ export class CoaDbRepository implements IChartOfAccountRepository {
     return this.prisma as Prisma.TransactionClient;
   }
 
-  async findById(tenantId: string, companyId: string, id: string): Promise<CoaAccount | null> {
-    const res = await this.db.chartOfAccount.findUnique({
+  async findById(tenant_id: string, company_id: string, id: string): Promise<CoaAccount | null> {
+    const res = await this.db.finance_chart_of_accounts.findUnique({
       where: { id }
     });
     if (!res) return null;
     return this.mapToDomain(res);
   }
 
-  async findByCode(tenantId: string, companyId: string, code: string): Promise<CoaAccount | null> {
-    const res = await this.db.chartOfAccount.findUnique({
+  async findByCode(tenant_id: string, company_id: string, code: string): Promise<CoaAccount | null> {
+    const res = await this.db.finance_chart_of_accounts.findUnique({
       where: { 
-        tenantId_code: { tenantId, code }
+        tenant_id_code: { tenant_id: tenant_id, code }
       }
     });
     if (!res) return null;
     return this.mapToDomain(res);
   }
 
-  async findAll(tenantId: string, companyId: string): Promise<CoaAccount[]> {
-    const list = await this.db.chartOfAccount.findMany({
-      where: { tenantId }
+  async findAll(tenant_id: string, company_id: string): Promise<CoaAccount[]> {
+    const list = await this.db.finance_chart_of_accounts.findMany({
+      where: { tenant_id: tenant_id }
     });
-    return list.map(item => this.mapToDomain(item));
+    return list.map((item: any) => this.mapToDomain(item));
   }
 
-  async create(tenantId: string, companyId: string, data: Partial<CoaAccount>): Promise<CoaAccount> {
-    const created = await this.db.chartOfAccount.create({
+  async create(tenant_id: string, company_id: string, data: Partial<CoaAccount>): Promise<CoaAccount> {
+    const created = await this.db.finance_chart_of_accounts.create({
       data: {
-        tenantId,
+        tenant_id,
         code: data.accountCode!,
         name: data.name!,
         type: data.accountType!,
@@ -50,12 +50,12 @@ export class CoaDbRepository implements IChartOfAccountRepository {
     return this.mapToDomain(created);
   }
 
-  async save(tenantId: string, companyId: string, data: Partial<CoaAccount>): Promise<CoaAccount> {
-    return this.create(tenantId, companyId, data);
+  async save(tenant_id: string, company_id: string, data: Partial<CoaAccount>): Promise<CoaAccount> {
+    return this.create(tenant_id, company_id, data);
   }
 
-  async update(tenantId: string, companyId: string, id: string, data: Partial<CoaAccount>): Promise<CoaAccount> {
-    const updated = await this.db.chartOfAccount.update({
+  async update(tenant_id: string, company_id: string, id: string, data: Partial<CoaAccount>): Promise<CoaAccount> {
+    const updated = await this.db.finance_chart_of_accounts.update({
       where: { id },
       data: {
         name: data.name,
@@ -67,15 +67,15 @@ export class CoaDbRepository implements IChartOfAccountRepository {
     return this.mapToDomain(updated);
   }
 
-  async checkInUse(tenantId: string, companyId: string, id: string): Promise<boolean> {
-    const journalLines = await this.db.journalLine.findFirst({
-      where: { accountId: id }
+  async checkInUse(tenant_id: string, company_id: string, id: string): Promise<boolean> {
+    const journalLines = await this.db.finance_journal_lines.findFirst({
+      where: { account_id: id }
     });
     return !!journalLines;
   }
 
-  async delete(tenantId: string, companyId: string, id: string): Promise<void> {
-    await this.db.chartOfAccount.delete({
+  async delete(tenant_id: string, company_id: string, id: string): Promise<void> {
+    await this.db.finance_chart_of_accounts.delete({
       where: { id }
     });
   }
@@ -83,7 +83,7 @@ export class CoaDbRepository implements IChartOfAccountRepository {
   private mapToDomain(item: any): CoaAccount {
     return {
       id: item.id,
-      tenantId: item.tenantId,
+      tenant_id: item.tenant_id,
       accountCode: item.code,
       name: item.name,
       accountType: item.type,
@@ -91,8 +91,8 @@ export class CoaDbRepository implements IChartOfAccountRepository {
       isActive: item.status === 'ACTIVE',
       accountLevel: 1,
       accountPath: item.code,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
     } as unknown as CoaAccount;
   }
 }

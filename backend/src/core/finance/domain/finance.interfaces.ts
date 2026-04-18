@@ -10,8 +10,8 @@ import {
 
 export interface JournalEntry {
   id: string;
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   fiscalPeriodId: string;
   ledgerSequence: number;
   postingDate: Date;
@@ -24,8 +24,8 @@ export interface JournalEntry {
   memo?: string; // Legacy Compatibility
   previousHash?: string; // Audit Chaining
   entryHash?: string;   // Audit Chaining
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
   metadata?: Record<string, any>;
 }
 
@@ -37,8 +37,8 @@ export interface JournalLine {
   side: PostingSide | string;
   amount: Prisma.Decimal;
   currency: string;
-  branchId?: string;
-  locationId?: string;
+  branch_id?: string;
+  location_id?: string;
   dimensionBranchId?: string;
   dimensionChannelId?: string;
   dimensionCostCenterId?: string;
@@ -48,12 +48,12 @@ export interface JournalLine {
   costCenterId?: string; // Compatibility
   projectId?: string; // Compatibility
   description?: string;
-  createdAt: Date;
+  created_at: Date;
 }
 
 export interface JournalPostedEvent {
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   journalId: string;
   fiscalPeriodId: string;
   ledgerSequence: number;
@@ -70,28 +70,28 @@ export interface JournalValidationResult {
 
 export interface AccountBalance {
   id: string;
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   accountId: string;
   currency: string;
   fiscalPeriodId: string;
   debitTotal: Prisma.Decimal;
   creditTotal: Prisma.Decimal;
   netBalance: Prisma.Decimal;
-  branchId: string;
-  locationId: string;
+  branch_id: string;
+  location_id: string;
   departmentId?: string;
   costCenterId?: string;
   projectId?: string;
   version: number; // Optimistic Concurrency
   lastUpdatedAt: Date;
-  updatedAt?: Date; // Compatibility
+  updated_at?: Date; // Compatibility
 }
 
 export interface AccountBalanceSnapshot {
   id: string;
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   accountId: string;
   currency: string;
   periodId: string;
@@ -121,10 +121,10 @@ export interface SnapshotApplicationLog {
 
 export interface TrialBalanceProjection {
   id: string;
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   accountId: string;
-  accountName: string;
+  account_name: string;
   accountCode?: string; // Compatibility
   fiscalPeriodId: string;
   accountCategory: string;
@@ -135,13 +135,13 @@ export interface TrialBalanceProjection {
   balance?: Prisma.Decimal; // Compatibility
   snapshotSequence: number;
   lastUpdatedAt: Date;
-  updatedAt?: Date; // Compatibility
+  updated_at?: Date; // Compatibility
 }
 
 export interface GeneralLedgerProjection {
   id: string;
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   accountId: string;
   journalId: string;
   ledgerSequence: number;
@@ -154,13 +154,13 @@ export interface GeneralLedgerProjection {
   dimensionCostCenterId?: string;
   dimensionDepartmentId?: string;
   dimensionProjectId?: string;
-  createdAt: Date;
+  created_at: Date;
 }
 
 export interface AccountStatementProjection {
   id: string;
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   accountId: string;
   ledgerSequence: number;
   journalId: string;
@@ -174,15 +174,15 @@ export interface AccountStatementProjection {
   dimensionCostCenterId?: string;
   dimensionDepartmentId?: string;
   dimensionProjectId?: string;
-  createdAt: Date;
+  created_at: Date;
 }
 
 // --- Reports & Snapshots ---
 
 export interface FinancialReportSnapshot {
   id: string;
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   fiscalPeriodId: string;
   snapshotSequence: number;
   projectionCheckpointSequence?: number; // Compatibility
@@ -194,13 +194,13 @@ export interface FinancialReportSnapshot {
   compressedReportData: string;
   compressedData?: string; // Compatibility
   integrityHash: string;
-  createdAt: Date;
+  created_at: Date;
 }
 
 export interface FinancialSnapshot {
   id: string;
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   fiscalPeriodId: string;
   periodId?: string; // Compatibility
   snapshotSequence: number;
@@ -208,15 +208,15 @@ export interface FinancialSnapshot {
   trialBalanceStateHash?: string; // Legacy check
   compressedTrialBalanceState: string;
   integrityHash: string;
-  createdAt: Date;
+  created_at: Date;
 }
 
 // --- Period Closing ---
 
 export interface PeriodClosingRecord {
   id: string;
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   periodId: string;
   status: string;
   snapshotSequence: number;
@@ -237,7 +237,7 @@ export interface ClosingExecutionLock {
   expiresAt: Date;
   startedAt?: Date; // Compatibility
   status?: string; 
-  updatedAt?: Date; 
+  updated_at?: Date; 
 }
 
 export interface ClosingJournalLine {
@@ -259,15 +259,15 @@ export interface ReversalBatch {
 
 export interface LedgerMerkleCheckpoint {
   id: string;
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   ledgerSequence: number;
   fromSequence?: number; // Compatibility
   toSequence?: number; // Compatibility
   journalCount?: number; // Compatibility
   previousCheckpointId?: string; // Compatibility
   merkleRoot: string;
-  createdAt: Date;
+  created_at: Date;
 }
 
 export interface CheckpointChainResult {
@@ -278,12 +278,12 @@ export interface CheckpointChainResult {
 
 export interface LedgerProjectionCheckpoint {
   id: string;
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   projectionType: string;
   lastSequence: number;
   lastJournalSequence?: number; // Compatibility
-  updatedAt: Date;
+  updated_at: Date;
 }
 
 // --- Errors ---
@@ -300,7 +300,7 @@ export class FiscalPeriodLockedError extends Error {
 export interface CompanyGroupMember {
   id: string;
   groupId: string;
-  companyId: string;
+  company_id: string;
   ownershipPercentage: number;
   joinedAt: Date;
   companyGroupId?: string; // Compatibility
@@ -308,13 +308,13 @@ export interface CompanyGroupMember {
 
 export interface ConsolidatedFinancialSnapshot {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   groupId: string;
   fiscalPeriodId: string;
   reportParametersHash: string;
   compressedData: string;
   projectionCheckpointSequence: number;
-  createdAt: Date;
+  created_at: Date;
 }
 
 // --- ALIASES (Compatibility Layer) ---
@@ -339,9 +339,9 @@ export type MerkleInclusionResult = any;
 
 export interface PayrollRecord {
   id: string;
-  tenantId: string;
-  companyId: string;
-  employeeId: string;
+  tenant_id: string;
+  company_id: string;
+  employee_id: string;
   periodId: string;
   baseSalary: Prisma.Decimal;
   netSalary: Prisma.Decimal;
@@ -350,10 +350,10 @@ export interface PayrollRecord {
 
 export interface IntercompanyEliminationRule {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   companyA: string;
   companyB: string;
   accountMapping: Record<string, string>;
   isActive: boolean;
-  updatedAt?: Date;
+  updated_at?: Date;
 }

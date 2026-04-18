@@ -29,12 +29,12 @@ export class IndonesiaComplianceExporter implements IComplianceExporter {
     data.lineItems.forEach((item, idx) => {
       lines.push([
         idx + 1,
-        item.employeeId,
+        item.employee_id,
         `"${item.employeeName}"`,
         item.grossSalary,
         item.employeeContribution,
         item.employerContribution,
-        item.taxAmount,
+        item.tax_amount,
         item.netSalary,
         `"${item.notes || ''}"`,
       ].join(','));
@@ -59,12 +59,12 @@ export class IndonesiaComplianceExporter implements IComplianceExporter {
       .map(
         (item, idx) => `
     <Employee seq="${idx + 1}">
-      <Id>${item.employeeId}</Id>
+      <Id>${item.employee_id}</Id>
       <Name>${item.employeeName}</Name>
       <GrossSalary>${item.grossSalary}</GrossSalary>
       <EmployeeContribution>${item.employeeContribution}</EmployeeContribution>
       <EmployerContribution>${item.employerContribution}</EmployerContribution>
-      <TaxAmount>${item.taxAmount}</TaxAmount>
+      <TaxAmount>${item.tax_amount}</TaxAmount>
       <NetSalary>${item.netSalary}</NetSalary>
     </Employee>`,
       )
@@ -77,7 +77,7 @@ export class IndonesiaComplianceExporter implements IComplianceExporter {
     <Module>${data.module}</Module>
     <Period>${data.period}</Period>
     <RuleVersion>${data.ruleVersion}</RuleVersion>
-    <TenantId>${data.tenantId}</TenantId>
+    <TenantId>${data.tenant_id}</TenantId>
     <GeneratedAt>${data.generatedAt.toISOString()}</GeneratedAt>
   </Header>
   <Summary>
@@ -101,7 +101,7 @@ export class IndonesiaComplianceExporter implements IComplianceExporter {
     const content = [
       `COMPLIANCE REPORT — ${data.module}`,
       `Period: ${data.period}  |  Country: ${data.country}  |  Rule v${data.ruleVersion}`,
-      `Tenant: ${data.tenantId}  |  Generated: ${data.generatedAt.toISOString()}`,
+      `Tenant: ${data.tenant_id}  |  Generated: ${data.generatedAt.toISOString()}`,
       '',
       `Total Employees:    ${data.totalEmployees}`,
       `Employee Deductions:IDR ${data.totalDeductions.toLocaleString()}`,
@@ -111,7 +111,7 @@ export class IndonesiaComplianceExporter implements IComplianceExporter {
       '--- LINE ITEMS ---',
       ...data.lineItems.map(
         (i, idx) =>
-          `${idx + 1}. ${i.employeeName} | Gross: ${i.grossSalary} | EmpContrib: ${i.employeeContribution} | EmprContrib: ${i.employerContribution} | Tax: ${i.taxAmount} | Net: ${i.netSalary}`,
+          `${idx + 1}. ${i.employeeName} | Gross: ${i.grossSalary} | EmpContrib: ${i.employeeContribution} | EmprContrib: ${i.employerContribution} | Tax: ${i.tax_amount} | Net: ${i.netSalary}`,
       ),
     ].join('\n');
 

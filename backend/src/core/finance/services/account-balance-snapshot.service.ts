@@ -20,16 +20,16 @@ export class AccountBalanceSnapshotService {
    * Resilience: Sequence Buffer & Atomic Propagation
    * Processes all lines of a journal in a single sequence-aware execution.
    */
-  async handleJournalEntry(tenantId: string, companyId: string, entry: JournalEntry): Promise<void> {
+  async handleJournalEntry(tenant_id: string, company_id: string, entry: JournalEntry): Promise<void> {
     const periodId = entry.fiscalPeriodId;
     const ledgerSequence = entry.ledgerSequence || 0;
 
     // 1. Sequence Gap Detection & Buffering
-    const lastSeq = await this.snapshotRepo.getLastAppliedSequence(tenantId, companyId, periodId);
+    const lastSeq = await this.snapshotRepo.getLastAppliedSequence(tenant_id, company_id, periodId);
     
     if (ledgerSequence > lastSeq + 1) {
       this.logger.warn(`Sequence Gap: Expected ${lastSeq + 1}, got ${ledgerSequence}. Buffering entry ${entry.id}.`);
-      await this.snapshotRepo.saveToBuffer(tenantId, companyId, entry);
+      await this.snapshotRepo.saveToBuffer(tenant_id, company_id, entry);
       return; 
     }
 
@@ -40,19 +40,19 @@ export class AccountBalanceSnapshotService {
 
     // 2. BEGIN ATOMIC PROCESSING (Journal + Propagation)
     try {
-      await this.processJournalAtomically(tenantId, companyId, entry);
+      await this.processJournalAtomically(tenant_id, company_id, entry);
       
       // 3. Update Sequence
-      await this.snapshotRepo.updateLastAppliedSequence(tenantId, companyId, periodId, ledgerSequence);
+      await this.snapshotRepo.updateLastAppliedSequence(tenant_id, company_id, periodId, ledgerSequence);
       
       // 4. Clear from buffer if it was there
-      await this.snapshotRepo.clearFromBuffer(tenantId, companyId, entry.id);
+      await this.snapshotRepo.clearFromBuffer(tenant_id, company_id, entry.id);
 
       // 5. Recursive Buffer Drain (Process next in sequence if buffered)
-      const nextBuffered = await this.snapshotRepo.getFromBuffer(tenantId, companyId, periodId, ledgerSequence + 1);
+      const nextBuffered = await this.snapshotRepo.getFromBuffer(tenant_id, company_id, periodId, ledgerSequence + 1);
       if (nextBuffered) {
         this.logger.log(`Gap Fixed: Processing buffered entry ${nextBuffered.id} (Seq: ${ledgerSequence + 1})`);
-        await this.handleJournalEntry(tenantId, companyId, nextBuffered);
+        await this.handleJournalEntry(tenant_id, company_id, nextBuffered);
       }
 
     } catch (error) {
@@ -61,12 +61,12 @@ export class AccountBalanceSnapshotService {
     }
   }
 
-  private async processJournalAtomically(tenantId: string, companyId: string, entry: JournalEntry): Promise<void> {
+  private async processJournalAtomically(tenant_id: string, company_id: string, entry: JournalEntry): Promise<void> {
     const lines = await this.journalRepo.findLines(entry.id);
     const periodId = entry.fiscalPeriodId;
 
     // Period State Enforcement
-    const period = await this.fiscalRepo.findById(tenantId, companyId, periodId);
+    const period = await this.fiscalRepo.findById(tenant_id, company_id, periodId);
     if (!period) throw new BadRequestException('Period not found');
     if (period.status === FiscalPeriodStatus.CLOSED || period.status === FiscalPeriodStatus.HARD_LOCK) {
       throw new BadRequestException(`Immutability Violation: Cannot update snapshots for ${period.status} period.`);
@@ -77,10 +77,10 @@ export class AccountBalanceSnapshotService {
       const currency = line.currency || 'USD';
       
       // Row Lock Current Period
-      await this.snapshotRepo.acquireRowLock(tenantId, companyId, line.accountId, currency, periodId);
+      await this.snapshotRepo.acquireRowLock(tenant_id, company_id, line.accountId, currency, periodId);
 
-      let snapshot = await this.snapshotRepo.findByAccount(tenantId, companyId, line.accountId, currency, periodId);
-      if (!snapshot) snapshot = await this.initializeSnapshot(tenantId, companyId, line.accountId, periodId, currency);
+      let snapshot = await this.snapshotRepo.findByAccount(tenant_id, company_id, line.accountId, currency, periodId);
+      if (!snapshot) snapshot = await this.initializeSnapshot(tenant_id, company_id, line.accountId, periodId, currency);
 
       if (line.side === PostingSide.DEBIT) {
         snapshot.debitTotal = (snapshot.debitTotal || new Prisma.Decimal(0)).plus(line.amount);
@@ -92,10 +92,10 @@ export class AccountBalanceSnapshotService {
       snapshot.snapshotSequence = (snapshot.snapshotSequence || 0) + 1;
       snapshot.lastUpdatedAt = new Date();
 
-      await this.snapshotRepo.upsert(tenantId, companyId, snapshot);
+      await this.snapshotRepo.upsert(tenant_id, company_id, snapshot);
 
       // UNIFIED TRANSACTIONAL PROPAGATION
-      await this.propagateForwardResilient(tenantId, companyId, line.accountId, period.fiscalYearId, period.periodNumber, netDelta, currency);
+      await this.propagateForwardResilient(tenant_id, company_id, line.accountId, period.fiscalYearId, period.periodNumber, netDelta, currency);
       
       await this.snapshotRepo.addLog({ 
         snapshotId: snapshot.id,
@@ -107,32 +107,32 @@ export class AccountBalanceSnapshotService {
     }
   }
 
-  private async propagateForwardResilient(tenantId: string, companyId: string, accountId: string, yearId: string, startPeriod: number, delta: Prisma.Decimal, currency: string): Promise<void> {
-    const futurePeriods = await this.snapshotRepo.findPeriodsAfter(tenantId, companyId, startPeriod, yearId);
+  private async propagateForwardResilient(tenant_id: string, company_id: string, accountId: string, yearId: string, startPeriod: number, delta: Prisma.Decimal, currency: string): Promise<void> {
+    const futurePeriods = await this.snapshotRepo.findPeriodsAfter(tenant_id, company_id, startPeriod, yearId);
     
     for (const periodId of futurePeriods) {
-      await this.snapshotRepo.acquireRowLock(tenantId, companyId, accountId, currency, periodId);
+      await this.snapshotRepo.acquireRowLock(tenant_id, company_id, accountId, currency, periodId);
       
-      const snapshot = await this.snapshotRepo.findByAccount(tenantId, companyId, accountId, currency, periodId);
+      const snapshot = await this.snapshotRepo.findByAccount(tenant_id, company_id, accountId, currency, periodId);
       if (snapshot) {
         snapshot.openingBalance = (snapshot.openingBalance || new Prisma.Decimal(0)).plus(delta);
         snapshot.closingBalance = (snapshot.closingBalance || new Prisma.Decimal(0)).plus(delta);
         snapshot.snapshotSequence = (snapshot.snapshotSequence || 0) + 1;
         snapshot.lastUpdatedAt = new Date();
-        await this.snapshotRepo.upsert(tenantId, companyId, snapshot);
+        await this.snapshotRepo.upsert(tenant_id, company_id, snapshot);
       }
     }
   }
 
-  async triggerRecovery(tenantId: string, companyId: string, periodId: string): Promise<void> {
-    const lastSeq = await this.snapshotRepo.getLastAppliedSequence(tenantId, companyId, periodId);
+  async triggerRecovery(tenant_id: string, company_id: string, periodId: string): Promise<void> {
+    const lastSeq = await this.snapshotRepo.getLastAppliedSequence(tenant_id, company_id, periodId);
     this.logger.warn(`Controlled Recovery triggered for period ${periodId} from sequence ${lastSeq}`);
-    await this.rebuildPeriod(tenantId, companyId, periodId);
+    await this.rebuildPeriod(tenant_id, company_id, periodId);
   }
 
-  async getSafeSnapshot(tenantId: string, companyId: string, accountId: string, periodId: string, currency: string): Promise<AccountBalanceSnapshot | null> {
-    const closingSeq = await this.snapshotRepo.getClosingSnapshotSequence(tenantId, companyId, periodId);
-    const snapshot = await this.snapshotRepo.findByAccount(tenantId, companyId, accountId, currency, periodId);
+  async getSafeSnapshot(tenant_id: string, company_id: string, accountId: string, periodId: string, currency: string): Promise<AccountBalanceSnapshot | null> {
+    const closingSeq = await this.snapshotRepo.getClosingSnapshotSequence(tenant_id, company_id, periodId);
+    const snapshot = await this.snapshotRepo.findByAccount(tenant_id, company_id, accountId, currency, periodId);
 
     if (closingSeq && snapshot && (snapshot.snapshotSequence || 0) > closingSeq) {
        this.logger.warn(`Audit Warning: Accessing snapshot newer than closing sequence (${snapshot.snapshotSequence} > ${closingSeq})`);
@@ -145,11 +145,11 @@ export class AccountBalanceSnapshotService {
     return Math.round((num + Number.EPSILON) * 100) / 100;
   }
 
-  private async initializeSnapshot(tenantId: string, companyId: string, accountId: string, periodId: string, currency: string): Promise<AccountBalanceSnapshot> {
+  private async initializeSnapshot(tenant_id: string, company_id: string, accountId: string, periodId: string, currency: string): Promise<AccountBalanceSnapshot> {
     return {
-      id: `${tenantId}:${companyId}:${accountId}:${periodId}:${currency}`,
-      tenantId,
-      companyId,
+      id: `${tenant_id}:${company_id}:${accountId}:${periodId}:${currency}`,
+      tenant_id,
+      company_id,
       accountId,
       currency,
       periodId,
@@ -163,15 +163,15 @@ export class AccountBalanceSnapshotService {
     };
   }
 
-  async rebuildPeriod(tenantId: string, companyId: string, periodId: string): Promise<void> {
-    await this.fiscalRepo.acquireLock(tenantId, companyId, periodId);
+  async rebuildPeriod(tenant_id: string, company_id: string, periodId: string): Promise<void> {
+    await this.fiscalRepo.acquireLock(tenant_id, company_id, periodId);
     try {
-      await this.snapshotRepo.deleteForPeriod(tenantId, companyId, periodId);
-      const entries = await this.journalRepo.findAllOrderedByDate(tenantId, companyId);
+      await this.snapshotRepo.deleteForPeriod(tenant_id, company_id, periodId);
+      const entries = await this.journalRepo.findAllOrderedByDate(tenant_id, company_id);
       const periodEntries = entries.filter(e => e.fiscalPeriodId === periodId).sort((a, b) => (a.ledgerSequence || 0) - (b.ledgerSequence || 0));
 
       for (const entry of periodEntries) {
-        await this.handleJournalEntry(tenantId, companyId, entry);
+        await this.handleJournalEntry(tenant_id, company_id, entry);
       }
     } catch (error) {
        this.logger.error(`Rebuild failed. ${error.message}`);
@@ -179,9 +179,9 @@ export class AccountBalanceSnapshotService {
     }
   }
 
-  async validateSnapshot(tenantId: string, companyId: string, periodId: string): Promise<boolean> {
-    const rawBalances = await this.journalRepo.getRawBalances(tenantId, companyId, periodId, new Date('1970-01-01'), new Date('2099-12-31'));
-    const snapshots = await this.snapshotRepo.findAllInPeriod(tenantId, companyId, periodId);
+  async validateSnapshot(tenant_id: string, company_id: string, periodId: string): Promise<boolean> {
+    const rawBalances = await this.journalRepo.getRawBalances(tenant_id, company_id, periodId, new Date('1970-01-01'), new Date('2099-12-31'));
+    const snapshots = await this.snapshotRepo.findAllInPeriod(tenant_id, company_id, periodId);
 
     for (const snapshot of snapshots) {
       const glBalance = new Prisma.Decimal(rawBalances[snapshot.accountId!] || 0);

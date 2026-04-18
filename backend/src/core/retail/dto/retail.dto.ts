@@ -173,7 +173,7 @@ export class CreateStoreDto {
 
   @IsString()
   @IsNotEmpty()
-  locationId: string;
+  location_id: string;
 
   @IsString()
   @IsNotEmpty()
@@ -198,7 +198,7 @@ export class CreateStoreDto {
 
   @IsOptional()
   @IsString()
-  managerId?: string;
+  manager_id?: string;
 
   @IsOptional()
   @IsString()
@@ -214,7 +214,7 @@ export class CreateStoreDto {
 
   @IsOptional()
   @IsString()
-  inventoryPoolId?: string;
+  inventory_pool_id?: string;
 
   @IsOptional()
   @ValidateNested()
@@ -249,7 +249,7 @@ export class UpdateStoreDto {
 
   @IsOptional()
   @IsString()
-  locationId?: string;
+  location_id?: string;
 
   @IsOptional()
   @IsString()
@@ -294,11 +294,11 @@ export class UpdateStoreDto {
 
   @IsOptional()
   @IsString()
-  managerId?: string;
+  manager_id?: string;
 
   @IsOptional()
   @IsString()
-  inventoryPoolId?: string;
+  inventory_pool_id?: string;
 
   @IsOptional()
   @ValidateNested()
@@ -354,16 +354,16 @@ export class CreateEcommerceStoreDto {
 
   @IsOptional()
   @IsString()
-  inventoryPoolId?: string; // null = private inventory
+  inventory_pool_id?: string; // null = private inventory
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  branchIds?: string[]; // linked physical store IDs
+  branch_ids?: string[]; // linked physical store IDs
 
   @IsOptional()
   @IsString()
-  managerId?: string;
+  manager_id?: string;
 
   @IsOptional()
   settings?: Record<string, any>;
@@ -380,7 +380,7 @@ export class UpdateEcommerceStoreDto {
 
   @IsOptional()
   @IsString()
-  inventoryPoolId?: string;
+  inventory_pool_id?: string;
 
   @IsOptional()
   @IsString()
@@ -388,7 +388,7 @@ export class UpdateEcommerceStoreDto {
 
   @IsOptional()
   @IsString()
-  managerId?: string;
+  manager_id?: string;
 
   @IsOptional()
   settings?: Record<string, any>;
@@ -397,7 +397,7 @@ export class UpdateEcommerceStoreDto {
 export class LinkBranchDto {
   @IsString()
   @IsNotEmpty()
-  branchId: string;
+  branch_id: string;
 }
 
 // ============================================================
@@ -425,7 +425,7 @@ export class CreateInventoryPoolDto {
 export class OrderItemDto {
   @IsString()
   @IsNotEmpty()
-  productId: string;
+  product_id: string;
 
   @IsNumber()
   @IsNotEmpty()
@@ -433,7 +433,11 @@ export class OrderItemDto {
 
   @IsNumber()
   @IsNotEmpty()
-  unitPrice: number;
+  unit_price: number;
+
+  @IsOptional()
+  @IsString()
+  variant_id?: string;
 
   @IsOptional()
   @IsString()
@@ -444,21 +448,21 @@ export class CreateOrderDto {
   @IsString()
   @IsNotEmpty()
   @Transform(({ obj, value }) => value ?? obj.store_id, { toClassOnly: true })
-  storeId: string;
+  store_id: string;
 
   @IsString()
   @IsNotEmpty()
   @Transform(({ obj, value }) => value ?? obj.terminal_id, {
     toClassOnly: true,
   })
-  terminalId: string;
+  terminal_id: string;
 
   @IsOptional()
   @IsString()
   @Transform(({ obj, value }) => value ?? obj.customer_id, {
     toClassOnly: true,
   })
-  customerId?: string;
+  customer_id?: string;
 
   @IsArray()
   @ValidateNested({ each: true })
@@ -471,18 +475,18 @@ export class CreateOrderDto {
   @Transform(({ obj, value }) => value ?? obj.payment_method, {
     toClassOnly: true,
   })
-  paymentMethod: "cash" | "card" | "qr" | "wallet";
+  payment_method: "cash" | "card" | "qr" | "wallet";
 
   @IsNumber()
   @IsNotEmpty()
   @Transform(({ obj, value }) => value ?? obj.grand_total, {
     toClassOnly: true,
   })
-  grandTotal: number;
+  grand_total: number;
 
   @IsOptional()
   @IsString()
-  shiftId?: string;
+  shift_id?: string;
 }
 
 // ============================================================
@@ -493,21 +497,36 @@ export class OpenShiftDto {
   @IsString()
   @IsNotEmpty()
   @Transform(({ obj, value }) => value ?? obj.store_id, { toClassOnly: true })
-  storeId: string;
+  store_id: string;
 
   @IsString()
   @IsNotEmpty()
   @Transform(({ obj, value }) => value ?? obj.terminal_id, {
     toClassOnly: true,
   })
-  terminalId: string;
+  terminal_id: string;
+
+  @IsOptional()
+  @IsString()
+  @Transform(({ obj, value }) => value ?? obj.ecommerce_id, {
+    toClassOnly: true,
+  })
+  ecommerce_id?: string;
+
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  type?: string;
 
   @IsNumber()
   @IsNotEmpty()
   @Transform(({ obj, value }) => value ?? obj.opening_cash, {
     toClassOnly: true,
   })
-  openingCash: number;
+  opening_cash: number;
 }
 
 export class CloseShiftDto {
@@ -516,7 +535,7 @@ export class CloseShiftDto {
   @Transform(({ obj, value }) => value ?? obj.closing_cash, {
     toClassOnly: true,
   })
-  closingCash: number;
+  closing_cash: number;
 
   @IsOptional()
   @IsString()
@@ -537,11 +556,11 @@ export class UpdateProductDto {
 
   @IsOptional()
   @IsString()
-  categoryId?: string;
+  category_id?: string;
 
   @IsOptional()
   @IsNumber()
-  basePrice?: number;
+  base_price?: number;
 
   @IsOptional()
   @IsString()
@@ -565,7 +584,7 @@ export class UpdateProductDto {
 
   @IsOptional()
   @IsNumber()
-  stockOnHand?: number;
+  stock_on_hand?: number;
 
   @IsOptional()
   @IsNumber()
@@ -573,7 +592,7 @@ export class UpdateProductDto {
 
   @IsOptional()
   @IsString()
-  locationId?: string;
+  location_id?: string;
 }
 
 // ============================================================
@@ -596,35 +615,35 @@ export class RegisterBranchDeviceDto {
 
   @IsOptional()
   @IsString()
-  serialNumber?: string;
+  serial_number?: string;
 
   @IsOptional()
   @IsString()
   @IsEnum(["tcp_ip", "usb", "bluetooth", "com_port", "wifi", "other"])
-  connType?: string;
+  conn_type?: string;
 
   @IsOptional()
   @IsString()
-  ipAddress?: string;
+  ip_address?: string;
 
   @IsOptional()
   @IsString()
-  macAddress?: string;
+  mac_address?: string;
 
   @IsOptional()
   @IsString()
-  comPort?: string;
+  com_port?: string;
 
   @IsOptional()
   @IsString()
-  usbPort?: string;
+  usb_port?: string;
 
   @IsOptional()
   @IsString()
   notes?: string;
 
   @IsOptional()
-  assignment?: { role?: string; employeeId?: string; shiftBound?: boolean };
+  assignment?: { role?: string; employee_id?: string; shift_bound?: boolean };
 }
 
 export class RegisterCCTVCameraDto {
@@ -647,27 +666,27 @@ export class RegisterCCTVCameraDto {
 
   @IsOptional()
   @IsNumber()
-  resolutionMp?: number;
+  resolution_mp?: number;
 
   @IsOptional()
   @IsBoolean()
-  hasNightVision?: boolean;
+  has_night_vision?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  hasPtz?: boolean;
+  has_ptz?: boolean;
 
   @IsOptional()
   @IsString()
-  hlsUrl?: string;
+  hls_url?: string;
 
   @IsOptional()
   @IsString()
-  rtspUrl?: string;
+  rtsp_url?: string;
 
   @IsOptional()
   @IsString()
-  ipAddress?: string;
+  ip_address?: string;
 
   @IsOptional()
   @IsNumber()
@@ -683,19 +702,19 @@ export class RegisterCCTVCameraDto {
 
   @IsOptional()
   @IsString()
-  verificationCode?: string;
+  verification_code?: string;
 
   @IsOptional()
   @IsString()
-  cloudAccountId?: string;
+  cloud_account_id?: string;
 
   @IsOptional()
   @IsString()
-  streamToken?: string;
+  stream_token?: string;
 
   @IsOptional()
   @IsEnum(["connected", "not_configured", "error", "pending"])
-  integrationStatus?: string;
+  integration_status?: string;
 }
 
 export class RegisterBranchSensorDto {
@@ -722,7 +741,7 @@ export class RegisterBranchSensorDto {
 
   @IsOptional()
   @IsString()
-  serialNumber?: string;
+  serial_number?: string;
 
   @IsOptional()
   @IsString()
@@ -730,13 +749,52 @@ export class RegisterBranchSensorDto {
 
   @IsOptional()
   @IsNumber()
-  minThreshold?: number;
+  min_threshold?: number;
 
   @IsOptional()
   @IsNumber()
-  maxThreshold?: number;
+  max_threshold?: number;
 
   @IsOptional()
   @IsString()
   location?: string;
+}
+export class CheckoutDto {
+  @IsString()
+  @IsNotEmpty()
+  store_id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  terminal_id: string;
+
+  @IsOptional()
+  @IsString()
+  customer_id?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OrderItemDto)
+  items: OrderItemDto[];
+
+  @IsString()
+  @IsNotEmpty()
+  @IsEnum(["cash", "card", "qr", "wallet"])
+  payment_method: "cash" | "card" | "qr" | "wallet";
+
+  @IsNumber()
+  @IsNotEmpty()
+  payment_received: number;
+
+  @IsNumber()
+  @IsNotEmpty()
+  grand_total: number;
+
+  @IsOptional()
+  @IsString()
+  shift_id?: string;
+
+  @IsOptional()
+  @IsString()
+  payment_channel?: string;
 }

@@ -17,16 +17,16 @@ export class LedgerPostingDbRepository implements ILedgerPostingRepository {
     return tx || this.db;
   }
 
-  async createPosting(tenantId: string, companyId: string, data: Partial<LedgerPosting>, tx?: Prisma.TransactionClient): Promise<LedgerPosting> {
-    const created = await this.getDb(tx).ledgerPosting.create({
+  async createPosting(tenant_id: string, company_id: string, data: Partial<LedgerPosting>, tx?: Prisma.TransactionClient): Promise<LedgerPosting> {
+    const created = await this.getDb(tx).finance_ledger_postings.create({
       data: {
         id: 'xwpk5vba',
-        tenantId,
-        eventType: (data.eventType as string) || 'UNKNOWN',
-        sourceEventId: (data.sourceEventId as string) || 'UNKNOWN',
+        tenant_id: tenant_id,
+        event_type: (data.event_type as string) || 'UNKNOWN',
+        source_event_id: (data.sourceEventId as string) || 'UNKNOWN',
         status: (data.status as string) || LedgerPostingStatus.PENDING,
         payload: data.payload || {},
-        updatedAt: new Date(),
+        updated_at: new Date(),
       }
     });
     return created as unknown as LedgerPosting;
@@ -34,13 +34,13 @@ export class LedgerPostingDbRepository implements ILedgerPostingRepository {
 
   async createLines(postingId: string, lines: Partial<LedgerPostingLine>[], tx?: Prisma.TransactionClient): Promise<void> {
     await Promise.all(
-      lines.map(line => 
-        this.getDb(tx).ledgerPostingLine.create({
+      lines.map((line: any) => 
+        this.getDb(tx).finance_ledger_posting_lines.create({
           data: {
         id: 'cuq79hzp',
         
-            ledgerPostingId: postingId,
-            accountId: line.accountId!,
+            ledger_posting_id: postingId,
+            account_id: line.accountId!,
             side: line.side!,
             amount: new Prisma.Decimal(line.amount!.toString()),
             currency: 'IDR', // Default
@@ -50,46 +50,46 @@ export class LedgerPostingDbRepository implements ILedgerPostingRepository {
     );
   }
 
-  async updateStatus(tenantId: string, companyId: string, postingId: string, status: LedgerPostingStatus, retryCount?: number, failureReason?: string): Promise<LedgerPosting> {
-    const updated = await this.db.ledgerPosting.update({
+  async updateStatus(tenant_id: string, company_id: string, postingId: string, status: LedgerPostingStatus, retryCount?: number, failureReason?: string): Promise<LedgerPosting> {
+    const updated = await this.db.finance_ledger_postings.update({
       where: { id: postingId },
       data: { 
         status: status as any,
-        retryCount: retryCount,
-        failureReason: failureReason,
+        retry_count: retryCount,
+        failure_reason: failureReason,
       }
     });
     return updated as unknown as LedgerPosting;
   }
 
-  async findById(tenantId: string, companyId: string, id: string): Promise<LedgerPosting | null> {
-    const res = await this.db.ledgerPosting.findUnique({
+  async findById(tenant_id: string, company_id: string, id: string): Promise<LedgerPosting | null> {
+    const res = await this.db.finance_ledger_postings.findUnique({
       where: { id },
-      include: { financeLedgerPostingLines: true }
+      include: { finance_ledger_posting_lines: true }
     });
     return res as unknown as LedgerPosting;
   }
 
-  async findPending(tenantId: string, companyId?: string): Promise<LedgerPosting[]> {
-    const list = await this.db.ledgerPosting.findMany({
-      where: { tenantId, status: LedgerPostingStatus.PENDING }
+  async findPending(tenant_id: string, company_id?: string): Promise<LedgerPosting[]> {
+    const list = await this.db.finance_ledger_postings.findMany({
+      where: { tenant_id: tenant_id, status: LedgerPostingStatus.PENDING }
     });
     return list as unknown as LedgerPosting[];
   }
 
-  async claimPostings(tenantId: string, companyId: string, batchSize: number): Promise<LedgerPosting[]> {
+  async claimPostings(tenant_id: string, company_id: string, batchSize: number): Promise<LedgerPosting[]> {
     const db = this.prisma instanceof PrismaService ? this.prisma : (this.prisma as any);
     return await (db as any).$transaction(async (tx: Prisma.TransactionClient) => {
-      const candidates = await tx.ledgerPosting.findMany({
-        where: { tenantId, status: LedgerPostingStatus.PENDING },
+      const candidates = await tx.finance_ledger_postings.findMany({
+        where: { tenant_id: tenant_id, status: LedgerPostingStatus.PENDING },
         take: batchSize,
-        orderBy: { createdAt: 'asc' }
+        orderBy: { created_at: 'asc' }
       });
 
       if (candidates.length === 0) return [];
 
       const ids = candidates.map((c: any) => c.id);
-      await tx.ledgerPosting.updateMany({
+      await tx.finance_ledger_postings.updateMany({
         where: { id: { in: ids }, status: LedgerPostingStatus.PENDING },
         data: { status: LedgerPostingStatus.PROCESSING }
       });
@@ -102,48 +102,48 @@ export class LedgerPostingDbRepository implements ILedgerPostingRepository {
   }
 
   async findLines(postingId: string): Promise<LedgerPostingLine[]> {
-    const list = await this.db.ledgerPostingLine.findMany({
-      where: { ledgerPostingId: postingId }
+    const list = await this.db.finance_ledger_posting_lines.findMany({
+      where: { ledger_posting_id: postingId }
     });
     return list as unknown as LedgerPostingLine[];
   }
 
-  async checkIdempotency(tenantId: string, companyId: string, sourceEventId: string, tx?: Prisma.TransactionClient): Promise<boolean> {
-    const res = await this.getDb(tx).ledgerIdempotency.findFirst({
-      where: { tenantId, companyId, sourceEventId }
+  async checkIdempotency(tenant_id: string, company_id: string, sourceEventId: string, tx?: Prisma.TransactionClient): Promise<boolean> {
+    const res = await this.getDb(tx).finance_ledger_idempotency.findFirst({
+      where: { tenant_id: tenant_id, company_id: company_id, source_event_id: sourceEventId }
     });
     return !!res;
   }
 
-  async createIdempotency(tenantId: string, companyId: string, sourceEventId: string, tx?: Prisma.TransactionClient): Promise<void> {
-    await this.getDb(tx).ledgerIdempotency.create({
+  async createIdempotency(tenant_id: string, company_id: string, sourceEventId: string, tx?: Prisma.TransactionClient): Promise<void> {
+    await this.getDb(tx).finance_ledger_idempotency.create({
       data: {
         id: '04jts9q4',
         
-        tenantId,
-        companyId,
-        sourceEventId,
+        tenant_id: tenant_id,
+        company_id: company_id,
+        source_event_id: sourceEventId,
       }
     });
   }
 
-  async getDeadLetterPostings(tenantId: string, companyId: string): Promise<LedgerPosting[]> {
-    const list = await this.db.ledgerPosting.findMany({
-      where: { tenantId, status: LedgerPostingStatus.FAILED }
+  async getDeadLetterPostings(tenant_id: string, company_id: string): Promise<LedgerPosting[]> {
+    const list = await this.db.finance_ledger_postings.findMany({
+      where: { tenant_id: tenant_id, status: LedgerPostingStatus.FAILED }
     });
     return list as unknown as LedgerPosting[];
   }
 
-  async findStuckProcessing(tenantId: string, companyId: string, threshold: Date): Promise<LedgerPosting[]> {
-    const list = await this.db.ledgerPosting.findMany({
-      where: { tenantId, status: LedgerPostingStatus.PROCESSING, updatedAt: { lt: threshold } }
+  async findStuckProcessing(tenant_id: string, company_id: string, threshold: Date): Promise<LedgerPosting[]> {
+    const list = await this.db.finance_ledger_postings.findMany({
+      where: { tenant_id: tenant_id, status: LedgerPostingStatus.PROCESSING, updated_at: { lt: threshold } }
     });
     return list as unknown as LedgerPosting[];
   }
 
-  async findByStatus(tenantId: string, companyId: string, status: LedgerPostingStatus): Promise<LedgerPosting[]> {
-    const list = await this.db.ledgerPosting.findMany({
-      where: { tenantId, status: status as any }
+  async findByStatus(tenant_id: string, company_id: string, status: LedgerPostingStatus): Promise<LedgerPosting[]> {
+    const list = await this.db.finance_ledger_postings.findMany({
+      where: { tenant_id: tenant_id, status: status as any }
     });
     return list as unknown as LedgerPosting[];
   }

@@ -7,7 +7,7 @@ export class CreateTimelineEventDto {
 
   @IsString()
   @IsOptional()
-  leadId?: string;
+  lead_id?: string;
 
   @IsString()
   @IsNotEmpty()

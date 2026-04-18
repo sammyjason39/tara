@@ -33,28 +33,28 @@ export class MarketingDbRepository extends IMarketingRepository {
   private mapCampaign(db: any): MarketingCampaign {
     return {
       id: db.id,
-      tenantId: db.tenantId,
+      tenant_id: db.tenant_id,
       name: db.name,
       objective: db.objective as any,
-      channelMix: db.channelMix as any,
-      ownerId: db.ownerId,
-      ownerName: db.ownerName,
+      channel_mix: db.channel_mix as any,
+      owner_id: db.owner_id,
+      owner_name: db.owner_name,
       budget: Number(db.budget),
       currency: db.currency as any,
       status: db.status.toLowerCase() as any,
-      startDate: db.startDate.toISOString(),
-      endDate: db.endDate.toISOString(),
+      start_date: db.start_date.toISOString(),
+      end_date: db.end_date.toISOString(),
       audience: db.audience,
       aiRecommendation: db.aiRecommendation,
-      createdAt: db.createdAt,
-      updatedAt: db.updatedAt,
+      created_at: db.created_at,
+      updated_at: db.updated_at,
     };
   }
 
   private mapExecution(db: any): MarketingExecution {
     return {
       id: db.id,
-      tenantId: db.tenantId,
+      tenant_id: db.tenant_id,
       campaignId: db.campaignId,
       channel: db.channel as any,
       scheduledAt: db.scheduledAt.toISOString(),
@@ -62,19 +62,19 @@ export class MarketingDbRepository extends IMarketingRepository {
       leadsGenerated: db.leadsGenerated,
       spend: Number(db.spend),
       notes: db.notes,
-      createdAt: db.createdAt,
-      updatedAt: db.updatedAt,
+      created_at: db.created_at,
+      updated_at: db.updated_at,
     };
   }
 
   private mapLead(db: any): MarketingLead {
     return {
       id: db.id,
-      tenantId: db.tenantId,
+      tenant_id: db.tenant_id,
       campaignId: db.campaignId,
       source: db.source as any,
-      companyName: db.companyName,
-      contactName: db.contactName,
+      company_name: db.company_name,
+      contact_name: db.contact_name,
       email: db.email,
       phone: db.phone,
       country: db.country,
@@ -86,27 +86,27 @@ export class MarketingDbRepository extends IMarketingRepository {
       status: db.status.toUpperCase() as any,
       qualificationReason: db.qualificationReason,
       salesHandoffId: db.salesHandoffId,
-      createdAt: db.createdAt,
-      updatedAt: db.updatedAt,
+      created_at: db.created_at,
+      updated_at: db.updated_at,
     };
   }
 
   // Implementation
-  async getDashboard(tenantId: string): Promise<MarketingDashboard> {
+  async getDashboard(tenant_id: string): Promise<MarketingDashboard> {
     const [campaigns, leads, executions, accounts, attribution] =
       await Promise.all([
-        this.prisma.marketingCampaign.findMany({
-          where: { tenantId: tenantId },
+        this.prisma.marketing_campaigns.findMany({
+          where: { tenant_id: tenant_id },
         }),
-        this.prisma.marketingLead.findMany({ where: { tenantId: tenantId } }),
-        this.prisma.marketingExecution.findMany({
-          where: { tenantId: tenantId },
+        this.prisma.marketing_leads.findMany({ where: { tenant_id: tenant_id } }),
+        this.prisma.marketing_executions.findMany({
+          where: { tenant_id: tenant_id },
         }),
-        this.prisma.marketingAccount.findMany({
-          where: { tenantId: tenantId },
+        this.prisma.marketing_accounts.findMany({
+          where: { tenant_id: tenant_id },
         }),
-        this.prisma.marketingAttribution.findMany({
-          where: { tenantId: tenantId },
+        this.prisma.marketing_attribution.findMany({
+          where: { tenant_id: tenant_id },
         }),
       ]);
 
@@ -127,7 +127,7 @@ export class MarketingDbRepository extends IMarketingRepository {
       activeCampaigns: campaigns.filter((c: any) => c.status === "ACTIVE")
         .length,
       leadsToday: leads.filter(
-        (l: any) => l.createdAt.toDateString() === new Date().toDateString(),
+        (l: any) => l.created_at.toDateString() === new Date().toDateString(),
       ).length,
       qualifiedLeads: leads.filter((l: any) => l.status === "QUALIFIED").length,
       handoffReady: leads.filter((l: any) => l.status === "HANDOFF_READY")
@@ -142,10 +142,10 @@ export class MarketingDbRepository extends IMarketingRepository {
   }
 
   async getChannelPerformance(
-    tenantId: string,
+    tenant_id: string,
   ): Promise<MarketingChannelPerformance[]> {
-    const executions = await this.prisma.marketingExecution.findMany({
-      where: { tenantId: tenantId },
+    const executions = await this.prisma.marketing_executions.findMany({
+      where: { tenant_id: tenant_id },
     });
 
     const groups = executions.reduce(
@@ -167,75 +167,75 @@ export class MarketingDbRepository extends IMarketingRepository {
     }));
   }
 
-  async getCampaigns(tenantId: string): Promise<MarketingCampaign[]> {
-    const items = await this.prisma.marketingCampaign.findMany({
-      where: { tenantId: tenantId },
-      orderBy: { createdAt: "desc" },
+  async getCampaigns(tenant_id: string): Promise<MarketingCampaign[]> {
+    const items = await this.prisma.marketing_campaigns.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { created_at: "desc" },
     });
     return items.map((i: any) => this.mapCampaign(i));
   }
 
   async createCampaign(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateCampaignDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<MarketingCampaign> {
-    const item = await this.prisma.marketingCampaign.create({
+    const item = await this.prisma.marketing_campaigns.create({
       data: {
         id: '30f50s4a',
-        updatedAt: new Date(),
-        tenantId: tenantId,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
         name: dto.name,
         objective: dto.objective,
-        channelMix: dto.channelMix,
-        ownerId: actorId,
-        ownerName: "Zenvix User",
+        channel_mix: dto.channel_mix,
+        owner_id: actor_id,
+        owner_name: "Zenvix User",
         budget: dto.budget,
         currency: dto.currency || "USD",
         status: "DRAFT",
-        startDate: new Date(dto.startDate),
-        endDate: new Date(dto.endDate),
+        start_date: new Date(dto.start_date),
+        end_date: new Date(dto.end_date),
         audience: dto.audience,
-        aiRecommendation: "System generated budget allocation recommended.",
+        ai_recommendation: "System generated budget allocation recommended.",
       },
     });
     return this.mapCampaign(item);
   }
 
   async updateCampaignStatus(
-    tenantId: string,
+    tenant_id: string,
     id: string,
     dto: UpdateCampaignStatusDto,
   ): Promise<MarketingCampaign> {
-    const item = await this.prisma.marketingCampaign.update({
-      where: { id, tenantId: tenantId },
+    const item = await this.prisma.marketing_campaigns.update({
+      where: { id, tenant_id: tenant_id },
       data: { status: dto.status.toUpperCase() },
     });
     return this.mapCampaign(item);
   }
 
-  async getExecutions(tenantId: string): Promise<MarketingExecution[]> {
-    const items = await this.prisma.marketingExecution.findMany({
-      where: { tenantId: tenantId },
-      orderBy: { scheduledAt: "desc" },
+  async getExecutions(tenant_id: string): Promise<MarketingExecution[]> {
+    const items = await this.prisma.marketing_executions.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { scheduled_at: "desc" },
     });
     return items.map((i: any) => this.mapExecution(i));
   }
 
   async scheduleExecution(
-    tenantId: string,
+    tenant_id: string,
     dto: ScheduleExecutionDto,
   ): Promise<MarketingExecution> {
-    const item = await this.prisma.marketingExecution.create({
+    const item = await this.prisma.marketing_executions.create({
       data: {
         id: 'x4fyl78q',
-        updatedAt: new Date(),
-        tenantId: tenantId,
-        campaignId: dto.campaignId,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        campaign_id: dto.campaignId,
         channel: dto.channel,
-        scheduledAt: new Date(dto.scheduledAt),
+        scheduled_at: new Date(dto.scheduledAt),
         status: "SCHEDULED",
-        leadsGenerated: 0,
+        leads_generated: 0,
         spend: 0,
         notes: dto.notes,
       },
@@ -244,50 +244,50 @@ export class MarketingDbRepository extends IMarketingRepository {
   }
 
   async runExecution(
-    tenantId: string,
+    tenant_id: string,
     id: string,
     dto: RunExecutionDto,
   ): Promise<MarketingExecution> {
-    const item = await this.prisma.marketingExecution.update({
-      where: { id, tenantId: tenantId },
+    const item = await this.prisma.marketing_executions.update({
+      where: { id, tenant_id: tenant_id },
       data: {
         status: dto.failed ? "FAILED" : "COMPLETED",
-        leadsGenerated: dto.leadsGenerated,
+        leads_generated: dto.leadsGenerated,
         spend: dto.spend,
       },
     });
     return this.mapExecution(item);
   }
 
-  async getLeads(tenantId: string): Promise<MarketingLead[]> {
-    const items = await this.prisma.marketingLead.findMany({
-      where: { tenantId: tenantId },
-      orderBy: { createdAt: "desc" },
+  async getLeads(tenant_id: string): Promise<MarketingLead[]> {
+    const items = await this.prisma.marketing_leads.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { created_at: "desc" },
     });
     return items.map((i: any) => this.mapLead(i));
   }
 
   async captureLead(
-    tenantId: string,
+    tenant_id: string,
     dto: CaptureLeadDto,
   ): Promise<MarketingLead> {
     const dedupKey =
-      `${dto.companyName}-${dto.email || dto.phone || dto.contactName}`.toLowerCase();
-    const item = await this.prisma.marketingLead.create({
+      `${dto.company_name}-${dto.email || dto.phone || dto.contact_name}`.toLowerCase();
+    const item = await this.prisma.marketing_leads.create({
       data: {
         id: 'b6fcz6j7',
-        updatedAt: new Date(),
-        tenantId: tenantId,
-        campaignId: dto.campaignId,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        campaign_id: dto.campaignId,
         source: dto.source,
-        companyName: dto.companyName,
-        contactName: dto.contactName,
+        company_name: dto.company_name,
+        contact_name: dto.contact_name,
         email: dto.email,
         phone: dto.phone,
         country: dto.country,
         industry: dto.industry,
-        employeeBand: dto.employeeBand,
-        dedupKey,
+        employee_band: dto.employeeBand,
+        dedup_key: dedupKey,
         score: 50,
         intent: "MEDIUM",
         status: "SCORED",
@@ -297,53 +297,53 @@ export class MarketingDbRepository extends IMarketingRepository {
   }
 
   async markLeadHandoffReady(
-    tenantId: string,
+    tenant_id: string,
     id: string,
   ): Promise<MarketingLead> {
-    const item = await this.prisma.marketingLead.update({
-      where: { id, tenantId: tenantId },
+    const item = await this.prisma.marketing_leads.update({
+      where: { id, tenant_id: tenant_id },
       data: { status: "HANDOFF_READY" },
     });
     return this.mapLead(item);
   }
 
   async handoffLeadToSales(
-    tenantId: string,
+    tenant_id: string,
     id: string,
   ): Promise<MarketingLead> {
-    const item = await this.prisma.marketingLead.update({
-      where: { id, tenantId: tenantId },
+    const item = await this.prisma.marketing_leads.update({
+      where: { id, tenant_id: tenant_id },
       data: { status: "HANDOFF_SENT" },
     });
     return this.mapLead(item);
   }
 
-  async getWorkflows(tenantId: string): Promise<MarketingWorkflow[]> {
-    const items = await this.prisma.marketingWorkflow.findMany({
-      where: { tenantId: tenantId },
+  async getWorkflows(tenant_id: string): Promise<MarketingWorkflow[]> {
+    const items = await this.prisma.marketing_workflows.findMany({
+      where: { tenant_id: tenant_id },
     });
     return items.map((i: any) => ({
       id: i.id,
-      tenantId: i.tenantId,
+      tenant_id: i.tenant_id,
       name: i.name,
       trigger: i.trigger as any,
       status: i.status.toLowerCase() as any,
       steps: i.steps as any,
       aiSuggestion: i.aiSuggestion || undefined,
-      createdAt: i.createdAt,
-      updatedAt: i.updatedAt,
+      created_at: i.created_at,
+      updated_at: i.updated_at,
     }));
   }
 
   async createWorkflow(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateWorkflowDto,
   ): Promise<MarketingWorkflow> {
-    const item = await this.prisma.marketingWorkflow.create({
+    const item = await this.prisma.marketing_workflows.create({
       data: {
         id: 'v77e462a',
-        updatedAt: new Date(),
-        tenantId: tenantId,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
         name: dto.name,
         trigger: dto.trigger,
         status: "DRAFT",
@@ -352,190 +352,190 @@ export class MarketingDbRepository extends IMarketingRepository {
     });
     return {
       id: item.id,
-      tenantId: item.tenantId,
+      tenant_id: item.tenant_id,
       name: item.name,
       trigger: item.trigger as any,
       status: item.status.toLowerCase() as any,
       steps: item.steps as any,
-      aiSuggestion: item.aiSuggestion || undefined,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
+      aiSuggestion: item.ai_suggestion || undefined,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
     };
   }
 
   async updateWorkflowStatus(
-    tenantId: string,
+    tenant_id: string,
     id: string,
     dto: UpdateWorkflowStatusDto,
   ): Promise<MarketingWorkflow> {
-    const item = await this.prisma.marketingWorkflow.update({
-      where: { id, tenantId: tenantId },
+    const item = await this.prisma.marketing_workflows.update({
+      where: { id, tenant_id: tenant_id },
       data: { status: dto.status.toUpperCase() },
     });
     return {
       id: item.id,
-      tenantId: item.tenantId,
+      tenant_id: item.tenant_id,
       name: item.name,
       trigger: item.trigger as any,
       status: item.status.toLowerCase() as any,
       steps: item.steps as any,
-      aiSuggestion: item.aiSuggestion || undefined,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
+      aiSuggestion: item.ai_suggestion || undefined,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
     };
   }
 
   async getConnectedAccounts(
-    tenantId: string,
+    tenant_id: string,
   ): Promise<MarketingConnectedAccount[]> {
-    const items = await this.prisma.marketingAccount.findMany({
-      where: { tenantId: tenantId },
+    const items = await this.prisma.marketing_accounts.findMany({
+      where: { tenant_id: tenant_id },
     });
     return items.map((i: any) => ({
       id: i.id,
-      tenantId: i.tenantId,
+      tenant_id: i.tenant_id,
       provider: i.provider as any,
-      accountName: i.accountName,
+      account_name: i.account_name,
       status: i.status.toLowerCase() as any,
       tokenExpiresAt: i.tokenExpiresAt,
       scopes: i.scopes,
       lastSyncAt: i.lastSyncAt,
-      createdAt: i.createdAt,
-      updatedAt: i.updatedAt,
+      created_at: i.created_at,
+      updated_at: i.updated_at,
     }));
   }
 
   async connectAccount(
-    tenantId: string,
+    tenant_id: string,
     dto: ConnectAccountDto,
   ): Promise<MarketingConnectedAccount> {
-    const item = await this.prisma.marketingAccount.create({
+    const item = await this.prisma.marketing_accounts.create({
       data: {
         id: 'e7imhqu6',
-        updatedAt: new Date(),
-        tenantId: tenantId,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
         provider: dto.provider,
-        accountName: dto.accountName,
+        account_name: dto.account_name,
         status: "CONNECTED",
-        tokenExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        token_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         scopes: dto.scopes,
-        lastSyncAt: new Date(),
+        last_sync_at: new Date(),
       },
     });
     return {
       id: item.id,
-      tenantId: item.tenantId,
+      tenant_id: item.tenant_id,
       provider: item.provider as any,
-      accountName: item.accountName,
+      account_name: item.account_name,
       status: item.status.toLowerCase() as any,
-      tokenExpiresAt: item.tokenExpiresAt,
+      tokenExpiresAt: item.token_expires_at,
       scopes: item.scopes,
-      lastSyncAt: item.lastSyncAt || undefined,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
+      lastSyncAt: item.last_sync_at || undefined,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
     };
   }
 
   async updateAccountStatus(
-    tenantId: string,
+    tenant_id: string,
     id: string,
     dto: UpdateAccountStatusDto,
   ): Promise<MarketingConnectedAccount> {
-    const item = await this.prisma.marketingAccount.update({
-      where: { id, tenantId: tenantId },
+    const item = await this.prisma.marketing_accounts.update({
+      where: { id, tenant_id: tenant_id },
       data: { status: dto.status.toUpperCase() },
     });
     return {
       id: item.id,
-      tenantId: item.tenantId,
+      tenant_id: item.tenant_id,
       provider: item.provider as any,
-      accountName: item.accountName,
+      account_name: item.account_name,
       status: item.status.toLowerCase() as any,
-      tokenExpiresAt: item.tokenExpiresAt,
+      tokenExpiresAt: item.token_expires_at,
       scopes: item.scopes,
-      lastSyncAt: item.lastSyncAt || undefined,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
+      lastSyncAt: item.last_sync_at || undefined,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
     };
   }
 
-  async getAttribution(tenantId: string): Promise<MarketingAttribution[]> {
-    const items = await this.prisma.marketingAttribution.findMany({
-      where: { tenantId: tenantId },
-      orderBy: { createdAt: "desc" },
+  async getAttribution(tenant_id: string): Promise<MarketingAttribution[]> {
+    const items = await this.prisma.marketing_attribution.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { created_at: "desc" },
     });
     return items.map((i: any) => ({
       id: i.id,
-      tenantId: i.tenantId,
+      tenant_id: i.tenant_id,
       campaignId: i.campaignId,
-      leadId: i.leadId,
+      lead_id: i.lead_id,
       opportunityId: i.opportunityId,
       revenueAttributed: Number(i.revenueAttributed),
       spend: Number(i.spend),
       roiPercent: Number(i.roiPercent),
-      createdAt: i.createdAt,
+      created_at: i.created_at,
     }));
   }
 
-  async getAlerts(tenantId: string): Promise<MarketingAlert[]> {
-    const items = await this.prisma.marketingAlert.findMany({
-      where: { tenantId: tenantId },
-      orderBy: { createdAt: "desc" },
+  async getAlerts(tenant_id: string): Promise<MarketingAlert[]> {
+    const items = await this.prisma.marketing_alerts.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { created_at: "desc" },
     });
     return items.map((i: any) => ({
       id: i.id,
-      tenantId: i.tenantId,
+      tenant_id: i.tenant_id,
       type: i.type as any,
       severity: i.severity as any,
-      entityType: i.entityType as any,
-      entityId: i.entityId,
+      entity_type: i.entity_type as any,
+      entity_id: i.entity_id,
       message: i.message,
       acknowledged: i.acknowledged,
-      createdAt: i.createdAt,
-      updatedAt: i.updatedAt,
+      created_at: i.created_at,
+      updated_at: i.updated_at,
     }));
   }
 
   async acknowledgeAlert(
-    tenantId: string,
+    tenant_id: string,
     id: string,
   ): Promise<MarketingAlert> {
-    const item = await this.prisma.marketingAlert.update({
-      where: { id, tenantId: tenantId },
+    const item = await this.prisma.marketing_alerts.update({
+      where: { id, tenant_id: tenant_id },
       data: { acknowledged: true },
     });
     return {
       id: item.id,
-      tenantId: item.tenantId,
+      tenant_id: item.tenant_id,
       type: item.type as any,
       severity: item.severity as any,
-      entityType: item.entityType as any,
-      entityId: item.entityId,
+      entity_type: item.entity_type as any,
+      entity_id: item.entity_id,
       message: item.message,
       acknowledged: item.acknowledged,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
     };
   }
 
-  async runHealthSweep(tenantId: string): Promise<MarketingAlert[]> {
-    return this.getAlerts(tenantId);
+  async runHealthSweep(tenant_id: string): Promise<MarketingAlert[]> {
+    return this.getAlerts(tenant_id);
   }
 
-  async getAuditEvents(tenantId: string): Promise<MarketingAuditEvent[]> {
-    const items = await this.prisma.marketingAuditEvent.findMany({
-      where: { tenantId: tenantId },
-      orderBy: { createdAt: "desc" },
+  async getAuditEvents(tenant_id: string): Promise<MarketingAuditEvent[]> {
+    const items = await this.prisma.marketing_audit_events.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { created_at: "desc" },
     });
     return items.map((i: any) => ({
       id: i.id,
-      tenantId: i.tenantId,
-      actorId: i.actorId,
+      tenant_id: i.tenant_id,
+      actor_id: i.actor_id,
       action: i.action,
-      entityType: i.entityType as any,
-      entityId: i.entityId,
+      entity_type: i.entity_type as any,
+      entity_id: i.entity_id,
       detail: i.detail,
-      createdAt: i.createdAt,
+      created_at: i.created_at,
     }));
   }
 }

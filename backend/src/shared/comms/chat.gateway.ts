@@ -20,25 +20,25 @@ export class ChatGateway implements OnGatewayConnection {
   constructor(private readonly chatService: ChatService) {}
 
   async handleConnection(client: Socket) {
-    const tenantId = client.handshake.query.tenantId as string;
-    const userId = client.handshake.query.userId as string;
+    const tenant_id = client.handshake.query.tenant_id as string;
+    const user_id = client.handshake.query.user_id as string;
 
-    if (tenantId && userId) {
+    if (tenant_id && user_id) {
       // Logic for user presence can be added here
-      client.join(`tenant_${tenantId}`);
-      client.join(`user_${userId}`);
+      client.join(`tenant_${tenant_id}`);
+      client.join(`user_${user_id}`);
     }
   }
 
   @SubscribeMessage('sendMessage')
   async handleMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { roomId: string; body: string; tenantId: string; userId: string },
+    @MessageBody() payload: { roomId: string; body: string; tenant_id: string; user_id: string },
   ) {
     const message = await this.chatService.sendMessage({
-      tenantId: payload.tenantId,
+      tenant_id: payload.tenant_id,
       roomId: payload.roomId,
-      senderId: payload.userId,
+      senderId: payload.user_id,
       body: payload.body,
     });
 
@@ -53,17 +53,17 @@ export class ChatGateway implements OnGatewayConnection {
   ) {
     const updated = await this.chatService.updateMessageStatus(payload.messageId, 'DELIVERED');
     // Notify sender that message was delivered
-    this.server.to(`user_${updated.senderId}`).emit('messageStatusUpdated', updated);
+    this.server.to(`user_${updated.sender_id}`).emit('messageStatusUpdated', updated);
   }
 
   @SubscribeMessage('messagesRead')
   async handleMessagesRead(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { roomId: string, userId: string },
+    @MessageBody() payload: { roomId: string, user_id: string },
   ) {
-    await this.chatService.markAsRead(payload.roomId, payload.userId);
+    await this.chatService.markAsRead(payload.roomId, payload.user_id);
     // Broadcast status change to room members
-    this.server.to(`room_${payload.roomId}`).emit('roomRead', { roomId: payload.roomId, userId: payload.userId });
+    this.server.to(`room_${payload.roomId}`).emit('roomRead', { roomId: payload.roomId, user_id: payload.user_id });
   }
 
   @SubscribeMessage('joinRoom')

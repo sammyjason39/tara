@@ -27,17 +27,17 @@ export class AuthService {
     }
 
     const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(dto.password, salt);
+    const password_hash = await bcrypt.hash(dto.password, salt);
 
     const user = await this.authRepo.create("system", {
       email: dto.email,
-      passwordHash,
-      firstName: dto.firstName,
-      lastName: dto.lastName,
+      password_hash,
+      first_name: dto.first_name,
+      last_name: dto.last_name,
       phone: dto.phone,
     });
 
-    const { passwordHash: _, ...userWithoutPassword } = user;
+    const { password_hash: _, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
 
@@ -48,18 +48,21 @@ export class AuthService {
       throw new UnauthorizedException("Invalid credentials");
     }
 
-    const isMatch = await bcrypt.compare(dto.password, user.passwordHash);
+    const isMatch = await bcrypt.compare(dto.password, user.password_hash);
     if (!isMatch) {
       throw new UnauthorizedException("Invalid credentials");
     }
 
     const payload = { sub: user.id, email: user.email };
-    const token = jwt.sign(payload, this.jwtSecret, { expiresIn: "1d" });
+    const token = (jwt.sign as any)(payload, this.jwtSecret, { expiresIn: "1d" });
 
-    const { passwordHash: _, ...userWithoutPassword } = user;
+    const { password_hash: _, ...userWithoutPassword } = user;
     return {
       token,
-      user: userWithoutPassword,
+      users: {
+        ...userWithoutPassword,
+        userCompanies: (user as any).userCompany || [],
+      },
     };
   }
 
@@ -70,7 +73,7 @@ export class AuthService {
 
       if (!user) throw new UnauthorizedException("User not found");
 
-      const { passwordHash: _, ...userWithoutPassword } = user;
+      const { password_hash: _, ...userWithoutPassword } = user;
       return userWithoutPassword;
     } catch (e) {
       throw new UnauthorizedException("Invalid token");

@@ -4,24 +4,24 @@
  */
 export class LeaveRequest {
   id: string;
-  tenantId: string;
-  employeeId: string;
-  leaveType:
+  tenant_id: string;
+  employee_id: string;
+  leave_type:
     | "annual"
     | "sick"
     | "unpaid"
     | "maternity"
     | "paternity"
     | "emergency";
-  startDate: Date;
-  endDate: Date;
-  totalDays: number;
+  start_date: Date;
+  end_date: Date;
+  total_days: number;
   reason: string;
   status: "pending" | "approved" | "rejected" | "cancelled";
-  requestedAt: Date;
-  reviewedBy?: string;
-  reviewedAt?: Date;
-  reviewNotes?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  requested_at: Date;
+  reviewed_by?: string;
+  reviewed_at?: Date;
+  review_notes?: string;
+  created_at: Date;
+  updated_at: Date;
 }

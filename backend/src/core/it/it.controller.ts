@@ -46,13 +46,13 @@ export class ITController {
    */
   @Get("overview")
   async getOverview(@Req() request: RequestWithTenant) {
-    const { tenantId, locationId } = request.tenantContext;
+    const { tenant_id, location_id } = request.tenantContext;
 
     // Core IT metrics
     const pendingProvisioningCount = await this.itService
-      .getProvisioningRequests(tenantId)
+      .getProvisioningRequests(tenant_id)
       .then((r) => r.filter((p: any) => p.status === "PENDING").length);
-    const systemHealth = await this.itService.getSystemHealth(tenantId);
+    const systemHealth = await this.itService.getSystemHealth(tenant_id);
 
     const coreIT = {
       pendingProvisioningRequests: pendingProvisioningCount,
@@ -69,35 +69,35 @@ export class ITController {
 
     const retailIsActive = await isModuleActive(
       this.prisma,
-      tenantId,
+      tenant_id,
       "retail",
     );
     if (retailIsActive) {
       // POS Device stats - Now queried from the unified Device model
-      const posDeviceWhere = locationId
-        ? { tenantId, locationId, type: "POS_TERMINAL" }
-        : { tenantId, type: "POS_TERMINAL" };
+      const posDeviceWhere = location_id
+        ? { tenant_id, location_id, type: "POS_TERMINAL" }
+        : { tenant_id, type: "POS_TERMINAL" };
 
       const [totalPosDevices, onlinePosDevices, offlinePosDevices] =
         await Promise.all([
-          this.prisma.itDevice.count({ where: posDeviceWhere }),
-          this.prisma.itDevice.count({
+          this.prisma.it_devices.count({ where: posDeviceWhere }),
+          this.prisma.it_devices.count({
             where: { ...posDeviceWhere, status: "ONLINE" },
           }),
-          this.prisma.itDevice.count({
+          this.prisma.it_devices.count({
             where: { ...posDeviceWhere, status: "OFFLINE" },
           }),
         ]);
 
       // Ecommerce channel connectors
-      const ecomChannels = await this.prisma.ecommerceConnector.findMany({
-        where: { tenantId },
+      const ecomChannels = await this.prisma.ecommerce_connectors.findMany({
+        where: { tenant_id: tenant_id },
         select: {
           id: true,
           name: true,
           platform: true,
           status: true,
-          updatedAt: true,
+          updated_at: true,
         },
         take: 10,
       });
@@ -129,12 +129,12 @@ export class ITController {
                 name: string;
                 platform: string;
                 status: string;
-                updatedAt: Date | null;
+                updated_at: Date | null;
               }) => ({
                 name: c.name,
                 type: c.platform,
                 status: c.status,
-                lastSynced: c.updatedAt,
+                lastSynced: c.updated_at,
               }),
             ),
         },
@@ -143,7 +143,7 @@ export class ITController {
 
     return {
       success: true,
-      tenantId,
+      tenant_id,
       data: {
         coreIT,
         moduleContributions: {
@@ -157,9 +157,9 @@ export class ITController {
 
   @Get("devices")
   async getDevices(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.itService.getDevices(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.itService.getDevices(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Post("devices")
@@ -167,23 +167,23 @@ export class ITController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreateDeviceDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      data: await this.itService.createDevice(tenantId, dto, userId),
+      data: await this.itService.createDevice(tenant_id, dto, user_id),
     };
   }
 
   @Put("devices/:id")
   async updateDevice(
     @Req() request: RequestWithTenant,
-    @Param("id") deviceId: string,
+    @Param("id") device_id: string,
     @Body() dto: Partial<CreateDeviceDto>,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      data: await this.itService.updateDevice(tenantId, deviceId, dto, userId),
+      data: await this.itService.updateDevice(tenant_id, device_id, dto, user_id),
     };
   }
 
@@ -191,9 +191,9 @@ export class ITController {
 
   @Get("device-events")
   async getDeviceEvents(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.itService.getDeviceEvents(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.itService.getDeviceEvents(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Post("device-events")
@@ -201,10 +201,10 @@ export class ITController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreateDeviceEventDto,
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     return {
       success: true,
-      data: await this.itService.createDeviceEvent(tenantId, dto),
+      data: await this.itService.createDeviceEvent(tenant_id, dto),
     };
   }
 
@@ -212,9 +212,9 @@ export class ITController {
 
   @Get("provisioning")
   async getProvisioningRequests(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.itService.getProvisioningRequests(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.itService.getProvisioningRequests(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Post("provisioning")
@@ -222,15 +222,15 @@ export class ITController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreateProvisioningRequestDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Provisioning request created",
       data: await this.itService.createProvisioningRequest(
-        tenantId,
+        tenant_id,
         dto,
-        userId,
+        user_id,
       ),
     };
   }
@@ -238,19 +238,19 @@ export class ITController {
   @Put("provisioning/:id/provision")
   async markProvisioned(
     @Req() request: RequestWithTenant,
-    @Param("id") requestId: string,
+    @Param("id") request_id: string,
     @Body() body: { provisionedBy: string },
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Provisioning request marked as provisioned",
       data: await this.itService.markProvisioned(
-        tenantId,
-        requestId,
+        tenant_id,
+        request_id,
         body.provisionedBy || "system",
-        userId,
+        user_id,
       ),
     };
   }
@@ -258,19 +258,19 @@ export class ITController {
   @Put("provisioning/:id")
   async updateProvisioningRequest(
     @Req() request: RequestWithTenant,
-    @Param("id") requestId: string,
+    @Param("id") request_id: string,
     @Body() dto: Partial<CreateProvisioningRequestDto>,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Provisioning request updated",
       data: await this.itService.updateProvisioningRequest(
-        tenantId,
-        requestId,
+        tenant_id,
+        request_id,
         dto,
-        userId,
+        user_id,
       ),
     };
   }
@@ -278,40 +278,40 @@ export class ITController {
   @Delete("provisioning/:id")
   async deleteProvisioningRequest(
     @Req() request: RequestWithTenant,
-    @Param("id") requestId: string,
+    @Param("id") request_id: string,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    await this.itService.deleteProvisioningRequest(tenantId, requestId, userId);
+    const { tenant_id, user_id } = request.tenantContext;
+    await this.itService.deleteProvisioningRequest(tenant_id, request_id, user_id);
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Provisioning request deleted",
     };
   }
 
   @Get("system-health")
   async getSystemHealth(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.itService.getSystemHealth(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.itService.getSystemHealth(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   // ==================== Monitoring ====================
 
   @Get("monitoring/stats")
   async getMonitoringStats(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.itService.getMonitoringStats(tenantId);
+    const { tenant_id } = request.tenantContext;
+    const data = await this.itService.getMonitoringStats(tenant_id);
     return { success: true, data };
   }
 
   @Get("monitoring/logs")
   async getAuditLogs(
     @Req() request: RequestWithTenant,
-    @Query("requestId") requestId?: string
+    @Query("request_id") request_id?: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.itService.getAuditLogs(tenantId, requestId);
+    const { tenant_id } = request.tenantContext;
+    const data = await this.itService.getAuditLogs(tenant_id, request_id);
     return { success: true, count: data.length, data };
   }
 }

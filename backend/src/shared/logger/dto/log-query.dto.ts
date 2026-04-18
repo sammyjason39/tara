@@ -5,9 +5,9 @@ export class LogQueryDto {
   @IsOptional() @IsString() module?: string;
   @IsOptional() @IsString() level?: string;
   @IsOptional() @IsString() event?: string;
-  @IsOptional() @IsString() userId?: string;
-  @IsOptional() @IsString() startDate?: string;
-  @IsOptional() @IsString() endDate?: string;
+  @IsOptional() @IsString() user_id?: string;
+  @IsOptional() @IsString() start_date?: string;
+  @IsOptional() @IsString() end_date?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) limit?: number;
 }

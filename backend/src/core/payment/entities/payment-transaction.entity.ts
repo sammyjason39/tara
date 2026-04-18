@@ -8,7 +8,7 @@ export class PaymentRetryAttempt {
 
 export class PaymentTransaction {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   externalReference?: string;
   type:
     | "vendor_payout"
@@ -23,7 +23,7 @@ export class PaymentTransaction {
   source?: string;
   channel: "bank_transfer" | "card_online" | "card_pos" | "wallet" | "qr";
   providerId?: string;
-  idempotencyKey: string;
+  idempotency_key: string;
   status:
     | "request_created"
     | "approval_pending"
@@ -42,6 +42,6 @@ export class PaymentTransaction {
   createdBy: string;
   approvedBy?: string;
   approvedAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

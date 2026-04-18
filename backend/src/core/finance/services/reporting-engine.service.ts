@@ -25,7 +25,7 @@ export class ReportingEngineService {
       return JSON.stringify(obj);
     }
     if (Array.isArray(obj)) {
-      return '[' + obj.map((item) => this.stableSerialize(item)).join(',') + ']';
+      return '[' + obj.map((item: any) => this.stableSerialize(item)).join(',') + ']';
     }
     const keys = Object.keys(obj).sort();
     return (
@@ -49,24 +49,24 @@ export class ReportingEngineService {
    * Hardened with Decimal math to eliminate floating point drift (MATH-001).
    */
   async getTrialBalance(
-    tenantId: string, 
-    companyId: string, 
+    tenant_id: string, 
+    company_id: string, 
     fiscalPeriodId: string, 
     options: { statusFilter?: 'POSTED' | 'ALL' } = {}
   ) {
-    const period = await this.fiscalPeriodService.getPeriod(tenantId, companyId, fiscalPeriodId);
+    const period = await this.fiscalPeriodService.getPeriod(tenant_id, company_id, fiscalPeriodId);
     let snapshotSeq: number = 0;
 
     if (period.status === FiscalPeriodStatus.CLOSED) {
-      const closingRecord = await this.fiscalPeriodService.getClosingRecord(tenantId, companyId, fiscalPeriodId);
+      const closingRecord = await this.fiscalPeriodService.getClosingRecord(tenant_id, company_id, fiscalPeriodId);
       if (closingRecord) snapshotSeq = closingRecord.snapshotSequence;
     }
     
-    const filteredRows = await this.trialBalanceRepo.findAll(tenantId, companyId, fiscalPeriodId, { snapshotSequence: snapshotSeq });
+    const filteredRows = await this.trialBalanceRepo.findAll(tenant_id, company_id, fiscalPeriodId, { snapshotSequence: snapshotSeq });
     
     const rows = filteredRows.map(row => ({
         accountId: row.accountId,
-        accountName: row.accountName,
+        account_name: row.account_name,
         type: row.accountCategory,
         debitTotal: row.debitTotal || new Prisma.Decimal(0),
         creditTotal: row.creditTotal || new Prisma.Decimal(0),
@@ -96,14 +96,14 @@ export class ReportingEngineService {
    * Balance Sheet based on a specific date (Cumulative).
    */
   async getBalanceSheet(
-    tenantId: string, 
-    companyId: string, 
+    tenant_id: string, 
+    company_id: string, 
     asOfDate: Date, 
     comparisonDate?: Date,
     dimensions?: Record<string, string>,
     options: { statusFilter?: 'POSTED' | 'ALL' } = {}
   ) {
-    const tbRows = await this.trialBalanceRepo.findAll(tenantId, companyId, 'CURRENT');
+    const tbRows = await this.trialBalanceRepo.findAll(tenant_id, company_id, 'CURRENT');
     
     let totalAssets = new Prisma.Decimal(0);
     let totalLiabilities = new Prisma.Decimal(0);
@@ -113,7 +113,7 @@ export class ReportingEngineService {
 
     for (const row of tbRows) {
         const balance = this.normalizeBalance(row.accountCategory as AccountType, row.debitTotal || new Prisma.Decimal(0), row.creditTotal || new Prisma.Decimal(0));
-        const item = { accountId: row.accountId, accountName: row.accountName, balance };
+        const item = { accountId: row.accountId, account_name: row.account_name, balance };
 
         if (row.accountCategory === AccountType.ASSET) {
             totalAssets = totalAssets.plus(balance);
@@ -151,19 +151,19 @@ export class ReportingEngineService {
    * Profit & Loss for a specific period.
    */
   async getProfitLoss(
-    tenantId: string, 
-    companyId: string, 
+    tenant_id: string, 
+    company_id: string, 
     fiscalPeriodId: string, 
     comparisonPeriodId?: string,
-    dimensions?: { costCenterId?: string; departmentId?: string; branchId?: string },
+    dimensions?: { costCenterId?: string; departmentId?: string; branch_id?: string },
     options: { statusFilter?: 'POSTED' | 'ALL' } = {}
   ) {
     const filters: any = { snapshotSequence: 0 };
     if (dimensions?.costCenterId) filters.dimensionCostCenterId = dimensions.costCenterId;
     if (dimensions?.departmentId) filters.dimensionDepartmentId = dimensions.departmentId;
-    if (dimensions?.branchId) filters.dimensionBranchId = dimensions.branchId;
+    if (dimensions?.branch_id) filters.dimensionBranchId = dimensions.branch_id;
 
-    const tbRows = await this.trialBalanceRepo.findAll(tenantId, companyId, fiscalPeriodId, filters);
+    const tbRows = await this.trialBalanceRepo.findAll(tenant_id, company_id, fiscalPeriodId, filters);
     
     let revenue = new Prisma.Decimal(0);
     let expense = new Prisma.Decimal(0);
@@ -175,15 +175,15 @@ export class ReportingEngineService {
         
         return {
             accountId: row.accountId,
-            accountName: row.accountName,
+            account_name: row.account_name,
             amount: amount.abs().toDecimalPlaces(2),
             category: row.accountCategory
         };
     });
 
     const report = {
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       periodId: fiscalPeriodId,
       dimensions,
       summary: {
@@ -205,15 +205,15 @@ export class ReportingEngineService {
    * N-Period Trend Report for Trend Analysis (Phase 8)
    */
   async getTrendReport(
-    tenantId: string,
-    companyId: string,
+    tenant_id: string,
+    company_id: string,
     periodIds: string[],
     metric: 'REVENUE' | 'NET_PROFIT' | 'EXPENSE'
   ) {
     const trendData: any[] = [];
 
     for (const periodId of periodIds) {
-        const pl = await this.getProfitLoss(tenantId, companyId, periodId);
+        const pl = await this.getProfitLoss(tenant_id, company_id, periodId);
         trendData.push({
             periodId,
             value: metric === 'REVENUE' ? pl.summary.revenue : 
@@ -224,8 +224,8 @@ export class ReportingEngineService {
     }
 
     const report = {
-        tenantId,
-        companyId,
+        tenant_id,
+        company_id,
         metric,
         periods: trendData,
         generatedAt: new Date(),
@@ -241,11 +241,11 @@ export class ReportingEngineService {
   /**
    * Retained Earnings Dual Mode logic.
    */
-  async getRetainedEarnings(tenantId: string, companyId: string, fiscalPeriodId: string): Promise<Prisma.Decimal> {
-    const period = await this.fiscalPeriodService.getPeriod(tenantId, companyId, fiscalPeriodId);
+  async getRetainedEarnings(tenant_id: string, company_id: string, fiscalPeriodId: string): Promise<Prisma.Decimal> {
+    const period = await this.fiscalPeriodService.getPeriod(tenant_id, company_id, fiscalPeriodId);
     
     if (period.status === FiscalPeriodStatus.OPEN) {
-      const tbRows = await this.trialBalanceRepo.findAll(tenantId, companyId, 'ALL_TIME'); 
+      const tbRows = await this.trialBalanceRepo.findAll(tenant_id, company_id, 'ALL_TIME'); 
       return tbRows.reduce((sum, row) => {
         if (row.accountCategory === AccountType.REVENUE) return sum.plus((row.creditTotal || new Prisma.Decimal(0)).minus(row.debitTotal || 0));
         if (row.accountCategory === AccountType.EXPENSE) return sum.minus((row.debitTotal || new Prisma.Decimal(0)).minus(row.creditTotal || 0));
@@ -301,8 +301,8 @@ export class ReportingEngineService {
     }
   }
 
-  async getSummary(tenantId: string, companyId: string, fiscalPeriodId: string) {
-    const pl = await this.getProfitLoss(tenantId, companyId, fiscalPeriodId);
+  async getSummary(tenant_id: string, company_id: string, fiscalPeriodId: string) {
+    const pl = await this.getProfitLoss(tenant_id, company_id, fiscalPeriodId);
     return {
       revenue: pl.summary.revenue,
       expense: pl.summary.expense,
@@ -314,12 +314,12 @@ export class ReportingEngineService {
         totalEquity: new Prisma.Decimal(0) 
       },
       periodId: fiscalPeriodId,
-      companyId: companyId
+      company_id: company_id
     };
   }
 
-  async getHierarchicalReport(tenantId: string, companyId: string, fiscalPeriodId: string) {
-    const tb = await this.getTrialBalance(tenantId, companyId, fiscalPeriodId);
+  async getHierarchicalReport(tenant_id: string, company_id: string, fiscalPeriodId: string) {
+    const tb = await this.getTrialBalance(tenant_id, company_id, fiscalPeriodId);
     return tb.rows; 
   }
 

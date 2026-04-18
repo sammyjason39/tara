@@ -21,6 +21,7 @@ import {
   RegisterBranchDeviceDto,
   RegisterCCTVCameraDto,
   RegisterBranchSensorDto,
+  CheckoutDto,
 } from "./dto/retail.dto";
 import { randomBytes, createHash } from "crypto";
 import { AuditService } from "../../shared/audit/audit.service";
@@ -39,296 +40,296 @@ export class RetailService {
 
   // Stores (Physical Branches)
   async listStores(
-    tenantId: string,
-    locationId?: string,
+    tenant_id: string,
+    location_id?: string,
   ): Promise<RetailStore[]> {
-    return this.retailRepository.listStores(tenantId, locationId);
+    return this.retailRepository.listStores(tenant_id, location_id);
   }
 
-  async listCategories(tenantId: string): Promise<any[]> {
-    return this.retailRepository.listCategories(tenantId);
+  async listCategories(tenant_id: string): Promise<any[]> {
+    return this.retailRepository.listCategories(tenant_id);
   }
 
   async createStore(
-    tenantId: string,
+    tenant_id: string,
     data: CreateStoreDto,
-    userId: string,
+    user_id: string,
   ): Promise<RetailStore> {
-    const store = await this.retailRepository.createStore(tenantId, data);
+    const store = await this.retailRepository.createStore(tenant_id, data);
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "CREATE",
-      entityType: "STORE",
-      entityId: store.id,
-      metadata: { name: store.name, code: store.code },
+      entity_type: "STORE",
+      entity_id: stores.id,
+      metadata: { name: stores.name, code: stores.code },
     });
     return store;
   }
 
   async updateStore(
-    tenantId: string,
-    storeId: string,
+    tenant_id: string,
+    store_id: string,
     data: UpdateStoreDto,
-    userId: string,
+    user_id: string,
   ): Promise<RetailStore> {
     const store = await this.retailRepository.updateStore(
-      tenantId,
-      storeId,
+      tenant_id,
+      store_id,
       data,
     );
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "UPDATE",
-      entityType: "STORE",
-      entityId: storeId,
+      entity_type: "STORE",
+      entity_id: stores_id,
       metadata: { changes: data },
     });
     return store;
   }
 
   async deleteStore(
-    tenantId: string,
-    storeId: string,
-    userId: string,
+    tenant_id: string,
+    store_id: string,
+    user_id: string,
   ): Promise<void> {
-    await this.retailRepository.deleteStore(tenantId, storeId);
+    await this.retailRepository.deleteStore(tenant_id, store_id);
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "DELETE",
-      entityType: "STORE",
-      entityId: storeId,
+      entity_type: "STORE",
+      entity_id: stores_id,
     });
   }
 
   // Inventory Pools
-  async listInventoryPools(tenantId: string): Promise<any[]> {
-    return this.retailRepository.listInventoryPools(tenantId);
+  async listInventoryPools(tenant_id: string): Promise<any[]> {
+    return this.retailRepository.listInventoryPools(tenant_id);
   }
 
   async createInventoryPool(
-    tenantId: string,
+    tenant_id: string,
     data: CreateInventoryPoolDto,
-    userId: string,
+    user_id: string,
   ): Promise<any> {
     const pool = await this.retailRepository.createInventoryPool(
-      tenantId,
+      tenant_id,
       data,
     );
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "CREATE",
-      entityType: "INVENTORY_POOL",
-      entityId: pool.id,
+      entity_type: "INVENTORY_POOL",
+      entity_id: pool.id,
       metadata: { name: pool.name },
     });
     return pool;
   }
 
-  async getInventoryPool(tenantId: string, poolId: string): Promise<any> {
-    const pool = await this.retailRepository.getInventoryPool(tenantId, poolId);
+  async getInventoryPool(tenant_id: string, poolId: string): Promise<any> {
+    const pool = await this.retailRepository.getInventoryPool(tenant_id, poolId);
     if (!pool)
       throw new NotFoundException(`Inventory pool ${poolId} not found`);
     return pool;
   }
 
   async deleteInventoryPool(
-    tenantId: string,
+    tenant_id: string,
     poolId: string,
-    userId: string,
+    user_id: string,
   ): Promise<void> {
-    await this.retailRepository.deleteInventoryPool(tenantId, poolId);
+    await this.retailRepository.deleteInventoryPool(tenant_id, poolId);
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "DELETE",
-      entityType: "INVENTORY_POOL",
-      entityId: poolId,
+      entity_type: "INVENTORY_POOL",
+      entity_id: poolId,
     });
   }
 
   // E-Commerce Stores
   async listEcommerceStores(
-    tenantId: string,
-    storeId?: string,
+    tenant_id: string,
+    store_id?: string,
   ): Promise<any[]> {
-    return this.retailRepository.listEcommerceStores(tenantId, storeId);
+    return this.retailRepository.listEcommerceStores(tenant_id, store_id);
   }
 
-  async getEcommerceStore(tenantId: string, storeId: string): Promise<any> {
+  async getEcommerceStore(tenant_id: string, store_id: string): Promise<any> {
     const store = await this.retailRepository.getEcommerceStore(
-      tenantId,
-      storeId,
+      tenant_id,
+      store_id,
     );
-    if (!store)
-      throw new NotFoundException(`E-commerce store ${storeId} not found`);
+    if (true /* RECOVERY */)
+      throw new NotFoundException(`E-commerce store ${store_id} not found`);
     return store;
   }
 
   async createEcommerceStore(
-    tenantId: string,
+    tenant_id: string,
     data: CreateEcommerceStoreDto,
-    userId: string,
+    user_id: string,
   ): Promise<any> {
     const store = await this.retailRepository.createEcommerceStore(
-      tenantId,
+      tenant_id,
       data,
     );
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "CREATE",
-      entityType: "ECOMMERCE_STORE",
-      entityId: store.id,
-      metadata: { name: store.name },
+      entity_type: "ECOMMERCE_STORE",
+      entity_id: stores.id,
+      metadata: { name: stores.name },
     });
     return store;
   }
 
   async updateEcommerceStore(
-    tenantId: string,
-    storeId: string,
+    tenant_id: string,
+    store_id: string,
     data: UpdateEcommerceStoreDto,
-    userId: string,
+    user_id: string,
   ): Promise<any> {
     const store = await this.retailRepository.updateEcommerceStore(
-      tenantId,
-      storeId,
+      tenant_id,
+      store_id,
       data,
     );
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "UPDATE",
-      entityType: "ECOMMERCE_STORE",
-      entityId: storeId,
+      entity_type: "ECOMMERCE_STORE",
+      entity_id: stores_id,
       metadata: { changes: data },
     });
     return store;
   }
 
   async deleteEcommerceStore(
-    tenantId: string,
-    storeId: string,
-    userId: string,
+    tenant_id: string,
+    store_id: string,
+    user_id: string,
   ): Promise<void> {
-    await this.retailRepository.deleteEcommerceStore(tenantId, storeId);
+    await this.retailRepository.deleteEcommerceStore(tenant_id, store_id);
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "DELETE",
-      entityType: "ECOMMERCE_STORE",
-      entityId: storeId,
+      entity_type: "ECOMMERCE_STORE",
+      entity_id: stores_id,
     });
   }
 
   async linkEcommerceToBranch(
-    tenantId: string,
+    tenant_id: string,
     ecommerceId: string,
-    branchId: string,
-    userId: string,
+    branch_id: string,
+    user_id: string,
   ): Promise<void> {
     await this.retailRepository.linkEcommerceToBranch(
-      tenantId,
+      tenant_id,
       ecommerceId,
-      branchId,
+      branch_id,
     );
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "LINK",
-      entityType: "ECOMMERCE_BRANCH",
-      entityId: ecommerceId,
-      metadata: { branchId },
+      entity_type: "ECOMMERCE_BRANCH",
+      entity_id: ecommerceId,
+      metadata: { branch_id },
     });
   }
 
   async unlinkEcommerceFromBranch(
-    tenantId: string,
+    tenant_id: string,
     ecommerceId: string,
-    branchId: string,
-    userId: string,
+    branch_id: string,
+    user_id: string,
   ): Promise<void> {
     await this.retailRepository.unlinkEcommerceFromBranch(
-      tenantId,
+      tenant_id,
       ecommerceId,
-      branchId,
+      branch_id,
     );
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "UNLINK",
-      entityType: "ECOMMERCE_BRANCH",
-      entityId: ecommerceId,
-      metadata: { branchId },
+      entity_type: "ECOMMERCE_BRANCH",
+      entity_id: ecommerceId,
+      metadata: { branch_id },
     });
   }
 
   // Products
   async listProducts(
-    tenantId: string,
+    tenant_id: string,
     options?: {
       page?: number;
       pageSize?: number;
-      categoryId?: string;
+      category_id?: string;
       type?: string;
       minPrice?: number;
       maxPrice?: number;
       q?: string;
-      sortBy?: "name" | "price" | "createdAt";
+      sortBy?: "name" | "price" | "created_at";
       sortDir?: "asc" | "desc";
-      locationId?: string;
+      location_id?: string;
     },
   ) {
-    return this.retailRepository.listProducts(tenantId, options);
+    return this.retailRepository.listProducts(tenant_id, options);
   }
 
-  async getProduct(tenantId: string, productId: string) {
-    return this.retailRepository.getProduct(tenantId, productId);
+  async getProduct(tenant_id: string, product_id: string) {
+    return this.retailRepository.getProduct(tenant_id, product_id);
   }
 
   async updateProduct(
-    tenantId: string,
-    productId: string,
+    tenant_id: string,
+    product_id: string,
     data: UpdateProductDto,
-    userId: string,
-    locationId?: string,
+    user_id: string,
+    location_id?: string,
   ) {
     const updated = await this.retailRepository.updateProduct(
-      tenantId,
-      productId,
+      tenant_id,
+      product_id,
       data,
-      locationId,
+      location_id,
     );
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "UPDATE",
-      entityType: "PRODUCT",
-      entityId: productId,
-      metadata: { changes: data, locationId },
+      entity_type: "PRODUCT",
+      entity_id: product_id,
+      metadata: { changes: data, location_id },
     });
     return updated;
   }
 
-  async findProductBySku(tenantId: string, sku: string): Promise<any> {
-    return this.prisma.itemMaster.findFirst({
+  async findProductBySku(tenant_id: string, sku: string): Promise<any> {
+    return this.prisma.item_masters.findFirst({
       where: {
-        tenantId,
+        tenant_id: tenant_id,
         sku,
         status: "active",
       },
@@ -336,47 +337,47 @@ export class RetailService {
   }
 
   async generateNextSku(
-    tenantId: string,
-    categoryId: string,
+    tenant_id: string,
+    category_id: string,
   ): Promise<{ sku: string; barcode: string }> {
-    const sku = await this.skuGenerator.generateSku(tenantId, categoryId);
-    const barcode = this.skuGenerator.generateBarcode(tenantId, sku);
+    const sku = await this.skuGenerator.generateSku(tenant_id, category_id);
+    const barcode = this.skuGenerator.generateBarcode(tenant_id, sku);
     return { sku, barcode };
   }
 
-  async listOrders(tenantId: string, storeId?: string): Promise<RetailOrder[]> {
-    return this.retailRepository.listOrders(tenantId, storeId);
+  async listOrders(tenant_id: string, store_id?: string): Promise<RetailOrder[]> {
+    return this.retailRepository.listOrders(tenant_id, store_id);
   }
 
   async createOrder(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     data: CreateOrderDto,
-    userId: string,
+    user_id: string,
   ): Promise<RetailOrder> {
     // 1. Initial creation (PENDING)
     const order = await this.retailRepository.createOrder(
-      tenantId,
-      locationId,
+      tenant_id,
+      location_id,
       data,
-      userId,
+      user_id,
     );
 
     // Audit initial creation
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "CREATE",
-      entityType: "ORDER",
-      entityId: order.id,
-      metadata: { total: order.grandTotal, itemCount: order.items.length },
+      entity_type: "ORDER",
+      entity_id: order.id,
+      metadata: { total: order.grand_total, itemCount: order.items.length },
     });
 
     // 2. Transition to RESERVED if items can be locked
     try {
-      await this.reserveOrderStock(tenantId, order);
-      return this.updateOrderStatus(tenantId, order.id, "reserved", {
+      await this.reserveOrderStock(tenant_id, order);
+      return this.updateOrderStatus(tenant_id, order.id, "reserved", {
         reservation_expires_at: new Date(
           Date.now() + 15 * 60 * 1000,
         ).toISOString(), // 15 min lock
@@ -387,132 +388,132 @@ export class RetailService {
     }
   }
 
-  async reserveOrderStock(tenantId: string, order: RetailOrder) {
+  async reserveOrderStock(tenant_id: string, order: RetailOrder) {
     for (const item of order.items) {
       const res = await this.retailRepository.reserveStock(
-        tenantId,
-        order.locationId || "default",
-        item.productId,
+        tenant_id,
+        order.location_id || "default",
+        item.product_id,
         item.quantity,
       );
       if (!res.success) {
-        throw new Error(`Insufficient stock for product ${item.productId}`);
+        throw new Error(`Insufficient stock for product ${item.product_id}`);
       }
     }
   }
 
   async calculateTax(
-    tenantId: string,
-    orderId: string,
-    userId?: string,
+    tenant_id: string,
+    order_id: string,
+    user_id?: string,
   ): Promise<number> {
-    const order = await this.retailRepository.getOrder(tenantId, orderId);
+    const order = await this.retailRepository.getOrder(tenant_id, order_id);
     if (!order) throw new NotFoundException("Order not found");
 
     // Placeholder for real tax logic (e.g., Avalara/TaxJar)
     // Simple 10% tax for mock mode
-    const taxTotal = Number(order.subtotal) * 0.1;
+    const tax_total = Number(order.subtotal) * 0.1;
     await this.retailRepository.updateOrderStatus(
-      tenantId,
-      orderId,
+      tenant_id,
+      order_id,
       order.status,
-      { tax_total: taxTotal },
+      { tax_total: tax_total },
     );
 
-    if (userId) {
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "retail",
         action: "CALCULATE_TAX",
-        entityType: "ORDER",
-        entityId: orderId,
-        metadata: { taxTotal },
+        entity_type: "ORDER",
+        entity_id: order_id,
+        metadata: { tax_total },
       });
     }
 
-    return taxTotal;
+    return tax_total;
   }
 
   async updateOrderStatus(
-    tenantId: string,
-    orderId: string,
+    tenant_id: string,
+    order_id: string,
     status: string,
     metadata?: any,
-    userId?: string,
+    user_id?: string,
   ): Promise<RetailOrder> {
     const order = await this.retailRepository.updateOrderStatus(
-      tenantId,
-      orderId,
+      tenant_id,
+      order_id,
       status,
       metadata,
     );
-    if (userId) {
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "retail",
         action: "UPDATE_STATUS",
-        entityType: "ORDER",
-        entityId: orderId,
+        entity_type: "ORDER",
+        entity_id: order_id,
         metadata: { status, ...metadata },
       });
     }
     return order;
   }
 
-  async getStockStatus(tenantId: string, productId: string) {
-    return this.retailRepository.checkStock(tenantId, productId);
+  async getStockStatus(tenant_id: string, product_id: string) {
+    return this.retailRepository.checkStock(tenant_id, product_id);
   }
 
   async getInventoryStats(
-    tenantId: string,
-    options?: { categoryId?: string; q?: string },
+    tenant_id: string,
+    options?: { category_id?: string; q?: string },
   ) {
-    return this.retailRepository.getInventoryStats(tenantId, options);
+    return this.retailRepository.getInventoryStats(tenant_id, options);
   }
 
   // Shifts
   async getActiveShift(
-    tenantId: string,
-    storeId: string,
-    employeeId: string,
+    tenant_id: string,
+    store_id: string,
+    employee_id: string,
   ): Promise<RetailShift | null> {
-    return this.retailRepository.getActiveShift(tenantId, storeId, employeeId);
+    return this.retailRepository.getActiveShift(tenant_id, store_id, employee_id);
   }
 
   async openShift(
-    tenantId: string,
-    locationId: string,
-    employeeId: string,
+    tenant_id: string,
+    location_id: string,
+    employee_id: string,
     data: OpenShiftDto,
-    userId?: string,
+    user_id?: string,
   ): Promise<RetailShift> {
     // Check if already has an active shift
     const active = await this.retailRepository.getActiveShift(
-      tenantId,
-      data.storeId,
-      employeeId,
+      tenant_id,
+      data.store_id,
+      employee_id,
     );
     if (active) {
       throw new Error("Shift already active for this employee and store.");
     }
     const shift = await this.retailRepository.openShift(
-      tenantId,
-      locationId,
-      employeeId,
+      tenant_id,
+      location_id,
+      employee_id,
       data,
     );
 
-    if (userId) {
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "retail",
         action: "OPEN_SHIFT",
-        entityType: "SHIFT",
-        entityId: shift.id,
-        metadata: { openingCash: data.openingCash, storeId: data.storeId },
+        entity_type: "SHIFT",
+        entity_id: shift.id,
+        metadata: { opening_cash: data.opening_cash, store_id: data.store_id },
       });
     }
 
@@ -520,69 +521,120 @@ export class RetailService {
   }
 
   async closeShift(
-    tenantId: string,
-    shiftId: string,
+    tenant_id: string,
+    shift_id: string,
     data: CloseShiftDto,
-    userId: string,
+    user_id: string,
   ): Promise<RetailShift> {
     const shift = await this.retailRepository.closeShift(
-      tenantId,
-      shiftId,
+      tenant_id,
+      shift_id,
       data,
     );
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "CLOSE_SHIFT",
-      entityType: "SHIFT",
-      entityId: shiftId,
-      metadata: { closingCash: data.closingCash },
+      entity_type: "SHIFT",
+      entity_id: shift_id,
+      metadata: { closing_cash: data.closing_cash },
     });
     return shift;
   }
 
-  async listShifts(tenantId: string, storeId?: string): Promise<RetailShift[]> {
-    return this.retailRepository.listShifts(tenantId, storeId);
+  async listShifts(
+    tenant_id: string,
+    filters?: {
+      store_id?: string;
+      employee_id?: string;
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<RetailShift[]> {
+    return this.retailRepository.listShifts(tenant_id, filters);
+  }
+
+  async checkout(
+    tenant_id: string,
+    data: CheckoutDto,
+    user_id: string,
+    idempotencyKey?: string,
+  ): Promise<RetailOrder> {
+    const order = await this.retailRepository.atomicCheckout(
+      tenant_id,
+      data,
+      user_id,
+      idempotencyKey,
+    );
+
+    await this.auditService.log({
+      tenant_id,
+      user_id,
+      module: "retail",
+      action: "CHECKOUT",
+      entity_type: "ORDER",
+      entity_id: order.id,
+      metadata: {
+        total: order.grand_total,
+        items: order.items.length,
+        method: data.payment_method,
+      },
+    });
+
+    // Fire event for any downstream listeners (e.g. Loyalty/Email)
+    await this.eventBus.publish({
+      tenant_id,
+      event_type: "retail.order.completed",
+      entity_id: order.id,
+      entity_type: "ORDER",
+      source_module: "retail",
+      payload: {
+        order_id: order.id,
+        total: order.grand_total,
+      },
+    });
+
+    return order;
   }
 
   // Promotions
-  async listPromotions(tenantId: string): Promise<any[]> {
-    return this.retailRepository.listPromotions(tenantId);
+  async listPromotions(tenant_id: string): Promise<any[]> {
+    return this.retailRepository.listPromotions(tenant_id);
   }
 
   async updatePromotion(
-    tenantId: string,
+    tenant_id: string,
     promotionId: string,
     data: any,
-    userId: string,
+    user_id: string,
   ): Promise<any> {
     const promo = await this.retailRepository.updatePromotion(
-      tenantId,
+      tenant_id,
       promotionId,
       data,
     );
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "UPDATE",
-      entityType: "PROMOTION",
-      entityId: promotionId,
+      entity_type: "PROMOTION",
+      entity_id: promotionId,
       metadata: { changes: data },
     });
     return promo;
   }
 
   // Channels
-  async listChannels(tenantId: string): Promise<any[]> {
-    return this.retailRepository.listChannels(tenantId);
+  async listChannels(tenant_id: string): Promise<any[]> {
+    return this.retailRepository.listChannels(tenant_id);
   }
 
   async createChannel(
-    tenantId: string,
+    tenant_id: string,
     data: any,
-    userId: string,
+    user_id: string,
   ): Promise<any> {
     const shouldProvision =
       typeof data?.provisionCredentials === "boolean"
@@ -606,17 +658,17 @@ export class RetailService {
     };
 
     const channel = await this.retailRepository.createChannel(
-      tenantId,
+      tenant_id,
       payload,
     );
 
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "CREATE",
-      entityType: "CHANNEL",
-      entityId: channel.id,
+      entity_type: "CHANNEL",
+      entity_id: channel.id,
       metadata: { name: channel.name, type: channel.type },
     });
 
@@ -628,79 +680,79 @@ export class RetailService {
   }
 
   async updateChannel(
-    tenantId: string,
+    tenant_id: string,
     channelId: string,
     data: any,
-    userId: string,
+    user_id: string,
   ): Promise<any> {
     const channel = await this.retailRepository.updateChannel(
-      tenantId,
+      tenant_id,
       channelId,
       data,
     );
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "UPDATE",
-      entityType: "CHANNEL",
-      entityId: channelId,
+      entity_type: "CHANNEL",
+      entity_id: channelId,
       metadata: { changes: data },
     });
     return channel;
   }
 
   async deleteChannel(
-    tenantId: string,
+    tenant_id: string,
     channelId: string,
-    userId: string,
+    user_id: string,
   ): Promise<{ success: boolean }> {
     const result = await this.retailRepository.deleteChannel(
-      tenantId,
+      tenant_id,
       channelId,
     );
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "DELETE",
-      entityType: "CHANNEL",
-      entityId: channelId,
+      entity_type: "CHANNEL",
+      entity_id: channelId,
     });
     return result;
   }
 
   async syncChannel(
-    tenantId: string,
+    tenant_id: string,
     channelId: string,
-    userId: string,
+    user_id: string,
   ): Promise<{ success: boolean }> {
-    const result = await this.retailRepository.syncChannel(tenantId, channelId);
+    const result = await this.retailRepository.syncChannel(tenant_id, channelId);
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "SYNC",
-      entityType: "CHANNEL",
-      entityId: channelId,
+      entity_type: "CHANNEL",
+      entity_id: channelId,
     });
     return result;
   }
 
   async getChannelById(
-    tenantId: string,
+    tenant_id: string,
     channelId: string,
   ): Promise<any | null> {
-    return this.retailRepository.getChannelById(tenantId, channelId);
+    return this.retailRepository.getChannelById(tenant_id, channelId);
   }
 
   async rotateChannelCredentials(
-    tenantId: string,
+    tenant_id: string,
     channelId: string,
-    userId: string,
+    user_id: string,
   ): Promise<{ clientId: string; clientSecret: string }> {
     const channel = await this.retailRepository.getChannelById(
-      tenantId,
+      tenant_id,
       channelId,
     );
     if (!channel) {
@@ -709,7 +761,7 @@ export class RetailService {
 
     const existingCredentials = channel.credentials as {
       clientId?: string;
-      branchId?: string;
+      branch_id?: string;
       gatewayUrl?: string;
       connector?: string;
     } | null;
@@ -719,7 +771,7 @@ export class RetailService {
       clientId,
       clientSecret,
       clientSecretHash: this.hashSecret(clientSecret),
-      branchId: existingCredentials?.branchId,
+      branch_id: existingCredentials?.branch_id,
       gatewayUrl: existingCredentials?.gatewayUrl,
       connector: existingCredentials?.connector,
       lastRotated: new Date().toISOString(),
@@ -727,30 +779,30 @@ export class RetailService {
     };
 
     await this.retailRepository.updateChannelCredentials(
-      tenantId,
+      tenant_id,
       channelId,
       credentialsPayload,
     );
 
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "ROTATE_CREDENTIALS",
-      entityType: "CHANNEL",
-      entityId: channelId,
+      entity_type: "CHANNEL",
+      entity_id: channelId,
     });
 
     return { clientId, clientSecret };
   }
 
   async revokeChannelCredentials(
-    tenantId: string,
+    tenant_id: string,
     channelId: string,
-    userId: string,
+    user_id: string,
   ): Promise<{ clientId: string }> {
     const channel = await this.retailRepository.getChannelById(
-      tenantId,
+      tenant_id,
       channelId,
     );
     if (!channel) {
@@ -761,7 +813,7 @@ export class RetailService {
       clientId?: string;
       clientSecret?: string;
       clientSecretHash?: string;
-      branchId?: string;
+      branch_id?: string;
       gatewayUrl?: string;
       connector?: string;
     } | null;
@@ -773,7 +825,7 @@ export class RetailService {
       clientId: existingCredentials.clientId,
       clientSecret: existingCredentials.clientSecret,
       clientSecretHash: existingCredentials.clientSecretHash ?? "",
-      branchId: existingCredentials.branchId,
+      branch_id: existingCredentials.branch_id,
       gatewayUrl: existingCredentials.gatewayUrl,
       connector: existingCredentials.connector,
       revoked: true,
@@ -781,18 +833,18 @@ export class RetailService {
     };
 
     await this.retailRepository.updateChannelCredentials(
-      tenantId,
+      tenant_id,
       channelId,
       credentialsPayload,
     );
 
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "REVOKE_CREDENTIALS",
-      entityType: "CHANNEL",
-      entityId: channelId,
+      entity_type: "CHANNEL",
+      entity_id: channelId,
     });
 
     return { clientId: existingCredentials.clientId };
@@ -811,136 +863,136 @@ export class RetailService {
   }
 
   async findChannelByClientId(
-    tenantId: string,
+    tenant_id: string,
     clientId: string,
   ): Promise<any | null> {
-    return this.retailRepository.findChannelByClientId(tenantId, clientId);
+    return this.retailRepository.findChannelByClientId(tenant_id, clientId);
   }
 
   // Devices
-  async listDevices(tenantId: string, storeId?: string): Promise<any[]> {
-    return this.retailRepository.listDevices(tenantId, storeId);
+  async listDevices(tenant_id: string, store_id?: string): Promise<any[]> {
+    return this.retailRepository.listDevices(tenant_id, store_id);
   }
 
   async registerDevice(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     data: RegisterBranchDeviceDto,
-    userId: string,
+    user_id: string,
   ): Promise<any> {
     const device = await this.retailRepository.registerDevice(
-      tenantId,
-      locationId,
+      tenant_id,
+      location_id,
       data,
     );
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "it",
       action: "REGISTER",
-      entityType: "DEVICE",
-      entityId: device.id,
+      entity_type: "DEVICE",
+      entity_id: device.id,
       metadata: { name: device.name, type: device.type },
     });
     return device;
   }
 
-  async listCCTVs(tenantId: string, storeId?: string): Promise<any[]> {
-    return this.retailRepository.listCCTVs(tenantId, storeId);
+  async listCCTVs(tenant_id: string, store_id?: string): Promise<any[]> {
+    return this.retailRepository.listCCTVs(tenant_id, store_id);
   }
 
   async validateCCTVConnection(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     data: Partial<RegisterCCTVCameraDto>,
   ): Promise<{ success: boolean; message?: string }> {
     return this.retailRepository.validateCCTVConnection(
-      tenantId,
-      locationId,
+      tenant_id,
+      location_id,
       data,
     );
   }
 
   async registerCCTV(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     data: RegisterCCTVCameraDto,
-    userId: string,
+    user_id: string,
   ): Promise<any> {
     const camera = await this.retailRepository.registerCCTV(
-      tenantId,
-      locationId,
+      tenant_id,
+      location_id,
       data,
     );
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "it",
       action: "REGISTER",
-      entityType: "CCTV",
-      entityId: camera.id,
+      entity_type: "CCTV",
+      entity_id: camera.id,
       metadata: { name: camera.name, provider: camera.provider },
     });
     return camera;
   }
 
-  async listSensors(tenantId: string, storeId?: string): Promise<any[]> {
-    return this.retailRepository.listSensors(tenantId, storeId);
+  async listSensors(tenant_id: string, store_id?: string): Promise<any[]> {
+    return this.retailRepository.listSensors(tenant_id, store_id);
   }
 
   async registerSensor(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     data: RegisterBranchSensorDto,
-    userId: string,
+    user_id: string,
   ): Promise<any> {
     const sensor = await this.retailRepository.registerSensor(
-      tenantId,
-      locationId,
+      tenant_id,
+      location_id,
       data,
     );
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "it",
       action: "REGISTER",
-      entityType: "SENSOR",
-      entityId: sensor.id,
+      entity_type: "SENSOR",
+      entity_id: sensor.id,
       metadata: { name: sensor.name, type: sensor.type },
     });
     return sensor;
   }
 
   async pingDevice(
-    tenantId: string,
-    deviceId: string,
+    tenant_id: string,
+    device_id: string,
   ): Promise<{ success: boolean }> {
-    return this.retailRepository.pingDevice(tenantId, deviceId);
+    return this.retailRepository.pingDevice(tenant_id, device_id);
   }
 
-  async scanDevices(tenantId: string, locationId: string): Promise<any[]> {
-    return this.retailRepository.scanDevices(tenantId, locationId);
+  async scanDevices(tenant_id: string, location_id: string): Promise<any[]> {
+    return this.retailRepository.scanDevices(tenant_id, location_id);
   }
 
   async commitScannedDevice(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     discoveryId: string,
-    userId: string,
+    user_id: string,
   ): Promise<any> {
     const device = await this.retailRepository.commitScannedDevice(
-      tenantId,
-      locationId,
+      tenant_id,
+      location_id,
       discoveryId,
     );
     if (device) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "it",
         action: "REGISTER",
-        entityType: "DEVICE",
-        entityId: device.id,
+        entity_type: "DEVICE",
+        entity_id: device.id,
         metadata: {
           name: device.name,
           type: device.type,
@@ -953,50 +1005,50 @@ export class RetailService {
 
   // Payments & Returns
   async processPayment(
-    tenantId: string,
-    orderId: string,
-    data: { amount: number; method: string; shiftId?: string },
-    userId: string,
+    tenant_id: string,
+    order_id: string,
+    data: { amount: number; method: string; shift_id?: string },
+    user_id: string,
   ): Promise<any> {
     // 1. Process payment via Repository (Atomically handles DB, Stock, and Finance ledgers)
     const result = await this.retailRepository.processPayment(
-      tenantId,
-      orderId,
+      tenant_id,
+      order_id,
       data,
     );
 
     // 2. Publish Sales Event
     if (result.success && result.movements) {
       await this.eventBus.publish({
-        eventType: "RETAIL_SALE_COMPLETED",
-        tenantId: tenantId,
-        entityId: orderId,
-        entityType: "ORDER",
-        sourceModule: "retail",
+        event_type: "RETAIL_SALE_COMPLETED",
+        tenant_id: tenant_id,
+        entity_id: order_id,
+        entity_type: "ORDER",
+        source_module: "retail",
         payload: {
-          orderId,
-          locationId: result.movements[0]?.fromLocationId || "default",
+          order_id,
+          location_id: result.movements[0]?.fromLocationId || "default",
           movements: result.movements,
           amount: data.amount,
           method: data.method,
         },
-        userId,
+        user_id,
       });
     }
 
     // 3. Audit Logging
-    const order = await this.retailRepository.getOrder(tenantId, orderId);
+    const order = await this.retailRepository.getOrder(tenant_id, order_id);
     if (order) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "retail",
         action: "PAYMENT_COMPLETE",
-        entityType: "ORDER",
-        entityId: orderId,
+        entity_type: "ORDER",
+        entity_id: order_id,
         metadata: {
-          total: order.grandTotal,
-          paymentMethod: data.method,
+          total: order.grand_total,
+          payment_method: data.method,
         },
       });
     }
@@ -1005,53 +1057,53 @@ export class RetailService {
   }
 
   async processReturn(
-    tenantId: string,
-    orderId: string,
-    data: { itemIds: string[]; shiftId?: string },
-    userId: string,
+    tenant_id: string,
+    order_id: string,
+    data: { itemIds: string[]; shift_id?: string },
+    user_id: string,
   ): Promise<{ success: boolean }> {
     // 1. Get Order Details
-    const order = await this.retailRepository.getOrder(tenantId, orderId);
+    const order = await this.retailRepository.getOrder(tenant_id, order_id);
     if (!order) throw new NotFoundException("Order not found");
 
     // 2. Emit Return Completed Event instead of calling Inventory and Finance
     await this.eventBus.publish({
-      eventType: "RETAIL_RETURN_COMPLETED",
-      tenantId: tenantId,
-      entityId: orderId,
-      entityType: "ORDER",
-      sourceModule: "retail",
+      event_type: "RETAIL_RETURN_COMPLETED",
+      tenant_id: tenant_id,
+      entity_id: order_id,
+      entity_type: "ORDER",
+      source_module: "retail",
       payload: {
-        orderId,
-        storeId: order.storeId || "default",
-        grandTotal: order.grandTotal,
-        returnedItems: data.itemIds.map((itemId) => {
-          const orderItem = order.items.find((i) => i.productId === itemId);
+        order_id,
+        store_id: order.store_id || "default",
+        grand_total: order.grand_total,
+        returnedItems: data.itemIds.map((item_id) => {
+          const orderItem = order.items.find((i) => i.product_id === item_id);
           return {
-            productId: itemId,
+            product_id: item_id,
             quantity: orderItem?.quantity || 1,
-            unitPrice: Number(orderItem?.unitPrice || 0),
+            unit_price: Number(orderItem?.unit_price || 0),
           };
         }),
       },
-      userId,
+      user_id,
     });
 
     // 4. Call Repository
     const result = await this.retailRepository.processReturn(
-      tenantId,
-      orderId,
+      tenant_id,
+      order_id,
       data,
     );
 
     // 5. Audit Log
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "RETURN_PROCESS",
-      entityType: "ORDER",
-      entityId: orderId,
+      entity_type: "ORDER",
+      entity_id: order_id,
       metadata: { refundedItems: data.itemIds.length },
     });
 
@@ -1060,36 +1112,36 @@ export class RetailService {
 
   // Inventory Operations
   async submitOpname(
-    tenantId: string,
-    data: { storeId: string; adjustments: any[]; shiftId?: string },
-    userId: string,
+    tenant_id: string,
+    data: { store_id: string; adjustments: any[]; shift_id?: string },
+    user_id: string,
   ): Promise<{ success: boolean }> {
     // 1. Emit Opname Event (adjustments handled by listener)
     await this.eventBus.publish({
-      eventType: "RETAIL_OPNAME_SUBMITTED",
-      tenantId: tenantId,
-      entityId: data.storeId,
-      entityType: "STORE",
-      sourceModule: "retail",
+      event_type: "RETAIL_OPNAME_SUBMITTED",
+      tenant_id: tenant_id,
+      entity_id: data.store_id,
+      entity_type: "STORE",
+      source_module: "retail",
       payload: {
-        storeId: data.storeId,
+        store_id: data.store_id,
         adjustments: data.adjustments.filter((adj) => adj.variance !== 0),
-        sessionId: data.shiftId || "SESSION",
+        sessionId: data.shift_id || "SESSION",
       },
-      userId,
+      user_id,
     });
 
     // 2. Call Repository
-    const result = await this.retailRepository.submitOpname(tenantId, data);
+    const result = await this.retailRepository.submitOpname(tenant_id, data);
 
     // 3. Audit Log
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "STOCK_OPNAME",
-      entityType: "STORE",
-      entityId: data.storeId,
+      entity_type: "STORE",
+      entity_id: data.store_id,
       metadata: { adjustmentCount: data.adjustments.length },
     });
 
@@ -1097,41 +1149,41 @@ export class RetailService {
   }
 
   async receiveGoods(
-    tenantId: string,
+    tenant_id: string,
     data: {
-      storeId: string;
-      shipmentId: string;
+      store_id: string;
+      shipment_id: string;
       items: any[];
-      shiftId?: string;
+      shift_id?: string;
     },
-    userId: string,
+    user_id: string,
   ): Promise<{ success: boolean }> {
     // 1. Emit Goods Receipt Event to trigger Inventory Intake
     await this.eventBus.publish({
-      eventType: "RETAIL_GOODS_RECEIVED",
-      tenantId: tenantId,
-      entityId: data.shipmentId,
-      entityType: "SHIPMENT",
-      sourceModule: "retail",
+      event_type: "RETAIL_GOODS_RECEIVED",
+      tenant_id: tenant_id,
+      entity_id: data.shipment_id,
+      entity_type: "SHIPMENT",
+      source_module: "retail",
       payload: {
-        storeId: data.storeId,
-        shipmentId: data.shipmentId,
+        store_id: data.store_id,
+        shipment_id: data.shipment_id,
         items: data.items,
       },
-      userId,
+      user_id,
     });
 
     // 2. Call Repository
-    const result = await this.retailRepository.receiveGoods(tenantId, data);
+    const result = await this.retailRepository.receiveGoods(tenant_id, data);
 
     // 3. Audit Log
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "retail",
       action: "STOCK_INTAKE",
-      entityType: "SHIPMENT",
-      entityId: data.shipmentId,
+      entity_type: "SHIPMENT",
+      entity_id: data.shipment_id,
       metadata: { itemCount: data.items.length },
     });
 
@@ -1140,24 +1192,24 @@ export class RetailService {
 
   // --- Public Gateway (Customer, Cart, Wishlist) ---
 
-  async findCustomerByEmail(tenantId: string, email: string) {
-    return this.retailRepository.findCustomerByEmail(tenantId, email);
+  async findCustomerByEmail(tenant_id: string, email: string) {
+    return this.retailRepository.findCustomerByEmail(tenant_id, email);
   }
 
-  async findCustomerById(tenantId: string, customerId: string) {
-    return this.retailRepository.findCustomerById(tenantId, customerId);
+  async findCustomerById(tenant_id: string, customer_id: string) {
+    return this.retailRepository.findCustomerById(tenant_id, customer_id);
   }
 
-  async createCustomer(tenantId: string, data: any, userId?: string) {
-    const customer = await this.retailRepository.createCustomer(tenantId, data);
-    if (userId) {
+  async createCustomer(tenant_id: string, data: any, user_id?: string) {
+    const customer = await this.retailRepository.createCustomer(tenant_id, data);
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "retail",
         action: "CREATE",
-        entityType: "CUSTOMER",
-        entityId: customer.id,
+        entity_type: "CUSTOMER",
+        entity_id: customer.id,
         metadata: { name: customer.name, email: customer.email },
       });
     }
@@ -1165,105 +1217,105 @@ export class RetailService {
   }
 
   async updateCustomer(
-    tenantId: string,
-    customerId: string,
+    tenant_id: string,
+    customer_id: string,
     data: any,
-    userId?: string,
+    user_id?: string,
   ) {
     const customer = await this.retailRepository.updateCustomer(
-      tenantId,
-      customerId,
+      tenant_id,
+      customer_id,
       data,
     );
-    if (userId) {
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "retail",
         action: "UPDATE",
-        entityType: "CUSTOMER",
-        entityId: customerId,
+        entity_type: "CUSTOMER",
+        entity_id: customer_id,
         metadata: { changes: data },
       });
     }
     return customer;
   }
 
-  async createCustomerSession(tenantId: string, data: any) {
-    return this.retailRepository.createCustomerSession(tenantId, data);
+  async createCustomerSession(tenant_id: string, data: any) {
+    return this.retailRepository.createCustomerSession(tenant_id, data);
   }
 
-  async findCustomerSession(tenantId: string, tokenHash: string) {
-    return this.retailRepository.findCustomerSession(tenantId, tokenHash);
+  async findCustomerSession(tenant_id: string, tokenHash: string) {
+    return this.retailRepository.findCustomerSession(tenant_id, tokenHash);
   }
 
-  async revokeCustomerSession(tenantId: string, tokenHash: string) {
-    return this.retailRepository.revokeCustomerSession(tenantId, tokenHash);
+  async revokeCustomerSession(tenant_id: string, tokenHash: string) {
+    return this.retailRepository.revokeCustomerSession(tenant_id, tokenHash);
   }
 
-  async getCart(tenantId: string, customerId: string) {
-    return this.retailRepository.getCart(tenantId, customerId);
+  async getCart(tenant_id: string, customer_id: string) {
+    return this.retailRepository.getCart(tenant_id, customer_id);
   }
 
-  async createCart(tenantId: string, customerId: string) {
-    return this.retailRepository.createCart(tenantId, customerId);
+  async createCart(tenant_id: string, customer_id: string) {
+    return this.retailRepository.createCart(tenant_id, customer_id);
   }
 
   async updateCartItem(
-    tenantId: string,
+    tenant_id: string,
     cartId: string,
-    productId: string,
-    data: { quantity: number; unitPrice: number },
+    product_id: string,
+    data: { quantity: number; unit_price: number },
   ) {
     return this.retailRepository.updateCartItem(
-      tenantId,
+      tenant_id,
       cartId,
-      productId,
+      product_id,
       data,
     );
   }
 
-  async removeCartItem(tenantId: string, cartId: string, itemId: string) {
-    return this.retailRepository.removeCartItem(tenantId, cartId, itemId);
+  async removeCartItem(tenant_id: string, cartId: string, item_id: string) {
+    return this.retailRepository.removeCartItem(tenant_id, cartId, item_id);
   }
 
-  async clearCart(tenantId: string, cartId: string) {
-    return this.retailRepository.clearCart(tenantId, cartId);
+  async clearCart(tenant_id: string, cartId: string) {
+    return this.retailRepository.clearCart(tenant_id, cartId);
   }
 
-  async getWishlist(tenantId: string, customerId: string) {
-    return this.retailRepository.getWishlist(tenantId, customerId);
+  async getWishlist(tenant_id: string, customer_id: string) {
+    return this.retailRepository.getWishlist(tenant_id, customer_id);
   }
 
-  async upsertWishlist(tenantId: string, customerId: string) {
-    return this.retailRepository.upsertWishlist(tenantId, customerId);
+  async upsertWishlist(tenant_id: string, customer_id: string) {
+    return this.retailRepository.upsertWishlist(tenant_id, customer_id);
   }
 
   async addWishlistItem(
-    tenantId: string,
+    tenant_id: string,
     wishlistId: string,
-    productId: string,
+    product_id: string,
   ) {
     return this.retailRepository.addWishlistItem(
-      tenantId,
+      tenant_id,
       wishlistId,
-      productId,
+      product_id,
     );
   }
 
   async removeWishlistItem(
-    tenantId: string,
+    tenant_id: string,
     wishlistId: string,
-    itemId: string,
+    item_id: string,
   ) {
     return this.retailRepository.removeWishlistItem(
-      tenantId,
+      tenant_id,
       wishlistId,
-      itemId,
+      item_id,
     );
   }
 
-  async logEvent(tenantId: string, data: any) {
-    return this.retailRepository.logEvent(tenantId, data);
+  async logEvent(tenant_id: string, data: any) {
+    return this.retailRepository.logEvent(tenant_id, data);
   }
 }

@@ -25,8 +25,8 @@ export class APAllocationService {
 
     // 1. Resolve Accounting Mapping
     const mapping = await this.mappingService.resolveAccounts(
-        payment.tenantId,
-        payment.companyId,
+        payment.tenant_id,
+        payment.company_id,
         SubledgerEntryType.AP_ALLOCATION,
         'ALLOCATION'
     );
@@ -38,12 +38,12 @@ export class APAllocationService {
 
     // 3. Trigger Financial Posting (POSTING)
     const postingRequest = {
-        requestId: postingRequestId,
-        tenantId: payment.tenantId,
-        companyId: payment.companyId,
-        sourceModule: 'ACCOUNTS_PAYABLE',
+        request_id: postingRequestId,
+        tenant_id: payment.tenant_id,
+        company_id: payment.company_id,
+        source_module: 'ACCOUNTS_PAYABLE',
         sourceEventId: `ALC-${payment.id}-${bill.id}`,
-        eventType: SubledgerEntryType.AP_ALLOCATION,
+        event_type: SubledgerEntryType.AP_ALLOCATION,
         payload: {
           paymentId: payment.id,
           billId: bill.id,
@@ -53,7 +53,7 @@ export class APAllocationService {
           creditAccountId: mapping.creditAccountId,
           fiscalPeriodId: 'SYS_AUTO',
         },
-        createdAt: new Date(),
+        created_at: new Date(),
     };
 
     const result = await this.gateway.postEvent(postingRequest as any);

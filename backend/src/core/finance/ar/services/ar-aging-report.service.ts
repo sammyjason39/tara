@@ -9,8 +9,8 @@ export class ArAgingReportService {
     private readonly invoiceRepo: IArInvoiceRepository,
   ) {}
 
-  async getAgingReport(tenantId: string, companyId: string) {
-    const invoices = await this.invoiceRepo.findAll(tenantId, companyId);
+  async getAgingReport(tenant_id: string, company_id: string) {
+    const invoices = await this.invoiceRepo.findAll(tenant_id, company_id);
     const now = new Date();
 
     const report = {
@@ -26,7 +26,7 @@ export class ArAgingReportService {
         return;
       }
 
-      const dueDate = inv.dueDate || inv.createdAt;
+      const dueDate = inv.dueDate || inv.created_at;
       const diffDays = Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
       const amount = Number(inv.outstandingAmount);
 

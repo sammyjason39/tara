@@ -4,17 +4,17 @@
  */
 export class Position {
   id: string;
-  tenantId: string;
-  locationId: string;
-  departmentId: string;
+  tenant_id: string;
+  location_id: string;
+  department_id: string;
   title: string;
   grade: string;
   status: "open" | "filled" | "frozen" | "closed";
   budgetedSalary?: number;
   reportsToPositionId?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date;
+  created_at: Date;
+  updated_at: Date;
+  deleted_at?: Date;
 
   positionSkills?: any[]; // Position skills
   department?: any;

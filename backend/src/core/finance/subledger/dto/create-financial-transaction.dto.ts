@@ -4,7 +4,7 @@ import { Transform } from 'class-transformer';
 export class CreateFinancialTransactionDto {
   @IsNotEmpty()
   @IsString()
-  locationId: string;
+  location_id: string;
 
   @IsNotEmpty()
   @IsString()

@@ -9,8 +9,8 @@ export class PostingLockManager {
    * Acquires a lock for a specific source event to prevent race conditions.
    * In production, this would use Redis (Redlock).
    */
-  async acquire(tenantId: string, companyId: string, sourceEventId: string): Promise<boolean> {
-    const lockKey = `${tenantId}:${companyId}:${sourceEventId}`;
+  async acquire(tenant_id: string, company_id: string, sourceEventId: string): Promise<boolean> {
+    const lockKey = `${tenant_id}:${company_id}:${sourceEventId}`;
     
     if (this.locks.has(lockKey)) {
       this.logger.warn(`Lock already held for key: ${lockKey}`);
@@ -25,8 +25,8 @@ export class PostingLockManager {
   /**
    * Releases the lock.
    */
-  async release(tenantId: string, companyId: string, sourceEventId: string): Promise<void> {
-    const lockKey = `${tenantId}:${companyId}:${sourceEventId}`;
+  async release(tenant_id: string, company_id: string, sourceEventId: string): Promise<void> {
+    const lockKey = `${tenant_id}:${company_id}:${sourceEventId}`;
     this.locks.delete(lockKey);
     this.logger.debug(`Lock released for key: ${lockKey}`);
   }

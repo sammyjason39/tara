@@ -36,17 +36,17 @@ export class LedgerIntegrityService {
   ) {}
 
   @Cron(CronExpression.EVERY_HOUR)
-  async runIntegrityAudits(tenantId: string = this.defaultTenantId, companyId?: string) {
-    this.logger.log(`Starting background Ledger Integrity Audits for Tenant ${tenantId}${companyId ? ` Company ${companyId}` : ''}...`);
+  async runIntegrityAudits(tenant_id: string = this.defaultTenantId, company_id?: string) {
+    this.logger.log(`Starting background Ledger Integrity Audits for Tenant ${tenant_id}${company_id ? ` Company ${company_id}` : ''}...`);
     
-    const companies = companyId ? [companyId] : ['company_1']; 
+    const companies = company_id ? [company_id] : ['company_1']; 
 
     for (const cid of companies) {
-      await this.checkTrialBalanceIntegrity(tenantId, cid);
-      await this.checkBalanceProjectionIntegrity(tenantId, cid);
-      await this.checkSequenceIntegrity(tenantId, cid);
-      await this.verifyJournalHashChain(tenantId, cid);
-      await this.storeDailyHashAnchor(tenantId, cid);
+      await this.checkTrialBalanceIntegrity(tenant_id, cid);
+      await this.checkBalanceProjectionIntegrity(tenant_id, cid);
+      await this.checkSequenceIntegrity(tenant_id, cid);
+      await this.verifyJournalHashChain(tenant_id, cid);
+      await this.storeDailyHashAnchor(tenant_id, cid);
     }
     
     this.logger.log('Ledger Integrity Audits completed.');
@@ -55,10 +55,10 @@ export class LedgerIntegrityService {
   /**
    * 1. Trial Balance Check: SUM(Debits) must equal SUM(Credits)
    */
-  private async checkTrialBalanceIntegrity(tenantId: string, companyId: string) {
-    this.logger.debug(`[Integrity] Checking Trial Balance for Tenant ${tenantId} Company ${companyId}`);
+  private async checkTrialBalanceIntegrity(tenant_id: string, company_id: string) {
+    this.logger.debug(`[Integrity] Checking Trial Balance for Tenant ${tenant_id} Company ${company_id}`);
     
-    const journals = await this.journalRepo.findAllOrderedByDate(tenantId, companyId);
+    const journals = await this.journalRepo.findAllOrderedByDate(tenant_id, company_id);
     let totalDebit = new Prisma.Decimal(0);
     let totalCredit = new Prisma.Decimal(0);
 
@@ -72,8 +72,8 @@ export class LedgerIntegrityService {
 
     if (!totalDebit.equals(totalCredit)) {
       await this.reportViolation(
-        tenantId, 
-        companyId, 
+        tenant_id, 
+        company_id, 
         'TRIAL_BALANCE_MISMATCH', 
         `Total Debits (${totalDebit.toString()}) do not equal Total Credits (${totalCredit.toString()})`
       );
@@ -84,12 +84,12 @@ export class LedgerIntegrityService {
    * 2. Balance Projection Check: AccountBalance.netBalance == SUM(JournalLines)
    * Area 2: Uses rolling reconciliation for scalability.
    */
-  private async checkBalanceProjectionIntegrity(tenantId: string, companyId: string) {
-    this.logger.debug(`[Integrity] Checking Balance Projection for Tenant ${tenantId} Company ${companyId}`);
+  private async checkBalanceProjectionIntegrity(tenant_id: string, company_id: string) {
+    this.logger.debug(`[Integrity] Checking Balance Projection for Tenant ${tenant_id} Company ${company_id}`);
     
     // In mock, we check a few key accounts or all in a period
     // Real implementation would iterate through all active AccountBalance records
-    const journals = await this.journalRepo.findAllOrderedByDate(tenantId, companyId);
+    const journals = await this.journalRepo.findAllOrderedByDate(tenant_id, company_id);
     if (journals.length === 0) return;
 
     const fiscalPeriodId = journals[journals.length - 1].fiscalPeriodId;
@@ -99,23 +99,23 @@ export class LedgerIntegrityService {
     if (firstLine) {
       const currency = firstLine.currency || 'USD';
       const report = await this.reconService.verifyAccountConsistencyRolling(
-        tenantId, 
-        companyId, 
+        tenant_id, 
+        company_id, 
         fiscalPeriodId, 
         firstLine.accountId,
         currency,
-        { branchId: firstLine.dimensionBranchId || firstLine.branchId || '', locationId: firstLine.locationId || '' }
+        { branch_id: firstLine.dimensionBranchId || firstLine.branch_id || '', location_id: firstLine.location_id || '' }
       );
 
       if (report.status === 'MISMATCH') {
         // Area 3: Self-Healing Trigger
         await this.autoRepairBalance(
-          tenantId, 
-          companyId, 
+          tenant_id, 
+          company_id, 
           fiscalPeriodId, 
           firstLine.accountId, 
           currency,
-          { branchId: firstLine.dimensionBranchId || firstLine.branchId || '', locationId: firstLine.locationId || '' }
+          { branch_id: firstLine.dimensionBranchId || firstLine.branch_id || '', location_id: firstLine.location_id || '' }
         );
       }
     }
@@ -126,17 +126,17 @@ export class LedgerIntegrityService {
    * Automatically repairs a drifted account balance by recalculating it from the ledger.
    */
   async autoRepairBalance(
-    tenantId: string,
-    companyId: string,
+    tenant_id: string,
+    company_id: string,
     fiscalPeriodId: string,
     accountId: string,
     currency: string,
     dimensions: any
   ): Promise<boolean> {
-    this.logger.warn(`[Self-Healing] Attempting auto-repair for Account ${accountId} (Company: ${companyId})...`);
+    this.logger.warn(`[Self-Healing] Attempting auto-repair for Account ${accountId} (Company: ${company_id})...`);
 
     // 1. Recalculate true balance from ledger (Full scan required for authoritative repair)
-    const journals = await this.journalRepo.findAllOrderedByDate(tenantId, companyId);
+    const journals = await this.journalRepo.findAllOrderedByDate(tenant_id, company_id);
     let trueNet = new Prisma.Decimal(0);
     let trueDebit = new Prisma.Decimal(0);
     let trueCredit = new Prisma.Decimal(0);
@@ -147,8 +147,8 @@ export class LedgerIntegrityService {
       const relevantLines = lines.filter(l => 
         l.accountId === accountId &&
         l.currency === currency &&
-        (l.dimensionBranchId || l.branchId || '') === dimensions.branchId &&
-        (l.locationId || '') === dimensions.locationId &&
+        (l.dimensionBranchId || l.branch_id || '') === dimensions.branch_id &&
+        (l.location_id || '') === dimensions.location_id &&
         l.dimensionDepartmentId === dimensions.departmentId &&
         l.dimensionCostCenterId === dimensions.costCenterId &&
         l.dimensionProjectId === dimensions.projectId
@@ -167,7 +167,7 @@ export class LedgerIntegrityService {
 
     // 1.5. Find original balance for audit
     const original = await this.balanceRepo.findBalance({
-      tenantId, companyId, fiscalPeriodId, accountId, currency, ...dimensions
+      tenant_id, company_id, fiscalPeriodId, accountId, currency, ...dimensions
     });
     const originalNet = original?.netBalance || new Prisma.Decimal(0);
     const delta = trueNet.minus(originalNet);
@@ -176,14 +176,14 @@ export class LedgerIntegrityService {
     try {
       // Create Journal Adjustment for Auditability (Section 1)
       const entryId = `ADJ-${Math.random().toString(36).substr(2, 9)}`;
-      const ctx = PostingContextFactory.issue(tenantId, companyId);
+      const ctx = PostingContextFactory.issue(tenant_id, company_id);
       await this.journalRepo.createEntry(ctx, {
         id: entryId,
         fiscalPeriodId,
         journalType: 'SYSTEM_ADJUSTMENT' as any,
         status: 'POSTED' as any,
         memo: `[AUTO_RECONCILIATION] Repair Account ${accountId}. Original: ${originalNet.toString()}, Corrected: ${trueNet.toString()}, Delta: ${delta.toString()}`,
-        sourceModule: 'RECONCILIATION_SERVICE',
+        source_module: 'RECONCILIATION_SERVICE',
         effectiveDate: new Date(),
       } as any);
 
@@ -197,12 +197,12 @@ export class LedgerIntegrityService {
         } as any
       ]);
 
-      await this.balanceRepo.updateBalance(tenantId, companyId, {
+      await this.balanceRepo.updateBalance(tenant_id, company_id, {
         fiscalPeriodId,
         accountId,
         currency,
-        branchId: dimensions.branchId,
-        locationId: dimensions.locationId,
+        branch_id: dimensions.branch_id,
+        location_id: dimensions.location_id,
         departmentId: dimensions.departmentId,
         costCenterId: dimensions.costCenterId,
         projectId: dimensions.projectId,
@@ -211,10 +211,10 @@ export class LedgerIntegrityService {
 
       this.monitor.recordSelfHealing();
       this.logger.log(`[Self-Healing] SUCCESS: Account ${accountId}:${currency} repaired to ${trueNet.toString()}`);
-      this.monitor.recordReconciliationResult(tenantId, companyId, accountId, trueNet, trueNet, 'MATCH', currency); // Reset metrics to MATCH
+      this.monitor.recordReconciliationResult(tenant_id, company_id, accountId, trueNet, trueNet, 'MATCH', currency); // Reset metrics to MATCH
       return true;
       
-      await this.reportViolation(tenantId, companyId, 'SELF_HEALING_REPAIR', `Account ${accountId}:${currency} was drifted and has been automatically repaired. Delta: ${delta.toString()}`);
+      await this.reportViolation(tenant_id, company_id, 'SELF_HEALING_REPAIR', `Account ${accountId}:${currency} was drifted and has been automatically repaired. Delta: ${delta.toString()}`);
       return true;
     } catch (error) {
       this.logger.error(`[Self-Healing] FAILED: Could not repair account ${accountId}:${currency}. ${error.message}`);
@@ -225,17 +225,17 @@ export class LedgerIntegrityService {
   /**
    * 3. Sequence Integrity Check: No gaps or duplicates in sequenceNumber per sequenceKey
    */
-  private async checkSequenceIntegrity(tenantId: string, companyId: string) {
-    this.logger.debug(`[Integrity] Checking Sequence Continuity for Tenant ${tenantId} Company ${companyId}`);
+  private async checkSequenceIntegrity(tenant_id: string, company_id: string) {
+    this.logger.debug(`[Integrity] Checking Sequence Continuity for Tenant ${tenant_id} Company ${company_id}`);
     
-    const journals = await this.journalRepo.findAllOrderedByDate(tenantId, companyId);
+    const journals = await this.journalRepo.findAllOrderedByDate(tenant_id, company_id);
     let lastSeq = -1;
 
     for (const journal of journals) {
       if (lastSeq !== -1 && journal.ledgerSequence !== lastSeq + 1) {
         await this.reportViolation(
-          tenantId, 
-          companyId, 
+          tenant_id, 
+          company_id, 
           'SEQUENCE_GAP', 
           `Sequence gap detected between ${lastSeq} and ${journal.ledgerSequence}`
         );
@@ -247,22 +247,22 @@ export class LedgerIntegrityService {
   /**
    * 4. Hash Chain Verification: Verify each journal's hash matches the previous journal's hash.
    */
-  private async verifyJournalHashChain(tenantId: string, companyId: string) {
-    this.logger.debug(`[Integrity] Verifying Hash Chain for Tenant ${tenantId} Company ${companyId}`);
+  private async verifyJournalHashChain(tenant_id: string, company_id: string) {
+    this.logger.debug(`[Integrity] Verifying Hash Chain for Tenant ${tenant_id} Company ${company_id}`);
 
-    const journals = await this.journalRepo.findAllOrderedByDate(tenantId, companyId);
+    const journals = await this.journalRepo.findAllOrderedByDate(tenant_id, company_id);
     let expectedPrevHash = 'GENESIS';
 
     for (const journal of journals) {
       if (!journal.entryHash) {
-        await this.reportViolation(tenantId, companyId, 'HASH_CHAIN', `Journal ${journal.id} is missing entryHash`);
+        await this.reportViolation(tenant_id, company_id, 'HASH_CHAIN', `Journal ${journal.id} is missing entryHash`);
         return;
       }
 
       if (journal.previousHash !== expectedPrevHash) {
         await this.reportViolation(
-          tenantId, 
-          companyId,
+          tenant_id, 
+          company_id,
           'HASH_CHAIN', 
           `Journal ${journal.id} prevHash mismatch. Expected: ${expectedPrevHash}, Actual: ${journal.previousHash}`
         );
@@ -274,7 +274,7 @@ export class LedgerIntegrityService {
       const recomputedHash = this.hashingService.generateJournalHash({
         previousHash: journal.previousHash || 'GENESIS',
         journalId: journal.id,
-        timestamp: journal.createdAt || new Date(),
+        timestamp: journal.created_at || new Date(),
         lines: lines.map(l => ({
           accountId: l.accountId,
           side: l.side as any,
@@ -284,8 +284,8 @@ export class LedgerIntegrityService {
 
       if (journal.entryHash !== recomputedHash) {
         await this.reportViolation(
-          tenantId, 
-          companyId,
+          tenant_id, 
+          company_id,
           'HASH_CHAIN', 
           `Journal ${journal.id} hash corruption detected! Stored: ${journal.entryHash}, Recomputed: ${recomputedHash}`
         );
@@ -299,10 +299,10 @@ export class LedgerIntegrityService {
   /**
    * Stores the last journal hash for independent verification.
    */
-  private async storeDailyHashAnchor(tenantId: string, companyId: string): Promise<void> {
-    this.logger.log(`Storing daily hash anchor for Tenant ${tenantId} Company ${companyId}...`);
+  private async storeDailyHashAnchor(tenant_id: string, company_id: string): Promise<void> {
+    this.logger.log(`Storing daily hash anchor for Tenant ${tenant_id} Company ${company_id}...`);
     
-    const lastHash = await this.journalRepo.getLastEntryHash(tenantId, companyId);
+    const lastHash = await this.journalRepo.getLastEntryHash(tenant_id, company_id);
     if (!lastHash) return;
 
     this.logger.log(`Anchor for ${new Date().toDateString()}: ${lastHash}`);
@@ -311,15 +311,15 @@ export class LedgerIntegrityService {
   /**
    * On-demand verification of a specific journal entry's hash integrity.
    */
-  async verifyJournalHash(tenantId: string, companyId: string, journalId: string): Promise<{ valid: boolean; error?: string }> {
-    const journal = await this.journalRepo.findById(tenantId, companyId, journalId);
+  async verifyJournalHash(tenant_id: string, company_id: string, journalId: string): Promise<{ valid: boolean; error?: string }> {
+    const journal = await this.journalRepo.findById(tenant_id, company_id, journalId);
     if (!journal) return { valid: false, error: 'Journal not found' };
 
     const lines = await this.journalRepo.findLines(journalId);
     const recomputedHash = this.hashingService.generateJournalHash({
       previousHash: journal.previousHash || 'GENESIS',
       journalId: journal.id,
-      timestamp: journal.createdAt || new Date(),
+      timestamp: journal.created_at || new Date(),
       lines: lines.map(l => ({
         accountId: l.accountId,
         side: l.side as any,
@@ -337,18 +337,18 @@ export class LedgerIntegrityService {
     return { valid: true };
   }
 
-  private async reportViolation(tenantId: string, companyId: string, checkType: string, details: string) {
-    this.logger.error(`INTEGRITY_VIOLATION [Company: ${companyId}] [${checkType}]: ${details}`);
+  private async reportViolation(tenant_id: string, company_id: string, checkType: string, details: string) {
+    this.logger.error(`INTEGRITY_VIOLATION [Company: ${company_id}] [${checkType}]: ${details}`);
     
     if (this.auditService?.log) {
       await this.auditService.log({
-        tenantId,
-        userId: 'SYSTEM',
+        tenant_id,
+        user_id: 'SYSTEM',
         module: 'FINANCE',
         action: 'INTEGRITY_VIOLATION',
-        entityType: 'SystemAudit',
-        entityId: checkType,
-        metadata: { companyId, checkType, details, timestamp: new Date().toISOString() }
+        entity_type: 'SystemAudit',
+        entity_id: checkType,
+        metadata: { company_id, checkType, details, timestamp: new Date().toISOString() }
       });
     }
   }

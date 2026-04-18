@@ -7,112 +7,113 @@ export class NotificationService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createNotification(params: {
-    tenantId: string;
-    userId: string;
+    tenant_id: string;
+    user_id: string;
     title: string;
     message: string;
     type: string;
     link?: string;
     priority: "LOW" | "NORMAL" | "HIGH" | "URGENT";
-    eventReferenceId: string;
+    event_reference_id: string;
   }) {
-    return this.prisma.notification.create({
+    return this.prisma.notifications.create({
       data: {
+          updated_at: new Date(),
         id: uuidv4(),
         
-        tenantId: params.tenantId,
-        userId: params.userId,
+        tenant_id: params.tenant_id,
+        user_id: params.user_id,
         title: params.title,
         message: params.message,
         type: params.type,
         link: params.link || null,
         priority: params.priority || "NORMAL",
-        eventReferenceId: params.eventReferenceId || null,
+        event_reference_id: params.event_reference_id || null,
         status: params.priority === "URGENT" ? "PENDING" : "SENT", // Urgent might need separate worker processing
       },
     });
   }
 
-  async retryNotification(tenantId: string, id: string) {
-    const notification = await this.prisma.notification.findUnique({
-      where: { id, tenantId },
+  async retryNotification(tenant_id: string, id: string) {
+    const notification = await this.prisma.notifications.findUnique({
+      where: { id, tenant_id: tenant_id },
     });
 
-    if (!notification || notification.retryCount >= 5) {
+    if (!notification || notification.retry_count >= 5) {
       return notification;
     }
 
-    return this.prisma.notification.update({
-      where: { id, tenantId },
+    return this.prisma.notifications.update({
+      where: { id, tenant_id: tenant_id },
       data: {
-        retryCount: { increment: 1 },
-        lastRetryAt: new Date(),
+        retry_count: { increment: 1 },
+        last_retry_at: new Date(),
         status: "PENDING", // Signal for re-delivery
       },
     });
   }
 
-  async getNotifications(tenantId: string, userId: string, filters: any = {}) {
+  async getNotifications(tenant_id: string, user_id: string, filters: any = {}) {
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 20;
     const skip = (page - 1) * limit;
 
     const [data, total] = await Promise.all([
-      this.prisma.notification.findMany({
-        where: { tenantId, userId },
-        orderBy: { createdAt: 'desc' },
+      this.prisma.notifications.findMany({
+        where: { tenant_id: tenant_id, user_id: user_id },
+        orderBy: { created_at: 'desc' },
         skip,
         take: limit,
       }),
-      this.prisma.notification.count({
-        where: { tenantId, userId },
+      this.prisma.notifications.count({
+        where: { tenant_id: tenant_id, user_id: user_id },
       }),
     ]);
 
     return { data, total, page, limit };
   }
 
-  async markAsRead(tenantId: string, id: string) {
-    return this.prisma.notification.update({
-      where: { id, tenantId },
-      data: { isRead: true },
+  async markAsRead(tenant_id: string, id: string) {
+    return this.prisma.notifications.update({
+      where: { id, tenant_id: tenant_id },
+      data: { is_read: true },
     });
   }
 
-  async markAllAsRead(tenantId: string, userId: string) {
-    return this.prisma.notification.updateMany({
-      where: { tenantId, userId, isRead: false },
-      data: { isRead: true },
+  async markAllAsRead(tenant_id: string, user_id: string) {
+    return this.prisma.notifications.updateMany({
+      where: { tenant_id: tenant_id, user_id: user_id, is_read: false },
+      data: { is_read: true },
     });
   }
 
-  async getUnreadCounts(tenantId: string, userId: string) {
+  async getUnreadCounts(tenant_id: string, user_id: string) {
     // Get mail account first
-    const account = await this.prisma.mailAccount.findFirst({
-      where: { tenantId, userId, deletedAt: null }
+    const account = await this.prisma.mail_accounts.findFirst({
+      where: { tenant_id: tenant_id, user_id: user_id, deleted_at: null }
     });
 
     const [notifCount, mailCount, rooms] = await Promise.all([
-      this.prisma.notification.count({
-        where: { tenantId, userId, isRead: false },
+      this.prisma.notifications.count({
+        where: { tenant_id: tenant_id, user_id: user_id, is_read: false },
       }),
-      account ? this.prisma.mailMessage.count({
+      account ? this.prisma.mail_messages.count({
         where: { 
-          tenantId, 
-          toAddresses: { array_contains: account.address }, 
-          isRead: false,
+          tenant_id: tenant_id, 
+          to_addresses: { array_contains: account.address }, 
+          is_read: false,
           status: 'sent',
-          deletedAt: null 
+          deleted_at: null 
         }
       }) : Promise.resolve(0),
-      this.prisma.chatRoom.findMany({
+      this.prisma.chat_rooms.findMany({
         where: {
-          tenantId,
-          chatMembers: { some: { userId } },
-          deletedAt: null
+          tenant_id: tenant_id,
+          chat_members: { some: { user_id: user_id } },
+          deleted_at: null
         },
         include: {
-          chatMembers: { where: { userId } }
+          chat_members: { where: { user_id: user_id } }
         }
       })
     ]);

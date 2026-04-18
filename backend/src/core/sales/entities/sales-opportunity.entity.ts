@@ -1,10 +1,10 @@
 export class SalesOpportunity {
   id: string;
-  tenantId: string;
-  leadId?: string;
-  accountName: string;
-  ownerId: string;
-  ownerName: string;
+  tenant_id: string;
+  lead_id?: string;
+  account_name: string;
+  owner_id: string;
+  owner_name: string;
   stage:
     | "new"
     | "contacted"
@@ -16,10 +16,10 @@ export class SalesOpportunity {
   probability: number;
   amount: number;
   currency: "IDR" | "USD";
-  expectedCloseDate: Date;
+  expected_close_date: Date;
   health: "low_risk" | "medium_risk" | "high_risk";
   nextAction: string;
   lastActivityAt: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

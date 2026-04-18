@@ -30,79 +30,79 @@ export class ProcurementService {
 
   // ─── SUPPLIERS ───────────────────────────────────────────────────────────────
 
-  async getSuppliers(tenantId: string) {
-    return this.repository.getSuppliers(tenantId);
+  async getSuppliers(tenant_id: string) {
+    return this.repository.getSuppliers(tenant_id);
   }
 
-  async createSupplier(tenantId: string, data: CreateSupplierDto, userId?: string) {
-    const supplier = await this.repository.createSupplier(tenantId, data);
-    await this.repository.createAuditEvent(tenantId, userId || "system", "supplier.created", "SUPPLIER", supplier.id, supplier.name);
-    if (userId) {
-      await this.auditService.log({ tenantId, userId, module: "procurement", action: "CREATE", entityType: "SUPPLIER", entityId: supplier.id, metadata: { name: data.name, category: data.category } });
+  async createSupplier(tenant_id: string, data: CreateSupplierDto, user_id?: string) {
+    const supplier = await this.repository.createSupplier(tenant_id, data);
+    await this.repository.createAuditEvent(tenant_id, user_id || "system", "supplier.created", "SUPPLIER", supplier.id, supplier.name);
+    if (user_id) {
+      await this.auditService.log({ tenant_id, user_id, module: "procurement", action: "CREATE", entity_type: "SUPPLIER", entity_id: supplier.id, metadata: { name: data.name, category: data.category } });
     }
     return supplier;
   }
 
   // ─── SUPPLIER BRANCHES ────────────────────────────────────────────────────────
 
-  async getSupplierBranches(tenantId: string) {
-    return this.repository.getSupplierBranches(tenantId);
+  async getSupplierBranches(tenant_id: string) {
+    return this.repository.getSupplierBranches(tenant_id);
   }
 
-  async createSupplierBranch(tenantId: string, data: CreateSupplierBranchDto, userId?: string) {
-    const branch = await this.repository.createSupplierBranch(tenantId, data);
-    await this.repository.createAuditEvent(tenantId, userId || "system", "supplier_branch.created", "SUPPLIER_BRANCH", branch.id, branch.branchName);
-    if (userId) {
-      await this.auditService.log({ tenantId, userId, module: "procurement", action: "CREATE", entityType: "SUPPLIER_BRANCH", entityId: branch.id, metadata: { branchCode: data.branchCode, supplierId: data.supplierId } });
+  async createSupplierBranch(tenant_id: string, data: CreateSupplierBranchDto, user_id?: string) {
+    const branch = await this.repository.createSupplierBranch(tenant_id, data);
+    await this.repository.createAuditEvent(tenant_id, user_id || "system", "supplier_branch.created", "SUPPLIER_BRANCH", branch.id, branch.branchName);
+    if (user_id) {
+      await this.auditService.log({ tenant_id, user_id, module: "procurement", action: "CREATE", entity_type: "SUPPLIER_BRANCH", entity_id: branch.id, metadata: { branchCode: data.branchCode, supplierId: data.supplierId } });
     }
     return branch;
   }
 
   // ─── SUPPLIER PRODUCTS ────────────────────────────────────────────────────────
 
-  async getSupplierProducts(tenantId: string) {
-    return this.repository.getSupplierProducts(tenantId);
+  async getSupplierProducts(tenant_id: string) {
+    return this.repository.getSupplierProducts(tenant_id);
   }
 
-  async upsertSupplierProduct(tenantId: string, data: UpsertSupplierProductDto, userId?: string) {
-    const product = await this.repository.upsertSupplierProduct(tenantId, data);
-    await this.repository.createAuditEvent(tenantId, userId || "system", "supplier_product.upserted", "SUPPLIER_BRANCH", product.id, data.name);
+  async upsertSupplierProduct(tenant_id: string, data: UpsertSupplierProductDto, user_id?: string) {
+    const product = await this.repository.upsertSupplierProduct(tenant_id, data);
+    await this.repository.createAuditEvent(tenant_id, user_id || "system", "supplier_product.upserted", "SUPPLIER_BRANCH", product.id, data.name);
     return product;
   }
 
-  async getSupplierRecommendations(tenantId: string, params: any) {
-    return this.repository.getSupplierRecommendations(tenantId, params);
+  async getSupplierRecommendations(tenant_id: string, params: any) {
+    return this.repository.getSupplierRecommendations(tenant_id, params);
   }
 
   // ─── CATEGORIES ───────────────────────────────────────────────────────────────
 
-  async getCategories(tenantId: string) {
-    return this.repository.getCategories(tenantId);
+  async getCategories(tenant_id: string) {
+    return this.repository.getCategories(tenant_id);
   }
 
-  async upsertCategory(tenantId: string, userId: string, data: CreateProcurementCategoryDto | UpdateProcurementCategoryDto) {
-    const category = await this.repository.upsertCategory(tenantId, data);
+  async upsertCategory(tenant_id: string, user_id: string, data: CreateProcurementCategoryDto | UpdateProcurementCategoryDto) {
+    const category = await this.repository.upsertCategory(tenant_id, data);
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "procurement",
       action: "UPSERT",
-      entityType: "PROCUREMENT_CATEGORY",
-      entityId: category.id,
+      entity_type: "PROCUREMENT_CATEGORY",
+      entity_id: category.id,
       metadata: { name: (data as any).name },
     });
     return category;
   }
 
-  async deleteCategory(tenantId: string, userId: string, id: string) {
-    await this.repository.deleteCategory(tenantId, id);
+  async deleteCategory(tenant_id: string, user_id: string, id: string) {
+    await this.repository.deleteCategory(tenant_id, id);
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "procurement",
       action: "DELETE",
-      entityType: "PROCUREMENT_CATEGORY",
-      entityId: id,
+      entity_type: "PROCUREMENT_CATEGORY",
+      entity_id: id,
       metadata: {},
     });
     return { success: true };
@@ -110,127 +110,127 @@ export class ProcurementService {
 
   // ─── REQUISITIONS ─────────────────────────────────────────────────────────────
 
-  async getRequisitions(tenantId: string) {
-    return this.repository.getRequisitions(tenantId);
+  async getRequisitions(tenant_id: string) {
+    return this.repository.getRequisitions(tenant_id);
   }
 
-  async createRequisition(tenantId: string, data: CreateRequisitionDto, userId?: string) {
-    const requisition = await this.repository.createRequisition(tenantId, data);
-    await this.repository.createAuditEvent(tenantId, userId || "system", "requisition.created", "REQUISITION", requisition.id, requisition.title);
-    if (userId) {
-      await this.auditService.log({ tenantId, userId, module: "procurement", action: "CREATE", entityType: "REQUISITION", entityId: requisition.id, metadata: { title: data.title, amount: data.amount, requesterDept: data.requesterDept } });
+  async createRequisition(tenant_id: string, data: CreateRequisitionDto, user_id?: string) {
+    const requisition = await this.repository.createRequisition(tenant_id, data);
+    await this.repository.createAuditEvent(tenant_id, user_id || "system", "requisition.created", "REQUISITION", requisition.id, requisition.title);
+    if (user_id) {
+      await this.auditService.log({ tenant_id, user_id, module: "procurement", action: "CREATE", entity_type: "REQUISITION", entity_id: requisition.id, metadata: { title: data.title, amount: data.amount, requesterDept: data.requesterDept } });
     }
     return requisition;
   }
 
-  async approveRequesterHod(tenantId: string, requisitionId: string, userId?: string) {
-    const requisition = await this.repository.approveRequesterHod(tenantId, requisitionId);
-    await this.repository.createAuditEvent(tenantId, userId || "system", "requisition.requester_hod_approved", "REQUISITION", requisitionId, "HOD approval granted");
-    if (userId) {
-      await this.auditService.log({ tenantId, userId, module: "procurement", action: "APPROVE_HOD", entityType: "REQUISITION", entityId: requisitionId });
+  async approveRequesterHod(tenant_id: string, requisitionId: string, user_id?: string) {
+    const requisition = await this.repository.approveRequesterHod(tenant_id, requisitionId);
+    await this.repository.createAuditEvent(tenant_id, user_id || "system", "requisition.requester_hod_approved", "REQUISITION", requisitionId, "HOD approval granted");
+    if (user_id) {
+      await this.auditService.log({ tenant_id, user_id, module: "procurement", action: "APPROVE_HOD", entity_type: "REQUISITION", entity_id: requisitionId });
     }
     return requisition;
   }
 
-  async approveFinal(tenantId: string, requisitionId: string, data: ApproveFinalDto, userId?: string) {
-    const requisition = await this.repository.approveFinal(tenantId, requisitionId, data);
-    await this.repository.createAuditEvent(tenantId, userId || "system", `requisition.final_approved.${data.approver.toLowerCase()}`, "REQUISITION", requisitionId, `Final approval by ${data.approver}`);
+  async approveFinal(tenant_id: string, requisitionId: string, data: ApproveFinalDto, user_id?: string) {
+    const requisition = await this.repository.approveFinal(tenant_id, requisitionId, data);
+    await this.repository.createAuditEvent(tenant_id, user_id || "system", `requisition.final_approved.${data.approver.toLowerCase()}`, "REQUISITION", requisitionId, `Final approval by ${data.approver}`);
     return requisition;
   }
 
   // ─── DRAFT PURCHASE ORDERS ────────────────────────────────────────────────────
 
-  async getDraftPurchaseOrders(tenantId: string) {
-    return this.repository.getDraftPurchaseOrders(tenantId);
+  async getDraftPurchaseOrders(tenant_id: string) {
+    return this.repository.getDraftPurchaseOrders(tenant_id);
   }
 
-  async createDraftPurchaseOrder(tenantId: string, data: CreateDraftPoDto, userId?: string) {
-    const draft = await this.repository.createDraftPurchaseOrder(tenantId, data, userId || "system");
-    await this.repository.createAuditEvent(tenantId, userId || "system", "draft_po.created", "DRAFT_PO", draft.id, `Draft PO for requisition ${data.requisitionId}`);
-    if (userId) {
-      await this.auditService.log({ tenantId, userId, module: "procurement", action: "CREATE", entityType: "DRAFT_PO", entityId: draft.id, metadata: { requisitionId: data.requisitionId, supplierId: data.supplierId } });
+  async createDraftPurchaseOrder(tenant_id: string, data: CreateDraftPoDto, user_id?: string) {
+    const draft = await this.repository.createDraftPurchaseOrder(tenant_id, data, user_id || "system");
+    await this.repository.createAuditEvent(tenant_id, user_id || "system", "draft_po.created", "DRAFT_PO", draft.id, `Draft PO for requisition ${data.requisitionId}`);
+    if (user_id) {
+      await this.auditService.log({ tenant_id, user_id, module: "procurement", action: "CREATE", entity_type: "DRAFT_PO", entity_id: draft.id, metadata: { requisitionId: data.requisitionId, supplierId: data.supplierId } });
     }
     return draft;
   }
 
-  async approveDraftByProcurementHod(tenantId: string, draftPoId: string, userId?: string) {
-    const draft = await this.repository.approveDraftByProcurementHod(tenantId, draftPoId);
-    await this.repository.createAuditEvent(tenantId, userId || "system", "draft_po.procurement_hod_approved", "DRAFT_PO", draftPoId, "Procurement HOD approved draft PO");
+  async approveDraftByProcurementHod(tenant_id: string, draftPoId: string, user_id?: string) {
+    const draft = await this.repository.approveDraftByProcurementHod(tenant_id, draftPoId);
+    await this.repository.createAuditEvent(tenant_id, user_id || "system", "draft_po.procurement_hod_approved", "DRAFT_PO", draftPoId, "Procurement HOD approved draft PO");
     return draft;
   }
 
-  async confirmSupplierQuote(tenantId: string, draftPoId: string, data: ConfirmQuoteDto, userId?: string) {
-    const draft = await this.repository.confirmSupplierQuote(tenantId, draftPoId, data);
-    await this.repository.createAuditEvent(tenantId, userId || "system", "draft_po.quote_confirmed", "DRAFT_PO", draftPoId, `Quote ref: ${data.quoteReference}`);
+  async confirmSupplierQuote(tenant_id: string, draftPoId: string, data: ConfirmQuoteDto, user_id?: string) {
+    const draft = await this.repository.confirmSupplierQuote(tenant_id, draftPoId, data);
+    await this.repository.createAuditEvent(tenant_id, user_id || "system", "draft_po.quote_confirmed", "DRAFT_PO", draftPoId, `Quote ref: ${data.quoteReference}`);
     return draft;
   }
 
   // ─── PURCHASE ORDERS (FINAL) ──────────────────────────────────────────────────
 
-  async releasePurchaseOrder(tenantId: string, data: ReleasePoDto, userId?: string) {
-    const po = await this.repository.releasePurchaseOrder(tenantId, data);
-    await this.repository.createAuditEvent(tenantId, userId || "system", "po.released", "FINAL_PO", po.id, `PO released for requisition ${data.requisitionId}`);
-    if (userId) {
-      await this.auditService.log({ tenantId, userId, module: "procurement", action: "RELEASE", entityType: "PURCHASE_ORDER", entityId: po.id, metadata: { requisitionId: data.requisitionId, supplierId: po.supplierId } });
+  async releasePurchaseOrder(tenant_id: string, data: ReleasePoDto, user_id?: string) {
+    const po = await this.repository.releasePurchaseOrder(tenant_id, data);
+    await this.repository.createAuditEvent(tenant_id, user_id || "system", "po.released", "FINAL_PO", po.id, `PO released for requisition ${data.requisitionId}`);
+    if (user_id) {
+      await this.auditService.log({ tenant_id, user_id, module: "procurement", action: "RELEASE", entity_type: "PURCHASE_ORDER", entity_id: po.id, metadata: { requisitionId: data.requisitionId, supplierId: po.supplierId } });
     }
     return po;
   }
 
-  async getPurchaseOrders(tenantId: string) {
-    return this.repository.getPurchaseOrders(tenantId);
+  async getPurchaseOrders(tenant_id: string) {
+    return this.repository.getPurchaseOrders(tenant_id);
   }
 
   // ─── RECEIPTS ─────────────────────────────────────────────────────────────────
 
-  async createReceipt(tenantId: string, data: CreateReceiptDto, userId?: string) {
-    const receipt = await this.repository.createReceipt(tenantId, data, userId || "system");
-    await this.repository.createAuditEvent(tenantId, userId || "system", "receipt.recorded", "FINAL_PO", data.finalPoId, `Goods receipt. Delivery on time: ${data.deliveryOnTime}. Issues: ${data.issueCount}`);
+  async createReceipt(tenant_id: string, data: CreateReceiptDto, user_id?: string) {
+    const receipt = await this.repository.createReceipt(tenant_id, data, user_id || "system");
+    await this.repository.createAuditEvent(tenant_id, user_id || "system", "receipt.recorded", "FINAL_PO", data.finalPoId, `Goods receipt. Delivery on time: ${data.deliveryOnTime}. Issues: ${data.issueCount}`);
     return receipt;
   }
 
   async processReceipt(
-    tenantId: string,
+    tenant_id: string,
     finalPoId: string,
     data: {
-      locationId: string;
+      location_id: string;
       items: Array<{ sku: string; quantity: number; unitCost?: number }>;
       receiptType?: "FULL" | "PARTIAL";
     },
-    userId?: string,
+    user_id?: string,
   ) {
     // 1. Update the finalPO status
     const status = data.receiptType === "PARTIAL" ? "PARTIALLY_RECEIVED" : "RECEIVED";
-    await this.prisma.procurementFinalPo.update({
-      where: { id: finalPoId, tenantId },
+    await this.prisma.procurement_final_pos.update({
+      where: { id: finalPoId, tenant_id: tenant_id },
       data: { status },
     });
 
     // 2. Emit PO_RECEIVED to trigger Inventory Intake
     await this.eventBus.publish({
-      eventType: "PO_RECEIVED",
-      tenantId: tenantId,
-      entityId: finalPoId,
-      entityType: "FINAL_PO",
-      sourceModule: "procurement",
+      event_type: "PO_RECEIVED",
+      tenant_id: tenant_id,
+      entity_id: finalPoId,
+      entity_type: "FINAL_PO",
+      source_module: "procurement",
       payload: {
         finalPoId,
-        locationId: data.locationId,
+        location_id: data.location_id,
         items: data.items,
         receiptType: data.receiptType || "FULL",
       },
-      userId,
+      user_id,
     });
 
     // 3. Audit Log
     await this.auditService.log({
-      tenantId,
-      userId: userId || "system",
+      tenant_id,
+      user_id: user_id || "system",
       module: "PROCUREMENT",
       action: "PROCUREMENT_RECEIPT",
-      entityType: "FINAL_PO",
-      entityId: finalPoId,
+      entity_type: "FINAL_PO",
+      entity_id: finalPoId,
       metadata: {
-        locationId: data.locationId,
+        location_id: data.location_id,
         itemCount: data.items?.length || 0,
         receiptType: data.receiptType || "FULL",
       },
@@ -244,90 +244,90 @@ export class ProcurementService {
 
   // ─── CONTRACTS ────────────────────────────────────────────────────────────────
 
-  async getContracts(tenantId: string) {
-    return this.repository.getContracts(tenantId);
+  async getContracts(tenant_id: string) {
+    return this.repository.getContracts(tenant_id);
   }
 
-  async createContract(tenantId: string, data: CreateContractDto, userId?: string) {
-    const contract = await this.repository.createContract(tenantId, data, userId || "system");
-    await this.repository.createAuditEvent(tenantId, userId || "system", "contract.created", "CONTRACT", contract.id, `Contract for requisition ${data.requisitionId}`);
-    if (userId) {
-      await this.auditService.log({ tenantId, userId, module: "procurement", action: "CREATE", entityType: "CONTRACT", entityId: contract.id, metadata: { requisitionId: data.requisitionId, supplierId: data.supplierId } });
+  async createContract(tenant_id: string, data: CreateContractDto, user_id?: string) {
+    const contract = await this.repository.createContract(tenant_id, data, user_id || "system");
+    await this.repository.createAuditEvent(tenant_id, user_id || "system", "contract.created", "CONTRACT", contract.id, `Contract for requisition ${data.requisitionId}`);
+    if (user_id) {
+      await this.auditService.log({ tenant_id, user_id, module: "procurement", action: "CREATE", entity_type: "CONTRACT", entity_id: contract.id, metadata: { requisitionId: data.requisitionId, supplierId: data.supplierId } });
     }
     return contract;
   }
 
-  async approveLegalContract(tenantId: string, contractId: string, userId?: string) {
-    const contract = await this.repository.approveLegalContract(tenantId, contractId);
-    await this.repository.createAuditEvent(tenantId, userId || "system", "contract.legal_approved", "CONTRACT", contractId, "Legal team approved the contract");
+  async approveLegalContract(tenant_id: string, contractId: string, user_id?: string) {
+    const contract = await this.repository.approveLegalContract(tenant_id, contractId);
+    await this.repository.createAuditEvent(tenant_id, user_id || "system", "contract.legal_approved", "CONTRACT", contractId, "Legal team approved the contract");
     return contract;
   }
 
-  async signContract(tenantId: string, contractId: string, data: SignContractDto, userId?: string) {
-    const contract = await this.repository.signContract(tenantId, contractId, data);
-    await this.repository.createAuditEvent(tenantId, userId || "system", `contract.signed.${data.party.toLowerCase()}`, "CONTRACT", contractId, `Signed by ${data.party}`);
+  async signContract(tenant_id: string, contractId: string, data: SignContractDto, user_id?: string) {
+    const contract = await this.repository.signContract(tenant_id, contractId, data);
+    await this.repository.createAuditEvent(tenant_id, user_id || "system", `contract.signed.${data.party.toLowerCase()}`, "CONTRACT", contractId, `Signed by ${data.party}`);
     return contract;
   }
 
   // ─── RISK MANAGEMENT ──────────────────────────────────────────────────────────
 
-  async getRiskSignals(tenantId: string) {
-    return this.repository.getRiskSignals(tenantId);
+  async getRiskSignals(tenant_id: string) {
+    return this.repository.getRiskSignals(tenant_id);
   }
 
-  async createRiskSignal(tenantId: string, data: CreateRiskSignalDto, userId?: string) {
-    const signal = await this.repository.createRiskSignal(tenantId, data);
-    await this.repository.createAuditEvent(tenantId, userId || "system", "risk_signal.created", "RISK_SIGNAL", signal.id, `${data.code} on entity ${data.entityId}`);
+  async createRiskSignal(tenant_id: string, data: CreateRiskSignalDto, user_id?: string) {
+    const signal = await this.repository.createRiskSignal(tenant_id, data);
+    await this.repository.createAuditEvent(tenant_id, user_id || "system", "risk_signal.created", "RISK_SIGNAL", signal.id, `${data.code} on entity ${data.entity_id}`);
     return signal;
   }
 
-  async updateRiskSignalStatus(tenantId: string, riskSignalId: string, status: string, userId?: string) {
-    const signal = await this.repository.updateRiskSignalStatus(tenantId, riskSignalId, status);
-    await this.repository.createAuditEvent(tenantId, userId || "system", "risk_signal.status_updated", "RISK_SIGNAL", riskSignalId, `Status changed to ${status}`);
+  async updateRiskSignalStatus(tenant_id: string, riskSignalId: string, status: string, user_id?: string) {
+    const signal = await this.repository.updateRiskSignalStatus(tenant_id, riskSignalId, status);
+    await this.repository.createAuditEvent(tenant_id, user_id || "system", "risk_signal.status_updated", "RISK_SIGNAL", riskSignalId, `Status changed to ${status}`);
     return signal;
   }
 
-  async runRiskScan(tenantId: string, userId?: string) {
-    const results = await this.repository.runRiskScan(tenantId);
-    await this.repository.createAuditEvent(tenantId, userId || "system", "risk_scan.executed", "RISK_SIGNAL", "risk-engine", `Scan found ${results.length} signals`);
-    if (userId) {
-      await this.auditService.log({ tenantId, userId, module: "procurement", action: "RUN_RISK_SCAN", entityType: "SYSTEM", entityId: "risk-engine", metadata: { signalsFound: results.length } });
+  async runRiskScan(tenant_id: string, user_id?: string) {
+    const results = await this.repository.runRiskScan(tenant_id);
+    await this.repository.createAuditEvent(tenant_id, user_id || "system", "risk_scan.executed", "RISK_SIGNAL", "risk-engine", `Scan found ${results.length} signals`);
+    if (user_id) {
+      await this.auditService.log({ tenant_id, user_id, module: "procurement", action: "RUN_RISK_SCAN", entity_type: "SYSTEM", entity_id: "risk-engine", metadata: { signalsFound: results.length } });
     }
     return results;
   }
 
   // ─── PORTAL MESSAGES ──────────────────────────────────────────────────────────
 
-  async getPortalMessages(tenantId: string) {
-    return this.repository.getPortalMessages(tenantId);
+  async getPortalMessages(tenant_id: string) {
+    return this.repository.getPortalMessages(tenant_id);
   }
 
-  async createPortalMessage(tenantId: string, data: CreatePortalMessageDto, userId?: string) {
-    const message = await this.repository.createPortalMessage(tenantId, data, userId || "system");
-    await this.repository.createAuditEvent(tenantId, userId || "system", "portal_message.sent", "PORTAL", message.id, `${data.type} message to supplier ${data.supplierId}`);
+  async createPortalMessage(tenant_id: string, data: CreatePortalMessageDto, user_id?: string) {
+    const message = await this.repository.createPortalMessage(tenant_id, data, user_id || "system");
+    await this.repository.createAuditEvent(tenant_id, user_id || "system", "portal_message.sent", "PORTAL", message.id, `${data.type} message to supplier ${data.supplierId}`);
     return message;
   }
 
   // ─── AUDIT EVENTS ─────────────────────────────────────────────────────────────
 
-  async getAuditEvents(tenantId: string) {
-    return this.repository.getAuditEvents(tenantId);
+  async getAuditEvents(tenant_id: string) {
+    return this.repository.getAuditEvents(tenant_id);
   }
 
-  async createAuditEventDirect(tenantId: string, data: any, userId?: string) {
+  async createAuditEventDirect(tenant_id: string, data: any, user_id?: string) {
     return this.repository.createAuditEvent(
-      tenantId,
-      data.actorId || userId || "system",
+      tenant_id,
+      data.actor_id || user_id || "system",
       data.action,
-      data.entityType,
-      data.entityId,
+      data.entity_type,
+      data.entity_id,
       data.detail || "",
     );
   }
 
   // ─── SPEND INSIGHTS ────────────────────────────────────────────────────────────
 
-  async getSpendInsights(tenantId: string) {
-    return this.repository.getSpendInsights(tenantId);
+  async getSpendInsights(tenant_id: string) {
+    return this.repository.getSpendInsights(tenant_id);
   }
 }

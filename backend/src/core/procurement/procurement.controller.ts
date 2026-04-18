@@ -56,26 +56,26 @@ export class ProcurementController {
 
   @Get("overview")
   async getOverview(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     const moduleContributions: any = {};
 
-    if (await isModuleActive(this.prisma, tenantId, "retail")) {
-      const pendingTransfers = await this.prisma.procurementRequisition.count({
-        where: { tenantId, status: "SUBMITTED" },
+    if (await isModuleActive(this.prisma, tenant_id, "retail")) {
+      const pendingTransfers = await this.prisma.procurement_requisitions.count({
+        where: { tenant_id: tenant_id, status: "SUBMITTED" },
       });
       moduleContributions.retail = { pendingStoreTransfers: pendingTransfers };
     }
 
-    return { success: true, tenantId, data: { moduleContributions } };
+    return { success: true, tenant_id, data: { moduleContributions } };
   }
 
   // ─── SUPPLIERS ───────────────────────────────────────────────────────────────
 
   @Get("suppliers")
   async getSuppliers(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.procurementService.getSuppliers(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.procurementService.getSuppliers(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Post("suppliers")
@@ -83,12 +83,12 @@ export class ProcurementController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreateSupplierDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Supplier created and routed for compliance verification",
-      data: await this.procurementService.createSupplier(tenantId, dto, userId),
+      data: await this.procurementService.createSupplier(tenant_id, dto, user_id),
     };
   }
 
@@ -96,9 +96,9 @@ export class ProcurementController {
 
   @Get("branches")
   async getBranches(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.procurementService.getSupplierBranches(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.procurementService.getSupplierBranches(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Post("branches")
@@ -106,71 +106,71 @@ export class ProcurementController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreateSupplierBranchDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Supplier branch created",
-      data: await this.procurementService.createSupplierBranch(tenantId, dto, userId),
+      data: await this.procurementService.createSupplierBranch(tenant_id, dto, user_id),
     };
   }
 
   // ─── SUPPLIER PRODUCTS ────────────────────────────────────────────────────────
 
   @Get("supplier-products")
-  getSupplierProducts(@Headers("x-tenant-id") tenantId: string) {
-    return this.procurementService.getSupplierProducts(tenantId);
+  getSupplierProducts(@Headers("x-tenant-id") tenant_id: string) {
+    return this.procurementService.getSupplierProducts(tenant_id);
   }
 
   @Post("supplier-products/upsert")
   upsertSupplierProduct(
-    @Headers("x-tenant-id") tenantId: string,
+    @Headers("x-tenant-id") tenant_id: string,
     @Body() data: UpsertSupplierProductDto,
     @Req() req: Request,
   ) {
-    return this.procurementService.upsertSupplierProduct(tenantId, data, (req as any).user?.id);
+    return this.procurementService.upsertSupplierProduct(tenant_id, data, (req as any).user?.id);
   }
 
   @Get("supplier-recommendations")
   getSupplierRecommendations(
-    @Headers("x-tenant-id") tenantId: string,
+    @Headers("x-tenant-id") tenant_id: string,
     @Query() params: any,
   ) {
-    return this.procurementService.getSupplierRecommendations(tenantId, params);
+    return this.procurementService.getSupplierRecommendations(tenant_id, params);
   }
 
   // ─── CATEGORIES ───────────────────────────────────────────────────────────────
 
   @Get("categories")
-  getCategories(@Headers("x-tenant-id") tenantId: string) {
-    return this.procurementService.getCategories(tenantId);
+  getCategories(@Headers("x-tenant-id") tenant_id: string) {
+    return this.procurementService.getCategories(tenant_id);
   }
 
   @Post("categories/upsert")
   upsertCategory(
-    @Headers("x-tenant-id") tenantId: string,
+    @Headers("x-tenant-id") tenant_id: string,
     @Body() data: CreateProcurementCategoryDto | UpdateProcurementCategoryDto,
     @Req() req: Request,
   ) {
-    return this.procurementService.upsertCategory(tenantId, (req as any).user?.id || "system", data);
+    return this.procurementService.upsertCategory(tenant_id, (req as any).user?.id || "system", data);
   }
 
   @Delete("categories/:id")
   deleteCategory(
-    @Headers("x-tenant-id") tenantId: string,
+    @Headers("x-tenant-id") tenant_id: string,
     @Param("id") id: string,
     @Req() req: Request,
   ) {
-    return this.procurementService.deleteCategory(tenantId, (req as any).user?.id || "system", id);
+    return this.procurementService.deleteCategory(tenant_id, (req as any).user?.id || "system", id);
   }
 
   // ─── REQUISITIONS ─────────────────────────────────────────────────────────────
 
   @Get("requisitions")
   async getRequisitions(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.procurementService.getRequisitions(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.procurementService.getRequisitions(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Post("requisitions")
@@ -178,12 +178,12 @@ export class ProcurementController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreateRequisitionDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Requisition created and routed to HOD",
-      data: await this.procurementService.createRequisition(tenantId, dto, userId),
+      data: await this.procurementService.createRequisition(tenant_id, dto, user_id),
     };
   }
 
@@ -192,12 +192,12 @@ export class ProcurementController {
     @Req() request: RequestWithTenant,
     @Param("id") requisitionId: string,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Requester HOD approval completed",
-      data: await this.procurementService.approveRequesterHod(tenantId, requisitionId, userId),
+      data: await this.procurementService.approveRequesterHod(tenant_id, requisitionId, user_id),
     };
   }
 
@@ -207,12 +207,12 @@ export class ProcurementController {
     @Param("id") requisitionId: string,
     @Body() dto: ApproveFinalDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: `Final approval by ${dto.approver} recorded`,
-      data: await this.procurementService.approveFinal(tenantId, requisitionId, dto, userId),
+      data: await this.procurementService.approveFinal(tenant_id, requisitionId, dto, user_id),
     };
   }
 
@@ -220,9 +220,9 @@ export class ProcurementController {
 
   @Get("draft-pos")
   async getDraftPurchaseOrders(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.procurementService.getDraftPurchaseOrders(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.procurementService.getDraftPurchaseOrders(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Post("draft-pos")
@@ -230,12 +230,12 @@ export class ProcurementController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreateDraftPoDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Draft purchase order created",
-      data: await this.procurementService.createDraftPurchaseOrder(tenantId, dto, userId),
+      data: await this.procurementService.createDraftPurchaseOrder(tenant_id, dto, user_id),
     };
   }
 
@@ -244,12 +244,12 @@ export class ProcurementController {
     @Req() request: RequestWithTenant,
     @Param("id") draftPoId: string,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Draft PO approved by Procurement HOD",
-      data: await this.procurementService.approveDraftByProcurementHod(tenantId, draftPoId, userId),
+      data: await this.procurementService.approveDraftByProcurementHod(tenant_id, draftPoId, user_id),
     };
   }
 
@@ -259,12 +259,12 @@ export class ProcurementController {
     @Param("id") draftPoId: string,
     @Body() dto: ConfirmQuoteDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Supplier quote confirmed",
-      data: await this.procurementService.confirmSupplierQuote(tenantId, draftPoId, dto, userId),
+      data: await this.procurementService.confirmSupplierQuote(tenant_id, draftPoId, dto, user_id),
     };
   }
 
@@ -272,9 +272,9 @@ export class ProcurementController {
 
   @Get("purchase-orders")
   async getPurchaseOrders(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.procurementService.getPurchaseOrders(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.procurementService.getPurchaseOrders(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Post("purchase-orders/release")
@@ -282,12 +282,12 @@ export class ProcurementController {
     @Req() request: RequestWithTenant,
     @Body() dto: ReleasePoDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Purchase order released and payable synchronized",
-      data: await this.procurementService.releasePurchaseOrder(tenantId, dto, userId),
+      data: await this.procurementService.releasePurchaseOrder(tenant_id, dto, user_id),
     };
   }
 
@@ -298,12 +298,12 @@ export class ProcurementController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreateReceiptDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Goods receipt recorded and supplier rating updated",
-      data: await this.procurementService.createReceipt(tenantId, dto, userId),
+      data: await this.procurementService.createReceipt(tenant_id, dto, user_id),
     };
   }
 
@@ -312,22 +312,22 @@ export class ProcurementController {
     @Req() request: RequestWithTenant,
     @Param("id") finalPoId: string,
     @Body() body: {
-      locationId: string;
+      location_id: string;
       items: Array<{ sku: string; quantity: number; unitCost?: number }>;
       receiptType?: "FULL" | "PARTIAL";
     },
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    return await this.procurementService.processReceipt(tenantId, finalPoId, body, userId);
+    const { tenant_id, user_id } = request.tenantContext;
+    return await this.procurementService.processReceipt(tenant_id, finalPoId, body, user_id);
   }
 
   // ─── CONTRACTS ────────────────────────────────────────────────────────────────
 
   @Get("contracts")
   async getContracts(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.procurementService.getContracts(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.procurementService.getContracts(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Post("contracts")
@@ -335,12 +335,12 @@ export class ProcurementController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreateContractDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Contract packet created and routed to Legal",
-      data: await this.procurementService.createContract(tenantId, dto, userId),
+      data: await this.procurementService.createContract(tenant_id, dto, user_id),
     };
   }
 
@@ -349,12 +349,12 @@ export class ProcurementController {
     @Req() request: RequestWithTenant,
     @Param("id") contractId: string,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Legal approval recorded",
-      data: await this.procurementService.approveLegalContract(tenantId, contractId, userId),
+      data: await this.procurementService.approveLegalContract(tenant_id, contractId, user_id),
     };
   }
 
@@ -364,12 +364,12 @@ export class ProcurementController {
     @Param("id") contractId: string,
     @Body() dto: SignContractDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: `Contract signed by ${dto.party}`,
-      data: await this.procurementService.signContract(tenantId, contractId, dto, userId),
+      data: await this.procurementService.signContract(tenant_id, contractId, dto, user_id),
     };
   }
 
@@ -377,9 +377,9 @@ export class ProcurementController {
 
   @Get("risk-signals")
   async getRiskSignals(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.procurementService.getRiskSignals(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.procurementService.getRiskSignals(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Post("risk-signals")
@@ -387,12 +387,12 @@ export class ProcurementController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreateRiskSignalDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Risk signal created",
-      data: await this.procurementService.createRiskSignal(tenantId, dto, userId),
+      data: await this.procurementService.createRiskSignal(tenant_id, dto, user_id),
     };
   }
 
@@ -402,29 +402,29 @@ export class ProcurementController {
     @Param("id") riskSignalId: string,
     @Body() dto: UpdateRiskSignalStatusDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: `Risk signal status updated to ${dto.status}`,
-      data: await this.procurementService.updateRiskSignalStatus(tenantId, riskSignalId, dto.status, userId),
+      data: await this.procurementService.updateRiskSignalStatus(tenant_id, riskSignalId, dto.status, user_id),
     };
   }
 
   @Post("risk-scan")
   async runRiskScan(@Req() request: RequestWithTenant) {
-    const { tenantId, userId } = request.tenantContext;
-    const data = await this.procurementService.runRiskScan(tenantId, userId);
-    return { success: true, tenantId, message: "Risk scan completed", count: data.length, data };
+    const { tenant_id, user_id } = request.tenantContext;
+    const data = await this.procurementService.runRiskScan(tenant_id, user_id);
+    return { success: true, tenant_id, message: "Risk scan completed", count: data.length, data };
   }
 
   // ─── PORTAL MESSAGES ──────────────────────────────────────────────────────────
 
   @Get("portal-messages")
   async getPortalMessages(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.procurementService.getPortalMessages(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.procurementService.getPortalMessages(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Post("portal-messages")
@@ -432,12 +432,12 @@ export class ProcurementController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreatePortalMessageDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Portal message created",
-      data: await this.procurementService.createPortalMessage(tenantId, dto, userId),
+      data: await this.procurementService.createPortalMessage(tenant_id, dto, user_id),
     };
   }
 
@@ -445,9 +445,9 @@ export class ProcurementController {
 
   @Get("audit-events")
   async getAuditEvents(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.procurementService.getAuditEvents(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.procurementService.getAuditEvents(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 
   @Post("audit-events")
@@ -455,17 +455,17 @@ export class ProcurementController {
     @Req() request: RequestWithTenant,
     @Body() body: any,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const data = await this.procurementService.createAuditEventDirect(tenantId, body, userId);
-    return { success: true, tenantId, data };
+    const { tenant_id, user_id } = request.tenantContext;
+    const data = await this.procurementService.createAuditEventDirect(tenant_id, body, user_id);
+    return { success: true, tenant_id, data };
   }
 
   // ─── SPEND INSIGHTS ────────────────────────────────────────────────────────────
 
   @Get("spend-insights")
   async getSpendInsights(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const data = await this.procurementService.getSpendInsights(tenantId);
-    return { success: true, tenantId, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const data = await this.procurementService.getSpendInsights(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
   }
 }

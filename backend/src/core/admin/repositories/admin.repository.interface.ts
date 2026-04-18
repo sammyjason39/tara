@@ -5,20 +5,20 @@ import { AdminModuleStatus } from "../entities/admin-module.entity";
 import { AdminRequest } from "../entities/admin-request.entity";
 
 export abstract class IAdminRepository {
-  abstract getModuleStatuses(tenantId: string): Promise<AdminModuleStatus[]>;
+  abstract getModuleStatuses(tenant_id: string): Promise<AdminModuleStatus[]>;
   abstract toggleModule(
-    tenantId: string,
+    tenant_id: string,
     dto: ToggleModuleDto,
   ): Promise<AdminModuleStatus>;
-  abstract getRequests(tenantId: string): Promise<AdminRequest[]>;
+  abstract getRequests(tenant_id: string): Promise<AdminRequest[]>;
   abstract createRequest(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateAdminRequestDto,
   ): Promise<AdminRequest>;
   abstract resolveRequest(
-    tenantId: string,
-    requestId: string,
+    tenant_id: string,
+    request_id: string,
     resolvedBy: string,
   ): Promise<AdminRequest>;
-  abstract getAuditEvents(tenantId: string): Promise<AdminAuditEvent[]>;
+  abstract getAuditEvents(tenant_id: string): Promise<AdminAuditEvent[]>;
 }

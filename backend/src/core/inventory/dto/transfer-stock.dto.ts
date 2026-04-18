@@ -9,7 +9,7 @@ import {
 export class TransferStockDto {
   @IsString()
   @IsNotEmpty()
-  itemId: string;
+  item_id: string;
 
   @IsString()
   @IsNotEmpty()

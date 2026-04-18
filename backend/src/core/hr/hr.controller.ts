@@ -79,6 +79,9 @@ import { isModuleActive } from "../../shared/helpers/module-active.helper";
 import { AuditService } from "../../shared/audit/audit.service";
 import { ComplianceEngineService } from "../../modules/compliance/compliance.service";
 import { ComplianceSuggestionService } from "../../modules/compliance/compliance-suggestion.service";
+import { RolesGuard } from "../../shared/guards/roles.guard";
+import { Roles } from "../../shared/decorators/roles.decorator";
+import { UserRole } from "../../shared/roles";
 
 interface RequestWithTenant extends Request {
   tenantContext: TenantContext;
@@ -91,7 +94,7 @@ interface RequestWithTenant extends Request {
  */
 @Controller("api/hr")
 @UseInterceptors(TenantInterceptor, HRMutationInterceptor, IdempotencyInterceptor)
-@UseGuards(ModuleStateGuard, BranchGatingGuard, TenantGuard)
+@UseGuards(ModuleStateGuard, BranchGatingGuard, TenantGuard, RolesGuard)
 @RequiredModule("hr")
 @Throttle({ default: { limit: 20, ttl: 60000 } })
 export class HRController {
@@ -125,7 +128,7 @@ export class HRController {
    */
   @Get("overview")
   async getOverview(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
 
     // Core HR metrics
     const [
@@ -135,13 +138,13 @@ export class HRController {
       openCasesCount,
       openRequisitions,
     ] = await Promise.all([
-      this.prisma.employee.count({ where: { tenantId } }),
-      this.prisma.employee.count({ where: { tenantId, status: "active" } }),
-      this.prisma.leaveRequest.count({
-        where: { tenantId, status: "PENDING" },
+      this.prisma.employees.count({ where: { tenant_id: tenant_id } }),
+      this.prisma.employees.count({ where: { tenant_id: tenant_id, status: "active" } }),
+      this.prisma.leave_requests.count({
+        where: { tenant_id: tenant_id, status: "PENDING" },
       }),
-      this.prisma.hrCase.count({ where: { tenantId, status: "OPEN" } }),
-      this.prisma.jobRequisition.count({ where: { tenantId, status: "OPEN" } }),
+      this.prisma.hr_cases.count({ where: { tenant_id: tenant_id, status: "OPEN" } }),
+      this.prisma.job_requisitions.count({ where: { tenant_id: tenant_id, status: "OPEN" } }),
     ]);
 
     const coreWorkforce = {
@@ -160,14 +163,14 @@ export class HRController {
 
     const retailIsActive = await isModuleActive(
       this.prisma,
-      tenantId,
+      tenant_id,
       "retail",
     );
     if (retailIsActive) {
       // Retail staff (employees in the Retail Operations department or with retail role)
-      const retailDept = await this.prisma.department.findFirst({
+      const retailDept = await this.prisma.departments.findFirst({
         where: {
-          tenantId,
+          tenant_id: tenant_id,
           OR: [
             { name: { contains: "Retail", mode: "insensitive" } },
             { code: { contains: "RET", mode: "insensitive" } },
@@ -177,41 +180,41 @@ export class HRController {
       });
 
       const retailStaffCount = retailDept
-        ? await this.prisma.employee.count({
-            where: { tenantId, departmentId: retailDept.id, status: "active" },
+        ? await this.prisma.employees.count({
+            where: { tenant_id: tenant_id, department_id: retailDept.id, status: "active" },
           })
-        : await this.prisma.employee.count({
-            where: { tenantId, status: "active" },
+        : await this.prisma.employees.count({
+            where: { tenant_id: tenant_id, status: "active" },
           });
 
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
 
       // Active shifts today (open retail shifts)
-      const activeShifts = await this.prisma.retailShift.count({
+      const activeShifts = await this.prisma.retail_shifts.count({
         where: {
-          tenantId,
-          startTime: { gte: todayStart },
-          endTime: null,
+          tenant_id: tenant_id,
+          start_time: { gte: todayStart },
+          end_time: null,
         },
       });
 
       // Shifts closed today (completed)
-      const completedShifts = await this.prisma.retailShift.count({
+      const completedShifts = await this.prisma.retail_shifts.count({
         where: {
-          tenantId,
-          startTime: { gte: todayStart },
-          endTime: { not: null },
+          tenant_id: tenant_id,
+          start_time: { gte: todayStart },
+          end_time: { not: null },
         },
       });
 
       // Pending shift closures (open shifts older than 8h — likely need closure)
       const eightHoursAgo = new Date(Date.now() - 8 * 60 * 60 * 1000);
-      const pendingShiftClosures = await this.prisma.retailShift.count({
+      const pendingShiftClosures = await this.prisma.retail_shifts.count({
         where: {
-          tenantId,
-          endTime: null,
-          startTime: { lte: eightHoursAgo },
+          tenant_id: tenant_id,
+          end_time: null,
+          start_time: { lte: eightHoursAgo },
         },
       });
 
@@ -228,7 +231,7 @@ export class HRController {
 
     return {
       success: true,
-      tenantId,
+      tenant_id,
       data: {
         coreWorkforce,
         moduleContributions: {
@@ -247,29 +250,29 @@ export class HRController {
   @Get("employees")
   async getEmployees(
     @Req() request: RequestWithTenant,
-    @Query("locationId") locationId?: string,
+    @Query("location_id") location_id?: string,
   ) {
     const {
-      tenantId,
+      tenant_id,
       role,
-      locationId: contextLocationId,
+      location_id: contextLocationId,
     } = request.tenantContext;
 
-    // For non-admin, force the context's locationId
+    // For non-admin, force the context's location_id
     const effectiveLocationId =
       role === "SUPERADMIN" || role === "OWNER" || role === "ADMIN"
-        ? locationId
+        ? location_id
         : contextLocationId;
 
     const result =
       role === "SUPERADMIN"
         ? await this.hrService.getGlobalEmployees(effectiveLocationId)
-        : await this.hrService.getEmployees(tenantId, effectiveLocationId);
+        : await this.hrService.getEmployees(tenant_id, effectiveLocationId);
 
     return {
       success: true,
-      tenantId,
-      locationId: locationId || "all",
+      tenant_id,
+      location_id: location_id || "all",
       count: result.data.length,
       total: result.total,
       data: result.data,
@@ -283,21 +286,21 @@ export class HRController {
   @Get("employees/:id")
   async getEmployee(
     @Req() request: RequestWithTenant,
-    @Param("id") employeeId: string,
+    @Param("id") employee_id: string,
   ) {
-    const { tenantId, role } = request.tenantContext;
+    const { tenant_id, role } = request.tenantContext;
 
     let employee;
     if (role === "SUPERADMIN") {
-      employee = await this.hrService.getGlobalEmployeeById(employeeId);
+      employee = await this.hrService.getGlobalEmployeeById(employee_id);
     } else {
-      employee = await this.hrService.getEmployeeById(tenantId, employeeId);
+      employee = await this.hrService.getEmployeeById(tenant_id, employee_id);
     }
 
     if (!employee) {
       return {
         success: false,
-        tenantId,
+        tenant_id,
         message: "Employee not found",
         data: null,
       };
@@ -305,7 +308,7 @@ export class HRController {
 
     return {
       success: true,
-      tenantId,
+      tenant_id,
       data: employee,
     };
   }
@@ -315,26 +318,27 @@ export class HRController {
    * Create a new employee
    */
   @Post("employees")
+  @Roles(UserRole.ADMIN, UserRole.OWNER, UserRole.SUPERADMIN)
   async createEmployee(
     @Req() request: RequestWithTenant,
     @Body() createEmployeeDto: CreateEmployeeDto,
   ) {
-    const { tenantId, locationId, userId } = request.tenantContext;
+    const { tenant_id, location_id, user_id } = request.tenantContext;
 
-    // Use context locationId if not provided in DTO
-    if (locationId && !createEmployeeDto.locationId) {
-      createEmployeeDto.locationId = locationId;
+    // Use context location_id if not provided in DTO
+    if (location_id && !createEmployeeDto.location_id) {
+      createEmployeeDto.location_id = location_id;
     }
 
     const employee = await this.hrService.createEmployee(
-      tenantId,
+      tenant_id,
       createEmployeeDto,
-      userId,
+      user_id,
     );
 
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Employee created successfully",
       data: employee,
     };
@@ -347,21 +351,21 @@ export class HRController {
   @Put("employees/:id")
   async updateEmployee(
     @Req() request: RequestWithTenant,
-    @Param("id") employeeId: string,
+    @Param("id") employee_id: string,
     @Body() updateEmployeeDto: UpdateEmployeeDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    console.log(`[DEBUG] Updating Employee ${employeeId}:`, JSON.stringify(updateEmployeeDto, null, 2));
+    const { tenant_id, user_id } = request.tenantContext;
+    console.log(`[DEBUG] Updating Employee ${employee_id}:`, JSON.stringify(updateEmployeeDto, null, 2));
     const employee = await this.hrService.updateEmployee(
-      tenantId,
-      employeeId,
+      tenant_id,
+      employee_id,
       updateEmployeeDto,
-      userId,
+      user_id,
     );
 
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Employee updated successfully",
       data: employee,
     };
@@ -374,18 +378,18 @@ export class HRController {
   @Delete("employees/:id")
   async deactivateEmployee(
     @Req() request: RequestWithTenant,
-    @Param("id") employeeId: string,
+    @Param("id") employee_id: string,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const employee = await this.hrService.deactivateEmployee(
-      tenantId,
-      employeeId,
-      userId,
+      tenant_id,
+      employee_id,
+      user_id,
     );
 
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Employee deactivated successfully",
       data: employee,
     };
@@ -401,19 +405,19 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const fileType = file.originalname.endsWith(".csv") ? "csv" : "xlsx";
 
     const result = await this.hrService.importEmployees(
-      tenantId,
+      tenant_id,
       file.buffer,
       fileType,
-      userId!,
+      user_id!,
     );
 
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: `Imported ${result.imported} employees`,
       errors: result.errors,
     };
@@ -428,13 +432,13 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Res() res: Response,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const buffer = await this.hrService.exportEmployees(tenantId, userId!);
+    const { tenant_id, user_id } = request.tenantContext;
+    const buffer = await this.hrService.exportEmployees(tenant_id, user_id!);
 
     res.set({
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="employees_${tenantId}_${Date.now()}.xlsx"`,
+      "Content-Disposition": `attachment; filename="employees_${tenant_id}_${Date.now()}.xlsx"`,
       "Content-Length": buffer.length,
     });
 
@@ -450,14 +454,14 @@ export class HRController {
   @Get("attendance")
   async getAttendance(
     @Req() request: RequestWithTenant,
-    @Query("employeeId") employeeId?: string,
-    @Query("startDate") startDate?: string,
-    @Query("endDate") endDate?: string,
+    @Query("employee_id") employee_id?: string,
+    @Query("start_date") start_date?: string,
+    @Query("end_date") end_date?: string,
   ) {
     const {
-      tenantId,
+      tenant_id,
       role,
-      locationId: contextLocationId,
+      location_id: contextLocationId,
     } = request.tenantContext;
 
     const effectiveLocationId =
@@ -468,22 +472,22 @@ export class HRController {
     const result =
       role === "SUPERADMIN"
         ? await this.hrService.getGlobalAttendance(
-            employeeId,
-            startDate,
-            endDate,
+            employee_id,
+            start_date,
+            end_date,
           )
         : await this.hrService.getAttendance(
-            tenantId,
+            tenant_id,
             effectiveLocationId,
-            employeeId,
-            startDate,
-            endDate,
+            employee_id,
+            start_date,
+            end_date,
           );
 
     return {
       success: true,
-      tenantId,
-      employeeId: employeeId || "all",
+      tenant_id,
+      employee_id: employee_id || "all",
       count: result.data.length,
       total: result.total,
       data: result.data,
@@ -495,24 +499,24 @@ export class HRController {
    * Clock in an employee
    */
   @Post("attendance/clock-in")
-  async clockIn(
+  async clock_in(
     @Req() request: RequestWithTenant,
     @Body() clockInDto: ClockInDto,
   ) {
-    const { tenantId, userId, locationId } = request.tenantContext;
+    const { tenant_id, user_id, location_id } = request.tenantContext;
     const effectiveLocationId =
-      clockInDto.locationId || locationId || "default";
+      clockInDto.location_id || location_id || "default";
 
-    const attendance = await this.hrService.clockIn(
-      tenantId,
-      clockInDto.employeeId,
+    const attendance = await this.hrService.clock_in(
+      tenant_id,
+      clockInDto.employee_id,
       effectiveLocationId,
-      userId,
+      user_id,
     );
 
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Clocked in successfully",
       data: attendance,
     };
@@ -523,20 +527,20 @@ export class HRController {
    * Clock out an employee
    */
   @Post("attendance/clock-out")
-  async clockOut(
+  async clock_out(
     @Req() request: RequestWithTenant,
-    @Body() body: { employeeId: string },
+    @Body() body: { employee_id: string },
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const attendance = await this.hrService.clockOut(
-      tenantId,
-      body.employeeId,
-      userId,
+    const { tenant_id, user_id } = request.tenantContext;
+    const attendance = await this.hrService.clock_out(
+      tenant_id,
+      body.employee_id,
+      user_id,
     );
 
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Clocked out successfully",
       data: attendance,
     };
@@ -552,12 +556,12 @@ export class HRController {
   async getLeaveRequests(
     @Req() request: RequestWithTenant,
     @Query("status") status?: string,
-    @Query("employeeId") employeeId?: string,
+    @Query("employee_id") employee_id?: string,
   ) {
     const {
-      tenantId,
+      tenant_id,
       role,
-      locationId: contextLocationId,
+      location_id: contextLocationId,
     } = request.tenantContext;
 
     const effectiveLocationId =
@@ -567,17 +571,17 @@ export class HRController {
 
     const requests =
       role === "SUPERADMIN"
-        ? await this.hrService.getGlobalLeaveRequests(status, employeeId)
+        ? await this.hrService.getGlobalLeaveRequests(status, employee_id)
         : await this.hrService.getLeaveRequests(
-            tenantId,
+            tenant_id,
             effectiveLocationId,
             status,
-            employeeId,
+            employee_id,
           );
 
     return {
       success: true,
-      tenantId,
+      tenant_id,
       count: requests.length,
       data: requests,
     };
@@ -592,16 +596,16 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() createLeaveRequestDto: CreateLeaveRequestDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const leaveRequest = await this.hrService.createLeaveRequest(
-      tenantId,
+      tenant_id,
       createLeaveRequestDto,
-      userId,
+      user_id,
     );
 
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Leave request created successfully",
       data: leaveRequest,
     };
@@ -614,21 +618,21 @@ export class HRController {
   @Put("leave-requests/:id/approve")
   async approveLeaveRequest(
     @Req() request: RequestWithTenant,
-    @Param("id") requestId: string,
+    @Param("id") request_id: string,
     @Body() body: { reviewerId: string; notes?: string },
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const leaveRequest = await this.hrService.approveLeaveRequest(
-      tenantId,
-      requestId,
+      tenant_id,
+      request_id,
       body.reviewerId,
       body.notes,
-      userId,
+      user_id,
     );
 
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Leave request approved",
       data: leaveRequest,
     };
@@ -641,21 +645,21 @@ export class HRController {
   @Put("leave-requests/:id/reject")
   async rejectLeaveRequest(
     @Req() request: RequestWithTenant,
-    @Param("id") requestId: string,
+    @Param("id") request_id: string,
     @Body() body: { reviewerId: string; notes: string },
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const leaveRequest = await this.hrService.rejectLeaveRequest(
-      tenantId,
-      requestId,
+      tenant_id,
+      request_id,
       body.reviewerId,
       body.notes,
-      userId,
+      user_id,
     );
 
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Leave request rejected",
       data: leaveRequest,
     };
@@ -664,19 +668,19 @@ export class HRController {
   // ==================== Payroll Management ====================
 
   /**
-   * GET /hr/payroll/:employeeId
+   * GET /hr/payroll/:employee_id
    * Get payroll records for an employee
    */
-  @Get("payroll/:employeeId")
+  @Get("payroll/:employee_id")
   async getPayroll(
     @Req() request: RequestWithTenant,
-    @Param("employeeId") employeeId: string,
+    @Param("employee_id") employee_id: string,
     @Query("period") period?: string,
   ) {
     const {
-      tenantId,
+      tenant_id,
       role,
-      locationId: contextLocationId,
+      location_id: contextLocationId,
     } = request.tenantContext;
 
     const effectiveLocationId =
@@ -686,44 +690,44 @@ export class HRController {
 
     const payrolls =
       role === "SUPERADMIN"
-        ? await this.hrService.getGlobalPayroll(employeeId, period)
+        ? await this.hrService.getGlobalPayroll(employee_id, period)
         : await this.hrService.getPayroll(
-            tenantId,
+            tenant_id,
             effectiveLocationId,
-            employeeId,
+            employee_id,
             period,
           );
 
     return {
       success: true,
-      tenantId,
-      employeeId,
+      tenant_id,
+      employee_id,
       count: payrolls.length,
       data: payrolls,
     };
   }
 
   /**
-   * POST /hr/payroll/:employeeId/calculate
+   * POST /hr/payroll/:employee_id/calculate
    * Calculate payroll for an employee
    */
-  @Post("payroll/:employeeId/calculate")
+  @Post("payroll/:employee_id/calculate")
   async calculatePayroll(
     @Req() request: RequestWithTenant,
-    @Param("employeeId") employeeId: string,
+    @Param("employee_id") employee_id: string,
     @Body() body: { period: string },
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const payroll = await this.hrService.calculatePayroll(
-      tenantId,
-      employeeId,
+      tenant_id,
+      employee_id,
       body.period,
-      userId,
+      user_id,
     );
 
     return {
       success: true,
-      tenantId,
+      tenant_id,
       message: "Payroll calculated successfully",
       data: payroll,
     };
@@ -733,28 +737,29 @@ export class HRController {
 
   @Get("departments")
   async getDepartments(@Req() request: RequestWithTenant) {
-    const { tenantId, role } = request.tenantContext;
+    const { tenant_id, role } = request.tenantContext;
 
     const departments =
       role === "SUPERADMIN"
         ? await this.hrService.getGlobalDepartments()
-        : await this.hrService.getDepartments(tenantId);
+        : await this.hrService.getDepartments(tenant_id);
 
-    return { success: true, tenantId, data: departments };
+    return { success: true, tenant_id, data: departments };
   }
 
   @Post("departments")
+  @Roles(UserRole.ADMIN, UserRole.OWNER, UserRole.SUPERADMIN)
   async createDepartment(
     @Req() request: RequestWithTenant,
     @Body() dto: CreateDepartmentDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const department = await this.hrService.createDepartment(
-      tenantId,
+      tenant_id,
       dto,
-      userId,
+      user_id,
     );
-    return { success: true, tenantId, data: department };
+    return { success: true, tenant_id, data: department };
   }
 
   // ==================== Recruitment Management ====================
@@ -764,14 +769,14 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Query("status") status?: string,
   ) {
-    const { tenantId, role } = request.tenantContext;
+    const { tenant_id, role } = request.tenantContext;
 
     const requisitions =
       role === "SUPERADMIN"
         ? await this.hrService.getGlobalRequisitions(status)
-        : await this.hrService.getRequisitions(tenantId, status);
+        : await this.hrService.getRequisitions(tenant_id, status);
 
-    return { success: true, tenantId, data: requisitions };
+    return { success: true, tenant_id, data: requisitions };
   }
 
   @Post("requisitions")
@@ -779,13 +784,13 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreateRequisitionDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const requisition = await this.hrService.createRequisition(
-      tenantId,
+      tenant_id,
       dto,
-      userId,
+      user_id,
     );
-    return { success: true, tenantId, data: requisition };
+    return { success: true, tenant_id, data: requisition };
   }
 
   @Patch("requisitions/:id")
@@ -794,23 +799,23 @@ export class HRController {
     @Param("id") id: string,
     @Body() body: any,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const requisition = await this.hrService.updateRequisition(
-      tenantId,
+      tenant_id,
       id,
       body,
-      userId,
+      user_id,
     );
-    return { success: true, tenantId, data: requisition };
+    return { success: true, tenant_id, data: requisition };
   }
 
   // ==================== Performance Management ====================
 
   @Get("performance/cycles")
   async getPerformanceCycles(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const cycles = await this.hrService.getPerformanceCycles(tenantId);
-    return { success: true, tenantId, data: cycles };
+    const { tenant_id } = request.tenantContext;
+    const cycles = await this.hrService.getPerformanceCycles(tenant_id);
+    return { success: true, tenant_id, data: cycles };
   }
 
   @Post("performance/cycles")
@@ -818,33 +823,33 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreatePerformanceCycleDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const cycle = await this.hrService.createPerformanceCycle(
-      tenantId,
+      tenant_id,
       dto,
-      userId,
+      user_id,
     );
-    return { success: true, tenantId, data: cycle };
+    return { success: true, tenant_id, data: cycle };
   }
 
   @Get("performance/reviews")
   async getPerformanceReviews(
     @Req() request: RequestWithTenant,
     @Query("cycleId") cycleId?: string,
-    @Query("employeeId") employeeId?: string,
+    @Query("employee_id") employee_id?: string,
   ) {
-    const { tenantId, role } = request.tenantContext;
+    const { tenant_id, role } = request.tenantContext;
 
     const reviews =
       role === "SUPERADMIN"
-        ? await this.hrService.getGlobalPerformanceReviews(cycleId, employeeId)
+        ? await this.hrService.getGlobalPerformanceReviews(cycleId, employee_id)
         : await this.hrService.getPerformanceReviews(
-            tenantId,
+            tenant_id,
             cycleId,
-            employeeId,
+            employee_id,
           );
 
-    return { success: true, tenantId, data: reviews };
+    return { success: true, tenant_id, data: reviews };
   }
 
   @Post("performance/reviews")
@@ -852,13 +857,13 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: SubmitReviewDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const review = await this.hrService.submitPerformanceReview(
-      tenantId,
+      tenant_id,
       dto,
-      userId,
+      user_id,
     );
-    return { success: true, tenantId, data: review };
+    return { success: true, tenant_id, data: review };
   }
 
   // ==================== Lifecycle Transitions ====================
@@ -869,9 +874,9 @@ export class HRController {
     @Param("id") id: string,
     @Body() dto: PromoteEmployeeDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const employee = await this.hrService.promoteEmployee(tenantId, id, dto, userId);
-    return { success: true, tenantId, message: "Employee promoted", data: employee };
+    const { tenant_id, user_id } = request.tenantContext;
+    const employee = await this.hrService.promoteEmployee(tenant_id, id, dto, user_id);
+    return { success: true, tenant_id, message: "Employee promoted", data: employee };
   }
 
   @Patch("employees/:id/transfer")
@@ -880,9 +885,9 @@ export class HRController {
     @Param("id") id: string,
     @Body() dto: TransferEmployeeDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const employee = await this.hrService.transferEmployee(tenantId, id, dto, userId);
-    return { success: true, tenantId, message: "Employee transferred", data: employee };
+    const { tenant_id, user_id } = request.tenantContext;
+    const employee = await this.hrService.transferEmployee(tenant_id, id, dto, user_id);
+    return { success: true, tenant_id, message: "Employee transferred", data: employee };
   }
 
   @Patch("employees/:id/suspend")
@@ -891,9 +896,9 @@ export class HRController {
     @Param("id") id: string,
     @Body() dto: SuspendEmployeeDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const employee = await this.hrService.suspendEmployee(tenantId, id, dto.reason, userId);
-    return { success: true, tenantId, message: "Employee suspended", data: employee };
+    const { tenant_id, user_id } = request.tenantContext;
+    const employee = await this.hrService.suspendEmployee(tenant_id, id, dto.reason, user_id);
+    return { success: true, tenant_id, message: "Employee suspended", data: employee };
   }
 
   // ==================== Talent Management ====================
@@ -903,9 +908,9 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Query("status") status?: string,
   ) {
-    const { tenantId } = request.tenantContext;
-    const candidates = await this.hrService.getCandidates(tenantId, status);
-    return { success: true, tenantId, data: candidates };
+    const { tenant_id } = request.tenantContext;
+    const candidates = await this.hrService.getCandidates(tenant_id, status);
+    return { success: true, tenant_id, data: candidates };
   }
 
   @Post("candidates")
@@ -913,9 +918,9 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreateCandidateDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const candidate = await this.hrService.createCandidate(tenantId, dto, userId);
-    return { success: true, tenantId, data: candidate };
+    const { tenant_id, user_id } = request.tenantContext;
+    const candidate = await this.hrService.createCandidate(tenant_id, dto, user_id);
+    return { success: true, tenant_id, data: candidate };
   }
 
   @Post("candidates/:id/hire")
@@ -923,9 +928,9 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Param("id") id: string,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const employee = await this.hrService.hireCandidate(tenantId, id, userId);
-    return { success: true, tenantId, message: "Candidate hired as employee", data: employee };
+    const { tenant_id, user_id } = request.tenantContext;
+    const employee = await this.hrService.hireCandidate(tenant_id, id, user_id);
+    return { success: true, tenant_id, message: "Candidate hired as employee", data: employee };
   }
 
   // ==================== Headcount & Compensation ====================
@@ -933,11 +938,11 @@ export class HRController {
   @Get("positions")
   async getPositions(
     @Req() request: RequestWithTenant,
-    @Query("departmentId") departmentId?: string,
+    @Query("department_id") department_id?: string,
   ) {
-    const { tenantId } = request.tenantContext;
-    const positions = await this.hrService.getPositions(tenantId, departmentId);
-    return { success: true, tenantId, data: positions };
+    const { tenant_id } = request.tenantContext;
+    const positions = await this.hrService.getPositions(tenant_id, department_id);
+    return { success: true, tenant_id, data: positions };
   }
 
   @Patch("positions/:id")
@@ -946,30 +951,30 @@ export class HRController {
     @Param("id") id: string,
     @Body() dto: UpdatePositionDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const position = await this.hrService.updatePosition(tenantId, id, dto, userId);
-    return { success: true, tenantId, data: position };
+    const { tenant_id, user_id } = request.tenantContext;
+    const position = await this.hrService.updatePosition(tenant_id, id, dto, user_id);
+    return { success: true, tenant_id, data: position };
   }
 
   @Get("employees/:id/compensation")
   async getCompensation(
     @Req() request: RequestWithTenant,
-    @Param("id") employeeId: string,
+    @Param("id") employee_id: string,
   ) {
-    const { tenantId } = request.tenantContext;
-    const compensation = await this.hrService.getCompensation(tenantId, employeeId);
-    return { success: true, tenantId, data: compensation };
+    const { tenant_id } = request.tenantContext;
+    const compensation = await this.hrService.getCompensation(tenant_id, employee_id);
+    return { success: true, tenant_id, data: compensation };
   }
 
   @Patch("employees/:id/compensation")
   async updateCompensation(
     @Req() request: RequestWithTenant,
-    @Param("id") employeeId: string,
+    @Param("id") employee_id: string,
     @Body() dto: UpdateCompensationDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const compensation = await this.hrService.updateCompensation(tenantId, employeeId, dto, userId);
-    return { success: true, tenantId, data: compensation };
+    const { tenant_id, user_id } = request.tenantContext;
+    const compensation = await this.hrService.updateCompensation(tenant_id, employee_id, dto, user_id);
+    return { success: true, tenant_id, data: compensation };
   }
 
   // ==================== Case Management ====================
@@ -980,9 +985,9 @@ export class HRController {
     @Query("status") status?: string,
   ) {
     const {
-      tenantId,
+      tenant_id,
       role,
-      locationId: contextLocationId,
+      location_id: contextLocationId,
     } = request.tenantContext;
 
     const effectiveLocationId =
@@ -991,18 +996,18 @@ export class HRController {
         : contextLocationId;
 
     const cases = await this.hrService.getCases(
-      tenantId,
+      tenant_id,
       effectiveLocationId,
       status,
     );
-    return { success: true, tenantId, data: cases };
+    return { success: true, tenant_id, data: cases };
   }
 
   @Get("cases/:id")
   async getCase(@Req() request: RequestWithTenant, @Param("id") id: string) {
-    const { tenantId } = request.tenantContext;
-    const hrCase = await this.hrService.getCaseById(tenantId, id);
-    return { success: true, tenantId, data: hrCase };
+    const { tenant_id } = request.tenantContext;
+    const hrCase = await this.hrService.getCaseById(tenant_id, id);
+    return { success: true, tenant_id, data: hrCase };
   }
 
   @Post("cases")
@@ -1010,9 +1015,9 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreateCaseDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const hrCase = await this.hrService.createCase(tenantId, dto, userId);
-    return { success: true, tenantId, data: hrCase };
+    const { tenant_id, user_id } = request.tenantContext;
+    const hrCase = await this.hrService.createCase(tenant_id, dto, user_id);
+    return { success: true, tenant_id, data: hrCase };
   }
 
   @Patch("cases/:id")
@@ -1021,9 +1026,9 @@ export class HRController {
     @Param("id") id: string,
     @Body() body: any,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const hrCase = await this.hrService.updateCase(tenantId, id, body, userId);
-    return { success: true, tenantId, data: hrCase };
+    const { tenant_id, user_id } = request.tenantContext;
+    const hrCase = await this.hrService.updateCase(tenant_id, id, body, user_id);
+    return { success: true, tenant_id, data: hrCase };
   }
 
   // ==================== Contract Management ====================
@@ -1031,12 +1036,12 @@ export class HRController {
   @Get("contracts")
   async getContracts(
     @Req() request: RequestWithTenant,
-    @Query("employeeId") employeeId?: string,
+    @Query("employee_id") employee_id?: string,
   ) {
     const {
-      tenantId,
+      tenant_id,
       role,
-      locationId: contextLocationId,
+      location_id: contextLocationId,
     } = request.tenantContext;
 
     const effectiveLocationId =
@@ -1046,14 +1051,14 @@ export class HRController {
 
     const contracts =
       role === "SUPERADMIN"
-        ? await this.hrService.getGlobalContracts(employeeId)
+        ? await this.hrService.getGlobalContracts(employee_id)
         : await this.hrService.getContracts(
-            tenantId,
+            tenant_id,
             effectiveLocationId,
-            employeeId,
+            employee_id,
           );
 
-    return { success: true, tenantId, data: contracts };
+    return { success: true, tenant_id, data: contracts };
   }
 
   @Post("contracts")
@@ -1061,9 +1066,9 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreateContractDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const contract = await this.hrService.createContract(tenantId, dto, userId);
-    return { success: true, tenantId, data: contract };
+    const { tenant_id, user_id } = request.tenantContext;
+    const contract = await this.hrService.createContract(tenant_id, dto, user_id);
+    return { success: true, tenant_id, data: contract };
   }
 
   @Patch("contracts/:id")
@@ -1072,14 +1077,14 @@ export class HRController {
     @Param("id") id: string,
     @Body() body: any,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const contract = await this.hrService.updateContract(
-      tenantId,
+      tenant_id,
       id,
       body,
-      userId,
+      user_id,
     );
-    return { success: true, tenantId, data: contract };
+    return { success: true, tenant_id, data: contract };
   }
 
   // ==================== Payroll Runs Management ====================
@@ -1090,18 +1095,18 @@ export class HRController {
    */
   @Get("payroll-runs")
   async getPayrollRuns(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const runs = await this.prisma.hrCase.findMany({
-      where: { tenantId, type: "PAYROLL_RUN" },
-      orderBy: { createdAt: "desc" },
+    const { tenant_id } = request.tenantContext;
+    const runs = await this.prisma.hr_cases.findMany({
+      where: { tenant_id: tenant_id, type: "PAYROLL_RUN" },
+      orderBy: { created_at: "desc" },
     });
     // Map case to payroll run shape
     const mapped = runs.map((r: any) => {
       let meta: any = {};
       try { meta = JSON.parse(r.description || "{}"); } catch {}
-      return { id: r.id, tenantId: r.tenantId, periodStart: meta.periodStart, periodEnd: meta.periodEnd, status: r.status === "OPEN" ? "draft" : r.status === "IN_PROGRESS" ? "pending" : r.status === "CLOSED" ? "approved" : r.status, totalEmployees: meta.totalEmployees ?? 0, totalGrossPay: meta.totalGrossPay ?? 0, totalNetPay: meta.totalNetPay ?? 0, createdAt: r.createdAt, updatedAt: r.updatedAt };
+      return { id: r.id, tenant_id: r.tenant_id, period_start: meta.period_start, period_end: meta.period_end, status: r.status === "OPEN" ? "draft" : r.status === "IN_PROGRESS" ? "pending" : r.status === "CLOSED" ? "approved" : r.status, totalEmployees: meta.totalEmployees ?? 0, totalGrossPay: meta.totalGrossPay ?? 0, totalNetPay: meta.totalNetPay ?? 0, created_at: r.created_at, updated_at: r.updated_at };
     });
-    return { success: true, tenantId, data: mapped };
+    return { success: true, tenant_id, data: mapped };
   }
 
   /**
@@ -1111,26 +1116,26 @@ export class HRController {
   @Post("payroll-runs")
   async createPayrollRun(
     @Req() request: RequestWithTenant,
-    @Body() body: { periodStart: string; periodEnd: string },
+    @Body() body: { period_start: string; period_end: string },
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const meta = JSON.stringify({ periodStart: body.periodStart, periodEnd: body.periodEnd, totalEmployees: 0, totalGrossPay: 0, totalNetPay: 0 });
-    const run = await this.prisma.hrCase.create({
+    const { tenant_id, user_id } = request.tenantContext;
+    const meta = JSON.stringify({ period_start: body.period_start, period_end: body.period_end, totalEmployees: 0, totalGrossPay: 0, totalNetPay: 0 });
+    const run = await this.prisma.hr_cases.create({
       data: {
         id: 'zv404yc3',
-        updatedAt: new Date(),
-        tenantId,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
         type: "PAYROLL_RUN",
-        title: `Payroll Run: ${body.periodStart} - ${body.periodEnd}|${meta}`,
+        title: `Payroll Run: ${body.period_start} - ${body.period_end}|${meta}`,
         status: "OPEN",
         priority: "NORMAL",
-        employeeId: userId || "system",
-        ownerId: userId || null,
+        employee_id: user_id || "system",
+        owner_id: user_id || null,
       },
     });
-    await this.auditService.log({ tenantId, userId: userId || "system", module: "hr", action: "CREATE", entityType: "PAYROLL_RUN", entityId: run.id, metadata: { periodStart: body.periodStart, periodEnd: body.periodEnd } });
-    const result = { id: run.id, tenantId, periodStart: body.periodStart, periodEnd: body.periodEnd, status: "draft", totalEmployees: 0, totalGrossPay: 0, totalNetPay: 0, createdAt: run.createdAt };
-    return { success: true, tenantId, data: result };
+    await this.auditService.log({ tenant_id, user_id: user_id || "system", module: "hr", action: "CREATE", entity_type: "PAYROLL_RUN", entity_id: run.id, metadata: { period_start: body.period_start, period_end: body.period_end } });
+    const result = { id: run.id, tenant_id, period_start: body.period_start, period_end: body.period_end, status: "draft", totalEmployees: 0, totalGrossPay: 0, totalNetPay: 0, created_at: run.created_at };
+    return { success: true, tenant_id, data: result };
   }
 
   /**
@@ -1142,13 +1147,13 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Param("id") id: string,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const run = await this.prisma.hrCase.update({
+    const { tenant_id, user_id } = request.tenantContext;
+    const run = await this.prisma.hr_cases.update({
       where: { id },
       data: { status: "IN_PROGRESS" },
     });
-    await this.auditService.log({ tenantId, userId: userId || "system", module: "hr", action: "SUBMIT", entityType: "PAYROLL_RUN", entityId: id, metadata: {} });
-    return { success: true, tenantId, data: { ...run, status: "pending" } };
+    await this.auditService.log({ tenant_id, user_id: user_id || "system", module: "hr", action: "SUBMIT", entity_type: "PAYROLL_RUN", entity_id: id, metadata: {} });
+    return { success: true, tenant_id, data: { ...run, status: "pending" } };
   }
 
   /**
@@ -1160,17 +1165,17 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Param("id") id: string,
   ) {
-    const { tenantId, userId, role } = request.tenantContext;
+    const { tenant_id, user_id, role } = request.tenantContext;
     const allowed = ["SUPERADMIN", "OWNER", "COMPANY_ADMIN", "FINANCE_ADMIN"].includes(role ?? "");
     if (!allowed) {
       return { success: false, message: "Insufficient permissions to approve payroll run." };
     }
-    const run = await this.prisma.hrCase.update({
+    const run = await this.prisma.hr_cases.update({
       where: { id },
       data: { status: "CLOSED" },
     });
-    await this.auditService.log({ tenantId, userId: userId || "system", module: "hr", action: "APPROVE", entityType: "PAYROLL_RUN", entityId: id, metadata: {} });
-    return { success: true, tenantId, data: { ...run, status: "approved" } };
+    await this.auditService.log({ tenant_id, user_id: user_id || "system", module: "hr", action: "APPROVE", entity_type: "PAYROLL_RUN", entity_id: id, metadata: {} });
+    return { success: true, tenant_id, data: { ...run, status: "approved" } };
   }
 
   /**
@@ -1183,16 +1188,16 @@ export class HRController {
     @Param("id") id: string,
     @Res() res: Response,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const run = await this.prisma.hrCase.findFirst({ where: { id, tenantId, type: "PAYROLL_RUN" } });
+    const { tenant_id, user_id } = request.tenantContext;
+    const run = await this.prisma.hr_cases.findFirst({ where: { id, tenant_id: tenant_id, type: "PAYROLL_RUN" } });
     if (!run || run.status !== "CLOSED") {
       res.status(400).json({ success: false, message: "Run not found or not approved." });
       return;
     }
     let meta: any = {};
     try { const parts = (run as any).title?.split("|"); if (parts?.[1]) meta = JSON.parse(parts[1]); } catch {}
-    const csv = `PayrollRun,${run.id},${meta.periodStart},${meta.periodEnd},${meta.totalGrossPay ?? 0},${meta.totalNetPay ?? 0}\n`;
-    await this.auditService.log({ tenantId, userId: userId || "system", module: "hr", action: "EXPORT", entityType: "PAYROLL_RUN", entityId: id, metadata: {} });
+    const csv = `PayrollRun,${run.id},${meta.period_start},${meta.period_end},${meta.totalGrossPay ?? 0},${meta.totalNetPay ?? 0}\n`;
+    await this.auditService.log({ tenant_id, user_id: user_id || "system", module: "hr", action: "EXPORT", entity_type: "PAYROLL_RUN", entity_id: id, metadata: {} });
     res.set({ "Content-Type": "text/csv", "Content-Disposition": `attachment; filename="payroll_${id}.csv"` });
     res.end(csv);
   }
@@ -1206,15 +1211,15 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Param("id") runId: string,
   ) {
-    const { tenantId } = request.tenantContext;
-    const run = await this.prisma.hrCase.findFirst({ where: { id: runId, tenantId, type: "PAYROLL_RUN" } });
+    const { tenant_id } = request.tenantContext;
+    const run = await this.prisma.hr_cases.findFirst({ where: { id: runId, tenant_id: tenant_id, type: "PAYROLL_RUN" } });
     if (!run) return { success: false, message: "Payroll run not found." };
     let meta: any = {};
     try { const parts = (run as any).title?.split("|"); if (parts?.[1]) meta = JSON.parse(parts[1]); } catch {}
     const gross = meta.totalGrossPay ?? 0;
     const net = meta.totalNetPay ?? 0;
     const varianceScore = gross > 0 ? Math.round(((gross - net) / gross) * 100) : 0;
-    return { success: true, tenantId, data: { runId, varianceScore } };
+    return { success: true, tenant_id, data: { runId, varianceScore } };
   }
 
   // ==================== Location Management ====================
@@ -1225,9 +1230,9 @@ export class HRController {
    */
   @Get("locations")
   async getLocations(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const locations = await this.hrService.getLocations(tenantId);
-    return { success: true, tenantId, data: locations };
+    const { tenant_id } = request.tenantContext;
+    const locations = await this.hrService.getLocations(tenant_id);
+    return { success: true, tenant_id, data: locations };
   }
   // ==================== Training Management ====================
 
@@ -1237,9 +1242,9 @@ export class HRController {
    */
   @Get("training/programs")
   async getTrainingPrograms(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const programs = await this.hrService.getTrainingPrograms(tenantId);
-    return { success: true, tenantId, data: programs };
+    const { tenant_id } = request.tenantContext;
+    const programs = await this.hrService.getTrainingPrograms(tenant_id);
+    return { success: true, tenant_id, data: programs };
   }
 
   /**
@@ -1251,9 +1256,9 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: any,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const program = await this.hrService.createTrainingProgram(tenantId, dto, userId!);
-    return { success: true, tenantId, data: program };
+    const { tenant_id, user_id } = request.tenantContext;
+    const program = await this.hrService.createTrainingProgram(tenant_id, dto, user_id!);
+    return { success: true, tenant_id, data: program };
   }
 
   /**
@@ -1262,9 +1267,9 @@ export class HRController {
    */
   @Get("training/assignments")
   async getTrainingAssignments(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const assignments = await this.hrService.getTrainingAssignments(tenantId);
-    return { success: true, tenantId, data: assignments };
+    const { tenant_id } = request.tenantContext;
+    const assignments = await this.hrService.getTrainingAssignments(tenant_id);
+    return { success: true, tenant_id, data: assignments };
   }
 
   /**
@@ -1276,9 +1281,9 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: any,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const assignment = await this.hrService.createTrainingAssignment(tenantId, dto, userId!);
-    return { success: true, tenantId, data: assignment };
+    const { tenant_id, user_id } = request.tenantContext;
+    const assignment = await this.hrService.createTrainingAssignment(tenant_id, dto, user_id!);
+    return { success: true, tenant_id, data: assignment };
   }
 
   /**
@@ -1291,9 +1296,9 @@ export class HRController {
     @Param("id") id: string,
     @Body() body: any,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const assignment = await this.hrService.updateTrainingAssignment(tenantId, id, body, userId!);
-    return { success: true, tenantId, data: assignment };
+    const { tenant_id, user_id } = request.tenantContext;
+    const assignment = await this.hrService.updateTrainingAssignment(tenant_id, id, body, user_id!);
+    return { success: true, tenant_id, data: assignment };
   }
 
   // ==================== Analytics & Reporting ====================
@@ -1304,9 +1309,9 @@ export class HRController {
    */
   @Get("analytics/workforce")
   async getWorkforceAnalytics(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const stats = await this.hrService.getTurnoverStats(tenantId);
-    return { success: true, tenantId, data: stats };
+    const { tenant_id } = request.tenantContext;
+    const stats = await this.hrService.getTurnoverStats(tenant_id);
+    return { success: true, tenant_id, data: stats };
   }
 
   /**
@@ -1315,9 +1320,9 @@ export class HRController {
    */
   @Get("analytics/trends")
   async getHeadcountTrends(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const trend = await this.hrService.getHeadcountTrend(tenantId);
-    return { success: true, tenantId, data: trend };
+    const { tenant_id } = request.tenantContext;
+    const trend = await this.hrService.getHeadcountTrend(tenant_id);
+    return { success: true, tenant_id, data: trend };
   }
 
   /**
@@ -1326,9 +1331,9 @@ export class HRController {
    */
   @Get("analytics/departments")
   async getDepartmentAnalytics(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const analytics = await this.hrService.getDepartmentAnalytics(tenantId);
-    return { success: true, tenantId, data: analytics };
+    const { tenant_id } = request.tenantContext;
+    const analytics = await this.hrService.getDepartmentAnalytics(tenant_id);
+    return { success: true, tenant_id, data: analytics };
   }
 
   /**
@@ -1337,9 +1342,9 @@ export class HRController {
    */
   @Get("analytics/compensation")
   async getCompensationAnalytics(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const analytics = await this.hrService.getCompensationAnalytics(tenantId);
-    return { success: true, tenantId, data: analytics };
+    const { tenant_id } = request.tenantContext;
+    const analytics = await this.hrService.getCompensationAnalytics(tenant_id);
+    return { success: true, tenant_id, data: analytics };
   }
 
   // ==================== Recruitment & Scheduling ====================
@@ -1353,9 +1358,9 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Query("candidateId") candidateId?: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const interviews = await this.hrService.getInterviews(tenantId, candidateId);
-    return { success: true, tenantId, data: interviews };
+    const { tenant_id } = request.tenantContext;
+    const interviews = await this.hrService.getInterviews(tenant_id, candidateId);
+    return { success: true, tenant_id, data: interviews };
   }
 
   /**
@@ -1367,9 +1372,9 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() body: ScheduleInterviewDto
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const interview = await this.hrService.scheduleInterview(tenantId, body, userId!);
-    return { success: true, tenantId, data: interview };
+    const { tenant_id, user_id } = request.tenantContext;
+    const interview = await this.hrService.scheduleInterview(tenant_id, body, user_id!);
+    return { success: true, tenant_id, data: interview };
   }
 
   /**
@@ -1382,9 +1387,9 @@ export class HRController {
     @Param("id") id: string,
     @Body() body: UpdateInterviewStatusDto
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const interview = await this.hrService.updateInterviewStatus(tenantId, id, body.status, userId!);
-    return { success: true, tenantId, data: interview };
+    const { tenant_id, user_id } = request.tenantContext;
+    const interview = await this.hrService.updateInterviewStatus(tenant_id, id, body.status, user_id!);
+    return { success: true, tenant_id, data: interview };
   }
 
   // ==================== Talent Sourcing ====================
@@ -1398,9 +1403,9 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Query("status") status?: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const leads = await this.hrService.getTalentLeads(tenantId, status);
-    return { success: true, tenantId, count: leads.length, data: leads };
+    const { tenant_id } = request.tenantContext;
+    const leads = await this.hrService.getTalentLeads(tenant_id, status);
+    return { success: true, tenant_id, count: leads.length, data: leads };
   }
 
   /**
@@ -1412,9 +1417,9 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: IngestTalentLeadDto
   ) {
-    const { tenantId } = request.tenantContext;
-    const lead = await this.talentSourcingService.ingestLead(tenantId, dto);
-    return { success: true, tenantId, message: "Talent lead ingested", data: lead };
+    const { tenant_id } = request.tenantContext;
+    const lead = await this.talentSourcingService.ingestLead(tenant_id, dto);
+    return { success: true, tenant_id, message: "Talent lead ingested", data: lead };
   }
 
   /**
@@ -1427,29 +1432,29 @@ export class HRController {
     @Param("id") id: string,
     @Body() dto: ConvertLeadDto
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     const candidate = await this.talentSourcingService.convertToCandidate(
-      tenantId,
+      tenant_id,
       id,
       dto.requisitionId
     );
-    return { success: true, tenantId, message: "Lead converted to candidate", data: candidate };
+    return { success: true, tenant_id, message: "Lead converted to candidate", data: candidate };
   }
 
   // ==================== AI-Powered Global Compliance Vault ====================
 
   /**
-   * GET /hr/compliance/documents/:employeeId
+   * GET /hr/compliance/documents/:employee_id
    * Fetch compliance documents for a specific employee
    */
-  @Get("compliance/documents/:employeeId")
+  @Get("compliance/documents/:employee_id")
   async getComplianceDocuments(
     @Req() request: RequestWithTenant,
-    @Param("employeeId") employeeId: string
+    @Param("employee_id") employee_id: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const docs = await this.repository.getComplianceDocuments(tenantId, employeeId);
-    return { success: true, tenantId, data: docs };
+    const { tenant_id } = request.tenantContext;
+    const docs = await this.repository.getComplianceDocuments(tenant_id, employee_id);
+    return { success: true, tenant_id, data: docs };
   }
 
   /**
@@ -1459,11 +1464,11 @@ export class HRController {
   @Post("compliance/upload-classify")
   async uploadAndClassify(
     @Req() request: RequestWithTenant,
-    @Body() data: { employeeId: string; fileUrl: string; fileName: string; documentType?: string }
+    @Body() data: { employee_id: string; fileUrl: string; fileName: string; documentType?: string }
   ) {
-    const { tenantId } = request.tenantContext;
-    const doc = await this.complianceService.uploadAndClassify(tenantId, data.employeeId, data);
-    return { success: true, tenantId, message: "Document uploaded and classified", data: doc };
+    const { tenant_id } = request.tenantContext;
+    const doc = await this.complianceService.uploadAndClassify(tenant_id, data.employee_id, data);
+    return { success: true, tenant_id, message: "Document uploaded and classified", data: doc };
   }
 
   /**
@@ -1472,9 +1477,9 @@ export class HRController {
    */
   @Get("compliance/audit")
   async auditCompliance(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const report = await this.complianceService.auditCompliance(tenantId);
-    return { success: true, tenantId, data: report };
+    const { tenant_id } = request.tenantContext;
+    const report = await this.complianceService.auditCompliance(tenant_id);
+    return { success: true, tenant_id, data: report };
   }
 
   /**
@@ -1485,11 +1490,11 @@ export class HRController {
   async verifyComplianceDocument(
     @Req() request: RequestWithTenant,
     @Param("id") id: string,
-    @Body() data: { status: 'VERIFIED' | 'REJECTED'; verifiedBy: string }
+    @Body() data: { status: 'VERIFIED' | 'REJECTED'; verified_by: string }
   ) {
-    const { tenantId } = request.tenantContext;
-    const doc = await this.complianceService.verifyDocument(tenantId, id, data.verifiedBy, data.status);
-    return { success: true, tenantId, message: `Document ${data.status.toLowerCase()}`, data: doc };
+    const { tenant_id } = request.tenantContext;
+    const doc = await this.complianceService.verifyDocument(tenant_id, id, data.verified_by, data.status);
+    return { success: true, tenant_id, message: `Document ${data.status.toLowerCase()}`, data: doc };
   }
 
   /**
@@ -1498,9 +1503,9 @@ export class HRController {
    */
   @Post("compliance/check-expirations")
   async checkComplianceExpirations(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const expiredCount = await this.complianceService.checkExpirations(tenantId);
-    return { success: true, tenantId, message: "Expiration check complete", expiredCount };
+    const { tenant_id } = request.tenantContext;
+    const expiredCount = await this.complianceService.checkExpirations(tenant_id);
+    return { success: true, tenant_id, message: "Expiration check complete", expiredCount };
   }
 
   /**
@@ -1512,9 +1517,9 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Param("id") id: string
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const result = await this.complianceService.triggerOcr(tenantId, id, userId!);
-    return { success: true, tenantId, message: "OCR processing completed", data: result };
+    const { tenant_id, user_id } = request.tenantContext;
+    const result = await this.complianceService.triggerOcr(tenant_id, id, user_id!);
+    return { success: true, tenant_id, message: "OCR processing completed", data: result };
   }
 
   // ==================== Predictive Workforce Analytics ====================
@@ -1525,9 +1530,9 @@ export class HRController {
    */
   @Get("analytics/predictions/turnover")
   async predictTurnover(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const prediction = await this.analyticsService.predictTurnover(tenantId);
-    return { success: true, tenantId, data: prediction };
+    const { tenant_id } = request.tenantContext;
+    const prediction = await this.analyticsService.predictTurnover(tenant_id);
+    return { success: true, tenant_id, data: prediction };
   }
 
   /**
@@ -1536,9 +1541,9 @@ export class HRController {
    */
   @Get("analytics/predictions/flight-risk")
   async getFlightRisks(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const risks = await this.analyticsService.getFlightRisks(tenantId);
-    return { success: true, tenantId, count: risks.length, data: risks };
+    const { tenant_id } = request.tenantContext;
+    const risks = await this.analyticsService.getFlightRisks(tenant_id);
+    return { success: true, tenant_id, count: risks.length, data: risks };
   }
 
   /**
@@ -1547,9 +1552,9 @@ export class HRController {
    */
   @Get("analytics/insights")
   async getWorkforceInsights(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const insights = await this.analyticsService.getWorkforceInsights(tenantId);
-    return { success: true, tenantId, data: insights };
+    const { tenant_id } = request.tenantContext;
+    const insights = await this.analyticsService.getWorkforceInsights(tenant_id);
+    return { success: true, tenant_id, data: insights };
   }
 
   // ==================== Strategic Workforce Planner ====================
@@ -1560,12 +1565,12 @@ export class HRController {
    */
   @Get("planning/scenarios")
   async getBudgetScenarios(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const scenarios = await this.prisma.budgetScenario.findMany({
-      where: { tenantId },
-      orderBy: { fiscalYear: "desc" },
+    const { tenant_id } = request.tenantContext;
+    const scenarios = await this.prisma.hr_budget_scenarios.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { fiscal_year: "desc" },
     });
-    return { success: true, tenantId, count: scenarios.length, data: scenarios };
+    return { success: true, tenant_id, count: scenarios.length, data: scenarios };
   }
 
   /**
@@ -1577,16 +1582,16 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreateBudgetScenarioDto
   ) {
-    const { tenantId } = request.tenantContext;
-    const scenario = await this.prisma.budgetScenario.create({
+    const { tenant_id } = request.tenantContext;
+    const scenario = await this.prisma.hr_budget_scenarios.create({
       data: {
         id: 'ol2p9h2a',
-        updatedAt: new Date(),
-        tenantId,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
         ...dto,
       },
     });
-    return { success: true, tenantId, message: "Budget scenario created", data: scenario };
+    return { success: true, tenant_id, message: "Budget scenario created", data: scenario };
   }
 
   /**
@@ -1598,15 +1603,15 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Param("id") id: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const plans = await this.prisma.headcountPlan.findMany({
+    const { tenant_id } = request.tenantContext;
+    const plans = await this.prisma.hr_headcount_plans.findMany({
       where: {
-        scenarioId: id,
-        tenantId,
+        scenario_id: id,
+        tenant_id: tenant_id,
       },
-      orderBy: { plannedHireDate: "asc" },
+      orderBy: { planned_hire_date: "asc" },
     });
-    return { success: true, tenantId, count: plans.length, data: plans };
+    return { success: true, tenant_id, count: plans.length, data: plans };
   }
 
   /**
@@ -1618,27 +1623,27 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreateHeadcountPlanDto
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     // Verify scenario ownership
-    const scenario = await this.prisma.budgetScenario.findFirst({
-      where: { id: dto.scenarioId, tenantId },
+    const scenario = await this.prisma.hr_budget_scenarios.findFirst({
+      where: { id: dto.scenario_id, tenant_id: tenant_id },
     });
     if (!scenario) return { success: false, message: "Scenario not found" };
 
-    const plan = await this.prisma.headcountPlan.create({
+    const plan = await this.prisma.hr_headcount_plans.create({
       data: {
         id: 'wzeaebyt',
-        updatedAt: new Date(),
-        tenantId,
-        scenarioId: dto.scenarioId,
-        departmentId: dto.departmentId,
-        positionTitle: dto.positionTitle,
-        targetHeadcount: dto.targetHeadcount || 1,
-        projectedSalary: dto.projectedSalary,
-        plannedHireDate: new Date(dto.plannedHireDate),
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        scenario_id: dto.scenario_id,
+        department_id: dto.department_id,
+        position_title: dto.position_title,
+        target_headcount: dto.target_headcount || 1,
+        projected_salary: dto.projected_salary,
+        planned_hire_date: new Date(dto.planned_hire_date),
       },
     });
-    return { success: true, tenantId, message: "Headcount plan created", data: plan };
+    return { success: true, tenant_id, message: "Headcount plan created", data: plan };
   }
 
   /**
@@ -1647,9 +1652,9 @@ export class HRController {
    */
   @Get("planning/scenarios/:id/what-if")
   async calculateWhatIf(@Req() request: RequestWithTenant, @Param("id") id: string) {
-    const { tenantId } = request.tenantContext;
-    const analysis = await this.workforcePlannerService.calculateWhatIfAnalysis(tenantId, id);
-    return { success: true, tenantId, data: analysis };
+    const { tenant_id } = request.tenantContext;
+    const analysis = await this.workforcePlannerService.calculateWhatIfAnalysis(tenant_id, id);
+    return { success: true, tenant_id, data: analysis };
   }
 
   /**
@@ -1662,13 +1667,13 @@ export class HRController {
     @Param("id") id: string,
     @Query("months") months?: string
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     const projections = await this.workforcePlannerService.generateCostProjections(
-      tenantId,
+      tenant_id,
       id,
       months ? parseInt(months) : 24
     );
-    return { success: true, tenantId, data: projections };
+    return { success: true, tenant_id, data: projections };
   }
 
   // ==================== Global Multi-Currency Payroll ====================
@@ -1679,12 +1684,12 @@ export class HRController {
    */
   @Get("payroll/exchange-rates")
   async getExchangeRates(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const rates = await this.prisma.exchangeRate.findMany({
-      where: { tenantId },
-      orderBy: { effectiveAt: "desc" },
+    const { tenant_id } = request.tenantContext;
+    const rates = await this.prisma.hr_exchange_rates.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { effective_at: "desc" },
     });
-    return { success: true, tenantId, data: rates };
+    return { success: true, tenant_id, data: rates };
   }
 
   /**
@@ -1696,19 +1701,19 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() data: any
   ) {
-    const { tenantId } = request.tenantContext;
-    const rate = await this.prisma.exchangeRate.create({
+    const { tenant_id } = request.tenantContext;
+    const rate = await this.prisma.hr_exchange_rates.create({
       data: {
         id: 'igf45np9',
-        updatedAt: new Date(),
-        tenantId,
-        fromCurrency: data.fromCurrency,
-        toCurrency: data.toCurrency,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        from_currency: data.fromCurrency,
+        to_currency: data.toCurrency,
         rate: data.rate,
-        effectiveAt: data.effectiveAt || data.effectiveDate ? new Date(data.effectiveAt || data.effectiveDate) : new Date(),
+        effective_at: data.effective_at || data.effectiveDate ? new Date(data.effective_at || data.effectiveDate) : new Date(),
       },
     });
-    return { success: true, tenantId, message: "Exchange rate updated", data: rate };
+    return { success: true, tenant_id, message: "Exchange rate updated", data: rate };
   }
 
   /**
@@ -1720,12 +1725,12 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Query("baseCurrency") baseCurrency?: string
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     const report = await this.payrollConsolidationService.getConsolidatedReport(
-      tenantId,
+      tenant_id,
       baseCurrency || "USD"
     );
-    return { success: true, tenantId, data: report };
+    return { success: true, tenant_id, data: report };
   }
 
   // ==================== Predictive Succession Planning ====================
@@ -1736,23 +1741,23 @@ export class HRController {
    */
   @Get("succession/plans")
   async getSuccessionPlans(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const plans = await this.successionService.getPlans(tenantId);
-    return { success: true, tenantId, data: plans };
+    const { tenant_id } = request.tenantContext;
+    const plans = await this.successionService.getPlans(tenant_id);
+    return { success: true, tenant_id, data: plans };
   }
 
   /**
-   * GET /hr/succession/plans/model/:positionId
+   * GET /hr/succession/plans/model/:position_id
    * Generate potential successors for a position
    */
-  @Get("succession/plans/model/:positionId")
+  @Get("succession/plans/model/:position_id")
   async modelSuccession(
     @Req() request: RequestWithTenant,
-    @Param("positionId") positionId: string
+    @Param("position_id") position_id: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const model = await this.successionService.getModelSuccession(tenantId, positionId);
-    return { success: true, tenantId, data: model };
+    const { tenant_id } = request.tenantContext;
+    const model = await this.successionService.getModelSuccession(tenant_id, position_id);
+    return { success: true, tenant_id, data: model };
   }
 
   /**
@@ -1764,9 +1769,9 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() data: any
   ) {
-    const { tenantId } = request.tenantContext;
-    const plan = await this.successionService.createPlan(tenantId, data);
-    return { success: true, tenantId, message: "Succession plan created", data: plan };
+    const { tenant_id } = request.tenantContext;
+    const plan = await this.successionService.createPlan(tenant_id, data);
+    return { success: true, tenant_id, message: "Succession plan created", data: plan };
   }
 
   /**
@@ -1779,12 +1784,12 @@ export class HRController {
     @Param("id") id: string,
     @Body() data: any
   ) {
-    const { tenantId } = request.tenantContext;
-    const candidate = await this.successionService.nominateSuccessor(tenantId, {
+    const { tenant_id } = request.tenantContext;
+    const candidate = await this.successionService.nominateSuccessor(tenant_id, {
       ...data,
       planId: id,
     });
-    return { success: true, tenantId, message: "Successor nominated", data: candidate };
+    return { success: true, tenant_id, message: "Successor nominated", data: candidate };
   }
 
   /**
@@ -1794,11 +1799,11 @@ export class HRController {
   @Get("succession/bench-strength")
   async getBenchStrength(
     @Req() request: RequestWithTenant,
-    @Query("departmentId") departmentId?: string
+    @Query("department_id") department_id?: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const health = await this.successionService.assessBenchStrength(tenantId, departmentId);
-    return { success: true, tenantId, data: health };
+    const { tenant_id } = request.tenantContext;
+    const health = await this.successionService.assessBenchStrength(tenant_id, department_id);
+    return { success: true, tenant_id, data: health };
   }
 
   // ==================== Skills-Based Org Design ====================
@@ -1812,9 +1817,9 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Query("category") category?: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const skills = await this.repository.getSkills(tenantId, category);
-    return { success: true, tenantId, count: skills.length, data: skills };
+    const { tenant_id } = request.tenantContext;
+    const skills = await this.repository.getSkills(tenant_id, category);
+    return { success: true, tenant_id, count: skills.length, data: skills };
   }
 
   /**
@@ -1826,23 +1831,23 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() data: { name: string; category: string; description?: string }
   ) {
-    const { tenantId } = request.tenantContext;
-    const skill = await this.repository.createSkill(tenantId, data);
-    return { success: true, tenantId, message: "Skill created", data: skill };
+    const { tenant_id } = request.tenantContext;
+    const skill = await this.repository.createSkill(tenant_id, data);
+    return { success: true, tenant_id, message: "Skill created", data: skill };
   }
 
   /**
-   * GET /hr/skills/employee/:employeeId
+   * GET /hr/skills/employee/:employee_id
    * Get skill profile for a specific employee
    */
-  @Get("skills/employee/:employeeId")
+  @Get("skills/employee/:employee_id")
   async getEmployeeSkills(
     @Req() request: RequestWithTenant,
-    @Param("employeeId") employeeId: string
+    @Param("employee_id") employee_id: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const skills = await this.repository.getEmployeeSkills(tenantId, employeeId);
-    return { success: true, tenantId, count: skills.length, data: skills };
+    const { tenant_id } = request.tenantContext;
+    const skills = await this.repository.getEmployeeSkills(tenant_id, employee_id);
+    return { success: true, tenant_id, count: skills.length, data: skills };
   }
 
   /**
@@ -1852,16 +1857,16 @@ export class HRController {
   @Post("skills/employee")
   async updateEmployeeSkill(
     @Req() request: RequestWithTenant,
-    @Body() data: { employeeId: string; skillId: string; proficiency: number }
+    @Body() data: { employee_id: string; skill_id: string; proficiency: number }
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const result = await this.skillsService.verifyProficiency(
-      tenantId,
-      data.employeeId,
-      data.skillId,
-      userId!
+      tenant_id,
+      data.employee_id,
+      data.skill_id,
+      user_id!
     );
-    return { success: true, tenantId, message: "Employee skill updated", data: result };
+    return { success: true, tenant_id, message: "Employee skill updated", data: result };
   }
 
   /**
@@ -1873,13 +1878,13 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: MatchTalentDto
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     const matches = await this.skillsService.mapInternalTalent(
-      tenantId,
+      tenant_id,
       dto.skillIds,
       dto.minProficiency || 3
     );
-    return { success: true, tenantId, count: matches.length, data: matches };
+    return { success: true, tenant_id, count: matches.length, data: matches };
   }
 
   /**
@@ -1892,25 +1897,25 @@ export class HRController {
     @Param("id") id: string,
     @Query("targetRoleId") targetRoleId: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const analysis = await this.skillsService.calculateSkillGap(tenantId, id, targetRoleId);
-    return { success: true, tenantId, data: analysis };
+    const { tenant_id } = request.tenantContext;
+    const analysis = await this.skillsService.calculateSkillGap(tenant_id, id, targetRoleId);
+    return { success: true, tenant_id, data: analysis };
   }
 
   // ==================== Total Rewards & Benefits ====================
 
   /**
-   * GET /hr/rewards/statement/:employeeId
+   * GET /hr/rewards/statement/:employee_id
    * Consolidated rewards summary (Salary + Benefits)
    */
-  @Get("rewards/statement/:employeeId")
+  @Get("rewards/statement/:employee_id")
   async getTotalRewardsStatement(
     @Req() request: RequestWithTenant,
-    @Param("employeeId") employeeId: string
+    @Param("employee_id") employee_id: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const statement = await this.totalRewardsService.calculateTotalRewards(tenantId, employeeId);
-    return { success: true, tenantId, data: statement };
+    const { tenant_id } = request.tenantContext;
+    const statement = await this.totalRewardsService.calculateTotalRewards(tenant_id, employee_id);
+    return { success: true, tenant_id, data: statement };
   }
 
   /**
@@ -1919,9 +1924,9 @@ export class HRController {
    */
   @Get("rewards/benefit-plans")
   async getBenefitPlans(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const plans = await this.repository.getBenefitPlans(tenantId);
-    return { success: true, tenantId, data: plans };
+    const { tenant_id } = request.tenantContext;
+    const plans = await this.repository.getBenefitPlans(tenant_id);
+    return { success: true, tenant_id, data: plans };
   }
 
   /**
@@ -1933,9 +1938,9 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreateBenefitPlanDto
   ) {
-    const { tenantId } = request.tenantContext;
-    const plan = await this.repository.createBenefitPlan(tenantId, dto);
-    return { success: true, tenantId, message: "Benefit plan created", data: plan };
+    const { tenant_id } = request.tenantContext;
+    const plan = await this.repository.createBenefitPlan(tenant_id, dto);
+    return { success: true, tenant_id, message: "Benefit plan created", data: plan };
   }
 
   /**
@@ -1947,39 +1952,39 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: EnrollBenefitDto
   ) {
-    const { tenantId } = request.tenantContext;
-    const enrollment = await this.repository.enrollInBenefit(tenantId, dto);
-    return { success: true, tenantId, message: "Enrollment successful", data: enrollment };
+    const { tenant_id } = request.tenantContext;
+    const enrollment = await this.repository.enrollInBenefit(tenant_id, dto);
+    return { success: true, tenant_id, message: "Enrollment successful", data: enrollment };
   }
 
   // ==================== AI-Powered Career Pathing ====================
 
   /**
-   * GET /hr/career/suggestions/:employeeId
+   * GET /hr/career/suggestions/:employee_id
    * AI suggestions for next role progression
    */
-  @Get("career/suggestions/:employeeId")
+  @Get("career/suggestions/:employee_id")
   async getCareerSuggestions(
     @Req() request: RequestWithTenant,
-    @Param("employeeId") employeeId: string
+    @Param("employee_id") employee_id: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const suggestions = await this.careerPathService.suggestNextRoles(tenantId, employeeId);
-    return { success: true, tenantId, data: suggestions };
+    const { tenant_id } = request.tenantContext;
+    const suggestions = await this.careerPathService.suggestNextRoles(tenant_id, employee_id);
+    return { success: true, tenant_id, data: suggestions };
   }
 
   /**
-   * GET /hr/career/mentors/:employeeId
+   * GET /hr/career/mentors/:employee_id
    * Suggested internal mentors based on skill gaps
    */
-  @Get("career/mentors/:employeeId")
+  @Get("career/mentors/:employee_id")
   async getMentorSuggestions(
     @Req() request: RequestWithTenant,
-    @Param("employeeId") employeeId: string
+    @Param("employee_id") employee_id: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const mentors = await this.careerPathService.findMentorMatches(tenantId, employeeId);
-    return { success: true, tenantId, data: mentors };
+    const { tenant_id } = request.tenantContext;
+    const mentors = await this.careerPathService.findMentorMatches(tenant_id, employee_id);
+    return { success: true, tenant_id, data: mentors };
   }
 
   /**
@@ -1991,30 +1996,30 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: CreateMentorshipDto
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     const pairing = await this.careerPathService.createMentorship(
-      tenantId,
+      tenant_id,
       dto.mentorId,
       dto.menteeId,
       dto.focusSkills
     );
-    return { success: true, tenantId, message: "Mentorship initiated", data: pairing };
+    return { success: true, tenant_id, message: "Mentorship initiated", data: pairing };
   }
 
   // ==================== AI-Generated Job Descriptions ====================
 
   /**
-   * GET /hr/recruitment/position-skills/:positionId
+   * GET /hr/recruitment/position-skills/:position_id
    * List required skills for a position
    */
-  @Get("recruitment/position-skills/:positionId")
+  @Get("recruitment/position-skills/:position_id")
   async getPositionSkills(
     @Req() request: RequestWithTenant,
-    @Param("positionId") positionId: string
+    @Param("position_id") position_id: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const skills = await this.repository.getPositionSkills(tenantId, positionId);
-    return { success: true, tenantId, data: skills };
+    const { tenant_id } = request.tenantContext;
+    const skills = await this.repository.getPositionSkills(tenant_id, position_id);
+    return { success: true, tenant_id, data: skills };
   }
 
   /**
@@ -2024,71 +2029,71 @@ export class HRController {
   @Post("recruitment/position-skills")
   async updatePositionSkill(
     @Req() request: RequestWithTenant,
-    @Body() data: { positionId: string; skillId: string; minProficiency: number; isMandatory?: boolean }
+    @Body() data: { position_id: string; skill_id: string; minProficiency: number; isMandatory?: boolean }
   ) {
-    const { tenantId } = request.tenantContext;
-    const skill = await this.repository.updatePositionSkill(tenantId, data);
-    return { success: true, tenantId, message: "Position skill updated", data: skill };
+    const { tenant_id } = request.tenantContext;
+    const skill = await this.repository.updatePositionSkill(tenant_id, data);
+    return { success: true, tenant_id, message: "Position skill updated", data: skill };
   }
 
   /**
-   * POST /hr/recruitment/generate-description/:positionId
+   * POST /hr/recruitment/generate-description/:position_id
    * AI-based job description generation
    */
-  @Post("recruitment/generate-description/:positionId")
+  @Post("recruitment/generate-description/:position_id")
   async generateJobDescription(
     @Req() request: RequestWithTenant,
-    @Param("positionId") positionId: string,
+    @Param("position_id") position_id: string,
     @Body() dto: GenerateDescriptionDto
   ) {
-    const { tenantId } = request.tenantContext;
-    const description = await this.jobDescriptionService.generateDescription(tenantId, positionId, dto.tone);
-    return { success: true, tenantId, data: description };
+    const { tenant_id } = request.tenantContext;
+    const description = await this.jobDescriptionService.generateDescription(tenant_id, position_id, dto.tone);
+    return { success: true, tenant_id, data: description };
   }
 
   /**
-   * POST /hr/recruitment/publish/:positionId
+   * POST /hr/recruitment/publish/:position_id
    * Distribute job post to channels
    */
-  @Post("recruitment/publish/:positionId")
+  @Post("recruitment/publish/:position_id")
   async publishJobPost(
     @Req() request: RequestWithTenant,
-    @Param("positionId") positionId: string,
+    @Param("position_id") position_id: string,
     @Body() dto: PublishJobPostDto
   ) {
-    const { tenantId } = request.tenantContext;
-    const result = await this.jobDescriptionService.publishJobPost(tenantId, positionId, dto.channels);
-    return { success: true, tenantId, message: "Job post published", data: result };
+    const { tenant_id } = request.tenantContext;
+    const result = await this.jobDescriptionService.publishJobPost(tenant_id, position_id, dto.channels);
+    return { success: true, tenant_id, message: "Job post published", data: result };
   }
 
   /**
-   * GET /hr/recruitment/benchmarks/:positionId
+   * GET /hr/recruitment/benchmarks/:position_id
    * Market alignment analysis
    */
-  @Get("recruitment/benchmarks/:positionId")
+  @Get("recruitment/benchmarks/:position_id")
   async getRecruitmentBenchmarks(
     @Req() request: RequestWithTenant,
-    @Param("positionId") positionId: string
+    @Param("position_id") position_id: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const benchmarks = await this.jobDescriptionService.analyzeMarketAlignment(tenantId, positionId);
-    return { success: true, tenantId, data: benchmarks };
+    const { tenant_id } = request.tenantContext;
+    const benchmarks = await this.jobDescriptionService.analyzeMarketAlignment(tenant_id, position_id);
+    return { success: true, tenant_id, data: benchmarks };
   }
 
   // ==================== AI-Powered Performance Predictor ====================
 
   /**
-   * GET /hr/performance/forecast/:employeeId
+   * GET /hr/performance/forecast/:employee_id
    * AI-based performance rating forecast
    */
-  @Get("performance/forecast/:employeeId")
+  @Get("performance/forecast/:employee_id")
   async forecastPerformance(
     @Req() request: RequestWithTenant,
-    @Param("employeeId") employeeId: string
+    @Param("employee_id") employee_id: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const forecast = await this.performancePredictorService.forecastPerformance(tenantId, employeeId);
-    return { success: true, tenantId, data: forecast };
+    const { tenant_id } = request.tenantContext;
+    const forecast = await this.performancePredictorService.forecastPerformance(tenant_id, employee_id);
+    return { success: true, tenant_id, data: forecast };
   }
 
   /**
@@ -2100,37 +2105,37 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Param("goalId") goalId: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const probability = await this.performancePredictorService.calculateGoalProbability(tenantId, goalId);
-    return { success: true, tenantId, data: probability };
+    const { tenant_id } = request.tenantContext;
+    const probability = await this.performancePredictorService.calculateGoalProbability(tenant_id, goalId);
+    return { success: true, tenant_id, data: probability };
   }
 
   /**
-   * GET /hr/performance/interventions/:employeeId
+   * GET /hr/performance/interventions/:employee_id
    * AI-recommended performance corrections
    */
-  @Get("performance/interventions/:employeeId")
+  @Get("performance/interventions/:employee_id")
   async getPerformanceInterventions(
     @Req() request: RequestWithTenant,
-    @Param("employeeId") employeeId: string
+    @Param("employee_id") employee_id: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const interventions = await this.performancePredictorService.recommendInterventions(tenantId, employeeId);
-    return { success: true, tenantId, data: interventions };
+    const { tenant_id } = request.tenantContext;
+    const interventions = await this.performancePredictorService.recommendInterventions(tenant_id, employee_id);
+    return { success: true, tenant_id, data: interventions };
   }
 
   /**
-   * GET /hr/performance/goals/:employeeId
+   * GET /hr/performance/goals/:employee_id
    * List employee performance goals
    */
-  @Get("performance/goals/:employeeId")
+  @Get("performance/goals/:employee_id")
   async getEmployeeGoals(
     @Req() request: RequestWithTenant,
-    @Param("employeeId") employeeId: string
+    @Param("employee_id") employee_id: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const goals = await this.repository.getEmployeeGoals(tenantId, employeeId);
-    return { success: true, tenantId, data: goals };
+    const { tenant_id } = request.tenantContext;
+    const goals = await this.repository.getEmployeeGoals(tenant_id, employee_id);
+    return { success: true, tenant_id, data: goals };
   }
 
   /**
@@ -2142,25 +2147,25 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: UpdatePerformanceGoalDto
   ) {
-    const { tenantId } = request.tenantContext;
-    const goal = await this.repository.updatePerformanceGoal(tenantId, dto);
-    return { success: true, tenantId, message: "Goal updated", data: goal };
+    const { tenant_id } = request.tenantContext;
+    const goal = await this.repository.updatePerformanceGoal(tenant_id, dto);
+    return { success: true, tenant_id, message: "Goal updated", data: goal };
   }
 
   // ==================== AI-Powered Learning Path Personalization ====================
 
   /**
-   * GET /hr/learning/recommendations/:employeeId
+   * GET /hr/learning/recommendations/:employee_id
    * Personalized course suggestions based on skill gaps
    */
-  @Get("learning/recommendations/:employeeId")
+  @Get("learning/recommendations/:employee_id")
   async getLearningRecommendations(
     @Req() request: RequestWithTenant,
-    @Param("employeeId") employeeId: string
+    @Param("employee_id") employee_id: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const recommendations = await this.learningService.recommendLearningPath(tenantId, employeeId);
-    return { success: true, tenantId, data: recommendations };
+    const { tenant_id } = request.tenantContext;
+    const recommendations = await this.learningService.recommendLearningPath(tenant_id, employee_id);
+    return { success: true, tenant_id, data: recommendations };
   }
 
   /**
@@ -2172,54 +2177,54 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: EnrollTrainingDto
   ) {
-    const { tenantId } = request.tenantContext;
-    const enrollment = await this.repository.enrollInTrainingProgram(tenantId, dto.employeeId, dto.programId);
-    return { success: true, tenantId, message: "Enrolled in training program", data: enrollment };
+    const { tenant_id } = request.tenantContext;
+    const enrollment = await this.repository.enrollInTrainingProgram(tenant_id, dto.employee_id, dto.programId);
+    return { success: true, tenant_id, message: "Enrolled in training program", data: enrollment };
   }
 
   /**
-   * POST /hr/learning/auto-enroll-gaps/:employeeId
+   * POST /hr/learning/auto-enroll-gaps/:employee_id
    * Auto-enroll in mandatory gap-filler courses
    */
-  @Post("learning/auto-enroll-gaps/:employeeId")
+  @Post("learning/auto-enroll-gaps/:employee_id")
   async autoEnrollGaps(
     @Req() request: RequestWithTenant,
-    @Param("employeeId") employeeId: string
+    @Param("employee_id") employee_id: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const enrollments = await this.learningService.autoEnrollInGapFillers(tenantId, employeeId);
-    return { success: true, tenantId, message: `Auto-enrolled in ${enrollments.length} programs`, data: enrollments };
+    const { tenant_id } = request.tenantContext;
+    const enrollments = await this.learningService.autoEnrollInGapFillers(tenant_id, employee_id);
+    return { success: true, tenant_id, message: `Auto-enrolled in ${enrollments.length} programs`, data: enrollments };
   }
 
   /**
-   * GET /hr/learning/roi/:employeeId
+   * GET /hr/learning/roi/:employee_id
    * Impact analysis of completed training
    */
-  @Get("learning/roi/:employeeId")
+  @Get("learning/roi/:employee_id")
   async getLearningROI(
     @Req() request: RequestWithTenant,
-    @Param("employeeId") employeeId: string
+    @Param("employee_id") employee_id: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const roi = await this.learningService.calculateLearningROI(tenantId, employeeId);
-    return { success: true, tenantId, data: roi };
+    const { tenant_id } = request.tenantContext;
+    const roi = await this.learningService.calculateLearningROI(tenant_id, employee_id);
+    return { success: true, tenant_id, data: roi };
   }
 
   // ==================== Strategic Global Workforce Explorer & Talent Mobility ====================
 
   /**
-   * GET /hr/strategic/mobility/:employeeId
+   * GET /hr/strategic/mobility/:employee_id
    * Assess employee readiness for cross-departmental or regional transition
    */
-  @Get("strategic/mobility/:employeeId")
+  @Get("strategic/mobility/:employee_id")
   async assessMobility(
     @Req() request: RequestWithTenant,
-    @Param("employeeId") employeeId: string,
+    @Param("employee_id") employee_id: string,
     @Query("targetDeptId") targetDeptId: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const assessment = await this.workforcePlannerService.assessTalentMobility(tenantId, employeeId, targetDeptId);
-    return { success: true, tenantId, data: assessment };
+    const { tenant_id } = request.tenantContext;
+    const assessment = await this.workforcePlannerService.assessTalentMobility(tenant_id, employee_id, targetDeptId);
+    return { success: true, tenant_id, data: assessment };
   }
 
   /**
@@ -2228,12 +2233,12 @@ export class HRController {
    */
   @Get("strategic/explorer/headcount")
   async getStrategicHeadcount(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     const [active, total] = await Promise.all([
-      this.prisma.employee.count({ where: { tenantId, status: 'active' } }),
-      this.prisma.employee.count({ where: { tenantId } })
+      this.prisma.employees.count({ where: { tenant_id: tenant_id, status: 'active' } }),
+      this.prisma.employees.count({ where: { tenant_id: tenant_id } })
     ]);
-    return { success: true, tenantId, metrics: { active, total, utilization: Number((active / (total || 1)).toFixed(2)) } };
+    return { success: true, tenant_id, metrics: { active, total, utilization: Number((active / (total || 1)).toFixed(2)) } };
   }
 
   /**
@@ -2242,23 +2247,23 @@ export class HRController {
    */
   @Get("strategic/explorer/growth")
   async getWorkforceDynamics(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const dynamics = await this.workforcePlannerService.getGlobalWorkforceDynamics(tenantId);
-    return { success: true, tenantId, data: dynamics };
+    const { tenant_id } = request.tenantContext;
+    const dynamics = await this.workforcePlannerService.getGlobalWorkforceDynamics(tenant_id);
+    return { success: true, tenant_id, data: dynamics };
   }
 
   /**
-   * GET /hr/learning/history/:employeeId
+   * GET /hr/learning/history/:employee_id
    * employee training history
    */
-  @Get("learning/history/:employeeId")
+  @Get("learning/history/:employee_id")
   async getEmployeeLearningHistory(
     @Req() request: RequestWithTenant,
-    @Param("employeeId") employeeId: string
+    @Param("employee_id") employee_id: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const history = await this.repository.getEmployeeTrainingHistory(tenantId, employeeId);
-    return { success: true, tenantId, data: history };
+    const { tenant_id } = request.tenantContext;
+    const history = await this.repository.getEmployeeTrainingHistory(tenant_id, employee_id);
+    return { success: true, tenant_id, data: history };
   }
 
   // ==================== Predictive Labor Cost Modeling ====================
@@ -2270,12 +2275,12 @@ export class HRController {
   @Get("finance/labor-projection/:deptId")
   async projectLaborCosts(
     @Req() request: RequestWithTenant,
-    @Param("deptId") departmentId: string,
+    @Param("deptId") department_id: string,
     @Query("periods") periods: string = "12"
   ) {
-    const { tenantId } = request.tenantContext;
-    const projection = await this.laborCostService.projectLaborCosts(tenantId, departmentId, parseInt(periods));
-    return { success: true, tenantId, data: projection };
+    const { tenant_id } = request.tenantContext;
+    const projection = await this.laborCostService.projectLaborCosts(tenant_id, department_id, parseInt(periods));
+    return { success: true, tenant_id, data: projection };
   }
 
   /**
@@ -2285,11 +2290,11 @@ export class HRController {
   @Get("finance/budget-variance/:deptId")
   async getBudgetVariance(
     @Req() request: RequestWithTenant,
-    @Param("deptId") departmentId: string
+    @Param("deptId") department_id: string
   ) {
-    const { tenantId } = request.tenantContext;
-    const variance = await this.laborCostService.getBudgetVarianceForecast(tenantId, departmentId);
-    return { success: true, tenantId, data: variance };
+    const { tenant_id } = request.tenantContext;
+    const variance = await this.laborCostService.getBudgetVarianceForecast(tenant_id, department_id);
+    return { success: true, tenant_id, data: variance };
   }
 
   /**
@@ -2301,9 +2306,9 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: SimulateInflationDto
   ) {
-    const { tenantId } = request.tenantContext;
-    const simulation = await this.laborCostService.simulateInflationImpact(tenantId, dto.inflationRate);
-    return { success: true, tenantId, data: simulation };
+    const { tenant_id } = request.tenantContext;
+    const simulation = await this.laborCostService.simulateInflationImpact(tenant_id, dto.inflationRate);
+    return { success: true, tenant_id, data: simulation };
   }
 
   // ==================== Compliance Engine ====================
@@ -2318,9 +2323,9 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: { module: string; period: string }
   ) {
-    const { tenantId } = request.tenantContext;
-    const result = await this.complianceEngineService.calculate(tenantId, dto.module, dto.period);
-    return { success: true, tenantId, data: result };
+    const { tenant_id } = request.tenantContext;
+    const result = await this.complianceEngineService.calculate(tenant_id, dto.module, dto.period);
+    return { success: true, tenant_id, data: result };
   }
 
   /**
@@ -2334,15 +2339,15 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: { module: string; period: string; format: 'CSV' | 'EXCEL' | 'XML' | 'PDF' }
   ) {
-    const { tenantId } = request.tenantContext;
-    const result = await this.complianceEngineService.calculate(tenantId, dto.module, dto.period);
+    const { tenant_id } = request.tenantContext;
+    const result = await this.complianceEngineService.calculate(tenant_id, dto.module, dto.period);
     const exported = this.complianceEngineService.export(dto.format, result);
     if (dto.format === 'CSV' || dto.format === 'XML') {
-      return { success: true, tenantId, format: dto.format, data: exported };
+      return { success: true, tenant_id, format: dto.format, data: exported };
     }
     return {
       success: true,
-      tenantId,
+      tenant_id,
       format: dto.format,
       data: (exported as Buffer).toString('base64'),
     };
@@ -2358,9 +2363,9 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Body() dto: { country: string; period: string }
   ) {
-    const { tenantId } = request.tenantContext;
-    const results = await this.complianceEngineService.calculateAll(tenantId, dto.country, dto.period);
-    return { success: true, tenantId, country: dto.country, results };
+    const { tenant_id } = request.tenantContext;
+    const results = await this.complianceEngineService.calculateAll(tenant_id, dto.country, dto.period);
+    return { success: true, tenant_id, country: dto.country, results };
   }
 
   /**
@@ -2381,8 +2386,8 @@ export class HRController {
    */
   @Get('compliance/ai-suggestions')
   async getComplianceSuggestions(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const suggestions = await this.complianceSuggestionService.generateSuggestions(tenantId);
-    return { success: true, tenantId, data: suggestions };
+    const { tenant_id } = request.tenantContext;
+    const suggestions = await this.complianceSuggestionService.generateSuggestions(tenant_id);
+    return { success: true, tenant_id, data: suggestions };
   }
 }

@@ -1,6 +1,8 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { v4 as uuidv4 } from 'uuid';
 import { EventBusService } from '../../shared/events/event-bus.service';
 import { PrismaService } from '../../persistence/prisma.service';
+import { WorkflowController } from './workflow.controller';
 
 @Injectable()
 export class WorkflowOrchestratorService implements OnModuleInit {
@@ -17,18 +19,20 @@ export class WorkflowOrchestratorService implements OnModuleInit {
   }
 
   private async ensureDefinitionsExist() {
-    const tenants = await this.prisma.company.findMany({ select: { id: true } });
+    const tenants = await this.prisma.companies.findMany({ select: { id: true } });
     for (const tenant of tenants) {
-      await this.prisma.workflowDefinition.upsert({
+      await this.prisma.workflow_definitions.upsert({
         where: { 
-          tenantId_name_version: {
-            tenantId: tenant.id,
+          tenant_id_name_version: {
+            tenant_id: tenant.id,
             name: 'RETAIL_SALE_FLOW',
             version: 1,
           }
         },
         create: {
-          tenantId: tenant.id,
+          id: uuidv4(),
+          updated_at: new Date(),
+          tenant_id: tenant.id,
           name: 'RETAIL_SALE_FLOW',
           version: 1,
           steps: [
@@ -51,120 +55,122 @@ export class WorkflowOrchestratorService implements OnModuleInit {
   private registerWorkflowListeners() {
     // RETAIL_SALE_FLOW tracker
     this.eventBus.subscribe('RETAIL_SALE_COMPLETED', 'workflow-retail-init', async (event) => {
-      if (event.correlationId) {
-        await this.initiateWorkflow(event.correlationId, 'RETAIL_SALE_COMPLETED', event.tenantId, event.payload, 'RETAIL_SALE_FLOW', event.id);
+      if (event.correlation_id) {
+        await this.initiateWorkflow(event.correlation_id, 'RETAIL_SALE_COMPLETED', event.tenant_id, event.payload, 'RETAIL_SALE_FLOW', event.id);
       }
     });
 
     this.eventBus.subscribe('STOCK_MOVEMENT_CREATED', 'workflow-retail-stock', async (event) => {
-      if (event.correlationId) {
-        await this.processStep(event.correlationId, 'STOCK_MOVEMENT_CREATED', event.tenantId, event.payload, event.id, 'workflow-retail-stock');
+      if (event.correlation_id) {
+        await this.processStep(event.correlation_id, 'STOCK_MOVEMENT_CREATED', event.tenant_id, event.payload, event.id, 'workflow-retail-stock');
       }
     });
 
     this.eventBus.subscribe('JOURNAL_ENTRY_CREATED', 'workflow-retail-ledger', async (event) => {
-      if (event.correlationId) {
-        await this.processStep(event.correlationId, 'JOURNAL_ENTRY_CREATED', event.tenantId, event.payload, event.id, 'workflow-retail-ledger');
+      if (event.correlation_id) {
+        await this.processStep(event.correlation_id, 'JOURNAL_ENTRY_CREATED', event.tenant_id, event.payload, event.id, 'workflow-retail-ledger');
       }
     });
 
     // Failure listener
     this.eventBus.subscribe('WORKFLOW_STEP_FAILED', 'workflow-failure-handler', async (event) => {
-      if (event.correlationId) {
-        await this.handleWorkflowFailure(event.correlationId, event.payload.error, event.payload.originalEventType, event.id);
+      if (event.correlation_id) {
+        await this.handleWorkflowFailure(event.correlation_id, event.payload.error, event.payload.originalEventType, event.id);
       }
     });
   }
 
-  private async initiateWorkflow(correlationId: string, eventType: string, tenantId: string, payload: any, workflowName: string, eventId?: string) {
-    if (!correlationId) return;
+  private async initiateWorkflow(correlation_id: string, event_type: string, tenant_id: string, payload: any, workflowName: string, eventId?: string) {
+    if (!correlation_id) return;
 
-    this.logger.log(`Initiating workflow ${workflowName} for correlationId: ${correlationId}`);
+    this.logger.log(`Initiating workflow ${workflowName} for correlation_id: ${correlation_id}`);
 
-    const definition = await this.prisma.workflowDefinition.findFirst({
-      where: { name: workflowName, tenantId, active: true }
+    const definition = await this.prisma.workflow_definitions.findFirst({
+      where: { name: workflowName, tenant_id: tenant_id, active: true }
     });
 
     if (!definition) {
-      this.logger.warn(`Active workflow definition ${workflowName} not found for tenant ${tenantId}`);
+      this.logger.warn(`Active workflow definition ${workflowName} not found for tenant ${tenant_id}`);
       return;
     }
 
     const steps = definition.steps as any[];
-    const firstStep = steps.find(s => s.event === eventType && s.order === 1);
+    const firstStep = steps.find(s => s.event === event_type && s.order === 1);
 
     if (!firstStep) {
-      this.logger.error(`Event ${eventType} is not the valid trigger for workflow ${workflowName}`);
+      this.logger.error(`Event ${event_type} is not the valid trigger for workflow ${workflowName}`);
       return;
     }
 
-    await this.prisma.workflowInstance.upsert({
-      where: { correlationId },
+    await this.prisma.workflow_instances.upsert({
+      where: { correlation_id: correlation_id },
       create: {
-        tenantId,
-        workflowDefinitionId: definition.id,
-        correlationId,
-        rootEventId: eventId,
+        id: uuidv4(),
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        workflow_definition_id: definition.id,
+        correlation_id,
+        root_event_id: eventId,
         status: 'IN_PROGRESS',
-        currentState: firstStep.state,
+        current_state: firstStep.state,
         context: payload,
-        stepsExecuted: [
-          { eventType, status: 'DONE', timestamp: new Date(), eventId }
+        steps_executed: [
+          { event_type, status: 'DONE', timestamp: new Date(), eventId }
         ] as any,
       },
       update: {
         status: 'IN_PROGRESS',
-        currentState: firstStep.state,
-        rootEventId: eventId,
+        current_state: firstStep.state,
+        root_event_id: eventId,
         context: payload,
-        stepsExecuted: [
-          { eventType, status: 'DONE', timestamp: new Date(), eventId }
+        steps_executed: [
+          { event_type, status: 'DONE', timestamp: new Date(), eventId }
         ] as any,
       }
     });
   }
 
-  private async processStep(correlationId: string, eventType: string, tenantId: string, payload: any, eventId?: string, handlerName?: string) {
-    if (!correlationId) return;
+  private async processStep(correlation_id: string, event_type: string, tenant_id: string, payload: any, eventId?: string, handlerName?: string) {
+    if (!correlation_id) return;
 
-    const instance = await this.prisma.workflowInstance.findUnique({
-      where: { correlationId },
-      include: { workflowDefinition: true }
+    const instance = await this.prisma.workflow_instances.findUnique({
+      where: { correlation_id: correlation_id },
+      include: { workflow_definitions: true }
     });
 
     if (!instance || instance.status !== 'IN_PROGRESS') {
       return;
     }
 
-    const validation = await this.validateTransition(instance, eventType);
+    const validation = await this.validateTransition(instance, event_type);
     if (!validation.valid) {
-      this.logger.error(`Workflow Violation [${instance.correlationId}]: ${validation.error}`);
+      this.logger.error(`Workflow Violation [${instance.correlation_id}]: ${validation.error}`);
       return;
     }
 
     const nextStep = validation.step;
-    const stepsExecuted = (instance.stepsExecuted as any[]) || [];
-    stepsExecuted.push({ eventType, status: 'DONE', timestamp: new Date(), eventId, handlerName });
+    const stepsExecuted = (instance.steps_executed as any[]) || [];
+    stepsExecuted.push({ event_type, status: 'DONE', timestamp: new Date(), eventId, handlerName });
 
-    await this.prisma.workflowInstance.update({
+    await this.prisma.workflow_instances.update({
       where: { id: instance.id },
       data: {
-        currentState: nextStep.state,
+        current_state: nextStep.state,
         status: nextStep.isFinal ? 'COMPLETED' : 'IN_PROGRESS',
-        stepsExecuted: stepsExecuted as any,
+        steps_executed: stepsExecuted as any,
         context: { ...(instance.context as any || {}), ...payload }
       }
     });
 
-    this.logger.log(`Workflow Step [${correlationId}]: Transitioned to ${nextStep.state} (${nextStep.isFinal ? 'COMPLETED' : 'IN_PROGRESS'})`);
+    this.logger.log(`Workflow Step [${correlation_id}]: Transitioned to ${nextStep.state} (${nextStep.isFinal ? 'COMPLETED' : 'IN_PROGRESS'})`);
   }
 
-  private async validateTransition(instance: any, eventType: string): Promise<{ valid: boolean; step?: any; error?: string }> {
+  private async validateTransition(instance: any, event_type: string): Promise<{ valid: boolean; step?: any; error?: string }> {
     const steps = instance.workflowDefinition.steps as any[];
-    const currentStep = steps.find(s => s.state === instance.currentState);
+    const currentStep = steps.find(s => s.state === instance.current_state);
     
     if (!currentStep) {
-      return { valid: false, error: `Current state ${instance.currentState} not found in definition` };
+      return { valid: false, error: `Current state ${instance.current_state} not found in definition` };
     }
 
     const nextStep = steps.find(s => s.order === currentStep.order + 1);
@@ -173,62 +179,62 @@ export class WorkflowOrchestratorService implements OnModuleInit {
       return { valid: false, error: `No next step defined after ${instance.currentState}` };
     }
 
-    if (nextStep.event !== eventType) {
-      return { valid: false, error: `Unexpected event. Expected ${nextStep.event}, got ${eventType}` };
+    if (nextStep.event !== event_type) {
+      return { valid: false, error: `Unexpected event. Expected ${nextStep.event}, got ${event_type}` };
     }
 
     return { valid: true, step: nextStep };
   }
 
-  private async handleWorkflowFailure(correlationId: string, error: string, eventType: string, eventId?: string) {
-    if (!correlationId) return;
+  private async handleWorkflowFailure(correlation_id: string, error: string, event_type: string, eventId?: string) {
+    if (!correlation_id) return;
 
-    const instance = await this.prisma.workflowInstance.findUnique({
-      where: { correlationId }
+    const instance = await this.prisma.workflow_instances.findUnique({
+      where: { correlation_id: correlation_id }
     });
 
     if (!instance || instance.status === 'COMPLETED' || instance.status === 'FAILED') {
       return;
     }
 
-    const stepsExecuted = (instance.stepsExecuted as any[]) || [];
-    stepsExecuted.push({ eventType, status: 'FAILED', timestamp: new Date(), error, eventId });
+    const stepsExecuted = (instance.steps_executed as any[]) || [];
+    stepsExecuted.push({ event_type, status: 'FAILED', timestamp: new Date(), error, eventId });
 
-    await this.prisma.workflowInstance.update({
+    await this.prisma.workflow_instances.update({
       where: { id: instance.id },
       data: {
         status: 'FAILED',
-        failureAt: new Date(),
-        failureReason: error,
-        stepsExecuted: stepsExecuted as any,
+        failure_at: new Date(),
+        failure_reason: error,
+        steps_executed: stepsExecuted as any,
       }
     });
   }
 
   // Public Query API
-  async getWorkflowInstance(correlationId: string) {
-    return this.prisma.workflowInstance.findUnique({
-      where: { correlationId },
-      include: { workflowDefinition: true }
+  async getWorkflowInstance(correlation_id: string) {
+    return this.prisma.workflow_instances.findUnique({
+      where: { correlation_id: correlation_id },
+      include: { workflow_definitions: true }
     });
   }
 
-  async getWorkflowSteps(correlationId: string) {
-    const instance = await this.prisma.workflowInstance.findUnique({
-      where: { correlationId }
+  async getWorkflowSteps(correlation_id: string) {
+    const instance = await this.prisma.workflow_instances.findUnique({
+      where: { correlation_id: correlation_id }
     });
-    return instance?.stepsExecuted || [];
+    return instance?.steps_executed || [];
   }
 
-  async getWorkflowWithEvents(correlationId: string) {
-    const instance = await this.prisma.workflowInstance.findUnique({
-      where: { correlationId },
-      include: { workflowDefinition: true }
+  async getWorkflowWithEvents(correlation_id: string) {
+    const instance = await this.prisma.workflow_instances.findUnique({
+      where: { correlation_id: correlation_id },
+      include: { workflow_definitions: true }
     });
 
     if (!instance) return null;
 
-    const eventChain = await this.eventBus.getEventChain(correlationId);
+    const eventChain = await this.eventBus.getEventChain(correlation_id);
 
     return {
       workflow: instance,

@@ -12,24 +12,24 @@ async function simulate() {
   console.log('--- STARTING RESILIENCE SIMULATION ---');
 
   // 0. Ensure valid tenant
-  let company = await prisma.company.findFirst();
+  let company = await prisma.companies.findFirst();
   if (!company) {
-    company = await prisma.company.create({
+    company = await prisma.companies.create({
       data: {
         id: uuidv4(),
         name: 'Simulation Corp',
         code: 'SIM-' + Date.now(),
         status: 'active',
-        updatedAt: new Date(),
+        updated_at: new Date(),
       }
     });
     console.log(`Created new simulation tenant: ${company.id}`);
   }
-  const tenantId = company.id;
-  console.log(`Using tenantId: ${tenantId}`);
+  const tenant_id = company.id;
+  console.log(`Using tenant_id: ${tenant_id}`);
 
   // 1. Cleanup old events
-  await prisma.sysOutboxEvent.deleteMany({ where: { tenantId } });
+  await prisma.sys_outbox_events.deleteMany({ where: { tenant_id: tenant_id } });
 
   console.log('Step 1: Simulating Event Storm (100 Mixed Priority Events)...');
   const events = [];
@@ -38,10 +38,11 @@ async function simulate() {
   for (let i = 0; i < 50; i++) {
     events.push({
       id: uuidv4(),
-      tenantId,
+      tenant_id: tenant_id,
       type: 'hr.insight.anomaly.v1',
       payload: { detail: `Insight ${i}` },
       status: 'PENDING',
+      updated_at: new Date(),
     });
   }
 
@@ -49,7 +50,7 @@ async function simulate() {
   for (let i = 0; i < 10; i++) {
     events.push({
       id: uuidv4(),
-      tenantId,
+      tenant_id: tenant_id,
       type: 'hr.payroll.executed.v1',
       payload: { 
         payrollRunId: uuidv4(),
@@ -59,17 +60,18 @@ async function simulate() {
         processedCount: 10
       },
       status: 'PENDING',
+      updated_at: new Date(),
     });
   }
 
-  await prisma.sysOutboxEvent.createMany({ data: events });
+  await prisma.sys_outbox_events.createMany({ data: events });
 
   console.log('Step 2: Running Worker (Priority & Backpressure Check)...');
   await worker.handleOutbox();
 
-  const processed = await prisma.sysOutboxEvent.findMany({
-    where: { tenantId, status: 'PROCESSED' },
-    orderBy: { updatedAt: 'asc' },
+  const processed = await prisma.sys_outbox_events.findMany({
+    where: { tenant_id: tenant_id, status: 'PROCESSED' },
+    orderBy: { updated_at: 'asc' },
   });
 
   console.log(`Processed: ${processed.length} events.`);
@@ -82,15 +84,31 @@ async function simulate() {
   for (let i = 0; i < 20; i++) {
     failedEvents.push({
       id: uuidv4(),
-      tenantId,
+      tenant_id: tenant_id,
       type: 'hr.insight.test.v1',
       payload: { error: true },
       status: 'FAILED',
       attempts: 1,
-      // lastError and nextRetryAt will be updated by worker if we run it, but we can seed it
+      updated_at: new Date(),
     });
   }
-  await prisma.sysOutboxEvent.createMany({ data: failedEvents });
+  // 10 HIGH priority (Payroll)
+  for (let i = 0; i < 10; i++) {
+    events.push({
+      id: uuidv4(),
+      tenant_id: tenant_id,
+      type: 'hr.payroll.executed.v1',
+      payload: { 
+        payrollRunId: uuidv4(),
+        period: '2026-03',
+        totalGross: 50000,
+        totalNet: 42000,
+        processedCount: 10
+      },
+      status: 'PENDING',
+      updated_at: new Date(),
+    });
+  }
 
   console.log('Step 4: Waiting for Event Sweep (30s interval)...');
   await new Promise(resolve => setTimeout(resolve, 35000));

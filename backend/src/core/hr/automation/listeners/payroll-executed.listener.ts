@@ -18,9 +18,9 @@ export class PayrollExecutedListener {
   }
 
   private async handle(event: DomainEvent) {
-    if (event.eventType !== EVENT_NAMES.PAYROLL_EXECUTED) return;
+    if (event.event_type !== EVENT_NAMES.PAYROLL_EXECUTED) return;
 
-    this.logger.log(`[Automation] Triggered for ${event.eventType} on entity ${event.entityId}`);
+    this.logger.log(`[Automation] Triggered for ${event.event_type} on entity ${event.entity_id}`);
 
     // Action 1: Compliance Calculation
     await this.triggerComplianceCalculation(event);
@@ -42,8 +42,8 @@ export class PayrollExecutedListener {
     try {
       await this.commandBus.execute(HR_COMMAND_NAMES.GENERATE_COMPLIANCE_REPORT, {
         commandId: `auto-${Date.now()}`,
-        tenantId: event.tenantId,
-        actorId: 'SYSTEM_AUTOMATION',
+        tenant_id: event.tenant_id,
+        actor_id: 'SYSTEM_AUTOMATION',
         timestamp: new Date(),
         payload: {
           country: 'ID',

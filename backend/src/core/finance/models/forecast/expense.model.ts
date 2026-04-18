@@ -12,9 +12,9 @@ export class ExpenseModel implements ForecastModel {
     const activeOutflows = cashflowBaseline.cashflowDrivers.outflow;
     const recurringBaselines = activeOutflows.filter(d => 
         d.amount > 0 && 
-        (d.accountName?.toLowerCase().includes('rent') || 
-         d.accountName?.toLowerCase().includes('sub') ||
-         d.accountName?.toLowerCase().includes('utility'))
+        (d.account_name?.toLowerCase().includes('rent') || 
+         d.account_name?.toLowerCase().includes('sub') ||
+         d.account_name?.toLowerCase().includes('utility'))
     );
 
     // 2. Compute Non-Recurring Baseline (3-period average)

@@ -13,7 +13,7 @@ export class RetailListener implements OnModuleInit {
 
   onModuleInit() {
     this.eventBus.subscribe('RETAIL_SALE_COMPLETED', 'RetailListener.handle', async (event: any) => {
-      switch (event.eventType) {
+      switch (event.event_type) {
         case "RETAIL_SALE_COMPLETED":
           return this.handleRetailSale(event);
         case "RETAIL_RETURN_COMPLETED":
@@ -27,24 +27,24 @@ export class RetailListener implements OnModuleInit {
   }
 
   async handleRetailSale(event: any) {
-    this.logger.log(`Received RETAIL_SALE_COMPLETED for order ${event.payload?.orderId}`);
+    this.logger.log(`Received RETAIL_SALE_COMPLETED for order ${event.payload?.order_id}`);
     try {
-      const { tenantId, payload, userId } = event;
+      const { tenant_id, payload, user_id } = event;
       
       for (const move of payload.movements) {
         await this.inventoryService.consumeStock(
-          tenantId,
+          tenant_id,
           {
-            itemId: move.productId,
-            locationId: move.fromLocationId,
+            item_id: move.product_id,
+            location_id: move.fromLocationId,
             quantity: move.quantity,
             reason: "RETAIL_SALE",
-            referenceId: payload.orderId,
+            referenceId: payload.order_id,
             referenceType: "RETAIL_ORDER",
           },
-          userId,
+          user_id,
           event.tx,
-          event.correlationId
+          event.correlation_id
         );
       }
     } catch (error) {
@@ -53,24 +53,24 @@ export class RetailListener implements OnModuleInit {
   }
 
   async handleRetailReturn(event: any) {
-    this.logger.log(`Received RETAIL_RETURN_COMPLETED for order ${event.payload?.orderId}`);
+    this.logger.log(`Received RETAIL_RETURN_COMPLETED for order ${event.payload?.order_id}`);
     try {
-      const { tenantId, payload, userId } = event;
+      const { tenant_id, payload, user_id } = event;
       
       for (const item of payload.returnedItems) {
         await this.inventoryService.intakeStock(
-          tenantId,
+          tenant_id,
           {
-            itemId: item.productId,
-            locationId: payload.storeId,
+            item_id: item.product_id,
+            location_id: payload.store_id,
             quantity: item.quantity,
-            unitCost: item.unitPrice,
+            unitCost: item.unit_price,
             reason: "CUSTOMER_RETURN",
-            referenceId: `RETAIL_RETURN_${payload.orderId}`,
+            referenceId: `RETAIL_RETURN_${payload.order_id}`,
           },
-          userId,
+          user_id,
           event.tx,
-          event.correlationId
+          event.correlation_id
         );
       }
     } catch (error) {
@@ -79,22 +79,22 @@ export class RetailListener implements OnModuleInit {
   }
 
   async handleRetailOpname(event: any) {
-    this.logger.log(`Received RETAIL_OPNAME_SUBMITTED for store ${event.payload?.storeId}`);
+    this.logger.log(`Received RETAIL_OPNAME_SUBMITTED for store ${event.payload?.store_id}`);
     try {
-      const { tenantId, payload, userId } = event;
+      const { tenant_id, payload, user_id } = event;
       
       for (const adj of payload.adjustments) {
         await this.inventoryService.createAdjustment(
-          tenantId,
+          tenant_id,
           {
-            itemId: adj.productId,
-            locationId: payload.storeId,
+            item_id: adj.product_id,
+            location_id: payload.store_id,
             requestedDelta: adj.variance,
             reason: `RETAIL_OPNAME_${payload.sessionId}`,
           },
-          userId,
+          user_id,
           event.tx,
-          event.correlationId
+          event.correlation_id
         );
       }
     } catch (error) {
@@ -103,24 +103,24 @@ export class RetailListener implements OnModuleInit {
   }
 
   async handleRetailGoodsReceived(event: any) {
-    this.logger.log(`Received RETAIL_GOODS_RECEIVED for shipment ${event.payload?.shipmentId}`);
+    this.logger.log(`Received RETAIL_GOODS_RECEIVED for shipment ${event.payload?.shipment_id}`);
     try {
-      const { tenantId, payload, userId } = event;
+      const { tenant_id, payload, user_id } = event;
       
       for (const item of payload.items) {
         await this.inventoryService.intakeStock(
-          tenantId,
+          tenant_id,
           {
-            itemId: item.productId,
-            locationId: payload.storeId,
+            item_id: item.product_id,
+            location_id: payload.store_id,
             quantity: item.quantity,
             unitCost: item.unitCost || 0,
             reason: "RETAIL_STOCK_INTAKE",
-            referenceId: `RETAIL_INTAKE_${payload.shipmentId}`,
+            referenceId: `RETAIL_INTAKE_${payload.shipment_id}`,
           },
-          userId,
+          user_id,
           event.tx,
-          event.correlationId
+          event.correlation_id
         );
       }
     } catch (error) {

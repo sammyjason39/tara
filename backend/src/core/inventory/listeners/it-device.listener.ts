@@ -20,11 +20,11 @@ export class ITDeviceListener implements OnModuleInit {
   private lastScans = new Map<string, number>();
 
   private async handleDeviceEvent(event: any) {
-    const { tenantId, payload, correlationId, userId, id: eventId } = event;
-    const { code, type, locationId } = payload;
+    const { tenant_id, payload, correlation_id, user_id, id: eventId } = event;
+    const { code, type, location_id } = payload;
 
     // 0. Logic-level de-duplication (5 second window per code per device)
-    const scanKey = `${tenantId}:${payload.deviceId}:${code}`;
+    const scanKey = `${tenant_id}:${payload.device_id}:${code}`;
     const now = Date.now();
     if (this.lastScans.has(scanKey) && now - this.lastScans.get(scanKey)! < 5000) {
         console.log(`[ITDeviceListener] Skipping duplicate scan for ${code} within window.`);
@@ -33,9 +33,9 @@ export class ITDeviceListener implements OnModuleInit {
     this.lastScans.set(scanKey, now);
 
     // 1. Resolve Product by Barcode or SKU
-    const itemMaster = await this.prisma.itemMaster.findFirst({
+    const itemMaster = await this.prisma.item_masters.findFirst({
         where: {
-            tenantId,
+            tenant_id: tenant_id,
             OR: [
                 { barcode: code },
                 { sku: code }
@@ -50,17 +50,17 @@ export class ITDeviceListener implements OnModuleInit {
 
     // 2. Perform Intake
     await this.inventoryService.intakeStock(
-        tenantId,
+        tenant_id,
         {
-          itemId: itemMaster.id,
-          locationId: locationId || 'SCAN_LOCATION',
+          item_id: itemMaster.id,
+          location_id: location_id || 'SCAN_LOCATION',
           quantity: 1, // Default scan quantity
           referenceId: eventId, // Standardized: referenceId = deviceEventId
           referenceType: 'DEVICE_SCAN',
         } as any,
-        userId,
+        user_id,
         null,
-        correlationId
+        correlation_id
     );
   }
 }

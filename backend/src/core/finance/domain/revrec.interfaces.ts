@@ -16,13 +16,13 @@ export interface RecognitionPeriod {
 
 export interface RevRecSchedule {
   id: string;
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   contractId: string;
-  totalAmount: Prisma.Decimal;
+  total_amount: Prisma.Decimal;
   currency: string;
-  startDate: Date;
-  endDate: Date;
+  start_date: Date;
+  end_date: Date;
   status: RevRecStatus;
   deferredAccountId: string;
   revenueAccountId: string;
@@ -32,8 +32,8 @@ export interface RevRecSchedule {
 export interface RecognitionEvent {
   id: string;
   scheduleId: string;
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   amount: Prisma.Decimal;
   currency: string;
   periodDate: Date;

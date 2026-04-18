@@ -8,7 +8,7 @@ export class PostingAuditService {
   /**
    * Records a state transition for a posting request.
    */
-  async recordTransition(requestId: string, from: PostingState, to: PostingState, reason?: string): Promise<StateTransition> {
+  async recordTransition(request_id: string, from: PostingState, to: PostingState, reason?: string): Promise<StateTransition> {
     const transition: StateTransition = {
       from,
       to,
@@ -16,7 +16,7 @@ export class PostingAuditService {
       reason,
     };
 
-    this.logger.log(`[Audit] Request ${requestId}: ${from} -> ${to} ${reason ? `(${reason})` : ''}`);
+    this.logger.log(`[Audit] Request ${request_id}: ${from} -> ${to} ${reason ? `(${reason})` : ''}`);
     
     // In production, this would persist to a specialized Audit table
     return transition;
@@ -34,14 +34,14 @@ export class PostingAuditService {
    * General ledger event logging (Phase 11 Standard).
    */
   async log(params: {
-    tenantId: string;
-    companyId: string;
+    tenant_id: string;
+    company_id: string;
     module: string;
     action: string;
-    entityType: string;
-    entityId: string;
+    entity_type: string;
+    entity_id: string;
     metadata: any;
   }) {
-    this.logger.log(`[AuditLog] ${params.action} on ${params.entityType}:${params.entityId} (Company: ${params.companyId})`);
+    this.logger.log(`[AuditLog] ${params.action} on ${params.entity_type}:${params.entity_id} (Company: ${params.company_id})`);
   }
 }

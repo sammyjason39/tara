@@ -1,15 +1,15 @@
 export class ComplianceDocument {
   id: string;
-  tenantId: string;
-  employeeId: string;
+  tenant_id: string;
+  employee_id: string;
   documentType: string;
   documentNumber?: string;
   fileUrl: string;
   expiryDate?: Date;
-  verificationStatus: string;
-  verifiedBy?: string;
-  verifiedAt?: Date;
+  verification_status: string;
+  verified_by?: string;
+  verified_at?: Date;
   metadata?: any;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

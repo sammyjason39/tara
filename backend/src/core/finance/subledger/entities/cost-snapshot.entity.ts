@@ -2,9 +2,9 @@ import { Prisma } from '@prisma/client';
 
 export class CostSnapshot {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   skuId: string;
-  locationId: string;
+  location_id: string;
   totalQty: Prisma.Decimal;
   totalValuation: Prisma.Decimal;
   avgUnitCost: Prisma.Decimal;

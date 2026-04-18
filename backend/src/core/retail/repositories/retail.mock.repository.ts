@@ -18,6 +18,7 @@ import {
   UpdateEcommerceStoreDto,
   CreateInventoryPoolDto,
   UpdateProductDto,
+  CheckoutDto,
 } from "../dto/retail.dto";
 
 @Injectable()
@@ -38,71 +39,71 @@ export class RetailMockRepository implements IRetailRepository {
     this.products = [
       {
         id: "item-001",
-        tenantId: "04bbc0e0-213d-4af4-9ce8-0e4674a58a90",
+        tenant_id: "04bbc0e0-213d-4af4-9ce8-0e4674a58a90",
         sku: "ELEC-MBP-001",
         name: "MacBook Pro 14 M3",
         description: "High performance laptop",
-        basePrice: 32999000,
-        categoryId: "cat-1",
-        categoryName: "Electronics",
+        base_price: 32999000,
+        category_id: "cat-1",
+        category_name: "Electronics",
         barcode: "888123456789",
         type: "ITEM",
         status: "active",
         unit: "PCS",
         stock: 5,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       } as any,
       {
         id: "item-002",
-        tenantId: "04bbc0e0-213d-4af4-9ce8-0e4674a58a90",
+        tenant_id: "04bbc0e0-213d-4af4-9ce8-0e4674a58a90",
         sku: "ELEC-IPN-015",
         name: "iPhone 15 Pro",
         description: "Stronger than ever",
-        basePrice: 18999000,
-        categoryId: "cat-1",
-        categoryName: "Electronics",
+        base_price: 18999000,
+        category_id: "cat-1",
+        category_name: "Electronics",
         barcode: "888987654321",
         type: "ITEM",
         status: "active",
         unit: "PCS",
         stock: 12,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       } as any,
       {
         id: "item-003",
-        tenantId: "04bbc0e0-213d-4af4-9ce8-0e4674a58a90",
+        tenant_id: "04bbc0e0-213d-4af4-9ce8-0e4674a58a90",
         sku: "CLOTH-TEE-BLK",
         name: "Minimalist Black Tee",
         description: "100% Cotton",
-        basePrice: 249000,
-        categoryId: "cat-2",
-        categoryName: "Clothing",
+        base_price: 249000,
+        category_id: "cat-2",
+        category_name: "Clothing",
         barcode: "111222333444",
         type: "ITEM",
         status: "active",
         unit: "PCS",
         stock: 50,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       } as any,
       {
         id: "item-004",
-        tenantId: "04bbc0e0-213d-4af4-9ce8-0e4674a58a90",
+        tenant_id: "04bbc0e0-213d-4af4-9ce8-0e4674a58a90",
         sku: "FURN-CHR-OAK",
         name: "Oak Dining Chair",
         description: "Solid oak wood",
-        basePrice: 1500000,
-        categoryId: "cat-3",
-        categoryName: "Furniture",
+        base_price: 1500000,
+        category_id: "cat-3",
+        category_name: "Furniture",
         barcode: "555666777888",
         type: "ITEM",
         status: "active",
         unit: "PCS",
         stock: 8,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        created_at: new Date(),
+        updated_at: new Date(),
       } as any,
     ];
 
@@ -110,18 +111,18 @@ export class RetailMockRepository implements IRetailRepository {
   }
 
   async listProducts(
-    tenantId: string,
+    tenant_id: string,
     options?: {
       page?: number;
       pageSize?: number;
-      categoryId?: string;
+      category_id?: string;
       type?: string;
       minPrice?: number;
       maxPrice?: number;
       q?: string;
-      sortBy?: "name" | "price" | "createdAt";
+      sortBy?: "name" | "price" | "created_at";
       sortDir?: "asc" | "desc";
-      locationId?: string;
+      location_id?: string;
     },
   ): Promise<{
     items: RetailProduct[];
@@ -129,22 +130,22 @@ export class RetailMockRepository implements IRetailRepository {
     page: number;
     pageSize: number;
   }> {
-    console.log(`[MockRepo] listProducts for tenant ${tenantId}`, options);
+    console.log(`[MockRepo] listProducts for tenant ${tenant_id}`, options);
 
-    let filtered = this.products.filter((p) => p.tenantId === tenantId);
+    let filtered = this.products.filter((p) => p.tenant_id === tenant_id);
 
     // Apply filters
-    if (options?.categoryId && options.categoryId !== "all") {
-      filtered = filtered.filter((p) => p.categoryId === options.categoryId);
+    if (options?.category_id && options.category_id !== "all") {
+      filtered = filtered.filter((p) => p.category_id === options.category_id);
     }
     if (options?.type && options.type !== "all") {
       filtered = filtered.filter((p) => p.type === options.type);
     }
     if (options?.minPrice !== undefined) {
-      filtered = filtered.filter((p) => p.basePrice >= options.minPrice!);
+      filtered = filtered.filter((p) => p.base_price >= options.minPrice!);
     }
     if (options?.maxPrice !== undefined) {
-      filtered = filtered.filter((p) => p.basePrice <= options.maxPrice!);
+      filtered = filtered.filter((p) => p.base_price <= options.maxPrice!);
     }
     if (options?.q) {
       const q = options.q.toLowerCase();
@@ -160,14 +161,14 @@ export class RetailMockRepository implements IRetailRepository {
       // Data Resolution Logic: Hierarchical Overrides
       let projection = undefined;
 
-      if (options?.locationId) {
+      if (options?.location_id) {
         projection = this.projections.find(
           (proj) =>
             proj.item_master_id === p.id &&
-            proj.tenant_id === tenantId &&
+            proj.tenant_id === tenant_id &&
             proj.module_type === "RETAIL" &&
             proj.is_active &&
-            proj.location_id === options.locationId,
+            proj.location_id === options.location_id,
         );
       }
 
@@ -175,7 +176,7 @@ export class RetailMockRepository implements IRetailRepository {
         projection = this.projections.find(
           (proj) =>
             proj.item_master_id === p.id &&
-            proj.tenant_id === tenantId &&
+            proj.tenant_id === tenant_id &&
             proj.module_type === "RETAIL" &&
             proj.is_active &&
             !proj.location_id,
@@ -205,35 +206,44 @@ export class RetailMockRepository implements IRetailRepository {
 
   // --- Implement other REQUIRED methods with minimal mock logic ---
   async listStores(
-    tenantId: string,
-    locationId?: string,
+    tenant_id: string,
+    location_id?: string,
   ): Promise<RetailStore[]> {
     return this.stores.filter(
       (s) =>
-        s.tenantId === tenantId && (!locationId || s.locationId === locationId),
+        s.tenant_id === tenant_id && (!location_id || s.location_id === location_id),
     );
   }
-  async listCategories(tenantId: string): Promise<any[]> {
+  async listCategories(tenant_id: string): Promise<any[]> {
     return [
-      { id: "cat-1", name: "Electronics", tenantId },
-      { id: "cat-2", name: "Clothing", tenantId },
-      { id: "cat-3", name: "Furniture", tenantId },
+      { id: "cat-1", name: "Electronics", tenant_id },
+      { id: "cat-2", name: "Clothing", tenant_id },
+      { id: "cat-3", name: "Furniture", tenant_id },
     ];
   }
+  async atomicCheckout(
+    tenant_id: string,
+    data: CheckoutDto,
+    user_id: string,
+    idempotencyKey?: string,
+  ): Promise<RetailOrder> {
+    console.log(`[MockRepo] atomicCheckout for tenant ${tenant_id}`, data);
+    return {} as any;
+  }
   async getStore(
-    tenantId: string,
-    storeId: string,
+    tenant_id: string,
+    store_id: string,
   ): Promise<RetailStore | null> {
     return null;
   }
   async createStore(
-    tenantId: string,
+    tenant_id: string,
     data: CreateStoreDto,
   ): Promise<RetailStore> {
     const store: RetailStore = {
       id: `store-${Math.random().toString(36).substr(2, 9)}`,
-      tenantId: tenantId,
-      locationId: data.locationId || "loc-default",
+      tenant_id: tenant_id,
+      location_id: data.location_id || "loc-default",
       name: data.name,
       code: data.code,
       type: data.type as any,
@@ -243,37 +253,37 @@ export class RetailMockRepository implements IRetailRepository {
       email: data.email,
       timezone: data.timezone || "UTC",
       currency: data.currency || "USD",
-      taxZone: data.tax_zone,
-      managerId: data.managerId,
-      inventoryPoolId: data.inventoryPoolId,
-      operationalConfig: data.operational_config as any,
-      supplyConfig: data.supply_config as any,
-      infrastructureRegistry: data.infrastructure_registry as any,
-      channelBinding: data.channel_binding as any,
+      tax_zone: data.tax_zone,
+      manager_id: data.manager_id,
+      inventory_pool_id: data.inventory_pool_id,
+      operational_config: data.operational_config as any,
+      supply_config: data.supply_config as any,
+      infrastructure_registry: data.infrastructure_registry as any,
+      channel_binding: data.channel_binding as any,
       governance: (data.governance || {
         license_status: "active",
         activation_source: "Cloud",
         compliance_level: 1,
         audit_frequency_tier: "standard",
       }) as any,
-      configVersion: {
+      config_version: {
         updated_by: "system_user",
         updated_at: new Date(),
         revision_number: 1,
       },
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
     };
     this.stores.push(store);
     return store;
   }
   async updateStore(
-    tenantId: string,
-    storeId: string,
+    tenant_id: string,
+    store_id: string,
     data: UpdateStoreDto,
   ): Promise<RetailStore> {
     const index = this.stores.findIndex(
-      (s) => s.id === storeId && s.tenantId === tenantId,
+      (s) => s.id === store_id && s.tenant_id === tenant_id,
     );
     if (index === -1) throw new Error("Store not found");
 
@@ -281,7 +291,7 @@ export class RetailMockRepository implements IRetailRepository {
     const updated: RetailStore = {
       ...current,
       name: data.name ?? current.name,
-      locationId: data.locationId ?? current.locationId,
+      location_id: data.location_id ?? current.location_id,
       currency: data.currency ?? current.currency,
       type: (data.type as any) ?? current.type,
       status: (data.status as any) ?? current.status,
@@ -289,120 +299,120 @@ export class RetailMockRepository implements IRetailRepository {
       phone: data.phone ?? current.phone,
       email: data.email ?? current.email,
       timezone: data.timezone ?? current.timezone,
-      taxZone: data.tax_zone ?? current.taxZone,
-      managerId: data.managerId ?? current.managerId,
-      inventoryPoolId: data.inventoryPoolId ?? current.inventoryPoolId,
-      operationalConfig: data.operational_config
+      tax_zone: data.tax_zone ?? current.tax_zone,
+      manager_id: data.manager_id ?? current.manager_id,
+      inventory_pool_id: data.inventory_pool_id ?? current.inventory_pool_id,
+      operational_config: data.operational_config
         ? {
-            ...(current.operationalConfig || {}),
+            ...(current.operational_config || {}),
             ...(data.operational_config as any),
           }
-        : current.operationalConfig,
-      supplyConfig: data.supply_config
-        ? { ...(current.supplyConfig || {}), ...(data.supply_config as any) }
-        : current.supplyConfig,
-      infrastructureRegistry: data.infrastructure_registry
+        : current.operational_config,
+      supply_config: data.supply_config
+        ? { ...(current.supply_config || {}), ...(data.supply_config as any) }
+        : current.supply_config,
+      infrastructure_registry: data.infrastructure_registry
         ? {
-            ...(current.infrastructureRegistry || {}),
+            ...(current.infrastructure_registry || {}),
             ...data.infrastructure_registry,
           }
-        : current.infrastructureRegistry,
-      channelBinding: data.channel_binding
-        ? { ...(current.channelBinding || {}), ...data.channel_binding }
-        : current.channelBinding,
+        : current.infrastructure_registry,
+      channel_binding: data.channel_binding
+        ? { ...(current.channel_binding || {}), ...data.channel_binding }
+        : current.channel_binding,
       governance: data.governance
         ? { ...(current.governance as any), ...data.governance }
         : current.governance,
-      updatedAt: new Date(),
+      updated_at: new Date(),
     };
 
     // Update revision
-    updated.configVersion = {
+    updated.config_version = {
       updated_by: "system_user", // Mock user
       updated_at: new Date(),
-      revision_number: (current.configVersion?.revision_number || 0) + 1,
+      revision_number: (current.config_version?.revision_number || 0) + 1,
     };
 
     this.stores[index] = updated;
     return updated;
   }
-  async deleteStore(tenantId: string, storeId: string): Promise<void> {}
-  async listInventoryPools(tenantId: string): Promise<any[]> {
+  async deleteStore(tenant_id: string, store_id: string): Promise<void> {}
+  async listInventoryPools(tenant_id: string): Promise<any[]> {
     return [];
   }
   async createInventoryPool(
-    tenantId: string,
+    tenant_id: string,
     data: CreateInventoryPoolDto,
   ): Promise<any> {
     return {};
   }
   async getInventoryPool(
-    tenantId: string,
+    tenant_id: string,
     poolId: string,
   ): Promise<any | null> {
     return null;
   }
-  async deleteInventoryPool(tenantId: string, poolId: string): Promise<void> {}
+  async deleteInventoryPool(tenant_id: string, poolId: string): Promise<void> {}
   async listEcommerceStores(
-    tenantId: string,
-    storeId?: string,
+    tenant_id: string,
+    store_id?: string,
   ): Promise<any[]> {
     return [];
   }
   async getEcommerceStore(
-    tenantId: string,
-    storeId: string,
+    tenant_id: string,
+    store_id: string,
   ): Promise<any | null> {
     return null;
   }
   async createEcommerceStore(
-    tenantId: string,
+    tenant_id: string,
     data: CreateEcommerceStoreDto,
   ): Promise<any> {
     return {};
   }
   async updateEcommerceStore(
-    tenantId: string,
-    storeId: string,
+    tenant_id: string,
+    store_id: string,
     data: UpdateEcommerceStoreDto,
   ): Promise<any> {
     return {};
   }
   async deleteEcommerceStore(
-    tenantId: string,
-    storeId: string,
+    tenant_id: string,
+    store_id: string,
   ): Promise<void> {}
   async linkEcommerceToBranch(
-    tenantId: string,
+    tenant_id: string,
     ecommerceId: string,
-    branchId: string,
+    branch_id: string,
   ): Promise<void> {}
   async unlinkEcommerceFromBranch(
-    tenantId: string,
+    tenant_id: string,
     ecommerceId: string,
-    branchId: string,
+    branch_id: string,
   ): Promise<void> {}
   async getProduct(
-    tenantId: string,
-    productId: string,
+    tenant_id: string,
+    product_id: string,
   ): Promise<RetailProduct | null> {
     const product = this.products.find(
-      (p) => p.id === productId && p.tenantId === tenantId,
+      (p) => p.id === product_id && p.tenant_id === tenant_id,
     );
     return product || null;
   }
   async updateProduct(
-    tenantId: string,
-    productId: string,
+    tenant_id: string,
+    product_id: string,
     data: UpdateProductDto,
-    locationId?: string,
+    location_id?: string,
   ): Promise<RetailProduct> {
     console.log(
-      `[MockRepo] updateProduct for tenant ${tenantId}, product ${productId}`,
+      `[MockRepo] updateProduct for tenant ${tenant_id}, product ${product_id}`,
       data,
     );
     const index = this.products.findIndex(
-      (p) => p.id === productId && p.tenantId === tenantId,
+      (p) => p.id === product_id && p.tenant_id === tenant_id,
     );
     if (index === -1) {
       throw new Error("Product not found");
@@ -411,8 +421,8 @@ export class RetailMockRepository implements IRetailRepository {
       ...this.products[index],
       name: data.name ?? this.products[index].name,
       description: data.description ?? this.products[index].description,
-      categoryId: data.categoryId ?? this.products[index].categoryId,
-      basePrice: data.basePrice ?? this.products[index].basePrice,
+      category_id: data.category_id ?? this.products[index].category_id,
+      base_price: data.base_price ?? this.products[index].base_price,
       unit: data.unit ?? this.products[index].unit,
       sku: data.sku ?? this.products[index].sku,
       barcode: data.barcode ?? this.products[index].barcode,
@@ -420,17 +430,17 @@ export class RetailMockRepository implements IRetailRepository {
     };
 
     // Mock logic: resolve category name if ID changed
-    if (data.categoryId) {
-      const cats = await this.listCategories(tenantId);
-      const cat = cats.find((c) => c.id === data.categoryId);
-      if (cat) updated.categoryName = cat.name;
+    if (data.category_id) {
+      const cats = await this.listCategories(tenant_id);
+      const cat = cats.find((c) => c.id === data.category_id);
+      if (cat) updated.category_name = cat.name;
     }
 
     this.products[index] = updated;
 
     // Also update any projections that might be overriding this product's name/desc
     this.projections = this.projections.map((proj) => {
-      if (proj.item_master_id === productId) {
+      if (proj.item_master_id === product_id) {
         return {
           ...proj,
           custom_name: data.name ?? proj.custom_name,
@@ -444,8 +454,8 @@ export class RetailMockRepository implements IRetailRepository {
   }
 
   async generateNextSku(
-    tenantId: string,
-    categoryId: string,
+    tenant_id: string,
+    category_id: string,
   ): Promise<{ sku: string; barcode: string }> {
     // Mock: derive prefix from known categories, generate a sequential-looking SKU
     const mockCats: Record<string, string> = {
@@ -453,7 +463,7 @@ export class RetailMockRepository implements IRetailRepository {
       "cat-2": "CLOTH",
       "cat-3": "FURN",
     };
-    const prefix = mockCats[categoryId] ?? "ITEM";
+    const prefix = mockCats[category_id] ?? "ITEM";
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     const seq = String(
       this.products.filter((p) => p.sku?.startsWith(prefix)).length + 1,
@@ -464,46 +474,46 @@ export class RetailMockRepository implements IRetailRepository {
     return { sku, barcode };
   }
 
-  async listOrders(tenantId: string, storeId?: string): Promise<RetailOrder[]> {
+  async listOrders(tenant_id: string, store_id?: string): Promise<RetailOrder[]> {
     return [];
   }
   async getOrder(
-    tenantId: string,
-    orderId: string,
+    tenant_id: string,
+    order_id: string,
   ): Promise<RetailOrder | null> {
     return null;
   }
   async createOrder(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     data: CreateOrderDto,
-    userId: string,
+    user_id: string,
   ): Promise<RetailOrder> {
     return {} as any;
   }
   async updateOrderStatus(
-    tenantId: string,
-    orderId: string,
+    tenant_id: string,
+    order_id: string,
     status: string,
     metadata?: any,
   ): Promise<RetailOrder> {
     return {} as any;
   }
-  async reserveStock(tenantId: string, locationId: string, productId: string, quantity: number): Promise<{ success: boolean; reservationId?: string }> {
+  async reserveStock(tenant_id: string, location_id: string, product_id: string, quantity: number): Promise<{ success: boolean; reservationId?: string }> {
     return { success: true };
   }
   async releaseStock(
-    tenantId: string,
-    productId: string,
+    tenant_id: string,
+    product_id: string,
     quantity: number,
   ): Promise<void> {}
   async checkStock(
-    tenantId: string,
-    productId: string,
+    tenant_id: string,
+    product_id: string,
   ): Promise<{ available: number; status: string }> {
     return { available: 10, status: "IN_STOCK" };
   }
-  async getInventoryStats(tenantId: string, options?: any): Promise<any> {
+  async getInventoryStats(tenant_id: string, options?: any): Promise<any> {
     return {
       totalItems: 0,
       critical: 0,
@@ -518,99 +528,117 @@ export class RetailMockRepository implements IRetailRepository {
     };
   }
   async getActiveShift(
-    tenantId: string,
-    storeId: string,
-    employeeId: string,
+    tenant_id: string,
+    store_id: string,
+    employee_id: string,
   ): Promise<RetailShift | null> {
     return null;
   }
   async openShift(
-    tenantId: string,
-    locationId: string,
-    employeeId: string,
+    tenant_id: string,
+    location_id: string,
+    employee_id: string,
     data: OpenShiftDto,
   ): Promise<RetailShift> {
     return {} as any;
   }
   async closeShift(
-    tenantId: string,
-    shiftId: string,
+    tenant_id: string,
+    shift_id: string,
     data: CloseShiftDto,
   ): Promise<RetailShift> {
     return {} as any;
   }
-  async listShifts(tenantId: string, storeId?: string): Promise<RetailShift[]> {
-    return [];
+  async listShifts(
+    tenant_id: string,
+    filters?: {
+      store_id?: string;
+      employee_id?: string;
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<RetailShift[]> {
+    let filtered = this.shifts.filter((s) => s.tenant_id === tenant_id);
+    if (filters?.store_id) {
+      filtered = filtered.filter((s) => s.store_id === filters.store_id);
+    }
+    if (filters?.employee_id) {
+      filtered = filtered.filter((s) => s.employee_id === filters.employee_id);
+    }
+
+    const limit = filters?.limit ?? 50;
+    const offset = filters?.offset ?? 0;
+    return filtered.slice(offset, offset + limit);
   }
-  async listPromotions(tenantId: string): Promise<any[]> {
+  async listPromotions(tenant_id: string): Promise<any[]> {
     return [];
   }
   async updatePromotion(
-    tenantId: string,
+    tenant_id: string,
     promotionId: string,
     data: any,
   ): Promise<any> {
     return {};
   }
-  async listChannels(tenantId: string): Promise<any[]> {
+  async listChannels(tenant_id: string): Promise<any[]> {
     return [];
   }
-  async createChannel(tenantId: string, data: any): Promise<any> {
+  async createChannel(tenant_id: string, data: any): Promise<any> {
     return {};
   }
   async updateChannel(
-    tenantId: string,
+    tenant_id: string,
     channelId: string,
     data: any,
   ): Promise<any> {
     return {};
   }
   async deleteChannel(
-    tenantId: string,
+    tenant_id: string,
     channelId: string,
   ): Promise<{ success: boolean }> {
     return { success: true };
   }
   async syncChannel(
-    tenantId: string,
+    tenant_id: string,
     channelId: string,
   ): Promise<{ success: boolean }> {
     return { success: true };
   }
   async getChannelById(
-    tenantId: string,
+    tenant_id: string,
     channelId: string,
   ): Promise<any | null> {
     return null;
   }
   async updateChannelCredentials(
-    tenantId: string,
+    tenant_id: string,
     channelId: string,
     credentials: any,
   ): Promise<any> {
     return {};
   }
   async findChannelByClientId(
-    tenantId: string,
+    tenant_id: string,
     clientId: string,
   ): Promise<any | null> {
     return null;
   }
-  async listDevices(tenantId: string, storeId?: string): Promise<any[]> {
+  async listDevices(tenant_id: string, store_id?: string): Promise<any[]> {
     return this.devices.filter(
-      (d) => d.tenant_id === tenantId && (!storeId || d.store_id === storeId),
+      (d) => d.tenant_id === tenant_id && (!store_id || d.store_id === store_id),
     );
   }
 
   async registerDevice(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     data: any,
   ): Promise<any> {
     const device = {
       id: `dev-${Math.random().toString(36).substr(2, 9)}`,
-      tenant_id: tenantId,
-      store_id: locationId,
+      tenant_id: tenant_id,
+      store_id: location_id,
       ...data,
       is_active: true,
       created_at: new Date(),
@@ -620,15 +648,15 @@ export class RetailMockRepository implements IRetailRepository {
     return device;
   }
 
-  async listCCTVs(tenantId: string, storeId?: string): Promise<any[]> {
+  async listCCTVs(tenant_id: string, store_id?: string): Promise<any[]> {
     return this.cameras.filter(
-      (c) => c.tenantId === tenantId && (!storeId || c.locationId === storeId),
+      (c) => c.tenant_id === tenant_id && (!store_id || c.location_id === store_id),
     );
   }
 
   async validateCCTVConnection(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     data: any,
   ): Promise<{ success: boolean; message?: string }> {
     // Mock Validation Logic Simulation
@@ -648,7 +676,7 @@ export class RetailMockRepository implements IRetailRepository {
 
     if (
       data.provider === "hikvision" &&
-      (!data.ipAddress || !data.username || !data.password)
+      (!data.ip_address || !data.username || !data.password)
     ) {
       return {
         success: false,
@@ -663,48 +691,48 @@ export class RetailMockRepository implements IRetailRepository {
   }
 
   async registerCCTV(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     data: any,
   ): Promise<any> {
     const camera = {
       id: `cam-${Math.random().toString(36).substr(2, 9)}`,
-      tenantId,
-      locationId,
+      tenant_id,
+      location_id,
       ...data,
       isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
     };
     this.cameras.push(camera);
     return camera;
   }
 
-  async listSensors(tenantId: string, storeId?: string): Promise<any[]> {
+  async listSensors(tenant_id: string, store_id?: string): Promise<any[]> {
     return this.sensors.filter(
-      (s) => s.tenantId === tenantId && (!storeId || s.locationId === storeId),
+      (s) => s.tenant_id === tenant_id && (!store_id || s.location_id === store_id),
     );
   }
 
   async registerSensor(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     data: any,
   ): Promise<any> {
     const sensor = {
       id: `sns-${Math.random().toString(36).substr(2, 9)}`,
-      tenantId,
-      locationId,
+      tenant_id,
+      location_id,
       ...data,
       isActive: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
     };
     this.sensors.push(sensor);
     return sensor;
   }
 
-  async scanDevices(tenantId: string, locationId: string): Promise<any[]> {
+  async scanDevices(tenant_id: string, location_id: string): Promise<any[]> {
     // Generate simulated discovery results
     this.discoveredDevices = [
       {
@@ -712,7 +740,7 @@ export class RetailMockRepository implements IRetailRepository {
         name: "Discovered Printer",
         type: "thermal_printer",
         macAddress: "AA:BB:CC:DD:EE:01",
-        ipAddress: "192.168.1.55",
+        ip_address: "192.168.1.55",
         model: "Postek C168 (Simulated)",
         status: "discovered",
       },
@@ -721,7 +749,7 @@ export class RetailMockRepository implements IRetailRepository {
         name: "Discovered PC",
         type: "pc",
         macAddress: "AA:BB:CC:DD:EE:02",
-        ipAddress: "192.168.1.102",
+        ip_address: "192.168.1.102",
         model: "Dell OptiPlex (Simulated)",
         status: "discovered",
       },
@@ -730,8 +758,8 @@ export class RetailMockRepository implements IRetailRepository {
   }
 
   async commitScannedDevice(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     discoveryId: string,
   ): Promise<any> {
     const found = this.discoveredDevices.find(
@@ -741,129 +769,129 @@ export class RetailMockRepository implements IRetailRepository {
 
     const device = {
       id: `dev-${discoveryId}`,
-      tenantId,
-      locationId,
+      tenant_id,
+      location_id,
       name: found.name,
       type: found.type,
       model: found.model,
       macAddress: found.macAddress,
-      ipAddress: found.ipAddress,
+      ip_address: found.ip_address,
       status: "online",
       isActive: true,
       lastSeen: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
     this.devices.push(device);
     return device;
   }
 
   async pingDevice(
-    tenantId: string,
-    deviceId: string,
+    tenant_id: string,
+    device_id: string,
   ): Promise<{ success: boolean }> {
     return { success: true };
   }
   async processPayment(
-    tenantId: string,
-    orderId: string,
+    tenant_id: string,
+    order_id: string,
     data: any,
   ): Promise<any> {
     return {};
   }
   async processReturn(
-    tenantId: string,
-    orderId: string,
+    tenant_id: string,
+    order_id: string,
     data: any,
   ): Promise<{ success: boolean }> {
     return { success: true };
   }
   async submitOpname(
-    tenantId: string,
+    tenant_id: string,
     data: any,
   ): Promise<{ success: boolean }> {
     return { success: true };
   }
   async receiveGoods(
-    tenantId: string,
+    tenant_id: string,
     data: any,
   ): Promise<{ success: boolean }> {
     return { success: true };
   }
   async findCustomerByEmail(
-    tenantId: string,
+    tenant_id: string,
     email: string,
   ): Promise<any | null> {
     return null;
   }
   async findCustomerById(
-    tenantId: string,
-    customerId: string,
+    tenant_id: string,
+    customer_id: string,
   ): Promise<any | null> {
     return null;
   }
-  async createCustomer(tenantId: string, data: any): Promise<any> {
+  async createCustomer(tenant_id: string, data: any): Promise<any> {
     return {};
   }
   async updateCustomer(
-    tenantId: string,
-    customerId: string,
+    tenant_id: string,
+    customer_id: string,
     data: any,
   ): Promise<any> {
     return {};
   }
-  async createCustomerSession(tenantId: string, data: any): Promise<any> {
+  async createCustomerSession(tenant_id: string, data: any): Promise<any> {
     return {};
   }
   async findCustomerSession(
-    tenantId: string,
+    tenant_id: string,
     tokenHash: string,
   ): Promise<any | null> {
     return null;
   }
   async revokeCustomerSession(
-    tenantId: string,
+    tenant_id: string,
     tokenHash: string,
   ): Promise<void> {}
-  async getCart(tenantId: string, customerId: string): Promise<any | null> {
+  async getCart(tenant_id: string, customer_id: string): Promise<any | null> {
     return null;
   }
-  async createCart(tenantId: string, customerId: string): Promise<any> {
+  async createCart(tenant_id: string, customer_id: string): Promise<any> {
     return {};
   }
   async updateCartItem(
-    tenantId: string,
+    tenant_id: string,
     cartId: string,
-    productId: string,
+    product_id: string,
     data: any,
   ): Promise<any> {
     return {};
   }
   async removeCartItem(
-    tenantId: string,
+    tenant_id: string,
     cartId: string,
-    itemId: string,
+    item_id: string,
   ): Promise<void> {}
-  async clearCart(tenantId: string, cartId: string): Promise<void> {}
-  async getWishlist(tenantId: string, customerId: string): Promise<any | null> {
+  async clearCart(tenant_id: string, cartId: string): Promise<void> {}
+  async getWishlist(tenant_id: string, customer_id: string): Promise<any | null> {
     return null;
   }
-  async upsertWishlist(tenantId: string, customerId: string): Promise<any> {
+  async upsertWishlist(tenant_id: string, customer_id: string): Promise<any> {
     return {};
   }
   async addWishlistItem(
-    tenantId: string,
+    tenant_id: string,
     wishlistId: string,
-    productId: string,
+    product_id: string,
   ): Promise<any> {
     return {};
   }
   async removeWishlistItem(
-    tenantId: string,
+    tenant_id: string,
     wishlistId: string,
-    itemId: string,
+    item_id: string,
   ): Promise<void> {}
-  async logEvent(tenantId: string, data: any): Promise<any> {
+  async logEvent(tenant_id: string, data: any): Promise<any> {
     return {};
   }
 }

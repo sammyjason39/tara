@@ -12,15 +12,15 @@ export class LedgerEventLogDbRepository implements ILedgerEventLogRepository {
     return this.prisma as Prisma.TransactionClient;
   }
 
-  async create(tenantId: string, companyId: string, data: any): Promise<LedgerEventLog> {
-    const created = await this.db.ledgerEventLog.create({
+  async create(tenant_id: string, company_id: string, data: any): Promise<LedgerEventLog> {
+    const created = await this.db.finance_ledger_event_log.create({
       data: {
-        id: 'radzh1s1',
-        updatedAt: new Date(),
-        tenantId,
-        companyId, // Correctly including companyId
-        eventType: data.eventType,
-        sourceEventId: data.sourceEventId,
+        id: require('crypto').randomUUID(),
+        updated_at: new Date(),
+        tenant_id,
+        company_id,
+        event_type: data.event_type,
+        source_event_id: data.sourceEventId,
         status: data.status || 'PENDING',
         payload: data.payload,
       }
@@ -28,42 +28,42 @@ export class LedgerEventLogDbRepository implements ILedgerEventLogRepository {
     return created as unknown as LedgerEventLog;
   }
 
-  async findBySourceEventId(tenantId: string, companyId: string, sourceEventId: string): Promise<LedgerEventLog | null> {
-    const res = await this.db.ledgerEventLog.findUnique({
-      where: { tenantId_companyId_sourceEventId: { tenantId, companyId, sourceEventId } }
+  async findBySourceEventId(tenant_id: string, company_id: string, sourceEventId: string): Promise<LedgerEventLog | null> {
+    const res = await this.db.finance_ledger_event_log.findUnique({
+      where: { tenant_id_company_id_source_event_id: { tenant_id: tenant_id, company_id: company_id, source_event_id: sourceEventId } }
     });
     return res as unknown as LedgerEventLog;
   }
 
-  async updateStatus(tenantId: string, companyId: string, id: string, status: 'PENDING' | 'POSTED' | 'FAILED'): Promise<void> {
-    await this.db.ledgerEventLog.update({
+  async updateStatus(tenant_id: string, company_id: string, id: string, status: 'PENDING' | 'POSTED' | 'FAILED'): Promise<void> {
+    await this.db.finance_ledger_event_log.update({
       where: { id },
       data: { status }
     });
   }
 
-  async findUnprocessed(tenantId: string, companyId: string, batchSize: number): Promise<LedgerEventLog[]> {
-    const list = await this.db.ledgerEventLog.findMany({
-      where: { tenantId, companyId, status: 'PENDING' },
+  async findUnprocessed(tenant_id: string, company_id: string, batchSize: number): Promise<LedgerEventLog[]> {
+    const list = await this.db.finance_ledger_event_log.findMany({
+      where: { tenant_id: tenant_id, company_id: company_id, status: 'PENDING' },
       take: batchSize,
-      orderBy: { createdAt: 'asc' }
+      orderBy: { created_at: 'asc' }
     });
     return list as unknown as LedgerEventLog[];
   }
 
-  async markProcessed(tenantId: string, companyId: string, id: string): Promise<void> {
-    await this.updateStatus(tenantId, companyId, id, 'POSTED');
+  async markProcessed(tenant_id: string, company_id: string, id: string): Promise<void> {
+    await this.updateStatus(tenant_id, company_id, id, 'POSTED');
   }
 
-  async findProcessedBefore(tenantId: string, companyId: string, date: Date): Promise<LedgerEventLog[]> {
-    const list = await this.db.ledgerEventLog.findMany({
-      where: { tenantId, companyId, status: 'POSTED', createdAt: { lt: date } }
+  async findProcessedBefore(tenant_id: string, company_id: string, date: Date): Promise<LedgerEventLog[]> {
+    const list = await this.db.finance_ledger_event_log.findMany({
+      where: { tenant_id: tenant_id, company_id: company_id, status: 'POSTED', created_at: { lt: date } }
     });
     return list as unknown as LedgerEventLog[];
   }
 
-  async deleteMany(tenantId: string, companyId: string, ids: string[]): Promise<void> {
-    await this.db.ledgerEventLog.deleteMany({
+  async deleteMany(tenant_id: string, company_id: string, ids: string[]): Promise<void> {
+    await this.db.finance_ledger_event_log.deleteMany({
       where: { id: { in: ids } }
     });
   }

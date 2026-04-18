@@ -1,6 +1,6 @@
 export class Interview {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   candidateId: string;
   interviewerId: string;
   title: string;
@@ -9,6 +9,6 @@ export class Interview {
   location?: string;
   status: "SCHEDULED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
   notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

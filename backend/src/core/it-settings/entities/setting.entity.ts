@@ -4,12 +4,12 @@
  */
 export class Setting {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   key: string;
   value: string;
   category: "general" | "finance" | "hr" | "security" | "integration";
   isPublic: boolean;
   description?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

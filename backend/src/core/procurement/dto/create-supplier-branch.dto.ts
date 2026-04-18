@@ -35,7 +35,7 @@ export class CreateSupplierBranchDto {
 
   @IsString()
   @IsOptional()
-  contactEmail?: string;
+  contact_email?: string;
 
   @IsString()
   @IsOptional()

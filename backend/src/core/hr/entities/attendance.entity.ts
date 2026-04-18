@@ -4,16 +4,16 @@
  */
 export class Attendance {
   id: string;
-  tenantId: string;
-  employeeId: string;
-  locationId: string;
-  clockIn: Date;
-  clockOut?: Date;
+  tenant_id: string;
+  employee_id: string;
+  location_id: string;
+  clock_in: Date;
+  clock_out?: Date;
   date: string; // YYYY-MM-DD format
-  hoursWorked?: number;
+  hours_worked?: number;
   status: "present" | "absent" | "late" | "half_day";
   notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date;
+  created_at: Date;
+  updated_at: Date;
+  deleted_at?: Date;
 }

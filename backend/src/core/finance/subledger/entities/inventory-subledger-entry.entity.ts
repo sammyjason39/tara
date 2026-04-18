@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 
 export class InventorySubledgerEntry {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   
   // Traceability
   inventoryTransactionId: string; // Operational Link
@@ -40,7 +40,7 @@ export class InventorySubledgerEntry {
   
   // Metadata
   skuId: string;
-  locationId: string;
+  location_id: string;
   isSystemGenerated: boolean;
   costVersionId?: string;
   
@@ -54,6 +54,6 @@ export class InventorySubledgerEntry {
   referenceType?: string;
   referenceId?: string;
   
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

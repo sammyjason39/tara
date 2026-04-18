@@ -17,7 +17,7 @@ export interface CapexRequest {
     | "REJECTED";
   currentApprovalStage?: "HOD" | "CFO";
   budgetMatched: boolean;
-  createdAt: string;
+  created_at: string;
   requesterId: string;
 }
 
@@ -42,15 +42,15 @@ export interface FinanceMoneySourceRow {
 
 export interface TreasuryTransfer {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   fromSourceId: string;
   toSourceId: string;
   amount: Prisma.Decimal;
   currency: string;
   status: string;
-  requestedBy: string;
-  createdAt: Date | string;
-  updatedAt: Date | string;
+  requested_by: string;
+  created_at: Date | string;
+  updated_at: Date | string;
 }
 
 export interface AssetDepreciationEntry {
@@ -73,7 +73,7 @@ export interface AssetEvent {
   reason?: string;
   journalEntryId?: string;
   attachmentDocumentIds: string[];
-  createdAt: string;
+  created_at: string;
   approvedBy?: string;
 }
 
@@ -96,7 +96,7 @@ export interface FinanceReceivableRow {
   dueDate: string;
   status: "DRAFT" | "SENT" | "OVERDUE" | "PAID" | "DISPUTED";
   agingDays: number;
-  updatedAt: string;
+  updated_at: string;
 }
 
 export interface FinancePayableRow {
@@ -107,7 +107,7 @@ export interface FinancePayableRow {
   currency: string;
   dueDate: string;
   status: "RECEIVED" | "APPROVED" | "SCHEDULED_FOR_PAYMENT" | "PAID";
-  updatedAt: string;
+  updated_at: string;
 }
 
 export interface FinancePaymentRow {
@@ -140,7 +140,7 @@ export interface PaymentRequest {
   purpose: string;
   extraInfo?: Record<string, any>;
   status: "DRAFT" | "SUBMITTED" | "APPROVED" | "PAID" | "REJECTED";
-  requestedBy: string;
+  requested_by: string;
   requestedAt: string;
 }
 
@@ -155,8 +155,8 @@ export interface FinancePolicyRow {
 export interface AccountingPeriod {
   id: string;
   name: string;
-  startDate: string;
-  endDate: string;
+  start_date: string;
+  end_date: string;
   status: "OPEN" | "CLOSED" | "LOCKED" | "ADJUSTING";
 }
 
@@ -172,14 +172,14 @@ export interface FinanceAlert {
   id: string;
   message: string;
   severity: "LOW" | "MEDIUM" | "HIGH";
-  createdAt: string;
+  created_at: string;
   read: boolean;
 }
 
 export interface PayrollEntry {
   id: string;
-  tenantId: string;
-  employeeId: string;
+  tenant_id: string;
+  employee_id: string;
   name?: string;
   department?: string;
   period: string; // e.g., "2026-02"
@@ -189,8 +189,8 @@ export interface PayrollEntry {
   netSalary: Prisma.Decimal;
   status: "PENDING" | "PROCESSED" | "PAID" | "pending" | "approved" | "paid";
   paymentDate?: string;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface PayrollEstimate {

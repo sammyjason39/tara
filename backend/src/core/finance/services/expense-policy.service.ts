@@ -12,9 +12,9 @@ export class ExpensePolicyService {
    * Evaluates an expense against the applicable policy.
    * Returns 'APPROVED', 'WARNING', or 'REJECTED'.
    */
-  async evaluateExpense(tenantId: string, category: string, amount: number) {
-    const policy = await this.prisma.expensePolicy.findFirst({
-      where: { tenantId, category, status: 'ACTIVE' }
+  async evaluateExpense(tenant_id: string, category: string, amount: number) {
+    const policy = await this.prisma.finance_expense_policies.findFirst({
+      where: { tenant_id: tenant_id, category, status: 'ACTIVE' }
     });
 
     if (!policy) {
@@ -24,11 +24,11 @@ export class ExpensePolicyService {
 
     const value = new Decimal(amount);
 
-    if (value.gt(policy.hardLimit)) {
+    if (value.gt(policy.hard_limit)) {
       return { status: 'REJECTED', policyId: policy.id, reason: 'EXCEEDS_HARD_LIMIT' };
     }
 
-    if (value.gt(policy.softLimit)) {
+    if (value.gt(policy.soft_limit)) {
       return { status: 'WARNING', policyId: policy.id, reason: 'EXCEEDS_SOFT_LIMIT' };
     }
 

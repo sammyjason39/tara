@@ -19,20 +19,20 @@ export class ComplianceController {
   @Get('tax/report')
   async getTaxReport(
     @TenantCtx() ctx: TenantContext,
-    @Query('companyId') companyId: string,
+    @Query('company_id') company_id: string,
     @Query('fiscalPeriodId') fiscalPeriodId: string,
   ) {
-    const targetCompanyId = companyId || ctx.companyId;
-    return this.taxExportService.generateTaxReport(ctx.tenantId, targetCompanyId, fiscalPeriodId);
+    const targetCompanyId = company_id || ctx.company_id;
+    return this.taxExportService.generateTaxReport(ctx.tenant_id, targetCompanyId, fiscalPeriodId);
   }
 
   @Get('audit/integrity')
   async getLedgerIntegrity(
     @TenantCtx() ctx: TenantContext,
-    @Query('companyId') companyId: string,
+    @Query('company_id') company_id: string,
   ) {
-    const targetCompanyId = companyId || ctx.companyId;
-    return this.auditDashboardService.verifyLedgerIntegrity(ctx.tenantId, targetCompanyId);
+    const targetCompanyId = company_id || ctx.company_id;
+    return this.auditDashboardService.verifyLedgerIntegrity(ctx.tenant_id, targetCompanyId);
   }
 
   @Get('audit/prove/:reportId')
@@ -41,6 +41,6 @@ export class ComplianceController {
     @Param('reportId') reportId: string,
     @Query('reportHash') reportHash: string,
   ) {
-    return this.auditDashboardService.proveReport(ctx.tenantId, reportId, reportHash);
+    return this.auditDashboardService.proveReport(ctx.tenant_id, reportId, reportHash);
   }
 }

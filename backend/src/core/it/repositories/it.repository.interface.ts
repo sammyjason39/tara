@@ -7,46 +7,46 @@ import { CreateDeviceDto, CreateDeviceEventDto } from "../dto/device.dto";
 export abstract class IITRepository {
   // Provisioning
   abstract getProvisioningRequests(
-    tenantId: string,
+    tenant_id: string,
   ): Promise<ProvisioningRequest[]>;
   abstract createProvisioningRequest(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateProvisioningRequestDto,
   ): Promise<ProvisioningRequest>;
   abstract markProvisioned(
-    tenantId: string,
-    requestId: string,
+    tenant_id: string,
+    request_id: string,
     provisionedBy: string,
   ): Promise<ProvisioningRequest>;
   abstract updateProvisioningRequest(
-    tenantId: string,
-    requestId: string,
+    tenant_id: string,
+    request_id: string,
     dto: Partial<CreateProvisioningRequestDto>,
   ): Promise<ProvisioningRequest>;
   abstract deleteProvisioningRequest(
-    tenantId: string,
-    requestId: string,
+    tenant_id: string,
+    request_id: string,
   ): Promise<void>;
 
   // Devices (NEW)
-  abstract getDevices(tenantId: string): Promise<Device[]>;
-  abstract createDevice(tenantId: string, dto: CreateDeviceDto): Promise<Device>;
+  abstract getDevices(tenant_id: string): Promise<Device[]>;
+  abstract createDevice(tenant_id: string, dto: CreateDeviceDto): Promise<Device>;
   abstract updateDevice(
-    tenantId: string,
-    deviceId: string,
+    tenant_id: string,
+    device_id: string,
     dto: Partial<CreateDeviceDto>,
   ): Promise<Device>;
-  abstract getDevice(tenantId: string, deviceId: string): Promise<Device | null>;
+  abstract getDevice(tenant_id: string, device_id: string): Promise<Device | null>;
 
   // Device Events (NEW)
-  abstract getDeviceEvents(tenantId: string): Promise<DeviceEvent[]>;
+  abstract getDeviceEvents(tenant_id: string): Promise<DeviceEvent[]>;
   abstract createDeviceEvent(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateDeviceEventDto,
   ): Promise<DeviceEvent>;
 
   // Misc
-  abstract getSystemHealth(tenantId: string): Promise<SystemHealth[]>;
-  abstract getProvisioningStats(tenantId: string): Promise<any>;
-  abstract getAuditLogs(tenantId: string, requestId?: string): Promise<any[]>;
+  abstract getSystemHealth(tenant_id: string): Promise<SystemHealth[]>;
+  abstract getProvisioningStats(tenant_id: string): Promise<any>;
+  abstract getAuditLogs(tenant_id: string, request_id?: string): Promise<any[]>;
 }

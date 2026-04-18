@@ -53,7 +53,7 @@ export class CreateItemDto {
   unit?: string;
 
   @IsOptional()
-  basePrice?: number;
+  base_price?: number;
 
   @IsOptional()
   taxRate?: number;

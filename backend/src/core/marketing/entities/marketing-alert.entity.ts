@@ -1,12 +1,12 @@
 export class MarketingAlert {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   type: "lead_spike" | "campaign_failure" | "token_expiry" | "handoff_delay";
   severity: "low" | "medium" | "high";
-  entityType: "campaign" | "lead" | "account" | "workflow";
-  entityId: string;
+  entity_type: "campaign" | "lead" | "account" | "workflow";
+  entity_id: string;
   message: string;
   acknowledged: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

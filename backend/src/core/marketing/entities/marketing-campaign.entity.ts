@@ -1,9 +1,9 @@
 export class MarketingCampaign {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   name: string;
   objective: "lead_generation" | "awareness" | "nurture" | "remarketing";
-  channelMix: Array<
+  channel_mix: Array<
     | "meta_ads"
     | "google_ads"
     | "email"
@@ -12,15 +12,15 @@ export class MarketingCampaign {
     | "landing_page"
     | "event"
   >;
-  ownerId: string;
-  ownerName: string;
+  owner_id: string;
+  owner_name: string;
   budget: number;
   currency: "IDR" | "USD";
   status: "draft" | "scheduled" | "active" | "paused" | "completed" | "failed";
-  startDate: string;
-  endDate: string;
+  start_date: string;
+  end_date: string;
   audience: string;
   aiRecommendation?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

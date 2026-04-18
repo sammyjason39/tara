@@ -13,9 +13,9 @@ export interface JournalDraftLine {
 
 export interface JournalDraft {
   draftId: string;
-  requestId: string;
-  tenantId: string;
-  companyId: string;
+  request_id: string;
+  tenant_id: string;
+  company_id: string;
   fiscalPeriodId: string;
   transactionCurrency: string;
   baseCurrency: string;
@@ -23,5 +23,5 @@ export interface JournalDraft {
   lines: JournalDraftLine[];
   totalDebitBase: number;
   totalCreditBase: number;
-  createdAt: Date;
+  created_at: Date;
 }

@@ -14,6 +14,7 @@ import {
   UpdateEcommerceStoreDto,
   CreateInventoryPoolDto,
   UpdateProductDto,
+  CheckoutDto,
 } from "../dto/retail.dto";
 
 export abstract class IRetailRepository {
@@ -21,88 +22,88 @@ export abstract class IRetailRepository {
   // BRANCHES (Physical Stores)
   // ============================================================
   abstract listStores(
-    tenantId: string,
-    locationId?: string,
+    tenant_id: string,
+    location_id?: string,
   ): Promise<RetailStore[]>;
-  abstract listCategories(tenantId: string): Promise<any[]>;
+  abstract listCategories(tenant_id: string): Promise<any[]>;
   abstract getStore(
-    tenantId: string,
-    storeId: string,
+    tenant_id: string,
+    store_id: string,
   ): Promise<RetailStore | null>;
   abstract createStore(
-    tenantId: string,
+    tenant_id: string,
     data: CreateStoreDto,
   ): Promise<RetailStore>;
   abstract updateStore(
-    tenantId: string,
-    storeId: string,
+    tenant_id: string,
+    store_id: string,
     data: UpdateStoreDto,
   ): Promise<RetailStore>;
-  abstract deleteStore(tenantId: string, storeId: string): Promise<void>;
+  abstract deleteStore(tenant_id: string, store_id: string): Promise<void>;
 
   // ============================================================
   // INVENTORY POOLS
   // ============================================================
-  abstract listInventoryPools(tenantId: string): Promise<any[]>;
+  abstract listInventoryPools(tenant_id: string): Promise<any[]>;
   abstract createInventoryPool(
-    tenantId: string,
+    tenant_id: string,
     data: CreateInventoryPoolDto,
   ): Promise<any>;
   abstract getInventoryPool(
-    tenantId: string,
+    tenant_id: string,
     poolId: string,
   ): Promise<any | null>;
-  abstract deleteInventoryPool(tenantId: string, poolId: string): Promise<void>;
+  abstract deleteInventoryPool(tenant_id: string, poolId: string): Promise<void>;
 
   // ============================================================
   // E-COMMERCE STORES
   // ============================================================
   abstract listEcommerceStores(
-    tenantId: string,
-    storeId?: string,
+    tenant_id: string,
+    store_id?: string,
   ): Promise<any[]>;
   abstract getEcommerceStore(
-    tenantId: string,
-    storeId: string,
+    tenant_id: string,
+    store_id: string,
   ): Promise<any | null>;
   abstract createEcommerceStore(
-    tenantId: string,
+    tenant_id: string,
     data: CreateEcommerceStoreDto,
   ): Promise<any>;
   abstract updateEcommerceStore(
-    tenantId: string,
-    storeId: string,
+    tenant_id: string,
+    store_id: string,
     data: UpdateEcommerceStoreDto,
   ): Promise<any>;
   abstract deleteEcommerceStore(
-    tenantId: string,
-    storeId: string,
+    tenant_id: string,
+    store_id: string,
   ): Promise<void>;
   abstract linkEcommerceToBranch(
-    tenantId: string,
+    tenant_id: string,
     ecommerceId: string,
-    branchId: string,
+    branch_id: string,
   ): Promise<void>;
   abstract unlinkEcommerceFromBranch(
-    tenantId: string,
+    tenant_id: string,
     ecommerceId: string,
-    branchId: string,
+    branch_id: string,
   ): Promise<void>;
 
   // ============================================================
   // PRODUCTS
   // ============================================================
   abstract listProducts(
-    tenantId: string,
+    tenant_id: string,
     options?: {
       page?: number;
       pageSize?: number;
-      categoryId?: string;
+      category_id?: string;
       type?: string;
       minPrice?: number;
       maxPrice?: number;
       q?: string;
-      sortBy?: "name" | "price" | "createdAt";
+      sortBy?: "name" | "price" | "created_at";
       sortDir?: "asc" | "desc";
     },
   ): Promise<{
@@ -112,40 +113,40 @@ export abstract class IRetailRepository {
     pageSize: number;
   }>;
   abstract getProduct(
-    tenantId: string,
-    productId: string,
+    tenant_id: string,
+    product_id: string,
   ): Promise<RetailProduct | null>;
   abstract updateProduct(
-    tenantId: string,
-    productId: string,
+    tenant_id: string,
+    product_id: string,
     data: UpdateProductDto,
-    locationId?: string,
+    location_id?: string,
   ): Promise<RetailProduct>;
   abstract generateNextSku(
-    tenantId: string,
-    categoryId: string,
+    tenant_id: string,
+    category_id: string,
   ): Promise<{ sku: string; barcode: string }>;
 
   // ============================================================
   // ORDERS
   // ============================================================
   abstract listOrders(
-    tenantId: string,
-    storeId?: string,
+    tenant_id: string,
+    store_id?: string,
   ): Promise<RetailOrder[]>;
   abstract getOrder(
-    tenantId: string,
-    orderId: string,
+    tenant_id: string,
+    order_id: string,
   ): Promise<RetailOrder | null>;
   abstract createOrder(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     data: CreateOrderDto,
-    userId: string,
+    user_id: string,
   ): Promise<RetailOrder>;
   abstract updateOrderStatus(
-    tenantId: string,
-    orderId: string,
+    tenant_id: string,
+    order_id: string,
     status: string,
     metadata?: any,
   ): Promise<RetailOrder>;
@@ -154,24 +155,24 @@ export abstract class IRetailRepository {
   // INVENTORY / STOCK
   // ============================================================
   abstract reserveStock(
-    tenantId: string,
-    locationId: string,
-    productId: string,
+    tenant_id: string,
+    location_id: string,
+    product_id: string,
     quantity: number,
   ): Promise<{ success: boolean; reservationId?: string }>;
   abstract releaseStock(
-    tenantId: string,
-    productId: string,
+    tenant_id: string,
+    product_id: string,
     quantity: number,
   ): Promise<void>;
   abstract checkStock(
-    tenantId: string,
-    productId: string,
+    tenant_id: string,
+    product_id: string,
   ): Promise<{ available: number; status: string }>;
 
   abstract getInventoryStats(
-    tenantId: string,
-    options?: { categoryId?: string; q?: string },
+    tenant_id: string,
+    options?: { category_id?: string; q?: string },
   ): Promise<{
     total: number;
     critical: number;
@@ -191,32 +192,37 @@ export abstract class IRetailRepository {
   // SHIFTS
   // ============================================================
   abstract getActiveShift(
-    tenantId: string,
-    storeId: string,
-    employeeId: string,
+    tenant_id: string,
+    store_id: string,
+    employee_id: string,
   ): Promise<RetailShift | null>;
   abstract openShift(
-    tenantId: string,
-    locationId: string,
-    employeeId: string,
+    tenant_id: string,
+    location_id: string,
+    employee_id: string,
     data: OpenShiftDto,
   ): Promise<RetailShift>;
   abstract closeShift(
-    tenantId: string,
-    shiftId: string,
+    tenant_id: string,
+    shift_id: string,
     data: CloseShiftDto,
   ): Promise<RetailShift>;
   abstract listShifts(
-    tenantId: string,
-    storeId?: string,
+    tenant_id: string,
+    filters?: {
+      store_id?: string;
+      employee_id?: string;
+      limit?: number;
+      offset?: number;
+    },
   ): Promise<RetailShift[]>;
 
   // ============================================================
   // PROMOTIONS
   // ============================================================
-  abstract listPromotions(tenantId: string): Promise<any[]>;
+  abstract listPromotions(tenant_id: string): Promise<any[]>;
   abstract updatePromotion(
-    tenantId: string,
+    tenant_id: string,
     promotionId: string,
     data: any,
   ): Promise<any>;
@@ -224,70 +230,70 @@ export abstract class IRetailRepository {
   // ============================================================
   // CHANNELS (Legacy - Ecommerce Hub integration)
   // ============================================================
-  abstract listChannels(tenantId: string): Promise<any[]>;
-  abstract createChannel(tenantId: string, data: any): Promise<any>;
+  abstract listChannels(tenant_id: string): Promise<any[]>;
+  abstract createChannel(tenant_id: string, data: any): Promise<any>;
   abstract updateChannel(
-    tenantId: string,
+    tenant_id: string,
     channelId: string,
     data: any,
   ): Promise<any>;
   abstract deleteChannel(
-    tenantId: string,
+    tenant_id: string,
     channelId: string,
   ): Promise<{ success: boolean }>;
   abstract syncChannel(
-    tenantId: string,
+    tenant_id: string,
     channelId: string,
   ): Promise<{ success: boolean }>;
   abstract getChannelById(
-    tenantId: string,
+    tenant_id: string,
     channelId: string,
   ): Promise<any | null>;
   abstract updateChannelCredentials(
-    tenantId: string,
+    tenant_id: string,
     channelId: string,
     credentials: any,
   ): Promise<any>;
   abstract findChannelByClientId(
-    tenantId: string,
+    tenant_id: string,
     clientId: string,
   ): Promise<any | null>;
 
   // ============================================================
   // DEVICES
   // ============================================================
-  abstract listDevices(tenantId: string, storeId?: string): Promise<any[]>;
+  abstract listDevices(tenant_id: string, store_id?: string): Promise<any[]>;
   abstract registerDevice(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     data: any,
   ): Promise<any>;
-  abstract listCCTVs(tenantId: string, storeId?: string): Promise<any[]>;
+  abstract listCCTVs(tenant_id: string, store_id?: string): Promise<any[]>;
   abstract registerCCTV(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     data: any,
   ): Promise<any>;
   abstract validateCCTVConnection(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     data: any,
   ): Promise<{ success: boolean; message?: string }>;
-  abstract listSensors(tenantId: string, storeId?: string): Promise<any[]>;
+  abstract listSensors(tenant_id: string, store_id?: string): Promise<any[]>;
   abstract registerSensor(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     data: any,
   ): Promise<any>;
   abstract pingDevice(
-    tenantId: string,
-    deviceId: string,
+    tenant_id: string,
+    device_id: string,
   ): Promise<{ success: boolean }>;
 
-  abstract scanDevices(tenantId: string, locationId: string): Promise<any[]>;
+  abstract scanDevices(tenant_id: string, location_id: string): Promise<any[]>;
   abstract commitScannedDevice(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     discoveryId: string,
   ): Promise<any>;
 
@@ -295,30 +301,37 @@ export abstract class IRetailRepository {
   // PAYMENTS & RETURNS
   // ============================================================
   abstract processPayment(
-    tenantId: string,
-    orderId: string,
-    data: { amount: number; method: string; shiftId?: string },
+    tenant_id: string,
+    order_id: string,
+    data: { amount: number; method: string; shift_id?: string },
   ): Promise<any>;
   abstract processReturn(
-    tenantId: string,
-    orderId: string,
-    data: { itemIds: string[]; shiftId?: string },
+    tenant_id: string,
+    order_id: string,
+    data: { itemIds: string[]; shift_id?: string },
   ): Promise<{ success: boolean }>;
+
+  abstract atomicCheckout(
+    tenant_id: string,
+    data: CheckoutDto,
+    user_id: string,
+    idempotencyKey?: string,
+  ): Promise<RetailOrder>;
 
   // ============================================================
   // INVENTORY OPERATIONS
   // ============================================================
   abstract submitOpname(
-    tenantId: string,
-    data: { storeId: string; adjustments: any[]; shiftId?: string },
+    tenant_id: string,
+    data: { store_id: string; adjustments: any[]; shift_id?: string },
   ): Promise<{ success: boolean }>;
   abstract receiveGoods(
-    tenantId: string,
+    tenant_id: string,
     data: {
-      storeId: string;
-      shipmentId: string;
+      store_id: string;
+      shipment_id: string;
       items: any[];
-      shiftId?: string;
+      shift_id?: string;
     },
   ): Promise<{ success: boolean }>;
 
@@ -328,64 +341,64 @@ export abstract class IRetailRepository {
 
   // Customers
   abstract findCustomerByEmail(
-    tenantId: string,
+    tenant_id: string,
     email: string,
   ): Promise<any | null>;
   abstract findCustomerById(
-    tenantId: string,
-    customerId: string,
+    tenant_id: string,
+    customer_id: string,
   ): Promise<any | null>;
-  abstract createCustomer(tenantId: string, data: any): Promise<any>;
+  abstract createCustomer(tenant_id: string, data: any): Promise<any>;
   abstract updateCustomer(
-    tenantId: string,
-    customerId: string,
+    tenant_id: string,
+    customer_id: string,
     data: any,
   ): Promise<any>;
 
   // Auth & Sessions
-  abstract createCustomerSession(tenantId: string, data: any): Promise<any>;
+  abstract createCustomerSession(tenant_id: string, data: any): Promise<any>;
   abstract findCustomerSession(
-    tenantId: string,
+    tenant_id: string,
     tokenHash: string,
   ): Promise<any | null>;
   abstract revokeCustomerSession(
-    tenantId: string,
+    tenant_id: string,
     tokenHash: string,
   ): Promise<void>;
 
   // Cart
-  abstract getCart(tenantId: string, customerId: string): Promise<any | null>;
-  abstract createCart(tenantId: string, customerId: string): Promise<any>;
+  abstract getCart(tenant_id: string, customer_id: string): Promise<any | null>;
+  abstract createCart(tenant_id: string, customer_id: string): Promise<any>;
   abstract updateCartItem(
-    tenantId: string,
+    tenant_id: string,
     cartId: string,
-    productId: string,
-    data: { quantity: number; unitPrice: number },
+    product_id: string,
+    data: { quantity: number; unit_price: number },
   ): Promise<any>;
   abstract removeCartItem(
-    tenantId: string,
+    tenant_id: string,
     cartId: string,
-    itemId: string,
+    item_id: string,
   ): Promise<void>;
-  abstract clearCart(tenantId: string, cartId: string): Promise<void>;
+  abstract clearCart(tenant_id: string, cartId: string): Promise<void>;
 
   // Wishlist
   abstract getWishlist(
-    tenantId: string,
-    customerId: string,
+    tenant_id: string,
+    customer_id: string,
   ): Promise<any | null>;
-  abstract upsertWishlist(tenantId: string, customerId: string): Promise<any>;
+  abstract upsertWishlist(tenant_id: string, customer_id: string): Promise<any>;
   abstract addWishlistItem(
-    tenantId: string,
+    tenant_id: string,
     wishlistId: string,
-    productId: string,
+    product_id: string,
   ): Promise<any>;
   abstract removeWishlistItem(
-    tenantId: string,
+    tenant_id: string,
     wishlistId: string,
-    itemId: string,
+    item_id: string,
   ): Promise<void>;
 
   // Events
-  abstract logEvent(tenantId: string, data: any): Promise<any>;
+  abstract logEvent(tenant_id: string, data: any): Promise<any>;
 }

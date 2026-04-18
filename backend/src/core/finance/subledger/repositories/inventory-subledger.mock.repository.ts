@@ -15,7 +15,7 @@ export class InventorySubledgerMockRepository implements IInventorySubledgerRepo
   async createEntry(tenant_id: string, data: Partial<InventorySubledgerEntry>, tx?: Prisma.TransactionClient): Promise<InventorySubledgerEntry> {
     const entry: InventorySubledgerEntry = {
       id: uuid(),
-      tenantId: tenant_id,
+      tenant_id: tenant_id,
       status: 'PENDING',
       isSystemGenerated: data.isSystemGenerated ?? true,
       amount: new Prisma.Decimal(data.amount?.toString() || '0'),
@@ -23,14 +23,14 @@ export class InventorySubledgerMockRepository implements IInventorySubledgerRepo
       unitCost: new Prisma.Decimal(data.unitCost?.toString() || '0'),
       currency: data.currency || 'USD',
       skuId: data.skuId!,
-      locationId: data.locationId!,
+      location_id: data.location_id!,
       inventoryTransactionId: data.inventoryTransactionId!,
       sourceEventId: data.sourceEventId!,
       postingRequestId: data.postingRequestId!,
       entryType: data.entryType!,
       accountingPeriodId: data.accountingPeriodId!,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
     } as InventorySubledgerEntry;
     
     this.entries.push(entry);
@@ -38,13 +38,13 @@ export class InventorySubledgerMockRepository implements IInventorySubledgerRepo
   }
 
   async getEntryById(tenant_id: string, id: string, tx?: Prisma.TransactionClient): Promise<InventorySubledgerEntry> {
-    const entry = this.entries.find(e => e.id === id && e.tenantId === tenant_id);
+    const entry = this.entries.find(e => e.id === id && e.tenant_id === tenant_id);
     if (!entry) throw new Error(`Entry ${id} not found`);
     return entry;
   }
 
   async findEntryBySourceEvent(tenant_id: string, sourceEventId: string, entryType: string, tx?: Prisma.TransactionClient): Promise<InventorySubledgerEntry | null> {
-    return this.entries.find(e => e.tenantId === tenant_id && e.sourceEventId === sourceEventId && e.entryType === entryType) || null;
+    return this.entries.find(e => e.tenant_id === tenant_id && e.sourceEventId === sourceEventId && e.entryType === entryType) || null;
   }
 
   async updateEntryStatus(tenant_id: string, id: string, status: any, metadata?: any, tx?: Prisma.TransactionClient): Promise<InventorySubledgerEntry> {
@@ -59,7 +59,7 @@ export class InventorySubledgerMockRepository implements IInventorySubledgerRepo
     if (metadata) {
       Object.assign(entry, metadata);
     }
-    entry.updatedAt = new Date();
+    entry.updated_at = new Date();
     return entry;
   }
 
@@ -67,23 +67,23 @@ export class InventorySubledgerMockRepository implements IInventorySubledgerRepo
     return this.updateEntryStatus(tenant_id, id, 'POSTED', undefined, tx);
   }
 
-  async getCostLayers(tenant_id: string, skuId: string, locationId: string, tx?: Prisma.TransactionClient): Promise<CostLayer[]> {
-    return this.costLayers.filter(l => l.tenantId === tenant_id && l.skuId === skuId && l.locationId === locationId && l.remainingQty.gt(0));
+  async getCostLayers(tenant_id: string, skuId: string, location_id: string, tx?: Prisma.TransactionClient): Promise<CostLayer[]> {
+    return this.costLayers.filter(l => l.tenant_id === tenant_id && l.skuId === skuId && l.location_id === location_id && l.remainingQty.gt(0));
   }
 
   async createCostLayer(tenant_id: string, data: Partial<CostLayer>, tx?: Prisma.TransactionClient): Promise<CostLayer> {
     const layer: CostLayer = {
       id: uuid(),
-      tenantId: tenant_id,
+      tenant_id: tenant_id,
       skuId: data.skuId!,
-      locationId: data.locationId!,
+      location_id: data.location_id!,
       qty: new Prisma.Decimal(data.qty?.toString() || '0'),
       remainingQty: new Prisma.Decimal(data.remainingQty?.toString() || data.qty?.toString() || '0'),
       unitCost: new Prisma.Decimal(data.unitCost?.toString() || '0'),
       currency: data.currency || 'USD',
       method: data.method || 'FIFO',
       sourceEventId: data.sourceEventId!,
-      createdAt: new Date(),
+      created_at: new Date(),
     } as CostLayer;
     this.costLayers.push(layer);
     return layer;
@@ -99,9 +99,9 @@ export class InventorySubledgerMockRepository implements IInventorySubledgerRepo
   async createCostSnapshot(tenant_id: string, data: Partial<CostSnapshot>, tx?: Prisma.TransactionClient): Promise<CostSnapshot> {
     const snapshot: CostSnapshot = {
       id: uuid(),
-      tenantId: tenant_id,
+      tenant_id: tenant_id,
       skuId: data.skuId!,
-      locationId: data.locationId!,
+      location_id: data.location_id!,
       totalQty: new Prisma.Decimal(data.totalQty?.toString() || '0'),
       totalValuation: new Prisma.Decimal(data.totalValuation?.toString() || '0'),
       avgUnitCost: new Prisma.Decimal(data.avgUnitCost?.toString() || '0'),
@@ -112,8 +112,8 @@ export class InventorySubledgerMockRepository implements IInventorySubledgerRepo
     return snapshot;
   }
 
-  async getCurrentValuation(tenant_id: string, skuId: string, locationId: string, tx?: Prisma.TransactionClient): Promise<{ unitCost: Prisma.Decimal; currency: string; method: string }> {
-    const layers = await this.getCostLayers(tenant_id, skuId, locationId);
+  async getCurrentValuation(tenant_id: string, skuId: string, location_id: string, tx?: Prisma.TransactionClient): Promise<{ unitCost: Prisma.Decimal; currency: string; method: string }> {
+    const layers = await this.getCostLayers(tenant_id, skuId, location_id);
     if (layers.length === 0) return { unitCost: new Prisma.Decimal(0), currency: 'USD', method: 'FIFO' };
     
     let totalQty = new Prisma.Decimal(0);

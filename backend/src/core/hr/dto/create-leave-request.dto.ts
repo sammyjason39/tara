@@ -23,20 +23,26 @@ export enum LeaveType {
 export class CreateLeaveRequestDto {
   @IsString()
   @IsNotEmpty()
-  employeeId: string;
+  employee_id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  department_id: string;
 
   @IsEnum(LeaveType)
-  leaveType: LeaveType;
+  leave_type: LeaveType;
 
   @IsDateString()
-  startDate: string;
+  @IsNotEmpty()
+  start_date: string;
 
   @IsDateString()
-  endDate: string;
+  @IsNotEmpty()
+  end_date: string;
 
   @IsNumber()
   @Min(0.5)
-  totalDays: number;
+  total_days: number;
 
   @IsString()
   @IsNotEmpty()

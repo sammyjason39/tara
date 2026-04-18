@@ -3,7 +3,7 @@ import { IsNotEmpty, IsString, IsNumber, IsOptional } from 'class-validator';
 export class CreateReservationDto {
   @IsNotEmpty()
   @IsString()
-  locationId: string;
+  location_id: string;
 
   @IsNotEmpty()
   @IsString()

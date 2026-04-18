@@ -17,7 +17,7 @@ export class InventoryAccountingIntegrationService {
     private readonly validator: PrePostingValidator,
   ) {}
 
-  async handleCostFinalized(tenant_id: string, entry: InventorySubledgerEntry, snapshot: CostSnapshot, correlationId?: string): Promise<void> {
+  async handleCostFinalized(tenant_id: string, entry: InventorySubledgerEntry, snapshot: CostSnapshot, correlation_id?: string): Promise<void> {
     this.logger.log(`Integrating subledger entry ${entry.id} with UFPG`);
     
     // 1. Pre-Posting Validation
@@ -30,20 +30,20 @@ export class InventoryAccountingIntegrationService {
       return;
     }
 
-    const companyId = 'COMP-DEFAULT';
-    const eventType = this.mapEntryTypeToFinancialEvent(entry.entryType);
-    if (!eventType) return;
+    const company_id = 'COMP-DEFAULT';
+    const event_type = this.mapEntryTypeToFinancialEvent(entry.entryType);
+    if (!event_type) return;
 
     const request = {
-      requestId: entry.postingRequestId, // Use unique request ID for UFPG idempotency
-      tenantId: tenant_id,
-      companyId,
+      request_id: entry.postingRequestId, // Use unique request ID for UFPG idempotency
+      tenant_id: tenant_id,
+      company_id,
       sourceEventId: entry.id,
-      eventType,
+      event_type,
       eventVersion: '1.0.0',
       payload: {
         skuId: entry.skuId,
-        locationId: entry.locationId,
+        location_id: entry.location_id,
         qty: entry.qty,
         amount: entry.amount,
         currency: entry.currency,
@@ -51,9 +51,9 @@ export class InventoryAccountingIntegrationService {
         inventoryTransactionId: entry.inventoryTransactionId,
       },
       metadata: {
-        userId: 'SYSTEM',
+        user_id: 'SYSTEM',
         timestamp: new Date().toISOString(),
-        correlationId,
+        correlation_id,
       },
     };
 

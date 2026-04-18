@@ -32,35 +32,35 @@ export class APBillService {
    * Approves a vendor bill and triggers financial posting.
    * Standardized Lifecycle: PENDING -> VALIDATED -> POSTING -> POSTED
    */
-  async approveBill(tenantId: string, companyId: string, billId: string, approverId: string): Promise<any> {
-    const bill = await this.repository.findById(tenantId, companyId, billId);
+  async approveBill(tenant_id: string, company_id: string, billId: string, approverId: string): Promise<any> {
+    const bill = await this.repository.findById(tenant_id, company_id, billId);
     if (!bill) throw new Error('Bill not found');
 
     // 1. Evaluate Expense Policy
-    const policyResult = await this.expensePolicyService.evaluateExpense(tenantId, 'AP_BILL', bill.totalAmount);
+    const policyResult = await this.expensePolicyService.evaluateExpense(tenant_id, 'AP_BILL', bill.total_amount);
     if (policyResult.status === 'REJECTED') {
         throw new Error(`Bill rejected by expense policy: ${policyResult.reason}`);
     }
 
     // 2. Submit for Approval in Workflow engine
-    await this.workflowService.submitForApproval(tenantId, 'AP_BILL', billId, approverId, {
-        amount: bill.totalAmount,
+    await this.workflowService.submitForApproval(tenant_id, 'AP_BILL', billId, approverId, {
+        amount: bill.total_amount,
         vendor: bill.vendorName
     });
 
     // 3. Update status to VALIDATED
     // 4. Resolve Open Fiscal Period & VALIDATE
     const currentPeriodId = await this.fiscalPeriodService.validatePeriodOpenForPosting(
-      bill.tenantId, 
-      bill.companyId, 
+      bill.tenant_id, 
+      bill.company_id, 
       'SYS_AUTO', 
       'SYS_USER'
     );
 
     // 2. Resolve Accounting Accounts
     const mapping = await this.mappingService.resolveAccounts(
-        bill.tenantId,
-        bill.companyId,
+        bill.tenant_id,
+        bill.company_id,
         SubledgerEntryType.AP_EXPENSE,
         'BILL'
     );
@@ -71,35 +71,35 @@ export class APBillService {
     // Micro-Hardened with Source Module, Direction, and FX context
     const subledgerEntry: Partial<FinanceSubledgerEntry> = {
         id: uuid(),
-        tenantId: bill.tenantId,
-        companyId: bill.companyId,
-        sourceModule: 'ACCOUNTS_PAYABLE', // Explicit source
+        tenant_id: bill.tenant_id,
+        company_id: bill.company_id,
+        source_module: 'ACCOUNTS_PAYABLE', // Explicit source
         referenceType: 'BILL',
         referenceId: bill.id,
         postingRequestId,
         entryType: SubledgerEntryType.AP_EXPENSE,
         status: SubledgerEntryStatus.VALIDATED,
         direction: AccountingDirection.CREDIT, // Credit AP Liability
-        amount: bill.totalAmount,
+        amount: bill.total_amount,
         currency: bill.currency,
-        baseAmount: bill.totalAmount, // Minimal FX - assumes functional currency for now
+        baseAmount: bill.total_amount, // Minimal FX - assumes functional currency for now
         baseCurrency: 'USD',
         exchangeRate: new Prisma.Decimal(1.0),
         debitAccountId: mapping.debitAccountId,
         creditAccountId: mapping.creditAccountId,
         accountingPeriodId: currentPeriodId,
         effectiveDate: new Date(), // Business date (Audit Hardening)
-        createdAt: new Date(),
+        created_at: new Date(),
     };
     
     // In production, save(subledgerEntry) happens here
 
     // 3.5 Calculate Tax
     const taxResults = await this.taxEngineService.calculateTax(
-      bill.tenantId,
+      bill.tenant_id,
       'BRANCH_AUTO',
       'ID',
-      bill.totalAmount,
+      bill.total_amount,
       'AP_BILL'
     );
 
@@ -109,15 +109,15 @@ export class APBillService {
 
     // 5. Map to UFPG Event
     const postingRequest = {
-        requestId: postingRequestId,
-        tenantId: bill.tenantId,
-        companyId: bill.companyId,
-        sourceModule: subledgerEntry.sourceModule,
+        request_id: postingRequestId,
+        tenant_id: bill.tenant_id,
+        company_id: bill.company_id,
+        source_module: subledgerEntry.source_module,
         sourceEventId: bill.id,
-        eventType: 'VENDOR_BILL_APPROVED',
+        event_type: 'VENDOR_BILL_APPROVED',
         payload: {
           vendorId: bill.vendorId,
-          totalAmount: bill.totalAmount,
+          total_amount: bill.total_amount,
           currency: bill.currency,
           fiscalPeriodId: currentPeriodId,
           debitAccountId: subledgerEntry.debitAccountId,
@@ -127,7 +127,7 @@ export class APBillService {
           exchangeRate: subledgerEntry.exchangeRate,
           taxLines: taxResults,
         },
-        createdAt: new Date(),
+        created_at: new Date(),
     };
 
 

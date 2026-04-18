@@ -42,7 +42,7 @@ export class BpjsKetenagakerjaanRules implements IComplianceRule {
 
   calculate(
     employees: any[],
-    tenantId: string,
+    tenant_id: string,
     period: string,
   ): ComplianceCalculationResult {
     const lineItems: ComplianceLineItem[] = employees.map((emp) => {
@@ -67,12 +67,12 @@ export class BpjsKetenagakerjaanRules implements IComplianceRule {
       const employerContribution = jhtEmployer + jpEmployer + jkkEmployer + jkmEmployer;
 
       return {
-        employeeId: emp.id,
-        employeeName: `${emp.firstName} ${emp.lastName}`.trim(),
+        employee_id: emp.id,
+        employeeName: `${emp.first_name} ${emp.last_name}`.trim(),
         grossSalary,
         employeeContribution,
         employerContribution,
-        taxAmount: 0,
+        tax_amount: 0,
         netSalary: grossSalary - employeeContribution,
         notes: [
           `JHT: Emp ${jhtEmployee.toLocaleString()} / Empr ${jhtEmployer.toLocaleString()}`,
@@ -86,7 +86,7 @@ export class BpjsKetenagakerjaanRules implements IComplianceRule {
       country: 'ID',
       module: 'BPJS_KETENAGAKERJAAN',
       period,
-      tenantId,
+      tenant_id,
       totalEmployees: employees.length,
       totalDeductions: lineItems.reduce((s, i) => s + i.employeeContribution, 0),
       totalContributions: lineItems.reduce((s, i) => s + i.employerContribution, 0),

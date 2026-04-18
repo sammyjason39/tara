@@ -7,22 +7,22 @@ import { z } from 'zod';
 
 export const RetailSaleSchemaV1 = z.object({
   saleId: z.string(),
-  tenantId: z.string(),
-  branchId: z.string(),
+  tenant_id: z.string(),
+  branch_id: z.string(),
   items: z.array(z.object({
-    productId: z.string(),
+    product_id: z.string(),
     quantity: z.number(),
-    unitPrice: z.number(),
+    unit_price: z.number(),
   })),
-  totalAmount: z.number(),
+  total_amount: z.number(),
   timestamp: z.string(),
 });
 
 export const StockMovementSchemaV1 = z.object({
   movementId: z.string(),
-  tenantId: z.string(),
-  productId: z.string(),
-  locationId: z.string().optional(),
+  tenant_id: z.string(),
+  product_id: z.string(),
+  location_id: z.string().optional(),
   type: z.enum(['intake', 'deduction', 'transfer_out', 'transfer_in', 'adjustment_plus', 'adjustment_minus']),
   quantity: z.number(),
   referenceId: z.string(),
@@ -34,11 +34,11 @@ export const WorkflowStepFailedSchemaV1 = z.object({
   originalEventType: z.string(),
   handlerName: z.string(),
   error: z.string(),
-  correlationId: z.string().optional(),
+  correlation_id: z.string().optional(),
 });
 
 export const InventoryItemCreatedSchemaV1 = z.object({
-  tenantId: z.string(),
+  tenant_id: z.string(),
   sku: z.string(),
   barcode: z.string().optional(),
   name: z.string(),
@@ -48,34 +48,34 @@ export const InventoryItemCreatedSchemaV1 = z.object({
 });
 
 export const InventoryStockInitializedSchemaV1 = z.object({
-  tenantId: z.string(),
+  tenant_id: z.string(),
   sku: z.string(),
-  locationId: z.string(),
+  location_id: z.string(),
   quantity: z.number(),
   unitCost: z.number().optional(),
   timestamp: z.string(),
 });
 
 export const LowStockAlertSchemaV1 = z.object({
-  tenantId: z.string(),
-  productId: z.string(),
-  locationId: z.string(),
+  tenant_id: z.string(),
+  product_id: z.string(),
+  location_id: z.string(),
   currentLevel: z.number(),
   threshold: z.number(),
   timestamp: z.string(),
 });
 
 export const DeviceEventCreatedSchemaV1 = z.object({
-  tenantId: z.string(),
-  deviceId: z.string(),
-  locationId: z.string(),
+  tenant_id: z.string(),
+  device_id: z.string(),
+  location_id: z.string(),
   type: z.enum(['SCAN_BARCODE', 'SCAN_RFID', 'SCAN_QR']),
   code: z.string(),
   timestamp: z.string(),
 });
 
 export const HREmployeeCreatedSchemaV1 = z.object({
-  employeeId: z.string(),
+  employee_id: z.string(),
   candidateId: z.string(),
   email: z.string(),
 });
@@ -89,8 +89,8 @@ export const HRPayrollExecutedSchemaV1 = z.object({
 });
 
 export const HRAttendanceLoggedSchemaV1 = z.object({
-  employeeId: z.string(),
-  locationId: z.string(),
+  employee_id: z.string(),
+  location_id: z.string(),
   type: z.enum(['CLOCK_IN', 'CLOCK_OUT']),
   timestamp: z.string(),
 });
@@ -102,33 +102,33 @@ export const HRInsightAnomalySchemaV1 = z.object({
 
 export const HREmployeeHiredSchemaV1 = z.object({
   candidateId: z.string(),
-  employeeId: z.string(),
-  position: z.string().optional(),
+  employee_id: z.string(),
+  positions: z.string().optional(),
   departmentId: z.string().optional(),
 });
 
 export const HREmployeePromotedSchemaV1 = z.object({
-  employeeId: z.string(),
+  employee_id: z.string(),
   newPosition: z.string(),
   newSalary: z.number().optional(),
 });
 
 export const HREmployeeTransferredSchemaV1 = z.object({
-  employeeId: z.string(),
+  employee_id: z.string(),
   targetDepartmentId: z.string().optional(),
   targetLocationId: z.string().optional(),
 });
 
 export const HREmployeeTerminatedSchemaV1 = z.object({
-  employeeId: z.string(),
+  employee_id: z.string(),
   reason: z.string().optional(),
   terminationDate: z.string().optional(),
 });
 
 export const HRPayrollCalculatedSchemaV1 = z.object({
-  employeeId: z.string(),
+  employee_id: z.string(),
   period: z.string(),
-  totalAmount: z.number(),
+  total_amount: z.number(),
 });
 
 export const HRCandidateAppliedSchemaV1 = z.object({
@@ -153,7 +153,7 @@ export const HRCaseCreatedSchemaV1 = z.object({
 });
 
 export const HRContractCreatedSchemaV1 = z.object({
-  employeeId: z.string(),
+  employee_id: z.string(),
   type: z.string(),
 });
 
@@ -250,26 +250,26 @@ export const EventRegistry: Record<string, Record<number, { schema: z.ZodObject<
 
 export type RegisteredEventType = keyof typeof EventRegistry;
 
-export function validateEventPayload(eventType: string, version: number, payload: any) {
-  const eventEntry = EventRegistry[eventType];
+export function validateEventPayload(event_type: string, version: number, payload: any) {
+  const eventEntry = EventRegistry[event_type];
   if (!eventEntry) {
     // If not registered, we allow it for now but log a warning (Phase 2 transitional)
-    console.warn(`[EventRegistry] Event type ${eventType} is not registered. Validation skipped.`);
+    console.warn(`[EventRegistry] Event type ${event_type} is not registered. Validation skipped.`);
     return true;
   }
 
   const versionEntry = eventEntry[version];
   if (!versionEntry) {
-    throw new Error(`[EventRegistry] Version ${version} for event ${eventType} not found.`);
+    throw new Error(`[EventRegistry] Version ${version} for event ${event_type} not found.`);
   }
 
   if (versionEntry.status === 'deprecated') {
-    console.warn(`[EventRegistry] Event ${eventType} v${version} is DEPRECATED since ${versionEntry.deprecatedAt}. Use v${versionEntry.replacementVersion} instead.`);
+    console.warn(`[EventRegistry] Event ${event_type} v${version} is DEPRECATED since ${versionEntry.deprecatedAt}. Use v${versionEntry.replacementVersion} instead.`);
   }
 
   const result = versionEntry.schema.safeParse(payload);
   if (!result.success) {
-    throw new Error(`[EventRegistry] Validation failed for ${eventType} v${version}: ${result.error.message}`);
+    throw new Error(`[EventRegistry] Validation failed for ${event_type} v${version}: ${result.error.message}`);
   }
 
   return true;

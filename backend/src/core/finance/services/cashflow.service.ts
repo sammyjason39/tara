@@ -21,7 +21,7 @@ export class CashflowService {
       return JSON.stringify(obj);
     }
     if (Array.isArray(obj)) {
-      return '[' + obj.map((item) => this.stableSerialize(item)).join(',') + ']';
+      return '[' + obj.map((item: any) => this.stableSerialize(item)).join(',') + ']';
     }
     const keys = Object.keys(obj).sort();
     return (
@@ -34,8 +34,8 @@ export class CashflowService {
   }
 
   async getCashflow(params: {
-    tenantId: string;
-    companyId: string;
+    tenant_id: string;
+    company_id: string;
     snapshotId?: string;
     days?: number;
     minimumSafeCash?: number;
@@ -46,36 +46,36 @@ export class CashflowService {
       expenseMultiplier?: number;
       delayDays?: number;
     };
-    correlationId?: string;
-    userId?: string;
+    correlation_id?: string;
+    user_id?: string;
   }): Promise<CashflowOutput> {
     const { 
-      tenantId, 
-      companyId, 
+      tenant_id, 
+      company_id, 
       snapshotId, 
       days = 30, 
       minimumSafeCash = 0, 
       avgDelayDays = 7,
       timezone = 'UTC',
       scenario,
-      correlationId = `auto-${Date.now()}`,
-      userId
+      correlation_id = `auto-${Date.now()}`,
+      user_id
     } = params;
 
     const round = (v: number) => Number(v.toFixed(2));
 
     const snapshot = snapshotId
-      ? await this.prisma.accountBalanceSnapshot.findUnique({ where: { id: snapshotId } })
-      : await this.prisma.accountBalanceSnapshot.findFirst({
-          where: { tenantId, company: { id: companyId } },
-          orderBy: { createdAt: 'desc' },
+      ? await this.prisma.finance_account_balance_snapshots.findUnique({ where: { id: snapshotId } })
+      : await this.prisma.finance_account_balance_snapshots.findFirst({
+          where: { tenant_id: tenant_id, companies: { id: company_id } },
+          orderBy: { created_at: 'desc' },
         });
 
     if (!snapshot) {
       throw new Error('Snapshot not found');
     }
 
-    const snapshotTimestamp = snapshot.createdAt;
+    const snapshotTimestamp = snapshot.created_at;
     const snapshotHash = (snapshot as any).trialBalanceStateHash;
     const snapshotSequence = (snapshot as any).snapshotSequence || 0;
 
@@ -87,10 +87,10 @@ export class CashflowService {
     });
     const simulationHash = crypto.createHash('sha256').update(simulationHashInput).digest('hex');
 
-    const cashAccounts = await this.prisma.chartOfAccount.findMany({
+    const cashAccounts = await this.prisma.finance_chart_of_accounts.findMany({
       where: {
-        tenantId,
-        company: { id: companyId },
+        tenant_id: tenant_id,
+        companies: { id: company_id },
         type: { in: ['CASH', 'BANK'] },
       },
       select: { code: true, id: true, name: true },
@@ -98,7 +98,7 @@ export class CashflowService {
     });
     const cashAccountIds = cashAccounts.map((a) => a.id);
 
-    const balances = snapshot.balancesData as Record<string, any>;
+    const balances = snapshot.balances_data as Record<string, any>;
     let currentCash = new Decimal(0);
     for (const id of cashAccountIds) {
       if (balances[id]) {
@@ -106,34 +106,34 @@ export class CashflowService {
       }
     }
 
-    const arInvoices = await this.prisma.arInvoice.findMany({
+    const arInvoices = await this.prisma.finance_ar_invoices.findMany({
       where: {
-        tenantId,
-        company: { id: companyId },
+        tenant_id: tenant_id,
+        companies: { id: company_id },
         status: { not: 'PAID' },
-        createdAt: { lte: snapshotTimestamp },
-        issueDate: { lte: snapshotTimestamp },
-        dueDate: { gt: snapshotTimestamp },
+        created_at: { lte: snapshotTimestamp },
+        issue_date: { lte: snapshotTimestamp },
+        due_date: { gt: snapshotTimestamp },
       },
       orderBy: [
-        { dueDate: 'asc' },
-        { issueDate: 'asc' },
-        { createdAt: 'asc' },
+        { due_date: 'asc' },
+        { issue_date: 'asc' },
+        { created_at: 'asc' },
         { id: 'asc' }
       ], 
     });
 
-    const payables = await this.prisma.payable.findMany({
+    const payables = await this.prisma.payables.findMany({
       where: {
-        tenantId,
-        company: { id: companyId },
+        tenant_id: tenant_id,
+        companies: { id: company_id },
         status: { not: 'PAID' },
-        createdAt: { lte: snapshotTimestamp },
-        dueDate: { gt: snapshotTimestamp },
+        created_at: { lte: snapshotTimestamp },
+        due_date: { gt: snapshotTimestamp },
       },
       orderBy: [
-        { dueDate: 'asc' },
-        { createdAt: 'asc' },
+        { due_date: 'asc' },
+        { created_at: 'asc' },
         { id: 'asc' }
       ],
     });
@@ -145,8 +145,8 @@ export class CashflowService {
     const confidenceAR = 0.8;
     const confidenceAP = 1.0;
 
-    const startDate = new Date(snapshotTimestamp);
-    startDate.setUTCHours(0, 0, 0, 0); 
+    const start_date = new Date(snapshotTimestamp);
+    start_date.setUTCHours(0, 0, 0, 0); 
 
     const revenueMultiplier = scenario?.revenueMultiplier ?? 1.0;
     const expenseMultiplier = scenario?.expenseMultiplier ?? 1.0;
@@ -157,8 +157,8 @@ export class CashflowService {
     const compressedRiskMarkers: RiskMarker[] = [];
 
     for (let i = 0; i <= days; i++) {
-      const currentDate = new Date(startDate);
-      currentDate.setUTCDate(startDate.getUTCDate() + i);
+      const currentDate = new Date(start_date);
+      currentDate.setUTCDate(start_date.getUTCDate() + i);
       const dateStr = currentDate.toISOString().split('T')[0];
 
       const openingBalance = round(rollingCash.toNumber());
@@ -166,14 +166,14 @@ export class CashflowService {
       const dailyOutflowDrivers: Driver[] = [];
 
       const dayAR = arInvoices.filter((inv) => {
-        const expectedDate = new Date(inv.dueDate!);
+        const expectedDate = new Date(inv.due_date!);
         expectedDate.setUTCDate(expectedDate.getUTCDate() + effectiveDelayDays);
         return expectedDate.toISOString().split('T')[0] === dateStr;
       });
 
       let dailyInflowTotal = new Decimal(0);
       for (const inv of dayAR) {
-        const total = new Decimal(inv.totalAmount || 0);
+        const total = new Decimal(inv.total_amount || 0);
         const paid = new Decimal((inv as any).paidAmount || 0);
         const amount = round(total.minus(paid).times(revenueMultiplier).toNumber());
         dailyInflowTotal = dailyInflowTotal.plus(amount);
@@ -181,16 +181,16 @@ export class CashflowService {
         dailyInflowDrivers.push({
           id: inv.id,
           accountId: (inv as any).accountId || 'PENDING_MAP',
-          accountName: `AR_INVOICE_${(inv as any).invoiceNumber || inv.id.slice(0, 8)}`,
+          account_name: `AR_INVOICE_${(inv as any).invoiceNumber || inv.id.slice(0, 8)}`,
           documentType: 'INVOICE',
           documentNumber: (inv as any).invoiceNumber || 'N/A',
           amount,
-          dueDate: inv.dueDate!.toISOString().split('T')[0]
+          dueDate: inv.due_date!.toISOString().split('T')[0]
         });
       }
 
       const dayAP = payables.filter((p) => {
-        const dueStr = new Date(p.dueDate).toISOString().split('T')[0];
+        const dueStr = new Date(p.due_date).toISOString().split('T')[0];
         return dueStr === dateStr;
       });
 
@@ -204,11 +204,11 @@ export class CashflowService {
         dailyOutflowDrivers.push({
           id: p.id,
           accountId: (p as any).accountId || 'PENDING_MAP',
-          accountName: `AP_BILL_${p.id.slice(0, 8)}`,
+          account_name: `AP_BILL_${p.id.slice(0, 8)}`,
           documentType: 'BILL',
           documentNumber: (p as any).billNumber || 'N/A',
           amount,
-          dueDate: p.dueDate.toISOString().split('T')[0]
+          dueDate: p.due_date.toISOString().split('T')[0]
         });
       }
 
@@ -226,8 +226,8 @@ export class CashflowService {
           yesterday.setUTCDate(currentDate.getUTCDate() - 1);
           compressedRiskMarkers.push({
             type: currentRiskType,
-            startDate: currentRiskStart,
-            endDate: yesterday.toISOString().split('T')[0],
+            start_date: currentRiskStart,
+            end_date: yesterday.toISOString().split('T')[0],
             severity: currentRiskType === 'DEFICIT' ? 'CRITICAL' : 'HIGH'
           });
         }
@@ -238,8 +238,8 @@ export class CashflowService {
       if (i === days && currentRiskType && currentRiskStart) {
         compressedRiskMarkers.push({
           type: currentRiskType,
-          startDate: currentRiskStart,
-          endDate: dateStr,
+          start_date: currentRiskStart,
+          end_date: dateStr,
           severity: currentRiskType === 'DEFICIT' ? 'CRITICAL' : 'HIGH'
         });
       }
@@ -304,37 +304,37 @@ export class CashflowService {
 
     if (scenario) {
       await this.auditService.log({
-        tenantId,
-        userId: userId || 'SYSTEM',
+        tenant_id,
+        user_id: user_id || 'SYSTEM',
         module: 'FINANCE_INTELLIGENCE',
         action: 'FINANCE_INTELLIGENCE_SCENARIO',
-        entityType: 'CASHFLOW_PROJECTION',
-        entityId: snapshot.id,
-        beforeState: { scenario, snapshotSequence, simulationHash },
-        correlationId
+        entity_type: 'CASHFLOW_PROJECTION',
+        entity_id: snapshot.id,
+        before_state: { scenario, snapshotSequence, simulationHash },
+        correlation_id
       });
     }
 
     await this.auditService.log({
-      tenantId,
-      userId: userId || 'SYSTEM',
+      tenant_id,
+      user_id: user_id || 'SYSTEM',
       module: 'FINANCE_INTELLIGENCE',
       action: 'CASHFLOW_VIEW',
-      entityType: 'FINANCE_INTELLIGENCE',
-      entityId: companyId,
-      beforeState: { correlationId, snapshotSequence, snapshotHash, simulationHash, projectionHash, severity, scenarioApplied: !!scenario },
-      correlationId
+      entity_type: 'FINANCE_INTELLIGENCE',
+      entity_id: company_id,
+      before_state: { correlation_id, snapshotSequence, snapshotHash, simulationHash, projectionHash, severity, scenarioApplied: !!scenario },
+      correlation_id
     });
 
     if (severity === 'CRITICAL' || severity === 'HIGH') {
       await this.notificationService.createNotification({
-        tenantId,
-        userId: userId || 'CFO_USER',
+        tenant_id,
+        user_id: user_id || 'CFO_USER',
         title: `CASHFLOW_RISK_${severity}`,
         message: `Snapshot Sequence ${snapshotSequence} detected ${severity} liquidity risk. Projection Hash: ${projectionHash.slice(0, 8)}`,
         type: 'SYSTEM_ALERT',
         priority: severity === 'CRITICAL' ? 'URGENT' : 'HIGH',
-        eventReferenceId: correlationId,
+        event_reference_id: correlation_id,
       });
     }
 

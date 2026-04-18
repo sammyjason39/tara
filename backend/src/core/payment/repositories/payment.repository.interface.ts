@@ -38,110 +38,110 @@ export type PaymentDashboard = {
 };
 
 export abstract class IPaymentRepository {
-  abstract getDashboard(tenantId: string): Promise<PaymentDashboard>;
+  abstract getDashboard(tenant_id: string): Promise<PaymentDashboard>;
 
-  abstract getTransactions(tenantId: string): Promise<PaymentTransaction[]>;
+  abstract getTransactions(tenant_id: string): Promise<PaymentTransaction[]>;
   abstract createTransaction(
-    tenantId: string,
+    tenant_id: string,
     dto: CreatePaymentTransactionDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentTransaction>;
   abstract approveTransaction(
-    tenantId: string,
+    tenant_id: string,
     paymentId: string,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentTransaction>;
   abstract rejectTransaction(
-    tenantId: string,
+    tenant_id: string,
     paymentId: string,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentTransaction>;
   abstract routeTransaction(
-    tenantId: string,
+    tenant_id: string,
     paymentId: string,
     dto: RoutePaymentDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentTransaction>;
   abstract executeTransaction(
-    tenantId: string,
+    tenant_id: string,
     paymentId: string,
     dto: ExecutePaymentDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentTransaction>;
   abstract settleTransaction(
-    tenantId: string,
+    tenant_id: string,
     paymentId: string,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentTransaction>;
 
-  abstract getProviders(tenantId: string): Promise<PaymentProvider[]>;
+  abstract getProviders(tenant_id: string): Promise<PaymentProvider[]>;
   abstract updateProviderStatus(
-    tenantId: string,
+    tenant_id: string,
     providerId: string,
     dto: UpdateProviderStatusDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentProvider>;
   abstract runProviderHealthSweep(
-    tenantId: string,
-    actorId: string,
+    tenant_id: string,
+    actor_id: string,
   ): Promise<PaymentProvider[]>;
 
   abstract getRoutingPolicies(
-    tenantId: string,
+    tenant_id: string,
   ): Promise<PaymentRoutingPolicy[]>;
-  abstract getDevices(tenantId: string): Promise<PaymentDevice[]>;
-  abstract getDevicePools(tenantId: string): Promise<PaymentDevicePool[]>;
+  abstract getDevices(tenant_id: string): Promise<PaymentDevice[]>;
+  abstract getDevicePools(tenant_id: string): Promise<PaymentDevicePool[]>;
   abstract updateDeviceStatus(
-    tenantId: string,
-    deviceId: string,
+    tenant_id: string,
+    device_id: string,
     dto: UpdateDeviceStatusDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentDevice>;
 
-  abstract getRefunds(tenantId: string): Promise<PaymentRefund[]>;
+  abstract getRefunds(tenant_id: string): Promise<PaymentRefund[]>;
   abstract createRefund(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateRefundDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentRefund>;
   abstract approveRefund(
-    tenantId: string,
+    tenant_id: string,
     refundId: string,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentRefund>;
   abstract executeRefund(
-    tenantId: string,
+    tenant_id: string,
     refundId: string,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentRefund>;
 
-  abstract getDisputes(tenantId: string): Promise<PaymentDispute[]>;
+  abstract getDisputes(tenant_id: string): Promise<PaymentDispute[]>;
   abstract createDispute(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateDisputeDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentDispute>;
   abstract attachDisputeEvidence(
-    tenantId: string,
+    tenant_id: string,
     disputeId: string,
     dto: AttachDisputeEvidenceDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentDispute>;
   abstract progressDispute(
-    tenantId: string,
+    tenant_id: string,
     disputeId: string,
     dto: ProgressDisputeDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentDispute>;
   abstract resolveDispute(
-    tenantId: string,
+    tenant_id: string,
     disputeId: string,
     dto: ResolveDisputeDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentDispute>;
 
-  abstract getChargebacks(tenantId: string): Promise<PaymentChargeback[]>;
-  abstract getSettlements(tenantId: string): Promise<PaymentSettlement[]>;
-  abstract getEvidencePacks(tenantId: string): Promise<PaymentEvidencePack[]>;
-  abstract getAuditEvents(tenantId: string): Promise<PaymentAuditEvent[]>;
+  abstract getChargebacks(tenant_id: string): Promise<PaymentChargeback[]>;
+  abstract getSettlements(tenant_id: string): Promise<PaymentSettlement[]>;
+  abstract getEvidencePacks(tenant_id: string): Promise<PaymentEvidencePack[]>;
+  abstract getAuditEvents(tenant_id: string): Promise<PaymentAuditEvent[]>;
 }

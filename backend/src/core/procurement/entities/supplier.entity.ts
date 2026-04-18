@@ -1,12 +1,12 @@
 export class Supplier {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   name: string;
   taxId: string;
   category: string;
   branchCode: string;
   complianceStatus: "pending" | "verified" | "expired";
   rating: number;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

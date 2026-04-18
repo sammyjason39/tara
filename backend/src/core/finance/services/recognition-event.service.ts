@@ -18,12 +18,12 @@ export class RecognitionEventService {
     this.logger.log(`Recognizing revenue for Schedule ${schedule.id}, Period ${period.date.toISOString()}`);
 
     const postingRequest = {
-        requestId: `REVREC-${schedule.id}-${periodIndex}`,
-        tenantId: schedule.tenantId,
-        companyId: schedule.companyId,
-        sourceModule: 'REVENUE_RECOGNITION',
+        request_id: `REVREC-${schedule.id}-${periodIndex}`,
+        tenant_id: schedule.tenant_id,
+        company_id: schedule.company_id,
+        source_module: 'REVENUE_RECOGNITION',
         sourceEventId: `${schedule.id}-${periodIndex}`,
-        eventType: 'REVENUE_RECOGNIZED',
+        event_type: 'REVENUE_RECOGNIZED',
         eventVersion: '1.0.0',
         schemaVersion: '2026-Q1',
         payload: {
@@ -34,7 +34,7 @@ export class RecognitionEventService {
           revenueAccountId: schedule.revenueAccountId,
           fiscalPeriodId: `${period.date.getFullYear()}-${(period.date.getMonth() + 1).toString().padStart(2, '0')}`,
         },
-        createdAt: new Date(),
+        created_at: new Date(),
     };
 
     const result = await this.gateway.postEvent(postingRequest as any);

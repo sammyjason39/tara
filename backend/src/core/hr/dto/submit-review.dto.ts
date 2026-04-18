@@ -14,7 +14,7 @@ export class SubmitReviewDto {
 
   @IsString()
   @IsNotEmpty()
-  employeeId: string;
+  employee_id: string;
 
   @IsString()
   @IsNotEmpty()

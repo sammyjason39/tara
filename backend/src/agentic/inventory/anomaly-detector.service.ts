@@ -10,18 +10,18 @@ export class AnomalyDetectorService {
   /**
    * Detects if a current stock movement is a "spike" (significantly above the average).
    */
-  async detectSpike(tenantId: string, productId: string, locationId: string, currentQty: number): Promise<boolean> {
+  async detectSpike(tenant_id: string, product_id: string, location_id: string, currentQty: number): Promise<boolean> {
     const windowDays = 30;
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - windowDays);
+    const start_date = new Date();
+    start_date.setDate(start_date.getDate() - windowDays);
 
-    const historicalMovements = await this.prisma.stockMovement.findMany({
+    const historicalMovements = await this.prisma.stock_movements.findMany({
       where: {
-        tenantId,
-        productId,
-        locationId,
+        tenant_id: tenant_id,
+        product_id: product_id,
+        location_id: location_id,
         type: { in: ['OUT', 'CONSUME_RESERVED'] },
-        createdAt: { gte: startDate },
+        created_at: { gte: start_date },
       },
       take: 50,
     });
@@ -32,7 +32,7 @@ export class AnomalyDetectorService {
     
     // Threshold: 3x the average
     if (Math.abs(currentQty) > avg * 3) {
-      this.logger.warn(`Potential Stock Spike detected for Product ${productId}: ${currentQty} vs Avg ${avg.toFixed(2)}`);
+      this.logger.warn(`Potential Stock Spike detected for Product ${product_id}: ${currentQty} vs Avg ${avg.toFixed(2)}`);
       return true;
     }
 
@@ -42,16 +42,16 @@ export class AnomalyDetectorService {
   /**
    * Identifies "Dead Stock" (no movement for X days).
    */
-  async isDeadStock(tenantId: string, productId: string, locationId: string, days: number = 90): Promise<boolean> {
+  async isDeadStock(tenant_id: string, product_id: string, location_id: string, days: number = 90): Promise<boolean> {
     const thresholdDate = new Date();
     thresholdDate.setDate(thresholdDate.getDate() - days);
 
-    const recentMovement = await this.prisma.stockMovement.findFirst({
+    const recentMovement = await this.prisma.stock_movements.findFirst({
       where: {
-        tenantId,
-        productId,
-        locationId,
-        createdAt: { gte: thresholdDate },
+        tenant_id: tenant_id,
+        product_id: product_id,
+        location_id: location_id,
+        created_at: { gte: thresholdDate },
       },
     });
 

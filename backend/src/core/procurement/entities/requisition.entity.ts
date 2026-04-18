@@ -1,6 +1,6 @@
 export class Requisition {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   title: string;
   description: string;
   category: string;
@@ -19,6 +19,6 @@ export class Requisition {
   approvals: any;
   contractRequired: boolean;
   createdBy: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

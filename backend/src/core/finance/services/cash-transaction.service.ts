@@ -26,8 +26,8 @@ export class CashTransactionService {
 
     // 1. Resolve Fiscal Period
     const currentPeriodId = await this.fiscalPeriodService.validatePeriodOpenForPosting(
-      transaction.tenantId,
-      transaction.companyId,
+      transaction.tenant_id,
+      transaction.company_id,
       'SYS_AUTO',
       'SYS_USER'
     );
@@ -38,8 +38,8 @@ export class CashTransactionService {
         : SubledgerEntryType.CASH_DISBURSEMENT;
         
     const mapping = await this.mappingService.resolveAccounts(
-        transaction.tenantId,
-        transaction.companyId,
+        transaction.tenant_id,
+        transaction.company_id,
         entryType,
         'BANK_TX'
     );
@@ -50,9 +50,9 @@ export class CashTransactionService {
     // Micro-Hardened with Source Module, Direction, and FX context
     const subledgerEntry: Partial<FinanceSubledgerEntry> = {
         id: uuid(),
-        tenantId: transaction.tenantId,
-        companyId: transaction.companyId,
-        sourceModule: 'CASH_MANAGEMENT',
+        tenant_id: transaction.tenant_id,
+        company_id: transaction.company_id,
+        source_module: 'CASH_MANAGEMENT',
         referenceType: 'BANK_TX',
         referenceId: transaction.id,
         postingRequestId,
@@ -70,19 +70,19 @@ export class CashTransactionService {
         creditAccountId: mapping.creditAccountId,
         accountingPeriodId: currentPeriodId,
         effectiveDate: new Date(), // Business date (Audit Hardening)
-        createdAt: new Date(),
+        created_at: new Date(),
     };
 
     // 4. Trigger Financial Posting (POSTING)
     subledgerEntry.status = SubledgerEntryStatus.POSTING;
 
     const postingRequest = {
-        requestId: postingRequestId,
-        tenantId: transaction.tenantId,
-        companyId: transaction.companyId,
-        sourceModule: subledgerEntry.sourceModule,
+        request_id: postingRequestId,
+        tenant_id: transaction.tenant_id,
+        company_id: transaction.company_id,
+        source_module: subledgerEntry.source_module,
         sourceEventId: transaction.id,
-        eventType: entryType,
+        event_type: entryType,
         payload: {
           bankAccountId: transaction.bankAccountId,
           amount: transaction.amount,
@@ -95,7 +95,7 @@ export class CashTransactionService {
           baseAmount: subledgerEntry.baseAmount,
           exchangeRate: subledgerEntry.exchangeRate,
         },
-        createdAt: new Date(),
+        created_at: new Date(),
     };
 
     const result = await this.gateway.postEvent(postingRequest as any);

@@ -16,7 +16,7 @@ export class APAgingService {
       bucket31_60: 0,
       bucket61_90: 0,
       bucket91_plus: 0,
-      updatedAt: now,
+      updated_at: now,
     };
 
     for (const bill of bills) {

@@ -14,24 +14,24 @@ export class ArCreditMemoService {
     private readonly fiscalPeriodService: FiscalPeriodService,
   ) {}
 
-  async issueCreditMemo(tenantId: string, companyId: string, data: any): Promise<IArCreditMemo> {
+  async issueCreditMemo(tenant_id: string, company_id: string, data: any): Promise<IArCreditMemo> {
     // Audit check
-    await this.fiscalPeriodService.validatePeriodOpenForPosting(tenantId, companyId, 'FISCAL_AUTO', 'SYS_USER');
+    await this.fiscalPeriodService.validatePeriodOpenForPosting(tenant_id, company_id, 'FISCAL_AUTO', 'SYS_USER');
 
-    const creditMemo = await this.creditMemoRepo.create(tenantId, companyId, data);
+    const creditMemo = await this.creditMemoRepo.create(tenant_id, company_id, data);
 
     // Enqueue for Ledger
     await this.ledgerPostingService.enqueuePosting(
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       AR_EVENT_TYPES.CREDIT_MEMO_ISSUED,
       `ar-cm-${creditMemo.id}`,
       {
         creditMemoId: creditMemo.id,
         amount: creditMemo.creditAmount,
-        customerId: creditMemo.customerId,
-        branchId: 'BRANCH_AUTO',
-        locationId: 'LOC_AUTO',
+        customer_id: creditMemo.customer_id,
+        branch_id: 'BRANCH_AUTO',
+        location_id: 'LOC_AUTO',
         fiscalPeriodId: 'FISCAL_AUTO',
       }
     );

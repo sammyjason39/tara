@@ -31,7 +31,7 @@ export class CreateTransactionDto {
 
   @IsString()
   @IsOptional()
-  locationId?: string;
+  location_id?: string;
 
   @IsString()
   @IsOptional()

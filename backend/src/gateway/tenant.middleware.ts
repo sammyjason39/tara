@@ -20,54 +20,20 @@ export class TenantMiddleware implements NestMiddleware {
 
   async use(req: any, res: Response, next: NextFunction) {
     // 1. Extract tenant ID from header (REQUIRED for multi-tenancy)
-    const tenantId = req.headers["x-tenant-id"];
+    const tenant_id = req.headers["x-tenant-id"];
     const bypass = req.headers["x-dev-bypass"];
 
     console.log(
-      `[V3001] URL: ${req.url}, Tenant: ${tenantId}, Bypass: ${bypass}`,
+      `[V3001] URL: ${req.url}, Tenant: ${tenant_id}, Bypass: ${bypass}`,
     );
 
-    if (!tenantId) {
+    if (!tenant_id) {
       throw new BadRequestException(
         "Missing required header: x-tenant-id. All requests must include a tenant identifier.",
       );
     }
 
-    // 1.5 Dev Bypass for verification
-    if (bypass === "true") {
-      const devRole = req.headers["x-dev-role"] || "OWNER";
-      const devTenantId = req.headers["x-dev-tenant-id"] || tenantId;
-      const devUserId = req.headers["x-dev-user-id"] || "dev-user";
-
-      console.log(
-        `[V3001] BYPASS ACTIVE for ${tenantId}, Role: ${devRole}, User: ${devUserId}`,
-      );
-
-      const devUser = {
-        id: devUserId,
-        email: "dev@zenvix.com",
-        firstName: "Dev",
-        lastName: "User",
-        userCompanies: [
-          {
-            tenantId: devTenantId,
-            role: devRole,
-          },
-        ],
-      };
-
-      req.tenantContext = {
-        tenantId: tenantId as string,
-        companyId: (req.headers["x-dev-company-id"] || req.headers["x-company-id"] || tenantId) as string,
-        userId: devUserId as string,
-        role: devRole as string,
-      };
-      req.user = devUser;
-      return next();
-    }
-
     // 2. JWT Verification (HARDENING)
-    // Extract token from Authorization header or cookie
     const authHeader = req.headers.authorization;
     let verifiedUser: any = null;
 
@@ -76,7 +42,6 @@ export class TenantMiddleware implements NestMiddleware {
       try {
         verifiedUser = await this.authService.verifyAndGetProfile(token);
       } catch (e) {
-        // If token is present but invalid/expired, we fail the request for security
         throw new UnauthorizedException(
           "Invalid or expired authentication token",
         );
@@ -84,66 +49,54 @@ export class TenantMiddleware implements NestMiddleware {
     }
 
     // 3. Context Construction
-    // REQUIRE verified user from token (unspoofable)
     if (!verifiedUser) {
       throw new UnauthorizedException(
-        "DEBUG_TAG_3001: Valid authentication token required for this resource.",
+        "Valid authentication token required for this resource.",
       );
     }
 
-    const userId = verifiedUser.id;
-    const locationId = req.headers["x-location-id"];
-    const companyId = req.headers["x-company-id"] || tenantId; // Fallback to tenantId if not provided
+    const user_id = verifiedUser.id;
+    const location_id = req.headers["x-location-id"];
+    const company_id = req.headers["x-company-id"] || tenant_id;
 
-    // 4. Role Extraction & Verification logic
-    // We look for the user's role in the context of the requested tenantId
-    let role = "MEMBER";
+    // 4. Role Extraction & Verification (STRICT MODE)
     const userCompanies = verifiedUser.userCompanies || [];
+    let activeRole: string | null = null;
 
-    console.log(
-      `[V3001] Extracting role for user ${userId} on tenant ${tenantId}`,
-    );
-    console.log(
-      `[V3001] User associations: ${JSON.stringify(userCompanies.map((uc: any) => ({ t: uc.tenantId, r: uc.role })))}`,
-    );
-
-    // Check if user is a Global Superadmin
-    const superadminAssoc = userCompanies.find(
+    // Check for Global Superadmin first
+    const isSuperAdmin = userCompanies.some(
       (uc: any) => uc.role === "SUPERADMIN",
     );
 
-    if (superadminAssoc) {
-      role = "SUPERADMIN";
-      console.log(`[V3001] User ${userId} is a GLOBAL SUPERADMIN`);
+    if (isSuperAdmin) {
+      activeRole = "SUPERADMIN";
+      console.log(`[RBAC] User ${user_id} detected as GLOBAL SUPERADMIN. Granting access to tenant ${tenant_id}`);
     } else {
-      // Find association for requested tenant
+      // Strict matching for other roles (OWNER, ADMIN, etc)
       const tenantAssoc = userCompanies.find(
-        (uc: any) => uc.tenantId === tenantId,
+        (uc: any) => uc.tenant_id === tenant_id,
       );
-      if (tenantAssoc) {
-        role = tenantAssoc.role;
-        console.log(
-          `[V3001] User ${userId} has role ${role} for tenant ${tenantId}`,
-        );
-      } else {
-        console.warn(
-          `[V3001] User ${userId} is NOT associated with tenant ${tenantId}. Defaulting to MEMBER.`,
+
+      if (!tenantAssoc) {
+        throw new UnauthorizedException(
+          `Access Denied: User ${user_id} is not associated with tenant ${tenant_id}`,
         );
       }
+
+      activeRole = tenantAssoc.role;
+      console.log(`[RBAC] User ${user_id} authorized for tenant ${tenant_id} with role ${activeRole}`);
     }
 
     // Attach tenant context to request object
-    const tenantContext: TenantContext = {
-      tenantId: tenantId as string,
-      companyId: companyId as string,
-      locationId: locationId as string | undefined,
-      userId,
-      role,
+    req.tenantContext = {
+      tenant_id: tenant_id as string,
+      company_id: company_id as string,
+      location_id: location_id as string | undefined,
+      user_id,
+      role: activeRole,
     };
 
-    req.tenantContext = tenantContext;
     req.user = verifiedUser;
-
     next();
   }
 }

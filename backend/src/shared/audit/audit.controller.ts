@@ -7,22 +7,22 @@ export class AuditController {
 
   @Get('logs')
   query(@Req() req: any, @Query() filters: AuditQueryDto) {
-    return this.auditService.query(req.tenantId, filters);
+    return this.auditService.query(req.tenant_id, filters);
   }
 
   @Get('logs/:id')
   async getOne(@Req() req: any, @Param('id') id: string) {
     // Note: accessing prisma directly from service for this specific bypass
     return (this.auditService as any).prisma.auditLog.findFirst({
-      where: { id, tenantId: req.tenantId },
+      where: { id, tenant_id: req.tenant_id },
     });
   }
 
   @Get('verify-chain')
   async verifyChain(@Req() req: any, @Query('fromTimestamp') fromTimestamp?: string) {
-    const tenantId = req.tenantId; // Shared tenant middleware
+    const tenant_id = req.tenant_id; // Shared tenant middleware
     return this.auditService.verifyChain(
-      tenantId, 
+      tenant_id, 
       fromTimestamp ? new Date(fromTimestamp) : undefined
     );
   }

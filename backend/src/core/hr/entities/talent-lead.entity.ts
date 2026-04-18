@@ -1,6 +1,6 @@
 export class TalentLead {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   source: string;
   externalProfileUrl?: string;
   name: string;
@@ -11,6 +11,6 @@ export class TalentLead {
   leadScore: number;
   status: string;
   metadata?: any;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

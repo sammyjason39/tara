@@ -30,7 +30,7 @@ export class WpsRules implements IComplianceRule {
 
   calculate(
     employees: any[],
-    tenantId: string,
+    tenant_id: string,
     period: string,
   ): ComplianceCalculationResult {
     // WPS does not calculate deductions — it validates that salary is due to be paid.
@@ -45,12 +45,12 @@ export class WpsRules implements IComplianceRule {
       const grossSalary = Number(emp.compensation?.baseSalary || emp.baseSalary || 0);
 
       return {
-        employeeId: emp.id,
-        employeeName: `${emp.firstName} ${emp.lastName}`.trim(),
+        employee_id: emp.id,
+        employeeName: `${emp.first_name} ${emp.last_name}`.trim(),
         grossSalary,
         employeeContribution: 0, // WPS: no deduction
         employerContribution: 0, // WPS: no employer contribution
-        taxAmount: 0,            // UAE: no income tax
+        tax_amount: 0,            // UAE: no income tax
         netSalary: grossSalary,  // Full salary disbursed
         notes: `WPS Transfer Deadline: ${transferDeadline.toISOString().substring(0, 10)}`,
       };
@@ -62,7 +62,7 @@ export class WpsRules implements IComplianceRule {
       country: 'AE',
       module: 'WPS',
       period,
-      tenantId,
+      tenant_id,
       totalEmployees: employees.length,
       totalDeductions: 0,
       totalContributions: totalPayroll, // represents total salary to be disbursed

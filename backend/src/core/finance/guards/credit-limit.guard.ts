@@ -12,7 +12,7 @@ export class CreditLimitGuard {
     const projectedExposure = balance.totalBalance + newInvoiceAmount;
     
     if (projectedExposure > balance.creditLimit) {
-      this.logger.warn(`Credit Limit Breach: Customer ${balance.customerId} (Limit: ${balance.creditLimit}, Exposure: ${projectedExposure})`);
+      this.logger.warn(`Credit Limit Breach: Customer ${balance.customer_id} (Limit: ${balance.creditLimit}, Exposure: ${projectedExposure})`);
       return false;
     }
 

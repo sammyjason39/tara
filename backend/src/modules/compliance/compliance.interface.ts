@@ -11,12 +11,12 @@
 // ──────────────────────────────────────────────
 
 export interface ComplianceLineItem {
-  employeeId: string;
+  employee_id: string;
   employeeName: string;
   grossSalary: number;
   employeeContribution: number;
   employerContribution: number;
-  taxAmount: number;
+  tax_amount: number;
   netSalary: number;
   notes?: string;
 }
@@ -29,7 +29,7 @@ export interface ComplianceCalculationResult {
   country: string;
   module: string;
   period: string;        // YYYY-MM
-  tenantId: string;
+  tenant_id: string;
   totalEmployees: number;
   totalDeductions: number;       // sum of employee contributions
   totalContributions: number;    // sum of employer contributions
@@ -56,12 +56,12 @@ export interface IComplianceRule {
   /**
    * Core calculation method.
    * @param employees - Array of employee objects including compensation data
-   * @param tenantId  - The tenant identifier (for audit/tracing)
+   * @param tenant_id  - The tenant identifier (for audit/tracing)
    * @param period    - The target period in 'YYYY-MM' format
    */
   calculate(
     employees: any[],
-    tenantId: string,
+    tenant_id: string,
     period: string,
   ): ComplianceCalculationResult;
 }

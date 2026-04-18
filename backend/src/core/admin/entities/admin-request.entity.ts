@@ -1,12 +1,12 @@
 export class AdminRequest {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   type: "access" | "module_toggle" | "compliance" | "other";
   title: string;
   detail: string;
   status: "open" | "in_progress" | "resolved";
-  requestedBy: string;
+  requested_by: string;
   resolvedBy?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

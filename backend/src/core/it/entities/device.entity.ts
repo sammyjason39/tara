@@ -1,22 +1,22 @@
 export class Device {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   name: string;
   type: string; // RFID_READER, BARCODE_SCANNER, POS_TERMINAL
   connection: string; // API, LAN, USB, MQTT
   status: string; // ONLINE, OFFLINE
-  locationId?: string;
-  ownerId?: string;
+  location_id?: string;
+  owner_id?: string;
   metadata?: any;
-  createdAt: Date;
+  created_at: Date;
 }
 
 export class DeviceEvent {
   id: string;
-  tenantId: string;
-  deviceId: string;
-  eventType: string; // RFID_SCAN, BARCODE_SCAN, TEMP_ALERT
+  tenant_id: string;
+  device_id: string;
+  event_type: string; // RFID_SCAN, BARCODE_SCAN, TEMP_ALERT
   payload: any;
   processed: boolean;
-  createdAt: Date;
+  created_at: Date;
 }

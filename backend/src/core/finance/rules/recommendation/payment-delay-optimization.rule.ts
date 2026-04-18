@@ -33,7 +33,7 @@ export class PaymentDelayOptimizationRule implements RecommendationRule {
       id: crypto.createHash('sha256').update(`DELAY:${topCandidate.accountId}:${firstDeficit.date}`).digest('hex'),
       basedOnInsightId: '', // Would be linked to the specific deficit insight
       type: 'PAYMENT_OPTIMIZATION',
-      action: `Negotiate 14-day payment extension for ${topCandidate.accountName} (Amt: ${topCandidate.amount.toLocaleString()})`,
+      action: `Negotiate 14-day payment extension for ${topCandidate.account_name} (Amt: ${topCandidate.amount.toLocaleString()})`,
       expectedImpact: {
         cashDelta: topCandidate.amount,
         runwayDeltaDays: 14,

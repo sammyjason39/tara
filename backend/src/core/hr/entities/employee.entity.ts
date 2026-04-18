@@ -4,22 +4,22 @@
  */
 export class Employee {
   id: string;
-  tenantId: string;
-  locationId?: string;
-  employeeCode: string;
-  firstName: string;
-  lastName: string;
-  fullName: string;
+  tenant_id: string;
+  location_id?: string;
+  employee_code: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
   email: string;
   phone?: string;
-  departmentId: string;
-  userId?: string;
-  managerId?: string;
+  department_id: string;
+  user_id?: string;
+  manager_id?: string;
   position: string;
-  positionId?: string; // Relation alias for services
-  jobTitle?: string; // Compatibility alias
+  position_id?: string; // Relation alias for services
+  job_title?: string; // Compatibility alias
   currency?: string; // Related to compensation/company
-  roleTitle: string;
+  role_title: string;
   status: 
     | "candidate" 
     | "offer" 
@@ -31,13 +31,13 @@ export class Employee {
     | "on_leave" 
     | "suspended" 
     | "terminated";
-  employmentType: "full_time" | "part_time" | "contractor" | "intern" | "temporary";
-  baseSalary?: number;
-  hourlyRate?: number;
-  documentsMetadata?: any;
-  hireDate: Date;
-  terminationDate?: Date;
-  hrEmployeeSkills?: any[];
-  createdAt: Date;
-  updatedAt: Date;
+  employment_type: "full_time" | "part_time" | "contractor" | "intern" | "temporary";
+  base_salary?: number;
+  hourly_rate?: number;
+  documents_metadata?: any;
+  hire_date: Date;
+  termination_date?: Date;
+  hr_employee_skills?: any[];
+  created_at: Date;
+  updated_at: Date;
 }

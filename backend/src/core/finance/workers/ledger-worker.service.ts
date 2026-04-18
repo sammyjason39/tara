@@ -39,17 +39,17 @@ export class LedgerWorkerService implements OnModuleInit, OnModuleDestroy {
   /**
    * TRIGGERED PATH: Real-time event ingestion for Phase 11.
    */
-  async triggerProcess(tenantId: string, companyId: string) {
+  async triggerProcess(tenant_id: string, company_id: string) {
     if (this.isShuttingDown) return;
     
-    const lockKey = `${tenantId}:${companyId}`;
+    const lockKey = `${tenant_id}:${company_id}`;
     if (this.activeProcesses.has(lockKey)) {
         this.logger.debug(`[${this.workerId}] Process already active for ${lockKey}. Skipping trigger.`);
         return;
     }
 
-    this.logger.log(`[${this.workerId}] Triggered process for ${tenantId}:${companyId}`);
-    return this.processTenant(tenantId, companyId);
+    this.logger.log(`[${this.workerId}] Triggered process for ${tenant_id}:${company_id}`);
+    return this.processTenant(tenant_id, company_id);
   }
 
 
@@ -62,42 +62,42 @@ export class LedgerWorkerService implements OnModuleInit, OnModuleDestroy {
     if (this.isShuttingDown) return;
     try {
       const activeTenants = ['tenant_1', 'tenant_2', 'tenant_3']; 
-      for (const tenantId of activeTenants) {
-        await this.processTenant(tenantId, 'default_company');
+      for (const tenant_id of activeTenants) {
+        await this.processTenant(tenant_id, 'default_company');
       }
     } finally {
       this.scheduleNextPoll(60000); // Keep safety poll slow
     }
   }
 
-  private async processTenant(tenantId: string, companyId: string) {
-    const lockKey = `${tenantId}:${companyId}`;
+  private async processTenant(tenant_id: string, company_id: string) {
+    const lockKey = `${tenant_id}:${company_id}`;
     if (this.activeProcesses.has(lockKey)) return;
     
     this.activeProcesses.add(lockKey);
     try {
       // 1. Backpressure Guard
-      const pendingCount = (await this.ledgerRepo.findPending(tenantId, companyId)).length;
+      const pendingCount = (await this.ledgerRepo.findPending(tenant_id, company_id)).length;
       if (pendingCount > LEDGER_WORKER_CONSTANTS.BACKPRESSURE_THRESHOLD) {
-        this.logger.warn(`Backpressure: ${pendingCount} items for ${tenantId}. Skipping.`);
+        this.logger.warn(`Backpressure: ${pendingCount} items for ${tenant_id}. Skipping.`);
         return;
       }
 
       // 2. Claim Batch of Postings with Sequence Safeguard & Tenant Isolation
-      const claimedPostings = await this.ledgerRepo.claimPostings(tenantId, companyId, LEDGER_WORKER_CONSTANTS.BATCH_SIZE);
+      const claimedPostings = await this.ledgerRepo.claimPostings(tenant_id, company_id, LEDGER_WORKER_CONSTANTS.BATCH_SIZE);
       
       if (claimedPostings.length > 0) {
-        this.logger.log(`[${this.workerId}] Claimed ${claimedPostings.length} postings for ${tenantId}.`);
+        this.logger.log(`[${this.workerId}] Claimed ${claimedPostings.length} postings for ${tenant_id}.`);
         
         for (const posting of claimedPostings) {
-          const startTime = Date.now();
+          const start_time = Date.now();
           try {
-            await this.postingService.processEvent(posting.tenantId, posting.companyId, posting.id);
-            this.logObservability(posting, 'SUCCESS', Date.now() - startTime);
+            await this.postingService.processEvent(posting.tenant_id, posting.company_id, posting.id);
+            this.logObservability(posting, 'SUCCESS', Date.now() - start_time);
           } catch (error) {
-            this.logger.error(`Failed posting ${posting.id} [${tenantId}]: ${error.message}`);
+            this.logger.error(`Failed posting ${posting.id} [${tenant_id}]: ${error.message}`);
             await this.handleFailure(posting, error.message);
-            this.logObservability(posting, 'FAILED', Date.now() - startTime);
+            this.logObservability(posting, 'FAILED', Date.now() - start_time);
           }
         }
       }
@@ -114,7 +114,7 @@ export class LedgerWorkerService implements OnModuleInit, OnModuleDestroy {
     
     if (nextRetryCount > LEDGER_WORKER_CONSTANTS.MAX_RETRY_ATTEMPTS) {
       this.logger.error(`Posting ${posting.id} exceeded max retries. Marking FAILED_TERMINAL.`);
-      await this.ledgerRepo.updateStatus(posting.tenantId, posting.companyId, posting.id, LedgerPostingStatus.FAILED_TERMINAL, nextRetryCount, errorMsg);
+      await this.ledgerRepo.updateStatus(posting.tenant_id, posting.company_id, posting.id, LedgerPostingStatus.FAILED_TERMINAL, nextRetryCount, errorMsg);
     } else {
       const backoffSeconds = getBackoffSeconds(nextRetryCount - 1);
       const nextRetryAt = new Date(Date.now() + backoffSeconds * 1000);
@@ -123,7 +123,7 @@ export class LedgerWorkerService implements OnModuleInit, OnModuleDestroy {
       
       // Return to PENDING so it can be picked up again
       // In a real DB, we would use FAILED_RETRYABLE and filter for nextRetryAt <= NOW()
-      const updatedP = await this.ledgerRepo.updateStatus(posting.tenantId, posting.companyId, posting.id, LedgerPostingStatus.PENDING, nextRetryCount);
+      const updatedP = await this.ledgerRepo.updateStatus(posting.tenant_id, posting.company_id, posting.id, LedgerPostingStatus.PENDING, nextRetryCount);
       (updatedP as any).nextRetryAt = nextRetryAt;
     }
   }
@@ -133,8 +133,8 @@ export class LedgerWorkerService implements OnModuleInit, OnModuleDestroy {
     const logData = {
       workerId: this.workerId,
       postingId: posting.id,
-      eventType: posting.eventType,
-      tenantId: posting.tenantId,
+      event_type: posting.event_type,
+      tenant_id: posting.tenant_id,
       processingTimeMs,
       outcome,
       timestamp: new Date().toISOString()

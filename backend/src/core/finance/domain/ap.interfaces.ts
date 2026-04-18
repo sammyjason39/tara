@@ -16,13 +16,13 @@ export interface APBillLine {
 
 export interface APVendorBill {
   id: string;
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   vendorId: string;
   billNumber: string;
   status: BillStatus;
   currency: string;
-  totalAmount: number;
+  total_amount: number;
   balanceDue: number;
   issueDate: Date;
   dueDate: Date;
@@ -31,8 +31,8 @@ export interface APVendorBill {
 
 export interface APVendorPayment {
   id: string;
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   vendorId: string;
   paymentNumber: string;
   amount: number;
@@ -47,5 +47,5 @@ export interface APVendorAgingBucket {
   bucket31_60: number;
   bucket61_90: number;
   bucket91_plus: number;
-  updatedAt: Date;
+  updated_at: Date;
 }

@@ -10,8 +10,8 @@ export class SimulationAdapter {
    * Run a controlled simulation based on scenario inputs
    */
   async runSimulation(params: {
-    tenantId: string;
-    companyId: string;
+    tenant_id: string;
+    company_id: string;
     snapshotId?: string;
     scenario: {
       revenueMultiplier?: number;
@@ -20,8 +20,8 @@ export class SimulationAdapter {
     };
   }): Promise<ForecastOutput> {
     return this.forecastService.getForecast({
-      tenantId: params.tenantId,
-      companyId: params.companyId,
+      tenant_id: params.tenant_id,
+      company_id: params.company_id,
       snapshotId: params.snapshotId,
       scenario: params.scenario
     });

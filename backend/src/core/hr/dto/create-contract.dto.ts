@@ -8,7 +8,7 @@ import {
 export class CreateContractDto {
   @IsString()
   @IsOptional()
-  employeeId?: string;
+  employee_id?: string;
 
   @IsString()
   @IsNotEmpty()
@@ -19,11 +19,11 @@ export class CreateContractDto {
   type: string;
 
   @IsDateString()
-  startDate: string;
+  start_date: string;
 
   @IsDateString()
   @IsOptional()
-  endDate?: string;
+  end_date?: string;
 
   @IsString()
   @IsOptional()

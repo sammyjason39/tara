@@ -1,12 +1,12 @@
 export class PayrollRun {
   id: string;
-  tenantId: string;
-  periodStart: Date;
-  periodEnd: Date;
+  tenant_id: string;
+  period_start: Date;
+  period_end: Date;
   status: string;
   totalGrossPay: number;
   totalNetPay: number;
   baseCurrency: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

@@ -1,12 +1,12 @@
 export class PurchaseOrder {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   requisitionId: string;
   supplierId: string;
   branchCode: string;
-  totalAmount: number;
+  total_amount: number;
   status: "released" | "delivering" | "received" | "closed";
   issuedAt: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

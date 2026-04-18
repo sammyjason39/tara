@@ -33,22 +33,22 @@ export class FinancialProjectionWorkerService {
    * Ensures exactly-once processing via ledgerSequence checkpoints.
    */
   async onJournalPosted(event: JournalPostedEvent): Promise<void> {
-    const { tenantId, companyId } = event;
-    await this.processPendingProjections(tenantId, companyId);
+    const { tenant_id, company_id } = event;
+    await this.processPendingProjections(tenant_id, company_id);
   }
 
   /**
    * Strictly ordered batch processing of pending projections.
    */
-  async processPendingProjections(tenantId: string, companyId: string): Promise<void> {
+  async processPendingProjections(tenant_id: string, company_id: string): Promise<void> {
     const batchSize = 500;
     
     while (true) {
       // 1. Get current checkpoint
-      const lastSequence = await this.checkpointRepo.getCheckpoint(tenantId, companyId, 'ALL_PROJECTIONS');
+      const lastSequence = await this.checkpointRepo.getCheckpoint(tenant_id, company_id, 'ALL_PROJECTIONS');
       
       // 2. Fetch next batch of journals in strict order
-      const batch = await this.journalRepo.findBySequenceRange(tenantId, companyId, lastSequence + 1, lastSequence + batchSize);
+      const batch = await this.journalRepo.findBySequenceRange(tenant_id, company_id, lastSequence + 1, lastSequence + batchSize);
       
       if (batch.length === 0) {
         break; // No more journals to process
@@ -71,15 +71,15 @@ export class FinancialProjectionWorkerService {
 
           // Fetch category if not in cache
           if (!categoryCache.has(line.accountId)) {
-            const acc = await this.coaRepo.findById(tenantId, companyId, line.accountId);
+            const acc = await this.coaRepo.findById(tenant_id, company_id, line.accountId);
             categoryCache.set(line.accountId, acc?.accountType || 'UNKNOWN');
           }
           const category = categoryCache.get(line.accountId)!;
 
           // a. Trial Balance (Period & Category aware)
           await this.trialBalanceRepo.update(
-            tenantId,
-            companyId,
+            tenant_id,
+            company_id,
             line.accountId, 
             journal.fiscalPeriodId,
             category,
@@ -88,14 +88,14 @@ export class FinancialProjectionWorkerService {
           );
 
           // b. General Ledger (with Running Balance & Dimensions)
-          const latestRunningBal = await this.glRepo.getLatestRunningBalance(tenantId, companyId, line.accountId);
+          const latestRunningBal = await this.glRepo.getLatestRunningBalance(tenant_id, company_id, line.accountId);
           const newRunningBal = isDebit 
             ? latestRunningBal.plus(amount) 
             : latestRunningBal.minus(amount);
           
           await this.glRepo.append({
-            tenantId,
-            companyId,
+            tenant_id,
+            company_id,
             accountId: line.accountId,
             journalId: journal.id,
             ledgerSequence: journal.ledgerSequence,
@@ -111,8 +111,8 @@ export class FinancialProjectionWorkerService {
 
           // c. Account Statement (with Dimensions)
           await this.statementRepo.append({
-            tenantId,
-            companyId,
+            tenant_id,
+            company_id,
             accountId: line.accountId,
             ledgerSequence: journal.ledgerSequence,
             journalId: journal.id,
@@ -129,11 +129,11 @@ export class FinancialProjectionWorkerService {
         }
 
         // 3. Mark Checkpoint after each journal in the batch is fully processed
-        await this.checkpointRepo.upsert(tenantId, companyId, 'ALL_PROJECTIONS', journal.ledgerSequence);
-        this.logger.debug(`Projections updated for journal ${journal.id} (seq: ${journal.ledgerSequence}) in Company ${companyId}`);
+        await this.checkpointRepo.upsert(tenant_id, company_id, 'ALL_PROJECTIONS', journal.ledgerSequence);
+        this.logger.debug(`Projections updated for journal ${journal.id} (seq: ${journal.ledgerSequence}) in Company ${company_id}`);
       }
 
-      this.logger.log(`Processed batch of ${orderedBatch.length} journals for Tenant ${tenantId} Company ${companyId}`);
+      this.logger.log(`Processed batch of ${orderedBatch.length} journals for Tenant ${tenant_id} Company ${company_id}`);
       
       if (orderedBatch.length < batchSize) {
         break; // Batch was not full, we caught up

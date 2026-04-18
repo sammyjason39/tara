@@ -15,6 +15,6 @@ export class InventoryItem {
   moduleTags: string[];
   active: boolean;
   departmentId?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

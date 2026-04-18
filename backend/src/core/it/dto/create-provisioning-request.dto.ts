@@ -10,7 +10,7 @@ export enum ProvisioningScope {
 export class CreateProvisioningRequestDto {
   @IsString()
   @IsOptional()
-  employeeId?: string;
+  employee_id?: string;
 
   @IsString()
   @IsOptional()
@@ -29,7 +29,7 @@ export class CreateProvisioningRequestDto {
 
   @IsString()
   @IsOptional()
-  requestedBy?: string;
+  requested_by?: string;
 
   @IsString()
   @IsOptional()

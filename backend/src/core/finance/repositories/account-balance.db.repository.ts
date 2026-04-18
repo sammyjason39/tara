@@ -13,58 +13,59 @@ export class AccountBalanceDbRepository implements IAccountBalanceRepository {
   }
 
   async findBalance(params: {
-    tenantId: string;
-    companyId: string;
+    tenant_id: string;
+    company_id: string;
     fiscalPeriodId: string;
     accountId: string;
     currency: string;
-    branchId: string;
-    locationId: string;
+    branch_id: string;
+    location_id: string;
     departmentId?: string;
     costCenterId?: string;
     projectId?: string;
   }): Promise<AccountBalance | null> {
-    const res = await this.db.accountBalance.findUnique({
+    const res = await this.db.finance_account_balances.findUnique({
       where: {
-        account_balance_dimensions: {
-          tenantId: params.tenantId,
-          fiscalPeriodId: params.fiscalPeriodId,
-          accountId: params.accountId,
+        tenant_id_fiscal_period_id_account_id_currency_branch_id_location_id_department_id_cost_center_id_project_id: {
+          tenant_id: params.tenant_id,
+          fiscal_period_id: params.fiscalPeriodId,
+          account_id: params.accountId,
           currency: params.currency,
-          branchId: params.branchId,
-          locationId: params.locationId,
-          departmentId: params.departmentId || 'GLOBAL',
-          costCenterId: params.costCenterId || 'GLOBAL',
-          projectId: params.projectId || 'GLOBAL'
+          branch_id: params.branch_id,
+          location_id: params.location_id,
+          department_id: params.departmentId || 'GLOBAL',
+          cost_center_id: params.costCenterId || 'GLOBAL',
+          project_id: params.projectId || 'GLOBAL'
         }
       }
     });
     return res as unknown as AccountBalance;
   }
 
-  async updateBalance(tenantId: string, companyId: string, data: Partial<AccountBalance>): Promise<void> {
-    await this.db.accountBalance.updateMany({
+  async updateBalance(tenant_id: string, company_id: string, data: Partial<AccountBalance>): Promise<void> {
+    await this.db.finance_account_balances.updateMany({
       where: {
-        tenantId,
-        fiscalPeriodId: data.fiscalPeriodId,
-        accountId: data.accountId,
+        tenant_id: tenant_id,
+        fiscal_period_id: data.fiscalPeriodId,
+        account_id: data.accountId,
         currency: data.currency,
       },
       data: {
-        debitTotal: data.debitTotal ? new Prisma.Decimal(data.debitTotal.toString()) : undefined,
-        creditTotal: data.creditTotal ? new Prisma.Decimal(data.creditTotal.toString()) : undefined,
-        netBalance: data.netBalance ? new Prisma.Decimal(data.netBalance.toString()) : undefined,
-        version: { increment: 1 }
+        debit_total: data.debitTotal ? new Prisma.Decimal(data.debitTotal.toString()) : undefined,
+        credit_total: data.creditTotal ? new Prisma.Decimal(data.creditTotal.toString()) : undefined,
+        net_balance: data.netBalance ? new Prisma.Decimal(data.netBalance.toString()) : undefined,
+        version: { increment: 1 },
+        updated_at: new Date(),
       }
     });
   }
 
-  async incrementBalance(tenantId: string, companyId: string, params: {
+  async incrementBalance(tenant_id: string, company_id: string, params: {
     fiscalPeriodId: string;
     accountId: string;
     currency: string;
-    branchId: string;
-    locationId: string;
+    branch_id: string;
+    location_id: string;
     departmentId?: string;
     costCenterId?: string;
     projectId?: string;
@@ -73,62 +74,58 @@ export class AccountBalanceDbRepository implements IAccountBalanceRepository {
     const credit = delta.credit ? new Prisma.Decimal(delta.credit.toString()) : new Prisma.Decimal(0);
     const net = delta.net ? new Prisma.Decimal(delta.net.toString()) : debit.minus(credit);
 
-    await this.db.accountBalance.upsert({
+    const dims = {
+      tenant_id: tenant_id,
+      fiscal_period_id: params.fiscalPeriodId,
+      account_id: params.accountId,
+      currency: params.currency,
+      branch_id: params.branch_id,
+      location_id: params.location_id,
+      department_id: params.departmentId || 'GLOBAL',
+      cost_center_id: params.costCenterId || 'GLOBAL',
+      project_id: params.projectId || 'GLOBAL'
+    };
+
+    await this.db.finance_account_balances.upsert({
       where: {
-        account_balance_dimensions: {
-          tenantId,
-          fiscalPeriodId: params.fiscalPeriodId,
-          accountId: params.accountId,
-          currency: params.currency,
-          branchId: params.branchId,
-          locationId: params.locationId,
-          departmentId: params.departmentId || 'GLOBAL',
-          costCenterId: params.costCenterId || 'GLOBAL',
-          projectId: params.projectId || 'GLOBAL'
-        }
+        tenant_id_fiscal_period_id_account_id_currency_branch_id_location_id_department_id_cost_center_id_project_id: dims
       },
       update: {
-        debitTotal: { increment: debit },
-        creditTotal: { increment: credit },
-        netBalance: { increment: net },
-        version: { increment: 1 }
-      } as any,
+        debit_total: { increment: debit },
+        credit_total: { increment: credit },
+        net_balance: { increment: net },
+        version: { increment: 1 },
+        updated_at: new Date(),
+      },
       create: {
-        tenantId,
-        fiscalPeriodId: params.fiscalPeriodId,
-        accountId: params.accountId,
-        currency: params.currency,
-        branchId: params.branchId,
-        locationId: params.locationId,
-        departmentId: params.departmentId || 'GLOBAL',
-        costCenterId: params.costCenterId || 'GLOBAL',
-        projectId: params.projectId || 'GLOBAL',
-        debitTotal: debit,
-        creditTotal: credit,
-        netBalance: net,
-        version: 1
-      } as any
+        id: require('crypto').randomUUID(),
+        ...dims,
+        debit_total: debit,
+        credit_total: credit,
+        net_balance: net,
+        version: 1,
+        updated_at: new Date(),
+      }
     });
   }
 
-  async createSnapshot(tenantId: string, companyId: string, data: Partial<AccountBalanceSnapshot>): Promise<AccountBalanceSnapshot> {
-    const created = await this.db.accountBalanceSnapshot.create({
+  async createSnapshot(tenant_id: string, company_id: string, data: Partial<AccountBalanceSnapshot>): Promise<AccountBalanceSnapshot> {
+    const created = await this.db.finance_account_balance_snapshots.create({
       data: {
-        id: 'iyavi2n2',
-        
-        tenantId,
-        fiscalPeriodId: data.fiscalPeriodId!,
-        snapshotDate: data.snapshotDate || new Date(),
+        id: require('crypto').randomUUID(),
+        tenant_id: tenant_id,
+        fiscal_period_id: data.fiscalPeriodId!,
+        snapshot_date: data.snapshotDate || new Date(),
         snapshotType: data.snapshotType || 'EOM',
-        balancesData: data.balancesData || {},
+        balances_data: data.balancesData || {},
       }
     });
     return created as unknown as AccountBalanceSnapshot;
   }
 
-  async reset(tenantId: string, companyId: string): Promise<void> {
-    await this.db.accountBalance.deleteMany({
-      where: { tenantId }
+  async reset(tenant_id: string, company_id: string): Promise<void> {
+    await this.db.finance_account_balances.deleteMany({
+      where: { tenant_id: tenant_id }
     });
   }
 }

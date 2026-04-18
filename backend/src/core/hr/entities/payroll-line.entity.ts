@@ -1,11 +1,11 @@
 export class PayrollLine {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   payrollRunId: string;
-  employeeId: string;
+  employee_id: string;
   grossPay: number;
   netPay: number;
   adjustments: number;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

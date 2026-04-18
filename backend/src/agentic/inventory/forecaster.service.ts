@@ -11,25 +11,25 @@ export class ForecasterService {
    * Calculates a simple moving average demand for a product at a location.
    * Default window: 30 days.
    */
-  async getForecast(tenantId: string, productId: string, locationId: string, daysWindow: number = 30): Promise<number> {
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - daysWindow);
+  async getForecast(tenant_id: string, product_id: string, location_id: string, daysWindow: number = 30): Promise<number> {
+    const start_date = new Date();
+    start_date.setDate(start_date.getDate() - daysWindow);
 
     // Fetch OUT movements (consumption/sales)
-    const movements = await this.prisma.stockMovement.findMany({
+    const movements = await this.prisma.stock_movements.findMany({
       where: {
-        tenantId,
-        productId,
-        locationId,
+        tenant_id: tenant_id,
+        product_id: product_id,
+        location_id: location_id,
         type: { in: ['OUT', 'CONSUME_RESERVED', 'TRANSFER_OUT'] },
-        createdAt: { gte: startDate },
+        created_at: { gte: start_date },
       },
     });
 
     const totalConsumed = movements.reduce((sum: number, m: any) => sum + Math.abs(Number(m.quantity)), 0);
     const averageDailyDemand = totalConsumed / daysWindow;
 
-    this.logger.debug(`Forecast for Product ${productId} at Location ${locationId}: ${averageDailyDemand.toFixed(2)} units/day`);
+    this.logger.debug(`Forecast for Product ${product_id} at Location ${location_id}: ${averageDailyDemand.toFixed(2)} units/day`);
     
     return averageDailyDemand;
   }

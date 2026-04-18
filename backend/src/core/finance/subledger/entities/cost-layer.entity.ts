@@ -2,14 +2,14 @@ import { Prisma } from '@prisma/client';
 
 export class CostLayer {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   skuId: string;
-  locationId: string;
+  location_id: string;
   qty: Prisma.Decimal;
   remainingQty: Prisma.Decimal;
   unitCost: Prisma.Decimal;
   currency: string;
   method: 'FIFO' | 'LIFO' | 'AVERAGE';
   sourceEventId: string;
-  createdAt: Date;
+  created_at: Date;
 }

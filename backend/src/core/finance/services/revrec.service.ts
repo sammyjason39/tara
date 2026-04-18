@@ -14,13 +14,13 @@ export class RevRecService {
    * Handles the activation of a contract by generating its recognition schedule.
    */
   async activateContract(params: {
-    tenantId: string;
-    companyId: string;
+    tenant_id: string;
+    company_id: string;
     contractId: string;
-    totalAmount: Prisma.Decimal;
+    total_amount: Prisma.Decimal;
     currency: string;
-    startDate: Date;
-    endDate: Date;
+    start_date: Date;
+    end_date: Date;
     deferredAccountId: string;
     revenueAccountId: string;
   }): Promise<RevRecSchedule> {

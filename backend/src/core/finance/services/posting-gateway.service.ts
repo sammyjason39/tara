@@ -40,29 +40,29 @@ export class PostingGatewayService {
    * Main entry point for all financial postings.
    */
   async postEvent(request: FinancialPostingRequest): Promise<FinancialPostingResult> {
-    const startTime = Date.now();
-    const { tenantId, companyId, sourceEventId, eventType, eventVersion } = request;
+    const start_time = Date.now();
+    const { tenant_id, company_id, sourceEventId, event_type, eventVersion } = request;
     let currentState = PostingState.RECEIVED;
 
     // 1. Guard: Event Registry
-    if (!this.registry.isValid(eventType, eventVersion)) {
-      return this.failResult(request, 'ERR-UNREGISTERED', `Access denied: ${eventType}`);
+    if (!this.registry.isValid(event_type, eventVersion)) {
+      return this.failResult(request, 'ERR-UNREGISTERED', `Access denied: ${event_type}`);
     }
 
     // 2. Acquire Concurrency Lock
-    const lockAcquired = await this.lockManager.acquire(tenantId, companyId, sourceEventId);
+    const lockAcquired = await this.lockManager.acquire(tenant_id, company_id, sourceEventId);
     if (!lockAcquired) {
       return this.failResult(request, 'ERR-LOCKED', 'Concurrent processing detected.');
     }
 
     try {
       // 3. Idempotency Guard
-      const existing = await this.eventLogRepo.findBySourceEventId(tenantId, companyId, sourceEventId);
+      const existing = await this.eventLogRepo.findBySourceEventId(tenant_id, company_id, sourceEventId);
       if (existing && existing.status === 'POSTED') {
-          return { requestId: request.requestId, status: PostingState.POSTED, attempts: 1 };
+          return { request_id: request.request_id, status: PostingState.POSTED, attempts: 1 };
       }
 
-      await this.audit.recordTransition(request.requestId, PostingState.RECEIVED, PostingState.VALIDATED);
+      await this.audit.recordTransition(request.request_id, PostingState.RECEIVED, PostingState.VALIDATED);
       currentState = PostingState.VALIDATED;
 
       // 4. Resolve Currencies & Rates
@@ -76,14 +76,14 @@ export class PostingGatewayService {
       // 6. Journal Drafting
       const draftLines = [
         { 
-          accountId: await this.accountResolver.resolve(tenantId, companyId, 'revenue', request.payload), 
+          accountId: await this.accountResolver.resolve(tenant_id, company_id, 'revenue', request.payload), 
           side: PostingSide.CREDIT, 
           amount: request.payload.total,
           baseAmount: request.payload.total * rateInfo.rate,
           ...dimensions 
         },
         { 
-          accountId: await this.accountResolver.resolve(tenantId, companyId, 'cash', request.payload), 
+          accountId: await this.accountResolver.resolve(tenant_id, company_id, 'cash', request.payload), 
           side: PostingSide.DEBIT, 
           amount: request.payload.total,
           baseAmount: request.payload.total * rateInfo.rate,
@@ -92,10 +92,10 @@ export class PostingGatewayService {
       ];
 
       const draft: any = {
-        draftId: `DRF-${request.requestId}`,
-        requestId: request.requestId,
-        tenantId,
-        companyId,
+        draftId: `DRF-${request.request_id}`,
+        request_id: request.request_id,
+        tenant_id,
+        company_id,
         fiscalPeriodId: request.payload.fiscalPeriodId,
         transactionCurrency,
         baseCurrency,
@@ -108,7 +108,7 @@ export class PostingGatewayService {
       // 7. PERSISTENCE PATCH: Save draft before final validation/commit
       await this.draftStore.save(draft);
 
-      await this.audit.recordTransition(request.requestId, currentState, PostingState.DRAFT_CREATED);
+      await this.audit.recordTransition(request.request_id, currentState, PostingState.DRAFT_CREATED);
       currentState = PostingState.DRAFT_CREATED;
 
       // 8. Double-Entry & Period Validation
@@ -117,7 +117,7 @@ export class PostingGatewayService {
         return this.failResult(request, 'ERR-INVALID-DRAFT', valResult.errors.join('|'));
       }
 
-      const periodOk = await this.fiscalGuard.canPost(tenantId, companyId, draft.fiscalPeriodId);
+      const periodOk = await this.fiscalGuard.canPost(tenant_id, company_id, draft.fiscalPeriodId);
       if (!periodOk) {
         return this.failResult(request, 'ERR-PERIOD-LOCKED', `Fiscal period ${draft.fiscalPeriodId} is closed.`);
       }
@@ -128,11 +128,11 @@ export class PostingGatewayService {
       // 10. CLEANUP PATCH: Remove draft from store on success
       await this.draftStore.remove(draft.draftId);
 
-      await this.audit.recordTransition(request.requestId, currentState, PostingState.POSTED);
-      this.audit.recordMetric('posting_latency_ms', Date.now() - startTime);
+      await this.audit.recordTransition(request.request_id, currentState, PostingState.POSTED);
+      this.audit.recordMetric('posting_latency_ms', Date.now() - start_time);
 
       return {
-        requestId: request.requestId,
+        request_id: request.request_id,
         status: PostingState.POSTED,
         journalId: result.journalId,
         ledgerSequence: result.sequence,
@@ -141,16 +141,16 @@ export class PostingGatewayService {
 
     } catch (error) {
       this.logger.error(`Gateway pipeline failure: ${error.message}`);
-      await this.audit.recordTransition(request.requestId, currentState, PostingState.FAILED, error.message);
+      await this.audit.recordTransition(request.request_id, currentState, PostingState.FAILED, error.message);
       return this.failResult(request, 'ERR-SYSTEM', error.message);
     } finally {
-      await this.lockManager.release(tenantId, companyId, sourceEventId);
+      await this.lockManager.release(tenant_id, company_id, sourceEventId);
     }
   }
 
   private failResult(req: FinancialPostingRequest, code: string, msg: string): FinancialPostingResult {
     return {
-      requestId: req.requestId,
+      request_id: req.request_id,
       status: PostingState.FAILED,
       errorCode: code,
       errorMessage: msg,

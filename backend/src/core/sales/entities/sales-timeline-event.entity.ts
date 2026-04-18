@@ -1,12 +1,12 @@
 export class SalesTimelineEvent {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   opportunityId: string;
-  leadId?: string;
+  lead_id?: string;
   channel: "note" | "email" | "whatsapp" | "sms" | "call" | "meeting";
   direction: "outbound" | "inbound" | "internal";
   summary: string;
   detail?: string;
   createdBy: string;
-  createdAt: Date;
+  created_at: Date;
 }

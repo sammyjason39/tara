@@ -1,6 +1,6 @@
 export class MarketingLead {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   campaignId?: string;
   source:
     | "landing_page"
@@ -10,8 +10,8 @@ export class MarketingLead {
     | "meta_lead_ads"
     | "google_ads"
     | "partner_api";
-  companyName: string;
-  contactName: string;
+  company_name: string;
+  contact_name: string;
   email?: string;
   phone?: string;
   country?: string;
@@ -29,6 +29,6 @@ export class MarketingLead {
     | "handoff_sent";
   qualificationReason: string;
   salesHandoffId?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

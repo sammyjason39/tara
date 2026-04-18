@@ -19,5 +19,5 @@ export class UpdatePositionDto {
 
   @IsString()
   @IsOptional()
-  departmentId?: string;
+  department_id?: string;
 }

@@ -13,11 +13,11 @@ import { BaseCommand } from '../../../shared/command-bus/base-command.interface'
 // ──────────────────────────────────────────────
 
 export interface HireEmployeePayload {
-  locationId: string;
+  location_id: string;
   candidateId: string;
-  departmentId: string;
+  department_id: string;
   position: string;
-  startDate: Date;
+  start_date: Date;
   salary: number;
   currency?: string;
 }
@@ -26,34 +26,34 @@ export class HireEmployeeCommand implements BaseCommand {
   readonly name = 'HireEmployeeCommand';
   constructor(
     public readonly commandId: string,
-    public readonly tenantId: string,
-    public readonly actorId: string,
+    public readonly tenant_id: string,
+    public readonly actor_id: string,
     public readonly timestamp: Date,
     public readonly payload: HireEmployeePayload,
   ) {}
 }
 
 export interface PromoteEmployeePayload {
-  employeeId: string;
+  employee_id: string;
   newPosition: string;
   newSalary: number;
   effectiveDate: Date;
-  approvedBy?: string;
+  approved_by?: string;
 }
 
 export class PromoteEmployeeCommand implements BaseCommand {
   readonly name = 'PromoteEmployeeCommand';
   constructor(
     public readonly commandId: string,
-    public readonly tenantId: string,
-    public readonly actorId: string,
+    public readonly tenant_id: string,
+    public readonly actor_id: string,
     public readonly timestamp: Date,
     public readonly payload: PromoteEmployeePayload,
   ) {}
 }
 
 export interface TransferEmployeePayload {
-  employeeId: string;
+  employee_id: string;
   targetDepartmentId: string;
   targetLocationId: string;
   effectiveDate: Date;
@@ -64,17 +64,17 @@ export class TransferEmployeeCommand implements BaseCommand {
   readonly name = 'TransferEmployeeCommand';
   constructor(
     public readonly commandId: string,
-    public readonly tenantId: string,
-    public readonly actorId: string,
+    public readonly tenant_id: string,
+    public readonly actor_id: string,
     public readonly timestamp: Date,
     public readonly payload: TransferEmployeePayload,
   ) {}
 }
 
 export interface TerminateEmployeePayload {
-  employeeId: string;
+  employee_id: string;
   reason: string;
-  terminationDate: Date;
+  termination_date: Date;
   finalizePayroll?: boolean;
 }
 
@@ -82,15 +82,15 @@ export class TerminateEmployeeCommand implements BaseCommand {
   readonly name = 'TerminateEmployeeCommand';
   constructor(
     public readonly commandId: string,
-    public readonly tenantId: string,
-    public readonly actorId: string,
+    public readonly tenant_id: string,
+    public readonly actor_id: string,
     public readonly timestamp: Date,
     public readonly payload: TerminateEmployeePayload,
   ) {}
 }
 
 export interface SuspendEmployeePayload {
-  employeeId: string;
+  employee_id: string;
   reason: string;
   suspensionDate: Date;
   expectedReturnDate?: Date;
@@ -100,8 +100,8 @@ export class SuspendEmployeeCommand implements BaseCommand {
   readonly name = 'SuspendEmployeeCommand';
   constructor(
     public readonly commandId: string,
-    public readonly tenantId: string,
-    public readonly actorId: string,
+    public readonly tenant_id: string,
+    public readonly actor_id: string,
     public readonly timestamp: Date,
     public readonly payload: SuspendEmployeePayload,
   ) {}
@@ -113,8 +113,8 @@ export class SuspendEmployeeCommand implements BaseCommand {
 
 export interface CreateJobOpeningPayload {
   title: string;
-  departmentId: string;
-  locationId: string;
+  department_id: string;
+  location_id: string;
   openings: number;
   requirements: string[];
   description?: string;
@@ -124,15 +124,15 @@ export class CreateJobOpeningCommand implements BaseCommand {
   readonly name = 'CreateJobOpeningCommand';
   constructor(
     public readonly commandId: string,
-    public readonly tenantId: string,
-    public readonly actorId: string,
+    public readonly tenant_id: string,
+    public readonly actor_id: string,
     public readonly timestamp: Date,
     public readonly payload: CreateJobOpeningPayload,
   ) {}
 }
 
 export interface ConvertLeadToCandidatePayload {
-  leadId: string;
+  lead_id: string;
   jobOpeningId: string;
 }
 
@@ -140,8 +140,8 @@ export class ConvertLeadToCandidateCommand implements BaseCommand {
   readonly name = 'ConvertLeadToCandidateCommand';
   constructor(
     public readonly commandId: string,
-    public readonly tenantId: string,
-    public readonly actorId: string,
+    public readonly tenant_id: string,
+    public readonly actor_id: string,
     public readonly timestamp: Date,
     public readonly payload: ConvertLeadToCandidatePayload,
   ) {}
@@ -158,8 +158,8 @@ export class ScheduleInterviewCommand implements BaseCommand {
   readonly name = 'ScheduleInterviewCommand';
   constructor(
     public readonly commandId: string,
-    public readonly tenantId: string,
-    public readonly actorId: string,
+    public readonly tenant_id: string,
+    public readonly actor_id: string,
     public readonly timestamp: Date,
     public readonly payload: ScheduleInterviewPayload,
   ) {}
@@ -170,9 +170,9 @@ export class ScheduleInterviewCommand implements BaseCommand {
 // ──────────────────────────────────────────────
 
 export interface ExecutePayrollPayload {
-  locationId: string;
-  periodStart: Date;
-  periodEnd: Date;
+  location_id: string;
+  period_start: Date;
+  period_end: Date;
   currency?: string;
 }
 
@@ -180,15 +180,15 @@ export class ExecutePayrollCommand implements BaseCommand {
   readonly name = 'ExecutePayrollCommand';
   constructor(
     public readonly commandId: string,
-    public readonly tenantId: string,
-    public readonly actorId: string,
+    public readonly tenant_id: string,
+    public readonly actor_id: string,
     public readonly timestamp: Date,
     public readonly payload: ExecutePayrollPayload,
   ) {}
 }
 
 export interface AdjustCompensationPayload {
-  employeeId: string;
+  employee_id: string;
   newSalary: number;
   effectiveDate: Date;
   reason?: string;
@@ -198,8 +198,8 @@ export class AdjustCompensationCommand implements BaseCommand {
   readonly name = 'AdjustCompensationCommand';
   constructor(
     public readonly commandId: string,
-    public readonly tenantId: string,
-    public readonly actorId: string,
+    public readonly tenant_id: string,
+    public readonly actor_id: string,
     public readonly timestamp: Date,
     public readonly payload: AdjustCompensationPayload,
   ) {}
@@ -207,15 +207,15 @@ export class AdjustCompensationCommand implements BaseCommand {
 
 export interface GeneratePayslipPayload {
   payrollRunId: string;
-  employeeId: string;
+  employee_id: string;
 }
 
 export class GeneratePayslipCommand implements BaseCommand {
   readonly name = 'GeneratePayslipCommand';
   constructor(
     public readonly commandId: string,
-    public readonly tenantId: string,
-    public readonly actorId: string,
+    public readonly tenant_id: string,
+    public readonly actor_id: string,
     public readonly timestamp: Date,
     public readonly payload: GeneratePayslipPayload,
   ) {}
@@ -236,8 +236,8 @@ export class GenerateComplianceReportCommand implements BaseCommand {
   readonly name = 'GenerateComplianceReportCommand';
   constructor(
     public readonly commandId: string,
-    public readonly tenantId: string,
-    public readonly actorId: string,
+    public readonly tenant_id: string,
+    public readonly actor_id: string,
     public readonly timestamp: Date,
     public readonly payload: GenerateComplianceReportPayload,
   ) {}
@@ -254,8 +254,8 @@ export class ExportGovernmentReportCommand implements BaseCommand {
   readonly name = 'ExportGovernmentReportCommand';
   constructor(
     public readonly commandId: string,
-    public readonly tenantId: string,
-    public readonly actorId: string,
+    public readonly tenant_id: string,
+    public readonly actor_id: string,
     public readonly timestamp: Date,
     public readonly payload: ExportGovernmentReportPayload,
   ) {}
@@ -271,8 +271,8 @@ export class EnableComplianceModuleCommand implements BaseCommand {
   readonly name = 'EnableComplianceModuleCommand';
   constructor(
     public readonly commandId: string,
-    public readonly tenantId: string,
-    public readonly actorId: string,
+    public readonly tenant_id: string,
+    public readonly actor_id: string,
     public readonly timestamp: Date,
     public readonly payload: EnableComplianceModulePayload,
   ) {}

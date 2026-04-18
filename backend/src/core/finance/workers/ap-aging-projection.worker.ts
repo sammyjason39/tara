@@ -12,12 +12,12 @@ export class APAgingProjectionWorker {
    * Listens to AP events and updates the vendor's aging profile.
    */
   async handleEvent(event: any): Promise<void> {
-    const { tenantId, vendorId } = event.payload;
+    const { tenant_id, vendorId } = event.payload;
 
     this.logger.log(`Recalculating aging for Vendor ${vendorId}...`);
 
     // 1. Fetch outstanding bills
-    const openBills = await this.fetchOpenBills(tenantId, vendorId);
+    const openBills = await this.fetchOpenBills(tenant_id, vendorId);
 
     // 2. Calculate buckets
     const newBucket = this.agingService.calculateAging(vendorId, openBills);
@@ -28,7 +28,7 @@ export class APAgingProjectionWorker {
     this.logger.log(`Aging updated for Vendor ${vendorId}.`);
   }
 
-  private async fetchOpenBills(tenantId: string, vendorId: string): Promise<APVendorBill[]> {
+  private async fetchOpenBills(tenant_id: string, vendorId: string): Promise<APVendorBill[]> {
     return []; // Mock
   }
 

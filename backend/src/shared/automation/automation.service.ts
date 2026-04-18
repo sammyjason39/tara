@@ -5,7 +5,7 @@ import { AuditService } from "../audit/audit.service";
 
 export interface AutomationRule {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   name: string;
   eventPattern: string; // e.g., "HR.EMPLOYEE_CREATED", "HR.*"
   condition?: any;      // JSON logic or simple equality
@@ -30,7 +30,7 @@ export class AutomationService implements OnModuleInit {
 
   async onModuleInit() {
     this.logger.log({
-      tenantId: "SYSTEM",
+      tenant_id: "SYSTEM",
       module: "AUTOMATION",
       level: "INFO",
       event: "ENGINE_STARTED",
@@ -50,7 +50,7 @@ export class AutomationService implements OnModuleInit {
     this.rules = [
       {
         id: "rule-1",
-        tenantId: "zenvix-corp",
+        tenant_id: "zenvix-corp",
         name: "New Employee Onboarding Alert",
         eventPattern: "HR.EMPLOYEE_CREATED",
         actionType: "NOTIFICATION",
@@ -59,10 +59,10 @@ export class AutomationService implements OnModuleInit {
       },
       {
         id: "rule-2",
-        tenantId: "zenvix-corp",
+        tenant_id: "zenvix-corp",
         name: "Security Alert: High Manual Adjustment",
         eventPattern: "HR.PAYROLL_CALCULATED",
-        condition: { field: "totalAmount", gt: 100000000 }, // > 100M
+        condition: { field: "total_amount", gt: 100000000 }, // > 100M
         actionType: "AI_ANALYZE",
         actionConfig: { prompt: "Analyze this high payroll for anomalies." },
         enabled: true,
@@ -74,8 +74,8 @@ export class AutomationService implements OnModuleInit {
     // 1. Find matching rules
     const matches = this.rules.filter(rule => 
       rule.enabled && 
-      rule.tenantId === event.tenantId && 
-      this.matchesPattern(event.eventType, rule.eventPattern)
+      rule.tenant_id === event.tenant_id && 
+      this.matchesPattern(event.event_type, rule.eventPattern)
     );
 
     for (const rule of matches) {
@@ -85,12 +85,12 @@ export class AutomationService implements OnModuleInit {
     }
   }
 
-  private matchesPattern(eventType: string, pattern: string): boolean {
+  private matchesPattern(event_type: string, pattern: string): boolean {
     if (pattern === "*") return true;
     if (pattern.endsWith("*")) {
-      return eventType.startsWith(pattern.slice(0, -1));
+      return event_type.startsWith(pattern.slice(0, -1));
     }
-    return eventType === pattern;
+    return event_type === pattern;
   }
 
   private evaluateCondition(event: DomainEvent, rule: AutomationRule): boolean {
@@ -107,18 +107,18 @@ export class AutomationService implements OnModuleInit {
 
   private async executeAction(event: DomainEvent, rule: AutomationRule) {
     this.logger.log({
-      tenantId: event.tenantId,
+      tenant_id: event.tenant_id,
       module: "AUTOMATION",
       level: "INFO",
       event: "RULE_TRIGGERED",
-      message: `Automation rule '${rule.name}' triggered by ${event.eventType}`,
+      message: `Automation rule '${rule.name}' triggered by ${event.event_type}`,
       payload: { ruleId: rule.id },
-      userId: event.userId,
+      user_id: event.user_id,
     });
 
     // In a real system, this would call specific service handlers
     this.logger.log({
-      tenantId: event.tenantId,
+      tenant_id: event.tenant_id,
       module: "AUTOMATION",
       level: "INFO",
       event: "ACTION_EXECUTED",
@@ -127,12 +127,12 @@ export class AutomationService implements OnModuleInit {
 
     // Log to Audit for compliance
     await this.audit.log({
-      tenantId: event.tenantId,
-      userId: "SYSTEM_AUTO",
+      tenant_id: event.tenant_id,
+      user_id: "SYSTEM_AUTO",
       module: "AUTOMATION",
       action: "EXECUTE",
-      entityType: "AUTOMATION_RULE",
-      entityId: rule.id,
+      entity_type: "AUTOMATION_RULE",
+      entity_id: rule.id,
       metadata: { actionType: rule.actionType },
     }, (event as any).tx);
   }

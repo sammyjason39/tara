@@ -4,5 +4,5 @@ export interface SalesNextAction {
   detail: string;
   priority: "P1" | "P2" | "P3";
   opportunityId?: string;
-  leadId?: string;
+  lead_id?: string;
 }

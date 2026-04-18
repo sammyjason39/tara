@@ -9,11 +9,11 @@ import {
 export class CreateOpportunityDto {
   @IsString()
   @IsOptional()
-  leadId?: string;
+  lead_id?: string;
 
   @IsString()
   @IsNotEmpty()
-  accountName: string;
+  account_name: string;
 
   @IsNumber()
   @Min(0)
@@ -25,11 +25,11 @@ export class CreateOpportunityDto {
 
   @IsString()
   @IsOptional()
-  ownerId?: string;
+  owner_id?: string;
 
   @IsString()
   @IsOptional()
-  ownerName?: string;
+  owner_name?: string;
 
   @IsString()
   @IsOptional()

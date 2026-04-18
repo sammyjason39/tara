@@ -18,7 +18,7 @@ export class CreateCampaignDto {
   objective: "lead_generation" | "awareness" | "nurture" | "remarketing";
 
   @IsArray()
-  channelMix: Array<
+  channel_mix: Array<
     | "meta_ads"
     | "google_ads"
     | "email"
@@ -38,11 +38,11 @@ export class CreateCampaignDto {
 
   @IsString()
   @IsNotEmpty()
-  startDate: string;
+  start_date: string;
 
   @IsString()
   @IsNotEmpty()
-  endDate: string;
+  end_date: string;
 
   @IsString()
   @IsNotEmpty()

@@ -8,8 +8,8 @@ export class AssetProjectionWorker {
   /**
    * Recalculates asset book values and accumulated depreciation metrics.
    */
-  async generateAssetBriefing(tenantId: string, companyId: string) {
-    this.logger.log(`Generating Asset Briefing (Book Value Tracking) for Tenant ${tenantId}`);
+  async generateAssetBriefing(tenant_id: string, company_id: string) {
+    this.logger.log(`Generating Asset Briefing (Book Value Tracking) for Tenant ${tenant_id}`);
 
     const mockBriefing = {
       valuation: [

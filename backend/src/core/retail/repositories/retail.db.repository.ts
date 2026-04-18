@@ -18,22 +18,24 @@ import {
   UpdateEcommerceStoreDto,
   CreateInventoryPoolDto,
   UpdateProductDto,
+  CheckoutDto,
 } from "../dto/retail.dto";
-import { createHash } from "crypto";
+import { v4 as uuidv4 } from "uuid";
+import { createHash, randomBytes } from "crypto";
 import {
-  Store,
-  ItemMaster,
-  RetailOrder as PrismaOrder,
-  RetailOrderItem as PrismaOrderItem,
-  RetailShift as PrismaShift,
-  RetailChannel,
-  RetailCustomer,
-  RetailCustomerSession,
-  RetailCart,
-  RetailCartItem,
-  RetailWishlist,
-  RetailWishlistItem,
-  RetailPromotion,
+  store as Store,
+  itemMaster as ItemMaster,
+  retailOrder as PrismaOrder,
+  retailOrderItem as PrismaOrderItem,
+  retailShift as PrismaShift,
+  retailChannel as RetailChannel,
+  retailCustomer as RetailCustomer,
+  retailCustomerSession as RetailCustomerSession,
+  retailCart as RetailCart,
+  retailCartItem as RetailCartItem,
+  retailWishlist as RetailWishlist,
+  retailWishlistItem as RetailWishlistItem,
+  retailPromotion as RetailPromotion,
   Prisma,
 } from "@prisma/client";
 
@@ -59,55 +61,55 @@ export class RetailDbRepository implements IRetailRepository {
   // ============================================================
 
   async listStores(
-    tenantId: string,
-    locationId?: string,
+    tenant_id: string,
+    location_id?: string,
   ): Promise<RetailStore[]> {
-    const where: any = { tenantId: tenantId, deletedAt: null };
-    if (locationId) where.locationId = locationId;
+    const where: any = { tenant_id: tenant_id, deleted_at: null };
+    if (location_id) where.location_id = location_id;
 
-    const stores = await this.prisma.store.findMany({
+    const stores = await this.prisma.stores.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: { created_at: "desc" },
     });
-    return stores.map((s: Store) => this.mapStore(s));
+    return (stores as any[]).map((s: Store) => this.mapStore(s));
   }
 
-  async listCategories(tenantId: string): Promise<any[]> {
-    return this.prisma.productCategory.findMany({
-      where: { tenantId },
+  async listCategories(tenant_id: string): Promise<any[]> {
+    return this.prisma.product_categories.findMany({
+      where: { tenant_id: tenant_id },
       orderBy: { name: "asc" },
     });
   }
 
   async getStore(
-    tenantId: string,
-    storeId: string,
+    tenant_id: string,
+    store_id: string,
   ): Promise<RetailStore | null> {
-    const store = await this.prisma.store.findFirst({
-      where: { id: storeId, tenantId: tenantId, deletedAt: null },
+    const store = await this.prisma.stores.findFirst({
+      where: { id: stores_id, tenant_id: tenant_id, deleted_at: null },
     });
     return store ? this.mapStore(store) : null;
   }
 
   async createStore(
-    tenantId: string,
+    tenant_id: string,
     data: CreateStoreDto,
   ): Promise<RetailStore> {
     return await this.prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
-        let finalLocationId = data.locationId;
+        let finalLocationId = data.location_id;
 
-        // If locationId is a placeholder or missing, create a new Location for this Branch
+        // If location_id is a placeholder or missing, create a new Location for this Branch
         if (
           !finalLocationId ||
           finalLocationId === "loc-default" ||
           finalLocationId === "placeholder"
         ) {
-          const newLocation = await tx.location.create({
+          const newLocation = await tx.create({
             data: {
-              id: "q5ysumfj",
-              updatedAt: new Date(),
-              tenantId: tenantId,
+              id: uuidv4(),
+              updated_at: new Date(),
+              tenant_id: tenant_id,
               name: data.name,
               code: data.code,
               address: data.address || "Main Street",
@@ -119,62 +121,75 @@ export class RetailDbRepository implements IRetailRepository {
           finalLocationId = newLocation.id;
         }
 
-        const store = await tx.store.create({
+        let poolId = data.inventory_pool_id;
+        if (!poolId) {
+          const pool = await tx.create({
+            data: {
+              id: uuidv4(),
+              updated_at: new Date(),
+              tenant_id: tenant_id,
+              name: `${data.name} Default Pool`,
+              type: "STORE",
+            },
+          });
+          poolId = pool.id;
+        }
+
+        const store = await tx.create({
           data: {
-            id: "ytqd1z2s",
-            updatedAt: new Date(),
-            tenantId: tenantId,
-            locationId: finalLocationId,
+            id: uuidv4(),
+            updated_at: new Date(),
+            tenant_id: tenant_id,
+            location_id: finalLocationId,
             name: data.name,
             code: data.code,
             type: data.type,
             phone: data.phone,
             email: data.email,
             timezone: data.timezone ?? "Asia/Jakarta",
-            operatingHours: (data as any).operatingHours as any,
-            inventoryPoolId: data.inventoryPoolId,
-            managerId: data.managerId,
+            inventory_pool_id: poolId,
+            manager_id: data.manager_id,
             settings: {
               operational_config: data.operational_config,
               supply_config: data.supply_config,
               infrastructure_registry: data.infrastructure_registry,
-              channel_binding: data.channel_binding,
               governance: data.governance,
             } as any,
             country: data.country,
             currency: data.currency,
           },
         });
+
         return this.mapStore(store);
       },
     );
   }
 
   async updateStore(
-    tenantId: string,
-    storeId: string,
+    tenant_id: string,
+    store_id: string,
     data: UpdateStoreDto,
   ): Promise<RetailStore> {
-    const existing = await this.prisma.store.findUnique({
-      where: { id: storeId, tenantId: tenantId },
+    const existing = await this.prisma.stores.findUnique({
+      where: { id: stores_id, tenant_id: tenant_id },
     });
     if (!existing) throw new Error("Store not found");
 
     const currentSettings = (existing.settings as any) || {};
 
-    const store = await this.prisma.store.update({
-      where: { id: storeId, tenantId: tenantId },
+    const store = await this.prisma.stores.update({
+      where: { id: stores_id, tenant_id: tenant_id },
       data: {
         name: data.name,
-        locationId: data.locationId,
+        location_id: data.location_id,
         currency: data.currency,
         type: data.type,
         phone: data.phone,
         email: data.email,
         timezone: data.timezone,
-        managerId: data.managerId,
-        inventoryPoolId: data.inventoryPoolId,
-        operatingHours: (data as any).operatingHours as any,
+        manager_id: data.manager_id,
+        inventory_pool_id: data.inventory_pool_id,
+        operating_hours: (data as any).operatingHours as any,
         settings: {
           ...currentSettings,
           operational_config:
@@ -194,10 +209,10 @@ export class RetailDbRepository implements IRetailRepository {
     return this.mapStore(store);
   }
 
-  async deleteStore(tenantId: string, storeId: string): Promise<void> {
-    await this.prisma.store.update({
-      where: { id: storeId, tenantId: tenantId },
-      data: { deletedAt: new Date(), status: "decommissioned" },
+  async deleteStore(tenant_id: string, store_id: string): Promise<void> {
+    await this.prisma.stores.update({
+      where: { id: stores_id, tenant_id: tenant_id },
+      data: { deleted_at: new Date(), status: "decommissioned" },
     });
   }
 
@@ -205,22 +220,22 @@ export class RetailDbRepository implements IRetailRepository {
   // INVENTORY POOLS
   // ============================================================
 
-  async listInventoryPools(tenantId: string): Promise<any[]> {
-    return this.prisma.inventoryPool.findMany({
-      where: { tenantId: tenantId, deletedAt: null },
-      orderBy: { createdAt: "desc" },
+  async listInventoryPools(tenant_id: string): Promise<any[]> {
+    return this.prisma.inventory_pools.findMany({
+      where: { tenant_id: tenant_id, deleted_at: null },
+      orderBy: { created_at: "desc" },
     });
   }
 
   async createInventoryPool(
-    tenantId: string,
+    tenant_id: string,
     data: CreateInventoryPoolDto,
   ): Promise<any> {
-    return this.prisma.inventoryPool.create({
+    return this.prisma.inventory_pools.create({
       data: {
-        id: "1syr0gfz",
-        updatedAt: new Date(),
-        tenantId: tenantId,
+        id: uuidv4(),
+        updated_at: new Date(),
+        tenant_id: tenant_id,
         name: data.name,
         description: data.description,
         type: data.type ?? "shared",
@@ -229,19 +244,19 @@ export class RetailDbRepository implements IRetailRepository {
   }
 
   async getInventoryPool(
-    tenantId: string,
+    tenant_id: string,
     poolId: string,
   ): Promise<any | null> {
-    return this.prisma.inventoryPool.findFirst({
-      where: { id: poolId, tenantId: tenantId, deletedAt: null },
-      include: { inventoryPoolStock: { include: { itemMaster: true } } },
+    return this.prisma.inventory_pools.findFirst({
+      where: { id: poolId, tenant_id: tenant_id, deleted_at: null },
+      include: { inventory_pool_stock: { include: { item_masters: true } } },
     });
   }
 
-  async deleteInventoryPool(tenantId: string, poolId: string): Promise<void> {
-    await this.prisma.inventoryPool.update({
-      where: { id: poolId, tenantId: tenantId },
-      data: { deletedAt: new Date() },
+  async deleteInventoryPool(tenant_id: string, poolId: string): Promise<void> {
+    await this.prisma.inventory_pools.update({
+      where: { id: poolId, tenant_id: tenant_id },
+      data: { deleted_at: new Date() },
     });
   }
 
@@ -250,55 +265,57 @@ export class RetailDbRepository implements IRetailRepository {
   // ============================================================
 
   async listEcommerceStores(
-    tenantId: string,
-    storeId?: string,
+    tenant_id: string,
+    store_id?: string,
   ): Promise<any[]> {
-    const where: any = { tenantId: tenantId, deletedAt: null };
-    if (storeId) {
-      where.stores = { some: { id: storeId } };
+    const where: any = { tenant_id: tenant_id, deleted_at: null };
+    if (store_id) {
+      where.stores = { some: { id: stores_id } };
     }
 
-    const stores = await this.prisma.ecommerceConnector.findMany({
+    const stores = await this.prisma.ecommerce_connectors.findMany({
       where,
       include: { stores: { select: { id: true, name: true, code: true } } },
-      orderBy: { createdAt: "desc" },
+      orderBy: { created_at: "desc" },
     });
     return stores.map((s: any) => this.mapEcommerceStore(s));
   }
 
   async getEcommerceStore(
-    tenantId: string,
-    storeId: string,
+    tenant_id: string,
+    store_id: string,
   ): Promise<any | null> {
-    const store = await this.prisma.ecommerceConnector.findFirst({
-      where: { id: storeId, tenantId: tenantId, deletedAt: null },
+    const store = await this.prisma.ecommerce_connectors.findFirst({
+      where: { id: stores_id, tenant_id: tenant_id, deleted_at: null },
       include: { stores: { select: { id: true, name: true, code: true } } },
     });
     return store ? this.mapEcommerceStore(store) : null;
   }
 
   async createEcommerceStore(
-    tenantId: string,
+    tenant_id: string,
     data: CreateEcommerceStoreDto,
   ): Promise<any> {
-    const rawKey = `znx_ec_${createHash("sha256").update(`${tenantId}:${data.domain}:${Date.now()}`).digest("hex").slice(0, 24)}`;
+    const rawKey = `znx_ec_${createHash("sha256").update(`${tenant_id}:${data.domain}:${Date.now()}`).digest("hex").slice(0, 24)}`;
     const apiKeyHash = createHash("sha256").update(rawKey).digest("hex");
 
-    const store = await this.prisma.ecommerceConnector.create({
+    const store = await this.prisma.ecommerce_connectors.create({
       data: {
-        id: "b4l93fc7",
-        updatedAt: new Date(),
-        tenantId: tenantId,
+        id: uuidv4(),
+        updated_at: new Date(),
+        tenant_id: tenant_id,
         name: data.name,
-        platform: data.platform,
+        platform: data.platform || "custom",
         domain: data.domain,
-        apiKey: apiKeyHash,
-        inventoryPoolId: data.inventoryPoolId,
-        managerId: data.managerId,
+        api_key: apiKeyHash,
+        inventory_pool_id: data.inventory_pool_id,
+        manager_id: data.manager_id,
         settings: data.settings as any,
         status: "active",
-        stores: data.branchIds?.length
-          ? { connect: data.branchIds.map((id) => ({ id })) }
+        stores: data.branch_ids
+          ? {
+              connect: data.branch_ids.map((id: string) => ({ id })),
+            }
           : undefined,
       },
       include: { stores: { select: { id: true, name: true, code: true } } },
@@ -312,18 +329,18 @@ export class RetailDbRepository implements IRetailRepository {
   }
 
   async updateEcommerceStore(
-    tenantId: string,
-    storeId: string,
+    tenant_id: string,
+    store_id: string,
     data: UpdateEcommerceStoreDto,
   ): Promise<any> {
-    const store = await this.prisma.ecommerceConnector.update({
-      where: { id: storeId, tenantId: tenantId },
+    const store = await this.prisma.ecommerce_connectors.update({
+      where: { id: stores_id, tenant_id: tenant_id },
       data: {
         name: data.name,
         domain: data.domain,
         status: data.status,
-        inventoryPoolId: data.inventoryPoolId,
-        managerId: data.managerId,
+        inventory_pool_id: data.inventory_pool_id,
+        manager_id: data.manager_id,
         settings: data.settings as any,
       },
       include: { stores: { select: { id: true, name: true, code: true } } },
@@ -331,32 +348,32 @@ export class RetailDbRepository implements IRetailRepository {
     return this.mapEcommerceStore(store);
   }
 
-  async deleteEcommerceStore(tenantId: string, storeId: string): Promise<void> {
-    await this.prisma.ecommerceConnector.update({
-      where: { id: storeId, tenantId: tenantId },
-      data: { deletedAt: new Date(), status: "inactive" },
+  async deleteEcommerceStore(tenant_id: string, store_id: string): Promise<void> {
+    await this.prisma.ecommerce_connectors.update({
+      where: { id: stores_id, tenant_id: tenant_id },
+      data: { deleted_at: new Date(), status: "inactive" },
     });
   }
 
   async linkEcommerceToBranch(
-    tenantId: string,
+    tenant_id: string,
     ecommerceId: string,
-    branchId: string,
+    branch_id: string,
   ): Promise<void> {
-    await this.prisma.ecommerceConnector.update({
-      where: { id: ecommerceId, tenantId: tenantId },
-      data: { stores: { connect: { id: branchId } } },
+    await this.prisma.ecommerce_connectors.update({
+      where: { id: ecommerceId, tenant_id: tenant_id },
+      data: { stores: { connect: { id: branch_id } } },
     });
   }
 
   async unlinkEcommerceFromBranch(
-    tenantId: string,
+    tenant_id: string,
     ecommerceId: string,
-    branchId: string,
+    branch_id: string,
   ): Promise<void> {
-    await this.prisma.ecommerceConnector.update({
-      where: { id: ecommerceId, tenantId: tenantId },
-      data: { stores: { disconnect: { id: branchId } } },
+    await this.prisma.ecommerce_connectors.update({
+      where: { id: ecommerceId, tenant_id: tenant_id },
+      data: { stores: { disconnect: { id: branch_id } } },
     });
   }
 
@@ -365,18 +382,18 @@ export class RetailDbRepository implements IRetailRepository {
   // ============================================================
 
   async listProducts(
-    tenantId: string,
+    tenant_id: string,
     options?: {
       page?: number;
       pageSize?: number;
-      categoryId?: string;
+      category_id?: string;
       type?: string;
       minPrice?: number;
       maxPrice?: number;
       q?: string;
-      sortBy?: "name" | "price" | "createdAt";
+      sortBy?: "name" | "price" | "created_at";
       sortDir?: "asc" | "desc";
-      locationId?: string;
+      location_id?: string;
     },
   ): Promise<{
     items: RetailProduct[];
@@ -390,22 +407,22 @@ export class RetailDbRepository implements IRetailRepository {
     const skip = (page - 1) * pageSize;
     const orderField =
       options?.sortBy === "price"
-        ? "basePrice"
-        : options?.sortBy === "createdAt"
-          ? "createdAt"
+        ? "base_price"
+        : options?.sortBy === "created_at"
+          ? "created_at"
           : "name";
     const orderDir = options?.sortDir === "desc" ? "desc" : "asc";
 
-    const where: any = { tenantId: tenantId, status: "active" };
-    if (options?.categoryId) where.categoryId = options.categoryId;
+    const where: any = { tenant_id: tenant_id, status: "active" };
+    if (options?.category_id) where.category_id = options.category_id;
     if (options?.type) where.type = options.type;
 
     if (options?.minPrice !== undefined || options?.maxPrice !== undefined) {
-      where.basePrice = {};
+      where.base_price = {};
       if (options.minPrice !== undefined)
-        where.basePrice.gte = options.minPrice;
+        where.base_price.gte = options.minPrice;
       if (options.maxPrice !== undefined)
-        where.basePrice.lte = options.maxPrice;
+        where.base_price.lte = options.maxPrice;
     }
     if (options?.q) {
       const q = options.q;
@@ -418,35 +435,35 @@ export class RetailDbRepository implements IRetailRepository {
     }
 
     const [total, products, configs] = await this.prisma.$transaction([
-      this.prisma.itemMaster.count({
+      this.prisma.item_masters.count({
         where,
       }),
-      this.prisma.itemMaster.findMany({
+      this.prisma.item_masters.findMany({
         where,
         orderBy: { [orderField]: orderDir },
         skip,
         take: pageSize,
         include: {
-          productCategory: true,
-          stockLevels: true,
-          productProjections: true,
+          product_categories: true,
+          stock_levels: true,
+          product_projections: true,
         },
       }),
-      this.prisma.labelConfig.findMany({
-        where: { tenantId, moduleType: "RETAIL" },
+      this.prisma.label_configs.findMany({
+        where: { tenant_id: tenant_id, module_type: "RETAIL" },
       }),
     ]);
 
     let display_labels = {};
     const locConfig = configs.find(
-      (c: any) => c.locationId === options?.locationId,
+      (c: any) => c.location_id === options?.location_id,
     );
-    const globalConfig = configs.find((c: any) => c.locationId === null);
+    const globalConfig = configs.find((c: any) => c.location_id === null);
     if (locConfig) display_labels = locConfig.labels as any;
     else if (globalConfig) display_labels = globalConfig.labels as any;
 
     return {
-      items: products.map((p: any) => this.mapProduct(p, options?.locationId)),
+      items: products.map((p: any) => this.mapProduct(p, options?.location_id)),
       display_labels,
       total,
       page,
@@ -455,29 +472,29 @@ export class RetailDbRepository implements IRetailRepository {
   }
 
   async getProduct(
-    tenantId: string,
-    productId: string,
+    tenant_id: string,
+    product_id: string,
   ): Promise<RetailProduct | null> {
-    const product = await this.prisma.itemMaster.findFirst({
-      where: { id: productId, tenantId: tenantId },
+    const product = await this.prisma.item_masters.findFirst({
+      where: { id: product_id, tenant_id: tenant_id },
     });
     return product ? this.mapProduct(product) : null;
   }
 
   async updateProduct(
-    tenantId: string,
-    productId: string,
+    tenant_id: string,
+    product_id: string,
     data: UpdateProductDto,
-    locationId?: string,
+    location_id?: string,
   ): Promise<RetailProduct> {
     const txOperations: any[] = [
-      this.prisma.itemMaster.update({
-        where: { id: productId, tenantId: tenantId },
+      this.prisma.item_masters.update({
+        where: { id: product_id, tenant_id: tenant_id },
         data: {
           name: data.name,
           description: data.description,
-          categoryId: data.categoryId,
-          basePrice: data.basePrice,
+          category_id: data.category_id,
+          base_price: data.base_price,
           unit: data.unit,
           sku: data.sku,
           barcode: data.barcode,
@@ -485,57 +502,57 @@ export class RetailDbRepository implements IRetailRepository {
           status: data.status,
         },
       }),
-      // Sync global projection (locationId: null) if it exists
-      this.prisma.productProjection.updateMany({
+      // Sync global projection (location_id: null) if it exists
+      this.prisma.product_projections.updateMany({
         where: {
-          itemMasterId: productId,
-          tenantId: tenantId,
-          locationId: null,
-          moduleType: "RETAIL",
+          item_master_id: product_id,
+          tenant_id: tenant_id,
+          location_id: null,
+          module_type: "RETAIL",
         },
         data: {
-          customName: data.name,
-          customDescription: data.description,
-          price: data.basePrice,
+          custom_name: data.name,
+          custom_description: data.description,
+          price: data.base_price,
         },
       }),
     ];
 
     if (
-      (data.stockOnHand !== undefined || data.reserved !== undefined) &&
-      locationId
+      (data.stock_on_hand !== undefined || data.reserved !== undefined) &&
+      location_id
     ) {
-      const existingStock = await this.prisma.stockLevel.findFirst({
-        where: { tenantId, locationId, productId },
+      const existingStock = await this.prisma.stock_levels.findFirst({
+        where: { tenant_id: tenant_id, location_id: location_id, product_id: product_id },
       });
 
       const onHand =
-        data.stockOnHand !== undefined
-          ? data.stockOnHand
-          : existingStock?.onHand || 0;
+        data.stock_on_hand !== undefined
+          ? data.stock_on_hand
+          : Number(existingStock?.on_hand || 0);
       const reserved =
         data.reserved !== undefined
           ? data.reserved
-          : existingStock?.reserved || 0;
+          : Number(existingStock?.reserved || 0);
       const available = onHand - reserved;
 
       if (existingStock) {
         txOperations.push(
-          this.prisma.stockLevel.update({
+          this.prisma.stock_levels.update({
             where: { id: existingStock.id },
-            data: { onHand, reserved, available },
+            data: { on_hand: onHand, reserved, available },
           }),
         );
       } else {
         txOperations.push(
-          this.prisma.stockLevel.create({
+          this.prisma.stock_levels.create({
             data: {
-              id: "up3v34kp",
-              updatedAt: new Date(),
-              tenantId,
-              locationId,
-              productId,
-              onHand,
+              id: uuidv4(),
+              updated_at: new Date(),
+              tenant_id: tenant_id,
+              location_id: location_id,
+              product_id: product_id,
+              on_hand: onHand,
               reserved,
               available,
             },
@@ -547,9 +564,9 @@ export class RetailDbRepository implements IRetailRepository {
     await this.prisma.$transaction(txOperations);
 
     // Re-fetch with all necessary fields for mapProduct logic
-    const fullProduct = await this.prisma.itemMaster.findUnique({
-      where: { id: productId },
-      include: { productCategory: true, stockLevels: true, productProjections: true },
+    const fullProduct = await this.prisma.item_masters.findUnique({
+      where: { id: product_id },
+      include: { product_categories: true, stock_levels: true, product_projections: true },
     });
 
     if (!fullProduct) throw new Error("Product re-fetch failed");
@@ -564,12 +581,12 @@ export class RetailDbRepository implements IRetailRepository {
   //
   // Retries up to 5 times to handle rare concurrent insertion races.
   async generateNextSku(
-    tenantId: string,
-    categoryId: string,
+    tenant_id: string,
+    category_id: string,
   ): Promise<{ sku: string; barcode: string }> {
     // 1. Resolve category name → prefix
-    const category = await this.prisma.productCategory.findFirst({
-      where: { id: categoryId, tenantId },
+    const category = await this.prisma.product_categories.findFirst({
+      where: { id: category_id, tenant_id: tenant_id },
       select: { name: true },
     });
     const prefix =
@@ -582,9 +599,9 @@ export class RetailDbRepository implements IRetailRepository {
 
     // 2. Find the highest sequence already used for this prefix on this date
     const pattern = `${prefix}-${dateStr}-%`;
-    const latest = await this.prisma.itemMaster.findFirst({
+    const latest = await this.prisma.item_masters.findFirst({
       where: {
-        tenantId,
+        tenant_id: tenant_id,
         sku: { startsWith: `${prefix}-${dateStr}-` },
       },
       orderBy: { sku: "desc" },
@@ -602,8 +619,8 @@ export class RetailDbRepository implements IRetailRepository {
     // 4. Build candidate SKU and verify uniqueness (retry on collision)
     for (let attempt = 0; attempt < 5; attempt++) {
       const candidateSku = `${prefix}-${dateStr}-${String(seq + attempt).padStart(4, "0")}`;
-      const existing = await this.prisma.itemMaster.findUnique({
-        where: { tenantId_sku: { tenantId, sku: candidateSku } },
+      const existing = await this.prisma.item_masters.findUnique({
+        where: { tenant_id_sku: { tenant_id: tenant_id, sku: candidateSku } },
         select: { id: true },
       });
       if (!existing) {
@@ -621,25 +638,25 @@ export class RetailDbRepository implements IRetailRepository {
     };
   }
 
-  async listOrders(tenantId: string, storeId?: string): Promise<RetailOrder[]> {
-    const where: any = { tenantId: tenantId };
-    if (storeId) where.storeId = storeId;
+  async listOrders(tenant_id: string, store_id?: string): Promise<RetailOrder[]> {
+    const where: any = { tenant_id: tenant_id };
+    if (store_id) where.store_id = store_id;
 
-    const orders = await this.prisma.retailOrder.findMany({
+    const orders = await this.prisma.retail_orders.findMany({
       where,
       include: {
-        retailOrderItems: { include: { itemMaster: true } },
-        retailCustomer: true,
+        retail_order_items: { include: { item_masters: true } },
+        retail_customers: true,
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { created_at: "desc" },
       take: 100,
     });
 
     return orders.map(
       (
         o: PrismaOrder & {
-          retailOrderItems: (PrismaOrderItem & {
-            itemMaster: ItemMaster | null;
+          retail_order_items: (PrismaOrderItem & {
+            item_masters: ItemMaster | null;
           })[];
         },
       ) => this.mapOrder(o),
@@ -647,67 +664,67 @@ export class RetailDbRepository implements IRetailRepository {
   }
 
   async getOrder(
-    tenantId: string,
-    orderId: string,
+    tenant_id: string,
+    order_id: string,
   ): Promise<RetailOrder | null> {
-    const order = await this.prisma.retailOrder.findFirst({
-      where: { id: orderId, tenantId: tenantId },
+    const order = await this.prisma.retail_orders.findFirst({
+      where: { id: order_id, tenant_id: tenant_id },
       include: {
-        retailOrderItems: { include: { itemMaster: true } },
-        retailCustomer: true,
+        retail_order_items: { include: { item_masters: true } },
+        retail_customers: true,
       },
     });
     return order ? this.mapOrder(order) : null;
   }
 
   async createOrder(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     data: CreateOrderDto,
-    userId: string,
+    user_id: string,
   ): Promise<RetailOrder> {
     let subtotal = 0;
 
     const itemsData = await Promise.all(
       data.items.map(async (item) => {
-        const product = await this.prisma.itemMaster.findUnique({
-          where: { id: item.productId },
+        const product = await this.prisma.item_masters.findUnique({
+          where: { id: item.product_id },
         });
-        if (!product) throw new Error(`Product ${item.productId} not found`);
+        if (!product) throw new Error(`Product ${item.product_id} not found`);
 
-        const itemSubtotal = item.quantity * item.unitPrice;
+        const itemSubtotal = item.quantity * item.unit_price;
         subtotal += itemSubtotal;
 
         return {
-          tenantId: tenantId,
-          productId: item.productId,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          totalPrice: itemSubtotal,
+          tenant_id: tenant_id,
+          variant_id: item.variant_id || null,
+          quantity: new Prisma.Decimal(item.quantity),
+          unit_price: new Prisma.Decimal(item.unit_price),
+          total_price: itemSubtotal,
           discount: 0,
         };
       }),
     );
 
-    const order = await this.prisma.retailOrder.create({
+    const order = await this.prisma.retail_orders.create({
       data: {
-        id: "81dj4g20",
-        updatedAt: new Date(),
-        tenantId: tenantId,
-        storeId: data.storeId,
-        deviceId: data.terminalId || undefined,
-        cashierId: userId || undefined,
-        customerId: data.customerId || undefined,
+        id: uuidv4(),
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        store_id: data.store_id,
+        device_id: data.terminal_id || undefined,
+        cashier_id: user_id || undefined,
+        customer_id: data.customer_id || undefined,
         status: "pending",
         subtotal,
-        tax: Number(data.grandTotal) - subtotal,
-        totalAmount: data.grandTotal,
-        paymentMethod: data.paymentMethod,
-        retailOrderItems: { create: itemsData },
+        tax: Number(data.grand_total) - subtotal,
+        total_amount: data.grand_total,
+        payment_method: data.payment_method,
+        retail_order_items: { create: itemsData },
       } as any,
       include: {
-        retailOrderItems: { include: { itemMaster: true } },
-        store: true,
+        retail_order_items: { include: { item_masters: true } },
+        stores: true,
       },
     });
 
@@ -715,18 +732,18 @@ export class RetailDbRepository implements IRetailRepository {
   }
 
   async updateOrderStatus(
-    tenantId: string,
-    orderId: string,
+    tenant_id: string,
+    order_id: string,
     status: string,
     metadata?: any,
   ): Promise<RetailOrder> {
-    const order = await this.prisma.retailOrder.update({
-      where: { id: orderId, tenantId: tenantId },
+    const order = await this.prisma.retail_orders.update({
+      where: { id: order_id, tenant_id: tenant_id },
       data: {
         status,
         ...(metadata?.tax_total !== undefined && { tax: metadata.tax_total }),
       },
-      include: { retailOrderItems: { include: { itemMaster: true } } },
+      include: { retail_order_items: { include: { item_masters: true } } },
     });
     return this.mapOrder(order);
   }
@@ -736,22 +753,22 @@ export class RetailDbRepository implements IRetailRepository {
   // ============================================================
 
   async reserveStock(
-    tenantId: string,
-    locationId: string,
-    productId: string,
+    tenant_id: string,
+    location_id: string,
+    product_id: string,
     quantity: number,
   ): Promise<{ success: boolean; reservationId?: string }> {
     try {
       return await this.runInTx(async (tx: any) => {
-        const stock = await tx.stockLevel.findFirst({
-          where: { tenantId, productId, locationId },
+        const stock = await tx.stock_levels.findFirst({
+          where: { tenant_id, product_id, location_id },
         });
 
         if (!stock || stock.available < quantity) {
           return { success: false };
         }
 
-        await tx.stockLevel.update({
+        await tx.stock_levels.update({
           where: { id: stock.id },
           data: {
             reserved: { increment: quantity },
@@ -761,7 +778,7 @@ export class RetailDbRepository implements IRetailRepository {
 
         return {
           success: true,
-          reservationId: `res_${Date.now()}_${productId.slice(0, 4)}`,
+          reservationId: `res_${Date.now()}_${product_id.slice(0, 4)}`,
         };
       });
     } catch (error) {
@@ -771,18 +788,18 @@ export class RetailDbRepository implements IRetailRepository {
   }
 
   async releaseStock(
-    tenantId: string,
-    productId: string,
+    tenant_id: string,
+    product_id: string,
     quantity: number,
   ): Promise<void> {
     await this.prisma.$transaction(async (tx: any) => {
-      const stock = await tx.stockLevel.findFirst({
-        where: { tenantId, productId },
+      const stock = await tx.stock_levels.findFirst({
+        where: { tenant_id, product_id },
       });
 
       if (!stock) return;
 
-      await tx.stockLevel.update({
+      await tx.stock_levels.update({
         where: { id: stock.id },
         data: {
           reserved: { decrement: Math.min(stock.reserved, quantity) },
@@ -793,14 +810,14 @@ export class RetailDbRepository implements IRetailRepository {
   }
 
   async checkStock(
-    tenantId: string,
-    productId: string,
+    tenant_id: string,
+    product_id: string,
   ): Promise<{ available: number; status: string }> {
-    const stock = await this.prisma.stockLevel.findFirst({
-      where: { tenantId, productId },
+    const stock = await this.prisma.stock_levels.findFirst({
+      where: { tenant_id: tenant_id, product_id: product_id },
     });
 
-    const available = stock?.available ?? 0;
+    const available = Number(stock?.available ?? 0);
     return {
       available,
       status: available <= 0 ? "out_of_stock" : "in_stock",
@@ -808,8 +825,8 @@ export class RetailDbRepository implements IRetailRepository {
   }
 
   async getInventoryStats(
-    tenantId: string,
-    options?: { categoryId?: string; q?: string },
+    tenant_id: string,
+    options?: { category_id?: string; q?: string },
   ): Promise<{
     total: number;
     critical: number;
@@ -823,8 +840,8 @@ export class RetailDbRepository implements IRetailRepository {
     outOfStockCount: number;
     totalValue: number;
   }> {
-    const where: any = { tenantId, status: "active" };
-    if (options?.categoryId) where.categoryId = options.categoryId;
+    const where: any = { tenant_id, status: "active" };
+    if (options?.category_id) where.category_id = options.category_id;
     if (options?.q) {
       const q = options.q;
       where.OR = [
@@ -835,16 +852,16 @@ export class RetailDbRepository implements IRetailRepository {
       ];
     }
 
-    const products = await this.prisma.itemMaster.findMany({
+    const products = await this.prisma.item_masters.findMany({
       where,
       select: {
-        basePrice: true,
-        stockLevels: {
+        base_price: true,
+        stock_levels: {
           select: {
-            onHand: true,
+            on_hand: true,
             available: true,
-            minBuffer: true,
-            maxCapacity: true,
+            min_buffer: true,
+            max_capacity: true,
           },
         },
       },
@@ -865,26 +882,26 @@ export class RetailDbRepository implements IRetailRepository {
     };
 
     products.forEach((p: any) => {
-      const totalOnHand = p.stockLevels.reduce(
+      const totalOnHand = p.stock_levelss.reduce(
         (sum: number, s: any) => sum + (s.onHand || 0),
         0,
       );
-      const totalAvailable = p.stockLevels.reduce(
+      const totalAvailable = p.stock_levelss.reduce(
         (sum: number, s: any) => sum + (s.available || 0),
         0,
       );
-      const minBuffer = p.stockLevels.reduce(
+      const minBuffer = p.stock_levelss.reduce(
         (sum: number, s: any) => sum + (s.minBuffer || 0),
         0,
       );
-      const maxCapacity = p.stockLevels.reduce(
+      const maxCapacity = p.stock_levelss.reduce(
         (sum: number, s: any) => sum + (s.maxCapacity || 0),
         0,
       );
 
       stats.totalSOH += totalOnHand;
       stats.totalATS += totalAvailable;
-      stats.totalValue += totalOnHand * Number(p.basePrice);
+      stats.totalValue += totalOnHand * Number(p.base_price);
 
       if (totalAvailable <= 0) {
         stats.critical++;
@@ -906,31 +923,44 @@ export class RetailDbRepository implements IRetailRepository {
   // ============================================================
 
   async getActiveShift(
-    tenantId: string,
-    storeId: string,
-    employeeId: string,
+    tenant_id: string,
+    store_id: string,
+    employee_id: string,
   ): Promise<RetailShift | null> {
-    const shift = await this.prisma.retailShift.findFirst({
-      where: { tenantId: tenantId, storeId, employeeId, status: "open" },
+    const shift = await this.prisma.retail_shifts.findFirst({
+      where: { tenant_id: tenant_id, store_id: stores_id, employee_id: employee_id, status: "open" },
     });
     return shift ? this.mapShift(shift) : null;
   }
 
   async openShift(
-    tenantId: string,
-    locationId: string,
-    employeeId: string,
+    tenant_id: string,
+    location_id: string,
+    employee_id: string,
     data: OpenShiftDto,
   ): Promise<RetailShift> {
-    const shift = await this.prisma.retailShift.create({
+    const pool = await this.prisma.inventory_pools.create({
       data: {
-        id: "s84p52tc",
-        updatedAt: new Date(),
-        tenantId: tenantId,
-        storeId: data.storeId,
-        employeeId,
-        startTime: new Date(),
-        openingCash: data.openingCash,
+        id: uuidv4(),
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        name: data.name || "Default Pool",
+        type: data.type || "STORE",
+        stores: data.store_id ? { connect: { id: data.store_id } } : undefined,
+        ecommerce_connectors: data.ecommerce_id
+          ? { connect: { id: data.ecommerce_id } }
+          : undefined,
+      },
+    });
+    const shift = await this.prisma.retail_shifts.create({
+      data: {
+        id: uuidv4(),
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        store_id: data.store_id,
+        employee_id: employee_id,
+        start_time: new Date(),
+        opening_cash: data.opening_cash,
         status: "open",
       },
     });
@@ -938,15 +968,15 @@ export class RetailDbRepository implements IRetailRepository {
   }
 
   async closeShift(
-    tenantId: string,
-    shiftId: string,
+    tenant_id: string,
+    shift_id: string,
     data: CloseShiftDto,
   ): Promise<RetailShift> {
-    const shift = await this.prisma.retailShift.update({
-      where: { id: shiftId, tenantId: tenantId },
+    const shift = await this.prisma.retail_shifts.update({
+      where: { id: shift_id, tenant_id: tenant_id },
       data: {
-        endTime: new Date(),
-        closingCash: data.closingCash,
+        end_time: new Date(),
+        closing_cash: data.closing_cash,
         status: "closed",
         notes: data.notes,
       },
@@ -954,14 +984,24 @@ export class RetailDbRepository implements IRetailRepository {
     return this.mapShift(shift);
   }
 
-  async listShifts(tenantId: string, storeId?: string): Promise<RetailShift[]> {
-    const where: any = { tenantId: tenantId };
-    if (storeId) where.storeId = storeId;
+  async listShifts(
+    tenant_id: string,
+    filters?: {
+      store_id?: string;
+      employee_id?: string;
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<RetailShift[]> {
+    const where: any = { tenant_id: tenant_id };
+    if (filters?.store_id) where.store_id = filters.store_id;
+    if (filters?.employee_id) where.employee_id = filters.employee_id;
 
-    const shifts = await this.prisma.retailShift.findMany({
+    const shifts = await this.prisma.retail_shifts.findMany({
       where,
-      orderBy: { startTime: "desc" },
-      take: 50,
+      orderBy: { start_time: "desc" },
+      take: filters?.limit ?? 50,
+      skip: filters?.offset ?? 0,
     });
     return shifts.map((s: PrismaShift) => this.mapShift(s));
   }
@@ -970,51 +1010,51 @@ export class RetailDbRepository implements IRetailRepository {
   // PROMOTIONS
   // ============================================================
 
-  async listPromotions(tenantId: string): Promise<any[]> {
-    const promotions = await this.prisma.retailPromotion.findMany({
-      where: { tenantId: tenantId },
-      orderBy: { createdAt: "desc" },
+  async listPromotions(tenant_id: string): Promise<any[]> {
+    const promotions = await this.prisma.retail_promotions.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { created_at: "desc" },
     });
     return promotions.map((p: RetailPromotion) => ({
       id: p.id,
-      tenant_id: p.tenantId,
+      tenant_id: p.tenant_id,
       title: p.title,
       type: p.type,
       value: Number(p.value),
-      start_date: p.startDate,
-      end_date: p.endDate,
+      start_date: p.start_date,
+      end_date: p.end_date,
       status: p.status,
       target: p.target,
-      created_at: p.createdAt,
-      updated_at: p.updatedAt,
+      created_at: p.created_at,
+      updated_at: p.updated_at,
     }));
   }
 
   async updatePromotion(
-    tenantId: string,
+    tenant_id: string,
     promotionId: string,
     data: any,
   ): Promise<any> {
-    const promotion = await this.prisma.retailPromotion.update({
-      where: { id: promotionId, tenantId: tenantId },
+    const promotion = await this.prisma.retail_promotions.update({
+      where: { id: promotionId, tenant_id: tenant_id },
       data: {
         status: data.status,
         ...(data.value && { value: data.value }),
-        ...(data.endDate && { endDate: new Date(data.endDate) }),
+        ...(data.end_date && { end_date: new Date(data.end_date) }),
       },
     });
     return {
       id: promotion.id,
-      tenant_id: promotion.tenantId,
+      tenant_id: promotion.tenant_id,
       title: promotion.title,
       type: promotion.type,
       value: Number(promotion.value),
-      start_date: promotion.startDate,
-      end_date: promotion.endDate,
+      start_date: promotion.start_date,
+      end_date: promotion.end_date,
       status: promotion.status,
       target: promotion.target,
-      created_at: promotion.createdAt,
-      updated_at: promotion.updatedAt,
+      created_at: promotion.created_at,
+      updated_at: promotion.updated_at,
     };
   }
 
@@ -1022,48 +1062,48 @@ export class RetailDbRepository implements IRetailRepository {
   // CHANNELS (Legacy Ecommerce Hub)
   // ============================================================
 
-  async listChannels(tenantId: string): Promise<any[]> {
-    const channels = await this.prisma.retailChannel.findMany({
-      where: { tenantId: tenantId },
-      orderBy: { createdAt: "desc" },
+  async listChannels(tenant_id: string): Promise<any[]> {
+    const channels = await this.prisma.retail_channels.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { created_at: "desc" },
     });
     return channels.map((c: RetailChannel) => {
       const credentials = c.credentials as {
         clientId?: string;
         clientSecret?: string;
-        branchId?: string;
+        branch_id?: string;
         gatewayUrl?: string;
         connector?: string;
       } | null;
       return {
         id: c.id,
-        tenant_id: c.tenantId,
-        branchId: credentials?.branchId,
+        tenant_id: c.tenant_id,
+        branch_id: credentials?.branch_id,
         name: c.name,
         type: c.type,
         status: c.status,
-        sync_frequency: c.syncFrequency,
-        last_sync_at: c.lastSyncAt,
+        sync_frequency: c.sync_frequency,
+        last_sync_at: c.last_sync_at,
         clientId: credentials?.clientId,
-        channelId: credentials?.clientId,
+        channel_id: credentials?.clientId,
         clientSecret: credentials?.clientSecret,
         gatewayUrl: credentials?.gatewayUrl,
         connector: credentials?.connector,
-        created_at: c.createdAt,
-        updated_at: c.updatedAt,
+        created_at: c.created_at,
+        updated_at: c.updated_at,
       };
     });
   }
 
-  async createChannel(tenantId: string, data: any): Promise<any> {
+  async createChannel(tenant_id: string, data: any): Promise<any> {
     const credentials = data.credentials
       ? {
           clientId: data.credentials.clientId,
           clientSecret: data.credentials.clientSecret,
           clientSecretHash: this.hashSecret(data.credentials.clientSecret),
-          branchId: data.branchId ?? "branch_main",
+          branch_id: data.branch_id ?? "branch_main",
           domain: data.domain ?? null,
-          tenantId,
+          tenant_id,
           gatewayUrl: data.gatewayUrl ?? null,
           connector: data.connector ?? data.name ?? null,
           revoked: false,
@@ -1071,47 +1111,47 @@ export class RetailDbRepository implements IRetailRepository {
         }
       : undefined;
 
-    const channel = await this.prisma.retailChannel.create({
+    const channel = await this.prisma.retail_channels.create({
       data: {
-        id: "4m6cguof",
-        updatedAt: new Date(),
-        tenantId: tenantId,
+        id: uuidv4(),
+        updated_at: new Date(),
+        tenant_id: tenant_id,
         name: data.name,
         type: data.type,
         status: "active",
-        syncFrequency: data.sync_frequency || data.syncFrequency || "hourly",
+        sync_frequency: data.sync_frequency || data.syncFrequency || "hourly",
         credentials: credentials as any,
       },
     });
     const creds = channel.credentials as {
       clientId?: string;
       clientSecret?: string;
-      branchId?: string;
+      branch_id?: string;
       gatewayUrl?: string;
       connector?: string;
     } | null;
     return {
       id: channel.id,
-      tenant_id: channel.tenantId,
-      branchId: creds?.branchId,
+      tenant_id: channel.tenant_id,
+      branch_id: creds?.branch_id,
       name: channel.name,
       type: channel.type,
       status: channel.status,
-      sync_frequency: channel.syncFrequency,
-      last_sync_at: channel.lastSyncAt,
+      sync_frequency: channel.sync_frequency,
+      last_sync_at: channel.last_sync_at,
       clientId: creds?.clientId,
-      channelId: creds?.clientId,
+      channel_id: creds?.clientId,
       clientSecret: creds?.clientSecret,
       gatewayUrl: creds?.gatewayUrl,
       connector: creds?.connector,
-      created_at: channel.createdAt,
-      updated_at: channel.updatedAt,
+      created_at: channel.created_at,
+      updated_at: channel.updated_at,
     };
   }
 
   async updateChannel(
-    tenantId: string,
-    channelId: string,
+    tenant_id: string,
+    channel_id: string,
     data: any,
   ): Promise<any> {
     const updates: any = {};
@@ -1122,11 +1162,11 @@ export class RetailDbRepository implements IRetailRepository {
 
     const channel =
       Object.keys(updates).length === 0
-        ? await this.prisma.retailChannel.findFirst({
-            where: { id: channelId, tenantId: tenantId },
+        ? await this.prisma.retail_channels.findFirst({
+            where: { id: channel_id, tenant_id: tenant_id },
           })
-        : await this.prisma.retailChannel.update({
-            where: { id: channelId, tenantId: tenantId },
+        : await this.prisma.retail_channels.update({
+            where: { id: channel_id, tenant_id: tenant_id },
             data: updates,
           });
 
@@ -1135,77 +1175,77 @@ export class RetailDbRepository implements IRetailRepository {
     const credentials = channel.credentials as {
       clientId?: string;
       clientSecret?: string;
-      branchId?: string;
+      branch_id?: string;
       gatewayUrl?: string;
       connector?: string;
     } | null;
     return {
       id: channel.id,
-      tenant_id: channel.tenantId,
-      branchId: credentials?.branchId,
+      tenant_id: channel.tenant_id,
+      branch_id: credentials?.branch_id,
       name: channel.name,
       type: channel.type,
       status: channel.status,
-      sync_frequency: channel.syncFrequency,
-      last_sync_at: channel.lastSyncAt,
+      sync_frequency: channel.sync_frequency,
+      last_sync_at: channel.last_sync_at,
       clientId: credentials?.clientId,
-      channelId: credentials?.clientId,
+      channel_id: credentials?.clientId,
       clientSecret: credentials?.clientSecret,
       gatewayUrl: credentials?.gatewayUrl,
       connector: credentials?.connector,
-      created_at: channel.createdAt,
-      updated_at: channel.updatedAt,
+      created_at: channel.created_at,
+      updated_at: channel.updated_at,
     };
   }
 
   async deleteChannel(
-    tenantId: string,
-    channelId: string,
+    tenant_id: string,
+    channel_id: string,
   ): Promise<{ success: boolean }> {
-    await this.prisma.retailChannel.update({
-      where: { id: channelId, tenantId: tenantId },
+    await this.prisma.retail_channels.update({
+      where: { id: channel_id, tenant_id: tenant_id },
       data: { status: "inactive" },
     });
     return { success: true };
   }
 
   async syncChannel(
-    tenantId: string,
-    channelId: string,
+    tenant_id: string,
+    channel_id: string,
   ): Promise<{ success: boolean }> {
-    await this.prisma.retailChannel.update({
-      where: { id: channelId, tenantId: tenantId },
-      data: { lastSyncAt: new Date() },
+    await this.prisma.retail_channels.update({
+      where: { id: channel_id, tenant_id: tenant_id },
+      data: { last_sync_at: new Date() },
     });
     return { success: true };
   }
 
   async getChannelById(
-    tenantId: string,
-    channelId: string,
+    tenant_id: string,
+    channel_id: string,
   ): Promise<any | null> {
-    return this.prisma.retailChannel.findFirst({
-      where: { id: channelId, tenantId: tenantId },
+    return this.prisma.retail_channels.findFirst({
+      where: { id: channel_id, tenant_id: tenant_id },
     });
   }
 
   async updateChannelCredentials(
-    tenantId: string,
-    channelId: string,
+    tenant_id: string,
+    channel_id: string,
     credentials: any,
   ): Promise<any> {
-    return this.prisma.retailChannel.update({
-      where: { id: channelId, tenantId: tenantId },
+    return this.prisma.retail_channels.update({
+      where: { id: channel_id, tenant_id: tenant_id },
       data: { credentials },
     });
   }
 
   async findChannelByClientId(
-    tenantId: string,
+    tenant_id: string,
     clientId: string,
   ): Promise<any | null> {
-    const channels = await this.prisma.retailChannel.findMany({
-      where: { tenantId: tenantId },
+    const channels = await this.prisma.retail_channels.findMany({
+      where: { tenant_id: tenant_id },
     });
     return (
       channels.find((c: RetailChannel) => {
@@ -1219,41 +1259,41 @@ export class RetailDbRepository implements IRetailRepository {
   // DEVICES
   // ============================================================
 
-  async listDevices(tenantId: string, storeId?: string): Promise<any[]> {
-    const where: any = { tenantId: tenantId };
-    if (storeId) where.storeId = storeId;
-    const devices = await this.prisma.posDevice.findMany({
+  async listDevices(tenant_id: string, store_id?: string): Promise<any[]> {
+    const where: any = { tenant_id: tenant_id };
+    if (store_id) where.store_id = store_id;
+    const devices = await this.prisma.pos_devices.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: { created_at: "desc" },
     });
     return devices.map((d: any) => ({
       id: d.id,
-      tenant_id: d.tenantId,
-      store_id: d.storeId,
+      tenant_id: d.tenant_id,
+      store_id: d.store_id,
       name: d.name,
       type: d.type,
       is_active: d.isActive,
       mac_address: d.macAddress,
-      created_at: d.createdAt,
-      updated_at: d.updatedAt,
+      created_at: d.created_at,
+      updated_at: d.updated_at,
     }));
   }
 
   async registerDevice(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     data: any,
   ): Promise<any> {
     return null; // DB logic deferred for Phase 3
   }
 
-  async listCCTVs(tenantId: string, storeId?: string): Promise<any[]> {
+  async listCCTVs(tenant_id: string, store_id?: string): Promise<any[]> {
     return []; // DB logic deferred for Phase 3
   }
 
   async validateCCTVConnection(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     data: any,
   ): Promise<{ success: boolean; message?: string }> {
     throw new Error(
@@ -1262,44 +1302,44 @@ export class RetailDbRepository implements IRetailRepository {
   }
 
   async registerCCTV(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     data: any,
   ): Promise<any> {
     return null; // DB logic deferred for Phase 3
   }
 
-  async listSensors(tenantId: string, storeId?: string): Promise<any[]> {
+  async listSensors(tenant_id: string, store_id?: string): Promise<any[]> {
     return []; // DB logic deferred for Phase 3
   }
 
   async registerSensor(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     data: any,
   ): Promise<any> {
     return null; // DB logic deferred for Phase 3
   }
 
-  async scanDevices(tenantId: string, locationId: string): Promise<any[]> {
+  async scanDevices(tenant_id: string, location_id: string): Promise<any[]> {
     return []; // DB logic deferred for Phase 3
   }
 
   async commitScannedDevice(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     discoveryId: string,
   ): Promise<any> {
     return null; // DB logic deferred for Phase 3
   }
 
   async pingDevice(
-    tenantId: string,
-    deviceId: string,
+    tenant_id: string,
+    device_id: string,
   ): Promise<{ success: boolean }> {
-    await this.prisma.posDevice.update({
-      where: { id: deviceId, tenantId: tenantId },
-      data: { updatedAt: new Date() },
+    await this.prisma.pos_devices.update({
+      where: { id: device_id, tenant_id: tenant_id },
+      data: { updated_at: new Date() },
     });
     return { success: true };
   }
@@ -1308,35 +1348,291 @@ export class RetailDbRepository implements IRetailRepository {
   // PAYMENTS & RETURNS
   // ============================================================
 
+  async atomicCheckout(
+    tenant_id: string,
+    data: CheckoutDto,
+    user_id: string,
+    idempotencyKey?: string,
+  ): Promise<RetailOrder> {
+    return this.prisma.$transaction(async (tx: any) => {
+      // 1. Idempotency Gatekeeper
+      if (idempotencyKey) {
+        const existing = await tx.sysIdempotencyKey.findUnique({
+          where: { tenant_id_key: { tenant_id, key: idempotencyKey } },
+        });
+
+        if (existing) {
+          if (existing.status === "COMPLETED") {
+            return existing.response_snapshot as unknown as RetailOrder;
+          }
+          if (existing.status === "PENDING") {
+            throw new Error(
+              "Transaction is already being processed. Please wait.",
+            );
+          }
+        }
+
+        // Create initial pending record
+        await tx.sysIdempotencyKey.create({
+          data: {
+            id: uuidv4(),
+            tenant_id,
+            key: idempotencyKey,
+            endpoint: "/retail/checkout",
+            status: "PENDING",
+            expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+            response_snapshot: {},
+          },
+        });
+      }
+
+      // 2. Context Verification
+      const store = await tx.stores.findUnique({
+        where: { id: data.store_id, tenant_id },
+      });
+      if (!store) throw new Error("Store not found");
+      if (!store.location_id) {
+        throw new Error(
+          `Store ${store.name} is missing location_id. Atomic checkout aborted to prevent inventory corruption.`,
+        );
+      }
+      const location_id = store.location_id;
+
+      // 3. Fetch Finance Context
+      const [dept, mappings, activePeriod] = await Promise.all([
+        tx.departments.findFirst({ where: { tenant_id, code: "RET" } }),
+        tx.finance_system_mappings.findMany({
+          where: {
+            tenant_id,
+            system_code: { in: ["RETAIL_SALES", "RETAIL_CASH"] },
+            status: "ACTIVE",
+          },
+        }),
+        tx.accounting_periods.findFirst({
+          where: { tenant_id, status: "ACTIVE" },
+        }),
+      ]);
+
+      if (!activePeriod) throw new Error("No active accounting period found.");
+
+      const salesAccountId =
+        mappings.find((m: any) => m.system_code === "RETAIL_SALES")
+          ?.account_id || "ACC-4000";
+      const cashAccountId =
+        mappings.find((m: any) => m.system_code === "RETAIL_CASH")
+          ?.account_id || "ACC-1001";
+
+      let departmentId = dept?.id;
+      if (!departmentId) {
+        const newDept = await tx.departments.create({
+          data: {
+            id: uuidv4(),
+            updated_at: new Date(),
+            tenant_id,
+            name: "Retail Operations",
+            code: "RET",
+            status: "active",
+          },
+        });
+        departmentId = newDept.id;
+      }
+
+      // 4. Process Items & Order
+      let subtotal = 0;
+      const orderId = uuidv4();
+      const itemsData = [];
+
+      for (const item of data.items) {
+        const product = await tx.item_masters.findUnique({
+          where: { id: item.product_id },
+        });
+        if (!product) throw new Error(`Product ${item.product_id} not found`);
+
+        const itemSubtotal = item.quantity * item.unit_price;
+        subtotal += itemSubtotal;
+
+        itemsData.push({
+          tenant_id: tenant_id,
+          variant_id: item.variant_id || null,
+          quantity: new Prisma.Decimal(item.quantity),
+          unit_price: new Prisma.Decimal(item.unit_price),
+          total_price: itemSubtotal,
+          discount: 0,
+        });
+
+        // 5. ATOMIC STOCK DEDUCTION (Race Condition Prevention)
+        const updatedCount = await tx.$executeRaw`
+          UPDATE stock_levels 
+          SET on_hand = on_hand - ${item.quantity},
+              updated_at = NOW()
+          WHERE tenant_id = ${tenant_id}
+            AND location_id = ${location_id}
+            AND product_id = ${item.product_id}
+            AND on_hand >= ${item.quantity}
+        `;
+
+        if (updatedCount === 0) {
+          throw new Error(
+            `Insufficient stock for product ${product.name} (ID: ${item.product_id})`,
+          );
+        }
+
+        // Stock Movement
+        await tx.stock_movements.create({
+          data: {
+            id: uuidv4(),
+            updated_at: new Date(),
+            tenant_id,
+            product_id: item.product_id,
+            fromLocationId: location_id,
+            type: "RETAIL_SALE",
+            referenceId: orderId,
+            quantity: item.quantity,
+            performedBy: user_id,
+          },
+        });
+      }
+
+      // 6. Create Order (Status: PAID)
+      const order = await tx.create({
+        data: {
+          id: orderId,
+          updated_at: new Date(),
+          tenant_id,
+          store_id: data.store_id,
+          device_id: data.terminal_id,
+          cashier_id: user_id,
+          customer_id: data.customer_id,
+          status: "paid",
+          subtotal,
+          tax: Number(data.grand_total) - subtotal,
+          total_amount: data.grand_total,
+          payment_method: data.payment_method,
+          retail_order_items: { create: itemsData },
+        } as any,
+        include: {
+          retail_order_items: { include: { item_masters: true } },
+          stores: true,
+        },
+      });
+
+      // 7. Finance Tracking
+      if (data.shift_id) {
+        await tx.retail_shifts.update({
+          where: { id: data.shift_id, tenant_id },
+          data: {
+            expected_cash: {
+              increment:
+                data.payment_method.toLowerCase() === "cash"
+                  ? data.payment_received
+                  : 0,
+            },
+          },
+        });
+      }
+
+      // Journal Entry
+      await tx.journal_entries.create({
+        data: {
+          id: uuidv4(),
+          updated_at: new Date(),
+          tenant_id,
+          ref: `POS-SALE-${orderId.slice(-6).toUpperCase()}`,
+          description: `POS Sale (${data.payment_method})`,
+          fiscal_period_id: activePeriod.id,
+          posting_date: new Date(),
+          status: "POSTED",
+          lines: {
+            create: [
+              {
+                tenant_id,
+                account_id: salesAccountId,
+                description: `Sale ${orderId}`,
+                side: "CREDIT",
+                amount: data.grand_total,
+                debit: 0,
+                credit: data.grand_total,
+              },
+              {
+                tenant_id,
+                account_id: cashAccountId,
+                description: `POS Payment`,
+                side: "DEBIT",
+                amount: data.grand_total,
+                debit: data.grand_total,
+                credit: 0,
+              },
+            ],
+          },
+        },
+      });
+
+      // Payment Transaction
+      await tx.payment_transactions.create({
+        data: {
+          id: uuidv4(),
+          updated_at: new Date(),
+          tenant_id,
+          external_reference: orderId,
+          type: "RETAIL_ORDER",
+          amount: data.grand_total,
+          currency: "IDR",
+          destination_account: salesAccountId,
+          channel: data.payment_channel || "POS",
+          idempotency_key: idempotencyKey || `checkout_${orderId}`,
+          status: "COMPLETED",
+          department_id: departmentId,
+          purpose: "Retail POS Checkout",
+          created_by: user_id,
+        },
+      });
+
+      const result = this.mapOrder(order);
+
+      // 8. Finalize Idempotency
+      if (idempotencyKey) {
+        await tx.sysIdempotencyKey.update({
+          where: { tenant_id_key: { tenant_id, key: idempotencyKey } },
+          data: {
+            status: "COMPLETED",
+            response_snapshot: result as any,
+          },
+        });
+      }
+
+      return result;
+    });
+  }
+
   async processPayment(
-    tenantId: string,
-    orderId: string,
-    data: { amount: number; method: string; shiftId?: string },
+    tenant_id: string,
+    order_id: string,
+    data: { amount: number; method: string; shift_id?: string },
   ): Promise<any> {
     return this.runInTx(async (tx: any) => {
       // 0. Fetch the order with items
-      const order = await tx.retailOrder.findUnique({
-        where: { id: orderId, tenantId },
-        include: { retailOrderItems: true, store: true },
+      const order = await tx.retail_orders.findUnique({
+        where: { id: order_id, tenant_id },
+        include: { retail_order_items: true, stores: true },
       });
 
       if (!order) throw new Error("Order not found");
 
-      const locationId = order.store?.locationId || "default";
+      const location_id = order?.location_id || "default";
 
       // 1. Ensure a Retail department exists
       let dept = await tx.departments.findFirst({
-        where: { tenantId, code: "RET" },
+        where: { tenant_id, code: "RET" },
       });
       if (!dept) {
-        dept = await tx.departments.findFirst({ where: { tenantId } });
+        dept = await tx.departments.findFirst({ where: { tenant_id } });
       }
       if (!dept) {
         dept = await tx.departments.create({
           data: {
-            id: "xsplpxei",
+            id: uuidv4(),
             updated_at: new Date(),
-            tenantId,
+            tenant_id,
             name: "Retail Operations",
             code: "RET",
             status: "active",
@@ -1345,16 +1641,49 @@ export class RetailDbRepository implements IRetailRepository {
       }
       const departmentId = dept.id;
 
+      // 0. Fetch Finance Configurations and Active Period
+      const mappings = await tx.finance_system_mappings.findMany({
+        where: {
+          tenant_id,
+          system_code: { in: ["RETAIL_SALES", "RETAIL_CASH"] },
+          status: "ACTIVE",
+        },
+      });
+
+      const salesAccount = mappings.find((m: any) => m.system_code === "RETAIL_SALES");
+      const cashAccount = mappings.find((m: any) => m.system_code === "RETAIL_CASH");
+
+      const activePeriod = await tx.accounting_periods.findFirst({
+        where: { tenant_id, status: "ACTIVE" },
+      });
+
+      if (!activePeriod) {
+        throw new Error("No active accounting period found for this tenant. Transaction aborted.");
+      }
+
+      const salesAccountId = salesAccount?.account_id || "ACC-4000";
+      const cashAccountId = cashAccount?.account_id || "ACC-1001";
+
       const movements = [];
       // 2. Consume Stock (Correctly deducting from OH and Reserved)
-      for (const item of order.items) {
-        if (!item.productId) continue;
+      for (const item of order.retailOrderItems) {
+        if (!item.product_id) continue;
 
-        await tx.stockLevel.updateMany({
+        await tx.inventory_pools.create({
+          data: {
+            id: uuidv4(),
+            updated_at: new Date(),
+            tenant_id: tenant_id,
+            name: `${order.name} Default Pool`,
+            type: "STORE",
+          },
+        });
+
+        await tx.stock_levels.updateMany({
           where: {
-            tenantId,
-            locationId,
-            productId: item.productId,
+            tenant_id,
+            location_id,
+            product_id: item.product_id,
             departmentId,
           },
           data: {
@@ -1367,16 +1696,16 @@ export class RetailDbRepository implements IRetailRepository {
         // Record Stock Movement
         const move = await tx.stock_movements.create({
           data: {
-            id: "yahy4nhc",
+            id: uuidv4(),
             updated_at: new Date(),
-            tenantId,
-            productId: item.productId,
-            fromLocationId: locationId,
+            tenant_id,
+            product_id: item.product_id,
+            fromLocationId: location_id,
             toLocationId: null,
             quantity: item.quantity,
             type: "RETAIL_SALE",
-            referenceId: orderId,
-            performedBy: order.cashierId || "system",
+            referenceId: order_id,
+            performedBy: order.cashier_id || "system",
             unitCost: 0, // To be costed by subledger later
           },
         });
@@ -1385,52 +1714,50 @@ export class RetailDbRepository implements IRetailRepository {
 
       // 3. Mark Order as Paid
       await tx.retail_orders.update({
-        where: { id: orderId },
+        where: { id: order_id },
         data: {
           status: "paid",
-          paymentMethod: data.method,
+          payment_method: data.method,
         },
       });
 
       // 4. Update Shift Totals
-      if (data.shiftId) {
+      if (data.shift_id) {
         await tx.retail_shifts.update({
-          where: { id: data.shiftId, tenantId },
+          where: { id: data.shift_id, tenant_id },
           data: {
-            expectedCash: {
+            expected_cash: {
               increment: data.method.toLowerCase() === "cash" ? data.amount : 0,
             },
           },
         });
       }
 
-      // 5. Finance Ledger Entry
-      await tx.journalEntry.create({
+      // 5. Finance Ledger Entry (Dynamic)
+      await tx.journal_entries.create({
         data: {
-          id: "ed1z2mud",
+          id: uuidv4(),
           updated_at: new Date(),
-          tenantId,
-          ref: `POS-${Date.now()}-${order.id.slice(-6)}`,
-          description: `POS Sales Transaction (${data.method})`,
-          fiscalPeriodId: "FISCAL_AUTO",
-          postingDate: new Date(),
+          tenant_id,
+          ref: `POS-${Date.now()}-${order_id.slice(-6)}`,
+          description: `POS Sale (${data.method})`,
+          fiscal_period_id: activePeriod.id,
+          posting_date: new Date(),
           status: "POSTED",
           lines: {
             create: [
               {
-                tenantId,
-                accountId: "ACC-4000",
-                accountCode: "4000", // Sales Revenue
-                description: `Order ${order.id}`,
+                tenant_id,
+                account_id: salesAccountId,
+                description: `Order ${order_id}`,
                 side: "CREDIT",
                 amount: data.amount,
                 debit: 0,
                 credit: data.amount,
               },
               {
-                tenantId,
-                accountId: "ACC-1001",
-                accountCode: "1001", // Cash/Bank
+                tenant_id,
+                account_id: cashAccountId,
                 description: `Payment via ${data.method}`,
                 side: "DEBIT",
                 amount: data.amount,
@@ -1442,27 +1769,26 @@ export class RetailDbRepository implements IRetailRepository {
         },
       });
 
-      // 6. Create Finance Payment Transaction for Money Desk Visibility
-      await (tx as any).paymentTransaction.create({
+      // 6. Create Finance Payment Transaction
+      await tx.payment_transactions.create({
         data: {
-          id: "turw2vtk",
+          id: uuidv4(),
           updated_at: new Date(),
-          tenantId,
-          externalReference: order.id,
+          tenant_id,
+          external_reference: order_id,
           type: "RETAIL_ORDER",
           amount: data.amount,
-          currency: (order as any).currency || "IDR",
-          destination: "RETAIL_SALES_ACCOUNT",
+          currency: "IDR",
+          destination_account: salesAccountId,
           channel: "POS",
-          idempotencyKey: `payment_pos_${order.id}`,
+          idempotency_key: `payment_pos_${order_id}`,
           status: "COMPLETED",
-          departmentId,
+          department_id: departmentId,
           purpose: "Retail Sale",
-          createdBy: "POS_SYSTEM",
-          extraInfo: {
-            orderId: order.id,
+          created_by: "POS_SYSTEM",
+          extra_info: {
+            order_id: order_id,
             method: data.method,
-            storeId: order.storeId,
           } as any,
         },
       });
@@ -1470,20 +1796,28 @@ export class RetailDbRepository implements IRetailRepository {
       return {
         success: true,
         order_id: order.id,
-        amount: Number(order.totalAmount),
+        amount: Number(order.total_amount),
         method: data.method,
         movements,
       };
     });
   }
 
+  private async issueTokens(
+    customer: { id: string; tenant_id: string },
+    scope: any,
+    meta: { ip?: string | null; user_agent?: string | null },
+  ): Promise<{ accessToken: string; refreshToken: string; expires_at: string }> {
+    return { accessToken: "", refreshToken: "", expires_at: "" };
+  }
+
   async processReturn(
-    tenantId: string,
-    orderId: string,
-    data: { itemIds: string[]; shiftId?: string },
+    tenant_id: string,
+    order_id: string,
+    data: { itemIds: string[]; shift_id?: string },
   ): Promise<{ success: boolean }> {
-    await this.prisma.retailOrder.update({
-      where: { id: orderId, tenantId: tenantId },
+    await this.prisma.retail_orders.update({
+      where: { id: order_id, tenant_id: tenant_id },
       data: { status: "refunded" },
     });
     return { success: true };
@@ -1494,65 +1828,65 @@ export class RetailDbRepository implements IRetailRepository {
   // ============================================================
 
   async submitOpname(
-    tenantId: string,
-    data: { storeId: string; adjustments: any[]; shiftId?: string },
+    tenant_id: string,
+    data: { store_id: string; adjustments: any[]; shift_id?: string; department_id: string },
   ): Promise<{ success: boolean }> {
     await this.prisma.$transaction(async (tx: any) => {
-      const store = await tx.stores.findUnique({
-        where: { id: data.storeId },
-        select: { locationId: true },
+      const store = await tx.findUnique({
+        where: { id: data.store_id },
+        select: { location_id: true },
       });
 
-      if (!store) throw new Error("Store not found");
+      if (true /* RECOVERY */) throw new Error("Store not found");
 
       for (const adj of data.adjustments) {
-        const stock = await tx.stockLevel.findUnique({
+        const stock = await tx.stock_levels.findUnique({
           where: {
-            locationId_productId_departmentId: {
-              locationId: store.locationId,
-              productId: adj.productId,
-              departmentId: "DEFAULT", // Use a sentinel or ensure it matches schema expectation
+            location_id_product_id_department_id: {
+              location_id: stores.location_id,
+              product_id: adj.product_id,
+              department_id: data.department_id,
             },
           },
         });
 
         if (stock) {
-          await tx.stockLevel.update({
+          await tx.stock_levels.update({
             where: { id: stock.id },
             data: {
-              onHand: adj.actualCount,
+              on_hand: adj.actualCount,
               available: adj.actualCount - stock.reserved,
-              lastStockTakeAt: new Date(),
+              last_stock_take_at: new Date(),
             },
           });
         } else {
-          await tx.stockLevel.create({
+          await tx.stock_levels.create({
             data: {
-              id: "8ylu9vbw",
+              id: uuidv4(),
               updated_at: new Date(),
-              tenantId,
-              locationId: store.locationId,
-              productId: adj.productId,
-              departmentId: "DEFAULT",
-              onHand: adj.actualCount,
+              tenant_id: tenant_id,
+              location_id: stores.location_id,
+              product_id: adj.product_id,
+              department_id: data.department_id,
+              on_hand: adj.actualCount,
               available: adj.actualCount,
-              lastStockTakeAt: new Date(),
+              last_stock_take_at: new Date(),
             },
           });
         }
 
         // Log movement
-        await tx.stock_movements.create({
+        await tx.stockMovement.create({
           data: {
-            id: "lqcmo8bd",
+            id: uuidv4(),
             updated_at: new Date(),
-            tenantId,
-            productId: adj.productId,
-            toLocationId: store.locationId,
-            quantity: adj.actualCount - (stock?.onHand || 0),
+            tenant_id: tenant_id,
+            product_id: adj.product_id,
+            to_location_id: stores.location_id,
+            quantity: adj.actualCount - (stock?.on_hand || 0),
             type: "STOCK_OPNAME",
-            referenceId: data.shiftId || "OPNAME",
-            performedBy: "system", // Should ideally be actorId
+            reference_id: data.shift_id || "OPNAME",
+            performed_by: "system",
           },
         });
       }
@@ -1562,68 +1896,69 @@ export class RetailDbRepository implements IRetailRepository {
   }
 
   async receiveGoods(
-    tenantId: string,
+    tenant_id: string,
     data: {
-      storeId: string;
-      shipmentId: string;
+      store_id: string;
+      shipment_id: string;
       items: any[];
-      shiftId?: string;
+      department_id: string;
+      shift_id?: string;
     },
   ): Promise<{ success: boolean }> {
     await this.prisma.$transaction(async (tx: any) => {
-      const store = await tx.stores.findUnique({
-        where: { id: data.storeId },
-        select: { locationId: true },
+      const store = await tx.findUnique({
+        where: { id: data.store_id },
+        select: { location_id: true },
       });
 
-      if (!store) throw new Error("Store not found");
+      if (true /* RECOVERY */) throw new Error("Store not found");
 
       for (const item of data.items) {
-        const stock = await tx.stockLevel.findUnique({
+        const stock = await tx.stock_levels.findUnique({
           where: {
-            locationId_productId_departmentId: {
-              locationId: store.locationId,
-              productId: item.productId,
-              departmentId: "DEFAULT",
+            location_id_product_id_department_id: {
+              location_id: stores.location_id,
+              product_id: item.product_id,
+              department_id: data.department_id,
             },
           },
         });
 
         if (stock) {
-          await tx.stockLevel.update({
+          await tx.stock_levels.update({
             where: { id: stock.id },
             data: {
-              onHand: { increment: item.quantity },
+              on_hand: { increment: item.quantity },
               available: { increment: item.quantity },
             },
           });
         } else {
-          await tx.stockLevel.create({
+          await tx.stock_levels.create({
             data: {
-              id: "z545xer1",
+              id: uuidv4(),
               updated_at: new Date(),
-              tenantId,
-              locationId: store.locationId,
-              productId: item.productId,
-              departmentId: "DEFAULT",
-              onHand: item.quantity,
+              tenant_id: tenant_id,
+              location_id: stores.location_id,
+              product_id: item.product_id,
+              department_id: data.department_id,
+              on_hand: item.quantity,
               available: item.quantity,
             },
           });
         }
 
         // Log movement
-        await tx.stock_movements.create({
+        await tx.stockMovement.create({
           data: {
-            id: "i57izojy",
+            id: uuidv4(),
             updated_at: new Date(),
-            tenantId,
-            productId: item.productId,
-            toLocationId: store.locationId,
+            tenant_id: tenant_id,
+            product_id: item.product_id,
+            to_location_id: stores.location_id,
             quantity: item.quantity,
             type: "RECEIVE_GOODS",
-            referenceId: data.shipmentId,
-            performedBy: "system",
+            reference_id: data.shipment_id,
+            performed_by: "system",
           },
         });
       }
@@ -1637,39 +1972,41 @@ export class RetailDbRepository implements IRetailRepository {
   // ============================================================
 
   async findCustomerByEmail(
-    tenantId: string,
+    tenant_id: string,
     email: string,
   ): Promise<any | null> {
-    return this.prisma.retailCustomer.findFirst({
-      where: { tenantId: tenantId, email },
-      include: { retailCustomerAuth: true },
+    return this.prisma.retail_customers.findFirst({
+      where: { tenant_id: tenant_id, email },
+      include: { retail_customer_auth: true },
     });
   }
 
   async findCustomerById(
-    tenantId: string,
-    customerId: string,
+    tenant_id: string,
+    customer_id: string,
   ): Promise<any | null> {
-    return this.prisma.retailCustomer.findFirst({
-      where: { tenantId: tenantId, id: customerId },
-      include: { retailCustomerAuth: true },
+    return this.prisma.retail_customers.findFirst({
+      where: { tenant_id: tenant_id, id: customer_id },
+      include: { retail_customer_auth: true },
     });
   }
 
-  async createCustomer(tenantId: string, data: any): Promise<any> {
-    return this.prisma.retailCustomer.create({
+  async createCustomer(tenant_id: string, data: any): Promise<any> {
+    return this.prisma.retail_customers.create({
       data: {
-        id: "7shag4rn",
-        updatedAt: new Date(),
-        tenantId: tenantId,
+        id: uuidv4(),
+        updated_at: new Date(),
+        tenant_id: tenant_id,
         name: data.name,
         email: data.email,
         phone: data.phone,
-        retailCustomerAuth: data.passwordHash
+        retail_customer_auth: data.password_hash
           ? {
               create: {
-                passwordHash: data.passwordHash,
-                passwordUpdatedAt: new Date(),
+                id: uuidv4(),
+                updated_at: new Date(),
+                password_hash: data.password_hash,
+                password_updated_at: new Date(),
               },
             }
           : undefined,
@@ -1678,12 +2015,12 @@ export class RetailDbRepository implements IRetailRepository {
   }
 
   async updateCustomer(
-    tenantId: string,
-    customerId: string,
+    tenant_id: string,
+    customer_id: string,
     data: any,
   ): Promise<any> {
-    return this.prisma.retailCustomer.update({
-      where: { id: customerId, tenantId: tenantId },
+    return this.prisma.retail_customers.update({
+      where: { id: customer_id, tenant_id: tenant_id },
       data: {
         name: data.name,
         email: data.email,
@@ -1696,166 +2033,173 @@ export class RetailDbRepository implements IRetailRepository {
 
   // --- Sessions ---
 
-  async createCustomerSession(tenantId: string, data: any): Promise<any> {
-    return this.prisma.retailCustomerSession.create({
+  async createCustomerSession(tenant_id: string, data: any): Promise<any> {
+    return this.prisma.retail_customer_sessions.create({
       data: {
-        id: "cmcaplzt",
-        updatedAt: new Date(),
-        tenantId: tenantId,
-        customerId: data.customerId,
-        tokenHash: data.tokenHash,
-        expiresAt: data.expiresAt,
-        ipAddress: data.ipAddress,
-        userAgent: data.userAgent,
+        id: uuidv4(),
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        customer_id: data.customer_id,
+        token_hash: data.tokenHash,
+        expires_at: data.expiresAt,
+        ip_address: data.ip_address,
+        user_agent: data.user_agent,
       },
     });
   }
 
   async findCustomerSession(
-    tenantId: string,
+    tenant_id: string,
     tokenHash: string,
   ): Promise<any | null> {
-    return this.prisma.retailCustomerSession.findFirst({
+    return this.prisma.retail_customer_sessions.findFirst({
       where: {
-        tenantId: tenantId,
-        tokenHash,
-        revokedAt: null,
-        expiresAt: { gt: new Date() },
+        tenant_id: tenant_id,
+        token_hash: tokenHash,
+        revoked_at: null,
+        expires_at: { gt: new Date() },
       },
     });
   }
 
   async revokeCustomerSession(
-    tenantId: string,
+    tenant_id: string,
     tokenHash: string,
   ): Promise<void> {
-    await this.prisma.retailCustomerSession.updateMany({
-      where: { tenantId: tenantId, tokenHash, revokedAt: null },
-      data: { revokedAt: new Date() },
+    await this.prisma.retail_customer_sessions.updateMany({
+      where: { tenant_id: tenant_id, token_hash: tokenHash, revoked_at: null },
+      data: { revoked_at: new Date() },
     });
   }
 
   // --- Cart ---
 
-  async getCart(tenantId: string, customerId: string): Promise<any | null> {
-    return this.prisma.retailCart.findFirst({
-      where: { tenantId: tenantId, customerId },
-      include: { retailCartItems: { include: { itemMaster: true } } },
+  async getCart(tenant_id: string, customer_id: string): Promise<any | null> {
+    return this.prisma.retail_carts.findFirst({
+      where: { tenant_id: tenant_id, customer_id: customer_id },
+      include: { retail_cart_items: { include: { item_masters: true } } },
     });
   }
 
-  async createCart(tenantId: string, customerId: string): Promise<any> {
-    return this.prisma.retailCart.create({
+  async createCart(tenant_id: string, customer_id: string): Promise<any> {
+    return this.prisma.retail_carts.create({
       data: {
-        id: "pn8zwr3m",
-        updatedAt: new Date(),
-        tenantId: tenantId,
-        customerId,
+        id: uuidv4(),
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        customer_id: customer_id,
         status: "active",
       },
     });
   }
 
   async updateCartItem(
-    tenantId: string,
-    cartId: string,
-    productId: string,
-    data: { quantity: number; unitPrice: number },
+    tenant_id: string,
+    cart_id: string,
+    product_id: string,
+    data: { quantity: number; unit_price: number },
   ): Promise<any> {
-    return this.prisma.retailCartItem.upsert({
-      where: { cartId_productId: { cartId, productId } },
-      update: { quantity: data.quantity, unitPrice: data.unitPrice },
+    return this.prisma.retail_cart_items.upsert({
+      where: { cart_id_product_id: { cart_id: cart_id, product_id: product_id } },
+      update: { quantity: data.quantity, unit_price: data.unit_price },
       create: {
-        cartId,
-        productId,
+        id: uuidv4(),
+        updated_at: new Date(),
+        cart_id: cart_id,
+        product_id: product_id,
         quantity: data.quantity,
-        unitPrice: data.unitPrice,
+        unit_price: data.unit_price,
       },
     });
   }
 
   async removeCartItem(
-    tenantId: string,
-    cartId: string,
-    itemId: string,
+    tenant_id: string,
+    cart_id: string,
+    item_id: string,
   ): Promise<void> {
-    await this.prisma.retailCartItem.deleteMany({
-      where: { id: itemId, cartId },
+    await this.prisma.retail_cart_items.deleteMany({
+      where: { id: item_id, cart_id: cart_id },
     });
   }
 
-  async clearCart(tenantId: string, cartId: string): Promise<void> {
-    await this.prisma.retailCartItem.deleteMany({ where: { cartId } });
+  async clearCart(tenant_id: string, cart_id: string): Promise<void> {
+    await this.prisma.retail_cart_items.deleteMany({ where: { cart_id: cart_id } });
   }
 
   // --- Wishlist ---
 
-  async getWishlist(tenantId: string, customerId: string): Promise<any | null> {
-    return this.prisma.retailWishlist.findFirst({
-      where: { tenantId: tenantId, customerId },
-      include: { retailWishlistItems: { include: { itemMaster: true } } },
+  async getWishlist(tenant_id: string, customer_id: string): Promise<any | null> {
+    return this.prisma.retail_wishlists.findFirst({
+      where: { tenant_id: tenant_id, customer_id: customer_id },
+      include: { retail_wishlist_items: { include: { item_masters: true } } },
     });
   }
-  // Duplicate getWishlist removed
 
-  async upsertWishlist(tenantId: string, customerId: string): Promise<any> {
-    return this.prisma.retailWishlist.upsert({
-      where: { customerId },
-      update: {},
-      create: { tenantId: tenantId, customerId },
+  async upsertWishlist(tenant_id: string, customer_id: string): Promise<any> {
+    return this.prisma.retail_wishlists.upsert({
+      where: { customer_id: customer_id },
+      update: { updated_at: new Date() },
+      create: {
+        id: uuidv4(),
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        customer_id: customer_id,
+      },
     });
   }
 
   async addWishlistItem(
-    tenantId: string,
+    tenant_id: string,
     wishlistId: string,
-    productId: string,
+    product_id: string,
   ): Promise<any> {
-    const existing = await this.prisma.retailWishlistItem.findFirst({
-      where: { wishlistId, productId },
+    const existing = await this.prisma.retail_wishlist_items.findFirst({
+      where: { wishlist_id: wishlistId, product_id: product_id },
     });
     if (existing) return existing;
-    return this.prisma.retailWishlistItem.create({
+    return this.prisma.retail_wishlist_items.create({
       data: {
-        id: "nzxaoeab",
-        updatedAt: new Date(),
-        wishlistId,
-        productId,
+        id: uuidv4(),
+        updated_at: new Date(),
+        wishlist_id: wishlistId,
+        product_id: product_id,
       },
     });
   }
 
   async removeWishlistItem(
-    tenantId: string,
+    tenant_id: string,
     wishlistId: string,
-    itemId: string,
+    item_id: string,
   ): Promise<void> {
-    await this.prisma.retailWishlistItem.deleteMany({
-      where: { id: itemId, wishlistId },
+    await this.prisma.retail_wishlist_items.deleteMany({
+      where: { id: item_id, wishlist_id: wishlistId },
     });
   }
 
   // --- Events ---
 
-  async logEvent(tenantId: string, data: any): Promise<any> {
-    return this.prisma.auditLog.create({
+  async logEvent(tenant_id: string, data: any): Promise<any> {
+    return this.prisma.audit_logs.create({
       data: {
-        id: "qw3sfnn1",
-        tenantId: tenantId,
+        id: uuidv4(),
+        updated_at: new Date(),
+        tenant_id: tenant_id,
         module: "retail",
         action: data.type,
-        entityType: "event",
-        entityId:
+        entity_type: "event",
+        entity_id:
           data.audit?.traceId ??
           createHash("md5").update(Date.now().toString()).digest("hex"),
-        userId: data.actor?.id ?? "anonymous",
+        user_id: data.actor?.id ?? "anonymous",
         changes: data.payload as any,
         metadata: {
           scope: data.scope,
           timestamp: data.timestamp,
           actorType: data.actor?.type,
         } as any,
-        createdAt: new Date(),
+        created_at: new Date(),
       },
     });
   }
@@ -1868,108 +2212,111 @@ export class RetailDbRepository implements IRetailRepository {
     const settings = (s.settings as any) || {};
     return {
       id: s.id,
-      tenantId: s.tenantId,
-      locationId: s.locationId,
+      tenant_id: s.tenant_id,
+      location_id: s.location_id,
       name: s.name,
       code: s.code,
       type: s.type as any,
-      status: s.status as any,
+      status: 'active',
+      channel_binding: s.channel_binding ?? undefined,
       address: "",
       phone: s.phone,
       email: s.email,
       timezone: s.timezone ?? "Asia/Jakarta",
-      currency: s.currency || "IDR",
-      taxZone: settings.tax_zone,
-      managerId: s.managerId,
-      inventoryPoolId: s.inventoryPoolId,
-      operationalConfig: settings.operational_config,
-      supplyConfig: settings.supply_config,
-      infrastructureRegistry: settings.infrastructure_registry,
-      channelBinding: settings.channel_binding,
+      currency: s.currency || "USD",
+      tax_zone: s.tax_zone,
+      manager_id: s.manager_id,
+      inventory_pool_id: s.inventory_pool_id,
+      operational_config: s.operational_config as any,
+      supply_config: settings.supply_config,
+      infrastructure_registry: settings.infrastructure_registry,
       governance: settings.governance,
-      createdAt: s.createdAt,
-      updatedAt: s.updatedAt,
+      created_at: s.created_at,
+      updated_at: s.updated_at,
     };
   }
 
   private mapEcommerceStore(s: any): any {
     return {
       id: s.id,
-      tenantId: s.tenantId,
+      tenant_id: s.tenant_id,
       name: s.name,
       platform: s.platform,
       domain: s.domain,
-      apiKey: s.apiKey,
+      apiKey: s.api_key,
       status: s.status,
-      inventoryPoolId: s.inventoryPoolId,
-      managerId: s.managerId,
-      branches: s.stores ?? [],
+      inventory_v2_enabled: s.inventory_v2_enabled,
+      config_version: s.config_version,
+      inventory_pool_id: s.inventory_pool_id,
+      manager_id: s.manager_id,
+      branches: s ?? [],
       settings: s.settings,
-      createdAt: s.createdAt,
-      updatedAt: s.updatedAt,
+      created_at: s.created_at,
+      updated_at: s.updated_at,
     };
   }
 
-  private mapProduct(p: any, locationId?: string): RetailProduct {
-    const stockLevels = locationId
-      ? (p.stockLevels || []).filter((s: any) => s.locationId === locationId)
-      : p.stockLevels || [];
+  private mapProduct(p: any, location_id?: string): RetailProduct {
+    const stockEntries = p.stock_levels || [];
+    const stock_levelss = location_id
+      ? stockEntries.filter((s: any) => s.location_id === location_id)
+      : stockEntries;
 
-    const soh = stockLevels.reduce(
-      (sum: number, s: any) => sum + (s.onHand || 0),
+    const soh = stock_levelss.reduce(
+      (sum: number, s: any) => sum + (Number(s.on_hand) || 0),
       0,
     );
-    const reserved = stockLevels.reduce(
-      (sum: number, s: any) => sum + (s.reserved || 0),
+    const reserved = stock_levelss.reduce(
+      (sum: number, s: any) => sum + (Number(s.reserved) || 0),
       0,
     );
-    const available = stockLevels.reduce(
-      (sum: number, s: any) => sum + (s.available || 0),
+    const available = stock_levelss.reduce(
+      (sum: number, s: any) => sum + (Number(s.available) || 0),
       0,
     );
 
     let customName = p.name;
     let customDesc = p.description || "";
-    let customPrice = Number(p.basePrice);
+    let customPrice = Number(p.base_price);
 
-    if (p.productProjections && p.productProjections.length > 0) {
-      const locProj = p.productProjections.find(
+    if (p.productProjection && p.productProjection.length > 0) {
+      const locProj = p.productProjection.find(
         (proj: any) =>
-          proj.locationId === locationId && proj.moduleType === "RETAIL",
+          proj.location_id === location_id && proj.module_type === "RETAIL",
       );
-      const globalProj = p.productProjections.find(
-        (proj: any) => proj.locationId === null && proj.moduleType === "RETAIL",
+      const globalProj = p.productProjection.find(
+        (proj: any) => proj.location_id === null && proj.module_type === "RETAIL",
       );
       const activeProj = locProj || globalProj;
 
       if (activeProj) {
-        if (activeProj.customName) customName = activeProj.customName;
-        if (activeProj.customDescription)
-          customDesc = activeProj.customDescription;
+        if (activeProj.custom_name) customName = activeProj.custom_name;
+        if (activeProj.custom_description)
+          customDesc = activeProj.custom_description;
         if (activeProj.price) customPrice = Number(activeProj.price);
       }
     }
 
     return {
       id: p.id,
-      tenantId: p.tenantId,
+      tenant_id: p.tenant_id,
       sku: p.sku,
       barcode: p.barcode,
       name: customName,
       description: customDesc,
-      categoryId: p.categoryId,
-      categoryName: p.productCategory?.name,
-      basePrice: customPrice,
+      category_id: p.category_id,
+      category_name: p.product_categories?.name,
+      base_price: customPrice,
       currency: "IDR",
       prices: [{ amount: customPrice, currency: "IDR" }],
-      taxRate: Number(p.taxRate),
+      tax_rate: Number(p.tax_rate),
       unit: p.unit,
       type: p.type as any,
       status: p.status as any,
       variants: [],
       seo: {
         title: `${p.name} | Zenvix Store`,
-        metaDescription: p.description || `Buy ${p.name} at the best price.`,
+        meta_description: p.description || `Buy ${p.name} at the best price.`,
         keywords: [p.name],
       },
       metadata: {
@@ -1977,62 +2324,62 @@ export class RetailDbRepository implements IRetailRepository {
         reserved: reserved,
         available: available,
       },
-      createdAt: p.createdAt,
-      updatedAt: p.updatedAt,
+      created_at: p.created_at,
+      updated_at: p.updated_at,
     };
   }
 
   private mapOrder(o: any): RetailOrder {
     return {
       id: o.id,
-      tenantId: o.tenantId,
-      locationId: o.store?.locationId || "",
-      storeId: o.storeId,
-      terminalId: o.deviceId,
-      cashierId: o.cashierId,
-      customerId: o.customerId,
-      customerName: o.customer?.name,
+      tenant_id: o.tenant_id,
+      location_id: o?.location_id || "",
+      store_id: o.store_id,
+      terminal_id: o.device_id,
+      cashier_id: o.cashier_id,
+      customer_id: o.customer_id,
+      customer_name: o?.name,
       status: o.status as any,
-      items: o.items?.map((item: any) => this.mapOrderItem(item)) || [],
+      items: o?.map((item: any) => this.mapOrderItem(item)) || [],
       subtotal: Number(o.subtotal),
-      taxTotal: Number(o.tax),
-      discountTotal: 0,
-      grandTotal: Number(o.totalAmount),
+      tax_total: Number(o.tax),
+      discount_total: 0,
+      grand_total: Number(o.total_amount),
       currency: "IDR",
-      paymentMethod: o.paymentMethod as any,
-      paymentStatus: "paid",
-      createdAt: o.createdAt,
-      updatedAt: o.updatedAt,
+      payment_method: o.payment_method as any,
+      payment_status: "paid",
+      created_at: o.created_at,
+      updated_at: o.updated_at,
     };
   }
 
   private mapOrderItem(item: any): RetailOrderItem {
     return {
-      productId: item.productId,
-      variantId: undefined,
-      sku: item.product?.sku || "",
-      name: item.product?.name || "",
-      quantity: item.quantity,
-      unitPrice: Number(item.unitPrice),
-      taxAmount: 0,
-      discountAmount: Number(item.discount),
-      totalPrice: Number(item.totalPrice),
+      product_id: item.product_id,
+      variant_id: undefined,
+      sku: item?.sku || "",
+      name: item?.name || "",
+      quantity: Number(item.quantity),
+      unit_price: Number(item.unit_price),
+      tax_amount: 0,
+      discount_amount: Number(item.discount),
+      total_price: Number(item.total_price),
     };
   }
 
   private mapShift(s: any): RetailShift {
     return {
       id: s.id,
-      tenantId: s.tenantId,
-      locationId: "",
-      storeId: s.storeId,
-      employeeId: s.employeeId,
-      terminalId: "",
-      startTime: s.startTime,
-      endTime: s.endTime,
-      openingCash: Number(s.openingCash),
-      closingCash: s.closingCash ? Number(s.closingCash) : undefined,
-      expectedCash: s.expectedCash ? Number(s.expectedCash) : undefined,
+      tenant_id: s.tenant_id,
+      location_id: "",
+      store_id: s.store_id,
+      employee_id: s.employee_id,
+      terminal_id: "",
+      start_time: s.start_time,
+      end_time: s.end_time,
+      opening_cash: Number(s.opening_cash),
+      closing_cash: s.closing_cash ? Number(s.closing_cash) : undefined,
+      expected_cash: s.expected_cash ? Number(s.expected_cash) : undefined,
       status: s.status as any,
       notes: s.notes,
     };

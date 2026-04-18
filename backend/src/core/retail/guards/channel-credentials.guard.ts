@@ -13,18 +13,18 @@ export class ChannelCredentialsGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     if (request.method === "OPTIONS") return true;
-    const tenantId = request.tenantContext?.tenantId;
+    const tenant_id = request.tenantContext?.tenant_id;
     const clientId = request.headers["x-client-id"] as string | undefined;
     const clientSecret = request.headers["x-client-secret"] as
       | string
       | undefined;
 
-    if (!tenantId) {
+    if (!tenant_id) {
       throw new UnauthorizedException("Missing x-tenant-id");
     }
 
     const scope = await this.authService.validateConnector(
-      tenantId,
+      tenant_id,
       clientId,
       clientSecret,
     );

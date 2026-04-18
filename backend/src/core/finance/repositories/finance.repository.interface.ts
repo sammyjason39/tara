@@ -32,193 +32,193 @@ import {
  * Abstract class defining the contract for finance data persistence
  * Using abstract class instead of interface for NestJS DI compatibility
  *
- * CRITICAL: All methods MUST accept tenantId as the first argument
+ * CRITICAL: All methods MUST accept tenant_id as the first argument
  * to enforce multi-tenancy at the data layer
  */
 export abstract class IFinanceRepository {
   // Ledger & Transactions
   abstract getLedger(
-    tenantId: string,
-    locationId?: string,
+    tenant_id: string,
+    location_id?: string,
   ): Promise<LedgerEntry[]>;
   abstract createTransaction(
-    tenantId: string,
+    tenant_id: string,
     data: CreateTransactionDto,
     tx?: Prisma.TransactionClient,
   ): Promise<Transaction>;
   abstract createJournal(
-    tenantId: string,
+    tenant_id: string,
     data: any,
     tx?: Prisma.TransactionClient,
   ): Promise<any>;
-  abstract getBalance(tenantId: string): Promise<Balance>;
+  abstract getBalance(tenant_id: string): Promise<Balance>;
   abstract getTransactionById(
-    tenantId: string,
-    transactionId: string,
+    tenant_id: string,
+    transaction_id: string,
   ): Promise<Transaction | null>;
 
   // Money Sources
-  abstract listMoneySources(tenantId: string): Promise<FinanceMoneySourceRow[]>;
+  abstract listMoneySources(tenant_id: string): Promise<FinanceMoneySourceRow[]>;
 
   // Treasury
-  abstract listTransfers(tenantId: string): Promise<TreasuryTransfer[]>;
+  abstract listTransfers(tenant_id: string): Promise<TreasuryTransfer[]>;
   abstract createTransfer(
-    tenantId: string,
+    tenant_id: string,
     data: Partial<TreasuryTransfer>,
     tx?: Prisma.TransactionClient,
   ): Promise<TreasuryTransfer>;
   abstract reconcileSettlement(
-    tenantId: string,
+    tenant_id: string,
     sourceId: string,
     amount: number,
     tx?: Prisma.TransactionClient,
   ): Promise<void>;
 
   // Assets
-  abstract listAssets(tenantId: string): Promise<Asset[]>;
+  abstract listAssets(tenant_id: string): Promise<Asset[]>;
   abstract getAssetById(
-    tenantId: string,
+    tenant_id: string,
     assetId: string,
   ): Promise<Asset | null>;
   abstract createAsset(
-    tenantId: string,
+    tenant_id: string,
     asset: Partial<Asset>,
     tx?: Prisma.TransactionClient,
   ): Promise<Asset>;
   abstract updateAsset(
-    tenantId: string,
+    tenant_id: string,
     assetId: string,
     updates: Partial<Asset>,
     tx?: Prisma.TransactionClient,
   ): Promise<Asset | null>;
 
   // Capex
-  abstract listCapexRequests(tenantId: string): Promise<CapexRequest[]>;
+  abstract listCapexRequests(tenant_id: string): Promise<CapexRequest[]>;
   abstract getCapexRequestById(
-    tenantId: string,
+    tenant_id: string,
     id: string,
   ): Promise<CapexRequest | null>;
   abstract createCapexRequest(
-    tenantId: string,
+    tenant_id: string,
     request: Partial<CapexRequest>,
     tx?: Prisma.TransactionClient,
   ): Promise<CapexRequest>;
   abstract updateCapexRequest(
-    tenantId: string,
+    tenant_id: string,
     id: string,
     updates: Partial<CapexRequest>,
     tx?: Prisma.TransactionClient,
   ): Promise<CapexRequest | null>;
-  abstract listCapexBudgets(tenantId: string): Promise<FinanceCapexBudgetRow[]>;
+  abstract listCapexBudgets(tenant_id: string): Promise<FinanceCapexBudgetRow[]>;
   abstract setCapexBudget(
-    tenantId: string,
+    tenant_id: string,
     budget: FinanceCapexBudgetRow,
   ): Promise<void>;
 
   // Depreciation & Events
   abstract listAssetDepreciationEntries(
-    tenantId: string,
+    tenant_id: string,
     assetId?: string,
   ): Promise<AssetDepreciationEntry[]>;
   abstract createDepreciationEntry(
-    tenantId: string,
+    tenant_id: string,
     entry: Partial<AssetDepreciationEntry>,
     tx?: Prisma.TransactionClient,
   ): Promise<AssetDepreciationEntry>;
   abstract listAssetEvents(
-    tenantId: string,
+    tenant_id: string,
     assetId?: string,
   ): Promise<AssetEvent[]>;
   abstract createAssetEvent(
-    tenantId: string,
+    tenant_id: string,
     event: Partial<AssetEvent>,
     tx?: Prisma.TransactionClient,
   ): Promise<AssetEvent>;
   abstract getAssetAuditPack(
-    tenantId: string,
+    tenant_id: string,
     assetId: string,
   ): Promise<AssetAuditPack>;
 
   // Receivables
-  abstract listReceivables(tenantId: string): Promise<FinanceReceivableRow[]>;
+  abstract listReceivables(tenant_id: string): Promise<FinanceReceivableRow[]>;
   abstract createReceivable(
-    tenantId: string,
+    tenant_id: string,
     invoice: Partial<ReceivableInvoice>,
     tx?: Prisma.TransactionClient,
   ): Promise<ReceivableInvoice>;
   abstract updateReceivable(
-    tenantId: string,
+    tenant_id: string,
     id: string,
     updates: Partial<ReceivableInvoice>,
     tx?: Prisma.TransactionClient,
   ): Promise<ReceivableInvoice | null>;
 
   // Payables
-  abstract listPayables(tenantId: string): Promise<FinancePayableRow[]>;
+  abstract listPayables(tenant_id: string): Promise<FinancePayableRow[]>;
   abstract createPayable(
-    tenantId: string,
+    tenant_id: string,
     bill: Partial<PayableBill>,
     tx?: Prisma.TransactionClient,
   ): Promise<PayableBill>;
   abstract updatePayable(
-    tenantId: string,
+    tenant_id: string,
     id: string,
     updates: Partial<PayableBill>,
     tx?: Prisma.TransactionClient,
   ): Promise<PayableBill | null>;
 
   // Payments
-  abstract listPayments(tenantId: string): Promise<FinancePaymentRow[]>;
+  abstract listPayments(tenant_id: string): Promise<FinancePaymentRow[]>;
   abstract createPaymentRequest(
-    tenantId: string,
+    tenant_id: string,
     request: Partial<PaymentRequest>,
     tx?: Prisma.TransactionClient,
   ): Promise<PaymentRequest>;
   abstract updatePaymentStatus(
-    tenantId: string,
+    tenant_id: string,
     id: string,
     status: string,
     tx?: Prisma.TransactionClient,
   ): Promise<void>;
 
   // Documents
-  abstract listDocuments(tenantId: string): Promise<FinanceDocumentRow[]>;
+  abstract listDocuments(tenant_id: string): Promise<FinanceDocumentRow[]>;
   abstract createDocument(
-    tenantId: string,
+    tenant_id: string,
     doc: Partial<FinanceDocumentRow>,
     tx?: Prisma.TransactionClient,
   ): Promise<FinanceDocumentRow>;
 
   // Policies & Periods
-  abstract listPolicies(tenantId: string): Promise<FinancePolicyRow[]>;
-  abstract listPeriods(tenantId: string): Promise<AccountingPeriod[]>;
+  abstract listPolicies(tenant_id: string): Promise<FinancePolicyRow[]>;
+  abstract listPeriods(tenant_id: string): Promise<AccountingPeriod[]>;
 
   // Insights & Alerts
-  abstract getInsights(tenantId: string): Promise<FinanceInsight[]>;
-  abstract getAlerts(tenantId: string): Promise<FinanceAlert[]>;
+  abstract getInsights(tenant_id: string): Promise<FinanceInsight[]>;
+  abstract getAlerts(tenant_id: string): Promise<FinanceAlert[]>;
 
   // Payroll
   abstract listPayrollEntries(
-    tenantId: string,
+    tenant_id: string,
     period?: string,
   ): Promise<PayrollEntry[]>;
   abstract createPayrollEntry(
-    tenantId: string,
+    tenant_id: string,
     entry: Partial<PayrollEntry>,
     tx?: Prisma.TransactionClient,
   ): Promise<PayrollEntry>;
   abstract estimatePayroll(
-    tenantId: string,
+    tenant_id: string,
     period: string,
   ): Promise<PayrollEstimate[]>;
   abstract executePayrollRun(
-    tenantId: string,
+    tenant_id: string,
     period: string,
-    userId: string,
+    user_id: string,
     tx?: Prisma.TransactionClient,
   ): Promise<void>;
   abstract updatePayrollEntry(
-    tenantId: string,
+    tenant_id: string,
     id: string,
     updates: Partial<PayrollEntry>,
     tx?: Prisma.TransactionClient,

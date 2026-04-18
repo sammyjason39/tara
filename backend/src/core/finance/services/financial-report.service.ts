@@ -21,38 +21,38 @@ export class FinancialReportService {
     private readonly snapshotRepo: IFinancialReportSnapshotRepository,
   ) {}
 
-  async getReport(tenantId: string, companyId: string, type: string, fiscalPeriodId: string, dimensions?: Record<string, string>): Promise<any> {
+  async getReport(tenant_id: string, company_id: string, type: string, fiscalPeriodId: string, dimensions?: Record<string, string>): Promise<any> {
     const definition = this.registry.getDefinition(type);
     if (!definition) throw new Error(`Unknown report type: ${type}`);
 
     const parametersHash = this.computeParametersHash(fiscalPeriodId, dimensions);
-    const latestCheckpoint = await this.checkpointService.getLatestCheckpoint(tenantId, companyId);
-    const cached = await this.snapshotRepo.findLatest(tenantId, companyId, type, fiscalPeriodId, parametersHash);
+    const latestCheckpoint = await this.checkpointService.getLatestCheckpoint(tenant_id, company_id);
+    const cached = await this.snapshotRepo.findLatest(tenant_id, company_id, type, fiscalPeriodId, parametersHash);
 
     if (cached && (cached.projectionCheckpointSequence as any) === latestCheckpoint) {
-      if (cached.tenantId === tenantId && cached.companyId === companyId) {
+      if (cached.tenant_id === tenant_id && cached.company_id === company_id) {
         return this.decompressReport(cached.compressedData || '');
       }
     }
 
-    await this.validateAccess(tenantId, companyId, dimensions?.branchId);
+    await this.validateAccess(tenant_id, company_id, dimensions?.branch_id);
 
     let reportData: any;
     switch (type) {
       case 'PROFIT_LOSS':
-        reportData = await this.plService.generate(tenantId, companyId, fiscalPeriodId, dimensions);
+        reportData = await this.plService.generate(tenant_id, company_id, fiscalPeriodId, dimensions);
         break;
       case 'BALANCE_SHEET':
-        reportData = await this.bsService.generate(tenantId, companyId, fiscalPeriodId, dimensions);
+        reportData = await this.bsService.generate(tenant_id, company_id, fiscalPeriodId, dimensions);
         break;
       case 'CASH_FLOW':
-        reportData = await this.cfService.generate(tenantId, companyId, fiscalPeriodId);
+        reportData = await this.cfService.generate(tenant_id, company_id, fiscalPeriodId);
         break;
       default:
         throw new Error(`Report type ${type} not supported`);
     }
 
-    await this.cacheReport(tenantId, companyId, type, fiscalPeriodId, parametersHash, reportData, latestCheckpoint, definition.version);
+    await this.cacheReport(tenant_id, company_id, type, fiscalPeriodId, parametersHash, reportData, latestCheckpoint, definition.version);
 
     return reportData;
   }
@@ -63,8 +63,8 @@ export class FinancialReportService {
   }
 
   private async cacheReport(
-    tenantId: string, 
-    companyId: string,
+    tenant_id: string, 
+    company_id: string,
     type: string, 
     fiscalPeriodId: string, 
     paramsHash: string, 
@@ -76,8 +76,8 @@ export class FinancialReportService {
     const compressed = Buffer.from(serialized).toString('base64');
 
     await this.snapshotRepo.create({
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       reportType: type,
       reportVersion: Number(version) || 1,
       fiscalPeriodId,
@@ -92,7 +92,7 @@ export class FinancialReportService {
     return JSON.parse(serialized);
   }
 
-  private async validateAccess(tenantId: string, companyId: string, branchId?: string): Promise<void> {
-    if (!tenantId || !companyId) throw new Error(`Access denied`);
+  private async validateAccess(tenant_id: string, company_id: string, branch_id?: string): Promise<void> {
+    if (!tenant_id || !company_id) throw new Error(`Access denied`);
   }
 }

@@ -31,19 +31,19 @@ export class OutboxWorkerService {
     try {
       const now = new Date();
       // PHASE 1-5: Production Guarded Query
-      const events = await this.prisma.sysOutboxEvent.findMany({
+      const events = await this.prisma.sys_outbox_events.findMany({
         where: {
           OR: [
             { status: 'PENDING' },
             { 
               status: 'FAILED', 
               attempts: { lt: this.MAX_ATTEMPTS },
-              nextRetryAt: { lte: now }
+              next_retry_at: { lte: now }
             },
           ],
         },
         take: 50, // Batch limit (Backpressure)
-        orderBy: { createdAt: 'asc' },
+        orderBy: { created_at: 'asc' },
       });
 
       if (events.length === 0) {
@@ -101,24 +101,24 @@ export class OutboxWorkerService {
       }
 
       await this.eventBus.publish({
-        eventType: event.type,
-        tenantId: event.tenantId,
+        event_type: event.type,
+        tenant_id: event.tenant_id,
         payload: {
           ...(payload as any),
           _metadata: {
             eventId: event.id,
             version: 'v1',
-            timestamp: event.createdAt,
+            timestamp: event.created_at,
           },
         },
-        sourceModule: 'HR',
-        entityId: (payload as any).employeeId || (payload as any).payrollRunId || (payload as any).id || event.id,
-        entityType: event.type.split('.')[1]?.toUpperCase() || 'UNKNOWN',
+        source_module: 'HR',
+        entity_id: (payload as any).employee_id || (payload as any).payrollRunId || (payload as any).id || event.id,
+        entity_type: event.type.split('.')[1]?.toUpperCase() || 'UNKNOWN',
       });
 
-      await this.prisma.sysOutboxEvent.update({
+      await this.prisma.sys_outbox_events.update({
         where: { id: event.id },
-        data: { status: 'PROCESSED', updatedAt: new Date() },
+        data: { status: 'PROCESSED', updated_at: new Date() },
       });
     } catch (error) {
       this.errorCount++;
@@ -129,14 +129,14 @@ export class OutboxWorkerService {
 
       this.logger.error(`Failed to process outbox event ${event.id} (Attempt ${nextAttempt}): ${error.message}`);
       
-      await this.prisma.sysOutboxEvent.update({
+      await this.prisma.sys_outbox_events.update({
         where: { id: event.id },
         data: { 
           status: 'FAILED', 
           attempts: nextAttempt,
-          lastError: error.message,
-          nextRetryAt,
-          updatedAt: new Date(),
+          last_error: error.message,
+          next_retry_at: nextRetryAt,
+          updated_at: new Date(),
         },
       }).catch(() => {});
     }

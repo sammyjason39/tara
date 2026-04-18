@@ -1,13 +1,13 @@
 export class TrainingAssignment {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   programId: string;
-  employeeId: string;
+  employee_id: string;
   status: string; // in_progress, completed
   assignedAt: Date;
   completedAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 
   employee?: any;
   program?: any;

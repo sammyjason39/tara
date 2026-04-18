@@ -13,25 +13,25 @@ export class LedgerMerkleCheckpointService {
     private readonly journalRepo: IJournalRepository,
   ) {}
 
-  async buildCheckpoint(tenantId: string, companyId: string, fromSeq: number, toSeq: number): Promise<string> {
-    const journals = await this.journalRepo.findBySequenceRange(tenantId, companyId, fromSeq, toSeq);
+  async buildCheckpoint(tenant_id: string, company_id: string, fromSeq: number, toSeq: number): Promise<string> {
+    const journals = await this.journalRepo.findBySequenceRange(tenant_id, company_id, fromSeq, toSeq);
     const hashes = journals.map((j: JournalEntry) => j.entryHash || 'UNDEFINED');
     const root = this.computeMerkleRoot(hashes);
 
-    await this.checkpointRepo.create(tenantId, companyId, {
+    await this.checkpointRepo.create(tenant_id, company_id, {
       ledgerSequence: toSeq,
       fromSequence: fromSeq,
       toSequence: toSeq,
       merkleRoot: root,
       journalCount: journals.length,
-      createdAt: new Date(),
+      created_at: new Date(),
     });
 
     return root;
   }
 
-  async verifyChain(tenantId: string, companyId: string): Promise<CheckpointChainResult> {
-    const checkpoints = await this.checkpointRepo.findAll(tenantId, companyId);
+  async verifyChain(tenant_id: string, company_id: string): Promise<CheckpointChainResult> {
+    const checkpoints = await this.checkpointRepo.findAll(tenant_id, company_id);
     const violations: string[] = [];
 
     for (let i = 1; i < checkpoints.length; i++) {

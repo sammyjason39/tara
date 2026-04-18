@@ -2,10 +2,10 @@ import { IsString, IsEmail, IsOptional } from 'class-validator';
 
 export class CreateCandidateDto {
   @IsString()
-  firstName: string;
+  first_name: string;
 
   @IsString()
-  lastName: string;
+  last_name: string;
 
   @IsEmail()
   email: string;

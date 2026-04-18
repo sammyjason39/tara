@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../../../../persistence/prisma.service';
 import { IArPaymentRepository } from './interfaces/ar-payment.repository.interface';
 import { IArPayment, IArPaymentAllocation } from '../domain/ar.interfaces';
@@ -12,85 +13,96 @@ export class ArPaymentDbRepository implements IArPaymentRepository {
     return this.prisma as Prisma.TransactionClient;
   }
 
-  async findById(tenantId: string, companyId: string, id: string): Promise<IArPayment | null> {
-    const res = await this.db.arPayment.findUnique({
+  async findById(tenant_id: string, company_id: string, id: string): Promise<IArPayment | null> {
+    const res = await this.db.finance_ar_payments.findUnique({
       where: { id },
-      include: { financeArPaymentAllocations: true }
+      include: { finance_ar_payment_allocations: true }
     });
     if (!res) return null;
     return this.mapToDomain(res);
   }
 
-  async findByIdempotencyKey(tenantId: string, companyId: string, key: string): Promise<IArPayment | null> {
-    const res = await this.db.arPayment.findFirst({
-      where: { tenantId, idempotencyKey: key },
-      include: { financeArPaymentAllocations: true }
+  async findByIdempotencyKey(tenant_id: string, company_id: string, key: string): Promise<IArPayment | null> {
+    const res = await this.db.finance_ar_payments.findFirst({
+      where: { tenant_id: tenant_id, idempotency_key: key },
+      include: { finance_ar_payment_allocations: true }
     });
     if (!res) return null;
     return this.mapToDomain(res);
   }
 
-  async findAllocationByIdempotencyKey(tenantId: string, companyId: string, key: string): Promise<IArPaymentAllocation | null> {
-    // ArPaymentAllocation has no idempotencyKey in schema. Returning null to skip check.
+  async findAllocationByIdempotencyKey(tenant_id: string, company_id: string, key: string): Promise<IArPaymentAllocation | null> {
+    // ArPaymentAllocation has no idempotency_key in schema. Returning null to skip check.
     return null; 
   }
 
-  async findAllocationsByInvoice(tenantId: string, companyId: string, invoiceId: string): Promise<IArPaymentAllocation[]> {
-    const list = await this.db.arPaymentAllocation.findMany({
-      where: { invoiceId }
+  async findAllocationsByInvoice(tenant_id: string, company_id: string, invoiceId: string): Promise<IArPaymentAllocation[]> {
+    const list = await this.db.finance_ar_payment_allocations.findMany({
+      where: { invoice_id: invoiceId }
     });
-    return list as unknown as IArPaymentAllocation[];
-  }
-  async findAllocationsByPayment(tenantId: string, companyId: string, paymentId: string): Promise<IArPaymentAllocation[]> {
-    const list = await this.db.arPaymentAllocation.findMany({
-      where: { paymentId }
-    });
-    return list as unknown as IArPaymentAllocation[];
+    return list.map((item: any) => this.mapAllocationToDomain(item));
   }
 
-  async create(tenantId: string, companyId: string, data: any): Promise<IArPayment> {
-    const created = await this.db.arPayment.create({
+  async findAllocationsByPayment(tenant_id: string, company_id: string, paymentId: string): Promise<IArPaymentAllocation[]> {
+    const list = await this.db.finance_ar_payment_allocations.findMany({
+      where: { payment_id: paymentId }
+    });
+    return list.map((item: any) => this.mapAllocationToDomain(item));
+  }
+
+  async create(tenant_id: string, company_id: string, data: any): Promise<IArPayment> {
+    const created = await this.db.finance_ar_payments.create({
       data: {
-        
-        updatedAt: new Date(),
-        tenantId,
-        customerId: data.customerId,
+        id: data.id || randomUUID(),
+        tenant_id: tenant_id,
+        customer_id: data.customer_id,
         amount: new Prisma.Decimal(data.amount),
-        paymentDate: data.paymentDate || new Date(),
-        paymentMethod: data.paymentMethod || 'CASH',
-        idempotencyKey: data.idempotencyKey,
+        payment_date: data.paymentDate || new Date(),
+        payment_method: data.payment_method || 'CASH',
+        idempotency_key: data.idempotency_key,
         reference: data.reference,
+        created_at: new Date(),
+        updated_at: new Date(),
       }
     });
     return this.mapToDomain(created);
   }
 
-  async createAllocation(tenantId: string, companyId: string, data: any): Promise<IArPaymentAllocation> {
-    const created = await this.db.arPaymentAllocation.create({
+  async createAllocation(tenant_id: string, company_id: string, data: any): Promise<IArPaymentAllocation> {
+    const created = await this.db.finance_ar_payment_allocations.create({
       data: {
-        
-        
-        paymentId: data.paymentId,
-        invoiceId: data.invoiceId,
-        amountAllocated: new Prisma.Decimal(data.amountAllocated || data.amount),
+        id: randomUUID(),
+        payment_id: data.paymentId,
+        invoice_id: data.invoiceId,
+        amount_allocated: new Prisma.Decimal(data.amountAllocated || data.amount),
+        created_at: new Date(),
       }
     });
-    return created as unknown as IArPaymentAllocation;
+    return this.mapAllocationToDomain(created);
   }
 
   private mapToDomain(item: any): IArPayment {
     return {
       id: item.id,
-      tenantId: item.tenantId,
-      companyId: item.tenantId, 
-      customerId: item.customerId,
-      paymentDate: item.paymentDate,
+      tenant_id: item.tenant_id,
+      company_id: item.tenant_id, 
+      customer_id: item.customer_id,
+      paymentDate: item.payment_date,
       amount: item.amount,
-      paymentMethod: item.paymentMethod, 
+      payment_method: item.payment_method, 
       reference: item.reference || '',
-      idempotencyKey: item.idempotencyKey,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
+      idempotency_key: item.idempotency_key,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
     } as unknown as IArPayment;
+  }
+
+  private mapAllocationToDomain(item: any): IArPaymentAllocation {
+    return {
+      id: item.id,
+      paymentId: item.payment_id,
+      invoiceId: item.invoice_id,
+      amountAllocated: item.amount_allocated,
+    } as unknown as IArPaymentAllocation;
   }
 }

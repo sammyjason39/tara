@@ -1,0 +1,4872 @@
+{
+  "src/agentic/inventory/anomaly-detector.service.ts": [
+    {
+      "line": 18,
+      "col": 51,
+      "bad": "stock_movements",
+      "good": "stockMovement"
+    },
+    {
+      "line": 49,
+      "col": 46,
+      "bad": "stock_movements",
+      "good": "stockMovement"
+    }
+  ],
+  "src/agentic/inventory/forecaster.service.ts": [
+    {
+      "line": 19,
+      "col": 41,
+      "bad": "stock_movements",
+      "good": "stockMovement"
+    }
+  ],
+  "src/agentic/inventory/replenishment.service.ts": [
+    {
+      "line": 19,
+      "col": 37,
+      "bad": "stock_levels",
+      "good": "stockLevel"
+    }
+  ],
+  "src/core/admin/admin.controller.ts": [
+    {
+      "line": 40,
+      "col": 45,
+      "bad": "retail_orders",
+      "good": "retailOrder"
+    },
+    {
+      "line": 49,
+      "col": 46,
+      "bad": "locations",
+      "good": "location"
+    },
+    {
+      "line": 58,
+      "col": 43,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 63,
+      "col": 38,
+      "bad": "inventory_alerts",
+      "good": "inventoryAlert"
+    },
+    {
+      "line": 79,
+      "col": 42,
+      "bad": "audit_logs",
+      "good": "auditLog"
+    }
+  ],
+  "src/core/admin/repositories/admin.prisma.repository.ts": [
+    {
+      "line": 17,
+      "col": 40,
+      "bad": "admin_module_statuses",
+      "good": "adminModuleStatus"
+    },
+    {
+      "line": 27,
+      "col": 39,
+      "bad": "admin_module_statuses",
+      "good": "adminModuleStatus"
+    },
+    {
+      "line": 36,
+      "col": 23,
+      "bad": "admin_audit_events",
+      "good": "adminAuditEvent"
+    },
+    {
+      "line": 51,
+      "col": 40,
+      "bad": "admin_requests",
+      "good": "adminRequest"
+    },
+    {
+      "line": 61,
+      "col": 39,
+      "bad": "admin_requests",
+      "good": "adminRequest"
+    },
+    {
+      "line": 74,
+      "col": 23,
+      "bad": "admin_audit_events",
+      "good": "adminAuditEvent"
+    },
+    {
+      "line": 93,
+      "col": 40,
+      "bad": "admin_requests",
+      "good": "adminRequest"
+    },
+    {
+      "line": 97,
+      "col": 23,
+      "bad": "admin_audit_events",
+      "good": "adminAuditEvent"
+    },
+    {
+      "line": 112,
+      "col": 24,
+      "bad": "admin_audit_events",
+      "good": "adminAuditEvent"
+    }
+  ],
+  "src/core/auth/guards/branch-gating.guard.ts": [
+    {
+      "line": 47,
+      "col": 42,
+      "bad": "stores",
+      "good": "store"
+    }
+  ],
+  "src/core/auth/guards/module-state.guard.ts": [
+    {
+      "line": 51,
+      "col": 44,
+      "bad": "admin_module_statuses",
+      "good": "adminModuleStatus"
+    }
+  ],
+  "src/core/auth/repositories/auth.db.repository.ts": [
+    {
+      "line": 11,
+      "col": 24,
+      "bad": "users",
+      "good": "user"
+    },
+    {
+      "line": 29,
+      "col": 24,
+      "bad": "users",
+      "good": "user"
+    },
+    {
+      "line": 42,
+      "col": 24,
+      "bad": "users",
+      "good": "user"
+    },
+    {
+      "line": 61,
+      "col": 24,
+      "bad": "users",
+      "good": "user"
+    }
+  ],
+  "src/core/auth/repositories/provisioning.db.repository.ts": [
+    {
+      "line": 42,
+      "col": 33,
+      "bad": "locations",
+      "good": "location"
+    },
+    {
+      "line": 57,
+      "col": 35,
+      "bad": "departments",
+      "good": "department"
+    },
+    {
+      "line": 69,
+      "col": 16,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 92,
+      "col": 18,
+      "bad": "admin_module_statuses",
+      "good": "adminModuleStatus"
+    }
+  ],
+  "src/core/finance/ar/repositories/ar-customer-credit.db.repository.ts": [
+    {
+      "line": 16,
+      "col": 31,
+      "bad": "customer_credit_balances",
+      "good": "customerCreditBalance"
+    },
+    {
+      "line": 25,
+      "col": 19,
+      "bad": "customer_credit_balances",
+      "good": "customerCreditBalance"
+    },
+    {
+      "line": 41,
+      "col": 19,
+      "bad": "customer_credit_balances",
+      "good": "customerCreditBalance"
+    }
+  ],
+  "src/core/finance/repositories/asset.db.repository.ts": [
+    {
+      "line": 16,
+      "col": 31,
+      "bad": "fixed_assets",
+      "good": "fixedAsset"
+    },
+    {
+      "line": 23,
+      "col": 32,
+      "bad": "fixed_assets",
+      "good": "fixedAsset"
+    },
+    {
+      "line": 30,
+      "col": 35,
+      "bad": "fixed_assets",
+      "good": "fixedAsset"
+    },
+    {
+      "line": 52,
+      "col": 19,
+      "bad": "fixed_assets",
+      "good": "fixedAsset"
+    }
+  ],
+  "src/core/finance/repositories/finance.db.repository.ts": [
+    {
+      "line": 180,
+      "col": 44,
+      "bad": "money_sources",
+      "good": "moneySource"
+    },
+    {
+      "line": 224,
+      "col": 38,
+      "bad": "fixed_assets",
+      "good": "fixedAsset"
+    },
+    {
+      "line": 231,
+      "col": 37,
+      "bad": "fixed_assets",
+      "good": "fixedAsset"
+    },
+    {
+      "line": 243,
+      "col": 30,
+      "bad": "fixed_assets",
+      "good": "fixedAsset"
+    },
+    {
+      "line": 275,
+      "col": 30,
+      "bad": "fixed_assets",
+      "good": "fixedAsset"
+    },
+    {
+      "line": 284,
+      "col": 40,
+      "bad": "capex_requests",
+      "good": "capexRequest"
+    },
+    {
+      "line": 294,
+      "col": 39,
+      "bad": "capex_requests",
+      "good": "capexRequest"
+    },
+    {
+      "line": 306,
+      "col": 30,
+      "bad": "capex_requests",
+      "good": "capexRequest"
+    },
+    {
+      "line": 329,
+      "col": 30,
+      "bad": "capex_requests",
+      "good": "capexRequest"
+    },
+    {
+      "line": 342,
+      "col": 39,
+      "bad": "money_sources",
+      "good": "moneySource"
+    },
+    {
+      "line": 359,
+      "col": 44,
+      "bad": "retail_shifts",
+      "good": "retailShift"
+    },
+    {
+      "line": 390,
+      "col": 41,
+      "bad": "treasury_transfers",
+      "good": "treasuryTransfer"
+    },
+    {
+      "line": 407,
+      "col": 30,
+      "bad": "treasury_transfers",
+      "good": "treasuryTransfer"
+    },
+    {
+      "line": 435,
+      "col": 29,
+      "bad": "money_sources",
+      "good": "moneySource"
+    },
+    {
+      "line": 441,
+      "col": 14,
+      "bad": "money_sources",
+      "good": "moneySource"
+    },
+    {
+      "line": 451,
+      "col": 14,
+      "bad": "settlement_records",
+      "good": "settlementRecord"
+    },
+    {
+      "line": 468,
+      "col": 48,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 477,
+      "col": 42,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 524,
+      "col": 30,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 569,
+      "col": 14,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 577,
+      "col": 37,
+      "bad": "receivables",
+      "good": "receivable"
+    },
+    {
+      "line": 634,
+      "col": 37,
+      "bad": "payables",
+      "good": "payable"
+    },
+    {
+      "line": 728,
+      "col": 37,
+      "bad": "payroll_lines",
+      "good": "payrollLine"
+    },
+    {
+      "line": 760,
+      "col": 41,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 829,
+      "col": 32,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 982,
+      "col": 39,
+      "bad": "capex_budgets",
+      "good": "capexBudget"
+    },
+    {
+      "line": 993,
+      "col": 23,
+      "bad": "capex_budgets",
+      "good": "capexBudget"
+    },
+    {
+      "line": 1019,
+      "col": 39,
+      "bad": "asset_depreciation_entries",
+      "good": "assetDepreciationEntry"
+    },
+    {
+      "line": 1038,
+      "col": 30,
+      "bad": "asset_depreciation_entries",
+      "good": "assetDepreciationEntry"
+    },
+    {
+      "line": 1066,
+      "col": 38,
+      "bad": "asset_events",
+      "good": "assetEvent"
+    },
+    {
+      "line": 1084,
+      "col": 30,
+      "bad": "asset_events",
+      "good": "assetEvent"
+    },
+    {
+      "line": 1126,
+      "col": 30,
+      "bad": "receivables",
+      "good": "receivable"
+    },
+    {
+      "line": 1141,
+      "col": 30,
+      "bad": "payables",
+      "good": "payable"
+    },
+    {
+      "line": 1156,
+      "col": 36,
+      "bad": "finance_documents",
+      "good": "financeDocument"
+    },
+    {
+      "line": 1170,
+      "col": 30,
+      "bad": "finance_documents",
+      "good": "financeDocument"
+    },
+    {
+      "line": 1195,
+      "col": 40,
+      "bad": "finance_policies",
+      "good": "financePolicy"
+    },
+    {
+      "line": 1207,
+      "col": 39,
+      "bad": "accounting_periods",
+      "good": "accountingPeriod"
+    },
+    {
+      "line": 1219,
+      "col": 40,
+      "bad": "finance_insights",
+      "good": "financeInsight"
+    },
+    {
+      "line": 1230,
+      "col": 38,
+      "bad": "finance_alerts",
+      "good": "financeAlert"
+    }
+  ],
+  "src/core/finance/repositories/ledger-event-log.db.repository.ts": [
+    {
+      "line": 16,
+      "col": 35,
+      "bad": "ledger_event_logs",
+      "good": "ledgerEventLog"
+    },
+    {
+      "line": 32,
+      "col": 31,
+      "bad": "ledger_event_logs",
+      "good": "ledgerEventLog"
+    },
+    {
+      "line": 39,
+      "col": 19,
+      "bad": "ledger_event_logs",
+      "good": "ledgerEventLog"
+    },
+    {
+      "line": 46,
+      "col": 32,
+      "bad": "ledger_event_logs",
+      "good": "ledgerEventLog"
+    },
+    {
+      "line": 59,
+      "col": 32,
+      "bad": "ledger_event_logs",
+      "good": "ledgerEventLog"
+    },
+    {
+      "line": 66,
+      "col": 19,
+      "bad": "ledger_event_logs",
+      "good": "ledgerEventLog"
+    }
+  ],
+  "src/core/finance/repositories/payroll.db.repository.ts": [
+    {
+      "line": 19,
+      "col": 31,
+      "bad": "payroll_lines",
+      "good": "payrollLine"
+    },
+    {
+      "line": 37,
+      "col": 32,
+      "bad": "payroll_lines",
+      "good": "payrollLine"
+    }
+  ],
+  "src/core/finance/services/audit-certification.service.ts": [
+    {
+      "line": 70,
+      "col": 40,
+      "bad": "finance_certifications",
+      "good": "financeCertification"
+    },
+    {
+      "line": 144,
+      "col": 34,
+      "bad": "finance_certifications",
+      "good": "financeCertification"
+    },
+    {
+      "line": 165,
+      "col": 48,
+      "bad": "finance_certifications",
+      "good": "financeCertification"
+    },
+    {
+      "line": 187,
+      "col": 36,
+      "bad": "finance_certifications",
+      "good": "financeCertification"
+    },
+    {
+      "line": 195,
+      "col": 36,
+      "bad": "finance_certifications",
+      "good": "financeCertification"
+    }
+  ],
+  "src/core/finance/services/budgeting.service.ts": [
+    {
+      "line": 31,
+      "col": 20,
+      "bad": "scenario",
+      "good": "scenarioId"
+    }
+  ],
+  "src/core/finance/services/cashflow.service.ts": [
+    {
+      "line": 126,
+      "col": 40,
+      "bad": "payables",
+      "good": "payable"
+    }
+  ],
+  "src/core/finance/services/financial-dashboard.service.ts": [
+    {
+      "line": 159,
+      "col": 47,
+      "bad": "system_logs",
+      "good": "systemLog"
+    }
+  ],
+  "src/core/finance/services/payment-lifecycle.service.ts": [
+    {
+      "line": 40,
+      "col": 24,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 62,
+      "col": 32,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 77,
+      "col": 16,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 101,
+      "col": 20,
+      "bad": "receivables",
+      "good": "receivable"
+    },
+    {
+      "line": 146,
+      "col": 24,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    }
+  ],
+  "src/core/finance/services/workflow-integration.service.ts": [
+    {
+      "line": 20,
+      "col": 40,
+      "bad": "workflow_requests",
+      "good": "workflowRequest"
+    },
+    {
+      "line": 41,
+      "col": 25,
+      "bad": "payables",
+      "good": "payable"
+    },
+    {
+      "line": 43,
+      "col": 25,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 53,
+      "col": 40,
+      "bad": "workflow_requests",
+      "good": "workflowRequest"
+    }
+  ],
+  "src/core/finance/subledger/repositories/inventory-subledger.db.repository.ts": [
+    {
+      "line": 50,
+      "col": 30,
+      "bad": "inventory_subledger_entries",
+      "good": "inventorySubledgerEntry"
+    },
+    {
+      "line": 69,
+      "col": 30,
+      "bad": "inventory_subledger_entries",
+      "good": "inventorySubledgerEntry"
+    },
+    {
+      "line": 78,
+      "col": 30,
+      "bad": "inventory_subledger_entries",
+      "good": "inventorySubledgerEntry"
+    },
+    {
+      "line": 86,
+      "col": 31,
+      "bad": "inventory_subledger_entries",
+      "good": "inventorySubledgerEntry"
+    },
+    {
+      "line": 89,
+      "col": 30,
+      "bad": "inventory_subledger_entries",
+      "good": "inventorySubledgerEntry"
+    },
+    {
+      "line": 106,
+      "col": 31,
+      "bad": "cost_layers",
+      "good": "costLayer"
+    },
+    {
+      "line": 120,
+      "col": 30,
+      "bad": "cost_layers",
+      "good": "costLayer"
+    },
+    {
+      "line": 140,
+      "col": 30,
+      "bad": "cost_layers",
+      "good": "costLayer"
+    },
+    {
+      "line": 151,
+      "col": 33,
+      "bad": "cost_snapshots",
+      "good": "costSnapshot"
+    }
+  ],
+  "src/core/hr/hr-consistency.service.ts": [
+    {
+      "line": 31,
+      "col": 45,
+      "bad": "hr_context_snapshots",
+      "good": "hrContextSnapshot"
+    },
+    {
+      "line": 52,
+      "col": 27,
+      "bad": "hr_system_alerts",
+      "good": "hrSystemAlert"
+    }
+  ],
+  "src/core/hr/hr-insight.service.ts": [
+    {
+      "line": 38,
+      "col": 23,
+      "bad": "hr_context_snapshots",
+      "good": "hrContextSnapshot"
+    },
+    {
+      "line": 75,
+      "col": 50,
+      "bad": "hr_context_snapshots",
+      "good": "hrContextSnapshot"
+    },
+    {
+      "line": 91,
+      "col": 45,
+      "bad": "hr_recommendations",
+      "good": "hrRecommendation"
+    },
+    {
+      "line": 106,
+      "col": 41,
+      "bad": "hr_insights",
+      "good": "hrInsight"
+    },
+    {
+      "line": 143,
+      "col": 29,
+      "bad": "hr_recommendations",
+      "good": "hrRecommendation"
+    },
+    {
+      "line": 161,
+      "col": 25,
+      "bad": "hr_context_snapshots",
+      "good": "hrContextSnapshot"
+    },
+    {
+      "line": 184,
+      "col": 46,
+      "bad": "hr_recommendation_feedbacks",
+      "good": "hrRecommendationFeedback"
+    },
+    {
+      "line": 215,
+      "col": 48,
+      "bad": "hr_attendance_records",
+      "good": "hrAttendanceRecord"
+    },
+    {
+      "line": 224,
+      "col": 27,
+      "bad": "hr_system_alerts",
+      "good": "hrSystemAlert"
+    },
+    {
+      "line": 248,
+      "col": 42,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 254,
+      "col": 27,
+      "bad": "hr_system_alerts",
+      "good": "hrSystemAlert"
+    },
+    {
+      "line": 278,
+      "col": 25,
+      "bad": "hr_recommendations",
+      "good": "hrRecommendation"
+    },
+    {
+      "line": 294,
+      "col": 40,
+      "bad": "hr_context_snapshots",
+      "good": "hrContextSnapshot"
+    },
+    {
+      "line": 305,
+      "col": 48,
+      "bad": "hr_context_snapshots",
+      "good": "hrContextSnapshot"
+    },
+    {
+      "line": 319,
+      "col": 27,
+      "bad": "hr_system_alerts",
+      "good": "hrSystemAlert"
+    }
+  ],
+  "src/core/hr/hr-metric.service.ts": [
+    {
+      "line": 22,
+      "col": 47,
+      "bad": "hr_insights",
+      "good": "hrInsight"
+    },
+    {
+      "line": 23,
+      "col": 49,
+      "bad": "hr_insights",
+      "good": "hrInsight"
+    },
+    {
+      "line": 29,
+      "col": 49,
+      "bad": "hr_recommendations",
+      "good": "hrRecommendation"
+    },
+    {
+      "line": 30,
+      "col": 44,
+      "bad": "hr_recommendation_feedbacks",
+      "good": "hrRecommendationFeedback"
+    },
+    {
+      "line": 36,
+      "col": 25,
+      "bad": "hr_system_metrics",
+      "good": "hrSystemMetric"
+    }
+  ],
+  "src/core/hr/hr.controller.ts": [
+    {
+      "line": 138,
+      "col": 19,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 139,
+      "col": 19,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 140,
+      "col": 19,
+      "bad": "leave_requests",
+      "good": "leaveRequest"
+    },
+    {
+      "line": 143,
+      "col": 19,
+      "bad": "hr_cases",
+      "good": "hrCase"
+    },
+    {
+      "line": 144,
+      "col": 19,
+      "bad": "job_requisitions",
+      "good": "jobRequisition"
+    },
+    {
+      "line": 168,
+      "col": 44,
+      "bad": "departments",
+      "good": "department"
+    },
+    {
+      "line": 180,
+      "col": 29,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 183,
+      "col": 29,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 191,
+      "col": 46,
+      "bad": "retail_shifts",
+      "good": "retailShift"
+    },
+    {
+      "line": 200,
+      "col": 49,
+      "bad": "retail_shifts",
+      "good": "retailShift"
+    },
+    {
+      "line": 210,
+      "col": 54,
+      "bad": "retail_shifts",
+      "good": "retailShift"
+    },
+    {
+      "line": 1094,
+      "col": 36,
+      "bad": "hr_cases",
+      "good": "hrCase"
+    },
+    {
+      "line": 1118,
+      "col": 35,
+      "bad": "hr_cases",
+      "good": "hrCase"
+    },
+    {
+      "line": 1146,
+      "col": 35,
+      "bad": "hr_cases",
+      "good": "hrCase"
+    },
+    {
+      "line": 1168,
+      "col": 35,
+      "bad": "hr_cases",
+      "good": "hrCase"
+    },
+    {
+      "line": 1187,
+      "col": 35,
+      "bad": "hr_cases",
+      "good": "hrCase"
+    },
+    {
+      "line": 1210,
+      "col": 35,
+      "bad": "hr_cases",
+      "good": "hrCase"
+    },
+    {
+      "line": 2233,
+      "col": 19,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 2234,
+      "col": 19,
+      "bad": "employees",
+      "good": "employee"
+    }
+  ],
+  "src/core/hr/hr.service.ts": [
+    {
+      "line": 1892,
+      "col": 40,
+      "bad": "audit_logs",
+      "good": "auditLog"
+    },
+    {
+      "line": 1902,
+      "col": 43,
+      "bad": "domain_events",
+      "good": "domainEvent"
+    }
+  ],
+  "src/core/hr/repositories/hr.db.repository.ts": [
+    {
+      "line": 75,
+      "col": 19,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 85,
+      "col": 19,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 108,
+      "col": 19,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 118,
+      "col": 19,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 131,
+      "col": 40,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 147,
+      "col": 40,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 170,
+      "col": 38,
+      "bad": "locations",
+      "good": "location"
+    },
+    {
+      "line": 178,
+      "col": 25,
+      "bad": "users",
+      "good": "user"
+    },
+    {
+      "line": 192,
+      "col": 23,
+      "bad": "users",
+      "good": "user"
+    },
+    {
+      "line": 222,
+      "col": 31,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 273,
+      "col": 31,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 294,
+      "col": 31,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 339,
+      "col": 19,
+      "bad": "hr_attendance_records",
+      "good": "hrAttendanceRecord"
+    },
+    {
+      "line": 345,
+      "col": 19,
+      "bad": "hr_attendance_records",
+      "good": "hrAttendanceRecord"
+    },
+    {
+      "line": 370,
+      "col": 19,
+      "bad": "hr_attendance_records",
+      "good": "hrAttendanceRecord"
+    },
+    {
+      "line": 379,
+      "col": 19,
+      "bad": "hr_attendance_records",
+      "good": "hrAttendanceRecord"
+    },
+    {
+      "line": 405,
+      "col": 33,
+      "bad": "hr_attendance_records",
+      "good": "hrAttendanceRecord"
+    },
+    {
+      "line": 435,
+      "col": 38,
+      "bad": "hr_attendance_records",
+      "good": "hrAttendanceRecord"
+    },
+    {
+      "line": 460,
+      "col": 33,
+      "bad": "hr_attendance_records",
+      "good": "hrAttendanceRecord"
+    },
+    {
+      "line": 476,
+      "col": 14,
+      "bad": "schedule_assignments",
+      "good": "scheduleAssignment"
+    },
+    {
+      "line": 508,
+      "col": 40,
+      "bad": "leave_requests",
+      "good": "leaveRequest"
+    },
+    {
+      "line": 517,
+      "col": 39,
+      "bad": "leave_requests",
+      "good": "leaveRequest"
+    },
+    {
+      "line": 532,
+      "col": 40,
+      "bad": "leave_requests",
+      "good": "leaveRequest"
+    },
+    {
+      "line": 552,
+      "col": 39,
+      "bad": "leave_requests",
+      "good": "leaveRequest"
+    },
+    {
+      "line": 578,
+      "col": 30,
+      "bad": "leave_requests",
+      "good": "leaveRequest"
+    },
+    {
+      "line": 601,
+      "col": 30,
+      "bad": "leave_requests",
+      "good": "leaveRequest"
+    },
+    {
+      "line": 637,
+      "col": 44,
+      "bad": "payroll_lines",
+      "good": "payrollLine"
+    },
+    {
+      "line": 655,
+      "col": 40,
+      "bad": "payroll_lines",
+      "good": "payrollLine"
+    },
+    {
+      "line": 671,
+      "col": 31,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 710,
+      "col": 34,
+      "bad": "payroll_lines",
+      "good": "payrollLine"
+    },
+    {
+      "line": 734,
+      "col": 43,
+      "bad": "departments",
+      "good": "department"
+    },
+    {
+      "line": 742,
+      "col": 43,
+      "bad": "departments",
+      "good": "department"
+    },
+    {
+      "line": 754,
+      "col": 42,
+      "bad": "departments",
+      "good": "department"
+    },
+    {
+      "line": 766,
+      "col": 33,
+      "bad": "departments",
+      "good": "department"
+    },
+    {
+      "line": 794,
+      "col": 44,
+      "bad": "job_requisitions",
+      "good": "jobRequisition"
+    },
+    {
+      "line": 805,
+      "col": 44,
+      "bad": "job_requisitions",
+      "good": "jobRequisition"
+    },
+    {
+      "line": 819,
+      "col": 34,
+      "bad": "job_requisitions",
+      "good": "jobRequisition"
+    },
+    {
+      "line": 841,
+      "col": 36,
+      "bad": "job_requisitions",
+      "good": "jobRequisition"
+    },
+    {
+      "line": 856,
+      "col": 38,
+      "bad": "hr_performance_cycles",
+      "good": "hrPerformanceCycle"
+    },
+    {
+      "line": 864,
+      "col": 37,
+      "bad": "hr_performance_cycles",
+      "good": "hrPerformanceCycle"
+    },
+    {
+      "line": 877,
+      "col": 28,
+      "bad": "hr_performance_cycles",
+      "good": "hrPerformanceCycle"
+    },
+    {
+      "line": 899,
+      "col": 30,
+      "bad": "hr_performance_cycles",
+      "good": "hrPerformanceCycle"
+    },
+    {
+      "line": 915,
+      "col": 39,
+      "bad": "performance_reviews",
+      "good": "performanceReview"
+    },
+    {
+      "line": 928,
+      "col": 39,
+      "bad": "performance_reviews",
+      "good": "performanceReview"
+    },
+    {
+      "line": 943,
+      "col": 29,
+      "bad": "performance_reviews",
+      "good": "performanceReview"
+    },
+    {
+      "line": 972,
+      "col": 37,
+      "bad": "hr_cases",
+      "good": "hrCase"
+    },
+    {
+      "line": 981,
+      "col": 29,
+      "bad": "hr_cases",
+      "good": "hrCase"
+    },
+    {
+      "line": 999,
+      "col": 30,
+      "bad": "hr_cases",
+      "good": "hrCase"
+    },
+    {
+      "line": 1020,
+      "col": 41,
+      "bad": "contracts",
+      "good": "contract"
+    },
+    {
+      "line": 1032,
+      "col": 41,
+      "bad": "contracts",
+      "good": "contract"
+    },
+    {
+      "line": 1042,
+      "col": 31,
+      "bad": "contracts",
+      "good": "contract"
+    },
+    {
+      "line": 1058,
+      "col": 30,
+      "bad": "contracts",
+      "good": "contract"
+    },
+    {
+      "line": 1197,
+      "col": 24,
+      "bad": "locations",
+      "good": "location"
+    },
+    {
+      "line": 1650,
+      "col": 40,
+      "bad": "training_programs",
+      "good": "trainingProgram"
+    },
+    {
+      "line": 1658,
+      "col": 39,
+      "bad": "training_programs",
+      "good": "trainingProgram"
+    },
+    {
+      "line": 1672,
+      "col": 43,
+      "bad": "training_assignments",
+      "good": "trainingAssignment"
+    },
+    {
+      "line": 1680,
+      "col": 42,
+      "bad": "training_assignments",
+      "good": "trainingAssignment"
+    },
+    {
+      "line": 1700,
+      "col": 42,
+      "bad": "training_assignments",
+      "good": "trainingAssignment"
+    },
+    {
+      "line": 1707,
+      "col": 42,
+      "bad": "training_assignments",
+      "good": "trainingAssignment"
+    },
+    {
+      "line": 1716,
+      "col": 40,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 1728,
+      "col": 40,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 1740,
+      "col": 40,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 1753,
+      "col": 42,
+      "bad": "candidates",
+      "good": "candidate"
+    },
+    {
+      "line": 1761,
+      "col": 41,
+      "bad": "candidates",
+      "good": "candidate"
+    },
+    {
+      "line": 1769,
+      "col": 32,
+      "bad": "candidates",
+      "good": "candidate"
+    },
+    {
+      "line": 1788,
+      "col": 30,
+      "bad": "candidates",
+      "good": "candidate"
+    },
+    {
+      "line": 1797,
+      "col": 32,
+      "bad": "candidates",
+      "good": "candidate"
+    },
+    {
+      "line": 1814,
+      "col": 16,
+      "bad": "candidates",
+      "good": "candidate"
+    },
+    {
+      "line": 1820,
+      "col": 27,
+      "bad": "users",
+      "good": "user"
+    },
+    {
+      "line": 1825,
+      "col": 25,
+      "bad": "users",
+      "good": "user"
+    },
+    {
+      "line": 1845,
+      "col": 33,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 1866,
+      "col": 16,
+      "bad": "contracts",
+      "good": "contract"
+    },
+    {
+      "line": 1882,
+      "col": 16,
+      "bad": "sys_outbox_events",
+      "good": "sysOutboxEvent"
+    },
+    {
+      "line": 1934,
+      "col": 18,
+      "bad": "payroll_lines",
+      "good": "payrollLine"
+    },
+    {
+      "line": 1967,
+      "col": 16,
+      "bad": "sys_outbox_events",
+      "good": "sysOutboxEvent"
+    },
+    {
+      "line": 1997,
+      "col": 31,
+      "bad": "positions",
+      "good": "position"
+    },
+    {
+      "line": 2010,
+      "col": 44,
+      "bad": "compensations",
+      "good": "compensation"
+    },
+    {
+      "line": 2018,
+      "col": 35,
+      "bad": "compensations",
+      "good": "compensation"
+    },
+    {
+      "line": 2053,
+      "col": 39,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 2078,
+      "col": 19,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 2084,
+      "col": 19,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 2092,
+      "col": 43,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 2105,
+      "col": 43,
+      "bad": "departments",
+      "good": "department"
+    },
+    {
+      "line": 2142,
+      "col": 45,
+      "bad": "compensations",
+      "good": "compensation"
+    },
+    {
+      "line": 2161,
+      "col": 37,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 2165,
+      "col": 43,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 2176,
+      "col": 39,
+      "bad": "performance_reviews",
+      "good": "performanceReview"
+    },
+    {
+      "line": 2200,
+      "col": 19,
+      "bad": "hr_attendance_records",
+      "good": "hrAttendanceRecord"
+    },
+    {
+      "line": 2201,
+      "col": 19,
+      "bad": "hr_cases",
+      "good": "hrCase"
+    },
+    {
+      "line": 2212,
+      "col": 41,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 2233,
+      "col": 41,
+      "bad": "positions",
+      "good": "position"
+    },
+    {
+      "line": 2246,
+      "col": 30,
+      "bad": "positions",
+      "good": "position"
+    },
+    {
+      "line": 2270,
+      "col": 35,
+      "bad": "positions",
+      "good": "position"
+    },
+    {
+      "line": 2282,
+      "col": 42,
+      "bad": "interviews",
+      "good": "interview"
+    },
+    {
+      "line": 2294,
+      "col": 30,
+      "bad": "interviews",
+      "good": "interview"
+    },
+    {
+      "line": 2314,
+      "col": 30,
+      "bad": "interviews",
+      "good": "interview"
+    },
+    {
+      "line": 2374,
+      "col": 38,
+      "bad": "hr_cases",
+      "good": "hrCase"
+    },
+    {
+      "line": 2381,
+      "col": 41,
+      "bad": "interviews",
+      "good": "interview"
+    },
+    {
+      "line": 2398,
+      "col": 36,
+      "bad": "hr_compliance_documents",
+      "good": "hrComplianceDocument"
+    },
+    {
+      "line": 2406,
+      "col": 35,
+      "bad": "hr_compliance_documents",
+      "good": "hrComplianceDocument"
+    },
+    {
+      "line": 2429,
+      "col": 35,
+      "bad": "hr_compliance_documents",
+      "good": "hrComplianceDocument"
+    },
+    {
+      "line": 2561,
+      "col": 37,
+      "bad": "payroll_lines",
+      "good": "payrollLine"
+    },
+    {
+      "line": 2619,
+      "col": 39,
+      "bad": "hr_succession_candidates",
+      "good": "successionCandidate"
+    },
+    {
+      "line": 2694,
+      "col": 38,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 2702,
+      "col": 37,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 2740,
+      "col": 41,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 2795,
+      "col": 40,
+      "bad": "hr_employee_benefits",
+      "good": "employeeBenefit"
+    },
+    {
+      "line": 2803,
+      "col": 39,
+      "bad": "hr_employee_benefits",
+      "good": "employeeBenefit"
+    },
+    {
+      "line": 2887,
+      "col": 39,
+      "bad": "positions",
+      "good": "position"
+    },
+    {
+      "line": 2891,
+      "col": 41,
+      "bad": "positions",
+      "good": "position"
+    },
+    {
+      "line": 2892,
+      "col": 35,
+      "bad": "positions",
+      "good": "position"
+    },
+    {
+      "line": 2902,
+      "col": 35,
+      "bad": "positions",
+      "good": "position"
+    },
+    {
+      "line": 2910,
+      "col": 38,
+      "bad": "positions",
+      "good": "position"
+    },
+    {
+      "line": 2918,
+      "col": 37,
+      "bad": "positions",
+      "good": "position"
+    },
+    {
+      "line": 2943,
+      "col": 39,
+      "bad": "performance_reviews",
+      "good": "performanceReview"
+    },
+    {
+      "line": 2963,
+      "col": 37,
+      "bad": "hr_performance_goals",
+      "good": "performanceGoal"
+    },
+    {
+      "line": 2971,
+      "col": 36,
+      "bad": "hr_performance_goals",
+      "good": "performanceGoal"
+    },
+    {
+      "line": 2994,
+      "col": 36,
+      "bad": "hr_performance_goals",
+      "good": "performanceGoal"
+    },
+    {
+      "line": 3002,
+      "col": 40,
+      "bad": "training_programs",
+      "good": "trainingProgram"
+    },
+    {
+      "line": 3016,
+      "col": 43,
+      "bad": "training_assignments",
+      "good": "trainingAssignment"
+    },
+    {
+      "line": 3024,
+      "col": 42,
+      "bad": "training_assignments",
+      "good": "trainingAssignment"
+    },
+    {
+      "line": 3040,
+      "col": 39,
+      "bad": "training_programs",
+      "good": "trainingProgram"
+    },
+    {
+      "line": 3075,
+      "col": 40,
+      "bad": "payroll_profiles",
+      "good": "payrollProfile"
+    },
+    {
+      "line": 3091,
+      "col": 24,
+      "bad": "holiday",
+      "good": "hrHoliday"
+    },
+    {
+      "line": 3101,
+      "col": 24,
+      "bad": "holiday",
+      "good": "hrHoliday"
+    },
+    {
+      "line": 3119,
+      "col": 24,
+      "bad": "hr_compliance_modules",
+      "good": "hrComplianceModule"
+    },
+    {
+      "line": 3125,
+      "col": 24,
+      "bad": "hr_compliance_modules",
+      "good": "hrComplianceModule"
+    },
+    {
+      "line": 3146,
+      "col": 24,
+      "bad": "hr_compliance_reports",
+      "good": "hrComplianceReport"
+    },
+    {
+      "line": 3153,
+      "col": 24,
+      "bad": "hr_compliance_reports",
+      "good": "hrComplianceReport"
+    },
+    {
+      "line": 3171,
+      "col": 36,
+      "bad": "hr_compliance_documents",
+      "good": "hrComplianceDocument"
+    },
+    {
+      "line": 3179,
+      "col": 43,
+      "bad": "job_requisitions",
+      "good": "jobRequisition"
+    },
+    {
+      "line": 3186,
+      "col": 40,
+      "bad": "contracts",
+      "good": "contract"
+    },
+    {
+      "line": 3208,
+      "col": 33,
+      "bad": "departments",
+      "good": "department"
+    },
+    {
+      "line": 3261,
+      "col": 29,
+      "bad": "employees",
+      "good": "employee"
+    }
+  ],
+  "src/core/hr/scheduling.service.ts": [
+    {
+      "line": 25,
+      "col": 40,
+      "bad": "locations",
+      "good": "location"
+    }
+  ],
+  "src/core/inventory/guards/location.guard.ts": [
+    {
+      "line": 40,
+      "col": 40,
+      "bad": "locations",
+      "good": "location"
+    }
+  ],
+  "src/core/inventory/inventory.controller.ts": [
+    {
+      "line": 75,
+      "col": 46,
+      "bad": "locations",
+      "good": "location"
+    },
+    {
+      "line": 81,
+      "col": 51,
+      "bad": "stock_levels",
+      "good": "stockLevel"
+    },
+    {
+      "line": 87,
+      "col": 27,
+      "bad": "procurement_requisitions",
+      "good": "procurementRequisition"
+    }
+  ],
+  "src/core/inventory/inventory.service.ts": [
+    {
+      "line": 533,
+      "col": 35,
+      "bad": "stock_levels",
+      "good": "stockLevel"
+    },
+    {
+      "line": 541,
+      "col": 42,
+      "bad": "inventory_alerts",
+      "good": "inventoryAlert"
+    },
+    {
+      "line": 550,
+      "col": 27,
+      "bad": "inventory_alerts",
+      "good": "inventoryAlert"
+    },
+    {
+      "line": 594,
+      "col": 48,
+      "bad": "inventory_alerts",
+      "good": "inventoryAlert"
+    }
+  ],
+  "src/core/inventory/repositories/inventory.db.repository.ts": [
+    {
+      "line": 40,
+      "col": 46,
+      "bad": "locations",
+      "good": "location"
+    },
+    {
+      "line": 43,
+      "col": 48,
+      "bad": "departments",
+      "good": "department"
+    },
+    {
+      "line": 47,
+      "col": 43,
+      "bad": "stock_levels",
+      "good": "stockLevel"
+    },
+    {
+      "line": 76,
+      "col": 45,
+      "bad": "inventory_alerts",
+      "good": "inventoryAlert"
+    },
+    {
+      "line": 79,
+      "col": 50,
+      "bad": "inventory_alerts",
+      "good": "inventoryAlert"
+    },
+    {
+      "line": 83,
+      "col": 51,
+      "bad": "procurement_final_pos",
+      "good": "procurementFinalPo"
+    },
+    {
+      "line": 132,
+      "col": 38,
+      "bad": "product_categories",
+      "good": "productCategory"
+    },
+    {
+      "line": 137,
+      "col": 36,
+      "bad": "product_categories",
+      "good": "productCategory"
+    },
+    {
+      "line": 190,
+      "col": 38,
+      "bad": "stock_levels",
+      "good": "stockLevel"
+    },
+    {
+      "line": 226,
+      "col": 41,
+      "bad": "stock_movements",
+      "good": "stockMovement"
+    },
+    {
+      "line": 367,
+      "col": 16,
+      "bad": "stock_levels",
+      "good": "stockLevel"
+    },
+    {
+      "line": 376,
+      "col": 29,
+      "bad": "stock_levels",
+      "good": "stockLevel"
+    },
+    {
+      "line": 399,
+      "col": 32,
+      "bad": "stock_movements",
+      "good": "stockMovement"
+    },
+    {
+      "line": 418,
+      "col": 31,
+      "bad": "stock_movements",
+      "good": "stockMovement"
+    },
+    {
+      "line": 515,
+      "col": 30,
+      "bad": "stock_levels",
+      "good": "stockLevel"
+    },
+    {
+      "line": 538,
+      "col": 16,
+      "bad": "stock_movements",
+      "good": "stockMovement"
+    },
+    {
+      "line": 574,
+      "col": 38,
+      "bad": "inventory_alerts",
+      "good": "inventoryAlert"
+    },
+    {
+      "line": 597,
+      "col": 37,
+      "bad": "inventory_alerts",
+      "good": "inventoryAlert"
+    },
+    {
+      "line": 615,
+      "col": 24,
+      "bad": "inventory_audit_cycles",
+      "good": "inventoryAuditCycle"
+    },
+    {
+      "line": 621,
+      "col": 24,
+      "bad": "inventory_audit_cycles",
+      "good": "inventoryAuditCycle"
+    },
+    {
+      "line": 636,
+      "col": 24,
+      "bad": "inventory_audit_cycles",
+      "good": "inventoryAuditCycle"
+    },
+    {
+      "line": 643,
+      "col": 24,
+      "bad": "inventory_integration_events",
+      "good": "inventoryIntegrationEvent"
+    },
+    {
+      "line": 649,
+      "col": 24,
+      "bad": "inventory_integration_events",
+      "good": "inventoryIntegrationEvent"
+    },
+    {
+      "line": 714,
+      "col": 24,
+      "bad": "procurement_requisitions",
+      "good": "procurementRequisition"
+    },
+    {
+      "line": 741,
+      "col": 33,
+      "bad": "product_categories",
+      "good": "productCategory"
+    },
+    {
+      "line": 746,
+      "col": 31,
+      "bad": "product_categories",
+      "good": "productCategory"
+    },
+    {
+      "line": 1206,
+      "col": 38,
+      "bad": "stock_levels",
+      "good": "stockLevel"
+    },
+    {
+      "line": 1210,
+      "col": 23,
+      "bad": "stock_snapshots",
+      "good": "stockSnapshot"
+    },
+    {
+      "line": 1271,
+      "col": 37,
+      "bad": "agentic_events",
+      "good": "agenticEvent"
+    }
+  ],
+  "src/core/it-settings/repositories/it-settings.db.repository.ts": [
+    {
+      "line": 17,
+      "col": 39,
+      "bad": "device",
+      "good": "itDevice"
+    },
+    {
+      "line": 44,
+      "col": 39,
+      "bad": "device",
+      "good": "itDevice"
+    },
+    {
+      "line": 82,
+      "col": 39,
+      "bad": "device",
+      "good": "itDevice"
+    },
+    {
+      "line": 104,
+      "col": 40,
+      "bad": "it_settings",
+      "good": "itSettings"
+    },
+    {
+      "line": 125,
+      "col": 39,
+      "bad": "it_settings",
+      "good": "itSettings"
+    },
+    {
+      "line": 149,
+      "col": 39,
+      "bad": "it_settings",
+      "good": "itSettings"
+    }
+  ],
+  "src/core/it/it.controller.ts": [
+    {
+      "line": 83,
+      "col": 23,
+      "bad": "device",
+      "good": "itDevice"
+    },
+    {
+      "line": 84,
+      "col": 23,
+      "bad": "device",
+      "good": "itDevice"
+    },
+    {
+      "line": 87,
+      "col": 23,
+      "bad": "device",
+      "good": "itDevice"
+    },
+    {
+      "line": 93,
+      "col": 46,
+      "bad": "ecommerce_connectors",
+      "good": "ecommerceConnector"
+    }
+  ],
+  "src/core/it/repositories/it.db.repository.ts": [
+    {
+      "line": 20,
+      "col": 40,
+      "bad": "it_provisioning_requests",
+      "good": "itProvisioningRequest"
+    },
+    {
+      "line": 50,
+      "col": 37,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 66,
+      "col": 37,
+      "bad": "supplier_masters",
+      "good": "supplierMaster"
+    },
+    {
+      "line": 74,
+      "col": 39,
+      "bad": "it_provisioning_requests",
+      "good": "itProvisioningRequest"
+    },
+    {
+      "line": 113,
+      "col": 39,
+      "bad": "it_provisioning_requests",
+      "good": "itProvisioningRequest"
+    },
+    {
+      "line": 148,
+      "col": 37,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 170,
+      "col": 39,
+      "bad": "it_provisioning_requests",
+      "good": "itProvisioningRequest"
+    },
+    {
+      "line": 196,
+      "col": 23,
+      "bad": "it_provisioning_requests",
+      "good": "itProvisioningRequest"
+    },
+    {
+      "line": 203,
+      "col": 39,
+      "bad": "device",
+      "good": "itDevice"
+    },
+    {
+      "line": 210,
+      "col": 39,
+      "bad": "device",
+      "good": "itDevice"
+    },
+    {
+      "line": 232,
+      "col": 39,
+      "bad": "device",
+      "good": "itDevice"
+    },
+    {
+      "line": 240,
+      "col": 38,
+      "bad": "device",
+      "good": "itDevice"
+    },
+    {
+      "line": 248,
+      "col": 38,
+      "bad": "deviceEvent",
+      "good": "itDeviceEvent"
+    },
+    {
+      "line": 260,
+      "col": 39,
+      "bad": "deviceEvent",
+      "good": "itDeviceEvent"
+    },
+    {
+      "line": 303,
+      "col": 38,
+      "bad": "it_system_health",
+      "good": "itSystemHealth"
+    },
+    {
+      "line": 317,
+      "col": 38,
+      "bad": "it_provisioning_requests",
+      "good": "itProvisioningRequest"
+    }
+  ],
+  "src/core/it/webhook.service.ts": [
+    {
+      "line": 38,
+      "col": 27,
+      "bad": "system_logs",
+      "good": "systemLog"
+    },
+    {
+      "line": 53,
+      "col": 27,
+      "bad": "system_logs",
+      "good": "systemLog"
+    }
+  ],
+  "src/core/marketing/marketing.controller.ts": [
+    {
+      "line": 60,
+      "col": 49,
+      "bad": "retail_orders",
+      "good": "retailOrder"
+    },
+    {
+      "line": 63,
+      "col": 48,
+      "bad": "retail_orders",
+      "good": "retailOrder"
+    }
+  ],
+  "src/core/marketing/repositories/marketing.db.repository.ts": [
+    {
+      "line": 98,
+      "col": 21,
+      "bad": "marketing_campaigns",
+      "good": "marketingCampaign"
+    },
+    {
+      "line": 101,
+      "col": 21,
+      "bad": "marketing_leads",
+      "good": "marketingLead"
+    },
+    {
+      "line": 102,
+      "col": 21,
+      "bad": "marketing_executions",
+      "good": "marketingExecution"
+    },
+    {
+      "line": 108,
+      "col": 21,
+      "bad": "marketing_attribution",
+      "good": "marketingAttribution"
+    },
+    {
+      "line": 147,
+      "col": 42,
+      "bad": "marketing_executions",
+      "good": "marketingExecution"
+    },
+    {
+      "line": 171,
+      "col": 37,
+      "bad": "marketing_campaigns",
+      "good": "marketingCampaign"
+    },
+    {
+      "line": 183,
+      "col": 36,
+      "bad": "marketing_campaigns",
+      "good": "marketingCampaign"
+    },
+    {
+      "line": 210,
+      "col": 36,
+      "bad": "marketing_campaigns",
+      "good": "marketingCampaign"
+    },
+    {
+      "line": 218,
+      "col": 37,
+      "bad": "marketing_executions",
+      "good": "marketingExecution"
+    },
+    {
+      "line": 229,
+      "col": 36,
+      "bad": "marketing_executions",
+      "good": "marketingExecution"
+    },
+    {
+      "line": 251,
+      "col": 36,
+      "bad": "marketing_executions",
+      "good": "marketingExecution"
+    },
+    {
+      "line": 263,
+      "col": 37,
+      "bad": "marketing_leads",
+      "good": "marketingLead"
+    },
+    {
+      "line": 276,
+      "col": 36,
+      "bad": "marketing_leads",
+      "good": "marketingLead"
+    },
+    {
+      "line": 303,
+      "col": 36,
+      "bad": "marketing_leads",
+      "good": "marketingLead"
+    },
+    {
+      "line": 314,
+      "col": 36,
+      "bad": "marketing_leads",
+      "good": "marketingLead"
+    },
+    {
+      "line": 322,
+      "col": 37,
+      "bad": "marketing_workflows",
+      "good": "marketingWorkflow"
+    },
+    {
+      "line": 342,
+      "col": 36,
+      "bad": "marketing_workflows",
+      "good": "marketingWorkflow"
+    },
+    {
+      "line": 371,
+      "col": 36,
+      "bad": "marketing_workflows",
+      "good": "marketingWorkflow"
+    },
+    {
+      "line": 463,
+      "col": 37,
+      "bad": "marketing_attribution",
+      "good": "marketingAttribution"
+    },
+    {
+      "line": 481,
+      "col": 37,
+      "bad": "marketing_alerts",
+      "good": "marketingAlert"
+    },
+    {
+      "line": 503,
+      "col": 36,
+      "bad": "marketing_alerts",
+      "good": "marketingAlert"
+    },
+    {
+      "line": 526,
+      "col": 37,
+      "bad": "marketing_audit_events",
+      "good": "marketingAuditEvent"
+    }
+  ],
+  "src/core/payment/payment.controller.ts": [
+    {
+      "line": 61,
+      "col": 47,
+      "bad": "payment_pos_devices",
+      "good": "paymentPosDevice"
+    },
+    {
+      "line": 64,
+      "col": 47,
+      "bad": "payment_disputes",
+      "good": "paymentDispute"
+    }
+  ],
+  "src/core/payment/repositories/payment.db.repository.ts": [
+    {
+      "line": 82,
+      "col": 23,
+      "bad": "payment_audit_events",
+      "good": "paymentAuditEvent"
+    },
+    {
+      "line": 104,
+      "col": 44,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 112,
+      "col": 48,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 116,
+      "col": 49,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 120,
+      "col": 49,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 124,
+      "col": 50,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 128,
+      "col": 44,
+      "bad": "payment_disputes",
+      "good": "paymentDispute"
+    },
+    {
+      "line": 135,
+      "col": 47,
+      "bad": "payment_chargebacks",
+      "good": "paymentChargeback"
+    },
+    {
+      "line": 142,
+      "col": 45,
+      "bad": "payment_refunds",
+      "good": "paymentRefund"
+    },
+    {
+      "line": 162,
+      "col": 35,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 181,
+      "col": 40,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 186,
+      "col": 39,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 220,
+      "col": 39,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 244,
+      "col": 39,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 269,
+      "col": 39,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 277,
+      "col": 40,
+      "bad": "payment_routing_policies",
+      "good": "paymentRoutingPolicy"
+    },
+    {
+      "line": 289,
+      "col": 39,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 314,
+      "col": 39,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 323,
+      "col": 41,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 349,
+      "col": 42,
+      "bad": "payment_settlements",
+      "good": "paymentSettlement"
+    },
+    {
+      "line": 360,
+      "col": 39,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 392,
+      "col": 39,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 397,
+      "col": 42,
+      "bad": "payment_settlements",
+      "good": "paymentSettlement"
+    },
+    {
+      "line": 405,
+      "col": 40,
+      "bad": "payment_evidence_packs",
+      "good": "paymentEvidencePack"
+    },
+    {
+      "line": 418,
+      "col": 39,
+      "bad": "payment_transactions",
+      "good": "paymentTransaction"
+    },
+    {
+      "line": 439,
+      "col": 41,
+      "bad": "payment_providers",
+      "good": "paymentProvider"
+    },
+    {
+      "line": 461,
+      "col": 39,
+      "bad": "payment_providers",
+      "good": "paymentProvider"
+    },
+    {
+      "line": 487,
+      "col": 23,
+      "bad": "payment_providers",
+      "good": "paymentProvider"
+    },
+    {
+      "line": 492,
+      "col": 41,
+      "bad": "payment_providers",
+      "good": "paymentProvider"
+    },
+    {
+      "line": 518,
+      "col": 40,
+      "bad": "payment_routing_policies",
+      "good": "paymentRoutingPolicy"
+    },
+    {
+      "line": 536,
+      "col": 39,
+      "bad": "payment_pos_devices",
+      "good": "paymentPosDevice"
+    },
+    {
+      "line": 567,
+      "col": 39,
+      "bad": "payment_pos_devices",
+      "good": "paymentPosDevice"
+    },
+    {
+      "line": 593,
+      "col": 39,
+      "bad": "payment_refunds",
+      "good": "paymentRefund"
+    },
+    {
+      "line": 604,
+      "col": 39,
+      "bad": "payment_refunds",
+      "good": "paymentRefund"
+    },
+    {
+      "line": 634,
+      "col": 39,
+      "bad": "payment_refunds",
+      "good": "paymentRefund"
+    },
+    {
+      "line": 657,
+      "col": 39,
+      "bad": "payment_refunds",
+      "good": "paymentRefund"
+    },
+    {
+      "line": 676,
+      "col": 40,
+      "bad": "payment_disputes",
+      "good": "paymentDispute"
+    },
+    {
+      "line": 687,
+      "col": 39,
+      "bad": "payment_disputes",
+      "good": "paymentDispute"
+    },
+    {
+      "line": 716,
+      "col": 39,
+      "bad": "payment_disputes",
+      "good": "paymentDispute"
+    },
+    {
+      "line": 723,
+      "col": 39,
+      "bad": "payment_disputes",
+      "good": "paymentDispute"
+    },
+    {
+      "line": 747,
+      "col": 39,
+      "bad": "payment_disputes",
+      "good": "paymentDispute"
+    },
+    {
+      "line": 774,
+      "col": 39,
+      "bad": "payment_disputes",
+      "good": "paymentDispute"
+    },
+    {
+      "line": 782,
+      "col": 42,
+      "bad": "payment_chargebacks",
+      "good": "paymentChargeback"
+    },
+    {
+      "line": 806,
+      "col": 43,
+      "bad": "payment_chargebacks",
+      "good": "paymentChargeback"
+    },
+    {
+      "line": 822,
+      "col": 43,
+      "bad": "payment_settlements",
+      "good": "paymentSettlement"
+    },
+    {
+      "line": 844,
+      "col": 37,
+      "bad": "payment_evidence_packs",
+      "good": "paymentEvidencePack"
+    },
+    {
+      "line": 860,
+      "col": 38,
+      "bad": "payment_audit_events",
+      "good": "paymentAuditEvent"
+    }
+  ],
+  "src/core/procurement/procurement.controller.ts": [
+    {
+      "line": 63,
+      "col": 50,
+      "bad": "procurement_requisitions",
+      "good": "procurementRequisition"
+    }
+  ],
+  "src/core/procurement/procurement.service.ts": [
+    {
+      "line": 203,
+      "col": 23,
+      "bad": "procurement_final_pos",
+      "good": "procurementFinalPo"
+    }
+  ],
+  "src/core/procurement/repositories/procurement.db.repository.ts": [
+    {
+      "line": 55,
+      "col": 24,
+      "bad": "procurement_audit_events",
+      "good": "procurementAuditEvent"
+    },
+    {
+      "line": 63,
+      "col": 38,
+      "bad": "procurement_audit_events",
+      "good": "procurementAuditEvent"
+    },
+    {
+      "line": 83,
+      "col": 24,
+      "bad": "procurement_categories",
+      "good": "procurementCategory"
+    },
+    {
+      "line": 100,
+      "col": 26,
+      "bad": "procurement_categories",
+      "good": "procurementCategory"
+    },
+    {
+      "line": 105,
+      "col": 26,
+      "bad": "procurement_categories",
+      "good": "procurementCategory"
+    },
+    {
+      "line": 117,
+      "col": 24,
+      "bad": "procurement_categories",
+      "good": "procurementCategory"
+    },
+    {
+      "line": 126,
+      "col": 41,
+      "bad": "supplier_masters",
+      "good": "supplierMaster"
+    },
+    {
+      "line": 148,
+      "col": 39,
+      "bad": "supplier_masters",
+      "good": "supplierMaster"
+    },
+    {
+      "line": 183,
+      "col": 40,
+      "bad": "supplier_branches",
+      "good": "supplierBranch"
+    },
+    {
+      "line": 204,
+      "col": 40,
+      "bad": "supplier_masters",
+      "good": "supplierMaster"
+    },
+    {
+      "line": 209,
+      "col": 39,
+      "bad": "supplier_branches",
+      "good": "supplierBranch"
+    },
+    {
+      "line": 247,
+      "col": 40,
+      "bad": "supplier_products",
+      "good": "supplierProduct"
+    },
+    {
+      "line": 268,
+      "col": 41,
+      "bad": "supplier_products",
+      "good": "supplierProduct"
+    },
+    {
+      "line": 282,
+      "col": 41,
+      "bad": "supplier_products",
+      "good": "supplierProduct"
+    },
+    {
+      "line": 306,
+      "col": 40,
+      "bad": "supplier_products",
+      "good": "supplierProduct"
+    },
+    {
+      "line": 336,
+      "col": 44,
+      "bad": "procurement_requisitions",
+      "good": "procurementRequisition"
+    },
+    {
+      "line": 361,
+      "col": 39,
+      "bad": "procurement_requisitions",
+      "good": "procurementRequisition"
+    },
+    {
+      "line": 399,
+      "col": 39,
+      "bad": "procurement_requisitions",
+      "good": "procurementRequisition"
+    },
+    {
+      "line": 424,
+      "col": 35,
+      "bad": "procurement_requisitions",
+      "good": "procurementRequisition"
+    },
+    {
+      "line": 434,
+      "col": 39,
+      "bad": "procurement_requisitions",
+      "good": "procurementRequisition"
+    },
+    {
+      "line": 461,
+      "col": 38,
+      "bad": "procurement_draft_pos",
+      "good": "procurementDraftPo"
+    },
+    {
+      "line": 481,
+      "col": 43,
+      "bad": "procurement_requisitions",
+      "good": "procurementRequisition"
+    },
+    {
+      "line": 489,
+      "col": 37,
+      "bad": "procurement_draft_pos",
+      "good": "procurementDraftPo"
+    },
+    {
+      "line": 507,
+      "col": 23,
+      "bad": "procurement_requisitions",
+      "good": "procurementRequisition"
+    },
+    {
+      "line": 529,
+      "col": 37,
+      "bad": "procurement_draft_pos",
+      "good": "procurementDraftPo"
+    },
+    {
+      "line": 534,
+      "col": 39,
+      "bad": "procurement_draft_pos",
+      "good": "procurementDraftPo"
+    },
+    {
+      "line": 539,
+      "col": 23,
+      "bad": "procurement_requisitions",
+      "good": "procurementRequisition"
+    },
+    {
+      "line": 548,
+      "col": 37,
+      "bad": "procurement_draft_pos",
+      "good": "procurementDraftPo"
+    },
+    {
+      "line": 553,
+      "col": 39,
+      "bad": "procurement_draft_pos",
+      "good": "procurementDraftPo"
+    },
+    {
+      "line": 561,
+      "col": 23,
+      "bad": "procurement_requisitions",
+      "good": "procurementRequisition"
+    },
+    {
+      "line": 572,
+      "col": 43,
+      "bad": "procurement_requisitions",
+      "good": "procurementRequisition"
+    },
+    {
+      "line": 577,
+      "col": 34,
+      "bad": "procurement_final_pos",
+      "good": "procurementFinalPo"
+    },
+    {
+      "line": 592,
+      "col": 23,
+      "bad": "procurement_requisitions",
+      "good": "procurementRequisition"
+    },
+    {
+      "line": 598,
+      "col": 40,
+      "bad": "supplier_masters",
+      "good": "supplierMaster"
+    },
+    {
+      "line": 599,
+      "col": 23,
+      "bad": "payables",
+      "good": "payable"
+    },
+    {
+      "line": 627,
+      "col": 35,
+      "bad": "procurement_final_pos",
+      "good": "procurementFinalPo"
+    },
+    {
+      "line": 648,
+      "col": 39,
+      "bad": "procurement_final_pos",
+      "good": "procurementFinalPo"
+    },
+    {
+      "line": 654,
+      "col": 23,
+      "bad": "procurement_final_pos",
+      "good": "procurementFinalPo"
+    },
+    {
+      "line": 663,
+      "col": 23,
+      "bad": "supplier_masters",
+      "good": "supplierMaster"
+    },
+    {
+      "line": 684,
+      "col": 41,
+      "bad": "procurement_contracts",
+      "good": "procurementContract"
+    },
+    {
+      "line": 696,
+      "col": 33,
+      "bad": "signedByProcurementHod",
+      "good": "signedByProcHod"
+    },
+    {
+      "line": 705,
+      "col": 40,
+      "bad": "procurement_contracts",
+      "good": "procurementContract"
+    },
+    {
+      "line": 711,
+      "col": 41,
+      "bad": "procurement_contracts",
+      "good": "procurementContract"
+    },
+    {
+      "line": 726,
+      "col": 39,
+      "bad": "procurement_contracts",
+      "good": "procurementContract"
+    },
+    {
+      "line": 743,
+      "col": 23,
+      "bad": "procurement_requisitions",
+      "good": "procurementRequisition"
+    },
+    {
+      "line": 752,
+      "col": 40,
+      "bad": "procurement_contracts",
+      "good": "procurementContract"
+    },
+    {
+      "line": 757,
+      "col": 39,
+      "bad": "procurement_contracts",
+      "good": "procurementContract"
+    },
+    {
+      "line": 765,
+      "col": 40,
+      "bad": "procurement_contracts",
+      "good": "procurementContract"
+    },
+    {
+      "line": 775,
+      "col": 39,
+      "bad": "procurement_contracts",
+      "good": "procurementContract"
+    },
+    {
+      "line": 785,
+      "col": 45,
+      "bad": "procurement_contracts",
+      "good": "procurementContract"
+    },
+    {
+      "line": 796,
+      "col": 37,
+      "bad": "procurement_risk_signals",
+      "good": "procurementRiskSignal"
+    },
+    {
+      "line": 814,
+      "col": 40,
+      "bad": "procurement_risk_signals",
+      "good": "procurementRiskSignal"
+    },
+    {
+      "line": 819,
+      "col": 24,
+      "bad": "procurement_risk_signals",
+      "good": "procurementRiskSignal"
+    },
+    {
+      "line": 834,
+      "col": 38,
+      "bad": "procurement_risk_signals",
+      "good": "procurementRiskSignal"
+    },
+    {
+      "line": 839,
+      "col": 24,
+      "bad": "procurement_risk_signals",
+      "good": "procurementRiskSignal"
+    },
+    {
+      "line": 846,
+      "col": 46,
+      "bad": "procurement_requisitions",
+      "good": "procurementRequisition"
+    },
+    {
+      "line": 850,
+      "col": 42,
+      "bad": "procurement_risk_signals",
+      "good": "procurementRiskSignal"
+    },
+    {
+      "line": 854,
+      "col": 27,
+      "bad": "procurement_risk_signals",
+      "good": "procurementRiskSignal"
+    },
+    {
+      "line": 874,
+      "col": 40,
+      "bad": "supplier_portal_messages",
+      "good": "supplierPortalMessage"
+    },
+    {
+      "line": 895,
+      "col": 39,
+      "bad": "supplier_portal_messages",
+      "good": "supplierPortalMessage"
+    },
+    {
+      "line": 926,
+      "col": 44,
+      "bad": "procurement_requisitions",
+      "good": "procurementRequisition"
+    }
+  ],
+  "src/core/retail/guards/ecommerce-connector.guard.ts": [
+    {
+      "line": 45,
+      "col": 42,
+      "bad": "retail_channels",
+      "good": "retailChannel"
+    },
+    {
+      "line": 88,
+      "col": 43,
+      "bad": "ecommerce_connectors",
+      "good": "ecommerceConnector"
+    }
+  ],
+  "src/core/retail/repositories/ecommerce-hub.db.repository.ts": [
+    {
+      "line": 73,
+      "col": 36,
+      "bad": "ecommerce_connectors",
+      "good": "ecommerceConnector"
+    },
+    {
+      "line": 85,
+      "col": 35,
+      "bad": "ecommerce_connectors",
+      "good": "ecommerceConnector"
+    },
+    {
+      "line": 171,
+      "col": 35,
+      "bad": "ecommerce_connectors",
+      "good": "ecommerceConnector"
+    },
+    {
+      "line": 181,
+      "col": 36,
+      "bad": "retail_channels",
+      "good": "retailChannel"
+    },
+    {
+      "line": 192,
+      "col": 35,
+      "bad": "retail_channels",
+      "good": "retailChannel"
+    },
+    {
+      "line": 206,
+      "col": 35,
+      "bad": "retail_channels",
+      "good": "retailChannel"
+    },
+    {
+      "line": 245,
+      "col": 35,
+      "bad": "retail_channels",
+      "good": "retailChannel"
+    },
+    {
+      "line": 283,
+      "col": 23,
+      "bad": "retail_channels",
+      "good": "retailChannel"
+    },
+    {
+      "line": 305,
+      "col": 23,
+      "bad": "retail_channels",
+      "good": "retailChannel"
+    },
+    {
+      "line": 316,
+      "col": 23,
+      "bad": "retail_channels",
+      "good": "retailChannel"
+    },
+    {
+      "line": 320,
+      "col": 35,
+      "bad": "retail_channels",
+      "good": "retailChannel"
+    }
+  ],
+  "src/core/retail/repositories/retail-infrastructure.db.repository.ts": [
+    {
+      "line": 18,
+      "col": 37,
+      "bad": "retail_gateway_nodes",
+      "good": "retailGatewayNode"
+    },
+    {
+      "line": 29,
+      "col": 36,
+      "bad": "retail_gateway_nodes",
+      "good": "retailGatewayNode"
+    },
+    {
+      "line": 40,
+      "col": 36,
+      "bad": "retail_gateway_nodes",
+      "good": "retailGatewayNode"
+    },
+    {
+      "line": 52,
+      "col": 23,
+      "bad": "retail_gateway_nodes",
+      "good": "retailGatewayNode"
+    },
+    {
+      "line": 66,
+      "col": 35,
+      "bad": "retail_load_balancers",
+      "good": "retailLoadBalancer"
+    },
+    {
+      "line": 78,
+      "col": 34,
+      "bad": "retail_load_balancers",
+      "good": "retailLoadBalancer"
+    },
+    {
+      "line": 89,
+      "col": 34,
+      "bad": "retail_load_balancers",
+      "good": "retailLoadBalancer"
+    },
+    {
+      "line": 109,
+      "col": 34,
+      "bad": "retail_load_balancers",
+      "good": "retailLoadBalancer"
+    }
+  ],
+  "src/core/retail/repositories/retail.db.repository.ts": [
+    {
+      "line": 68,
+      "col": 38,
+      "bad": "stores",
+      "good": "store"
+    },
+    {
+      "line": 76,
+      "col": 24,
+      "bad": "product_categories",
+      "good": "productCategory"
+    },
+    {
+      "line": 86,
+      "col": 37,
+      "bad": "stores",
+      "good": "store"
+    },
+    {
+      "line": 106,
+      "col": 40,
+      "bad": "locations",
+      "good": "location"
+    },
+    {
+      "line": 122,
+      "col": 32,
+      "bad": "stores",
+      "good": "store"
+    },
+    {
+      "line": 158,
+      "col": 40,
+      "bad": "stores",
+      "good": "store"
+    },
+    {
+      "line": 165,
+      "col": 37,
+      "bad": "stores",
+      "good": "store"
+    },
+    {
+      "line": 198,
+      "col": 23,
+      "bad": "stores",
+      "good": "store"
+    },
+    {
+      "line": 209,
+      "col": 24,
+      "bad": "inventory_pools",
+      "good": "inventoryPool"
+    },
+    {
+      "line": 219,
+      "col": 24,
+      "bad": "inventory_pools",
+      "good": "inventoryPool"
+    },
+    {
+      "line": 235,
+      "col": 24,
+      "bad": "inventory_pools",
+      "good": "inventoryPool"
+    },
+    {
+      "line": 242,
+      "col": 23,
+      "bad": "inventory_pools",
+      "good": "inventoryPool"
+    },
+    {
+      "line": 261,
+      "col": 38,
+      "bad": "ecommerce_connectors",
+      "good": "ecommerceConnector"
+    },
+    {
+      "line": 273,
+      "col": 37,
+      "bad": "ecommerce_connectors",
+      "good": "ecommerceConnector"
+    },
+    {
+      "line": 287,
+      "col": 37,
+      "bad": "ecommerce_connectors",
+      "good": "ecommerceConnector"
+    },
+    {
+      "line": 319,
+      "col": 37,
+      "bad": "ecommerce_connectors",
+      "good": "ecommerceConnector"
+    },
+    {
+      "line": 335,
+      "col": 23,
+      "bad": "ecommerce_connectors",
+      "good": "ecommerceConnector"
+    },
+    {
+      "line": 346,
+      "col": 23,
+      "bad": "ecommerce_connectors",
+      "good": "ecommerceConnector"
+    },
+    {
+      "line": 357,
+      "col": 23,
+      "bad": "ecommerce_connectors",
+      "good": "ecommerceConnector"
+    },
+    {
+      "line": 431,
+      "col": 19,
+      "bad": "label_configs",
+      "good": "labelConfig"
+    },
+    {
+      "line": 485,
+      "col": 19,
+      "bad": "product_projections",
+      "good": "productProjection"
+    },
+    {
+      "line": 504,
+      "col": 47,
+      "bad": "stock_levels",
+      "good": "stockLevel"
+    },
+    {
+      "line": 520,
+      "col": 23,
+      "bad": "stock_levels",
+      "good": "stockLevel"
+    },
+    {
+      "line": 527,
+      "col": 23,
+      "bad": "stock_levels",
+      "good": "stockLevel"
+    },
+    {
+      "line": 567,
+      "col": 40,
+      "bad": "product_categories",
+      "good": "productCategory"
+    },
+    {
+      "line": 624,
+      "col": 38,
+      "bad": "retail_orders",
+      "good": "retailOrder"
+    },
+    {
+      "line": 647,
+      "col": 37,
+      "bad": "retail_orders",
+      "good": "retailOrder"
+    },
+    {
+      "line": 686,
+      "col": 37,
+      "bad": "retail_orders",
+      "good": "retailOrder"
+    },
+    {
+      "line": 717,
+      "col": 37,
+      "bad": "retail_orders",
+      "good": "retailOrder"
+    },
+    {
+      "line": 793,
+      "col": 37,
+      "bad": "stock_levels",
+      "good": "stockLevel"
+    },
+    {
+      "line": 907,
+      "col": 37,
+      "bad": "retail_shifts",
+      "good": "retailShift"
+    },
+    {
+      "line": 919,
+      "col": 37,
+      "bad": "retail_shifts",
+      "good": "retailShift"
+    },
+    {
+      "line": 939,
+      "col": 37,
+      "bad": "retail_shifts",
+      "good": "retailShift"
+    },
+    {
+      "line": 955,
+      "col": 38,
+      "bad": "retail_shifts",
+      "good": "retailShift"
+    },
+    {
+      "line": 968,
+      "col": 42,
+      "bad": "retail_promotions",
+      "good": "retailPromotion"
+    },
+    {
+      "line": 992,
+      "col": 41,
+      "bad": "retail_promotions",
+      "good": "retailPromotion"
+    },
+    {
+      "line": 1020,
+      "col": 40,
+      "bad": "retail_channels",
+      "good": "retailChannel"
+    },
+    {
+      "line": 1068,
+      "col": 39,
+      "bad": "retail_channels",
+      "good": "retailChannel"
+    },
+    {
+      "line": 1119,
+      "col": 29,
+      "bad": "retail_channels",
+      "good": "retailChannel"
+    },
+    {
+      "line": 1122,
+      "col": 29,
+      "bad": "retail_channels",
+      "good": "retailChannel"
+    },
+    {
+      "line": 1159,
+      "col": 23,
+      "bad": "retail_channels",
+      "good": "retailChannel"
+    },
+    {
+      "line": 1170,
+      "col": 23,
+      "bad": "retail_channels",
+      "good": "retailChannel"
+    },
+    {
+      "line": 1181,
+      "col": 24,
+      "bad": "retail_channels",
+      "good": "retailChannel"
+    },
+    {
+      "line": 1191,
+      "col": 24,
+      "bad": "retail_channels",
+      "good": "retailChannel"
+    },
+    {
+      "line": 1201,
+      "col": 40,
+      "bad": "retail_channels",
+      "good": "retailChannel"
+    },
+    {
+      "line": 1219,
+      "col": 39,
+      "bad": "pos_devices",
+      "good": "posDevice"
+    },
+    {
+      "line": 1294,
+      "col": 23,
+      "bad": "pos_devices",
+      "good": "posDevice"
+    },
+    {
+      "line": 1479,
+      "col": 23,
+      "bad": "retail_orders",
+      "good": "retailOrder"
+    },
+    {
+      "line": 1637,
+      "col": 24,
+      "bad": "retail_customers",
+      "good": "retailCustomer"
+    },
+    {
+      "line": 1647,
+      "col": 24,
+      "bad": "retail_customers",
+      "good": "retailCustomer"
+    },
+    {
+      "line": 1654,
+      "col": 24,
+      "bad": "retail_customers",
+      "good": "retailCustomer"
+    },
+    {
+      "line": 1679,
+      "col": 24,
+      "bad": "retail_customers",
+      "good": "retailCustomer"
+    },
+    {
+      "line": 1694,
+      "col": 24,
+      "bad": "retail_customer_sessions",
+      "good": "retailCustomerSession"
+    },
+    {
+      "line": 1712,
+      "col": 24,
+      "bad": "retail_customer_sessions",
+      "good": "retailCustomerSession"
+    },
+    {
+      "line": 1726,
+      "col": 23,
+      "bad": "retail_customer_sessions",
+      "good": "retailCustomerSession"
+    },
+    {
+      "line": 1735,
+      "col": 24,
+      "bad": "retail_carts",
+      "good": "retailCart"
+    },
+    {
+      "line": 1742,
+      "col": 24,
+      "bad": "retail_carts",
+      "good": "retailCart"
+    },
+    {
+      "line": 1755,
+      "col": 24,
+      "bad": "retail_cart_items",
+      "good": "retailCartItem"
+    },
+    {
+      "line": 1772,
+      "col": 23,
+      "bad": "retail_cart_items",
+      "good": "retailCartItem"
+    },
+    {
+      "line": 1778,
+      "col": 23,
+      "bad": "retail_cart_items",
+      "good": "retailCartItem"
+    },
+    {
+      "line": 1784,
+      "col": 24,
+      "bad": "retail_wishlists",
+      "good": "retailWishlist"
+    },
+    {
+      "line": 1792,
+      "col": 24,
+      "bad": "retail_wishlists",
+      "good": "retailWishlist"
+    },
+    {
+      "line": 1804,
+      "col": 40,
+      "bad": "retail_wishlist_items",
+      "good": "retailWishlistItem"
+    },
+    {
+      "line": 1808,
+      "col": 24,
+      "bad": "retail_wishlist_items",
+      "good": "retailWishlistItem"
+    },
+    {
+      "line": 1820,
+      "col": 23,
+      "bad": "retail_wishlist_items",
+      "good": "retailWishlistItem"
+    },
+    {
+      "line": 1828,
+      "col": 24,
+      "bad": "audit_logs",
+      "good": "auditLog"
+    }
+  ],
+  "src/core/retail/retail-events.service.ts": [
+    {
+      "line": 33,
+      "col": 42,
+      "bad": "audit_logs",
+      "good": "auditLog"
+    },
+    {
+      "line": 88,
+      "col": 42,
+      "bad": "retail_orders",
+      "good": "retailOrder"
+    }
+  ],
+  "src/core/retail/retail-public-auth.service.ts": [
+    {
+      "line": 84,
+      "col": 40,
+      "bad": "retail_customers",
+      "good": "retailCustomer"
+    },
+    {
+      "line": 91,
+      "col": 40,
+      "bad": "retail_customers",
+      "good": "retailCustomer"
+    },
+    {
+      "line": 106,
+      "col": 23,
+      "bad": "retail_customer_auth",
+      "good": "retailCustomerAuth"
+    },
+    {
+      "line": 132,
+      "col": 40,
+      "bad": "retail_customers",
+      "good": "retailCustomer"
+    },
+    {
+      "line": 139,
+      "col": 36,
+      "bad": "retail_customer_auth",
+      "good": "retailCustomerAuth"
+    },
+    {
+      "line": 159,
+      "col": 25,
+      "bad": "retail_customer_auth",
+      "good": "retailCustomerAuth"
+    },
+    {
+      "line": 172,
+      "col": 23,
+      "bad": "retail_customer_auth",
+      "good": "retailCustomerAuth"
+    },
+    {
+      "line": 197,
+      "col": 39,
+      "bad": "retail_customer_sessions",
+      "good": "retailCustomerSession"
+    },
+    {
+      "line": 208,
+      "col": 40,
+      "bad": "retail_customers",
+      "good": "retailCustomer"
+    },
+    {
+      "line": 215,
+      "col": 23,
+      "bad": "retail_customer_sessions",
+      "good": "retailCustomerSession"
+    },
+    {
+      "line": 242,
+      "col": 40,
+      "bad": "retail_customers",
+      "good": "retailCustomer"
+    },
+    {
+      "line": 273,
+      "col": 23,
+      "bad": "retail_customer_sessions",
+      "good": "retailCustomerSession"
+    },
+    {
+      "line": 295,
+      "col": 23,
+      "bad": "retail_customer_sessions",
+      "good": "retailCustomerSession"
+    }
+  ],
+  "src/core/retail/retail-public-customer.service.ts": [
+    {
+      "line": 17,
+      "col": 24,
+      "bad": "retail_carts",
+      "good": "retailCart"
+    },
+    {
+      "line": 29,
+      "col": 36,
+      "bad": "retail_carts",
+      "good": "retailCart"
+    },
+    {
+      "line": 95,
+      "col": 40,
+      "bad": "retail_cart_items",
+      "good": "retailCartItem"
+    },
+    {
+      "line": 100,
+      "col": 25,
+      "bad": "retail_cart_items",
+      "good": "retailCartItem"
+    },
+    {
+      "line": 105,
+      "col": 25,
+      "bad": "retail_cart_items",
+      "good": "retailCartItem"
+    },
+    {
+      "line": 131,
+      "col": 36,
+      "bad": "retail_cart_items",
+      "good": "retailCartItem"
+    },
+    {
+      "line": 139,
+      "col": 25,
+      "bad": "retail_cart_items",
+      "good": "retailCartItem"
+    },
+    {
+      "line": 141,
+      "col": 25,
+      "bad": "retail_cart_items",
+      "good": "retailCartItem"
+    },
+    {
+      "line": 152,
+      "col": 36,
+      "bad": "retail_cart_items",
+      "good": "retailCartItem"
+    },
+    {
+      "line": 158,
+      "col": 23,
+      "bad": "retail_cart_items",
+      "good": "retailCartItem"
+    },
+    {
+      "line": 164,
+      "col": 23,
+      "bad": "retail_cart_items",
+      "good": "retailCartItem"
+    },
+    {
+      "line": 169,
+      "col": 40,
+      "bad": "retail_wishlists",
+      "good": "retailWishlist"
+    },
+    {
+      "line": 214,
+      "col": 40,
+      "bad": "retail_wishlists",
+      "good": "retailWishlist"
+    },
+    {
+      "line": 223,
+      "col": 40,
+      "bad": "retail_wishlist_items",
+      "good": "retailWishlistItem"
+    },
+    {
+      "line": 228,
+      "col": 25,
+      "bad": "retail_wishlist_items",
+      "good": "retailWishlistItem"
+    },
+    {
+      "line": 243,
+      "col": 40,
+      "bad": "retail_wishlists",
+      "good": "retailWishlist"
+    },
+    {
+      "line": 249,
+      "col": 36,
+      "bad": "retail_wishlist_items",
+      "good": "retailWishlistItem"
+    },
+    {
+      "line": 255,
+      "col": 23,
+      "bad": "retail_wishlist_items",
+      "good": "retailWishlistItem"
+    },
+    {
+      "line": 268,
+      "col": 36,
+      "bad": "retail_carts",
+      "good": "retailCart"
+    },
+    {
+      "line": 277,
+      "col": 37,
+      "bad": "stores",
+      "good": "store"
+    },
+    {
+      "line": 327,
+      "col": 23,
+      "bad": "retail_cart_items",
+      "good": "retailCartItem"
+    }
+  ],
+  "src/core/retail/seeders/retail.seeder.ts": [
+    {
+      "line": 51,
+      "col": 27,
+      "bad": "admin_module_statuses",
+      "good": "adminModuleStatus"
+    },
+    {
+      "line": 71,
+      "col": 40,
+      "bad": "locations",
+      "good": "location"
+    },
+    {
+      "line": 77,
+      "col": 38,
+      "bad": "locations",
+      "good": "location"
+    },
+    {
+      "line": 90,
+      "col": 37,
+      "bad": "stores",
+      "good": "store"
+    },
+    {
+      "line": 96,
+      "col": 35,
+      "bad": "stores",
+      "good": "store"
+    },
+    {
+      "line": 113,
+      "col": 48,
+      "bad": "product_categories",
+      "good": "productCategory"
+    },
+    {
+      "line": 124,
+      "col": 45,
+      "bad": "product_categories",
+      "good": "productCategory"
+    },
+    {
+      "line": 135,
+      "col": 46,
+      "bad": "product_categories",
+      "good": "productCategory"
+    },
+    {
+      "line": 245,
+      "col": 46,
+      "bad": "stock_levels",
+      "good": "stockLevel"
+    },
+    {
+      "line": 249,
+      "col": 29,
+      "bad": "stock_levels",
+      "good": "stockLevel"
+    },
+    {
+      "line": 254,
+      "col": 29,
+      "bad": "stock_levels",
+      "good": "stockLevel"
+    },
+    {
+      "line": 435,
+      "col": 39,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 439,
+      "col": 43,
+      "bad": "departments",
+      "good": "department"
+    },
+    {
+      "line": 444,
+      "col": 42,
+      "bad": "departments",
+      "good": "department"
+    },
+    {
+      "line": 455,
+      "col": 37,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 477,
+      "col": 44,
+      "bad": "retail_customers",
+      "good": "retailCustomer"
+    },
+    {
+      "line": 493,
+      "col": 42,
+      "bad": "retail_orders",
+      "good": "retailOrder"
+    },
+    {
+      "line": 498,
+      "col": 29,
+      "bad": "retail_orders",
+      "good": "retailOrder"
+    },
+    {
+      "line": 522,
+      "col": 41,
+      "bad": "retail_orders",
+      "good": "retailOrder"
+    },
+    {
+      "line": 552,
+      "col": 29,
+      "bad": "retail_order_items",
+      "good": "retailOrderItem"
+    }
+  ],
+  "src/core/sales/repositories/sales.db.repository.ts": [
+    {
+      "line": 33,
+      "col": 19,
+      "bad": "sales_leads",
+      "good": "salesLead"
+    },
+    {
+      "line": 34,
+      "col": 19,
+      "bad": "sales_opportunities",
+      "good": "salesOpportunity"
+    },
+    {
+      "line": 35,
+      "col": 19,
+      "bad": "sales_quotes",
+      "good": "salesQuote"
+    },
+    {
+      "line": 38,
+      "col": 19,
+      "bad": "sales_alerts",
+      "good": "salesAlert"
+    },
+    {
+      "line": 65,
+      "col": 45,
+      "bad": "sales_opportunities",
+      "good": "salesOpportunity"
+    },
+    {
+      "line": 103,
+      "col": 24,
+      "bad": "sales_leads",
+      "good": "salesLead"
+    },
+    {
+      "line": 107,
+      "col": 24,
+      "bad": "sales_leads",
+      "good": "salesLead"
+    },
+    {
+      "line": 124,
+      "col": 24,
+      "bad": "sales_leads",
+      "good": "salesLead"
+    },
+    {
+      "line": 135,
+      "col": 36,
+      "bad": "sales_leads",
+      "good": "salesLead"
+    },
+    {
+      "line": 140,
+      "col": 24,
+      "bad": "sales_opportunities",
+      "good": "salesOpportunity"
+    },
+    {
+      "line": 157,
+      "col": 24,
+      "bad": "sales_opportunities",
+      "good": "salesOpportunity"
+    },
+    {
+      "line": 166,
+      "col": 24,
+      "bad": "sales_opportunities",
+      "good": "salesOpportunity"
+    },
+    {
+      "line": 181,
+      "col": 24,
+      "bad": "sales_opportunities",
+      "good": "salesOpportunity"
+    },
+    {
+      "line": 192,
+      "col": 38,
+      "bad": "sales_opportunities",
+      "good": "salesOpportunity"
+    },
+    {
+      "line": 198,
+      "col": 26,
+      "bad": "sales_orders",
+      "good": "salesOrder"
+    },
+    {
+      "line": 215,
+      "col": 24,
+      "bad": "sales_quotes",
+      "good": "salesQuote"
+    },
+    {
+      "line": 222,
+      "col": 24,
+      "bad": "sales_quotes",
+      "good": "salesQuote"
+    },
+    {
+      "line": 233,
+      "col": 24,
+      "bad": "sales_quotes",
+      "good": "salesQuote"
+    },
+    {
+      "line": 244,
+      "col": 24,
+      "bad": "sales_quotes",
+      "good": "salesQuote"
+    },
+    {
+      "line": 255,
+      "col": 24,
+      "bad": "sales_timeline_events",
+      "good": "salesTimelineEvent"
+    },
+    {
+      "line": 264,
+      "col": 24,
+      "bad": "sales_timeline_events",
+      "good": "salesTimelineEvent"
+    },
+    {
+      "line": 275,
+      "col": 24,
+      "bad": "sales_tasks",
+      "good": "salesTask"
+    },
+    {
+      "line": 279,
+      "col": 24,
+      "bad": "sales_tasks",
+      "good": "salesTask"
+    },
+    {
+      "line": 290,
+      "col": 24,
+      "bad": "sales_tasks",
+      "good": "salesTask"
+    },
+    {
+      "line": 297,
+      "col": 24,
+      "bad": "sales_orders",
+      "good": "salesOrder"
+    },
+    {
+      "line": 301,
+      "col": 24,
+      "bad": "sales_alerts",
+      "good": "salesAlert"
+    },
+    {
+      "line": 309,
+      "col": 24,
+      "bad": "sales_audit_events",
+      "good": "salesAuditEvent"
+    }
+  ],
+  "src/core/sales/sales.controller.ts": [
+    {
+      "line": 58,
+      "col": 50,
+      "bad": "retail_orders",
+      "good": "retailOrder"
+    },
+    {
+      "line": 67,
+      "col": 46,
+      "bad": "retail_orders",
+      "good": "retailOrder"
+    }
+  ],
+  "src/core/workflow/workflow-orchestrator.service.ts": [
+    {
+      "line": 22,
+      "col": 25,
+      "bad": "workflow_definitions",
+      "good": "workflowDefinition"
+    },
+    {
+      "line": 84,
+      "col": 42,
+      "bad": "workflow_definitions",
+      "good": "workflowDefinition"
+    },
+    {
+      "line": 101,
+      "col": 23,
+      "bad": "workflow_instances",
+      "good": "workflowInstance"
+    },
+    {
+      "line": 130,
+      "col": 40,
+      "bad": "workflow_instances",
+      "good": "workflowInstance"
+    },
+    {
+      "line": 149,
+      "col": 23,
+      "bad": "workflow_instances",
+      "good": "workflowInstance"
+    },
+    {
+      "line": 186,
+      "col": 40,
+      "bad": "workflow_instances",
+      "good": "workflowInstance"
+    },
+    {
+      "line": 197,
+      "col": 23,
+      "bad": "workflow_instances",
+      "good": "workflowInstance"
+    },
+    {
+      "line": 210,
+      "col": 24,
+      "bad": "workflow_instances",
+      "good": "workflowInstance"
+    },
+    {
+      "line": 217,
+      "col": 40,
+      "bad": "workflow_instances",
+      "good": "workflowInstance"
+    },
+    {
+      "line": 224,
+      "col": 40,
+      "bad": "workflow_instances",
+      "good": "workflowInstance"
+    }
+  ],
+  "src/database/seed-all.ts": [
+    {
+      "line": 239,
+      "col": 18,
+      "bad": "device",
+      "good": "itDevice"
+    },
+    {
+      "line": 266,
+      "col": 18,
+      "bad": "iTSetting",
+      "good": "itSettings"
+    }
+  ],
+  "src/modules/compliance/compliance.service.ts": [
+    {
+      "line": 95,
+      "col": 41,
+      "bad": "employees",
+      "good": "employee"
+    }
+  ],
+  "src/resilience-simulation.ts": [
+    {
+      "line": 31,
+      "col": 16,
+      "bad": "outbox_events",
+      "good": "sysOutboxEvent"
+    },
+    {
+      "line": 64,
+      "col": 16,
+      "bad": "outbox_events",
+      "good": "sysOutboxEvent"
+    },
+    {
+      "line": 69,
+      "col": 34,
+      "bad": "outbox_events",
+      "good": "sysOutboxEvent"
+    },
+    {
+      "line": 92,
+      "col": 16,
+      "bad": "outbox_events",
+      "good": "sysOutboxEvent"
+    }
+  ],
+  "src/shared/audit/audit-chain.service.ts": [
+    {
+      "line": 44,
+      "col": 36,
+      "bad": "audit_logs",
+      "good": "auditLog"
+    },
+    {
+      "line": 58,
+      "col": 41,
+      "bad": "audit_logs",
+      "good": "auditLog"
+    },
+    {
+      "line": 93,
+      "col": 27,
+      "bad": "audit_logs",
+      "good": "auditLog"
+    }
+  ],
+  "src/shared/audit/audit.service.ts": [
+    {
+      "line": 74,
+      "col": 43,
+      "bad": "audit_logs",
+      "good": "auditLog"
+    },
+    {
+      "line": 218,
+      "col": 19,
+      "bad": "audit_logs",
+      "good": "auditLog"
+    },
+    {
+      "line": 224,
+      "col": 19,
+      "bad": "audit_logs",
+      "good": "auditLog"
+    },
+    {
+      "line": 234,
+      "col": 36,
+      "bad": "audit_logs",
+      "good": "auditLog"
+    },
+    {
+      "line": 244,
+      "col": 41,
+      "bad": "audit_logs",
+      "good": "auditLog"
+    }
+  ],
+  "src/shared/comms/bulletin.service.ts": [
+    {
+      "line": 18,
+      "col": 24,
+      "bad": "bulletin_posts",
+      "good": "bulletinPost"
+    },
+    {
+      "line": 49,
+      "col": 19,
+      "bad": "bulletin_posts",
+      "good": "bulletinPost"
+    },
+    {
+      "line": 70,
+      "col": 19,
+      "bad": "bulletin_posts",
+      "good": "bulletinPost"
+    },
+    {
+      "line": 89,
+      "col": 36,
+      "bad": "bulletin_posts",
+      "good": "bulletinPost"
+    },
+    {
+      "line": 120,
+      "col": 24,
+      "bad": "bulletin_comments",
+      "good": "bulletinComment"
+    },
+    {
+      "line": 138,
+      "col": 40,
+      "bad": "bulletin_reactions",
+      "good": "bulletinReaction"
+    },
+    {
+      "line": 149,
+      "col": 28,
+      "bad": "bulletin_reactions",
+      "good": "bulletinReaction"
+    },
+    {
+      "line": 154,
+      "col": 26,
+      "bad": "bulletin_reactions",
+      "good": "bulletinReaction"
+    },
+    {
+      "line": 161,
+      "col": 24,
+      "bad": "bulletin_reactions",
+      "good": "bulletinReaction"
+    },
+    {
+      "line": 174,
+      "col": 24,
+      "bad": "bulletin_posts",
+      "good": "bulletinPost"
+    },
+    {
+      "line": 184,
+      "col": 24,
+      "bad": "bulletin_posts",
+      "good": "bulletinPost"
+    },
+    {
+      "line": 195,
+      "col": 24,
+      "bad": "bulletin_categories",
+      "good": "bulletinCategory"
+    },
+    {
+      "line": 202,
+      "col": 24,
+      "bad": "bulletin_categories",
+      "good": "bulletinCategory"
+    },
+    {
+      "line": 211,
+      "col": 24,
+      "bad": "bulletin_categories",
+      "good": "bulletinCategory"
+    },
+    {
+      "line": 219,
+      "col": 40,
+      "bad": "bulletin_categories",
+      "good": "bulletinCategory"
+    },
+    {
+      "line": 224,
+      "col": 24,
+      "bad": "bulletin_categories",
+      "good": "bulletinCategory"
+    }
+  ],
+  "src/shared/comms/chat.service.ts": [
+    {
+      "line": 29,
+      "col": 42,
+      "bad": "chat_rooms",
+      "good": "chatRoom"
+    },
+    {
+      "line": 36,
+      "col": 29,
+      "bad": "chat_rooms",
+      "good": "chatRoom"
+    },
+    {
+      "line": 48,
+      "col": 16,
+      "bad": "chat_members",
+      "good": "chatMember"
+    },
+    {
+      "line": 63,
+      "col": 37,
+      "bad": "chat_rooms",
+      "good": "chatRoom"
+    },
+    {
+      "line": 138,
+      "col": 38,
+      "bad": "users",
+      "good": "user"
+    },
+    {
+      "line": 183,
+      "col": 16,
+      "bad": "chat_rooms",
+      "good": "chatRoom"
+    },
+    {
+      "line": 194,
+      "col": 16,
+      "bad": "chat_members",
+      "good": "chatMember"
+    },
+    {
+      "line": 205,
+      "col": 32,
+      "bad": "chat_members",
+      "good": "chatMember"
+    },
+    {
+      "line": 209,
+      "col": 31,
+      "bad": "users",
+      "good": "user"
+    },
+    {
+      "line": 242,
+      "col": 23,
+      "bad": "chat_members",
+      "good": "chatMember"
+    }
+  ],
+  "src/shared/comms/mail.service.ts": [
+    {
+      "line": 20,
+      "col": 37,
+      "bad": "mail_accounts",
+      "good": "mailAccount"
+    },
+    {
+      "line": 25,
+      "col": 35,
+      "bad": "mail_accounts",
+      "good": "mailAccount"
+    },
+    {
+      "line": 74,
+      "col": 19,
+      "bad": "mail_messages",
+      "good": "mailMessage"
+    },
+    {
+      "line": 83,
+      "col": 19,
+      "bad": "mail_messages",
+      "good": "mailMessage"
+    },
+    {
+      "line": 100,
+      "col": 37,
+      "bad": "mail_accounts",
+      "good": "mailAccount"
+    },
+    {
+      "line": 105,
+      "col": 35,
+      "bad": "mail_accounts",
+      "good": "mailAccount"
+    },
+    {
+      "line": 120,
+      "col": 38,
+      "bad": "mail_threads",
+      "good": "mailThread"
+    },
+    {
+      "line": 130,
+      "col": 39,
+      "bad": "mail_messages",
+      "good": "mailMessage"
+    },
+    {
+      "line": 150,
+      "col": 52,
+      "bad": "mail_accounts",
+      "good": "mailAccount"
+    },
+    {
+      "line": 180,
+      "col": 24,
+      "bad": "mail_accounts",
+      "good": "mailAccount"
+    },
+    {
+      "line": 186,
+      "col": 24,
+      "bad": "mail_messages",
+      "good": "mailMessage"
+    },
+    {
+      "line": 193,
+      "col": 36,
+      "bad": "mail_messages",
+      "good": "mailMessage"
+    },
+    {
+      "line": 196,
+      "col": 24,
+      "bad": "mail_messages",
+      "good": "mailMessage"
+    },
+    {
+      "line": 204,
+      "col": 36,
+      "bad": "mail_messages",
+      "good": "mailMessage"
+    },
+    {
+      "line": 206,
+      "col": 26,
+      "bad": "mail_messages",
+      "good": "mailMessage"
+    },
+    {
+      "line": 208,
+      "col": 24,
+      "bad": "mail_messages",
+      "good": "mailMessage"
+    },
+    {
+      "line": 215,
+      "col": 24,
+      "bad": "mail_messages",
+      "good": "mailMessage"
+    }
+  ],
+  "src/shared/comms/notification.service.ts": [
+    {
+      "line": 18,
+      "col": 24,
+      "bad": "notifications",
+      "good": "notification"
+    },
+    {
+      "line": 36,
+      "col": 44,
+      "bad": "notifications",
+      "good": "notification"
+    },
+    {
+      "line": 44,
+      "col": 24,
+      "bad": "notifications",
+      "good": "notification"
+    },
+    {
+      "line": 60,
+      "col": 19,
+      "bad": "notifications",
+      "good": "notification"
+    },
+    {
+      "line": 66,
+      "col": 19,
+      "bad": "notifications",
+      "good": "notification"
+    },
+    {
+      "line": 75,
+      "col": 24,
+      "bad": "notifications",
+      "good": "notification"
+    },
+    {
+      "line": 82,
+      "col": 24,
+      "bad": "notifications",
+      "good": "notification"
+    },
+    {
+      "line": 90,
+      "col": 39,
+      "bad": "mail_accounts",
+      "good": "mailAccount"
+    },
+    {
+      "line": 95,
+      "col": 19,
+      "bad": "notifications",
+      "good": "notification"
+    },
+    {
+      "line": 98,
+      "col": 29,
+      "bad": "mail_messages",
+      "good": "mailMessage"
+    },
+    {
+      "line": 107,
+      "col": 19,
+      "bad": "chat_rooms",
+      "good": "chatRoom"
+    }
+  ],
+  "src/shared/events/event-bus.service.ts": [
+    {
+      "line": 60,
+      "col": 51,
+      "bad": "event_deliveries",
+      "good": "eventDelivery"
+    },
+    {
+      "line": 97,
+      "col": 45,
+      "bad": "domain_events",
+      "good": "domainEvent"
+    },
+    {
+      "line": 109,
+      "col": 20,
+      "bad": "domain_events",
+      "good": "domainEvent"
+    },
+    {
+      "line": 114,
+      "col": 20,
+      "bad": "event_deliveries",
+      "good": "eventDelivery"
+    },
+    {
+      "line": 279,
+      "col": 36,
+      "bad": "event_deliveries",
+      "good": "eventDelivery"
+    },
+    {
+      "line": 287,
+      "col": 25,
+      "bad": "domain_events",
+      "good": "domainEvent"
+    },
+    {
+      "line": 300,
+      "col": 27,
+      "bad": "domain_events",
+      "good": "domainEvent"
+    },
+    {
+      "line": 313,
+      "col": 22,
+      "bad": "event_deliveries",
+      "good": "eventDelivery"
+    },
+    {
+      "line": 339,
+      "col": 49,
+      "bad": "event_deliveries",
+      "good": "eventDelivery"
+    },
+    {
+      "line": 349,
+      "col": 29,
+      "bad": "event_deliveries",
+      "good": "eventDelivery"
+    },
+    {
+      "line": 354,
+      "col": 29,
+      "bad": "domain_events",
+      "good": "domainEvent"
+    },
+    {
+      "line": 377,
+      "col": 29,
+      "bad": "event_deliveries",
+      "good": "eventDelivery"
+    },
+    {
+      "line": 391,
+      "col": 51,
+      "bad": "event_deliveries",
+      "good": "eventDelivery"
+    },
+    {
+      "line": 395,
+      "col": 25,
+      "bad": "domain_events",
+      "good": "domainEvent"
+    },
+    {
+      "line": 406,
+      "col": 37,
+      "bad": "domain_events",
+      "good": "domainEvent"
+    },
+    {
+      "line": 418,
+      "col": 16,
+      "bad": "domain_events",
+      "good": "domainEvent"
+    },
+    {
+      "line": 424,
+      "col": 16,
+      "bad": "event_deliveries",
+      "good": "eventDelivery"
+    },
+    {
+      "line": 435,
+      "col": 24,
+      "bad": "domain_events",
+      "good": "domainEvent"
+    },
+    {
+      "line": 446,
+      "col": 24,
+      "bad": "event_deliveries",
+      "good": "eventDelivery"
+    },
+    {
+      "line": 454,
+      "col": 38,
+      "bad": "domain_events",
+      "good": "domainEvent"
+    }
+  ],
+  "src/shared/interceptors/idempotency.interceptor.ts": [
+    {
+      "line": 64,
+      "col": 45,
+      "bad": "idempotencyKey",
+      "good": "sysIdempotencyKey"
+    },
+    {
+      "line": 94,
+      "col": 25,
+      "bad": "idempotencyKey",
+      "good": "sysIdempotencyKey"
+    },
+    {
+      "line": 100,
+      "col": 23,
+      "bad": "idempotencyKey",
+      "good": "sysIdempotencyKey"
+    },
+    {
+      "line": 118,
+      "col": 29,
+      "bad": "idempotencyKey",
+      "good": "sysIdempotencyKey"
+    },
+    {
+      "line": 133,
+      "col": 29,
+      "bad": "idempotencyKey",
+      "good": "sysIdempotencyKey"
+    }
+  ],
+  "src/shared/license/license.service.ts": [
+    {
+      "line": 13,
+      "col": 39,
+      "bad": "module_licenses",
+      "good": "moduleLicense"
+    },
+    {
+      "line": 42,
+      "col": 24,
+      "bad": "module_licenses",
+      "good": "moduleLicense"
+    },
+    {
+      "line": 54,
+      "col": 39,
+      "bad": "module_licenses",
+      "good": "moduleLicense"
+    },
+    {
+      "line": 74,
+      "col": 39,
+      "bad": "module_licenses",
+      "good": "moduleLicense"
+    },
+    {
+      "line": 84,
+      "col": 23,
+      "bad": "module_license_logs",
+      "good": "moduleLicenseLog"
+    }
+  ],
+  "src/shared/logger/logger.service.ts": [
+    {
+      "line": 26,
+      "col": 25,
+      "bad": "system_logs",
+      "good": "systemLog"
+    },
+    {
+      "line": 65,
+      "col": 19,
+      "bad": "system_logs",
+      "good": "systemLog"
+    },
+    {
+      "line": 71,
+      "col": 19,
+      "bad": "system_logs",
+      "good": "systemLog"
+    },
+    {
+      "line": 80,
+      "col": 38,
+      "bad": "system_logs",
+      "good": "systemLog"
+    }
+  ],
+  "src/shared/maintenance/idempotency-cleanup.service.ts": [
+    {
+      "line": 19,
+      "col": 40,
+      "bad": "idempotencyKey",
+      "good": "sysIdempotencyKey"
+    }
+  ],
+  "src/shared/maintenance/outbox-worker.service.ts": [
+    {
+      "line": 34,
+      "col": 40,
+      "bad": "sys_outbox_events",
+      "good": "sysOutboxEvent"
+    },
+    {
+      "line": 119,
+      "col": 25,
+      "bad": "sys_outbox_events",
+      "good": "sysOutboxEvent"
+    },
+    {
+      "line": 132,
+      "col": 25,
+      "bad": "sys_outbox_events",
+      "good": "sysOutboxEvent"
+    }
+  ],
+  "src/shared/workflow/workflow.service.ts": [
+    {
+      "line": 26,
+      "col": 39,
+      "bad": "workflow_requests",
+      "good": "workflowRequest"
+    },
+    {
+      "line": 56,
+      "col": 39,
+      "bad": "workflow_requests",
+      "good": "workflowRequest"
+    },
+    {
+      "line": 63,
+      "col": 39,
+      "bad": "workflow_requests",
+      "good": "workflowRequest"
+    },
+    {
+      "line": 73,
+      "col": 23,
+      "bad": "workflow_audit_entries",
+      "good": "workflowAuditEntry"
+    },
+    {
+      "line": 101,
+      "col": 39,
+      "bad": "workflow_requests",
+      "good": "workflowRequest"
+    },
+    {
+      "line": 107,
+      "col": 39,
+      "bad": "workflow_requests",
+      "good": "workflowRequest"
+    },
+    {
+      "line": 116,
+      "col": 23,
+      "bad": "workflow_audit_entries",
+      "good": "workflowAuditEntry"
+    },
+    {
+      "line": 144,
+      "col": 24,
+      "bad": "workflow_requests",
+      "good": "workflowRequest"
+    },
+    {
+      "line": 155,
+      "col": 24,
+      "bad": "workflow_requests",
+      "good": "workflowRequest"
+    }
+  ],
+  "src/support/explorer/explorer.service.ts": [
+    {
+      "line": 37,
+      "col": 45,
+      "bad": "compensations",
+      "good": "compensation"
+    },
+    {
+      "line": 62,
+      "col": 41,
+      "bad": "employees",
+      "good": "employee"
+    },
+    {
+      "line": 94,
+      "col": 41,
+      "bad": "locations",
+      "good": "location"
+    }
+  ]
+}

@@ -8,12 +8,12 @@ export class MarketingWorkflowStep {
 
 export class MarketingWorkflow {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   name: string;
   status: "draft" | "active" | "paused";
   trigger: "new_lead" | "score_below_threshold" | "reengagement";
   steps: MarketingWorkflowStep[];
   aiSuggestion?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

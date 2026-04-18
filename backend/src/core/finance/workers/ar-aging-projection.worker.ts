@@ -13,23 +13,23 @@ export class ARAgingProjectionWorker {
    * In production, this would be a @SqsConsumer or @KafkaListener.
    */
   async handleEvent(event: any): Promise<void> {
-    const { tenantId, customerId } = event.payload;
+    const { tenant_id, customer_id } = event.payload;
 
-    this.logger.log(`Received trigger for Customer ${customerId}. Recalculating aging...`);
+    this.logger.log(`Received trigger for Customer ${customer_id}. Recalculating aging...`);
 
     // 1. Fetch all outstanding invoices for the customer
-    const openInvoices = await this.fetchOpenInvoices(tenantId, customerId);
+    const openInvoices = await this.fetchOpenInvoices(tenant_id, customer_id);
 
     // 2. Calculate new buckets
-    const newBucket = this.agingService.calculateAging(customerId, openInvoices);
+    const newBucket = this.agingService.calculateAging(customer_id, openInvoices);
 
     // 3. Persist to ARAgingBucket table
     await this.persistBucket(newBucket);
     
-    this.logger.log(`Aging buckets updated for Customer ${customerId}.`);
+    this.logger.log(`Aging buckets updated for Customer ${customer_id}.`);
   }
 
-  private async fetchOpenInvoices(tenantId: string, customerId: string): Promise<ARInvoice[]> {
+  private async fetchOpenInvoices(tenant_id: string, customer_id: string): Promise<ARInvoice[]> {
     // Mock fetch logic
     return [];
   }

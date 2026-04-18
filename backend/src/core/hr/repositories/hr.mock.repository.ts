@@ -83,434 +83,434 @@ export class HRMockRepository extends IHRRepository {
   private payrolls: Payroll[] = [];
 
   // Get By ID Methods
-  async getEmployeeById(tenantId: string, employeeId: string): Promise<Employee | null> {
-    return this.employees.find((e) => e.id === employeeId && e.tenantId === tenantId) || null;
+  async getEmployeeById(tenant_id: string, employee_id: string): Promise<Employee | null> {
+    return this.employees.find((e) => e.id === employee_id && e.tenant_id === tenant_id) || null;
   }
-  async getGlobalEmployeeById(employeeId: string): Promise<Employee | null> { return this.employees.find((e) => e.id === employeeId) || null; }
-  async getRequisitionById(tenantId: string, id: string): Promise<JobRequisition | null> {
-    return this.requisitions.find((r) => r.id === id && r.tenantId === tenantId) || null;
+  async getGlobalEmployeeById(employee_id: string): Promise<Employee | null> { return this.employees.find((e) => e.id === employee_id) || null; }
+  async getRequisitionById(tenant_id: string, id: string): Promise<JobRequisition | null> {
+    return this.requisitions.find((r) => r.id === id && r.tenant_id === tenant_id) || null;
   }
-  async getContractById(tenantId: string, id: string): Promise<Contract | null> {
-    return this.contracts.find((c) => c.id === id && c.tenantId === tenantId) || null;
+  async getContractById(tenant_id: string, id: string): Promise<Contract | null> {
+    return this.contracts.find((c) => c.id === id && c.tenant_id === tenant_id) || null;
   }
-  async getTrainingAssignmentById(tenantId: string, id: string): Promise<any | null> {
-    return this.trainingAssignments.find((a) => a.id === id && a.tenantId === tenantId) || null;
+  async getTrainingAssignmentById(tenant_id: string, id: string): Promise<any | null> {
+    return this.trainingAssignments.find((a) => a.id === id && a.tenant_id === tenant_id) || null;
   }
-  async getLeaveRequestById(tenantId: string, id: string): Promise<LeaveRequest | null> {
-    return this.leaveRequests.find((r) => r.id === id && r.tenantId === tenantId) || null;
+  async getLeaveRequestById(tenant_id: string, id: string): Promise<LeaveRequest | null> {
+    return this.leaveRequests.find((r) => r.id === id && r.tenant_id === tenant_id) || null;
   }
-  async getDepartmentById(tenantId: string, departmentId: string): Promise<Department | null> {
-    return this.departments.find((d) => d.id === departmentId && d.tenantId === tenantId) || null;
+  async getDepartmentById(tenant_id: string, department_id: string): Promise<Department | null> {
+    return this.departments.find((d) => d.id === department_id && d.tenant_id === tenant_id) || null;
   }
-  async getPerformanceCycleById(tenantId: string, id: string): Promise<PerformanceCycle | null> {
-    return this.performanceCycles.find((c) => c.id === id && c.tenantId === tenantId) || null;
+  async getPerformanceCycleById(tenant_id: string, id: string): Promise<PerformanceCycle | null> {
+    return this.performanceCycles.find((c) => c.id === id && c.tenant_id === tenant_id) || null;
   }
-  async getCaseById(tenantId: string, id: string): Promise<HRCase | null> {
-    return this.cases.find((c) => c.id === id && c.tenantId === tenantId) || null;
+  async getCaseById(tenant_id: string, id: string): Promise<HRCase | null> {
+    return this.cases.find((c) => c.id === id && c.tenant_id === tenant_id) || null;
   }
-  async getCandidateById(tenantId: string, id: string): Promise<Candidate | null> {
-    return this.candidates.find((c) => c.id === id && c.tenantId === tenantId) || null;
+  async getCandidateById(tenant_id: string, id: string): Promise<Candidate | null> {
+    return this.candidates.find((c) => c.id === id && c.tenant_id === tenant_id) || null;
   }
-  async getPositionById(tenantId: string, id: string): Promise<Position | null> {
-    return this.positions.find((p) => p.id === id && p.tenantId === tenantId) || null;
+  async getPositionById(tenant_id: string, id: string): Promise<Position | null> {
+    return this.positions.find((p) => p.id === id && p.tenant_id === tenant_id) || null;
   }
-  async getInterviewById(tenantId: string, id: string): Promise<Interview | null> {
-    return this.interviews.find((i) => i.id === id && i.tenantId === tenantId) || null;
+  async getInterviewById(tenant_id: string, id: string): Promise<Interview | null> {
+    return this.interviews.find((i) => i.id === id && i.tenant_id === tenant_id) || null;
   }
-  async getTalentLeadById(tenantId: string, id: string): Promise<TalentLead | null> {
-    return this.leads.find((l) => l.id === id && l.tenantId === tenantId) || null;
+  async getTalentLeadById(tenant_id: string, id: string): Promise<TalentLead | null> {
+    return this.leads.find((l) => l.id === id && l.tenant_id === tenant_id) || null;
   }
-  async getGoalById(tenantId: string, id: string): Promise<PerformanceGoal | null> {
-    return this.performanceGoals.find((g) => g.id === id && g.tenantId === tenantId) || null;
+  async getGoalById(tenant_id: string, id: string): Promise<PerformanceGoal | null> {
+    return this.performanceGoals.find((g) => g.id === id && g.tenant_id === tenant_id) || null;
   }
-  async getTrainingProgramById(tenantId: string, id: string): Promise<TrainingProgram | null> {
-    return this.trainingPrograms.find((p) => p.id === id && p.tenantId === tenantId) || null;
+  async getTrainingProgramById(tenant_id: string, id: string): Promise<TrainingProgram | null> {
+    return this.trainingPrograms.find((p) => p.id === id && p.tenant_id === tenant_id) || null;
   }
 
   // Employee Management
   // Employee Management
-  async getEmployees(tenantId: string, locationId?: string, page: number = 1, limit: number = 20): Promise<{ data: Employee[]; total: number }> {
-    const filtered = this.employees.filter((e) => e.tenantId === tenantId && (!locationId || e.locationId === locationId));
+  async getEmployees(tenant_id: string, location_id?: string, page: number = 1, limit: number = 20): Promise<{ data: Employee[]; total: number }> {
+    const filtered = this.employees.filter((e) => e.tenant_id === tenant_id && (!location_id || e.location_id === location_id));
     return { data: filtered.slice((page - 1) * limit, page * limit), total: filtered.length };
   }
-  async getGlobalEmployees(locationId?: string, page: number = 1, limit: number = 20): Promise<{ data: Employee[]; total: number }> {
-    const filtered = this.employees.filter((e) => !locationId || e.locationId === locationId);
+  async getGlobalEmployees(location_id?: string, page: number = 1, limit: number = 20): Promise<{ data: Employee[]; total: number }> {
+    const filtered = this.employees.filter((e) => !location_id || e.location_id === location_id);
     return { data: filtered.slice((page - 1) * limit, page * limit), total: filtered.length };
   }
-  async createEmployee(tenantId: string, data: CreateEmployeeDto, tx?: Prisma.TransactionClient): Promise<Employee> {
+  async createEmployee(tenant_id: string, data: CreateEmployeeDto, tx?: Prisma.TransactionClient): Promise<Employee> {
     const employee: Employee = { 
       id: `emp-${Date.now()}`, 
-      tenantId, 
+      tenant_id, 
       ...data, 
-      fullName: `${data.firstName} ${data.lastName}`, 
+      full_name: `${data.first_name} ${data.last_name}`, 
       status: "active", 
-      employeeCode: `EMP-${Date.now()}`,
-      hireDate: new Date(),
-      employmentType: "full_time",
+      employee_code: `EMP-${Date.now()}`,
+      hire_date: new Date(),
+      employment_type: "full_time",
       position: (data as any).position || "Staff",
-      departmentId: data.departmentId || "DEPT-001",
-      roleTitle: (data as any).roleTitle || "Staff",
-      createdAt: new Date(), 
-      updatedAt: new Date() 
+      department_id: data.department_id || "DEPT-001",
+      role_title: (data as any).role_title || "Staff",
+      created_at: new Date(), 
+      updated_at: new Date() 
     } as any;
     this.employees.push(employee); return employee;
   }
-  async updateEmployee(tenantId: string, employeeId: string, data: UpdateEmployeeDto, tx?: Prisma.TransactionClient): Promise<Employee> {
-    const idx = this.employees.findIndex((e) => e.id === employeeId && e.tenantId === tenantId);
+  async updateEmployee(tenant_id: string, employee_id: string, data: UpdateEmployeeDto, tx?: Prisma.TransactionClient): Promise<Employee> {
+    const idx = this.employees.findIndex((e) => e.id === employee_id && e.tenant_id === tenant_id);
     if (idx === -1) throw new Error("Employee not found");
-    this.employees[idx] = { ...this.employees[idx], ...data, updatedAt: new Date() } as any; return this.employees[idx];
+    this.employees[idx] = { ...this.employees[idx], ...data, updated_at: new Date() } as any; return this.employees[idx];
   }
-  async deactivateEmployee(tenantId: string, employeeId: string, tx?: Prisma.TransactionClient): Promise<Employee> {
-    const idx = this.employees.findIndex((e) => e.id === employeeId && e.tenantId === tenantId);
+  async deactivateEmployee(tenant_id: string, employee_id: string, tx?: Prisma.TransactionClient): Promise<Employee> {
+    const idx = this.employees.findIndex((e) => e.id === employee_id && e.tenant_id === tenant_id);
     if (idx === -1) throw new Error("Employee not found");
     this.employees[idx].status = "terminated"; return this.employees[idx];
   }
-  async promoteEmployee(tenantId: string, employeeId: string, data: any, tx?: Prisma.TransactionClient): Promise<Employee> {
-    const idx = this.employees.findIndex((e) => e.id === employeeId && e.tenantId === tenantId);
+  async promoteEmployee(tenant_id: string, employee_id: string, data: any, tx?: Prisma.TransactionClient): Promise<Employee> {
+    const idx = this.employees.findIndex((e) => e.id === employee_id && e.tenant_id === tenant_id);
     if (idx === -1) throw new Error("Employee not found");
-    this.employees[idx] = { ...this.employees[idx], position: data.newRole, roleTitle: data.newRoleTitle || this.employees[idx].roleTitle, updatedAt: new Date() };
+    this.employees[idx] = { ...this.employees[idx], position: data.newRole, role_title: data.newRoleTitle || this.employees[idx].role_title, updated_at: new Date() };
     return this.employees[idx];
   }
-  async transferEmployee(tenantId: string, employeeId: string, data: any, tx?: Prisma.TransactionClient): Promise<Employee> {
-    const idx = this.employees.findIndex((e) => e.id === employeeId && e.tenantId === tenantId);
+  async transferEmployee(tenant_id: string, employee_id: string, data: any, tx?: Prisma.TransactionClient): Promise<Employee> {
+    const idx = this.employees.findIndex((e) => e.id === employee_id && e.tenant_id === tenant_id);
     if (idx === -1) throw new Error("Employee not found");
-    this.employees[idx] = { ...this.employees[idx], departmentId: data.targetDepartment || this.employees[idx].departmentId, locationId: data.targetLocation || this.employees[idx].locationId, updatedAt: new Date() };
+    this.employees[idx] = { ...this.employees[idx], department_id: data.targetDepartment || this.employees[idx].department_id, location_id: data.targetLocation || this.employees[idx].location_id, updated_at: new Date() };
     return this.employees[idx];
   }
-  async suspendEmployee(tenantId: string, employeeId: string, reason: string, tx?: Prisma.TransactionClient): Promise<Employee> {
-    const idx = this.employees.findIndex((e) => e.id === employeeId && e.tenantId === tenantId);
+  async suspendEmployee(tenant_id: string, employee_id: string, reason: string, tx?: Prisma.TransactionClient): Promise<Employee> {
+    const idx = this.employees.findIndex((e) => e.id === employee_id && e.tenant_id === tenant_id);
     if (idx === -1) throw new Error("Employee not found");
     this.employees[idx].status = "suspended"; return this.employees[idx];
   }
 
   // Attendance & Shifts
   // Attendance & Shifts
-  async getAttendance(tenantId: string, locationId?: string, employeeId?: string, startDate?: string, endDate?: string, page: number = 1, limit: number = 50): Promise<{ data: Attendance[]; total: number }> {
-    const filtered = this.attendance.filter((a) => a.tenantId === tenantId && (!locationId || a.locationId === locationId) && (!employeeId || a.employeeId === employeeId));
+  async getAttendance(tenant_id: string, location_id?: string, employee_id?: string, start_date?: string, end_date?: string, page: number = 1, limit: number = 50): Promise<{ data: Attendance[]; total: number }> {
+    const filtered = this.attendance.filter((a) => a.tenant_id === tenant_id && (!location_id || a.location_id === location_id) && (!employee_id || a.employee_id === employee_id));
     return { data: filtered.slice((page - 1) * limit, page * limit), total: filtered.length };
   }
-  async getGlobalAttendance(employeeId?: string, startDate?: string, endDate?: string, page: number = 1, limit: number = 50): Promise<{ data: Attendance[]; total: number }> {
-    const filtered = this.attendance.filter((a) => !employeeId || a.employeeId === employeeId);
+  async getGlobalAttendance(employee_id?: string, start_date?: string, end_date?: string, page: number = 1, limit: number = 50): Promise<{ data: Attendance[]; total: number }> {
+    const filtered = this.attendance.filter((a) => !employee_id || a.employee_id === employee_id);
     return { data: filtered.slice((page - 1) * limit, page * limit), total: filtered.length };
   }
-  async clockIn(tenantId: string, employeeId: string, locationId: string, shiftId?: string, method?: string, metadata?: any, tx?: Prisma.TransactionClient): Promise<Attendance> {
-    const a: Attendance = { id: `att-${Date.now()}`, tenantId, employeeId, locationId, clockIn: new Date(), status: "present", date: new Date(), createdAt: new Date(), updatedAt: new Date() } as any;
+  async clock_in(tenant_id: string, employee_id: string, location_id: string, shift_id?: string, method?: string, metadata?: any, tx?: Prisma.TransactionClient): Promise<Attendance> {
+    const a: Attendance = { id: `att-${Date.now()}`, tenant_id, employee_id, location_id, clock_in: new Date(), status: "present", date: new Date(), created_at: new Date(), updated_at: new Date() } as any;
     this.attendance.push(a); return a;
   }
-  async clockOut(tenantId: string, employeeId: string, tx?: Prisma.TransactionClient): Promise<Attendance> {
-    const att = this.attendance.find((a) => a.employeeId === employeeId && a.tenantId === tenantId && !a.clockOut);
-    if (!att) throw new Error("No active clock-in found"); att.clockOut = new Date(); return att;
+  async clock_out(tenant_id: string, employee_id: string, tx?: Prisma.TransactionClient): Promise<Attendance> {
+    const att = this.attendance.find((a) => a.employee_id === employee_id && a.tenant_id === tenant_id && !a.clock_out);
+    if (!att) throw new Error("No active clock-in found"); att.clock_out = new Date(); return att;
   }
-  async assignShift(tenantId: string, employeeId: string, shiftId: string, locationId: string, date: string, tx?: Prisma.TransactionClient): Promise<void> { return; }
+  async assignShift(tenant_id: string, employee_id: string, shift_id: string, location_id: string, date: string, tx?: Prisma.TransactionClient): Promise<void> { return; }
 
   // Global Scheduling
-  async getWorkSchedules(tenantId: string, locationId?: string, status?: string): Promise<any[]> { return []; }
-  async createWorkSchedule(tenantId: string, data: any, tx?: Prisma.TransactionClient): Promise<any> { return { id: `sch-${Date.now()}`, ...data }; }
-  async updateWorkSchedule(tenantId: string, id: string, data: any, tx?: Prisma.TransactionClient): Promise<any> { return { id, ...data }; }
-  async getWorkShifts(tenantId: string, scheduleId?: string, employeeId?: string): Promise<any[]> { return []; }
-  async createWorkShift(tenantId: string, data: any, tx?: Prisma.TransactionClient): Promise<any> { return { id: `shf-${Date.now()}`, ...data }; }
-  async updateWorkShift(tenantId: string, id: string, data: any, tx?: Prisma.TransactionClient): Promise<any> { return { id, ...data }; }
-  async approveWorkSchedule(tenantId: string, id: string, approvedBy: string, tx?: Prisma.TransactionClient): Promise<any> { return { id, status: "APPROVED" }; }
+  async getWorkSchedules(tenant_id: string, location_id?: string, status?: string): Promise<any[]> { return []; }
+  async createWorkSchedule(tenant_id: string, data: any, tx?: Prisma.TransactionClient): Promise<any> { return { id: `sch-${Date.now()}`, ...data }; }
+  async updateWorkSchedule(tenant_id: string, id: string, data: any, tx?: Prisma.TransactionClient): Promise<any> { return { id, ...data }; }
+  async getWorkShifts(tenant_id: string, scheduleId?: string, employee_id?: string): Promise<any[]> { return []; }
+  async createWorkShift(tenant_id: string, data: any, tx?: Prisma.TransactionClient): Promise<any> { return { id: `shf-${Date.now()}`, ...data }; }
+  async updateWorkShift(tenant_id: string, id: string, data: any, tx?: Prisma.TransactionClient): Promise<any> { return { id, ...data }; }
+  async approveWorkSchedule(tenant_id: string, id: string, approved_by: string, tx?: Prisma.TransactionClient): Promise<any> { return { id, status: "APPROVED" }; }
 
   // Leave Management
-  async getLeaveRequests(tenantId: string, locationId?: string, status?: string, employeeId?: string): Promise<LeaveRequest[]> { return this.leaveRequests.filter((r) => r.tenantId === tenantId && (!status || r.status === status) && (!employeeId || r.employeeId === employeeId)); }
-  async getGlobalLeaveRequests(status?: string, employeeId?: string): Promise<LeaveRequest[]> { return this.leaveRequests.filter((r) => (!status || r.status === status) && (!employeeId || r.employeeId === employeeId)); }
-  async createLeaveRequest(tenantId: string, data: CreateLeaveRequestDto, tx?: Prisma.TransactionClient): Promise<LeaveRequest> {
-    const r: LeaveRequest = { id: `lv-${Date.now()}`, tenantId, ...data, status: "pending", requestedAt: new Date(), startDate: new Date(data.startDate), endDate: new Date(data.endDate), createdAt: new Date(), updatedAt: new Date() } as any;
+  async getLeaveRequests(tenant_id: string, location_id?: string, status?: string, employee_id?: string): Promise<LeaveRequest[]> { return this.leaveRequests.filter((r) => r.tenant_id === tenant_id && (!status || r.status === status) && (!employee_id || r.employee_id === employee_id)); }
+  async getGlobalLeaveRequests(status?: string, employee_id?: string): Promise<LeaveRequest[]> { return this.leaveRequests.filter((r) => (!status || r.status === status) && (!employee_id || r.employee_id === employee_id)); }
+  async createLeaveRequest(tenant_id: string, data: CreateLeaveRequestDto, tx?: Prisma.TransactionClient): Promise<LeaveRequest> {
+    const r: LeaveRequest = { id: `lv-${Date.now()}`, tenant_id, ...data, status: "pending", requested_at: new Date(), start_date: new Date(data.start_date), end_date: new Date(data.end_date), created_at: new Date(), updated_at: new Date() } as any;
     this.leaveRequests.push(r); return r;
   }
-  async approveLeaveRequest(tenantId: string, id: string, revId: string, n?: string, tx?: Prisma.TransactionClient): Promise<LeaveRequest> {
-    const r = this.leaveRequests.find((r) => r.id === id && r.tenantId === tenantId);
-    if (!r) throw new Error("Not found"); r.status = "approved"; (r as any).reviewedBy = revId; r.reviewedAt = new Date(); r.updatedAt = new Date(); return r;
+  async approveLeaveRequest(tenant_id: string, id: string, revId: string, n?: string, tx?: Prisma.TransactionClient): Promise<LeaveRequest> {
+    const r = this.leaveRequests.find((r) => r.id === id && r.tenant_id === tenant_id);
+    if (!r) throw new Error("Not found"); r.status = "approved"; (r as any).reviewed_by = revId; r.reviewed_at = new Date(); r.updated_at = new Date(); return r;
   }
-  async rejectLeaveRequest(tenantId: string, id: string, revId: string, n: string, tx?: Prisma.TransactionClient): Promise<LeaveRequest> {
-    const r = this.leaveRequests.find((r) => r.id === id && r.tenantId === tenantId);
-    if (!r) throw new Error("Not found"); r.status = "rejected"; (r as any).reviewedBy = revId; r.reviewedAt = new Date(); r.updatedAt = new Date(); return r;
+  async rejectLeaveRequest(tenant_id: string, id: string, revId: string, n: string, tx?: Prisma.TransactionClient): Promise<LeaveRequest> {
+    const r = this.leaveRequests.find((r) => r.id === id && r.tenant_id === tenant_id);
+    if (!r) throw new Error("Not found"); r.status = "rejected"; (r as any).reviewed_by = revId; r.reviewed_at = new Date(); r.updated_at = new Date(); return r;
   }
 
   // Payroll Management
-  async getPayroll(t: string, l?: string, e?: string, p?: string): Promise<Payroll[]> { return this.payrolls.filter((pa) => pa.tenantId === t && (!e || pa.employeeId === e) && (!p || pa.period === p)); }
-  async getGlobalPayroll(e: string, p?: string): Promise<Payroll[]> { return this.payrolls.filter((pa) => pa.employeeId === e && (!p || pa.period === p)); }
-  async calculatePayroll(tenantId: string, employeeId: string, period: string, tx?: Prisma.TransactionClient): Promise<Payroll> {
-    const pa: Payroll = { id: `pay-${Date.now()}`, tenantId, employeeId, period, grossPay: 5000, netPay: 4000, status: "draft", baseSalary: 5000, createdAt: new Date(), updatedAt: new Date() } as any;
+  async getPayroll(t: string, l?: string, e?: string, p?: string): Promise<Payroll[]> { return this.payrolls.filter((pa) => pa.tenant_id === t && (!e || pa.employee_id === e) && (!p || pa.period === p)); }
+  async getGlobalPayroll(e: string, p?: string): Promise<Payroll[]> { return this.payrolls.filter((pa) => pa.employee_id === e && (!p || pa.period === p)); }
+  async calculatePayroll(tenant_id: string, employee_id: string, period: string, tx?: Prisma.TransactionClient): Promise<Payroll> {
+    const pa: Payroll = { id: `pay-${Date.now()}`, tenant_id, employee_id, period, grossPay: 5000, netPay: 4000, status: "draft", base_salary: 5000, created_at: new Date(), updated_at: new Date() } as any;
     this.payrolls.push(pa); return pa;
   }
-  async getPayrollRuns(tenantId: string): Promise<PayrollRun[]> { return this.runs.filter(r => r.tenantId === tenantId); }
-  async getPayrollLines(tenantId: string, runId: string): Promise<PayrollLine[]> { return this.lines.filter(l => l.payrollRunId === runId); }
+  async getPayrollRuns(tenant_id: string): Promise<PayrollRun[]> { return this.runs.filter(r => r.tenant_id === tenant_id); }
+  async getPayrollLines(tenant_id: string, runId: string): Promise<PayrollLine[]> { return this.lines.filter(l => l.payrollRunId === runId); }
 
   // Organization Management
-  async getLocations(tenantId: string): Promise<any[]> { return []; }
-  async getDepartments(tenantId: string): Promise<Department[]> { return this.departments.filter((d) => d.tenantId === tenantId); }
+  async getLocations(tenant_id: string): Promise<any[]> { return []; }
+  async getDepartments(tenant_id: string): Promise<Department[]> { return this.departments.filter((d) => d.tenant_id === tenant_id); }
   async getGlobalDepartments(): Promise<Department[]> { return this.departments; }
-  async createDepartment(tenantId: string, data: CreateDepartmentDto, tx?: Prisma.TransactionClient): Promise<Department> {
-    const d: Department = { id: `dept-${Date.now()}`, tenantId, ...data, status: "active", createdAt: new Date(), updatedAt: new Date() };
+  async createDepartment(tenant_id: string, data: CreateDepartmentDto, tx?: Prisma.TransactionClient): Promise<Department> {
+    const d: Department = { id: `dept-${Date.now()}`, tenant_id, ...data, status: "active", created_at: new Date(), updated_at: new Date() };
     this.departments.push(d); return d;
   }
 
   // Recruitment & Talent
-  async getRequisitions(t: string, s?: string): Promise<JobRequisition[]> { return this.requisitions.filter((r) => r.tenantId === t && (!s || r.status === s)); }
+  async getRequisitions(t: string, s?: string): Promise<JobRequisition[]> { return this.requisitions.filter((r) => r.tenant_id === t && (!s || r.status === s)); }
   async getGlobalRequisitions(s?: string): Promise<JobRequisition[]> { return this.requisitions.filter((r) => (!s || r.status === s)); }
   async createRequisition(t: string, data: CreateRequisitionDto, tx?: Prisma.TransactionClient): Promise<JobRequisition> {
-    const r: JobRequisition = { id: `req-${Date.now()}`, tenantId: t, ...data, status: "open", createdAt: new Date(), updatedAt: new Date() };
+    const r: JobRequisition = { id: `req-${Date.now()}`, tenant_id: t, ...data, status: "open", created_at: new Date(), updated_at: new Date() };
     this.requisitions.push(r); return r;
   }
   async updateRequisition(t: string, id: string, data: any, tx?: Prisma.TransactionClient): Promise<JobRequisition> {
-    const idx = this.requisitions.findIndex((r) => r.id === id && r.tenantId === t);
+    const idx = this.requisitions.findIndex((r) => r.id === id && r.tenant_id === t);
     if (idx === -1) throw new Error("Not found");
-    this.requisitions[idx] = { ...this.requisitions[idx], ...data, updatedAt: new Date() }; return this.requisitions[idx];
+    this.requisitions[idx] = { ...this.requisitions[idx], ...data, updated_at: new Date() }; return this.requisitions[idx];
   }
-  async getCandidates(t: string, s?: string): Promise<Candidate[]> { return this.candidates.filter((c) => c.tenantId === t && (!s || c.status === s)); }
-  async createCandidate(tenantId: string, data: any, tx?: Prisma.TransactionClient): Promise<Candidate> {
-    const c: Candidate = { id: `cand-${Date.now()}`, tenantId, ...data, status: "applied", createdAt: new Date(), updatedAt: new Date() };
+  async getCandidates(t: string, s?: string): Promise<Candidate[]> { return this.candidates.filter((c) => c.tenant_id === t && (!s || c.status === s)); }
+  async createCandidate(tenant_id: string, data: any, tx?: Prisma.TransactionClient): Promise<Candidate> {
+    const c: Candidate = { id: `cand-${Date.now()}`, tenant_id, ...data, status: "applied", created_at: new Date(), updated_at: new Date() };
     this.candidates.push(c); return c;
   }
-  async updateCandidate(tenantId: string, id: string, data: any, tx?: Prisma.TransactionClient): Promise<Candidate> {
-    const idx = this.candidates.findIndex((c) => c.id === id && c.tenantId === tenantId);
+  async updateCandidate(tenant_id: string, id: string, data: any, tx?: Prisma.TransactionClient): Promise<Candidate> {
+    const idx = this.candidates.findIndex((c) => c.id === id && c.tenant_id === tenant_id);
     if (idx === -1) throw new Error("Not found");
-    this.candidates[idx] = { ...this.candidates[idx], ...data, updatedAt: new Date() }; return this.candidates[idx];
+    this.candidates[idx] = { ...this.candidates[idx], ...data, updated_at: new Date() }; return this.candidates[idx];
   }
-  async hireCandidate(tenantId: string, candidateId: string, data: any, tx?: Prisma.TransactionClient): Promise<Employee> {
-    const c = this.candidates.find((c) => c.id === candidateId && c.tenantId === tenantId);
+  async hireCandidate(tenant_id: string, candidateId: string, data: any, tx?: Prisma.TransactionClient): Promise<Employee> {
+    const c = this.candidates.find((c) => c.id === candidateId && c.tenant_id === tenant_id);
     if (!c) throw new Error("Not found");
-    return this.createEmployee(tenantId, { firstName: c.firstName, lastName: c.lastName, email: c.email, role: "employee", departmentId: "new" } as any, tx);
+    return this.createEmployee(tenant_id, { first_name: c.first_name, last_name: c.last_name, email: c.email, role: "employee", department_id: "new" } as any, tx);
   }
-  async getTalentLeads(t: string, s?: string): Promise<TalentLead[]> { return this.leads.filter((l) => l.tenantId === t && (!s || l.status === s)); }
+  async getTalentLeads(t: string, s?: string): Promise<TalentLead[]> { return this.leads.filter((l) => l.tenant_id === t && (!s || l.status === s)); }
   async createTalentLead(t: string, data: any): Promise<TalentLead> {
-    const l: TalentLead = { id: `lead-${Date.now()}`, tenantId: t, ...data, status: "new", createdAt: new Date(), updatedAt: new Date() };
+    const l: TalentLead = { id: `lead-${Date.now()}`, tenant_id: t, ...data, status: "new", created_at: new Date(), updated_at: new Date() };
     this.leads.push(l); return l;
   }
   async updateTalentLead(t: string, id: string, data: any): Promise<TalentLead> {
-    const idx = this.leads.findIndex((l) => l.id === id && l.tenantId === t);
+    const idx = this.leads.findIndex((l) => l.id === id && l.tenant_id === t);
     if (idx === -1) throw new Error("Not found");
-    this.leads[idx] = { ...this.leads[idx], ...data, updatedAt: new Date() }; return this.leads[idx];
+    this.leads[idx] = { ...this.leads[idx], ...data, updated_at: new Date() }; return this.leads[idx];
   }
-  async getInterviews(t: string, cid?: string): Promise<Interview[]> { return this.interviews.filter((i) => i.tenantId === t && (!cid || i.candidateId === cid)); }
+  async getInterviews(t: string, cid?: string): Promise<Interview[]> { return this.interviews.filter((i) => i.tenant_id === t && (!cid || i.candidateId === cid)); }
   async scheduleInterview(t: string, data: any, tx?: Prisma.TransactionClient): Promise<Interview> {
-    const i: Interview = { id: `int-${Date.now()}`, tenantId: t, ...data, status: "scheduled", createdAt: new Date(), updatedAt: new Date() };
+    const i: Interview = { id: `int-${Date.now()}`, tenant_id: t, ...data, status: "scheduled", created_at: new Date(), updated_at: new Date() };
     this.interviews.push(i); return i;
   }
   async updateInterviewStatus(t: string, id: string, s: string, tx?: Prisma.TransactionClient): Promise<Interview> {
-    const i = this.interviews.find((i) => i.id === id && i.tenantId === t);
+    const i = this.interviews.find((i) => i.id === id && i.tenant_id === t);
     if (!i) throw new Error("Not found"); i.status = s as any; return i;
   }
 
   // Headcount & Compensation
-  async getPositions(t: string, d?: string): Promise<Position[]> { return this.positions.filter((p) => p.tenantId === t && (!d || p.departmentId === d)); }
+  async getPositions(t: string, d?: string): Promise<Position[]> { return this.positions.filter((p) => p.tenant_id === t && (!d || p.department_id === d)); }
   async createPosition(t: string, data: any, tx?: Prisma.TransactionClient): Promise<Position> {
-    const p: Position = { id: `pos-${Date.now()}`, tenantId: t, ...data, status: "open", createdAt: new Date(), updatedAt: new Date() };
+    const p: Position = { id: `pos-${Date.now()}`, tenant_id: t, ...data, status: "open", created_at: new Date(), updated_at: new Date() };
     this.positions.push(p); return p;
   }
   async updatePosition(t: string, id: string, data: any, tx?: Prisma.TransactionClient): Promise<Position> {
-    const idx = this.positions.findIndex((p) => p.id === id && p.tenantId === t);
+    const idx = this.positions.findIndex((p) => p.id === id && p.tenant_id === t);
     if (idx === -1) throw new Error("Not found");
-    this.positions[idx] = { ...this.positions[idx], ...data, updatedAt: new Date() }; return this.positions[idx];
+    this.positions[idx] = { ...this.positions[idx], ...data, updated_at: new Date() }; return this.positions[idx];
   }
-  async getCompensation(t: string, eid: string): Promise<Compensation | null> { return this.compensations.find((c) => c.employeeId === eid && c.tenantId === t) || null; }
+  async getCompensation(t: string, eid: string): Promise<Compensation | null> { return this.compensations.find((c) => c.employee_id === eid && c.tenant_id === t) || null; }
   async updateCompensation(t: string, eid: string, data: any, tx?: Prisma.TransactionClient): Promise<Compensation> {
-    const idx = this.compensations.findIndex((c) => c.employeeId === eid && c.tenantId === t);
-    if (idx !== -1) { this.compensations[idx] = { ...this.compensations[idx], ...data, updatedAt: new Date() }; return this.compensations[idx]; }
-    const c: Compensation = { id: `comp-${Date.now()}`, tenantId: t, employeeId: eid, ...data, createdAt: new Date(), updatedAt: new Date() };
+    const idx = this.compensations.findIndex((c) => c.employee_id === eid && c.tenant_id === t);
+    if (idx !== -1) { this.compensations[idx] = { ...this.compensations[idx], ...data, updated_at: new Date() }; return this.compensations[idx]; }
+    const c: Compensation = { id: `comp-${Date.now()}`, tenant_id: t, employee_id: eid, ...data, created_at: new Date(), updated_at: new Date() };
     this.compensations.push(c); return c;
   }
 
   // Performance Management
-  async getPerformanceCycles(t: string): Promise<PerformanceCycle[]> { return this.performanceCycles.filter((c) => c.tenantId === t); }
-  async createPerformanceCycle(tenantId: string, data: CreatePerformanceCycleDto): Promise<PerformanceCycle> {
-    const c: PerformanceCycle = { id: `pc-${Date.now()}`, tenantId, ...data, status: "active", createdAt: new Date(), updatedAt: new Date(), startDate: new Date(data.startDate), endDate: new Date(data.endDate), dueDate: new Date(data.dueDate) } as any;
+  async getPerformanceCycles(t: string): Promise<PerformanceCycle[]> { return this.performanceCycles.filter((c) => c.tenant_id === t); }
+  async createPerformanceCycle(tenant_id: string, data: CreatePerformanceCycleDto): Promise<PerformanceCycle> {
+    const c: PerformanceCycle = { id: `pc-${Date.now()}`, tenant_id, ...data, status: "active", created_at: new Date(), updated_at: new Date(), start_date: new Date(data.start_date), end_date: new Date(data.end_date), dueDate: new Date(data.dueDate) } as any;
     this.performanceCycles.push(c); return c;
   }
-  async updatePerformanceCycle(tenantId: string, id: string, data: any): Promise<PerformanceCycle> {
-    const idx = this.performanceCycles.findIndex((c) => c.id === id && c.tenantId === tenantId);
+  async updatePerformanceCycle(tenant_id: string, id: string, data: any): Promise<PerformanceCycle> {
+    const idx = this.performanceCycles.findIndex((c) => c.id === id && c.tenant_id === tenant_id);
     if (idx === -1) throw new Error("Not found");
-    this.performanceCycles[idx] = { ...this.performanceCycles[idx], ...data, updatedAt: new Date() }; return this.performanceCycles[idx];
+    this.performanceCycles[idx] = { ...this.performanceCycles[idx], ...data, updated_at: new Date() }; return this.performanceCycles[idx];
   }
-  async getPerformanceReviews(t: string, cid?: string, eid?: string): Promise<PerformanceReview[]> { return this.performanceReviews.filter((r) => r.tenantId === t && (!cid || r.cycleId === cid) && (!eid || r.employeeId === eid)); }
-  async getGlobalPerformanceReviews(cid?: string, eid?: string): Promise<PerformanceReview[]> { return this.performanceReviews.filter((r) => (!cid || r.cycleId === cid) && (!eid || r.employeeId === eid)); }
-  async submitPerformanceReview(tenantId: string, data: SubmitReviewDto, tx?: Prisma.TransactionClient): Promise<PerformanceReview> {
-    const r: PerformanceReview = { id: `pr-${Date.now()}`, tenantId, ...data, status: "submitted", submittedAt: new Date(), createdAt: new Date(), updatedAt: new Date() } as any;
+  async getPerformanceReviews(t: string, cid?: string, eid?: string): Promise<PerformanceReview[]> { return this.performanceReviews.filter((r) => r.tenant_id === t && (!cid || r.cycleId === cid) && (!eid || r.employee_id === eid)); }
+  async getGlobalPerformanceReviews(cid?: string, eid?: string): Promise<PerformanceReview[]> { return this.performanceReviews.filter((r) => (!cid || r.cycleId === cid) && (!eid || r.employee_id === eid)); }
+  async submitPerformanceReview(tenant_id: string, data: SubmitReviewDto, tx?: Prisma.TransactionClient): Promise<PerformanceReview> {
+    const r: PerformanceReview = { id: `pr-${Date.now()}`, tenant_id, ...data, status: "submitted", submittedAt: new Date(), created_at: new Date(), updated_at: new Date() } as any;
     this.performanceReviews.push(r); return r;
   }
-  async getEmployeePerformanceHistory(t: string, eid: string): Promise<PerformanceReview[]> { return this.performanceReviews.filter((r) => r.employeeId === eid && r.tenantId === t); }
-  async getEmployeeGoals(t: string, eid: string): Promise<PerformanceGoal[]> { return this.performanceGoals.filter((g) => g.employeeId === eid && g.tenantId === t); }
-  async updatePerformanceGoal(tenantId: string, data: any): Promise<PerformanceGoal> {
-    const idx = this.performanceGoals.findIndex((g) => g.id === data.id && g.tenantId === tenantId);
-    if (idx !== -1) { this.performanceGoals[idx] = { ...this.performanceGoals[idx], ...data, updatedAt: new Date() }; return this.performanceGoals[idx]; }
-    const g: PerformanceGoal = { id: `goal-${Date.now()}`, tenantId, ...data, createdAt: new Date(), updatedAt: new Date() } as any;
+  async getEmployeePerformanceHistory(t: string, eid: string): Promise<PerformanceReview[]> { return this.performanceReviews.filter((r) => r.employee_id === eid && r.tenant_id === t); }
+  async getEmployeeGoals(t: string, eid: string): Promise<PerformanceGoal[]> { return this.performanceGoals.filter((g) => g.employee_id === eid && g.tenant_id === t); }
+  async updatePerformanceGoal(tenant_id: string, data: any): Promise<PerformanceGoal> {
+    const idx = this.performanceGoals.findIndex((g) => g.id === data.id && g.tenant_id === tenant_id);
+    if (idx !== -1) { this.performanceGoals[idx] = { ...this.performanceGoals[idx], ...data, updated_at: new Date() }; return this.performanceGoals[idx]; }
+    const g: PerformanceGoal = { id: `goal-${Date.now()}`, tenant_id, ...data, created_at: new Date(), updated_at: new Date() } as any;
     this.performanceGoals.push(g); return g;
   }
-  async updatePerformanceGoalStatus(tenantId: string, id: string, status: string): Promise<PerformanceGoal> {
-    const goal = this.performanceGoals.find(g => g.id === id && g.tenantId === tenantId);
-    if (!goal) throw new Error("Goal not found"); goal.status = status as any; goal.updatedAt = new Date(); return goal;
+  async updatePerformanceGoalStatus(tenant_id: string, id: string, status: string): Promise<PerformanceGoal> {
+    const goal = this.performanceGoals.find(g => g.id === id && g.tenant_id === tenant_id);
+    if (!goal) throw new Error("Goal not found"); goal.status = status as any; goal.updated_at = new Date(); return goal;
   }
 
   // Case Management
-  async getCases(t: string, lid?: string, s?: string, eid?: string): Promise<HRCase[]> { return this.cases.filter((c) => c.tenantId === t && (!s || c.status === s) && (!eid || c.employeeId === eid)); }
-  async createCase(tenantId: string, data: CreateCaseDto, tx?: Prisma.TransactionClient): Promise<HRCase> {
-    const c: HRCase = { id: `case-${Date.now()}`, tenantId, ...data, status: "open", priority: data.priority || "medium", createdAt: new Date(), updatedAt: new Date() } as any;
+  async getCases(t: string, lid?: string, s?: string, eid?: string): Promise<HRCase[]> { return this.cases.filter((c) => c.tenant_id === t && (!s || c.status === s) && (!eid || c.employee_id === eid)); }
+  async createCase(tenant_id: string, data: CreateCaseDto, tx?: Prisma.TransactionClient): Promise<HRCase> {
+    const c: HRCase = { id: `case-${Date.now()}`, tenant_id, ...data, status: "open", priority: data.priority || "medium", created_at: new Date(), updated_at: new Date() } as any;
     this.cases.push(c); return c;
   }
-  async updateCase(tenantId: string, id: string, data: any, tx?: Prisma.TransactionClient): Promise<HRCase> {
-    const idx = this.cases.findIndex((c) => c.id === id && c.tenantId === tenantId);
+  async updateCase(tenant_id: string, id: string, data: any, tx?: Prisma.TransactionClient): Promise<HRCase> {
+    const idx = this.cases.findIndex((c) => c.id === id && c.tenant_id === tenant_id);
     if (idx === -1) throw new Error("Not found");
-    this.cases[idx] = { ...this.cases[idx], ...data, updatedAt: new Date() }; return this.cases[idx];
+    this.cases[idx] = { ...this.cases[idx], ...data, updated_at: new Date() }; return this.cases[idx];
   }
 
   // Contract Management
-  async getContracts(t: string, lid?: string, eid?: string): Promise<Contract[]> { return this.contracts.filter((c) => c.tenantId === t && (!eid || c.employeeId === eid)); }
-  async getGlobalContracts(eid?: string): Promise<Contract[]> { return this.contracts.filter((c) => !eid || c.employeeId === eid); }
-  async createContract(tenantId: string, data: CreateContractDto): Promise<Contract> {
-    const c: Contract = { id: `ctr-${Date.now()}`, tenantId, ...data, status: "active", startDate: new Date(data.startDate), endDate: data.endDate ? new Date(data.endDate) : undefined, createdAt: new Date(), updatedAt: new Date() } as any;
+  async getContracts(t: string, lid?: string, eid?: string): Promise<Contract[]> { return this.contracts.filter((c) => c.tenant_id === t && (!eid || c.employee_id === eid)); }
+  async getGlobalContracts(eid?: string): Promise<Contract[]> { return this.contracts.filter((c) => !eid || c.employee_id === eid); }
+  async createContract(tenant_id: string, data: CreateContractDto): Promise<Contract> {
+    const c: Contract = { id: `ctr-${Date.now()}`, tenant_id, ...data, status: "active", start_date: new Date(data.start_date), end_date: data.end_date ? new Date(data.end_date) : undefined, created_at: new Date(), updated_at: new Date() } as any;
     this.contracts.push(c); return c;
   }
-  async updateContract(tenantId: string, id: string, data: any): Promise<Contract> {
-    const idx = this.contracts.findIndex((c) => c.id === id && c.tenantId === tenantId);
+  async updateContract(tenant_id: string, id: string, data: any): Promise<Contract> {
+    const idx = this.contracts.findIndex((c) => c.id === id && c.tenant_id === tenant_id);
     if (idx === -1) throw new Error("Not found");
-    this.contracts[idx] = { ...this.contracts[idx], ...data, updatedAt: new Date() }; return this.contracts[idx];
+    this.contracts[idx] = { ...this.contracts[idx], ...data, updated_at: new Date() }; return this.contracts[idx];
   }
 
   // Skills & Training
-  async getSkills(tenantId: string, category?: string): Promise<Skill[]> { return this.skills.filter((s) => s.tenantId === tenantId && (!category || (s as any).category === category)); }
-  async createSkill(tenantId: string, data: any): Promise<Skill> {
-    const sk: Skill = { id: `sk-${Date.now()}`, tenantId, ...data, createdAt: new Date(), updatedAt: new Date() };
+  async getSkills(tenant_id: string, category?: string): Promise<Skill[]> { return this.skills.filter((s) => s.tenant_id === tenant_id && (!category || (s as any).category === category)); }
+  async createSkill(tenant_id: string, data: any): Promise<Skill> {
+    const sk: Skill = { id: `sk-${Date.now()}`, tenant_id, ...data, created_at: new Date(), updated_at: new Date() };
     this.skills.push(sk); return sk;
   }
-  async getEmployeeSkills(tenantId: string, empId: string): Promise<EmployeeSkill[]> { return this.employeeSkills.filter((s) => s.employeeId === empId && s.tenantId === tenantId); }
-  async addEmployeeSkill(tenantId: string, data: any): Promise<EmployeeSkill> {
-    const es: EmployeeSkill = { id: `es-${Date.now()}`, tenantId, ...data, createdAt: new Date(), updatedAt: new Date() };
+  async getEmployeeSkills(tenant_id: string, empId: string): Promise<EmployeeSkill[]> { return this.employeeSkills.filter((s) => s.employee_id === empId && s.tenant_id === tenant_id); }
+  async addEmployeeSkill(tenant_id: string, data: any): Promise<EmployeeSkill> {
+    const es: EmployeeSkill = { id: `es-${Date.now()}`, tenant_id, ...data, created_at: new Date(), updated_at: new Date() };
     this.employeeSkills.push(es); return es;
   }
   async updateEmployeeSkill(t: string, data: any): Promise<EmployeeSkill> {
-    const idx = this.employeeSkills.findIndex((es) => es.employeeId === data.employeeId && es.skillId === data.skillId && es.tenantId === t);
-    if (idx !== -1) { this.employeeSkills[idx] = { ...this.employeeSkills[idx], ...data, updatedAt: new Date() }; return this.employeeSkills[idx]; }
+    const idx = this.employeeSkills.findIndex((es) => es.employee_id === data.employee_id && es.skill_id === data.skill_id && es.tenant_id === t);
+    if (idx !== -1) { this.employeeSkills[idx] = { ...this.employeeSkills[idx], ...data, updated_at: new Date() }; return this.employeeSkills[idx]; }
     return this.addEmployeeSkill(t, data);
   }
   async findTalentBySkills(t: string, ids: string[], limit: number = 20): Promise<any[]> { return []; }
-  async findReplacementCandidates(tenantId: string, positionId: string): Promise<any[]> { return []; }
-  async getPositionSkills(tenantId: string, positionId: string): Promise<PositionSkill[]> { return this.positionSkills.filter(ps => ps.positionId === positionId); }
-  async updatePositionSkill(tenantId: string, data: any): Promise<PositionSkill> {
-    const ps: PositionSkill = { id: `ps-${Date.now()}`, ...data, createdAt: new Date(), updatedAt: new Date() };
+  async findReplacementCandidates(tenant_id: string, position_id: string): Promise<any[]> { return []; }
+  async getPositionSkills(tenant_id: string, position_id: string): Promise<PositionSkill[]> { return this.positionSkills.filter(ps => ps.position_id === position_id); }
+  async updatePositionSkill(tenant_id: string, data: any): Promise<PositionSkill> {
+    const ps: PositionSkill = { id: `ps-${Date.now()}`, ...data, created_at: new Date(), updated_at: new Date() };
     this.positionSkills.push(ps); return ps;
   }
-  async getTrainingProgramsBySkills(tenantId: string, skillIds: string[]): Promise<TrainingProgram[]> { return []; }
-  async getEmployeeTrainingHistory(t: string, id: string): Promise<TrainingAssignment[]> { return this.trainingAssignments.filter((a) => a.employeeId === id && a.tenantId === t); }
+  async getTrainingProgramsBySkills(tenant_id: string, skillIds: string[]): Promise<TrainingProgram[]> { return []; }
+  async getEmployeeTrainingHistory(t: string, id: string): Promise<TrainingAssignment[]> { return this.trainingAssignments.filter((a) => a.employee_id === id && a.tenant_id === t); }
   async enrollInTrainingProgram(t: string, eid: string, pid: string): Promise<TrainingAssignment> {
-    const a: TrainingAssignment = { id: `ta-${Date.now()}`, tenantId: t, employeeId: eid, programId: pid, status: "enrolled", assignedAt: new Date(), createdAt: new Date(), updatedAt: new Date() };
+    const a: TrainingAssignment = { id: `ta-${Date.now()}`, tenant_id: t, employee_id: eid, programId: pid, status: "enrolled", assignedAt: new Date(), created_at: new Date(), updated_at: new Date() };
     this.trainingAssignments.push(a); return a;
   }
-  async getTrainingPrograms(tenantId: string): Promise<any[]> { return this.trainingPrograms.filter(p => p.tenantId === tenantId); }
-  async createTrainingProgram(tenantId: string, data: any): Promise<any> {
-    const p: TrainingProgram = { id: `tp-${Date.now()}`, tenantId, ...data, createdAt: new Date(), updatedAt: new Date() };
+  async getTrainingPrograms(tenant_id: string): Promise<any[]> { return this.trainingPrograms.filter(p => p.tenant_id === tenant_id); }
+  async createTrainingProgram(tenant_id: string, data: any): Promise<any> {
+    const p: TrainingProgram = { id: `tp-${Date.now()}`, tenant_id, ...data, created_at: new Date(), updated_at: new Date() };
     this.trainingPrograms.push(p); return p;
   }
-  async getTrainingAssignments(tenantId: string): Promise<any[]> { return this.trainingAssignments.filter(a => a.tenantId === tenantId); }
-  async createTrainingAssignment(tenantId: string, data: any): Promise<any> {
-    const a: TrainingAssignment = { id: `ta-${Date.now()}`, tenantId, ...data, status: "assigned", assignedAt: new Date(), createdAt: new Date(), updatedAt: new Date() };
+  async getTrainingAssignments(tenant_id: string): Promise<any[]> { return this.trainingAssignments.filter(a => a.tenant_id === tenant_id); }
+  async createTrainingAssignment(tenant_id: string, data: any): Promise<any> {
+    const a: TrainingAssignment = { id: `ta-${Date.now()}`, tenant_id, ...data, status: "assigned", assignedAt: new Date(), created_at: new Date(), updated_at: new Date() };
     this.trainingAssignments.push(a); return a;
   }
-  async updateTrainingAssignment(tenantId: string, id: string, data: any): Promise<any> {
-    const idx = this.trainingAssignments.findIndex((a) => a.id === id && a.tenantId === tenantId);
+  async updateTrainingAssignment(tenant_id: string, id: string, data: any): Promise<any> {
+    const idx = this.trainingAssignments.findIndex((a) => a.id === id && a.tenant_id === tenant_id);
     if (idx === -1) throw new Error("Assignment not found");
-    this.trainingAssignments[idx] = { ...this.trainingAssignments[idx], ...data, updatedAt: new Date() };
+    this.trainingAssignments[idx] = { ...this.trainingAssignments[idx], ...data, updated_at: new Date() };
     return this.trainingAssignments[idx];
   }
 
   // Benefits & Career
-  async getBenefitPlans(tenantId: string): Promise<BenefitPlan[]> { return this.benefitPlans.filter((p) => p.tenantId === tenantId); }
-  async createBenefitPlan(tenantId: string, data: any): Promise<BenefitPlan> {
-    const p: BenefitPlan = { id: `bp-${Date.now()}`, tenantId, ...data, createdAt: new Date(), updatedAt: new Date() };
+  async getBenefitPlans(tenant_id: string): Promise<BenefitPlan[]> { return this.benefitPlans.filter((p) => p.tenant_id === tenant_id); }
+  async createBenefitPlan(tenant_id: string, data: any): Promise<BenefitPlan> {
+    const p: BenefitPlan = { id: `bp-${Date.now()}`, tenant_id, ...data, created_at: new Date(), updated_at: new Date() };
     this.benefitPlans.push(p); return p;
   }
-  async getEmployeeBenefits(tenantId: string, empId: string): Promise<EmployeeBenefit[]> { return this.employeeBenefits.filter((b) => b.employeeId === empId && b.tenantId === tenantId); }
-  async enrollInBenefit(tenantId: string, data: any): Promise<EmployeeBenefit> {
-    const b: EmployeeBenefit = { id: `eb-${Date.now()}`, tenantId, ...data, createdAt: new Date(), updatedAt: new Date() };
+  async getEmployeeBenefits(tenant_id: string, empId: string): Promise<EmployeeBenefit[]> { return this.employeeBenefits.filter((b) => b.employee_id === empId && b.tenant_id === tenant_id); }
+  async enrollInBenefit(tenant_id: string, data: any): Promise<EmployeeBenefit> {
+    const b: EmployeeBenefit = { id: `eb-${Date.now()}`, tenant_id, ...data, created_at: new Date(), updated_at: new Date() };
     this.employeeBenefits.push(b); return b;
   }
-  async getCareerPaths(tenantId: string): Promise<CareerPath[]> { return this.careerPaths.filter((p) => p.tenantId === tenantId); }
-  async createCareerPath(tenantId: string, data: any): Promise<CareerPath> {
-    const p: CareerPath = { id: `cp-${Date.now()}`, tenantId, ...data, createdAt: new Date(), updatedAt: new Date() };
+  async getCareerPaths(tenant_id: string): Promise<CareerPath[]> { return this.careerPaths.filter((p) => p.tenant_id === tenant_id); }
+  async createCareerPath(tenant_id: string, data: any): Promise<CareerPath> {
+    const p: CareerPath = { id: `cp-${Date.now()}`, tenant_id, ...data, created_at: new Date(), updated_at: new Date() };
     this.careerPaths.push(p); return p;
   }
-  async getMentorshipPairs(tenantId: string, empId: string): Promise<MentorshipPair[]> { return this.mentorshipPairs.filter((p) => (p.mentorId === empId || p.menteeId === empId) && p.tenantId === tenantId); }
-  async createMentorshipPair(tenantId: string, data: any): Promise<MentorshipPair> {
-    const m: MentorshipPair = { id: `mp-${Date.now()}`, tenantId, ...data, createdAt: new Date(), updatedAt: new Date() };
+  async getMentorshipPairs(tenant_id: string, empId: string): Promise<MentorshipPair[]> { return this.mentorshipPairs.filter((p) => (p.mentorId === empId || p.menteeId === empId) && p.tenant_id === tenant_id); }
+  async createMentorshipPair(tenant_id: string, data: any): Promise<MentorshipPair> {
+    const m: MentorshipPair = { id: `mp-${Date.now()}`, tenant_id, ...data, created_at: new Date(), updated_at: new Date() };
     this.mentorshipPairs.push(m); return m;
   }
 
   // Compliance
-  async getComplianceDocuments(t: string, empId?: string): Promise<ComplianceDocument[]> { return this.documents.filter((d) => d.tenantId === t && (!empId || d.employeeId === empId)); }
-  async uploadComplianceDocument(tenantId: string, data: any): Promise<ComplianceDocument> {
-    const doc: ComplianceDocument = { id: `doc-${Date.now()}`, tenantId, ...data, verificationStatus: "pending", createdAt: new Date(), updatedAt: new Date() };
+  async getComplianceDocuments(t: string, empId?: string): Promise<ComplianceDocument[]> { return this.documents.filter((d) => d.tenant_id === t && (!empId || d.employee_id === empId)); }
+  async uploadComplianceDocument(tenant_id: string, data: any): Promise<ComplianceDocument> {
+    const doc: ComplianceDocument = { id: `doc-${Date.now()}`, tenant_id, ...data, verification_status: "pending", created_at: new Date(), updated_at: new Date() };
     this.documents.push(doc); return doc;
   }
-  async getGlobalComplianceStatus(tenantId: string, status?: string): Promise<any> {
-    const docs = this.documents.filter((d) => d.tenantId === tenantId && (!status || d.verificationStatus === status));
-    return { total: docs.length, verified: docs.filter(d => d.verificationStatus === "verified").length };
+  async getGlobalComplianceStatus(tenant_id: string, status?: string): Promise<any> {
+    const docs = this.documents.filter((d) => d.tenant_id === tenant_id && (!status || d.verification_status === status));
+    return { total: docs.length, verified: docs.filter(d => d.verification_status === "verified").length };
   }
-  async verifyDocument(tenantId: string, id: string, by: string, status: string): Promise<ComplianceDocument> {
-    const doc = this.documents.find(d => d.id === id && d.tenantId === tenantId);
-    if (!doc) throw new Error("Not found"); doc.verificationStatus = status as any; (doc as any).verifiedBy = by; doc.updatedAt = new Date(); return doc;
+  async verifyDocument(tenant_id: string, id: string, by: string, status: string): Promise<ComplianceDocument> {
+    const doc = this.documents.find(d => d.id === id && d.tenant_id === tenant_id);
+    if (!doc) throw new Error("Not found"); doc.verification_status = status as any; (doc as any).verified_by = by; doc.updated_at = new Date(); return doc;
   }
-  async getComplianceModules(tenantId: string): Promise<any[]> { return []; }
-  async enableComplianceModule(tenantId: string, key: string, config?: any): Promise<any> { return {}; }
-  async getComplianceReports(tenantId: string): Promise<any[]> { return []; }
-  async createComplianceReport(tenantId: string, data: any): Promise<any> { return {}; }
+  async getComplianceModules(tenant_id: string): Promise<any[]> { return []; }
+  async enableComplianceModule(tenant_id: string, key: string, config?: any): Promise<any> { return {}; }
+  async getComplianceReports(tenant_id: string): Promise<any[]> { return []; }
+  async createComplianceReport(tenant_id: string, data: any): Promise<any> { return {}; }
 
   // Strategic Workforce & Succession
-  async getBudgetScenarios(tenantId: string): Promise<BudgetScenario[]> { return this.scenarios.filter((s) => s.tenantId === tenantId); }
-  async createBudgetScenario(tenantId: string, data: any): Promise<BudgetScenario> {
-    const s: BudgetScenario = { id: `bc-${Date.now()}`, tenantId, ...data, status: "DRAFT", createdAt: new Date(), updatedAt: new Date() };
+  async getBudgetScenarios(tenant_id: string): Promise<BudgetScenario[]> { return this.scenarios.filter((s) => s.tenant_id === tenant_id); }
+  async createBudgetScenario(tenant_id: string, data: any): Promise<BudgetScenario> {
+    const s: BudgetScenario = { id: `bc-${Date.now()}`, tenant_id, ...data, status: "DRAFT", created_at: new Date(), updated_at: new Date() };
     this.scenarios.push(s); return s;
   }
-  async getHeadcountPlans(tenantId: string, scenarioId: string): Promise<HeadcountPlan[]> { return this.plans.filter((p) => p.scenarioId === scenarioId && p.tenantId === tenantId); }
+  async getHeadcountPlans(tenant_id: string, scenario_id: string): Promise<HeadcountPlan[]> { return this.plans.filter((p) => p.scenario_id === scenario_id && p.tenant_id === tenant_id); }
   async updateHeadcountPlan(t: string, id: string, data: any): Promise<HeadcountPlan> {
-    const idx = this.plans.findIndex((p) => p.id === id && p.tenantId === t);
+    const idx = this.plans.findIndex((p) => p.id === id && p.tenant_id === t);
     if (idx === -1) throw new Error("Not found");
-    this.plans[idx] = { ...this.plans[idx], ...data, updatedAt: new Date() }; return this.plans[idx];
+    this.plans[idx] = { ...this.plans[idx], ...data, updated_at: new Date() }; return this.plans[idx];
   }
-  async getExchangeRates(tenantId: string): Promise<ExchangeRate[]> { return this.rates.filter(r => r.tenantId === tenantId); }
-  async getSuccessionPlans(tenantId: string): Promise<SuccessionPlan[]> { return this.successionPlans.filter((p) => p.tenantId === tenantId); }
+  async getExchangeRates(tenant_id: string): Promise<ExchangeRate[]> { return this.rates.filter(r => r.tenant_id === tenant_id); }
+  async getSuccessionPlans(tenant_id: string): Promise<SuccessionPlan[]> { return this.successionPlans.filter((p) => p.tenant_id === tenant_id); }
   async getSuccessionPlan(t: string, pid: string): Promise<SuccessionPlan | null> {
-    const p = this.successionPlans.find(p => p.positionId === pid && p.tenantId === t);
+    const p = this.successionPlans.find(p => p.position_id === pid && p.tenant_id === t);
     if (!p) return null; return { ...p, candidates: this.successionCandidates.filter(c => c.planId === p.id) };
   }
-  async createSuccessionPlan(tenantId: string, data: any): Promise<SuccessionPlan> {
-    const p: SuccessionPlan = { id: `sp-${Date.now()}`, tenantId, ...data, createdAt: new Date(), updatedAt: new Date() };
+  async createSuccessionPlan(tenant_id: string, data: any): Promise<SuccessionPlan> {
+    const p: SuccessionPlan = { id: `sp-${Date.now()}`, tenant_id, ...data, created_at: new Date(), updated_at: new Date() };
     this.successionPlans.push(p); return p;
   }
-  async addSuccessionCandidate(tenantId: string, data: any): Promise<SuccessionCandidate> {
-    const sc: SuccessionCandidate = { id: `sc-${Date.now()}`, tenantId, ...data, createdAt: new Date(), updatedAt: new Date() };
+  async addSuccessionCandidate(tenant_id: string, data: any): Promise<SuccessionCandidate> {
+    const sc: SuccessionCandidate = { id: `sc-${Date.now()}`, tenant_id, ...data, created_at: new Date(), updated_at: new Date() };
     this.successionCandidates.push(sc); return sc;
   }
-  async getBenchStrength(t: string, d?: string): Promise<any> { return { departmentId: d, criticalRoles: 0, benchStrengthScore: 0, readinessCounts: {} }; }
+  async getBenchStrength(t: string, d?: string): Promise<any> { return { department_id: d, criticalRoles: 0, benchStrengthScore: 0, readinessCounts: {} }; }
 
   // Analytics & Reporting
   async getDepartmentBudgetData(t: string, id: string): Promise<any> { return {}; }
   async getActualLaborCostHistory(t: string, id: string, l: number): Promise<any[]> { return []; }
-  async getHolidays(tenantId: string): Promise<any[]> { return []; }
-  async createHoliday(tenantId: string, data: any): Promise<any> { return {}; }
-  async getHeadcountTrend(tenantId: string): Promise<any[]> { return []; }
-  async getExperienceRate(tenantId: string): Promise<any> { return { rate: 0 }; }
-  async getTurnoverStats(tenantId: string): Promise<any> { return {}; }
-  async getDepartmentAnalytics(tenantId: string): Promise<any[]> { return []; }
-  async getCompensationAnalytics(tenantId: string): Promise<any> { return {}; }
-  async getRetentionRiskData(tenantId: string): Promise<any[]> { return []; }
-  async getEngagementMetrics(tenantId: string): Promise<any> { return {}; }
+  async getHolidays(tenant_id: string): Promise<any[]> { return []; }
+  async createHoliday(tenant_id: string, data: any): Promise<any> { return {}; }
+  async getHeadcountTrend(tenant_id: string): Promise<any[]> { return []; }
+  async getExperienceRate(tenant_id: string): Promise<any> { return { rate: 0 }; }
+  async getTurnoverStats(tenant_id: string): Promise<any> { return {}; }
+  async getDepartmentAnalytics(tenant_id: string): Promise<any[]> { return []; }
+  async getCompensationAnalytics(tenant_id: string): Promise<any> { return {}; }
+  async getRetentionRiskData(tenant_id: string): Promise<any[]> { return []; }
+  async getEngagementMetrics(tenant_id: string): Promise<any> { return {}; }
 
   // Miscellaneous
-  async updatePositionJobPost(tenantId: string, positionId: string, data: any): Promise<any> { return {}; }
-  async getPositionJobPost(tenantId: string, positionId: string): Promise<any> { return {}; }
-  async executePayrollTransaction(tenantId: string, period: string, activeEmployees: any[], tx?: Prisma.TransactionClient): Promise<any> {
+  async updatePositionJobPost(tenant_id: string, position_id: string, data: any): Promise<any> { return {}; }
+  async getPositionJobPost(tenant_id: string, position_id: string): Promise<any> { return {}; }
+  async executePayrollTransaction(tenant_id: string, period: string, activeEmployees: any[], tx?: Prisma.TransactionClient): Promise<any> {
     const totalNetPay = activeEmployees.length * 4000;
     const run = { 
       id: `run-${Date.now()}`, 
-      tenantId, 
+      tenant_id, 
       name: period, 
       status: 'PROCESSED', 
       totalNetPay, 
       totalGrossPay: totalNetPay * 1.2, 
-      periodStart: new Date(),
-      periodEnd: new Date(),
-      createdAt: new Date() 
+      period_start: new Date(),
+      period_end: new Date(),
+      created_at: new Date() 
     };
     this.runs.push(run as any);
     return run;

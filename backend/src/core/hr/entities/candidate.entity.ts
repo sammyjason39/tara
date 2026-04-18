@@ -4,9 +4,9 @@
  */
 export class Candidate {
   id: string;
-  tenantId: string;
-  firstName: string;
-  lastName: string;
+  tenant_id: string;
+  first_name: string;
+  last_name: string;
   email: string;
   phone?: string;
   requisitionId: string;
@@ -14,9 +14,9 @@ export class Candidate {
   status: "applied" | "screening" | "interview" | "offer" | "hired" | "rejected";
   resumeUrl?: string;
   metadata?: Record<string, any>;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date;
+  created_at: Date;
+  updated_at: Date;
+  deleted_at?: Date;
 
   requisition?: any;
 }

@@ -11,24 +11,24 @@ export class CareerPathService {
     private readonly skillsService: SkillsService,
   ) {}
 
-  async suggestNextRoles(tenantId: string, employeeId: string) {
-    this.logger.log(`Suggesting next roles for employee ${employeeId}`);
+  async suggestNextRoles(tenant_id: string, employee_id: string) {
+    this.logger.log(`Suggesting next roles for employee ${employee_id}`);
     
     // 1. Get possible career paths from current position
-    const employee = await this.repository.getEmployeeById(tenantId, employeeId);
-    if (!employee || !employee.positionId) return [];
+    const employee = await this.repository.getEmployeeById(tenant_id, employee_id);
+    if (!employee || !employee.position_id) return [];
 
-    const allPaths = await this.repository.getCareerPaths(tenantId);
-    const potentialPaths = allPaths.filter(p => p.fromPositionId === employee.positionId);
+    const allPaths = await this.repository.getCareerPaths(tenant_id);
+    const potentialPaths = allPaths.filter(p => p.from_position_id === employee.position_id);
 
     // 2. For each potential role, calculate readiness
     const suggestions = await Promise.all(potentialPaths.map(async (path) => {
-      const readinessAnalysis = await this.predictReadinessIndex(tenantId, employeeId, path.toPositionId);
+      const readinessAnalysis = await this.predictReadinessIndex(tenant_id, employee_id, path.to_position_id);
       return {
-        roleId: path.toPositionId,
+        roleId: path.to_position_id,
         roleName: path.toPosition?.name || "Target Role",
         readinessScore: readinessAnalysis.readinessIndex,
-        requirementNotes: path.requirementNotes,
+        requirement_notes: path.requirement_notes,
         gaps: readinessAnalysis.gaps,
         recommendations: readinessAnalysis.recommendations,
       };
@@ -37,11 +37,11 @@ export class CareerPathService {
     return suggestions.sort((a, b) => b.readinessScore - a.readinessScore);
   }
 
-  async predictReadinessIndex(tenantId: string, employeeId: string, targetPositionId: string) {
-    this.logger.log(`Calculating readiness for ${employeeId} to ${targetPositionId}`);
+  async predictReadinessIndex(tenant_id: string, employee_id: string, targetPositionId: string) {
+    this.logger.log(`Calculating readiness for ${employee_id} to ${targetPositionId}`);
     
     // 1. Calculate base skill gap
-    const gapAnalysis = await this.skillsService.calculateSkillGap(tenantId, employeeId, targetPositionId);
+    const gapAnalysis = await this.skillsService.calculateSkillGap(tenant_id, employee_id, targetPositionId);
     
     // 2. Enhance with importance weighting
     // Core skills (level requirement >= 4) get 2x weight
@@ -65,7 +65,7 @@ export class CareerPathService {
       .map(g => `Increase ${g.skillName} from Level ${g.actual} to ${g.required}`);
 
     return {
-      employeeId,
+      employee_id,
       targetPositionId,
       readinessIndex,
       gaps: gapAnalysis.gaps,
@@ -73,28 +73,28 @@ export class CareerPathService {
     };
   }
 
-  async findMentorMatches(tenantId: string, employeeId: string) {
-    this.logger.log(`Finding mentor matches for employee ${employeeId}`);
+  async findMentorMatches(tenant_id: string, employee_id: string) {
+    this.logger.log(`Finding mentor matches for employee ${employee_id}`);
     
-    const employee = await this.repository.getEmployeeById(tenantId, employeeId);
+    const employee = await this.repository.getEmployeeById(tenant_id, employee_id);
     if (!employee) throw new NotFoundException("Employee not found");
 
     // 1. Identify employee skill gaps
-    const skills = await this.repository.getEmployeeSkills(tenantId, employeeId);
+    const skills = await this.repository.getEmployeeSkills(tenant_id, employee_id);
     const gaps = skills.filter(s => s.proficiency < 3); // Skills needing improvement
     
     if (gaps.length === 0) return [];
 
     // 2. Find employees with high proficiency in those skills
-    const gapSkillIds = gaps.map(g => g.skillId);
-    const potentialMentors = await this.repository.findTalentBySkills(tenantId, gapSkillIds, 4);
+    const gapSkillIds = gaps.map(g => g.skill_id);
+    const potentialMentors = await this.repository.findTalentBySkills(tenant_id, gapSkillIds, 4);
 
     // 3. Filter & Enhance with Location Awareness
     return potentialMentors
-      .filter(m => m.employee.id !== employeeId)
+      .filter(m => m.employee.id !== employee_id)
       .map(m => {
-        const isSameLocation = m.employee.locationId === employee.locationId;
-        const isSameTenant = m.employee.tenantId === employee.tenantId;
+        const isSameLocation = m.employee.location_id === employee.location_id;
+        const isSameTenant = m.employee.tenant_id === employee.tenant_id;
         
         let matchScore = m.matchPercentage;
         if (isSameLocation) matchScore += 10;
@@ -110,14 +110,14 @@ export class CareerPathService {
       .sort((a, b) => b.matchScore - a.matchScore);
   }
 
-  async createMentorship(tenantId: string, mentorId: string, menteeId: string, focusSkills: string[]) {
+  async createMentorship(tenant_id: string, mentorId: string, menteeId: string, focusSkills: string[]) {
     this.logger.log(`Initiating mentorship: ${mentorId} mentoring ${menteeId}`);
-    return this.repository.createMentorshipPair(tenantId, {
+    return this.repository.createMentorshipPair(tenant_id, {
       mentorId,
       menteeId,
       focusSkills,
       status: "ACTIVE",
-      startDate: new Date(),
+      start_date: new Date(),
     });
   }
 }

@@ -1,8 +1,8 @@
 export class SalesQuote {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   opportunityId: string;
-  accountName: string;
+  account_name: string;
   version: number;
   amount: number;
   discountPercent: number;
@@ -21,6 +21,6 @@ export class SalesQuote {
   approvalAt?: Date;
   notes?: string;
   createdBy: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

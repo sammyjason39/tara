@@ -21,8 +21,8 @@ export interface ForecastOutput {
 }
 
 export interface ForecastContext {
-  tenantId: string;
-  companyId: string;
+  tenant_id: string;
+  company_id: string;
   snapshotSequence: number;
   historicalSnapshots: any[];
   cashflowBaseline: CashflowOutput;

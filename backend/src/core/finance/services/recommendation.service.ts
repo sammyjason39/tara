@@ -27,29 +27,29 @@ export class RecommendationService {
    * Main entry point for recommendation generation
    */
   async getRecommendations(params: {
-    tenantId: string;
-    companyId: string;
+    tenant_id: string;
+    company_id: string;
     snapshotId?: string;
-    correlationId?: string;
-    userId?: string;
+    correlation_id?: string;
+    user_id?: string;
   }): Promise<Recommendation[]> {
-    const { tenantId, companyId, snapshotId, correlationId = `rec-${Date.now()}`, userId } = params;
+    const { tenant_id, company_id, snapshotId, correlation_id = `rec-${Date.now()}`, user_id } = params;
 
     // 1. Get Base Forecast (90-day baseline)
     const baselineForecast = await this.forecastService.getForecast({
-        tenantId,
-        companyId,
+        tenant_id,
+        company_id,
         snapshotId
     });
 
     // 2. Get Insights for this forecast
     const insights = await this.insightService.getInsights({
-        tenantId,
-        companyId,
+        tenant_id,
+        company_id,
         snapshotId,
         forecast: baselineForecast,
-        correlationId,
-        userId
+        correlation_id,
+        user_id
     });
 
     // 3. Initialize Recommendation Context
@@ -66,7 +66,7 @@ export class RecommendationService {
             const results = rule.generate(context);
             recommendations.push(...results);
         } catch (err) {
-            this.logger.error(`Recommendation rule ${rule.type} failed: ${err.message}`, correlationId);
+            this.logger.error(`Recommendation rule ${rule.type} failed: ${err.message}`, correlation_id);
         }
     }
 

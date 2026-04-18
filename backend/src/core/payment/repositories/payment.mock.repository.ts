@@ -80,72 +80,72 @@ export class PaymentMockRepository extends IPaymentRepository {
   }
 
   private addAudit(
-    tenantId: string,
-    actorId: string,
+    tenant_id: string,
+    actor_id: string,
     action: string,
-    entityType: PaymentAuditEvent["entityType"],
-    entityId: string,
+    entity_type: PaymentAuditEvent["entity_type"],
+    entity_id: string,
     detail: string,
   ) {
-    const store = this.getStore(tenantId);
+    const store = this.getStore(tenant_id);
     store.audit.unshift({
       id: this.id("payment-audit"),
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       action,
-      entityType,
-      entityId,
+      entity_type,
+      entity_id,
       detail,
-      createdAt: this.now(),
+      created_at: this.now(),
     });
   }
 
-  private ensureTenant(tenantId: string): TenantPaymentStore {
-    const existing = this.store.get(tenantId);
+  private ensureTenant(tenant_id: string): TenantPaymentStore {
+    const existing = this.store.get(tenant_id);
     if (existing) return existing;
 
     const providers: PaymentProvider[] = [
       {
         id: "BANK_BCA",
-        tenantId,
+        tenant_id,
         name: "Bank BCA",
         channels: ["bank_transfer", "qr"],
         status: "healthy",
-        maxAmountPerTxn: 1000000000,
-        settlementSlaHours: 6,
+        max_amount_per_txn: 1000000000,
+        settlement_sla_hours: 6,
         priority: 1,
         lastHeartbeatAt: this.now(),
       },
       {
         id: "BANK_MANDIRI",
-        tenantId,
+        tenant_id,
         name: "Bank Mandiri",
         channels: ["bank_transfer", "qr"],
         status: "healthy",
-        maxAmountPerTxn: 1000000000,
-        settlementSlaHours: 8,
+        max_amount_per_txn: 1000000000,
+        settlement_sla_hours: 8,
         priority: 2,
         lastHeartbeatAt: this.now(),
       },
       {
         id: "STRIPE",
-        tenantId,
+        tenant_id,
         name: "Stripe",
         channels: ["card_online", "card_pos", "wallet"],
         status: "healthy",
-        maxAmountPerTxn: 750000000,
-        settlementSlaHours: 24,
+        max_amount_per_txn: 750000000,
+        settlement_sla_hours: 24,
         priority: 3,
         lastHeartbeatAt: this.now(),
       },
       {
         id: "ADYEN",
-        tenantId,
+        tenant_id,
         name: "Adyen",
         channels: ["card_online", "card_pos", "wallet"],
         status: "healthy",
-        maxAmountPerTxn: 750000000,
-        settlementSlaHours: 24,
+        max_amount_per_txn: 750000000,
+        settlement_sla_hours: 24,
         priority: 4,
         lastHeartbeatAt: this.now(),
       },
@@ -153,23 +153,23 @@ export class PaymentMockRepository extends IPaymentRepository {
 
     const routing: PaymentRoutingPolicy[] = [
       {
-        id: `${tenantId}-routing-default`,
-        tenantId,
+        id: `${tenant_id}-routing-default`,
+        tenant_id,
         name: "Default enterprise routing",
         enabled: true,
         priorities: ["BANK_BCA", "BANK_MANDIRI", "STRIPE"],
         fallbackProviders: ["BANK_MANDIRI", "STRIPE", "ADYEN"],
         maxRetries: 3,
         exponentialBackoffSeconds: 2,
-        createdAt: this.now(),
-        updatedAt: this.now(),
+        created_at: this.now(),
+        updated_at: this.now(),
       },
     ];
 
     const devices: PaymentDevice[] = [
       {
-        id: `${tenantId}-pos-01`,
-        tenantId,
+        id: `${tenant_id}-pos-01`,
+        tenant_id,
         location: "Jakarta HQ",
         deviceCode: "POS-01",
         approved: true,
@@ -178,8 +178,8 @@ export class PaymentMockRepository extends IPaymentRepository {
         lastUsedAt: this.now(),
       },
       {
-        id: `${tenantId}-pos-02`,
-        tenantId,
+        id: `${tenant_id}-pos-02`,
+        tenant_id,
         location: "Jakarta HQ",
         deviceCode: "POS-02",
         approved: true,
@@ -190,20 +190,20 @@ export class PaymentMockRepository extends IPaymentRepository {
 
     const pools: PaymentDevicePool[] = [
       {
-        id: `${tenantId}-pool-jakarta`,
-        tenantId,
+        id: `${tenant_id}-pool-jakarta`,
+        tenant_id,
         location: "Jakarta HQ",
-        primaryDeviceId: `${tenantId}-pos-01`,
-        fallbackDeviceIds: [`${tenantId}-pos-02`],
-        createdAt: this.now(),
-        updatedAt: this.now(),
+        primaryDeviceId: `${tenant_id}-pos-01`,
+        fallbackDeviceIds: [`${tenant_id}-pos-02`],
+        created_at: this.now(),
+        updated_at: this.now(),
       },
     ];
 
     const transactions: PaymentTransaction[] = [
       {
-        id: `${tenantId}-pay-001`,
-        tenantId,
+        id: `${tenant_id}-pay-001`,
+        tenant_id,
         type: "vendor_payout",
         amount: 20000000,
         currency: "IDR",
@@ -211,7 +211,7 @@ export class PaymentMockRepository extends IPaymentRepository {
         source: "Finance",
         channel: "bank_transfer",
         providerId: "BANK_BCA",
-        idempotencyKey: `${tenantId}-idem-001`,
+        idempotency_key: `${tenant_id}-idem-001`,
         status: "settled",
         retryAttempts: [
           {
@@ -221,40 +221,40 @@ export class PaymentMockRepository extends IPaymentRepository {
             result: "success",
           },
         ],
-        settlementId: `${tenantId}-settlement-001`,
+        settlementId: `${tenant_id}-settlement-001`,
         ledgerSyncTriggeredAt: this.now(),
-        evidencePackId: `${tenantId}-evidence-001`,
+        evidencePackId: `${tenant_id}-evidence-001`,
         createdBy: "system",
         approvedBy: "finance-manager",
         approvedAt: this.now(),
-        createdAt: this.now(),
-        updatedAt: this.now(),
+        created_at: this.now(),
+        updated_at: this.now(),
       },
     ];
 
     const settlements: PaymentSettlement[] = [
       {
-        id: `${tenantId}-settlement-001`,
-        tenantId,
-        paymentId: `${tenantId}-pay-001`,
+        id: `${tenant_id}-settlement-001`,
+        tenant_id,
+        paymentId: `${tenant_id}-pay-001`,
         providerReference: "BCA-SETTLE-77881",
         status: "confirmed",
         confirmedAt: this.now(),
-        createdAt: this.now(),
-        updatedAt: this.now(),
+        created_at: this.now(),
+        updated_at: this.now(),
       },
     ];
 
     const evidence: PaymentEvidencePack[] = [
       {
-        id: `${tenantId}-evidence-001`,
-        tenantId,
-        paymentId: `${tenantId}-pay-001`,
+        id: `${tenant_id}-evidence-001`,
+        tenant_id,
+        paymentId: `${tenant_id}-pay-001`,
         providerProof: "BCA-TRANSFER-SLIP-77881",
         approvalSignatures: ["finance-manager"],
         checksum: "chk-seed",
         payload: '{"seed":"true"}',
-        createdAt: this.now(),
+        created_at: this.now(),
       },
     ];
 
@@ -271,16 +271,16 @@ export class PaymentMockRepository extends IPaymentRepository {
       evidence,
       audit: [],
     };
-    this.store.set(tenantId, seeded);
+    this.store.set(tenant_id, seeded);
     return seeded;
   }
 
-  private getStore(tenantId: string) {
-    return this.ensureTenant(tenantId);
+  private getStore(tenant_id: string) {
+    return this.ensureTenant(tenant_id);
   }
 
-  private findTransaction(tenantId: string, paymentId: string) {
-    const transaction = this.getStore(tenantId).transactions.find(
+  private findTransaction(tenant_id: string, paymentId: string) {
+    const transaction = this.getStore(tenant_id).transactions.find(
       (item) => item.id === paymentId,
     );
     if (!transaction)
@@ -288,35 +288,35 @@ export class PaymentMockRepository extends IPaymentRepository {
     return transaction;
   }
 
-  private findRefund(tenantId: string, refundId: string) {
-    const refund = this.getStore(tenantId).refunds.find(
+  private findRefund(tenant_id: string, refundId: string) {
+    const refund = this.getStore(tenant_id).refunds.find(
       (item) => item.id === refundId,
     );
     if (!refund) throw new NotFoundException("Refund not found");
     return refund;
   }
 
-  private findDispute(tenantId: string, disputeId: string) {
-    const dispute = this.getStore(tenantId).disputes.find(
+  private findDispute(tenant_id: string, disputeId: string) {
+    const dispute = this.getStore(tenant_id).disputes.find(
       (item) => item.id === disputeId,
     );
     if (!dispute) throw new NotFoundException("Dispute not found");
     return dispute;
   }
 
-  private activeRouting(tenantId: string) {
-    return this.getStore(tenantId).routing.find((item) => item.enabled);
+  private activeRouting(tenant_id: string) {
+    return this.getStore(tenant_id).routing.find((item) => item.enabled);
   }
 
-  async getDashboard(tenantId: string): Promise<PaymentDashboard> {
-    const store = this.getStore(tenantId);
+  async getDashboard(tenant_id: string): Promise<PaymentDashboard> {
+    const store = this.getStore(tenant_id);
     const now = this.now();
     const settledToday = store.transactions.filter((item) => {
       if (item.status !== "settled") return false;
       return (
-        item.updatedAt.getFullYear() === now.getFullYear() &&
-        item.updatedAt.getMonth() === now.getMonth() &&
-        item.updatedAt.getDate() === now.getDate()
+        item.updated_at.getFullYear() === now.getFullYear() &&
+        item.updated_at.getMonth() === now.getMonth() &&
+        item.updated_at.getDate() === now.getDate()
       );
     }).length;
     return {
@@ -345,29 +345,29 @@ export class PaymentMockRepository extends IPaymentRepository {
     };
   }
 
-  async getTransactions(tenantId: string): Promise<PaymentTransaction[]> {
-    return this.getStore(tenantId).transactions;
+  async getTransactions(tenant_id: string): Promise<PaymentTransaction[]> {
+    return this.getStore(tenant_id).transactions;
   }
 
   async createTransaction(
-    tenantId: string,
+    tenant_id: string,
     dto: CreatePaymentTransactionDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentTransaction> {
-    const store = this.getStore(tenantId);
+    const store = this.getStore(tenant_id);
     const key =
-      dto.idempotencyKey ??
+      dto.idempotency_key ??
       this.checksum(
-        `${tenantId}|${dto.type}|${dto.amount}|${dto.destination}|${dto.externalReference ?? ""}`,
+        `${tenant_id}|${dto.type}|${dto.amount}|${dto.destination}|${dto.externalReference ?? ""}`,
       );
     const existing = store.transactions.find(
-      (item) => item.idempotencyKey === key,
+      (item) => item.idempotency_key === key,
     );
     if (existing) return existing;
 
     const created: PaymentTransaction = {
       id: this.id("payment"),
-      tenantId,
+      tenant_id,
       externalReference: dto.externalReference,
       type: dto.type,
       amount: dto.amount,
@@ -375,17 +375,17 @@ export class PaymentMockRepository extends IPaymentRepository {
       destination: dto.destination,
       source: dto.source,
       channel: dto.channel ?? "bank_transfer",
-      idempotencyKey: key,
+      idempotency_key: key,
       status: "approval_pending",
       retryAttempts: [],
-      createdBy: actorId,
-      createdAt: this.now(),
-      updatedAt: this.now(),
+      createdBy: actor_id,
+      created_at: this.now(),
+      updated_at: this.now(),
     };
     store.transactions.unshift(created);
     this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "request.created",
       "transaction",
       created.id,
@@ -395,18 +395,18 @@ export class PaymentMockRepository extends IPaymentRepository {
   }
 
   async approveTransaction(
-    tenantId: string,
+    tenant_id: string,
     paymentId: string,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentTransaction> {
-    const payment = this.findTransaction(tenantId, paymentId);
+    const payment = this.findTransaction(tenant_id, paymentId);
     payment.status = "approved";
-    payment.approvedBy = actorId;
+    payment.approvedBy = actor_id;
     payment.approvedAt = this.now();
-    payment.updatedAt = this.now();
+    payment.updated_at = this.now();
     this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "request.approved",
       "transaction",
       payment.id,
@@ -416,18 +416,18 @@ export class PaymentMockRepository extends IPaymentRepository {
   }
 
   async rejectTransaction(
-    tenantId: string,
+    tenant_id: string,
     paymentId: string,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentTransaction> {
-    const payment = this.findTransaction(tenantId, paymentId);
+    const payment = this.findTransaction(tenant_id, paymentId);
     payment.status = "rejected";
-    payment.approvedBy = actorId;
+    payment.approvedBy = actor_id;
     payment.approvedAt = this.now();
-    payment.updatedAt = this.now();
+    payment.updated_at = this.now();
     this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "request.rejected",
       "transaction",
       payment.id,
@@ -437,19 +437,19 @@ export class PaymentMockRepository extends IPaymentRepository {
   }
 
   async routeTransaction(
-    tenantId: string,
+    tenant_id: string,
     paymentId: string,
     dto: RoutePaymentDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentTransaction> {
-    const payment = this.findTransaction(tenantId, paymentId);
+    const payment = this.findTransaction(tenant_id, paymentId);
     if (!["approved", "provider_selected"].includes(payment.status)) {
       throw new BadRequestException(
         "Payment requires approval before routing.",
       );
     }
-    const store = this.getStore(tenantId);
-    const policy = this.activeRouting(tenantId);
+    const store = this.getStore(tenant_id);
+    const policy = this.activeRouting(tenant_id);
     if (!policy) throw new BadRequestException("No active routing policy");
 
     const pickOrdered = [...policy.priorities, ...policy.fallbackProviders];
@@ -460,7 +460,7 @@ export class PaymentMockRepository extends IPaymentRepository {
           (provider) =>
             provider.id === providerId &&
             provider.status !== "down" &&
-            provider.maxAmountPerTxn >= payment.amount,
+            provider.max_amount_per_txn >= payment.amount,
         ),
       );
     if (!selectedId)
@@ -468,10 +468,10 @@ export class PaymentMockRepository extends IPaymentRepository {
 
     payment.providerId = selectedId;
     payment.status = "provider_selected";
-    payment.updatedAt = this.now();
+    payment.updated_at = this.now();
     this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "provider.selected",
       "routing",
       payment.id,
@@ -481,24 +481,24 @@ export class PaymentMockRepository extends IPaymentRepository {
   }
 
   async executeTransaction(
-    tenantId: string,
+    tenant_id: string,
     paymentId: string,
     dto: ExecutePaymentDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentTransaction> {
-    const payment = this.findTransaction(tenantId, paymentId);
+    const payment = this.findTransaction(tenant_id, paymentId);
     if (!["approved", "provider_selected"].includes(payment.status)) {
       throw new BadRequestException(
         "Payment requires approval and routing before execution.",
       );
     }
-    const policy = this.activeRouting(tenantId);
+    const policy = this.activeRouting(tenant_id);
     if (!policy) throw new BadRequestException("No active routing policy");
     if (!payment.providerId)
       throw new BadRequestException("Provider is not selected");
 
     payment.status = "executing";
-    payment.updatedAt = this.now();
+    payment.updated_at = this.now();
     const attempts: PaymentRetryAttempt[] = [...payment.retryAttempts];
 
     let success = false;
@@ -524,10 +524,10 @@ export class PaymentMockRepository extends IPaymentRepository {
 
     if (!success) {
       payment.status = "failed";
-      payment.updatedAt = this.now();
+      payment.updated_at = this.now();
       this.addAudit(
-        tenantId,
-        actorId,
+        tenant_id,
+        actor_id,
         "execution.failed",
         "transaction",
         payment.id,
@@ -538,20 +538,20 @@ export class PaymentMockRepository extends IPaymentRepository {
 
     const settlement: PaymentSettlement = {
       id: this.id("settlement"),
-      tenantId,
+      tenant_id,
       paymentId: payment.id,
       providerReference: `${payment.providerId}-${Date.now()}`,
       status: "pending",
-      createdAt: this.now(),
-      updatedAt: this.now(),
+      created_at: this.now(),
+      updated_at: this.now(),
     };
-    this.getStore(tenantId).settlements.unshift(settlement);
+    this.getStore(tenant_id).settlements.unshift(settlement);
     payment.status = "settlement_pending";
     payment.settlementId = settlement.id;
-    payment.updatedAt = this.now();
+    payment.updated_at = this.now();
     this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "execution.sent",
       "transaction",
       payment.id,
@@ -561,24 +561,24 @@ export class PaymentMockRepository extends IPaymentRepository {
   }
 
   async settleTransaction(
-    tenantId: string,
+    tenant_id: string,
     paymentId: string,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentTransaction> {
-    const payment = this.findTransaction(tenantId, paymentId);
+    const payment = this.findTransaction(tenant_id, paymentId);
     if (payment.status !== "settlement_pending") {
       throw new BadRequestException("Payment must be settlement-pending.");
     }
     if (!payment.settlementId)
       throw new BadRequestException("Settlement missing.");
-    const settlement = this.getStore(tenantId).settlements.find(
+    const settlement = this.getStore(tenant_id).settlements.find(
       (item) => item.id === payment.settlementId,
     );
     if (!settlement) throw new NotFoundException("Settlement not found");
 
     settlement.status = "confirmed";
     settlement.confirmedAt = this.now();
-    settlement.updatedAt = this.now();
+    settlement.updated_at = this.now();
 
     const payload = JSON.stringify({
       paymentId: payment.id,
@@ -591,24 +591,24 @@ export class PaymentMockRepository extends IPaymentRepository {
 
     const evidence: PaymentEvidencePack = {
       id: this.id("evidence"),
-      tenantId,
+      tenant_id,
       paymentId: payment.id,
       providerProof: settlement.providerReference,
-      approvalSignatures: [payment.createdBy, payment.approvedBy ?? actorId],
+      approvalSignatures: [payment.createdBy, payment.approvedBy ?? actor_id],
       checksum: this.checksum(payload),
       payload,
-      createdAt: this.now(),
+      created_at: this.now(),
     };
-    this.getStore(tenantId).evidence.unshift(evidence);
+    this.getStore(tenant_id).evidence.unshift(evidence);
 
     payment.status = "settled";
     payment.evidencePackId = evidence.id;
     payment.ledgerSyncTriggeredAt = this.now();
-    payment.updatedAt = this.now();
+    payment.updated_at = this.now();
 
     this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "settlement.confirmed",
       "settlement",
       settlement.id,
@@ -617,25 +617,25 @@ export class PaymentMockRepository extends IPaymentRepository {
     return payment;
   }
 
-  async getProviders(tenantId: string): Promise<PaymentProvider[]> {
-    return this.getStore(tenantId).providers;
+  async getProviders(tenant_id: string): Promise<PaymentProvider[]> {
+    return this.getStore(tenant_id).providers;
   }
 
   async updateProviderStatus(
-    tenantId: string,
+    tenant_id: string,
     providerId: string,
     dto: UpdateProviderStatusDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentProvider> {
-    const provider = this.getStore(tenantId).providers.find(
+    const provider = this.getStore(tenant_id).providers.find(
       (item) => item.id === providerId,
     );
     if (!provider) throw new NotFoundException("Provider not found");
     provider.status = dto.status;
     provider.lastHeartbeatAt = this.now();
     this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "provider.status_changed",
       "routing",
       provider.id,
@@ -645,17 +645,17 @@ export class PaymentMockRepository extends IPaymentRepository {
   }
 
   async runProviderHealthSweep(
-    tenantId: string,
-    actorId: string,
+    tenant_id: string,
+    actor_id: string,
   ): Promise<PaymentProvider[]> {
-    const providers = this.getStore(tenantId).providers;
+    const providers = this.getStore(tenant_id).providers;
     providers.forEach((provider) => {
       provider.lastHeartbeatAt = this.now();
       if (provider.status === "down") provider.status = "degraded";
     });
     this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "provider.health_sweep",
       "routing",
       "health-sweep",
@@ -664,32 +664,32 @@ export class PaymentMockRepository extends IPaymentRepository {
     return providers;
   }
 
-  async getRoutingPolicies(tenantId: string): Promise<PaymentRoutingPolicy[]> {
-    return this.getStore(tenantId).routing;
+  async getRoutingPolicies(tenant_id: string): Promise<PaymentRoutingPolicy[]> {
+    return this.getStore(tenant_id).routing;
   }
 
-  async getDevices(tenantId: string): Promise<PaymentDevice[]> {
-    return this.getStore(tenantId).devices;
+  async getDevices(tenant_id: string): Promise<PaymentDevice[]> {
+    return this.getStore(tenant_id).devices;
   }
 
-  async getDevicePools(tenantId: string): Promise<PaymentDevicePool[]> {
-    return this.getStore(tenantId).pools;
+  async getDevicePools(tenant_id: string): Promise<PaymentDevicePool[]> {
+    return this.getStore(tenant_id).pools;
   }
 
   async updateDeviceStatus(
-    tenantId: string,
-    deviceId: string,
+    tenant_id: string,
+    device_id: string,
     dto: UpdateDeviceStatusDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentDevice> {
-    const device = this.getStore(tenantId).devices.find(
-      (item) => item.id === deviceId,
+    const device = this.getStore(tenant_id).devices.find(
+      (item) => item.id === device_id,
     );
     if (!device) throw new NotFoundException("Device not found");
     device.status = dto.status;
     this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "device.status_changed",
       "device",
       device.id,
@@ -698,16 +698,16 @@ export class PaymentMockRepository extends IPaymentRepository {
     return device;
   }
 
-  async getRefunds(tenantId: string): Promise<PaymentRefund[]> {
-    return this.getStore(tenantId).refunds;
+  async getRefunds(tenant_id: string): Promise<PaymentRefund[]> {
+    return this.getStore(tenant_id).refunds;
   }
 
   async createRefund(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateRefundDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentRefund> {
-    const payment = this.findTransaction(tenantId, dto.paymentId);
+    const payment = this.findTransaction(tenant_id, dto.paymentId);
     if (payment.status !== "settled") {
       throw new BadRequestException(
         "Refund is allowed only for settled payments.",
@@ -715,21 +715,21 @@ export class PaymentMockRepository extends IPaymentRepository {
     }
     const created: PaymentRefund = {
       id: this.id("refund"),
-      tenantId,
+      tenant_id,
       paymentId: dto.paymentId,
       type: dto.type,
       amount: dto.amount,
       reason: dto.reason,
       status: "requested",
-      requestedBy: actorId,
+      requested_by: actor_id,
       scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : undefined,
-      createdAt: this.now(),
-      updatedAt: this.now(),
+      created_at: this.now(),
+      updated_at: this.now(),
     };
-    this.getStore(tenantId).refunds.unshift(created);
+    this.getStore(tenant_id).refunds.unshift(created);
     this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "refund.requested",
       "refund",
       created.id,
@@ -739,17 +739,17 @@ export class PaymentMockRepository extends IPaymentRepository {
   }
 
   async approveRefund(
-    tenantId: string,
+    tenant_id: string,
     refundId: string,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentRefund> {
-    const refund = this.findRefund(tenantId, refundId);
+    const refund = this.findRefund(tenant_id, refundId);
     refund.status = "approved";
-    refund.approvedBy = actorId;
-    refund.updatedAt = this.now();
+    refund.approvedBy = actor_id;
+    refund.updated_at = this.now();
     this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "refund.approved",
       "refund",
       refund.id,
@@ -759,19 +759,19 @@ export class PaymentMockRepository extends IPaymentRepository {
   }
 
   async executeRefund(
-    tenantId: string,
+    tenant_id: string,
     refundId: string,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentRefund> {
-    const refund = this.findRefund(tenantId, refundId);
+    const refund = this.findRefund(tenant_id, refundId);
     if (refund.status !== "approved")
       throw new BadRequestException("Refund must be approved first.");
     refund.status = "settled";
     refund.providerReference = `RFD-${Date.now()}`;
-    refund.updatedAt = this.now();
+    refund.updated_at = this.now();
     this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "refund.settled",
       "refund",
       refund.id,
@@ -780,32 +780,32 @@ export class PaymentMockRepository extends IPaymentRepository {
     return refund;
   }
 
-  async getDisputes(tenantId: string): Promise<PaymentDispute[]> {
-    return this.getStore(tenantId).disputes;
+  async getDisputes(tenant_id: string): Promise<PaymentDispute[]> {
+    return this.getStore(tenant_id).disputes;
   }
 
   async createDispute(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateDisputeDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentDispute> {
-    this.findTransaction(tenantId, dto.paymentId);
+    this.findTransaction(tenant_id, dto.paymentId);
     const created: PaymentDispute = {
       id: this.id("dispute"),
-      tenantId,
+      tenant_id,
       paymentId: dto.paymentId,
       reason: dto.reason,
       amount: dto.amount,
       status: "opened",
-      openedBy: actorId,
+      openedBy: actor_id,
       evidence: [],
-      createdAt: this.now(),
-      updatedAt: this.now(),
+      created_at: this.now(),
+      updated_at: this.now(),
     };
-    this.getStore(tenantId).disputes.unshift(created);
+    this.getStore(tenant_id).disputes.unshift(created);
     this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "dispute.opened",
       "dispute",
       created.id,
@@ -815,18 +815,18 @@ export class PaymentMockRepository extends IPaymentRepository {
   }
 
   async attachDisputeEvidence(
-    tenantId: string,
+    tenant_id: string,
     disputeId: string,
     dto: AttachDisputeEvidenceDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentDispute> {
-    const dispute = this.findDispute(tenantId, disputeId);
+    const dispute = this.findDispute(tenant_id, disputeId);
     dispute.evidence = [...dispute.evidence, dto.evidence];
     dispute.status = "evidence_attached";
-    dispute.updatedAt = this.now();
+    dispute.updated_at = this.now();
     this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "dispute.evidence_attached",
       "dispute",
       dispute.id,
@@ -836,20 +836,20 @@ export class PaymentMockRepository extends IPaymentRepository {
   }
 
   async progressDispute(
-    tenantId: string,
+    tenant_id: string,
     disputeId: string,
     dto: ProgressDisputeDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentDispute> {
-    const dispute = this.findDispute(tenantId, disputeId);
+    const dispute = this.findDispute(tenant_id, disputeId);
     dispute.status = dto.status;
-    dispute.updatedAt = this.now();
+    dispute.updated_at = this.now();
     if (dto.status === "provider_submitted") {
       dispute.providerCaseId = `CASE-${Date.now()}`;
     }
     this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "dispute.status_changed",
       "dispute",
       dispute.id,
@@ -859,29 +859,29 @@ export class PaymentMockRepository extends IPaymentRepository {
   }
 
   async resolveDispute(
-    tenantId: string,
+    tenant_id: string,
     disputeId: string,
     dto: ResolveDisputeDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<PaymentDispute> {
-    const dispute = this.findDispute(tenantId, disputeId);
+    const dispute = this.findDispute(tenant_id, disputeId);
     dispute.status = "resolved";
     dispute.resolution = dto.resolution;
-    dispute.updatedAt = this.now();
+    dispute.updated_at = this.now();
     const chargeback: PaymentChargeback = {
       id: this.id("chargeback"),
-      tenantId,
+      tenant_id,
       paymentId: dispute.paymentId,
       disputeId: dispute.id,
       amount: dispute.amount,
       status: dto.resolution === "lost" ? "lost" : "won",
-      createdAt: this.now(),
-      updatedAt: this.now(),
+      created_at: this.now(),
+      updated_at: this.now(),
     };
-    this.getStore(tenantId).chargebacks.unshift(chargeback);
+    this.getStore(tenant_id).chargebacks.unshift(chargeback);
     this.addAudit(
-      tenantId,
-      actorId,
+      tenant_id,
+      actor_id,
       "dispute.resolved",
       "chargeback",
       chargeback.id,
@@ -890,19 +890,19 @@ export class PaymentMockRepository extends IPaymentRepository {
     return dispute;
   }
 
-  async getChargebacks(tenantId: string): Promise<PaymentChargeback[]> {
-    return this.getStore(tenantId).chargebacks;
+  async getChargebacks(tenant_id: string): Promise<PaymentChargeback[]> {
+    return this.getStore(tenant_id).chargebacks;
   }
 
-  async getSettlements(tenantId: string): Promise<PaymentSettlement[]> {
-    return this.getStore(tenantId).settlements;
+  async getSettlements(tenant_id: string): Promise<PaymentSettlement[]> {
+    return this.getStore(tenant_id).settlements;
   }
 
-  async getEvidencePacks(tenantId: string): Promise<PaymentEvidencePack[]> {
-    return this.getStore(tenantId).evidence;
+  async getEvidencePacks(tenant_id: string): Promise<PaymentEvidencePack[]> {
+    return this.getStore(tenant_id).evidence;
   }
 
-  async getAuditEvents(tenantId: string): Promise<PaymentAuditEvent[]> {
-    return this.getStore(tenantId).audit;
+  async getAuditEvents(tenant_id: string): Promise<PaymentAuditEvent[]> {
+    return this.getStore(tenant_id).audit;
   }
 }

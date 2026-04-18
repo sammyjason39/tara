@@ -17,28 +17,28 @@ export class BudgetingService {
    * Variance = Actual - Budget (for Revenue)
    * Variance = Budget - Actual (for Expense)
    */
-  async calculateVariance(tenantId: string, budgetLineId: string) {
-    const budgetLine = await this.prisma.budgetLine.findUnique({
+  async calculateVariance(tenant_id: string, budgetLineId: string) {
+    const budgetLine = await this.prisma.finance_budget_lines.findUnique({
       where: { id: budgetLineId },
-      include: { hrBudgetScenario: true }
+      include: { hr_budget_scenarios: true }
     });
 
     if (!budgetLine) throw new Error('Budget Line not found');
 
     // Fetch actuals from ledger (via AccountBalance)
     const balance = await this.balanceRepo.getBalance(
-        tenantId, 
-        (budgetLine as any).hrBudgetScenario.tenantId, 
-        budgetLine.accountId, 
-        budgetLine.periodId
+        tenant_id, 
+        (budgetLine as any).hrBudgetScenario.tenant_id, 
+        budgetLine.account_id, 
+        budgetLine.period_id
     );
 
     const actualAmount = new Decimal(Number(balance?.closingBalance || 0));
     const budgetAmount = budgetLine.amount;
 
     // Determine account type to calculate variance correctly
-    const account = await this.prisma.chartOfAccount.findUnique({
-        where: { id: budgetLine.accountId }
+    const account = await this.prisma.finance_chart_of_accounts.findUnique({
+        where: { id: budgetLine.account_id }
     });
 
     let variance: Decimal;
@@ -49,12 +49,13 @@ export class BudgetingService {
     }
 
     // Record the actual snapshot for trend tracking
-    await this.prisma.budgetActual.create({
+    await this.prisma.finance_budget_actuals.create({
         data: {
+          updated_at: new Date(),
         id: '5df6fynr',
-            budgetLineId,
+            budget_line_id: budgetLineId,
             amount: actualAmount,
-            asOfDate: new Date(),
+            as_of_date: new Date(),
         }
     });
 
@@ -70,14 +71,14 @@ export class BudgetingService {
   /**
    * Aggregates variance for an entire budget scenario.
    */
-  async getScenarioVariance(tenantId: string, scenarioId: string) {
-      const lines = await this.prisma.budgetLine.findMany({
-          where: { scenarioId }
+  async getScenarioVariance(tenant_id: string, scenarioId: string) {
+      const lines = await this.prisma.finance_budget_lines.findMany({
+          where: { scenario_id: scenarioId }
       });
 
       const results = [];
       for (const line of lines) {
-          results.push(await this.calculateVariance(tenantId, line.id));
+          results.push(await this.calculateVariance(tenant_id, line.id));
       }
 
       return results;

@@ -1,6 +1,6 @@
 export class AdminModuleStatus {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   moduleKey:
     | "finance"
     | "hr"
@@ -12,5 +12,5 @@ export class AdminModuleStatus {
     | "sales";
   enabled: boolean;
   updatedBy: string;
-  updatedAt: Date;
+  updated_at: Date;
 }

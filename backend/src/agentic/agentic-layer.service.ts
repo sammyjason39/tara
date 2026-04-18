@@ -12,21 +12,21 @@ export class AgenticLayerService {
    * Evaluates an agentic event asynchronously.
    * Instead of direct DB writes, we publish an insight or recommendation.
    */
-  async processEvent(tenantId: string, data: CreateAgenticEventDto) {
-    this.logger.log(`[AgenticLayer] Processing event for tenant ${tenantId}: ${data.eventType}`);
+  async processEvent(tenant_id: string, data: CreateAgenticEventDto) {
+    this.logger.log(`[AgenticLayer] Processing event for tenant ${tenant_id}: ${data.event_type}`);
     
     // Stub: Publish an AI recommendation event instead of direct mutation
     await this.eventBus.publish({
-      eventType: "AGENTIC_INSIGHT_GENERATED",
-      tenantId,
-      entityId: "insight-123",
-      entityType: "AI_INSIGHT",
-      sourceModule: "agentic",
+      event_type: "AGENTIC_INSIGHT_GENERATED",
+      tenant_id,
+      entity_id: "insight-123",
+      entity_type: "AI_INSIGHT",
+      source_module: "agentic",
       payload: {
         originalEvent: data,
         insight: "Agentic layer analysis complete",
       },
-      userId: "system-ai",
+      user_id: "system-ai",
     });
 
     return { success: true, message: "Insight generated and published" };
@@ -36,10 +36,10 @@ export class AgenticLayerService {
    * Stub for demand forecasting.
    * Returns a mock recommendation for now.
    */
-  async getDemandForecast(tenantId: string, productId: string) {
+  async getDemandForecast(tenant_id: string, product_id: string) {
     // This would call an AI model (e.g. Prophet, LSTM, or a Gemini-based agent)
     return {
-      productId,
+      product_id,
       recommendedStock: 50,
       confidence: 0.85,
       reason: "Historical trend indicates 20% increase in demand next month.",
@@ -49,7 +49,7 @@ export class AgenticLayerService {
   /**
    * Stub for replenishment recommendations.
    */
-  async getReplenishmentAdvice(tenantId: string) {
+  async getReplenishmentAdvice(tenant_id: string) {
     return [
       {
         sku: "PROD-001",

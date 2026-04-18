@@ -14,25 +14,25 @@ export class WorkflowService {
   ) {}
 
   async createRequest(params: {
-    tenantId: string;
-    entityType: string;
-    entityId: string;
-    makerDept: string;
-    destinationDept: string;
-    requestedBy: string;
+    tenant_id: string;
+    entity_type: string;
+    entity_id: string;
+    maker_dept: string;
+    destination_dept: string;
+    requested_by: string;
     notes?: string;
     metadata?: any;
   }) {
-    const request = await this.prisma.workflowRequest.create({
+    const request = await this.prisma.workflow_requests.create({
       data: {
         id: 'k0ctrl8m',
-        updatedAt: new Date(),
-        tenantId: params.tenantId,
-        entityType: params.entityType,
-        entityId: params.entityId,
-        makerDept: params.makerDept,
-        destinationDept: params.destinationDept,
-        requestedBy: params.requestedBy,
+        updated_at: new Date(),
+        tenant_id: params.tenant_id,
+        entity_type: params.entity_type,
+        entity_id: params.entity_id,
+        maker_dept: params.maker_dept,
+        destination_dept: params.destination_dept,
+        requested_by: params.requested_by,
         notes: params.notes,
         metadata: params.metadata || {},
         status: 'PENDING',
@@ -41,43 +41,43 @@ export class WorkflowService {
     });
 
     await this.eventBus.publish({
-      eventType: 'workflow.created',
-      tenantId: params.tenantId,
-      entityId: request.id,
-      entityType: 'WORKFLOW_REQUEST',
-      sourceModule: 'WORKFLOW',
-      payload: { entityType: params.entityType, entityId: params.entityId },
+      event_type: 'workflow.created',
+      tenant_id: params.tenant_id,
+      entity_id: request.id,
+      entity_type: 'WORKFLOW_REQUEST',
+      source_module: 'WORKFLOW',
+      payload: { entity_type: params.entity_type, entity_id: params.entity_id },
     });
 
     return request;
   }
 
-  async approveRequest(tenantId: string, id: string, userId: string, notes?: string) {
-    const request = await this.prisma.workflowRequest.findUnique({
-      where: { id, tenantId },
+  async approveRequest(tenant_id: string, id: string, user_id: string, notes?: string) {
+    const request = await this.prisma.workflow_requests.findUnique({
+      where: { id, tenant_id },
     });
 
     if (!request) throw new NotFoundException('Workflow request not found');
     if (request.status !== 'PENDING') throw new BadRequestException('Request is no longer pending');
 
-    const updated = await this.prisma.workflowRequest.update({
+    const updated = await this.prisma.workflow_requests.update({
       where: { id },
       data: {
         status: 'APPROVED',
-        lastAction: 'APPROVE',
+        last_action: 'APPROVE',
         notes: notes || request.notes,
       },
     });
 
     // Audit Log entry
-    await this.prisma.workflowAuditEntry.create({
+    await this.prisma.workflow_audit_entries.create({
       data: {
         id: 'n35ogdd9',
-        updatedAt: new Date(),
-        tenantId,
-        workflowId: id,
+        updated_at: new Date(),
+        tenant_id,
+        workflow_id: id,
         action: 'APPROVE',
-        actorId: userId,
+        actor_id: user_id,
         notes,
         cycle: request.cycle,
         after: { status: 'APPROVED' },
@@ -85,42 +85,42 @@ export class WorkflowService {
     });
 
     await this.eventBus.publish({
-      eventType: 'workflow.approved',
-      tenantId,
-      entityId: id,
-      entityType: 'WORKFLOW_REQUEST',
-      sourceModule: 'WORKFLOW',
-      userId,
-      payload: { entityType: request.entityType, entityId: request.entityId },
+      event_type: 'workflow.approved',
+      tenant_id: tenant_id,
+      entity_id: id,
+      entity_type: 'WORKFLOW_REQUEST',
+      source_module: 'WORKFLOW',
+      user_id: user_id,
+      payload: { entity_type: request.entity_type, entity_id: request.entity_id },
     });
 
     return updated;
   }
 
-  async rejectRequest(tenantId: string, id: string, userId: string, notes?: string) {
-    const request = await this.prisma.workflowRequest.findUnique({
-      where: { id, tenantId },
+  async rejectRequest(tenant_id: string, id: string, user_id: string, notes?: string) {
+    const request = await this.prisma.workflow_requests.findUnique({
+      where: { id, tenant_id: tenant_id },
     });
 
     if (!request) throw new NotFoundException('Workflow request not found');
 
-    const updated = await this.prisma.workflowRequest.update({
+    const updated = await this.prisma.workflow_requests.update({
       where: { id },
       data: {
         status: 'REJECTED',
-        lastAction: 'REJECT',
+        last_action: 'REJECT',
         notes: notes || request.notes,
       },
     });
 
-    await this.prisma.workflowAuditEntry.create({
+    await this.prisma.workflow_audit_entries.create({
       data: {
         id: '78l3xc8k',
-        updatedAt: new Date(),
-        tenantId,
-        workflowId: id,
+        updated_at: new Date(),
+        tenant_id,
+        workflow_id: id,
         action: 'REJECT',
-        actorId: userId,
+        actor_id: user_id,
         notes,
         cycle: request.cycle,
         after: { status: 'REJECTED' },
@@ -128,35 +128,35 @@ export class WorkflowService {
     });
 
     await this.eventBus.publish({
-      eventType: 'workflow.rejected',
-      tenantId,
-      entityId: id,
-      entityType: 'WORKFLOW_REQUEST',
-      sourceModule: 'WORKFLOW',
-      userId,
-      payload: { entityType: request.entityType, entityId: request.entityId },
+      event_type: 'workflow.rejected',
+      tenant_id: tenant_id,
+      entity_id: id,
+      entity_type: 'WORKFLOW_REQUEST',
+      source_module: 'WORKFLOW',
+      user_id: user_id,
+      payload: { entity_type: request.entity_type, entity_id: request.entity_id },
     });
 
     return updated;
   }
 
-  async listInbox(tenantId: string, dept: string) {
-    return this.prisma.workflowRequest.findMany({
+  async listInbox(tenant_id: string, dept: string) {
+    return this.prisma.workflow_requests.findMany({
       where: {
-        tenantId,
-        destinationDept: dept,
+        tenant_id: tenant_id,
+        destination_dept: dept,
         status: 'PENDING',
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { created_at: 'desc' },
     });
   }
 
-  async listAll(tenantId: string) {
-    return this.prisma.workflowRequest.findMany({
+  async listAll(tenant_id: string) {
+    return this.prisma.workflow_requests.findMany({
       where: {
-        tenantId,
+        tenant_id: tenant_id,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { created_at: 'desc' },
       take: 50,
     });
   }

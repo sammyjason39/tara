@@ -8,24 +8,24 @@ import { Prisma } from '@prisma/client';
 export class ArCustomerCreditMockRepository implements IArCustomerCreditRepository {
   private balances: ICustomerCreditBalance[] = [];
 
-  async updateCreditBalance(tenantId: string, companyId: string, customerId: string, amount: Prisma.Decimal): Promise<void> {
-    const existing = this.balances.find(b => b.tenantId === tenantId && b.companyId === companyId && b.customerId === customerId);
+  async updateCreditBalance(tenant_id: string, company_id: string, customer_id: string, amount: Prisma.Decimal): Promise<void> {
+    const existing = this.balances.find(b => b.tenant_id === tenant_id && b.company_id === company_id && b.customer_id === customer_id);
     if (existing) {
       existing.balance = existing.balance.plus(amount);
-      existing.updatedAt = new Date();
+      existing.updated_at = new Date();
     } else {
       this.balances.push({
         id: uuid(),
-        tenantId,
-        companyId,
-        customerId,
+        tenant_id,
+        company_id,
+        customer_id,
         balance: new Prisma.Decimal(amount),
-        updatedAt: new Date(),
+        updated_at: new Date(),
       });
     }
   }
 
-  async findByCustomer(tenantId: string, companyId: string, customerId: string): Promise<ICustomerCreditBalance | null> {
-    return this.balances.find(b => b.tenantId === tenantId && b.companyId === companyId && b.customerId === customerId) || null;
+  async findByCustomer(tenant_id: string, company_id: string, customer_id: string): Promise<ICustomerCreditBalance | null> {
+    return this.balances.find(b => b.tenant_id === tenant_id && b.company_id === company_id && b.customer_id === customer_id) || null;
   }
 }

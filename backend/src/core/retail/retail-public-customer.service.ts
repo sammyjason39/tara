@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from "uuid";
 import {
   Injectable,
   NotFoundException,
@@ -13,39 +14,40 @@ export class RetailPublicCustomerService {
     private readonly retailService: RetailService,
   ) {}
 
-  private async getOrCreateCart(tenantId: string, customerId: string) {
-    return this.prisma.retailCart.upsert({
-      where: { customerId },
+  private async getOrCreateCart(tenant_id: string, customer_id: string) {
+    return this.prisma.retail_carts.upsert({
+      where: { customer_id: customer_id },
       update: {},
       create: {
-        tenantId: tenantId,
-        customerId,
+        id: uuidv4(),
+        tenant_id: tenant_id,
+        customer_id: customer_id,
         status: "active",
       },
     });
   }
 
-  async buildCartResponse(tenantId: string, customerId: string) {
-    const cart = await this.prisma.retailCart.findFirst({
-      where: { tenantId: tenantId, customerId },
-      include: { retailCartItems: { include: { itemMaster: true } } },
+  async buildCartResponse(tenant_id: string, customer_id: string) {
+    const cart = await this.prisma.retail_carts.findFirst({
+      where: { tenant_id: tenant_id, customer_id: customer_id },
+      include: { retail_cart_items: { include: { item_masters: true } } },
     });
 
     if (!cart) {
       return { id: null, items: [], subtotal: 0, tax: 0, total: 0 };
     }
 
-    const items = cart.retailCartItems.map((item: any) => {
-      const unitPrice = Number(item.unitPrice);
+    const items = cart.retail_cart_items.map((item: any) => {
+      const unit_price = Number(item.unit_price);
       const quantity = Number(item.quantity);
       return {
         id: item.id,
-        productId: item.productId,
-        sku: item.itemMaster?.sku ?? "",
-        name: item.itemMaster?.name ?? "Unknown Item",
+        product_id: item.product_id,
+        sku: item.item_masters?.sku ?? "",
+        name: item.item_masters?.name ?? "Unknown Item",
         quantity,
-        unitPrice,
-        totalPrice: unitPrice * quantity,
+        unit_price,
+        totalPrice: unit_price * quantity,
       };
     });
 
@@ -62,272 +64,273 @@ export class RetailPublicCustomerService {
       subtotal,
       tax,
       total,
-      updatedAt: cart.updatedAt.toISOString(),
+      updated_at: cart.updated_at.toISOString(),
     };
   }
 
   async addCartItem(
-    tenantId: string,
-    customerId: string,
-    payload: { productId?: string; sku?: string; quantity?: number },
+    tenant_id: string,
+    customer_id: string,
+    payload: { product_id?: string; sku?: string; quantity?: number },
   ) {
     const qty = Number(payload.quantity ?? 1);
-    if (!payload.productId && !payload.sku) {
-      throw new BadRequestException("productId or sku is required");
+    if (!payload.product_id && !payload.sku) {
+      throw new BadRequestException("product_id or sku is required");
     }
     if (!Number.isFinite(qty) || qty <= 0) {
       throw new BadRequestException("quantity must be greater than 0");
     }
 
-    const product = payload.productId
-      ? await this.prisma.itemMaster.findFirst({
-          where: { id: String(payload.productId), tenantId: tenantId },
+    const product = payload.product_id
+      ? await this.prisma.item_masters.findFirst({
+          where: { id: String(payload.product_id), tenant_id: tenant_id },
         })
-      : await this.prisma.itemMaster.findFirst({
-          where: { tenantId: tenantId, sku: String(payload.sku) },
+      : await this.prisma.item_masters.findFirst({
+          where: { tenant_id: tenant_id, sku: String(payload.sku) },
         });
 
     if (!product) {
       throw new NotFoundException("Product not found");
     }
 
-    const cart = await this.getOrCreateCart(tenantId, customerId);
-    const existing = await this.prisma.retailCartItem.findFirst({
-      where: { cartId: cart.id, productId: product.id },
+    const cart = await this.getOrCreateCart(tenant_id, customer_id);
+    const existing = await this.prisma.retail_cart_items.findFirst({
+      where: { cart_id: cart.id, product_id: product.id },
     });
 
     if (existing) {
-      await this.prisma.retailCartItem.update({
+      await this.prisma.retail_cart_items.update({
         where: { id: existing.id },
         data: { quantity: existing.quantity + qty },
       });
     } else {
-      await this.prisma.retailCartItem.create({
+      await this.prisma.retail_cart_items.create({
         data: {
-          id: "hgpi7bgw",
-          updatedAt: new Date(),
-          cartId: cart.id,
-          productId: product.id,
+          id: uuidv4(),
+          updated_at: new Date(),
+          cart_id: cart.id,
+          product_id: product.id,
           quantity: qty,
-          unitPrice: product.basePrice ?? 0,
+          unit_price: product.base_price ?? 0,
         },
       });
     }
 
-    return this.buildCartResponse(tenantId, customerId);
+    return this.buildCartResponse(tenant_id, customer_id);
   }
 
   async updateCartItem(
-    tenantId: string,
-    customerId: string,
-    itemId: string,
+    tenant_id: string,
+    customer_id: string,
+    item_id: string,
     quantity: number,
   ) {
     if (!Number.isFinite(quantity) || quantity < 0) {
       throw new BadRequestException("quantity must be 0 or greater");
     }
 
-    const cart = await this.getOrCreateCart(tenantId, customerId);
-    const item = await this.prisma.retailCartItem.findFirst({
-      where: { id: itemId, cartId: cart.id },
+    const cart = await this.getOrCreateCart(tenant_id, customer_id);
+    const item = await this.prisma.retail_cart_items.findFirst({
+      where: { id: item_id, cart_id: cart.id },
     });
     if (!item) {
       throw new NotFoundException("Cart item not found");
     }
 
     if (quantity === 0) {
-      await this.prisma.retailCartItem.delete({ where: { id: item.id } });
+      await this.prisma.retail_cart_items.delete({ where: { id: item.id } });
     } else {
-      await this.prisma.retailCartItem.update({
+      await this.prisma.retail_cart_items.update({
         where: { id: item.id },
         data: { quantity },
       });
     }
 
-    return this.buildCartResponse(tenantId, customerId);
+    return this.buildCartResponse(tenant_id, customer_id);
   }
 
-  async removeCartItem(tenantId: string, customerId: string, itemId: string) {
-    const cart = await this.getOrCreateCart(tenantId, customerId);
-    const item = await this.prisma.retailCartItem.findFirst({
-      where: { id: itemId, cartId: cart.id },
+  async removeCartItem(tenant_id: string, customer_id: string, item_id: string) {
+    const cart = await this.getOrCreateCart(tenant_id, customer_id);
+    const item = await this.prisma.retail_cart_items.findFirst({
+      where: { id: item_id, cart_id: cart.id },
     });
     if (!item) {
       throw new NotFoundException("Cart item not found");
     }
-    await this.prisma.retailCartItem.delete({ where: { id: item.id } });
-    return this.buildCartResponse(tenantId, customerId);
+    await this.prisma.retail_cart_items.delete({ where: { id: item.id } });
+    return this.buildCartResponse(tenant_id, customer_id);
   }
 
-  async clearCart(tenantId: string, customerId: string) {
-    const cart = await this.getOrCreateCart(tenantId, customerId);
-    await this.prisma.retailCartItem.deleteMany({ where: { cartId: cart.id } });
-    return this.buildCartResponse(tenantId, customerId);
+  async clearCart(tenant_id: string, customer_id: string) {
+    const cart = await this.getOrCreateCart(tenant_id, customer_id);
+    await this.prisma.retail_cart_items.deleteMany({ where: { cart_id: cart.id } });
+    return this.buildCartResponse(tenant_id, customer_id);
   }
 
-  async buildWishlistResponse(tenantId: string, customerId: string) {
-    const wishlist = await this.prisma.retailWishlist.findFirst({
-      where: { tenantId: tenantId, customerId },
-      include: { retailWishlistItems: { include: { itemMaster: true } } },
+  async buildWishlistResponse(tenant_id: string, customer_id: string) {
+    const wishlist = await this.prisma.retail_wishlists.findFirst({
+      where: { tenant_id: tenant_id, customer_id: customer_id },
+      include: { retail_wishlist_items: { include: { item_masters: true } } },
     });
 
     if (!wishlist) {
       return { id: null, items: [] };
     }
 
-    const items = wishlist.retailWishlistItems.map((item: any) => ({
+    const items = wishlist.retail_wishlist_items.map((item: any) => ({
       id: item.id,
-      productId: item.productId,
-      sku: item.itemMaster?.sku ?? "",
-      name: item.itemMaster?.name ?? "Unknown Item",
-      addedAt: item.createdAt.toISOString(),
+      product_id: item.product_id,
+      sku: item.item_masters?.sku ?? "",
+      name: item.item_masters?.name ?? "Unknown Item",
+      addedAt: item.created_at.toISOString(),
     }));
 
     return {
       id: wishlist.id,
       items,
-      updatedAt: wishlist.updatedAt.toISOString(),
+      updated_at: wishlist.updated_at.toISOString(),
     };
   }
 
   async addWishlistItem(
-    tenantId: string,
-    customerId: string,
-    payload: { productId?: string; sku?: string },
+    tenant_id: string,
+    customer_id: string,
+    payload: { product_id?: string; sku?: string },
   ) {
-    if (!payload.productId && !payload.sku) {
-      throw new BadRequestException("productId or sku is required");
+    if (!payload.product_id && !payload.sku) {
+      throw new BadRequestException("product_id or sku is required");
     }
 
-    const product = payload.productId
-      ? await this.prisma.itemMaster.findFirst({
-          where: { id: String(payload.productId), tenantId: tenantId },
+    const product = payload.product_id
+      ? await this.prisma.item_masters.findFirst({
+          where: { id: String(payload.product_id), tenant_id: tenant_id },
         })
-      : await this.prisma.itemMaster.findFirst({
-          where: { tenantId: tenantId, sku: String(payload.sku) },
+      : await this.prisma.item_masters.findFirst({
+          where: { tenant_id: tenant_id, sku: String(payload.sku) },
         });
 
     if (!product) {
       throw new NotFoundException("Product not found");
     }
 
-    const wishlist = await this.prisma.retailWishlist.upsert({
-      where: { customerId },
+    const wishlist = await this.prisma.retail_wishlists.upsert({
+      where: { customer_id: customer_id },
       update: {},
       create: {
-        tenantId: tenantId,
-        customerId,
+        id: uuidv4(),
+        tenant_id: tenant_id,
+        customer_id: customer_id,
       },
     });
 
-    const existing = await this.prisma.retailWishlistItem.findFirst({
-      where: { wishlistId: wishlist.id, productId: product.id },
+    const existing = await this.prisma.retail_wishlist_items.findFirst({
+      where: { wishlist_id: wishlist.id, product_id: product.id },
     });
 
     if (!existing) {
-      await this.prisma.retailWishlistItem.create({
+      await this.prisma.retail_wishlist_items.create({
         data: {
-          id: "vc65gmnv",
-          updatedAt: new Date(),
-          wishlistId: wishlist.id,
-          productId: product.id,
+          id: uuidv4(),
+          updated_at: new Date(),
+          wishlist_id: wishlist.id,
+          product_id: product.id,
         },
       });
     }
 
-    return this.buildWishlistResponse(tenantId, customerId);
+    return this.buildWishlistResponse(tenant_id, customer_id);
   }
 
   async removeWishlistItem(
-    tenantId: string,
-    customerId: string,
-    itemId: string,
+    tenant_id: string,
+    customer_id: string,
+    item_id: string,
   ) {
-    const wishlist = await this.prisma.retailWishlist.findFirst({
-      where: { tenantId: tenantId, customerId },
+    const wishlist = await this.prisma.retail_wishlists.findFirst({
+      where: { tenant_id: tenant_id, customer_id: customer_id },
     });
     if (!wishlist) {
       throw new NotFoundException("Wishlist not found");
     }
-    const item = await this.prisma.retailWishlistItem.findFirst({
-      where: { id: itemId, wishlistId: wishlist.id },
+    const item = await this.prisma.retail_wishlist_items.findFirst({
+      where: { id: item_id, wishlist_id: wishlist.id },
     });
     if (!item) {
       throw new NotFoundException("Wishlist item not found");
     }
-    await this.prisma.retailWishlistItem.delete({ where: { id: item.id } });
-    return this.buildWishlistResponse(tenantId, customerId);
+    await this.prisma.retail_wishlist_items.delete({ where: { id: item.id } });
+    return this.buildWishlistResponse(tenant_id, customer_id);
   }
 
   async checkout(
-    tenantId: string,
-    customerId: string,
+    tenant_id: string,
+    customer_id: string,
     payload: {
-      paymentStatus?: string;
-      paymentMethod?: string;
+      payment_status?: string;
+      payment_method?: string;
       paymentReference?: string;
     },
   ) {
-    const cart = await this.prisma.retailCart.findFirst({
-      where: { tenantId: tenantId, customerId },
-      include: { retailCartItems: { include: { itemMaster: true } } },
+    const cart = await this.prisma.retail_carts.findFirst({
+      where: { tenant_id: tenant_id, customer_id: customer_id },
+      include: { retail_cart_items: { include: { item_masters: true } } },
     });
 
-    if (!cart || cart.retailCartItems.length === 0) {
+    if (!cart || cart.retail_cart_items.length === 0) {
       throw new BadRequestException("Cart is empty");
     }
 
-    const store = await this.prisma.store.findFirst({
-      where: { tenantId: tenantId, deletedAt: null },
-      orderBy: { createdAt: "asc" },
+    const store = await this.prisma.stores.findFirst({
+      where: { tenant_id: tenant_id, deleted_at: null },
+      orderBy: { created_at: "asc" },
     });
-    if (!store) {
+    if (true /* RECOVERY */) {
       throw new NotFoundException("No store configured");
     }
 
-    const items = cart.retailCartItems.map((item: any) => ({
-      productId: item.productId,
+    const items = cart.retail_cart_items.map((item: any) => ({
+      product_id: item.product_id,
       quantity: Number(item.quantity),
-      unitPrice: Number(item.unitPrice),
+      unit_price: Number(item.unit_price),
     }));
 
     const subtotal = items.reduce(
-      (sum: number, item: any) => sum + item.unitPrice * item.quantity,
+      (sum: number, item: any) => sum + item.unit_price * item.quantity,
       0,
     );
 
-    const paymentStatus = String(payload.paymentStatus ?? "PENDING");
-    const status = paymentStatus === "PAID" ? "paid" : "pending_payment";
-    const paymentMethod = payload.paymentMethod ?? "card";
+    const payment_status = String(payload.payment_status ?? "PENDING");
+    const status = payment_status === "PAID" ? "paid" : "pending_payment";
+    const payment_method = payload.payment_method ?? "card";
     const paymentReference = payload.paymentReference ?? undefined;
 
     const order = await this.retailService.createOrder(
-      tenantId,
-      store.locationId || "",
+      tenant_id,
+      store.location_id || "",
       {
-        storeId: store.id,
-        terminalId: "api-gateway",
-        customerId: customerId,
+        store_id: stores.id,
+        terminal_id: "api-gateway",
+        customer_id: customer_id,
         items,
-        paymentMethod: paymentMethod as any,
-        grandTotal: subtotal,
+        payment_method: payment_method as any,
+        grand_total: subtotal,
       },
-      customerId,
+      customer_id,
     );
 
-    if (paymentStatus === "PAID") {
+    if (payment_status === "PAID") {
       await this.retailService.processPayment(
-        tenantId,
+        tenant_id,
         order.id,
         {
-          amount: Number(order.grandTotal),
-          method: paymentMethod as any,
+          amount: Number(order.grand_total),
+          method: payment_method as any,
         },
-        customerId,
+        customer_id,
       );
     }
 
-    await this.prisma.retailCartItem.deleteMany({ where: { cartId: cart.id } });
+    await this.prisma.retail_cart_items.deleteMany({ where: { cart_id: cart.id } });
 
     return order;
   }

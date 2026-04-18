@@ -1,11 +1,11 @@
 export class CareerPath {
   id: string;
-  tenantId: string;
-  fromPositionId: string;
-  toPositionId: string;
-  requirementNotes?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  tenant_id: string;
+  from_position_id: string;
+  to_position_id: string;
+  requirement_notes?: string;
+  created_at: Date;
+  updated_at: Date;
 
   fromPosition?: any;
   toPosition?: any;

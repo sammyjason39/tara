@@ -16,7 +16,7 @@ export class ProcurementListener implements OnModuleInit {
   }
 
   private async handlePoReceived(event: any) {
-    const { tenantId, payload, correlationId, userId } = event;
+    const { tenant_id, payload, correlation_id, user_id } = event;
     const { poId, items } = payload;
 
     for (const item of items) {
@@ -27,18 +27,18 @@ export class ProcurementListener implements OnModuleInit {
       
       // 2. Intake Stock
       await this.inventoryService.intakeStock(
-        tenantId,
+        tenant_id,
         {
-          itemId: item.productId,
-          locationId: item.locationId || 'DEFAULT_WH', // Default warehouse if not specified
+          item_id: item.product_id,
+          location_id: item.location_id || 'DEFAULT_WH', // Default warehouse if not specified
           quantity: item.quantity,
-          unitCost: item.unitPrice,
+          unitCost: item.unit_price,
           referenceId: poId,
           referenceType: 'PROCUREMENT_RECEIPT',
         } as any,
-        userId,
+        user_id,
         null,
-        correlationId
+        correlation_id
       );
     }
   }

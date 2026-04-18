@@ -23,7 +23,7 @@ export class FiscalMappingService {
     this.logger.log(`Resolving accounts for intent: ${intent} (Tenant: ${tenant_id})`);
 
     // 1. Fetch Tenant Industry
-    const company = await this.prisma.company.findUnique({
+    const company = await this.prisma.companies.findUnique({
       where: { id: tenant_id },
       select: { industry: true },
     });

@@ -1,12 +1,12 @@
 export class PositionSkill {
   id: string;
-  tenantId: string;
-  positionId: string;
-  skillId: string;
+  tenant_id: string;
+  position_id: string;
+  skill_id: string;
   minProficiency: number;
   isMandatory: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 
   position?: any;
   skill?: any;

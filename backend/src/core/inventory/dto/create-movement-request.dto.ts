@@ -7,7 +7,7 @@ import {
 
 export class CreateMovementRequestDto {
   @IsString()
-  productId: string;
+  product_id: string;
 
   @IsString()
   fromLocationId: string;

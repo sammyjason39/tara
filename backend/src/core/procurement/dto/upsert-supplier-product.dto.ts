@@ -11,7 +11,7 @@ export class UpsertSupplierProductDto {
 
   @IsString()
   @IsNotEmpty()
-  branchId: string;
+  branch_id: string;
 
   @IsString()
   @IsNotEmpty()
@@ -27,7 +27,7 @@ export class UpsertSupplierProductDto {
 
   @IsNumber()
   @Min(0)
-  unitPrice: number;
+  unit_price: number;
 
   @IsString()
   @IsOptional()

@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 
 export interface IGeneralLedgerProjectionRepository {
   append(data: Partial<GeneralLedgerProjection>): Promise<void>;
-  reset(tenantId: string, companyId: string): Promise<void>;
-  findHistory(tenantId: string, companyId: string, accountId: string, fromSeq: number, toSeq: number): Promise<GeneralLedgerProjection[]>;
-  getLatestRunningBalance(tenantId: string, companyId: string, accountId: string): Promise<Prisma.Decimal>;
+  reset(tenant_id: string, company_id: string): Promise<void>;
+  findHistory(tenant_id: string, company_id: string, accountId: string, fromSeq: number, toSeq: number): Promise<GeneralLedgerProjection[]>;
+  getLatestRunningBalance(tenant_id: string, company_id: string, accountId: string): Promise<Prisma.Decimal>;
 }

@@ -1,20 +1,20 @@
 export interface ProvisioningResult {
-  tenantId: string;
-  companyName: string;
-  locationId: string;
+  tenant_id: string;
+  company_name: string;
+  location_id: string;
   departmentId: string;
 }
 
 export interface ProvisioningData {
-  userId: string;
+  user_id: string;
   name: string;
   country: string;
   currency: string;
   industry: string;
   address: string;
   user: {
-    firstName: string;
-    lastName: string;
+    first_name: string;
+    last_name: string;
     email: string;
     phone?: string;
   };

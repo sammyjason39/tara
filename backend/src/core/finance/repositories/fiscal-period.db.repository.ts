@@ -13,93 +13,93 @@ export class FiscalPeriodDbRepository implements IFiscalPeriodRepository {
     return this.prisma as Prisma.TransactionClient;
   }
 
-  async findYear(tenantId: string, companyId: string, year: number): Promise<FinanceFiscalYear | null> {
-    const period = await this.db.fiscalPeriod.findFirst({
-      where: { tenantId, name: { startsWith: year.toString() } }
+  async findYear(tenant_id: string, company_id: string, year: number): Promise<FinanceFiscalYear | null> {
+    const period = await this.db.finance_fiscal_periods.findFirst({
+      where: { tenant_id: tenant_id, name: { startsWith: year.toString() } }
     });
     
     if (!period) return null;
     
     return {
       id: year.toString(),
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       year,
-      startDate: period.startDate,
-      endDate: period.endDate,
+      start_date: period.start_date,
+      end_date: period.end_date,
       isClosed: false,
-      createdAt: period.createdAt,
-      updatedAt: period.updatedAt,
+      created_at: period.created_at,
+      updated_at: period.updated_at,
     };
   }
 
-  async findPeriods(tenantId: string, companyId: string, yearId: string): Promise<FinanceFiscalPeriod[]> {
-    const list = await this.db.fiscalPeriod.findMany({
-      where: { tenantId, name: { startsWith: yearId } }
+  async findPeriods(tenant_id: string, company_id: string, yearId: string): Promise<FinanceFiscalPeriod[]> {
+    const list = await this.db.finance_fiscal_periods.findMany({
+      where: { tenant_id: tenant_id, name: { startsWith: yearId } }
     });
     return list as unknown as FinanceFiscalPeriod[];
   }
 
-  async findById(tenantId: string, companyId: string, id: string): Promise<FinanceFiscalPeriod | null> {
-    const res = await this.db.fiscalPeriod.findUnique({
+  async findById(tenant_id: string, company_id: string, id: string): Promise<FinanceFiscalPeriod | null> {
+    const res = await this.db.finance_fiscal_periods.findUnique({
       where: { id }
     });
     return res as unknown as FinanceFiscalPeriod;
   }
 
-  async updateStatus(tenantId: string, companyId: string, periodId: string, status: FiscalPeriodStatus): Promise<FinanceFiscalPeriod> {
-    const updated = await this.db.fiscalPeriod.update({
+  async updateStatus(tenant_id: string, company_id: string, periodId: string, status: FiscalPeriodStatus): Promise<FinanceFiscalPeriod> {
+    const updated = await this.db.finance_fiscal_periods.update({
       where: { id: periodId },
       data: { status: status as any }
     });
     return updated as unknown as FinanceFiscalPeriod;
   }
 
-  async createYear(tenantId: string, companyId: string, data: Partial<FinanceFiscalYear>): Promise<FinanceFiscalYear> {
+  async createYear(tenant_id: string, company_id: string, data: Partial<FinanceFiscalYear>): Promise<FinanceFiscalYear> {
     return {
       ...data,
       id: data.id || data.year?.toString() || '',
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       isClosed: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
     } as FinanceFiscalYear;
   }
 
-  async createPeriod(tenantId: string, companyId: string, data: Partial<FinanceFiscalPeriod>): Promise<FinanceFiscalPeriod> {
-    const created = await this.db.fiscalPeriod.create({
+  async createPeriod(tenant_id: string, company_id: string, data: Partial<FinanceFiscalPeriod>): Promise<FinanceFiscalPeriod> {
+    const created = await this.db.finance_fiscal_periods.create({
       data: {
         id: 'bj15i9qd',
-        updatedAt: new Date(),
-        tenantId,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
         name: data.id || '', 
-        startDate: data.startDate || new Date(),
-        endDate: data.endDate || new Date(),
+        start_date: data.start_date || new Date(),
+        end_date: data.end_date || new Date(),
         status: (data.status as any) || FiscalPeriodStatus.OPEN,
       }
     });
     return created as unknown as FinanceFiscalPeriod;
   }
 
-  async saveClosingRecord(tenantId: string, companyId: string, record: PeriodClosingRecord): Promise<PeriodClosingRecord> {
+  async saveClosingRecord(tenant_id: string, company_id: string, record: PeriodClosingRecord): Promise<PeriodClosingRecord> {
     return record;
   }
 
-  async getClosingRecord(tenantId: string, companyId: string, periodId: string): Promise<PeriodClosingRecord | null> {
+  async getClosingRecord(tenant_id: string, company_id: string, periodId: string): Promise<PeriodClosingRecord | null> {
     return null;
   }
 
-  async acquireLock(tenantId: string, companyId: string, periodId: string): Promise<void> {
+  async acquireLock(tenant_id: string, company_id: string, periodId: string): Promise<void> {
   }
 
-  async getExecutionLock(tenantId: string, companyId: string, periodId: string): Promise<ClosingExecutionLock | null> {
+  async getExecutionLock(tenant_id: string, company_id: string, periodId: string): Promise<ClosingExecutionLock | null> {
     return null;
   }
 
-  async saveExecutionLock(tenantId: string, companyId: string, lock: ClosingExecutionLock): Promise<void> {
+  async saveExecutionLock(tenant_id: string, company_id: string, lock: ClosingExecutionLock): Promise<void> {
   }
 
-  async releaseExecutionLock(tenantId: string, companyId: string, periodId: string): Promise<void> {
+  async releaseExecutionLock(tenant_id: string, company_id: string, periodId: string): Promise<void> {
   }
 }

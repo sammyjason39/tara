@@ -1,6 +1,6 @@
 export class PaymentDispute {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   paymentId: string;
   reason: string;
   amount: number;
@@ -15,17 +15,17 @@ export class PaymentDispute {
   evidence: string[];
   providerCaseId?: string;
   resolution?: "won" | "lost" | "settled";
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export class PaymentChargeback {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   paymentId: string;
   disputeId: string;
   amount: number;
   status: "open" | "submitted" | "won" | "lost";
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

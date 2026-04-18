@@ -10,15 +10,15 @@ import {
 export class CreateLeadDto {
   @IsString()
   @IsNotEmpty()
-  companyName: string;
+  company_name: string;
 
   @IsString()
   @IsNotEmpty()
-  contactName: string;
+  contact_name: string;
 
   @IsEmail()
   @IsOptional()
-  contactEmail?: string;
+  contact_email?: string;
 
   @IsString()
   @IsOptional()
@@ -30,7 +30,7 @@ export class CreateLeadDto {
 
   @IsNumber()
   @Min(0)
-  potentialValue: number;
+  potential_value: number;
 
   @IsString()
   @IsOptional()

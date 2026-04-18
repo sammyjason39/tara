@@ -51,5 +51,5 @@ export class CreatePaymentTransactionDto {
 
   @IsString()
   @IsOptional()
-  idempotencyKey?: string;
+  idempotency_key?: string;
 }

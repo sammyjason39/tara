@@ -13,11 +13,11 @@ export class AccountingMappingService {
   /**
    * Resolves the standard Debit and Credit accounts for a given subledger entry.
    * In a production system, this would query a Mapping Repository based on 
-   * (tenantId, companyId, entryType, referenceType).
+   * (tenant_id, company_id, entryType, referenceType).
    */
   async resolveAccounts(
-    tenantId: string,
-    companyId: string,
+    tenant_id: string,
+    company_id: string,
     entryType: SubledgerEntryType,
     referenceType: string
   ): Promise<AccountMapping> {

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../../../persistence/prisma.service';
 import { IAssetRepository } from './interfaces/asset.repository.interface';
 import { Asset } from '../domain/asset.interfaces';
@@ -12,46 +13,67 @@ export class AssetDbRepository implements IAssetRepository {
     return this.prisma as Prisma.TransactionClient;
   }
 
-  async findById(tenantId: string, companyId: string, id: string): Promise<Asset | null> {
-    const res = await this.db.fixedAsset.findUnique({
+  async findById(tenant_id: string, company_id: string, id: string): Promise<Asset | null> {
+    const res = await this.db.fixed_assets.findUnique({
       where: { id }
     });
-    return res as unknown as Asset;
+    if (!res) return null;
+    return this.mapToDomain(res);
   }
 
-  async findAll(tenantId: string, companyId: string): Promise<Asset[]> {
-    const list = await this.db.fixedAsset.findMany({
-      where: { tenantId }
+  async findAll(tenant_id: string, company_id: string): Promise<Asset[]> {
+    const list = await this.db.fixed_assets.findMany({
+      where: { tenant_id: tenant_id }
     });
-    return list as unknown as Asset[];
+    return list.map((item: any) => this.mapToDomain(item));
   }
 
   async save(asset: Asset): Promise<Asset> {
-    const created = await this.db.fixedAsset.create({
+    const created = await this.db.fixed_assets.create({
       data: {
-        id: 'z8lvq6qv',
-        updatedAt: new Date(),
-        tenantId: asset.tenantId,
+        id: asset.id || randomUUID(),
+        tenant_id: asset.tenant_id,
         description: asset.description || asset.name || 'No Description',
-        assetClass: asset.assetClass || 'GENERAL',
-        location: asset.location || 'GLOBAL',
+        asset_class: asset.assetClass || 'GENERAL',
+        location: (asset as any).location || 'GLOBAL',
         department: asset.department || 'GLOBAL',
-        acquisitionCost: new Prisma.Decimal(asset.acquisitionCost.toString()),
-        acquisitionDate: new Date(asset.acquisitionDate),
-        usefulLifeYears: asset.usefulLifeYears || Math.floor(asset.usefulLifeMonths / 12) || 5,
-        depreciationMethod: asset.depreciationMethod,
-        residualValue: new Prisma.Decimal(asset.residualValue.toString()),
+        acquisition_cost: new Prisma.Decimal(asset.acquisitionCost.toString()),
+        acquisition_date: new Date(asset.acquisitionDate),
+        useful_life_years: asset.usefulLifeYears || (asset as any).usefulLifeMonths ? Math.floor((asset as any).usefulLifeMonths / 12) : 5,
+        depreciation_method: asset.depreciationMethod,
+        residual_value: new Prisma.Decimal(asset.residualValue.toString()),
         status: asset.status,
-        carryingValue: asset.carryingValue ? new Prisma.Decimal(asset.carryingValue.toString()) : new Prisma.Decimal(asset.acquisitionCost.toString()),
+        carrying_value: asset.carryingValue ? new Prisma.Decimal(asset.carryingValue.toString()) : new Prisma.Decimal(asset.acquisitionCost.toString()),
+        updated_at: new Date(),
       }
     });
-    return created as unknown as Asset;
+    return this.mapToDomain(created);
   }
 
-  async updateStatus(tenantId: string, companyId: string, id: string, status: string): Promise<void> {
-    await this.db.fixedAsset.update({
+  async updateStatus(tenant_id: string, company_id: string, id: string, status: string): Promise<void> {
+    await this.db.fixed_assets.update({
       where: { id },
-      data: { status }
+      data: { status, updated_at: new Date() }
     });
+  }
+
+  private mapToDomain(item: any): Asset {
+    return {
+      id: item.id,
+      tenant_id: item.tenant_id,
+      name: item.description,
+      description: item.description,
+      assetClass: item.asset_class,
+      location: item,
+      department: item.department,
+      acquisitionCost: item.acquisition_cost,
+      acquisitionDate: item.acquisition_date,
+      usefulLifeYears: item.useful_life_years,
+      depreciationMethod: item.depreciation_method,
+      residualValue: item.residual_value,
+      status: item.status,
+      carryingValue: item.carrying_value,
+      updated_at: item.updated_at,
+    } as unknown as Asset;
   }
 }

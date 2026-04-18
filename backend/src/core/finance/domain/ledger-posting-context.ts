@@ -37,12 +37,12 @@ export class ImmutableJournalError extends Error {
 export interface LedgerPostingContext {
   /** HMAC-SHA256 signature of tokenPayload */
   token: string;
-  /** Raw payload used for signing: uuid.tenantId.issuedAtMs */
+  /** Raw payload used for signing: uuid.tenant_id.issuedAtMs */
   tokenPayload: string;
   /** Tenant this context is scoped to */
-  tenantId: string;
+  tenant_id: string;
   /** Company this context is scoped to */
-  companyId: string;
+  company_id: string;
   /** Must always be 'LedgerPostingService' */
   originService: string;
   issuedAt: Date;

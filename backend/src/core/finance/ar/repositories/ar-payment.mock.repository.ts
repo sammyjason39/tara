@@ -7,57 +7,57 @@ import { Prisma } from '@prisma/client';
 @Injectable()
 export class ArPaymentMockRepository implements IArPaymentRepository {
   private payments: IArPayment[] = [];
-  private allocations: IArPaymentAllocation[] = [];
+  private allocation: IArPaymentAllocation[] = [];
 
-  async findById(tenantId: string, companyId: string, id: string): Promise<IArPayment | null> {
-    return this.payments.find(p => p.tenantId === tenantId && p.companyId === companyId && p.id === id) || null;
+  async findById(tenant_id: string, company_id: string, id: string): Promise<IArPayment | null> {
+    return this.payments.find(p => p.tenant_id === tenant_id && p.company_id === company_id && p.id === id) || null;
   }
 
-  async findByIdempotencyKey(tenantId: string, companyId: string, key: string): Promise<IArPayment | null> {
-    return this.payments.find(p => p.tenantId === tenantId && p.companyId === companyId && p.idempotencyKey === key) || null;
+  async findByIdempotencyKey(tenant_id: string, company_id: string, key: string): Promise<IArPayment | null> {
+    return this.payments.find(p => p.tenant_id === tenant_id && p.company_id === company_id && p.idempotency_key === key) || null;
   }
 
-  async create(tenantId: string, companyId: string, data: any): Promise<IArPayment> {
+  async create(tenant_id: string, company_id: string, data: any): Promise<IArPayment> {
     const payment: IArPayment = {
       id: uuid(),
-      tenantId,
-      companyId,
-      customerId: data.customerId,
+      tenant_id,
+      company_id,
+      customer_id: data.customer_id,
       paymentDate: new Date(),
       amount: new Prisma.Decimal(data.amount || 0),
-      paymentMethod: data.paymentMethod,
+      payment_method: data.payment_method,
       reference: data.reference,
       paymentReference: data.paymentReference || `PAY-${Date.now()}`,
-      idempotencyKey: data.idempotencyKey,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      idempotency_key: data.idempotency_key,
+      created_at: new Date(),
+      updated_at: new Date(),
     };
     this.payments.push(payment);
     return payment;
   }
 
-  async createAllocation(tenantId: string, companyId: string, data: any): Promise<IArPaymentAllocation> {
+  async createAllocation(tenant_id: string, company_id: string, data: any): Promise<IArPaymentAllocation> {
     const allocation: IArPaymentAllocation = {
       id: uuid(),
       paymentId: data.paymentId,
       invoiceId: data.invoiceId,
       amountAllocated: new Prisma.Decimal(data.amountAllocated || data.amount || 0),
-      idempotencyKey: data.idempotencyKey,
-      createdAt: new Date(),
+      idempotency_key: data.idempotency_key,
+      created_at: new Date(),
     };
-    this.allocations.push(allocation);
+    this.allocation.push(allocation);
     return allocation;
   }
 
-  async findAllocationByIdempotencyKey(tenantId: string, companyId: string, key: string): Promise<IArPaymentAllocation | null> {
-    return this.allocations.find(a => a.idempotencyKey === key) || null;
+  async findAllocationByIdempotencyKey(tenant_id: string, company_id: string, key: string): Promise<IArPaymentAllocation | null> {
+    return this.allocation.find((a: any) => a.idempotency_key === key) || null;
   }
 
-  async findAllocationsByInvoice(tenantId: string, companyId: string, invoiceId: string): Promise<IArPaymentAllocation[]> {
-    return this.allocations.filter(a => a.invoiceId === invoiceId);
+  async findAllocationsByInvoice(tenant_id: string, company_id: string, invoiceId: string): Promise<IArPaymentAllocation[]> {
+    return this.allocation.filter((a: any) => a.invoiceId === invoiceId);
   }
 
-  async findAllocationsByPayment(tenantId: string, companyId: string, paymentId: string): Promise<IArPaymentAllocation[]> {
-    return this.allocations.filter(a => a.paymentId === paymentId);
+  async findAllocationsByPayment(tenant_id: string, company_id: string, paymentId: string): Promise<IArPaymentAllocation[]> {
+    return this.allocation.filter((a: any) => a.paymentId === paymentId);
   }
 }

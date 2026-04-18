@@ -13,10 +13,10 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
   async provisionTenant(data: ProvisioningData): Promise<ProvisioningResult> {
     return await this.prisma.$transaction(async (tx) => {
       // Create Company
-      const company = await tx.company.create({
+      const company = await tx.companies.create({
         data: {
         id: 'dz1ew011',
-        updatedAt: new Date(),
+        updated_at: new Date(),
           name: data.name,
           code: `CMP-${Date.now().toString().slice(-6)}`,
           status: "active",
@@ -27,23 +27,23 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
       });
 
       // Map User to Company as OWNER
-      await tx.userCompany.create({
+      await tx.user_companies.create({
         data: {
         id: 'dv0bhsgk',
-        updatedAt: new Date(),
-          userId: data.userId,
-          tenantId: company.id,
+        updated_at: new Date(),
+          user_id: data.user_id,
+          tenant_id: company.id,
           role: "OWNER",
-          isDefault: true,
+          is_default: true,
         },
       });
 
       // Create HQ Location
-      const location = await tx.location.create({
+      const location = await tx.locations.create({
         data: {
         id: 'c74b543z',
-        updatedAt: new Date(),
-          tenantId: company.id,
+        updated_at: new Date(),
+          tenant_id: company.id,
           name: "Headquarters",
           code: "HQ",
           type: "headquarters",
@@ -54,11 +54,11 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
       });
 
       // Create Default Department
-      const department = await tx.department.create({
+      const department = await tx.departments.create({
         data: {
         id: '4utnd1ir',
-        updatedAt: new Date(),
-          tenantId: company.id,
+        updated_at: new Date(),
+          tenant_id: company.id,
           name: "Executive",
           code: "EXEC",
           status: "active",
@@ -66,22 +66,22 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
       });
 
       // Create Employee Record for the User
-      await tx.employee.create({
+      await tx.employees.create({
         data: {
         id: 'xmle2x2e',
-        updatedAt: new Date(),
-          tenantId: company.id,
-          locationId: location.id,
-          departmentId: department.id,
-          firstName: data.user.firstName,
-          lastName: data.user.lastName,
+        updated_at: new Date(),
+          tenant_id: company.id,
+          location_id: location.id,
+          department_id: department.id,
+          first_name: data.user.first_name,
+          last_name: data.user.last_name,
           email: data.user.email,
           phone: data.user.phone,
-          userId: data.userId,
-          employeeCode: `EMP-${Date.now().toString().slice(-4)}`,
+          user_id: data.user_id,
+          employee_code: `EMP-${Date.now().toString().slice(-4)}`,
           position: "Owner / CEO",
-          employmentType: "full_time",
-          hireDate: new Date(),
+          employment_type: "full_time",
+          hire_date: new Date(),
           status: "active",
         },
       });
@@ -89,22 +89,22 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
       // Enable Core Modules by Default
       const coreModules = ["finance", "hr", "it", "retail", "procurement"];
       for (const moduleKey of coreModules) {
-        await tx.adminModuleStatus.create({
+        await tx.admin_module_statuses.create({
           data: {
         id: '2w2swik9',
-        updatedAt: new Date(),
-            tenantId: company.id,
-            moduleKey,
+        updated_at: new Date(),
+            tenant_id: company.id,
+            module_key: moduleKey,
             enabled: true,
-            updatedBy: "system",
+            updated_by: "system",
           },
         });
       }
 
       return {
-        tenantId: company.id,
-        companyName: company.name,
-        locationId: location.id,
+        tenant_id: company.id,
+        company_name: company.name,
+        location_id: location.id,
         departmentId: department.id,
       };
     });

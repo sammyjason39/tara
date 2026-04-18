@@ -7,14 +7,14 @@ export class JobDescriptionService {
 
   constructor(private readonly repository: IHRRepository) {}
 
-  async generateDescription(tenantId: string, positionId: string, tone: 'PROFESSIONAL' | 'MODERN' | 'AGGRESSIVE') {
-    this.logger.log(`Generating description for position ${positionId} with tone ${tone}`);
+  async generateDescription(tenant_id: string, position_id: string, tone: 'PROFESSIONAL' | 'MODERN' | 'AGGRESSIVE') {
+    this.logger.log(`Generating description for position ${position_id} with tone ${tone}`);
     
     // 1. Get position and requirement metadata
-    const position = await this.repository.getPositionById(tenantId, positionId);
-    if (!position) throw new NotFoundException(`Position ${positionId} not found`);
+    const position = await this.repository.getPositionById(tenant_id, position_id);
+    if (!position) throw new NotFoundException(`Position ${position_id} not found`);
     
-    const skills = await this.repository.getPositionSkills(tenantId, positionId);
+    const skills = await this.repository.getPositionSkills(tenant_id, position_id);
     const mandatorySkills = skills.filter(s => s.isMandatory).map(s => s.skill?.name || "Skill");
     const optionalSkills = skills.filter(s => !s.isMandatory).map(s => s.skill?.name || "Skill");
 
@@ -60,15 +60,15 @@ ${optionalSkills.map(s => `- Knowledge of ${s}`).join('\n')}
       status: 'DRAFT'
     };
     
-    await this.repository.updatePositionJobPost(tenantId, positionId, metadata);
+    await this.repository.updatePositionJobPost(tenant_id, position_id, metadata);
     
     return metadata;
   }
 
-  async publishJobPost(tenantId: string, positionId: string, channels: string[]) {
-    this.logger.log(`Publishing job post ${positionId} to ${channels.join(', ')}`);
+  async publishJobPost(tenant_id: string, position_id: string, channels: string[]) {
+    this.logger.log(`Publishing job post ${position_id} to ${channels.join(', ')}`);
     
-    const current = await this.repository.getPositionJobPost(tenantId, positionId);
+    const current = await this.repository.getPositionJobPost(tenant_id, position_id);
     if (!current) throw new NotFoundException("No generated description found. Generate one first.");
 
     const updated = {
@@ -78,23 +78,23 @@ ${optionalSkills.map(s => `- Knowledge of ${s}`).join('\n')}
       channels
     };
 
-    await this.repository.updatePositionJobPost(tenantId, positionId, updated);
+    await this.repository.updatePositionJobPost(tenant_id, position_id, updated);
     
     return updated;
   }
 
-  async analyzeMarketAlignment(tenantId: string, positionId: string) {
-    this.logger.log(`Analyzing market alignment for ${positionId}`);
+  async analyzeMarketAlignment(tenant_id: string, position_id: string) {
+    this.logger.log(`Analyzing market alignment for ${position_id}`);
     
-    const position = await this.repository.getPositionById(tenantId, positionId);
-    if (!position) throw new NotFoundException(`Position ${positionId} not found`);
+    const position = await this.repository.getPositionById(tenant_id, position_id);
+    if (!position) throw new NotFoundException(`Position ${position_id} not found`);
 
     // Mock competitive analysis logic
     const marketCompetitiveness = Math.floor(Math.random() * 20) + 70; // 70-90%
     const salaryBenchmarkPercentile = Math.floor(Math.random() * 10) + 65; // 65-75%
     
     return {
-      positionTitle: position.title,
+      position_title: position.title,
       marketCompetitiveness,
       top3MissingMarketSkills: ["Cloud Architecture", "System Design (Lvl 5)", "Agile Leadership"],
       salaryBenchmarkPercentile,

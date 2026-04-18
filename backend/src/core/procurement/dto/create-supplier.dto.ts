@@ -35,7 +35,7 @@ export class CreateSupplierDto {
 
   @IsString()
   @IsOptional()
-  contactEmail?: string;
+  contact_email?: string;
 
   @IsString()
   @IsOptional()

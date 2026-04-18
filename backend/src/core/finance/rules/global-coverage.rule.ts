@@ -4,7 +4,7 @@ export class GlobalCoverageRule implements InsightRule {
   readonly type = 'SYSTEM_HEALTH';
 
   evaluate(context: InsightContext): Insight[] {
-    const { cashflow, snapshotSequence, tenantId, companyId } = context;
+    const { cashflow, snapshotSequence, tenant_id, company_id } = context;
 
     // 1. Calculate Coverage (from centralized metrics)
     const coverage = context.metrics.coverage;
@@ -33,8 +33,8 @@ export class GlobalCoverageRule implements InsightRule {
                 coreInputs
             },
             supportingData: { coverage },
-            tenantId,
-            companyId,
+            tenant_id,
+            company_id,
             snapshotSequence
         }];
     }
@@ -61,8 +61,8 @@ export class GlobalCoverageRule implements InsightRule {
             }
         },
         supportingData: { coverage },
-        tenantId,
-        companyId,
+        tenant_id,
+        company_id,
         snapshotSequence
     }];
   }

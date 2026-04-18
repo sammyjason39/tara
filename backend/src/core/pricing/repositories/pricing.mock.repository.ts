@@ -15,58 +15,58 @@ export class PricingMockRepository implements IPricingRepository {
   async createRule(tenant_id: string, data: CreatePricingRuleDto): Promise<PricingRule> {
     const rule: PricingRule = {
       id: uuid(),
-      tenantId: tenant_id,
+      tenant_id: tenant_id,
       ...data,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
     };
     this.rules.push(rule);
     return rule;
   }
 
   async getRules(tenant_id: string, criteria?: any): Promise<PricingRule[]> {
-    return this.rules.filter(r => r.tenantId === tenant_id && r.isActive).sort((a,b) => a.priority - b.priority);
+    return this.rules.filter(r => r.tenant_id === tenant_id && r.isActive).sort((a,b) => a.priority - b.priority);
   }
 
   async updateRule(tenant_id: string, id: string, data: Partial<PricingRule>): Promise<PricingRule> {
-    const rule = this.rules.find(r => r.id === id && r.tenantId === tenant_id);
+    const rule = this.rules.find(r => r.id === id && r.tenant_id === tenant_id);
     if (!rule) throw new Error('Rule not found');
     Object.assign(rule, data);
-    rule.updatedAt = new Date();
+    rule.updated_at = new Date();
     return rule;
   }
 
   async savePriceSnapshot(tenant_id: string, data: any): Promise<TransactionPriceSnapshot> {
     const snapshot: TransactionPriceSnapshot = {
       id: uuid(),
-      tenantId: tenant_id,
+      tenant_id: tenant_id,
       ...data,
-      createdAt: new Date(),
+      created_at: new Date(),
     };
     this.snapshots.push(snapshot);
     return snapshot;
   }
 
   async getPriceHistory(tenant_id: string, skuId: string): Promise<PriceVersion[]> {
-    return this.versions.filter(v => v.tenantId === tenant_id && v.skuId === skuId);
+    return this.versions.filter(v => v.tenant_id === tenant_id && v.skuId === skuId);
   }
 
   async createPriceVersion(tenant_id: string, data: any): Promise<PriceVersion> {
     // Mark previous current version as not current
-    this.versions.filter(v => v.tenantId === tenant_id && v.skuId === data.skuId).forEach(v => v.isCurrent = false);
+    this.versions.filter(v => v.tenant_id === tenant_id && v.skuId === data.skuId).forEach(v => v.isCurrent = false);
 
     const version: PriceVersion = {
       id: uuid(),
-      tenantId: tenant_id,
+      tenant_id: tenant_id,
       ...data,
       isCurrent: true,
-      createdAt: new Date(),
+      created_at: new Date(),
     };
     this.versions.push(version);
     return version;
   }
 
   async getCurrentPriceVersion(tenant_id: string, skuId: string): Promise<PriceVersion | undefined> {
-    return this.versions.find(v => v.tenantId === tenant_id && v.skuId === skuId && v.isCurrent);
+    return this.versions.find(v => v.tenant_id === tenant_id && v.skuId === skuId && v.isCurrent);
   }
 }

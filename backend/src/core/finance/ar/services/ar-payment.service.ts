@@ -27,27 +27,27 @@ export class ArPaymentService {
     private readonly mappingService: AccountingMappingService,
   ) {}
 
-  async receivePayment(tenantId: string, companyId: string, dto: CreatePaymentDto): Promise<IArPayment> {
+  async receivePayment(tenant_id: string, company_id: string, dto: CreatePaymentDto): Promise<IArPayment> {
     // Idempotency
-    if (dto.idempotencyKey) {
-      const existing = await this.paymentRepo.findByIdempotencyKey(tenantId, companyId, dto.idempotencyKey);
+    if (dto.idempotency_key) {
+      const existing = await this.paymentRepo.findByIdempotencyKey(tenant_id, company_id, dto.idempotency_key);
       if (existing) return existing;
     }
 
     // 1. Resolve Open Fiscal Period
     const currentPeriodId = await this.fiscalPeriodService.validatePeriodOpenForPosting(
-      tenantId, 
-      companyId, 
+      tenant_id, 
+      company_id, 
       'SYS_AUTO', 
       'SYS_USER'
     );
 
-    const payment = await this.paymentRepo.create(tenantId, companyId, dto);
+    const payment = await this.paymentRepo.create(tenant_id, company_id, dto);
 
     // 2. Resolve Accounting Mapping
     const mapping = await this.mappingService.resolveAccounts(
-        tenantId,
-        companyId,
+        tenant_id,
+        company_id,
         SubledgerEntryType.AR_PAYMENT,
         'PAYMENT'
     );
@@ -58,37 +58,37 @@ export class ArPaymentService {
 
     // 4. Enqueue for Ledger (POSTING)
     await this.ledgerPostingService.enqueuePosting(
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       AR_EVENT_TYPES.PAYMENT_RECEIVED,
       `ar-payment-${payment.id}`,
       {
         paymentId: payment.id,
         amount: payment.amount,
-        customerId: payment.customerId,
+        customer_id: payment.customer_id,
         postingRequestId,
         fiscalPeriodId: currentPeriodId,
         debitAccountId: mapping.debitAccountId,
         creditAccountId: mapping.creditAccountId,
-        branchId: 'BRANCH_AUTO',
-        locationId: 'LOC_AUTO',
+        branch_id: 'BRANCH_AUTO',
+        location_id: 'LOC_AUTO',
       }
     );
 
     return payment;
   }
 
-  async allocatePayment(tenantId: string, companyId: string, dto: AllocatePaymentDto): Promise<void> {
+  async allocatePayment(tenant_id: string, company_id: string, dto: AllocatePaymentDto): Promise<void> {
     // AREA 4: Idempotency Enforcement
-    if (dto.idempotencyKey) {
-      const existing = await this.paymentRepo.findAllocationByIdempotencyKey(tenantId, companyId, dto.idempotencyKey);
+    if (dto.idempotency_key) {
+      const existing = await this.paymentRepo.findAllocationByIdempotencyKey(tenant_id, company_id, dto.idempotency_key);
       if (existing) return;
     }
 
-    const payment = await this.paymentRepo.findById(tenantId, companyId, dto.paymentId);
+    const payment = await this.paymentRepo.findById(tenant_id, company_id, dto.paymentId);
     if (!payment) throw new NotFoundException('Payment not found');
 
-    const invoice = await this.invoiceRepo.findById(tenantId, companyId, dto.invoiceId);
+    const invoice = await this.invoiceRepo.findById(tenant_id, company_id, dto.invoiceId);
     if (!invoice) throw new NotFoundException('Invoice not found');
 
     if (dto.amount.gt(invoice.outstandingAmount)) {
@@ -96,57 +96,57 @@ export class ArPaymentService {
     }
 
     // Create allocation
-    await this.paymentRepo.createAllocation(tenantId, companyId, dto);
+    await this.paymentRepo.createAllocation(tenant_id, company_id, dto);
 
     // Update invoice balance
     const newOutstanding = invoice.outstandingAmount.minus(dto.amount);
     const newStatus = newOutstanding.lte(0) ? ArInvoiceStatus.PAID : ArInvoiceStatus.PARTIALLY_PAID;
 
-    await this.invoiceRepo.updateStatus(tenantId, companyId, invoice.id, newStatus, newOutstanding);
+    await this.invoiceRepo.updateStatus(tenant_id, company_id, invoice.id, newStatus, newOutstanding);
 
     // Phase 6: AR Overpayment Support (Architectural Fix: ALLOCATION/CREDIT_BALANCE types)
     if (dto.amount.lt(payment.amount)) {
       const remaining = payment.amount.minus(dto.amount);
       
       if (remaining.gt(0)) {
-        this.logger.log(`Surplus payment detected for customer ${payment.customerId}. Storing ${remaining} as credit.`);
+        this.logger.log(`Surplus payment detected for customer ${payment.customer_id}. Storing ${remaining} as credit.`);
         
         // 1. Create CREDIT_BALANCE Subledger Entry
         const creditMapping = await this.mappingService.resolveAccounts(
-            tenantId,
-            companyId,
+            tenant_id,
+            company_id,
             SubledgerEntryType.AR_CREDIT_BALANCE,
             'PAYMENT'
         );
         
         await this.ledgerPostingService.enqueuePosting(
-            tenantId,
-            companyId,
+            tenant_id,
+            company_id,
             'AR_CREDIT_RECOGNIZED',
             `ar-credit-${payment.id}`,
             {
-                customerId: payment.customerId,
+                customer_id: payment.customer_id,
                 amount: remaining,
                 debitAccountId: creditMapping.debitAccountId,
                 creditAccountId: creditMapping.creditAccountId,
             }
         );
 
-        await this.creditRepo.updateCreditBalance(tenantId, companyId, payment.customerId, remaining);
+        await this.creditRepo.updateCreditBalance(tenant_id, company_id, payment.customer_id, remaining);
       }
     }
 
     // 2. Trigger ALLOCATION subledger movement
     const allocMapping = await this.mappingService.resolveAccounts(
-        tenantId,
-        companyId,
+        tenant_id,
+        company_id,
         SubledgerEntryType.AR_ALLOCATION,
         'ALLOCATION'
     );
 
     await this.ledgerPostingService.enqueuePosting(
-        tenantId,
-        companyId,
+        tenant_id,
+        company_id,
         'AR_PAYMENT_ALLOCATED',
         `ar-alloc-${dto.paymentId}-${dto.invoiceId}`,
         {
@@ -159,16 +159,16 @@ export class ArPaymentService {
     );
   }
 
-  private async getTotalAllocated(tenantId: string, companyId: string, paymentId: string): Promise<Prisma.Decimal> {
-    const allocations = await this.paymentRepo.findAllocationsByPayment(tenantId, companyId, paymentId);
+  private async getTotalAllocated(tenant_id: string, company_id: string, paymentId: string): Promise<Prisma.Decimal> {
+    const allocations = await this.paymentRepo.findAllocationsByPayment(tenant_id, company_id, paymentId);
     return allocations.reduce((sum: Prisma.Decimal, a: IArPaymentAllocation) => sum.add(a.amountAllocated), new Prisma.Decimal(0));
   }
 
-  async refundPayment(tenantId: string, companyId: string, paymentId: string, amount: Prisma.Decimal | number): Promise<void> {
-    const payment = await this.paymentRepo.findById(tenantId, companyId, paymentId);
+  async refundPayment(tenant_id: string, company_id: string, paymentId: string, amount: Prisma.Decimal | number): Promise<void> {
+    const payment = await this.paymentRepo.findById(tenant_id, company_id, paymentId);
     if (!payment) throw new NotFoundException('Payment not found');
 
-    const totalAllocated = await this.getTotalAllocated(tenantId, companyId, paymentId);
+    const totalAllocated = await this.getTotalAllocated(tenant_id, company_id, paymentId);
     const availableToRefund = new Prisma.Decimal(payment.amount).minus(totalAllocated);
 
     const refundAmount = new Prisma.Decimal(amount);
@@ -177,18 +177,18 @@ export class ArPaymentService {
     }
 
     // Guard: Fiscal Period must be open
-    await this.fiscalPeriodService.validatePeriodOpenForPosting(tenantId, companyId, 'SYS_AUTO', 'SYS_USER');
+    await this.fiscalPeriodService.validatePeriodOpenForPosting(tenant_id, company_id, 'SYS_AUTO', 'SYS_USER');
 
     // Create refund event
     await this.ledgerPostingService.enqueuePosting(
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       AR_EVENT_TYPES.PAYMENT_REFUND,
       `ar-refund-${payment.id}-${Date.now()}`,
       {
         paymentId: payment.id,
         amount,
-        customerId: payment.customerId,
+        customer_id: payment.customer_id,
       }
     );
   }

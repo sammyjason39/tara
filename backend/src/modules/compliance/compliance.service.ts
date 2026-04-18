@@ -72,12 +72,12 @@ export class ComplianceEngineService {
   /**
    * Run compliance calculations for the given module and period.
    *
-   * @param tenantId  - The tenant/company identifier
+   * @param tenant_id  - The tenant/company identifier
    * @param module    - Compliance module key (e.g. 'BPJS_KESEHATAN', 'CPF')
    * @param period    - Period in 'YYYY-MM' format
    */
   async calculate(
-    tenantId: string,
+    tenant_id: string,
     module: string,
     period: string,
   ): Promise<ComplianceCalculationResult> {
@@ -89,21 +89,21 @@ export class ComplianceEngineService {
       );
     }
 
-    this.logger.log(`Compliance calculate: [${tenantId}] module=${module} period=${period}`);
+    this.logger.log(`Compliance calculate: [${tenant_id}] module=${module} period=${period}`);
 
     // Load employees with compensation data via Prisma
-    const employees = await this.prisma.employee.findMany({
-      where: { tenantId, status: { in: ['active', 'probation'] } },
+    const employees = await this.prisma.employees.findMany({
+      where: { tenant_id: tenant_id, status: { in: ['active', 'probation'] } },
       include: {
-        compensations: { select: { baseSalary: true, currency: true } },
+        compensations: { select: { base_salary: true, currency: true } },
       },
     });
 
     if (employees.length === 0) {
-      this.logger.warn(`No active employees found for tenant ${tenantId}`);
+      this.logger.warn(`No active employees found for tenant ${tenant_id}`);
     }
 
-    const result = engine.calculate(employees, tenantId, period);
+    const result = engine.calculate(employees, tenant_id, period);
 
     this.logger.log(
       `Compliance result: ${result.totalEmployees} employees, ` +
@@ -146,12 +146,12 @@ export class ComplianceEngineService {
    * Convenience: calculate + export in a single call.
    */
   async calculateAndExport(
-    tenantId: string,
+    tenant_id: string,
     module: string,
     period: string,
     format: 'CSV' | 'EXCEL' | 'XML' | 'PDF',
   ): Promise<{ result: ComplianceCalculationResult; exported: string | Buffer }> {
-    const result = await this.calculate(tenantId, module, period);
+    const result = await this.calculate(tenant_id, module, period);
     const exported = this.export(format, result);
     return { result, exported };
   }
@@ -161,7 +161,7 @@ export class ComplianceEngineService {
    * Useful for a full monthly payroll compliance run.
    */
   async calculateAll(
-    tenantId: string,
+    tenant_id: string,
     country: string,
     period: string,
   ): Promise<ComplianceCalculationResult[]> {
@@ -170,10 +170,10 @@ export class ComplianceEngineService {
       throw new BadRequestException(`No compliance modules configured for country '${country}'.`);
     }
 
-    this.logger.log(`Running all ${modules.length} compliance modules for [${country}] tenant=${tenantId}`);
+    this.logger.log(`Running all ${modules.length} compliance modules for [${country}] tenant=${tenant_id}`);
 
     const results = await Promise.all(
-      modules.map((mod) => this.calculate(tenantId, mod, period)),
+      modules.map((mod) => this.calculate(tenant_id, mod, period)),
     );
 
     return results;

@@ -13,6 +13,7 @@ import {
   HttpCode,
   HttpStatus,
   Patch,
+  Headers,
 } from "@nestjs/common";
 import { Request } from "express";
 import { RetailService } from "./retail.service";
@@ -31,6 +32,7 @@ import {
   RegisterBranchDeviceDto,
   RegisterCCTVCameraDto,
   RegisterBranchSensorDto,
+  CheckoutDto,
 } from "./dto/retail.dto";
 import { TenantContext } from "../../gateway/tenant-context.interface";
 import { ModuleStateGuard } from "../auth/guards/module-state.guard";
@@ -38,15 +40,18 @@ import {
   BranchGatingGuard,
   SkipBranchCheck,
 } from "../auth/guards/branch-gating.guard";
-import { LocationGuard } from "../../shared/guards/location.guard";
 import { RequiredModule } from "../../shared/decorators/required-module.decorator";
+import { RolesGuard } from "../../shared/guards/roles.guard";
+import { Roles } from "../../shared/decorators/roles.decorator";
+import { UserRole } from "../../shared/roles";
+import { LocationGuard } from "../../shared/guards/location.guard";
 
 interface RequestWithTenant extends Request {
   tenantContext: TenantContext;
 }
 
 @Controller("retail")
-@UseGuards(ModuleStateGuard, LocationGuard, BranchGatingGuard)
+@UseGuards(ModuleStateGuard, LocationGuard, BranchGatingGuard, RolesGuard)
 @RequiredModule("retail")
 export class RetailController {
   constructor(
@@ -56,6 +61,7 @@ export class RetailController {
 
   /** DEV ONLY: Trigger full retail seed (products + showcase orders) */
   @Post("dev/seed")
+  @Roles(UserRole.SUPERADMIN)
   @SkipBranchCheck()
   @HttpCode(HttpStatus.OK)
   async triggerSeed() {
@@ -66,21 +72,21 @@ export class RetailController {
   @Get("inventory/stats")
   async getInventoryStats(
     @Req() request: RequestWithTenant,
-    @Query("categoryId") categoryId?: string,
+    @Query("category_id") category_id?: string,
     @Query("q") q?: string,
   ) {
-    const { tenantId } = request.tenantContext;
-    const stats = await this.retailService.getInventoryStats(tenantId, {
-      categoryId,
+    const { tenant_id } = request.tenantContext;
+    const stats = await this.retailService.getInventoryStats(tenant_id, {
+      category_id,
       q,
     });
-    return this.respond(tenantId, stats);
+    return this.respond(tenant_id, stats);
   }
 
-  private respond<T>(tenantId: string, payload: T) {
+  private respond<T>(tenant_id: string, payload: T) {
     return {
       success: true,
-      tenantId,
+      tenant_id,
       data: payload,
     };
   }
@@ -93,8 +99,8 @@ export class RetailController {
   private mapChannel(channel: any) {
     return {
       id: channel.id,
-      tenantId: channel.tenantId ?? channel.tenant_id ?? channel.tenantId,
-      branchId: channel.branchId ?? channel.branch_id,
+      tenant_id: channel.tenant_id ?? channel.tenant_id ?? channel.tenant_id,
+      branch_id: channel.branch_id ?? channel.branch_id,
       name: channel.name,
       type: channel.type,
       status: channel.status,
@@ -105,32 +111,32 @@ export class RetailController {
       clientSecret: channel.clientSecret,
       gatewayUrl: channel.gatewayUrl,
       connector: channel.connector,
-      createdAt: this.toIso(channel.createdAt ?? channel.created_at),
-      updatedAt: this.toIso(channel.updatedAt ?? channel.updated_at),
+      created_at: this.toIso(channel.created_at ?? channel.created_at),
+      updated_at: this.toIso(channel.updated_at ?? channel.updated_at),
     };
   }
 
   @Get("stores")
   async listStores(@Req() request: RequestWithTenant) {
-    const { tenantId, locationId, role } = request.tenantContext;
+    const { tenant_id, location_id, role } = request.tenantContext;
 
     // For Global Fleet View / Management, privileged roles should see all stores.
     // Managers/Staff remain scoped to their assigned location.
     const isPrivileged = ["SUPERADMIN", "OWNER", "ADMIN"].includes(role || "");
-    const effectiveLocationId = isPrivileged ? undefined : locationId;
+    const effectiveLocationId = isPrivileged ? undefined : location_id;
 
     const stores = await this.retailService.listStores(
-      tenantId,
+      tenant_id,
       effectiveLocationId,
     );
-    return this.respond(tenantId, stores);
+    return this.respond(tenant_id, stores);
   }
 
   @Get("categories")
   async listCategories(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const categories = await this.retailService.listCategories(tenantId);
-    return this.respond(tenantId, categories);
+    const { tenant_id } = request.tenantContext;
+    const categories = await this.retailService.listCategories(tenant_id);
+    return this.respond(tenant_id, categories);
   }
 
   @Post("stores")
@@ -139,40 +145,40 @@ export class RetailController {
     @Req() request: RequestWithTenant,
     @Body() data: CreateStoreDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    const store = await this.retailService.createStore(tenantId, data, userId!);
-    return this.respond(tenantId, store);
+    const { tenant_id, user_id } = request.tenantContext;
+    const store = await this.retailService.createStore(tenant_id, data, user_id!);
+    return this.respond(tenant_id, store);
   }
 
   @Put("stores/:id")
   async updateStore(
     @Req() request: RequestWithTenant,
-    @Param("id") storeId: string,
+    @Param("id") store_id: string,
     @Body() data: UpdateStoreDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     console.log(
-      `[RetailController] Updating store ${storeId} for tenant ${tenantId}. Data:`,
+      `[RetailController] Updating store ${store_id} for tenant ${tenant_id}. Data:`,
       JSON.stringify(data, null, 2),
     );
     const store = await this.retailService.updateStore(
-      tenantId,
-      storeId,
+      tenant_id,
+      store_id,
       data,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, store);
+    return this.respond(tenant_id, store);
   }
 
   @Delete("stores/:id")
   @HttpCode(HttpStatus.OK)
   async deleteStore(
     @Req() request: RequestWithTenant,
-    @Param("id") storeId: string,
+    @Param("id") store_id: string,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    await this.retailService.deleteStore(tenantId, storeId, userId!);
-    return this.respond(tenantId, {
+    const { tenant_id, user_id } = request.tenantContext;
+    await this.retailService.deleteStore(tenant_id, store_id, user_id!);
+    return this.respond(tenant_id, {
       message: "Store decommissioned successfully",
     });
   }
@@ -183,12 +189,12 @@ export class RetailController {
 
   @Get("inventory-pools")
   async listInventoryPools(@Req() request: RequestWithTenant) {
-    const { tenantId, role, locationId } = request.tenantContext;
+    const { tenant_id, role, location_id } = request.tenantContext;
 
     // In a multi-site retail setup, we might want to restrict pools.
     // Usually pools are shared, but if we need isolation:
-    const pools = await this.retailService.listInventoryPools(tenantId);
-    return this.respond(tenantId, pools);
+    const pools = await this.retailService.listInventoryPools(tenant_id);
+    return this.respond(tenant_id, pools);
   }
 
   @Post("inventory-pools")
@@ -196,13 +202,13 @@ export class RetailController {
     @Req() request: RequestWithTenant,
     @Body() data: CreateInventoryPoolDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const pool = await this.retailService.createInventoryPool(
-      tenantId,
+      tenant_id,
       data,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, pool);
+    return this.respond(tenant_id, pool);
   }
 
   @Get("inventory-pools/:id")
@@ -210,9 +216,9 @@ export class RetailController {
     @Req() request: RequestWithTenant,
     @Param("id") poolId: string,
   ) {
-    const { tenantId } = request.tenantContext;
-    const pool = await this.retailService.getInventoryPool(tenantId, poolId);
-    return this.respond(tenantId, pool);
+    const { tenant_id } = request.tenantContext;
+    const pool = await this.retailService.getInventoryPool(tenant_id, poolId);
+    return this.respond(tenant_id, pool);
   }
 
   @Delete("inventory-pools/:id")
@@ -221,9 +227,9 @@ export class RetailController {
     @Req() request: RequestWithTenant,
     @Param("id") poolId: string,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    await this.retailService.deleteInventoryPool(tenantId, poolId, userId!);
-    return this.respond(tenantId, { message: "Pool deleted" });
+    const { tenant_id, user_id } = request.tenantContext;
+    await this.retailService.deleteInventoryPool(tenant_id, poolId, user_id!);
+    return this.respond(tenant_id, { message: "Pool deleted" });
   }
 
   // ============================================================
@@ -232,12 +238,12 @@ export class RetailController {
 
   @Get("ecommerce-stores")
   async listEcommerceStores(@Req() request: RequestWithTenant) {
-    const { tenantId, locationId } = request.tenantContext;
+    const { tenant_id, location_id } = request.tenantContext;
     const stores = await this.retailService.listEcommerceStores(
-      tenantId,
-      locationId!,
+      tenant_id,
+      location_id!,
     );
-    return this.respond(tenantId, stores);
+    return this.respond(tenant_id, stores);
   }
 
   @Post("ecommerce-stores")
@@ -245,50 +251,50 @@ export class RetailController {
     @Req() request: RequestWithTenant,
     @Body() data: CreateEcommerceStoreDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const store = await this.retailService.createEcommerceStore(
-      tenantId,
+      tenant_id,
       data,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, store);
+    return this.respond(tenant_id, store);
   }
 
   @Get("ecommerce-stores/:id")
   async getEcommerceStore(
     @Req() request: RequestWithTenant,
-    @Param("id") storeId: string,
+    @Param("id") store_id: string,
   ) {
-    const { tenantId } = request.tenantContext;
-    const store = await this.retailService.getEcommerceStore(tenantId, storeId);
-    return this.respond(tenantId, store);
+    const { tenant_id } = request.tenantContext;
+    const store = await this.retailService.getEcommerceStore(tenant_id, store_id);
+    return this.respond(tenant_id, store);
   }
 
   @Put("ecommerce-stores/:id")
   async updateEcommerceStore(
     @Req() request: RequestWithTenant,
-    @Param("id") storeId: string,
+    @Param("id") store_id: string,
     @Body() data: UpdateEcommerceStoreDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const store = await this.retailService.updateEcommerceStore(
-      tenantId,
-      storeId,
+      tenant_id,
+      store_id,
       data,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, store);
+    return this.respond(tenant_id, store);
   }
 
   @Delete("ecommerce-stores/:id")
   @HttpCode(HttpStatus.OK)
   async deleteEcommerceStore(
     @Req() request: RequestWithTenant,
-    @Param("id") storeId: string,
+    @Param("id") store_id: string,
   ) {
-    const { tenantId, userId } = request.tenantContext;
-    await this.retailService.deleteEcommerceStore(tenantId, storeId, userId!);
-    return this.respond(tenantId, { message: "E-commerce store removed" });
+    const { tenant_id, user_id } = request.tenantContext;
+    await this.retailService.deleteEcommerceStore(tenant_id, store_id, user_id!);
+    return this.respond(tenant_id, { message: "E-commerce store removed" });
   }
 
   @Post("ecommerce-stores/:id/link-branch")
@@ -297,45 +303,45 @@ export class RetailController {
     @Param("id") ecommerceId: string,
     @Body() data: LinkBranchDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     await this.retailService.linkEcommerceToBranch(
-      tenantId,
+      tenant_id,
       ecommerceId,
-      data.branchId,
-      userId!,
+      data.branch_id,
+      user_id!,
     );
-    return this.respond(tenantId, { message: "Branch linked successfully" });
+    return this.respond(tenant_id, { message: "Branch linked successfully" });
   }
 
-  @Delete("ecommerce-stores/:id/unlink-branch/:branchId")
+  @Delete("ecommerce-stores/:id/unlink-branch/:branch_id")
   @HttpCode(HttpStatus.OK)
   async unlinkEcommerceFromBranch(
     @Req() request: RequestWithTenant,
     @Param("id") ecommerceId: string,
-    @Param("branchId") branchId: string,
+    @Param("branch_id") branch_id: string,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     await this.retailService.unlinkEcommerceFromBranch(
-      tenantId,
+      tenant_id,
       ecommerceId,
-      branchId,
-      userId!,
+      branch_id,
+      user_id!,
     );
-    return this.respond(tenantId, { message: "Branch unlinked successfully" });
+    return this.respond(tenant_id, { message: "Branch unlinked successfully" });
   }
 
   @Get("products/next-sku")
   @SkipBranchCheck()
   async getNextSku(
     @Req() request: RequestWithTenant,
-    @Query("categoryId") categoryId: string,
+    @Query("category_id") category_id: string,
   ) {
-    const { tenantId } = request.tenantContext;
+    const { tenant_id } = request.tenantContext;
     const result = await this.retailService.generateNextSku(
-      tenantId,
-      categoryId,
+      tenant_id,
+      category_id,
     );
-    return this.respond(tenantId, result);
+    return this.respond(tenant_id, result);
   }
 
   @Get("products")
@@ -343,72 +349,72 @@ export class RetailController {
     @Req() request: RequestWithTenant,
     @Query("page") page?: string,
     @Query("pageSize") pageSize?: string,
-    @Query("categoryId") categoryId?: string,
+    @Query("category_id") category_id?: string,
     @Query("type") type?: string,
     @Query("minPrice") minPrice?: string,
     @Query("maxPrice") maxPrice?: string,
     @Query("q") q?: string,
-    @Query("sortBy") sortBy?: "name" | "price" | "createdAt",
+    @Query("sortBy") sortBy?: "name" | "price" | "created_at",
     @Query("sortDir") sortDir?: "asc" | "desc",
     @Query("location_id") queryLocationId?: string,
   ) {
-    const { tenantId, locationId: sessionLocationId } = request.tenantContext;
+    const { tenant_id, location_id: sessionLocationId } = request.tenantContext;
     const effectiveLocationId = queryLocationId || sessionLocationId;
-    const products = await this.retailService.listProducts(tenantId, {
+    const products = await this.retailService.listProducts(tenant_id, {
       page: page ? parseInt(page, 10) : undefined,
       pageSize: pageSize ? parseInt(pageSize, 10) : undefined,
-      categoryId: categoryId || undefined,
+      category_id: category_id || undefined,
       type: type || undefined,
       minPrice: minPrice ? parseFloat(minPrice) : undefined,
       maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
       q: q || undefined,
       sortBy,
       sortDir,
-      locationId: effectiveLocationId || undefined,
+      location_id: effectiveLocationId || undefined,
     });
-    return this.respond(tenantId, products);
+    return this.respond(tenant_id, products);
   }
 
   @Patch("products/:id")
   async updateProduct(
     @Req() request: RequestWithTenant,
-    @Param("id") productId: string,
+    @Param("id") product_id: string,
     @Body() data: UpdateProductDto,
   ) {
     const {
-      tenantId,
-      userId,
-      locationId: sessionLocationId,
+      tenant_id,
+      user_id,
+      location_id: sessionLocationId,
     } = request.tenantContext;
-    const effectiveLocationId = data.locationId || sessionLocationId;
+    const effectiveLocationId = data.location_id || sessionLocationId;
 
     const updated = await this.retailService.updateProduct(
-      tenantId,
-      productId,
+      tenant_id,
+      product_id,
       data,
-      userId!,
+      user_id!,
       effectiveLocationId,
     );
-    return this.respond(tenantId, updated);
+    return this.respond(tenant_id, updated);
   }
 
   @Get("orders")
   async listOrders(
     @Req() request: RequestWithTenant,
-    @Query("store_id") storeId?: string,
+    @Query("store_id") store_id?: string,
   ) {
-    const { tenantId, role, locationId } = request.tenantContext;
+    const { tenant_id, role, location_id } = request.tenantContext;
 
     const effectiveStoreId =
       role === "SUPERADMIN" || role === "OWNER" || role === "ADMIN"
-        ? storeId
-        : locationId;
+        ? store_id
+        : location_id;
 
     const orders = await this.retailService.listOrders(
-      tenantId,
+      tenant_id,
       effectiveStoreId,
     );
-    return this.respond(tenantId, orders);
+    return this.respond(tenant_id, orders);
   }
 
   @Post("orders")
@@ -416,34 +422,34 @@ export class RetailController {
     @Req() request: RequestWithTenant,
     @Body() data: CreateOrderDto,
   ) {
-    const { tenantId, locationId, userId } = request.tenantContext;
+    const { tenant_id, location_id, user_id } = request.tenantContext;
     const order = await this.retailService.createOrder(
-      tenantId,
-      locationId!,
+      tenant_id,
+      location_id!,
       data,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, order);
+    return this.respond(tenant_id, order);
   }
 
   @Get("shifts/active")
   async getActiveShift(
     @Req() request: RequestWithTenant,
-    @Query("store_id") storeId: string,
+    @Query("store_id") store_id: string,
   ) {
-    const { tenantId, role, locationId, userId } = request.tenantContext;
+    const { tenant_id, role, location_id, user_id } = request.tenantContext;
 
     const effectiveStoreId =
       role === "SUPERADMIN" || role === "OWNER" || role === "ADMIN"
-        ? storeId
-        : locationId;
+        ? store_id
+        : location_id;
 
     const shift = await this.retailService.getActiveShift(
-      tenantId,
+      tenant_id,
       effectiveStoreId!,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, shift);
+    return this.respond(tenant_id, shift);
   }
 
   @Post("shifts/open")
@@ -451,46 +457,57 @@ export class RetailController {
     @Req() request: RequestWithTenant,
     @Body() data: OpenShiftDto,
   ) {
-    const { tenantId, locationId, userId } = request.tenantContext;
+    const { tenant_id, location_id, user_id } = request.tenantContext;
 
     const shift = await this.retailService.openShift(
-      tenantId,
-      locationId!,
-      userId!,
+      tenant_id,
+      location_id!,
+      user_id!,
       data,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, shift);
+    return this.respond(tenant_id, shift);
   }
 
   @Put("shifts/:id/close")
   async closeShift(
     @Req() request: RequestWithTenant,
-    @Param("id") shiftId: string,
+    @Param("id") shift_id: string,
     @Body() data: CloseShiftDto,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const shift = await this.retailService.closeShift(
-      tenantId,
-      shiftId,
+      tenant_id,
+      shift_id,
       data,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, shift);
+    return this.respond(tenant_id, shift);
   }
 
   @Get("shifts")
-  async listShifts(@Req() request: RequestWithTenant) {
-    const { tenantId, locationId } = request.tenantContext;
-    const shifts = await this.retailService.listShifts(tenantId, locationId!);
-    return this.respond(tenantId, shifts);
+  async listShifts(
+    @Req() request: RequestWithTenant,
+    @Query("store_id") store_id?: string,
+    @Query("employee_id") employee_id?: string,
+    @Query("limit") limit?: number,
+    @Query("offset") offset?: number,
+  ) {
+    const { tenant_id, location_id } = request.tenantContext;
+    const shifts = await this.retailService.listShifts(tenant_id, {
+      store_id: stores_id || location_id,
+      employee_id,
+      limit: limit ? Number(limit) : undefined,
+      offset: offset ? Number(offset) : undefined,
+    });
+    return this.respond(tenant_id, shifts);
   }
 
   @Get("promotions")
   async listPromotions(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const promos = await this.retailService.listPromotions(tenantId);
-    return this.respond(tenantId, promos);
+    const { tenant_id } = request.tenantContext;
+    const promos = await this.retailService.listPromotions(tenant_id);
+    return this.respond(tenant_id, promos);
   }
 
   @Put("promotions/:id")
@@ -499,35 +516,35 @@ export class RetailController {
     @Param("id") promotionId: string,
     @Body() data: any,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const promo = await this.retailService.updatePromotion(
-      tenantId,
+      tenant_id,
       promotionId,
       data,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, promo);
+    return this.respond(tenant_id, promo);
   }
 
   @Get("channels")
   async listChannels(@Req() request: RequestWithTenant) {
-    const { tenantId } = request.tenantContext;
-    const channels = await this.retailService.listChannels(tenantId);
+    const { tenant_id } = request.tenantContext;
+    const channels = await this.retailService.listChannels(tenant_id);
     return this.respond(
-      tenantId,
+      tenant_id,
       channels.map((channel) => this.mapChannel(channel)),
     );
   }
 
   @Post("channels")
   async createChannel(@Req() request: RequestWithTenant, @Body() data: any) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const channel = await this.retailService.createChannel(
-      tenantId,
+      tenant_id,
       data,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, this.mapChannel(channel));
+    return this.respond(tenant_id, this.mapChannel(channel));
   }
 
   @Put("channels/:id")
@@ -536,14 +553,14 @@ export class RetailController {
     @Param("id") channelId: string,
     @Body() data: any,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const channel = await this.retailService.updateChannel(
-      tenantId,
+      tenant_id,
       channelId,
       data,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, this.mapChannel(channel));
+    return this.respond(tenant_id, this.mapChannel(channel));
   }
 
   @Delete("channels/:id")
@@ -551,13 +568,13 @@ export class RetailController {
     @Req() request: RequestWithTenant,
     @Param("id") channelId: string,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const result = await this.retailService.deleteChannel(
-      tenantId,
+      tenant_id,
       channelId,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, result);
+    return this.respond(tenant_id, result);
   }
 
   @Post("channels/:id/sync")
@@ -565,13 +582,13 @@ export class RetailController {
     @Req() request: RequestWithTenant,
     @Param("id") channelId: string,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const result = await this.retailService.syncChannel(
-      tenantId,
+      tenant_id,
       channelId,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, result);
+    return this.respond(tenant_id, result);
   }
 
   @Post("channels/:id/rotate-credentials")
@@ -579,13 +596,13 @@ export class RetailController {
     @Req() request: RequestWithTenant,
     @Param("id") channelId: string,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const creds = await this.retailService.rotateChannelCredentials(
-      tenantId,
+      tenant_id,
       channelId,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, creds);
+    return this.respond(tenant_id, creds);
   }
 
   @Post("channels/:id/revoke-credentials")
@@ -593,29 +610,29 @@ export class RetailController {
     @Req() request: RequestWithTenant,
     @Param("id") channelId: string,
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const result = await this.retailService.revokeChannelCredentials(
-      tenantId,
+      tenant_id,
       channelId,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, result);
+    return this.respond(tenant_id, result);
   }
   @Get("devices")
   async listDevices(
     @Req() request: RequestWithTenant,
-    @Query("store_id") storeId?: string,
+    @Query("store_id") store_id?: string,
   ) {
-    const { tenantId, role, locationId } = request.tenantContext;
+    const { tenant_id, role, location_id } = request.tenantContext;
     const effectiveStoreId =
       role === "SUPERADMIN" || role === "OWNER" || role === "ADMIN"
-        ? storeId
-        : locationId;
+        ? store_id
+        : location_id;
     const devices = await this.retailService.listDevices(
-      tenantId,
+      tenant_id,
       effectiveStoreId,
     );
-    return this.respond(tenantId, devices);
+    return this.respond(tenant_id, devices);
   }
 
   @Post("devices")
@@ -623,31 +640,31 @@ export class RetailController {
     @Req() request: RequestWithTenant,
     @Body() data: RegisterBranchDeviceDto,
   ) {
-    const { tenantId, userId, locationId } = request.tenantContext;
+    const { tenant_id, user_id, location_id } = request.tenantContext;
     const device = await this.retailService.registerDevice(
-      tenantId,
-      locationId!,
+      tenant_id,
+      location_id!,
       data,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, device);
+    return this.respond(tenant_id, device);
   }
 
   @Get("cctvs")
   async listCCTVs(
     @Req() request: RequestWithTenant,
-    @Query("store_id") storeId?: string,
+    @Query("store_id") store_id?: string,
   ) {
-    const { tenantId, role, locationId } = request.tenantContext;
+    const { tenant_id, role, location_id } = request.tenantContext;
     const effectiveStoreId =
       role === "SUPERADMIN" || role === "OWNER" || role === "ADMIN"
-        ? storeId
-        : locationId;
+        ? store_id
+        : location_id;
     const cctvs = await this.retailService.listCCTVs(
-      tenantId,
+      tenant_id,
       effectiveStoreId,
     );
-    return this.respond(tenantId, cctvs);
+    return this.respond(tenant_id, cctvs);
   }
 
   @Post("cctvs")
@@ -655,14 +672,14 @@ export class RetailController {
     @Req() request: RequestWithTenant,
     @Body() data: RegisterCCTVCameraDto,
   ) {
-    const { tenantId, userId, locationId } = request.tenantContext;
+    const { tenant_id, user_id, location_id } = request.tenantContext;
     const camera = await this.retailService.registerCCTV(
-      tenantId,
-      locationId!,
+      tenant_id,
+      location_id!,
       data,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, camera);
+    return this.respond(tenant_id, camera);
   }
 
   @Post("cctvs/validate")
@@ -670,30 +687,30 @@ export class RetailController {
     @Req() request: RequestWithTenant,
     @Body() data: RegisterCCTVCameraDto,
   ) {
-    const { tenantId, locationId } = request.tenantContext;
+    const { tenant_id, location_id } = request.tenantContext;
     const result = await this.retailService.validateCCTVConnection(
-      tenantId,
-      locationId!,
+      tenant_id,
+      location_id!,
       data,
     );
-    return this.respond(tenantId, result);
+    return this.respond(tenant_id, result);
   }
 
   @Get("sensors")
   async listSensors(
     @Req() request: RequestWithTenant,
-    @Query("store_id") storeId?: string,
+    @Query("store_id") store_id?: string,
   ) {
-    const { tenantId, role, locationId } = request.tenantContext;
+    const { tenant_id, role, location_id } = request.tenantContext;
     const effectiveStoreId =
       role === "SUPERADMIN" || role === "OWNER" || role === "ADMIN"
-        ? storeId
-        : locationId;
+        ? store_id
+        : location_id;
     const sensors = await this.retailService.listSensors(
-      tenantId,
+      tenant_id,
       effectiveStoreId,
     );
-    return this.respond(tenantId, sensors);
+    return this.respond(tenant_id, sensors);
   }
 
   @Post("sensors")
@@ -701,34 +718,34 @@ export class RetailController {
     @Req() request: RequestWithTenant,
     @Body() data: RegisterBranchSensorDto,
   ) {
-    const { tenantId, userId, locationId } = request.tenantContext;
+    const { tenant_id, user_id, location_id } = request.tenantContext;
     const sensor = await this.retailService.registerSensor(
-      tenantId,
-      locationId!,
+      tenant_id,
+      location_id!,
       data,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, sensor);
+    return this.respond(tenant_id, sensor);
   }
 
   @Post("devices/:id/ping")
   async pingDevice(
     @Req() request: RequestWithTenant,
-    @Param("id") deviceId: string,
+    @Param("id") device_id: string,
   ) {
-    const { tenantId } = request.tenantContext;
-    const result = await this.retailService.pingDevice(tenantId, deviceId);
-    return this.respond(tenantId, result);
+    const { tenant_id } = request.tenantContext;
+    const result = await this.retailService.pingDevice(tenant_id, device_id);
+    return this.respond(tenant_id, result);
   }
 
   @Post("devices/scan")
   async scanDevices(@Req() request: RequestWithTenant) {
-    const { tenantId, locationId } = request.tenantContext;
+    const { tenant_id, location_id } = request.tenantContext;
     const discovered = await this.retailService.scanDevices(
-      tenantId,
-      locationId!,
+      tenant_id,
+      location_id!,
     );
-    return this.respond(tenantId, discovered);
+    return this.respond(tenant_id, discovered);
   }
 
   @Post("devices/commit-scan/:discoveryId")
@@ -736,66 +753,82 @@ export class RetailController {
     @Req() request: RequestWithTenant,
     @Param("discoveryId") discoveryId: string,
   ) {
-    const { tenantId, locationId, userId } = request.tenantContext;
+    const { tenant_id, location_id, user_id } = request.tenantContext;
     const device = await this.retailService.commitScannedDevice(
-      tenantId,
-      locationId!,
+      tenant_id,
+      location_id!,
       discoveryId,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, device);
+    return this.respond(tenant_id, device);
   }
 
   @Post("orders/:id/payment")
   async processPayment(
     @Req() request: RequestWithTenant,
-    @Param("id") orderId: string,
-    @Body() data: { amount: number; method: string; shiftId?: string },
+    @Param("id") order_id: string,
+    @Body() data: { amount: number; method: string; shift_id?: string; department_id?: string },
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const payment = await this.retailService.processPayment(
-      tenantId,
-      orderId,
+      tenant_id,
+      order_id,
       data,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, payment);
+    return this.respond(tenant_id, payment);
+  }
+
+  @Post("checkout")
+  async checkout(
+    @Req() request: RequestWithTenant,
+    @Body() data: CheckoutDto,
+    @Headers("x-idempotency-key") idempotencyKey?: string,
+  ) {
+    const { tenant_id, user_id } = request.tenantContext;
+    const result = await this.retailService.checkout(
+      tenant_id,
+      data,
+      user_id!,
+      idempotencyKey,
+    );
+    return this.respond(tenant_id, result);
   }
 
   @Post("orders/:id/return")
   async processReturn(
     @Req() request: RequestWithTenant,
-    @Param("id") orderId: string,
-    @Body() data: { itemIds: string[]; shiftId?: string },
+    @Param("id") order_id: string,
+    @Body() data: { itemIds: string[]; shift_id?: string },
   ) {
-    const { tenantId, userId } = request.tenantContext;
+    const { tenant_id, user_id } = request.tenantContext;
     const result = await this.retailService.processReturn(
-      tenantId,
-      orderId,
+      tenant_id,
+      order_id,
       data,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, result);
+    return this.respond(tenant_id, result);
   }
 
   @Post("inventory/opname")
   async submitOpname(
     @Req() request: RequestWithTenant,
-    @Body() data: { storeId: string; adjustments: any[]; shiftId?: string },
+    @Body() data: { store_id: string; adjustments: any[]; shift_id?: string },
   ) {
-    const { tenantId, userId, role, locationId } = request.tenantContext;
+    const { tenant_id, user_id, role, location_id } = request.tenantContext;
 
-    // Enforce locationId for non-admins
+    // Enforce location_id for non-admins
     if (role !== "SUPERADMIN" && role !== "OWNER" && role !== "ADMIN") {
-      data.storeId = locationId!;
+      data.store_id = location_id!;
     }
 
     const result = await this.retailService.submitOpname(
-      tenantId,
+      tenant_id,
       data,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, result);
+    return this.respond(tenant_id, result);
   }
 
   @Post("inventory/receive")
@@ -803,24 +836,24 @@ export class RetailController {
     @Req() request: RequestWithTenant,
     @Body()
     data: {
-      storeId: string;
-      shipmentId: string;
+      store_id: string;
+      shipment_id: string;
       items: any[];
-      shiftId?: string;
+      shift_id?: string;
     },
   ) {
-    const { tenantId, userId, role, locationId } = request.tenantContext;
+    const { tenant_id, user_id, role, location_id } = request.tenantContext;
 
-    // Enforce locationId for non-admins
+    // Enforce location_id for non-admins
     if (role !== "SUPERADMIN" && role !== "OWNER" && role !== "ADMIN") {
-      data.storeId = locationId!;
+      data.store_id = location_id!;
     }
 
     const result = await this.retailService.receiveGoods(
-      tenantId,
+      tenant_id,
       data,
-      userId!,
+      user_id!,
     );
-    return this.respond(tenantId, result);
+    return this.respond(tenant_id, result);
   }
 }

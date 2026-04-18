@@ -25,7 +25,7 @@ export class ReportDefinitionRegistry {
       type: 'BALANCE_SHEET',
       name: 'Balance Sheet',
       version: 'v1',
-      supportedDimensions: ['locationId'],
+      supportedDimensions: ['location_id'],
       defaultGrouping: 'category',
     });
 

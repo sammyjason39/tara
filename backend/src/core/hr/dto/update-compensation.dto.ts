@@ -2,7 +2,7 @@ import { IsNumber, IsString, IsArray, IsOptional } from 'class-validator';
 
 export class UpdateCompensationDto {
   @IsNumber()
-  baseSalary: number;
+  base_salary: number;
 
   @IsString()
   currency: string;

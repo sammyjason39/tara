@@ -11,5 +11,5 @@ export class ReleasePoDto {
 
   @IsNumber()
   @Min(0)
-  totalAmount: number;
+  total_amount: number;
 }

@@ -5,7 +5,7 @@ export class CreateBudgetScenarioDto {
   name: string;
 
   @IsInt()
-  fiscalYear: number;
+  fiscal_year: number;
 
   @IsEnum(["DRAFT", "ACTIVE", "ARCHIVED"])
   @IsOptional()
@@ -13,7 +13,7 @@ export class CreateBudgetScenarioDto {
 
   @IsNumber()
   @IsOptional()
-  totalBudget?: number;
+  total_budget?: number;
 
   @IsString()
   @IsOptional()

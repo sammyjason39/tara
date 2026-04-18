@@ -22,7 +22,7 @@ export class CpfExporter implements IComplianceExporter {
     data.lineItems.forEach((item, idx) => {
       lines.push([
         idx + 1,
-        item.employeeId,
+        item.employee_id,
         `"${item.employeeName}"`,
         item.grossSalary,
         item.employeeContribution,
@@ -43,7 +43,7 @@ export class CpfExporter implements IComplianceExporter {
       .map(
         (item, idx) => `
     <Employee seq="${idx + 1}">
-      <Id>${item.employeeId}</Id>
+      <Id>${item.employee_id}</Id>
       <Name>${item.employeeName}</Name>
       <OrdinaryWages>${item.grossSalary}</OrdinaryWages>
       <EmployeeCPF>${item.employeeContribution}</EmployeeCPF>

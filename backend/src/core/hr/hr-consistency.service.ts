@@ -17,22 +17,22 @@ export class HRConsistencyService {
   /**
    * Compares HR payroll run total with Finance ledger entries for a period.
    */
-  async validatePayrollConsistency(tenantId: string, period: string) {
+  async validatePayrollConsistency(tenant_id: string, period: string) {
     try {
       // 1. Fetch HR Payroll Total for the period
-      const hrPayroll = await this.prisma.payrollRun.findFirst({
-        where: { tenantId, name: period, status: 'PROCESSED' },
+      const hrPayroll = await this.prisma.hr_payroll_runs.findFirst({
+        where: { tenant_id: tenant_id, name: period, status: 'PROCESSED' },
       });
 
       if (!hrPayroll) return;
 
       // 2. Fetch Finance Ledger Totals for 'PAYROLL' category
       // Mocking ledger access via context snapshot or generic query
-      const ledgerEntry = await this.prisma.hrContextSnapshot.findFirst({
+      const ledgerEntry = await this.prisma.hr_context_snapshots.findFirst({
         where: { 
-          tenantId, 
-          metricType: 'FINANCE_PAYROLL_REF',
-          aggregatedValues: { path: ['period'], equals: period }
+          tenant_id: tenant_id, 
+          metric_type: 'FINANCE_PAYROLL_REF',
+          aggregated_values: { path: ['period'], equals: period }
         },
       });
 
@@ -41,17 +41,18 @@ export class HRConsistencyService {
         return;
       }
 
-      const ledgerTotal = (ledgerEntry.aggregatedValues as any).totalAmount;
-      const hrTotal = Number(hrPayroll.totalNetPay);
+      const ledgerTotal = (ledgerEntry.aggregated_values as any).total_amount;
+      const hrTotal = Number(hrPayroll.total_net_pay);
       const discrepancy = Math.abs(hrTotal - ledgerTotal);
 
       // 3. Alert if threshold exceeded (e.g. > 1.00 currency unit)
       if (discrepancy > 1.0) {
-        this.logger.error(`[AI_CONSISTENCY] CRITICAL: Payroll discrepancy detected for tenant ${tenantId}. HR: ${hrTotal}, Ledger: ${ledgerTotal}.`);
+        this.logger.error(`[AI_CONSISTENCY] CRITICAL: Payroll discrepancy detected for tenant ${tenant_id}. HR: ${hrTotal}, Ledger: ${ledgerTotal}.`);
         
-        await this.prisma.hrSystemAlert.create({
+        await this.prisma.hr_system_alerts.create({
           data: {
-            tenantId,
+          updated_at: new Date(),
+            tenant_id: tenant_id,
             type: 'CONSISTENCY',
             severity: 'CRITICAL',
             message: `Cross-module payroll discrepancy detected. HR total (${hrTotal}) does not match Ledger entries (${ledgerTotal}).`,

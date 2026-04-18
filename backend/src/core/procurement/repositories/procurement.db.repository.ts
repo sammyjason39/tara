@@ -25,15 +25,15 @@ import { PurchaseOrder } from "../entities/purchase-order.entity";
 import { Requisition } from "../entities/requisition.entity";
 import { Supplier } from "../entities/supplier.entity";
 import {
-  SupplierMaster,
-  ProcurementRequisition,
-  ProcurementFinalPo,
-  ProcurementRiskSignal,
-  SupplierBranch,
-  SupplierProduct,
-  ProcurementDraftPo,
-  ProcurementContract,
-  ProcurementAuditEvent,
+  supplier_masters as SupplierMaster,
+  procurement_requisitions as ProcurementRequisition,
+  procurement_final_pos as ProcurementFinalPo,
+  procurement_risk_signals as ProcurementRiskSignal,
+  supplier_branches as SupplierBranch,
+  supplier_products as SupplierProduct,
+  procurement_draft_pos as ProcurementDraftPo,
+  procurement_contracts as ProcurementContract,
+  procurement_audit_events as ProcurementAuditEvent,
 } from "@prisma/client";
 import { IProcurementRepository } from "./procurement.repository.interface";
 
@@ -46,49 +46,56 @@ export class ProcurementDbRepository extends IProcurementRepository {
   // ─── AUDIT HELPERS ──────────────────────────────────────────────────────────
 
   async createAuditEvent(
-    tenantId: string,
-    actorId: string,
+    tenant_id: string,
+    actor_id: string,
     action: string,
-    entityType: string,
-    entityId: string,
+    entity_type: string,
+    entity_id: string,
     detail = "",
   ): Promise<any> {
-    return this.prisma.procurementAuditEvent.create({
+    return this.prisma.procurement_audit_events.create({
       data: {
         id: uuidv4(),
-        tenantId, actorId, action, entityType, entityId, detail },
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        actor_id: actor_id,
+        action,
+        entity_type: entity_type,
+        entity_id: entity_id,
+        detail,
+      },
     });
   }
 
-  async getAuditEvents(tenantId: string): Promise<any[]> {
-    const events = await this.prisma.procurementAuditEvent.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: "desc" },
+  async getAuditEvents(tenant_id: string): Promise<any[]> {
+    const events = await this.prisma.procurement_audit_events.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { created_at: "desc" },
       take: 200,
     });
-    return events.map((e: ProcurementAuditEvent) => ({
+    return events.map((e: any) => ({
       id: e.id,
-      tenantId: e.tenantId,
-      actorId: e.actorId,
+      tenant_id: e.tenant_id,
+      actor_id: e.actor_id,
       action: e.action,
-      entityType: e.entityType.toLowerCase(),
-      entityId: e.entityId,
+      entity_type: e.entity_type.toLowerCase(),
+      entity_id: e.entity_id,
       detail: e.detail,
-      createdAt: e.createdAt,
+      created_at: e.created_at,
     }));
   }
 
   // ─── CATEGORIES ─────────────────────────────────────────────────────────────
 
-  async getCategories(tenantId: string): Promise<any[]> {
-    return this.prisma.procurementCategory.findMany({
-      where: { tenantId, active: true },
+  async getCategories(tenant_id: string): Promise<any[]> {
+    return this.prisma.procurement_categories.findMany({
+      where: { tenant_id: tenant_id, active: true },
       orderBy: { name: "asc" },
     });
   }
 
   async upsertCategory(
-    tenantId: string,
+    tenant_id: string,
     data: CreateProcurementCategoryDto | UpdateProcurementCategoryDto,
   ): Promise<any> {
     const categoryData = {
@@ -98,279 +105,279 @@ export class ProcurementDbRepository extends IProcurementRepository {
     };
 
     if ("id" in data && data.id) {
-      return this.prisma.procurementCategory.update({
-        where: { id: data.id, tenantId },
+      return this.prisma.procurement_categories.update({
+        where: { id: data.id, tenant_id: tenant_id },
         data: categoryData,
       });
     } else {
-      return this.prisma.procurementCategory.create({
+      return this.prisma.procurement_categories.create({
         data: {
         id: uuidv4(),
-        updatedAt: new Date(),
+        updated_at: new Date(),
           ...categoryData,
-          tenantId,
+          tenant_id: tenant_id,
         },
       });
     }
   }
 
-  async deleteCategory(tenantId: string, id: string): Promise<any> {
-    return this.prisma.procurementCategory.update({
-      where: { id, tenantId },
+  async deleteCategory(tenant_id: string, id: string): Promise<any> {
+    return this.prisma.procurement_categories.update({
+      where: { id, tenant_id: tenant_id },
       data: { active: false },
     });
   }
 
   // ─── SUPPLIERS ───────────────────────────────────────────────────────────────
 
-  async getSuppliers(tenantId: string): Promise<Supplier[]> {
-    const suppliers = await this.prisma.supplierMaster.findMany({
-      where: { tenantId, deletedAt: null },
-      orderBy: { createdAt: "desc" },
+  async getSuppliers(tenant_id: string): Promise<Supplier[]> {
+    const suppliers = await this.prisma.supplier_masters.findMany({
+      where: { tenant_id: tenant_id, deleted_at: null },
+      orderBy: { created_at: "desc" },
     });
-    return suppliers.map((s: SupplierMaster) => ({
+    return suppliers.map((s: any) => ({
       id: s.id,
-      tenantId: s.tenantId,
+      tenant_id: s.tenant_id,
       name: s.name,
-      taxId: s.taxId || "",
+      taxId: s.tax_id || "",
       category: s.categories[0] || "General",
       categories: s.categories,
       branchCode: "HQ",
-      complianceStatus: s.complianceStatus as any,
-      globalRating: s.globalRating,
-      riskTier: s.riskTier as any,
-      rating: s.globalRating,
-      createdAt: s.createdAt,
-      updatedAt: s.updatedAt,
+      complianceStatus: s.compliance_status as any,
+      globalRating: s.global_rating,
+      riskTier: s.risk_tier as any,
+      rating: s.global_rating,
+      created_at: s.created_at,
+      updated_at: s.updated_at,
     }));
   }
 
-  async createSupplier(tenantId: string, data: CreateSupplierDto): Promise<Supplier> {
-    const created = await this.prisma.supplierMaster.create({
+  async createSupplier(tenant_id: string, data: CreateSupplierDto): Promise<Supplier> {
+    const created = await this.prisma.supplier_masters.create({
       data: {
         id: uuidv4(),
-        updatedAt: new Date(),
-        tenantId,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
         name: data.name,
-        taxId: data.taxId,
+        tax_id: data.taxId,
         categories: [data.category],
         website: data.website,
-        contactPerson: data.contactPerson,
-        contactEmail: data.contactEmail,
-        contactPhone: data.contactPhone,
+        contact_person: data.contactPerson,
+        contact_email: data.contact_email,
+        contact_phone: data.contactPhone,
         address: data.address,
-        complianceStatus: "PENDING",
-        globalRating: 70,
-        riskTier: "MEDIUM",
+        compliance_status: "PENDING",
+        global_rating: 70,
+        risk_tier: "MEDIUM",
       },
     });
     return {
       id: created.id,
-      tenantId: created.tenantId,
+      tenant_id: created.tenant_id,
       name: created.name,
-      taxId: created.taxId || "",
+      taxId: created.tax_id || "",
       category: created.categories[0],
       branchCode: data.branchCode,
       complianceStatus: "PENDING" as any,
-      rating: created.globalRating,
-      createdAt: created.createdAt,
-      updatedAt: created.updatedAt,
+      rating: created.global_rating,
+      created_at: created.created_at,
+      updated_at: created.updated_at,
     };
   }
 
   // ─── SUPPLIER BRANCHES ────────────────────────────────────────────────────────
 
-  async getSupplierBranches(tenantId: string): Promise<any[]> {
-    const branches = await this.prisma.supplierBranch.findMany({
-      where: { tenantId, deletedAt: null },
-      orderBy: { createdAt: "desc" },
+  async getSupplierBranches(tenant_id: string): Promise<any[]> {
+    const branches = await this.prisma.supplier_branches.findMany({
+      where: { tenant_id: tenant_id, deleted_at: null },
+      orderBy: { created_at: "desc" },
     });
-    return branches.map((b: SupplierBranch) => ({
+    return branches.map((b: any) => ({
       id: b.id,
-      tenantId: b.tenantId,
-      supplierId: b.supplierId,
-      branchCode: b.branchCode,
-      branchName: b.branchName,
+      tenant_id: b.tenant_id,
+      supplierId: b.supplier_id,
+      branchCode: b.branch_code,
+      branchName: b.branch_name,
       location: b.location,
-      leadTimeDays: b.leadTimeDays,
-      localRating: b.localRating,
-      riskTier: b.riskTier.toLowerCase(),
+      leadTimeDays: b.lead_time_days,
+      localRating: b.local_rating,
+      riskTier: b.risk_tier.toLowerCase(),
       active: b.active,
-      createdAt: b.createdAt,
-      updatedAt: b.updatedAt,
+      created_at: b.created_at,
+      updated_at: b.updated_at,
     }));
   }
 
-  async createSupplierBranch(tenantId: string, data: CreateSupplierBranchDto): Promise<any> {
-    const supplier = await this.prisma.supplierMaster.findUnique({
-      where: { id: data.supplierId, tenantId },
+  async createSupplierBranch(tenant_id: string, data: CreateSupplierBranchDto): Promise<any> {
+    const supplier = await this.prisma.supplier_masters.findUnique({
+      where: { id: data.supplierId, tenant_id: tenant_id },
     });
     if (!supplier) throw new NotFoundException("Supplier not found");
 
-    const created = await this.prisma.supplierBranch.create({
+    const created = await this.prisma.supplier_branches.create({
       data: {
         id: uuidv4(),
-        updatedAt: new Date(),
-        tenantId,
-        supplierId: data.supplierId,
-        branchCode: data.branchCode,
-        branchName: data.branchName,
-        location: data.location,
-        fullAddress: data.fullAddress,
-        contactPerson: data.contactPerson,
-        contactEmail: data.contactEmail,
-        contactPhone: data.contactPhone,
-        leadTimeDays: data.leadTimeDays,
-        localRating: 70,
-        riskTier: "MEDIUM",
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        supplier_id: data.supplierId,
+        branch_code: data.branchCode,
+        branch_name: data.branchName,
+        location: JSON.stringify(data),
+        full_address: data.fullAddress,
+        contact_person: data.contactPerson,
+        contact_email: data.contact_email,
+        contact_phone: data.contactPhone,
+        lead_time_days: data.leadTimeDays,
+        local_rating: 70,
+        risk_tier: "MEDIUM",
         active: data.active ?? true,
       },
     });
     return {
       id: created.id,
-      tenantId: created.tenantId,
-      supplierId: created.supplierId,
-      branchCode: created.branchCode,
-      branchName: created.branchName,
-      location: created.location,
-      leadTimeDays: created.leadTimeDays,
-      localRating: created.localRating,
-      riskTier: created.riskTier.toLowerCase(),
+      tenant_id: created.tenant_id,
+      supplierId: created.supplier_id,
+      branchCode: created.branch_code,
+      branchName: created.branch_name,
+      locations: created,
+      leadTimeDays: created.lead_time_days,
+      localRating: created.local_rating,
+      riskTier: created.risk_tier.toLowerCase(),
       active: created.active,
-      createdAt: created.createdAt,
-      updatedAt: created.updatedAt,
+      created_at: created.created_at,
+      updated_at: created.updated_at,
     };
   }
 
   // ─── SUPPLIER PRODUCTS ────────────────────────────────────────────────────────
 
-  async getSupplierProducts(tenantId: string): Promise<any[]> {
-    const products = await this.prisma.supplierProduct.findMany({
-      where: { tenantId, active: true },
+  async getSupplierProducts(tenant_id: string): Promise<any[]> {
+    const products = await this.prisma.supplier_products.findMany({
+      where: { tenant_id: tenant_id, active: true },
     });
     return products.map((p: SupplierProduct) => ({
       id: p.id,
-      tenantId: p.tenantId,
-      supplierId: p.supplierId,
-      branchId: p.branchId,
+      tenant_id: p.tenant_id,
+      supplierId: p.supplier_id,
+      branch_id: p.branch_id,
       sku: p.sku,
       name: p.name,
       category: p.category,
-      unitPrice: Number(p.unitPrice),
+      unit_price: Number(p.unit_price),
       currency: p.currency,
-      qualityScore: p.qualityScore,
+      quality_score: p.quality_score,
       active: p.active,
-      updatedAt: p.updatedAt,
+      updated_at: p.updated_at,
     }));
   }
 
-  async upsertSupplierProduct(tenantId: string, data: UpsertSupplierProductDto): Promise<any> {
+  async upsertSupplierProduct(tenant_id: string, data: UpsertSupplierProductDto): Promise<any> {
     if (data.id) {
-      const updated = await this.prisma.supplierProduct.update({
-        where: { id: data.id, tenantId },
+      const updated = await this.prisma.supplier_products.update({
+        where: { id: data.id, tenant_id: tenant_id },
         data: {
           sku: data.sku,
           name: data.name,
           category: data.category,
-          unitPrice: data.unitPrice,
+          unit_price: data.unit_price,
           currency: data.currency || "IDR",
-          qualityScore: data.qualityScore ?? 70,
+          quality_score: data.qualityScore ?? 70,
           active: data.active ?? true,
         },
       });
-      return { ...updated, unitPrice: Number(updated.unitPrice) };
+      return { ...updated, unit_price: Number(updated.unit_price) };
     } else {
-      const created = await this.prisma.supplierProduct.create({
+      const created = await this.prisma.supplier_products.create({
         data: {
         id: uuidv4(),
-        updatedAt: new Date(),
-          tenantId,
-          supplierId: data.supplierId,
-          branchId: data.branchId,
+        updated_at: new Date(),
+          tenant_id: tenant_id,
+          supplier_id: data.supplierId,
+          branch_id: data.branch_id,
           sku: data.sku,
           name: data.name,
           category: data.category,
-          unitPrice: data.unitPrice,
+          unit_price: data.unit_price,
           currency: data.currency || "IDR",
-          qualityScore: data.qualityScore ?? 70,
+          quality_score: data.qualityScore ?? 70,
           active: data.active ?? true,
         },
       });
-      return { ...created, unitPrice: Number(created.unitPrice) };
+      return { ...created, unit_price: Number(created.unit_price) };
     }
   }
 
   async getSupplierRecommendations(
-    tenantId: string,
+    tenant_id: string,
     params: { branchCode?: string; category?: string },
   ): Promise<any[]> {
-    const products = await this.prisma.supplierProduct.findMany({
+    const products = await this.prisma.supplier_products.findMany({
       where: {
-        tenantId,
+        tenant_id: tenant_id,
         category: params.category,
         active: true,
-        supplierBranch: {
+        supplier_branches: {
           active: true,
           ...(params.branchCode ? { branchCode: params.branchCode } : {}),
         },
       },
-      include: { supplierMaster: true, supplierBranch: true },
+      include: { supplier_masters: true, supplier_branches: true },
       take: 10,
     });
     return products.map((p) => ({
-      supplierId: p.supplierId,
-      branchId: p.branchId,
+      supplierId: p.supplier_id,
+      branch_id: p.branch_id,
       supplierName: (p as any).supplierMaster.name,
       branchName: (p as any).supplierBranch.branchName,
       branchCode: (p as any).supplierBranch.branchCode,
       category: p.category,
-      score: p.qualityScore,
+      score: p.quality_score,
       riskTier: (p as any).supplierBranch.riskTier,
-      unitPrice: Number(p.unitPrice),
+      unit_price: Number(p.unit_price),
       leadTimeDays: (p as any).supplierBranch.leadTimeDays,
     }));
   }
 
   // ─── REQUISITIONS ─────────────────────────────────────────────────────────────
 
-  async getRequisitions(tenantId: string): Promise<Requisition[]> {
-    const requisitions = await this.prisma.procurementRequisition.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: "desc" },
+  async getRequisitions(tenant_id: string): Promise<Requisition[]> {
+    const requisitions = await this.prisma.procurement_requisitions.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { created_at: "desc" },
     });
-    return requisitions.map((r: ProcurementRequisition) => ({
+    return (requisitions as any[]).map((r) => ({
       id: r.id,
-      tenantId: r.tenantId,
+      tenant_id: r.tenant_id,
       title: r.title,
       description: r.description,
       category: r.category,
-      budgetClass: r.budgetClass as any,
-      requesterDept: r.departmentId,
-      branchCode: r.branchCode,
+      budgetClass: r.budget_class as any,
+      requesterDept: r.department_id,
+      branchCode: r.branch_code,
       amount: Number(r.amount),
       currency: r.currency as any,
       status: r.status as any,
       approvals: {} as any,
       contractRequired: false,
-      createdBy: r.requesterId,
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
+      createdBy: r.requester_id,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
     }));
   }
 
-  async createRequisition(tenantId: string, data: CreateRequisitionDto): Promise<Requisition> {
-    const created = await this.prisma.procurementRequisition.create({
+  async createRequisition(tenant_id: string, data: CreateRequisitionDto): Promise<Requisition> {
+    const created = await this.prisma.procurement_requisitions.create({
       data: {
         id: uuidv4(),
-        updatedAt: new Date(),
-        tenantId,
-        requesterId: data.createdBy || "system",
-        departmentId: data.requesterDept,
-        branchCode: data.branchCode,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        requester_id: data.createdBy || "system",
+        department_id: data.requesterDept,
+        branch_code: data.branchCode,
         title: data.title,
         description: data.description,
         category: data.category || "General",
-        budgetClass: "OPEX",
+        budget_class: "OPEX",
         amount: data.amount,
         currency: data.currency || "IDR",
         status: "PENDING_REQUESTER_HOD",
@@ -378,52 +385,52 @@ export class ProcurementDbRepository extends IProcurementRepository {
     });
     return {
       id: created.id,
-      tenantId: created.tenantId,
+      tenant_id: created.tenant_id,
       title: created.title,
       description: created.description,
       category: created.category,
-      budgetClass: created.budgetClass as any,
-      requesterDept: created.departmentId,
-      branchCode: created.branchCode,
+      budgetClass: created.budget_class as any,
+      requesterDept: created.department_id,
+      branchCode: created.branch_code,
       amount: Number(created.amount),
       currency: created.currency as any,
       status: created.status as any,
       approvals: {} as any,
       contractRequired: false,
-      createdBy: created.requesterId,
-      createdAt: created.createdAt,
-      updatedAt: created.updatedAt,
+      createdBy: created.requester_id,
+      created_at: created.created_at,
+      updated_at: created.updated_at,
     };
   }
 
-  async approveRequesterHod(tenantId: string, requisitionId: string): Promise<Requisition> {
-    const updated = await this.prisma.procurementRequisition.update({
-      where: { id: requisitionId, tenantId },
+  async approveRequesterHod(tenant_id: string, requisitionId: string): Promise<Requisition> {
+    const updated = await this.prisma.procurement_requisitions.update({
+      where: { id: requisitionId, tenant_id: tenant_id },
       data: { status: "APPROVED_REQUESTER_HOD" },
     });
     return {
       id: updated.id,
-      tenantId: updated.tenantId,
+      tenant_id: updated.tenant_id,
       title: updated.title,
       description: updated.description,
       category: updated.category,
-      budgetClass: updated.budgetClass as any,
-      requesterDept: updated.departmentId,
-      branchCode: updated.branchCode,
+      budgetClass: updated.budget_class as any,
+      requesterDept: updated.department_id,
+      branchCode: updated.branch_code,
       amount: Number(updated.amount),
       currency: updated.currency as any,
       status: updated.status as any,
       approvals: {} as any,
       contractRequired: false,
-      createdBy: updated.requesterId,
-      createdAt: updated.createdAt,
-      updatedAt: updated.updatedAt,
+      createdBy: updated.requester_id,
+      created_at: updated.created_at,
+      updated_at: updated.updated_at,
     };
   }
 
-  async approveFinal(tenantId: string, requisitionId: string, data: ApproveFinalDto): Promise<Requisition> {
-    const req = await this.prisma.procurementRequisition.findUnique({
-      where: { id: requisitionId, tenantId },
+  async approveFinal(tenant_id: string, requisitionId: string, data: ApproveFinalDto): Promise<Requisition> {
+    const req = await this.prisma.procurement_requisitions.findUnique({
+      where: { id: requisitionId, tenant_id: tenant_id },
     });
     if (!req) throw new NotFoundException("Requisition not found");
 
@@ -432,227 +439,227 @@ export class ProcurementDbRepository extends IProcurementRepository {
     const newStatus =
       data.approver === "FINANCE_HOD" ? "FINAL_APPROVED" : "FINAL_APPROVAL_PENDING";
 
-    const updated = await this.prisma.procurementRequisition.update({
-      where: { id: requisitionId, tenantId },
+    const updated = await this.prisma.procurement_requisitions.update({
+      where: { id: requisitionId, tenant_id: tenant_id },
       data: { status: newStatus },
     });
     return {
       id: updated.id,
-      tenantId: updated.tenantId,
+      tenant_id: updated.tenant_id,
       title: updated.title,
       description: updated.description,
       category: updated.category,
-      budgetClass: updated.budgetClass as any,
-      requesterDept: updated.departmentId,
-      branchCode: updated.branchCode,
+      budgetClass: updated.budget_class as any,
+      requesterDept: updated.department_id,
+      branchCode: updated.branch_code,
       amount: Number(updated.amount),
       currency: updated.currency as any,
       status: updated.status as any,
       approvals: {} as any,
       contractRequired: false,
-      createdBy: updated.requesterId,
-      createdAt: updated.createdAt,
-      updatedAt: updated.updatedAt,
+      createdBy: updated.requester_id,
+      created_at: updated.created_at,
+      updated_at: updated.updated_at,
     };
   }
 
   // ─── DRAFT PURCHASE ORDERS ────────────────────────────────────────────────────
 
-  async getDraftPurchaseOrders(tenantId: string): Promise<any[]> {
-    const drafts = await this.prisma.procurementDraftPo.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: "desc" },
+  async getDraftPurchaseOrders(tenant_id: string): Promise<any[]> {
+    const drafts = await this.prisma.procurement_draft_pos.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { created_at: "desc" },
     });
-    return drafts.map((d: ProcurementDraftPo) => ({
+    return (drafts as any[]).map((d) => ({
       id: d.id,
-      tenantId: d.tenantId,
-      requisitionId: d.requisitionId,
-      branchCode: d.branchCode,
-      supplierId: d.supplierId,
-      supplierBranchId: d.supplierBranchId,
-      contractType: d.contractType.toLowerCase(),
+      tenant_id: d.tenant_id,
+      requisitionId: d.requisition_id,
+      branchCode: d.branch_code,
+      supplierId: d.supplier_id,
+      supplierBranchId: d.supplier_branch_id,
+      contractType: d.contract_type?.toLowerCase(),
       status: d.status,
-      quotedTotal: Number(d.quotedTotal),
-      createdAt: d.createdAt,
-      updatedAt: d.updatedAt,
+      quotedTotal: Number(d.quoted_total),
+      created_at: d.created_at,
+      updated_at: d.updated_at,
     }));
   }
 
-  async createDraftPurchaseOrder(tenantId: string, data: CreateDraftPoDto, createdBy: string): Promise<any> {
-    const requisition = await this.prisma.procurementRequisition.findUnique({
-      where: { id: data.requisitionId, tenantId },
+  async createDraftPurchaseOrder(tenant_id: string, data: CreateDraftPoDto, createdBy: string): Promise<any> {
+    const requisition = await this.prisma.procurement_requisitions.findUnique({
+      where: { id: data.requisitionId, tenant_id: tenant_id },
     });
     if (!requisition) throw new NotFoundException("Requisition not found");
 
-    const totalAmount = data.quotedTotal
-      ?? data.lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    const total_amount = data.quotedTotal
+      ?? data.lineItems.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
 
-    const draft = await this.prisma.procurementDraftPo.create({
+    const draft = await this.prisma.procurement_draft_pos.create({
       data: {
         id: uuidv4(),
-        updatedAt: new Date(),
-        tenantId,
-        requisitionId: data.requisitionId,
-        branchCode: requisition.branchCode,
-        supplierId: data.supplierId,
-        supplierBranchId: data.supplierBranchId,
-        contractType: data.contractType,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        requisition_id: data.requisitionId,
+        branch_code: requisition.branch_code,
+        supplier_id: data.supplierId,
+        supplier_branch_id: data.supplierBranchId,
+        contract_type: data.contractType,
         status: "DRAFT",
-        lineItems: data.lineItems as any,
-        quotedTotal: totalAmount,
-        createdBy,
+        line_items: data.lineItems as any,
+        quoted_total: total_amount,
+        created_by: createdBy,
       },
     });
 
     // Update requisition status
-    await this.prisma.procurementRequisition.update({
+    await this.prisma.procurement_requisitions.update({
       where: { id: data.requisitionId },
       data: { status: "DRAFT_PO_PREPARED" },
     });
 
     return {
       id: draft.id,
-      tenantId: draft.tenantId,
-      requisitionId: draft.requisitionId,
-      branchCode: draft.branchCode,
-      supplierId: draft.supplierId,
-      supplierBranchId: draft.supplierBranchId,
-      contractType: draft.contractType.toLowerCase(),
+      tenant_id: draft.tenant_id,
+      requisitionId: draft.requisition_id,
+      branchCode: draft.branch_code,
+      supplierId: draft.supplier_id,
+      supplierBranchId: draft.supplier_branch_id,
+      contractType: draft.contract_type?.toLowerCase(),
       status: draft.status,
-      quotedTotal: Number(draft.quotedTotal),
+      quotedTotal: Number(draft.quoted_total),
       lineItems: data.lineItems,
-      createdAt: draft.createdAt,
-      updatedAt: draft.updatedAt,
+      created_at: draft.created_at,
+      updated_at: draft.updated_at,
     };
   }
 
-  async approveDraftByProcurementHod(tenantId: string, draftPoId: string): Promise<any> {
-    const draft = await this.prisma.procurementDraftPo.findUnique({
-      where: { id: draftPoId, tenantId },
+  async approveDraftByProcurementHod(tenant_id: string, draftPoId: string): Promise<any> {
+    const draft = await this.prisma.procurement_draft_pos.findUnique({
+      where: { id: draftPoId, tenant_id: tenant_id },
     });
     if (!draft) throw new NotFoundException("Draft PO not found");
 
-    const updated = await this.prisma.procurementDraftPo.update({
-      where: { id: draftPoId, tenantId },
+    const updated = await this.prisma.procurement_draft_pos.update({
+      where: { id: draftPoId, tenant_id: tenant_id },
       data: { status: "PROCUREMENT_HOD_APPROVED" },
     });
 
-    await this.prisma.procurementRequisition.update({
-      where: { id: draft.requisitionId },
+    await this.prisma.procurement_requisitions.update({
+      where: { id: draft.requisition_id },
       data: { status: "DRAFT_PO_APPROVED" },
     });
 
-    return { ...updated, quotedTotal: Number(updated.quotedTotal), status: updated.status };
+    return { ...updated, quotedTotal: Number(updated.quoted_total), status: updated.status };
   }
 
-  async confirmSupplierQuote(tenantId: string, draftPoId: string, data: ConfirmQuoteDto): Promise<any> {
-    const draft = await this.prisma.procurementDraftPo.findUnique({
-      where: { id: draftPoId, tenantId },
+  async confirmSupplierQuote(tenant_id: string, draftPoId: string, data: ConfirmQuoteDto): Promise<any> {
+    const draft = await this.prisma.procurement_draft_pos.findUnique({
+      where: { id: draftPoId, tenant_id: tenant_id },
     });
     if (!draft) throw new NotFoundException("Draft PO not found");
 
-    const updated = await this.prisma.procurementDraftPo.update({
-      where: { id: draftPoId, tenantId },
+    const updated = await this.prisma.procurement_draft_pos.update({
+      where: { id: draftPoId, tenant_id: tenant_id },
       data: {
         status: "SUPPLIER_CONFIRMED",
         ...(data.quotedTotal != null ? { quotedTotal: data.quotedTotal } : {}),
       },
     });
 
-    await this.prisma.procurementRequisition.update({
-      where: { id: draft.requisitionId },
+    await this.prisma.procurement_requisitions.update({
+      where: { id: draft.requisition_id },
       data: { status: "SUPPLIER_CONFIRMED" },
     });
 
-    return { ...updated, quotedTotal: Number(updated.quotedTotal) };
+    return { ...updated, quotedTotal: Number(updated.quoted_total) };
   }
 
   // ─── PURCHASE ORDERS (FINAL) ──────────────────────────────────────────────────
 
-  async releasePurchaseOrder(tenantId: string, data: ReleasePoDto): Promise<PurchaseOrder> {
-    const requisition = await this.prisma.procurementRequisition.findUnique({
-      where: { id: data.requisitionId, tenantId },
+  async releasePurchaseOrder(tenant_id: string, data: ReleasePoDto): Promise<PurchaseOrder> {
+    const requisition = await this.prisma.procurement_requisitions.findUnique({
+      where: { id: data.requisitionId, tenant_id: tenant_id },
     });
     if (!requisition) throw new NotFoundException("Requisition not found");
 
-    const po = await this.prisma.procurementFinalPo.create({
+    const po = await this.prisma.procurement_final_pos.create({
       data: {
         id: uuidv4(),
-        updatedAt: new Date(),
-        tenantId,
-        requisitionId: requisition.id,
-        draftPoId: "auto",
-        supplierId: data.supplierId,
-        supplierBranchId: "auto",
-        branchCode: requisition.branchCode,
-        totalAmount: data.totalAmount,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        requisition_id: requisition.id,
+        draft_po_id: "auto",
+        supplier_id: data.supplierId,
+        supplier_branch_id: (data as any).supplierBranchId || "auto",
+        branch_code: requisition.branch_code,
+        total_amount: data.total_amount,
         status: "RELEASED",
       },
     });
 
-    await this.prisma.procurementRequisition.update({
+    await this.prisma.procurement_requisitions.update({
       where: { id: requisition.id },
       data: { status: "PO_RELEASED" },
     });
 
     // Cross-Module: create payable
-    const supplier = await this.prisma.supplierMaster.findUnique({ where: { id: data.supplierId } });
-    await this.prisma.payable.create({
+    const supplier = await this.prisma.supplier_masters.findUnique({ where: { id: data.supplierId } });
+    await this.prisma.payables.create({
       data: {
         id: uuidv4(),
-        updatedAt: new Date(),
-        tenantId,
-        vendorName: supplier?.name || "Unknown Supplier",
-        amount: data.totalAmount,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        vendor_name: supplier?.name || "Unknown Supplier",
+        amount: data.total_amount,
         currency: requisition.currency || "IDR",
-        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         status: "RECEIVED",
       },
     });
 
     return {
       id: po.id,
-      tenantId: po.tenantId,
-      requisitionId: po.requisitionId,
-      supplierId: po.supplierId,
-      branchCode: po.branchCode,
-      totalAmount: Number(po.totalAmount),
+      tenant_id: po.tenant_id,
+      requisitionId: po.requisition_id,
+      supplierId: po.supplier_id,
+      branchCode: po.branch_code,
+      total_amount: Number(po.total_amount),
       status: "released" as any,
-      issuedAt: po.issuedAt,
-      createdAt: po.createdAt,
-      updatedAt: po.updatedAt,
+      issuedAt: po.issued_at,
+      created_at: po.created_at,
+      updated_at: po.updated_at,
     };
   }
 
-  async getPurchaseOrders(tenantId: string): Promise<PurchaseOrder[]> {
-    const pos = await this.prisma.procurementFinalPo.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: "desc" },
+  async getPurchaseOrders(tenant_id: string): Promise<PurchaseOrder[]> {
+    const pos = await this.prisma.procurement_final_pos.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { created_at: "desc" },
     });
-    return pos.map((po: ProcurementFinalPo) => ({
+    return (pos as any[]).map((po) => ({
       id: po.id,
-      tenantId: po.tenantId,
-      requisitionId: po.requisitionId,
-      supplierId: po.supplierId,
-      branchCode: po.branchCode,
-      totalAmount: Number(po.totalAmount),
+      tenant_id: po.tenant_id,
+      requisitionId: po.requisition_id,
+      supplierId: po.supplier_id,
+      branchCode: po.branch_code,
+      total_amount: Number(po.total_amount),
       status: po.status.toLowerCase() as any,
-      issuedAt: po.issuedAt,
-      createdAt: po.createdAt,
-      updatedAt: po.updatedAt,
+      issuedAt: po.issued_at,
+      created_at: po.created_at,
+      updated_at: po.updated_at,
     }));
   }
 
   // ─── RECEIPTS ─────────────────────────────────────────────────────────────────
 
-  async createReceipt(tenantId: string, data: CreateReceiptDto, createdBy: string): Promise<any> {
-    const finalPo = await this.prisma.procurementFinalPo.findUnique({
-      where: { id: data.finalPoId, tenantId },
+  async createReceipt(tenant_id: string, data: CreateReceiptDto, createdBy: string): Promise<any> {
+    const finalPo = await this.prisma.procurement_final_pos.findUnique({
+      where: { id: data.finalPoId, tenant_id: tenant_id },
     });
     if (!finalPo) throw new NotFoundException("Final PO not found");
 
     // Update PO status to RECEIVED
-    await this.prisma.procurementFinalPo.update({
+    await this.prisma.procurement_final_pos.update({
       where: { id: data.finalPoId },
       data: { status: "RECEIVED" },
     });
@@ -661,110 +668,110 @@ export class ProcurementDbRepository extends IProcurementRepository {
     const qualityScore = (data.deliveryOnTime ? 25 : 0) + (data.quantityAccuracy * 0.5) + (data.qualityScore * 0.25) - (data.issueCount * 5) - (data.invoiceMismatch ? 10 : 0);
     const newRating = Math.max(0, Math.min(100, qualityScore));
 
-    await this.prisma.supplierMaster.update({
-      where: { id: finalPo.supplierId },
-      data: { globalRating: Math.round(newRating) },
+    await this.prisma.supplier_masters.update({
+      where: { id: finalPo.supplier_id },
+      data: { global_rating: Math.round(newRating) },
     });
 
     return {
       finalPoId: data.finalPoId,
-      tenantId,
+      tenant_id,
       deliveryOnTime: data.deliveryOnTime,
       quantityAccuracy: data.quantityAccuracy,
-      qualityScore: data.qualityScore,
+      quality_score: data.qualityScore,
       issueCount: data.issueCount,
       invoiceMismatch: data.invoiceMismatch,
       calculatedRating: Math.round(newRating),
-      createdAt: new Date(),
+      created_at: new Date(),
     };
   }
 
   // ─── CONTRACTS ────────────────────────────────────────────────────────────────
 
-  async getContracts(tenantId: string): Promise<any[]> {
-    const contracts = await this.prisma.procurementContract.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: "desc" },
+  async getContracts(tenant_id: string): Promise<any[]> {
+    const contracts = await this.prisma.procurement_contracts.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { created_at: "desc" },
     });
-    return contracts.map((c: ProcurementContract) => ({
+    return (contracts as any[]).map((c) => ({
       id: c.id,
-      tenantId: c.tenantId,
-      requisitionId: c.requisitionId,
-      supplierId: c.supplierId,
+      tenant_id: c.tenant_id,
+      requisitionId: c.requisition_id,
+      supplierId: c.supplier_id,
       status: c.status,
       version: c.version,
-      signedBySupplier: c.signedBySupplier,
-      signedByProcHod: c.signedByProcHod,
-      signedByFinanceHod: c.signedByFinanceHod,
+      signedBySupplier: c.signed_by_supplier,
+      signedByProcHod: c.signed_by_proc_hod,
+      signedByFinanceHod: c.signed_by_finance_hod,
       notes: c.notes,
-      createdAt: c.createdAt,
-      updatedAt: c.updatedAt,
+      created_at: c.created_at,
+      updated_at: c.updated_at,
     }));
   }
 
-  async createContract(tenantId: string, data: CreateContractDto, createdBy: string): Promise<any> {
-    const existing = await this.prisma.procurementContract.findFirst({
-      where: { tenantId, requisitionId: data.requisitionId },
+  async createContract(tenant_id: string, data: CreateContractDto, createdBy: string): Promise<any> {
+    const existing = await this.prisma.procurement_contracts.findFirst({
+      where: { tenant_id: tenant_id, requisition_id: data.requisitionId },
     });
 
     if (existing) {
       // Increment version and reset
-      const updated = await this.prisma.procurementContract.update({
+      const updated = await this.prisma.procurement_contracts.update({
         where: { id: existing.id },
         data: {
-          supplierId: data.supplierId,
+          supplier_id: data.supplierId,
           status: "LEGAL_REVIEW",
           version: existing.version + 1,
           notes: data.notes || existing.notes,
-          signedBySupplier: false,
-          signedByProcHod: false,
-          signedByFinanceHod: false,
+          signed_by_supplier: false,
+          signed_by_proc_hod: false,
+          signed_by_finance_hod: false,
         },
       });
       return { ...updated };
     }
 
-    const created = await this.prisma.procurementContract.create({
+    const created = await this.prisma.procurement_contracts.create({
       data: {
         id: uuidv4(),
-        updatedAt: new Date(),
-        tenantId,
-        requisitionId: data.requisitionId,
-        supplierId: data.supplierId,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        requisition_id: data.requisitionId,
+        supplier_id: data.supplierId,
         status: "LEGAL_REVIEW",
         version: 1,
         notes: data.notes,
-        signedBySupplier: false,
-        signedByProcHod: false,
-        signedByFinanceHod: false,
-        attachmentIds: data.attachmentIds || [],
+        signed_by_supplier: false,
+        signed_by_proc_hod: false,
+        signed_by_finance_hod: false,
+        attachment_ids: data.attachmentIds || [],
       },
     });
 
-    await this.prisma.procurementRequisition.update({
-      where: { id: data.requisitionId, tenantId },
+    await this.prisma.procurement_requisitions.update({
+      where: { id: data.requisitionId, tenant_id: tenant_id },
       data: { status: "LEGAL_APPROVED" },
     }).catch(() => {}); // Non-fatal; requisition may not exist in edge cases
 
     return { ...created };
   }
 
-  async approveLegalContract(tenantId: string, contractId: string): Promise<any> {
-    const contract = await this.prisma.procurementContract.findUnique({
-      where: { id: contractId, tenantId },
+  async approveLegalContract(tenant_id: string, contractId: string): Promise<any> {
+    const contract = await this.prisma.procurement_contracts.findUnique({
+      where: { id: contractId, tenant_id: tenant_id },
     });
     if (!contract) throw new NotFoundException("Contract not found");
 
-    const updated = await this.prisma.procurementContract.update({
-      where: { id: contractId, tenantId },
+    const updated = await this.prisma.procurement_contracts.update({
+      where: { id: contractId, tenant_id: tenant_id },
       data: { status: "LEGAL_APPROVED" },
     });
     return { ...updated };
   }
 
-  async signContract(tenantId: string, contractId: string, data: SignContractDto): Promise<any> {
-    const contract = await this.prisma.procurementContract.findUnique({
-      where: { id: contractId, tenantId },
+  async signContract(tenant_id: string, contractId: string, data: SignContractDto): Promise<any> {
+    const contract = await this.prisma.procurement_contracts.findUnique({
+      where: { id: contractId, tenant_id: tenant_id },
     });
     if (!contract) throw new NotFoundException("Contract not found");
 
@@ -773,17 +780,17 @@ export class ProcurementDbRepository extends IProcurementRepository {
     if (data.party === "PROCUREMENT_HOD") signPatch.signedByProcHod = true;
     if (data.party === "FINANCE_HOD") signPatch.signedByFinanceHod = true;
 
-    const updated = await this.prisma.procurementContract.update({
-      where: { id: contractId, tenantId },
+    const updated = await this.prisma.procurement_contracts.update({
+      where: { id: contractId, tenant_id: tenant_id },
       data: signPatch,
     });
 
     // If all three signed → status = SIGNED
-    const allSigned = updated.signedBySupplier && updated.signedByProcHod && updated.signedByFinanceHod;
-    const anySigned = updated.signedBySupplier || updated.signedByProcHod || updated.signedByFinanceHod;
+    const allSigned = updated.signed_by_supplier && updated.signed_by_proc_hod && updated.signed_by_finance_hod;
+    const anySigned = updated.signed_by_supplier || updated.signed_by_proc_hod || updated.signed_by_finance_hod;
 
     const finalStatus = allSigned ? "SIGNED" : anySigned ? "PARTIAL_SIGNED" : updated.status;
-    const finalContract = await this.prisma.procurementContract.update({
+    const finalContract = await this.prisma.procurement_contracts.update({
       where: { id: contractId },
       data: { status: finalStatus },
     });
@@ -793,146 +800,146 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   // ─── RISK MANAGEMENT ──────────────────────────────────────────────────────────
 
-  async getRiskSignals(tenantId: string): Promise<ProcurementRisk[]> {
-    const risks = await this.prisma.procurementRiskSignal.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: "desc" },
+  async getRiskSignals(tenant_id: string): Promise<ProcurementRisk[]> {
+    const risks = await this.prisma.procurement_risk_signals.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { created_at: "desc" },
     });
-    return risks.map((r: ProcurementRiskSignal) => ({
+    return (risks as any[]).map((r) => ({
       id: r.id,
-      tenantId: r.tenantId,
+      tenant_id: r.tenant_id,
       code: r.code as any,
       severity: r.severity as any,
       status: r.status as any,
-      entityId: r.entityId,
+      entity_id: r.entity_id,
       detail: r.detail,
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
     }));
   }
 
-  async createRiskSignal(tenantId: string, data: CreateRiskSignalDto): Promise<any> {
-    const existing = await this.prisma.procurementRiskSignal.findFirst({
-      where: { tenantId, entityId: data.entityId, code: data.code, status: "OPEN" },
+  async createRiskSignal(tenant_id: string, data: CreateRiskSignalDto): Promise<any> {
+    const existing = await this.prisma.procurement_risk_signals.findFirst({
+      where: { tenant_id: tenant_id, entity_id: data.entity_id, code: data.code, status: "OPEN" },
     });
     if (existing) return existing;
 
-    return this.prisma.procurementRiskSignal.create({
+    return this.prisma.procurement_risk_signals.create({
       data: {
         id: uuidv4(),
-        updatedAt: new Date(),
-        tenantId,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
         code: data.code,
         severity: data.severity,
         status: "OPEN",
-        entityId: data.entityId,
+        entity_id: data.entity_id,
         detail: data.detail || "",
       },
     });
   }
 
-  async updateRiskSignalStatus(tenantId: string, riskSignalId: string, status: string): Promise<any> {
-    const signal = await this.prisma.procurementRiskSignal.findUnique({
-      where: { id: riskSignalId, tenantId },
+  async updateRiskSignalStatus(tenant_id: string, riskSignalId: string, status: string): Promise<any> {
+    const signal = await this.prisma.procurement_risk_signals.findUnique({
+      where: { id: riskSignalId, tenant_id: tenant_id },
     });
     if (!signal) throw new NotFoundException("Risk signal not found");
 
-    return this.prisma.procurementRiskSignal.update({
+    return this.prisma.procurement_risk_signals.update({
       where: { id: riskSignalId },
       data: { status },
     });
   }
 
-  async runRiskScan(tenantId: string): Promise<ProcurementRisk[]> {
-    const highAmountReqs = await this.prisma.procurementRequisition.findMany({
-      where: { tenantId, amount: { gt: 1000000000 }, status: "PO_RELEASED" },
+  async runRiskScan(tenant_id: string): Promise<ProcurementRisk[]> {
+    const highAmountReqs = await this.prisma.procurement_requisitions.findMany({
+      where: { tenant_id: tenant_id, amount: { gt: 1000000000 }, status: "PO_RELEASED" },
     });
     for (const req of highAmountReqs) {
-      const existing = await this.prisma.procurementRiskSignal.findFirst({
-        where: { tenantId, entityId: req.id, code: "PRICE_SPIKE", status: "OPEN" },
+      const existing = await this.prisma.procurement_risk_signals.findFirst({
+        where: { tenant_id: tenant_id, entity_id: req.id, code: "PRICE_SPIKE", status: "OPEN" },
       });
       if (!existing) {
-        await this.prisma.procurementRiskSignal.create({
+        await this.prisma.procurement_risk_signals.create({
           data: {
         id: uuidv4(),
-        updatedAt: new Date(),
-            tenantId,
+        updated_at: new Date(),
+            tenant_id: tenant_id,
             code: "PRICE_SPIKE",
             severity: "HIGH",
             status: "OPEN",
-            entityId: req.id,
+            entity_id: req.id,
             detail: "Released PO amount exceeds threshold (> IDR 1B).",
           },
         });
       }
     }
-    return this.getRiskSignals(tenantId);
+    return this.getRiskSignals(tenant_id);
   }
 
   // ─── PORTAL MESSAGES ──────────────────────────────────────────────────────────
 
-  async getPortalMessages(tenantId: string): Promise<any[]> {
-    const messages = await this.prisma.supplierPortalMessage.findMany({
-      where: { tenantId },
-      orderBy: { createdAt: "desc" },
+  async getPortalMessages(tenant_id: string): Promise<any[]> {
+    const messages = await this.prisma.supplier_portal_messages.findMany({
+      where: { tenant_id: tenant_id },
+      orderBy: { created_at: "desc" },
       take: 100,
     });
     return messages.map((m) => ({
       id: m.id,
-      tenantId: m.tenantId,
-      supplierId: m.supplierId,
-      supplierBranchId: m.supplierBranchId,
+      tenant_id: m.tenant_id,
+      supplierId: m.supplier_id,
+      supplierBranchId: m.supplier_branch_id,
       direction: m.direction,
       type: m.type,
-      relatedEntityId: m.relatedEntityId,
+      relatedEntityId: m.related_entity_id,
       content: m.content,
-      attachmentName: m.attachmentName,
-      createdBy: m.createdBy,
-      createdAt: m.createdAt,
+      attachmentName: m.attachment_name,
+      createdBy: m.created_by,
+      created_at: m.created_at,
     }));
   }
 
-  async createPortalMessage(tenantId: string, data: CreatePortalMessageDto, createdBy: string): Promise<any> {
-    const created = await this.prisma.supplierPortalMessage.create({
+  async createPortalMessage(tenant_id: string, data: CreatePortalMessageDto, createdBy: string): Promise<any> {
+    const created = await this.prisma.supplier_portal_messages.create({
       data: {
         id: uuidv4(),
-        
-        tenantId,
-        supplierId: data.supplierId,
-        supplierBranchId: data.supplierBranchId,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
+        supplier_id: data.supplierId,
+        supplier_branch_id: data.supplierBranchId,
         direction: data.direction,
         type: data.type,
         content: data.content,
-        attachmentName: data.attachmentName,
-        createdBy,
+        attachment_name: data.attachmentName,
+        created_by: createdBy,
       },
     });
     return {
       id: created.id,
-      tenantId: created.tenantId,
-      supplierId: created.supplierId,
-      supplierBranchId: created.supplierBranchId,
+      tenant_id: created.tenant_id,
+      supplierId: created.supplier_id,
+      supplierBranchId: created.supplier_branch_id,
       direction: created.direction,
       type: created.type,
       content: created.content,
-      attachmentName: created.attachmentName,
-      createdBy: created.createdBy,
-      createdAt: created.createdAt,
+      attachmentName: created.attachment_name,
+      createdBy: created.created_by,
+      created_at: created.created_at,
     };
   }
 
   // ─── SPEND INSIGHTS ────────────────────────────────────────────────────────────
 
-  async getSpendInsights(tenantId: string): Promise<any[]> {
-    const requisitions = await this.prisma.procurementRequisition.findMany({
-      where: { tenantId, status: "PO_RELEASED" },
+  async getSpendInsights(tenant_id: string): Promise<any[]> {
+    const requisitions = await this.prisma.procurement_requisitions.findMany({
+      where: { tenant_id: tenant_id, status: "PO_RELEASED" },
     });
     const categories = Array.from(new Set(requisitions.map((r) => r.category)));
     return categories.map((cat) => {
       const catReqs = requisitions.filter((r) => r.category === cat);
       const totalSpend = catReqs.reduce((sum, r) => sum + Number(r.amount), 0);
       return {
-        id: `${tenantId}-si-${cat}`,
+        id: `${tenant_id}-si-${cat}`,
         label: cat,
         category: "SPEND",
         value: String(totalSpend),

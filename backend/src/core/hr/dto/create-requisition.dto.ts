@@ -13,7 +13,7 @@ export class CreateRequisitionDto {
 
   @IsString()
   @IsOptional()
-  departmentId?: string;
+  department_id?: string;
 
   @IsNumber()
   @Min(1)

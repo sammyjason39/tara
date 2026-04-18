@@ -4,7 +4,7 @@ export class ConcentrationRiskRule implements InsightRule {
   readonly type = 'CONCENTRATION_RISK';
 
   evaluate(context: InsightContext): Insight[] {
-    const { cashflow, snapshotSequence, tenantId, companyId } = context;
+    const { cashflow, snapshotSequence, tenant_id, company_id } = context;
 
     const snapshotDate = new Date(cashflow.snapshotTimestamp);
     const horizonLimit = new Date(snapshotDate);
@@ -45,7 +45,7 @@ export class ConcentrationRiskRule implements InsightRule {
         confidence: null, // Computed globally
         timeHorizon,
         actionPriority: concentrationRatio > 75 ? 6.5 : 4.5,
-        message: `High concentration risk detected: ${topDriver.accountName} accounts for ${Math.round(concentrationRatio)}% of projected outflows within 30 days.`,
+        message: `High concentration risk detected: ${topDriver.account_name} accounts for ${Math.round(concentrationRatio)}% of projected outflows within 30 days.`,
         recommendation: 'Evaluate payment terms or diversify vendors to mitigate liquidity dependency on this single account.',
         isPrimary: true,
         explanation: {
@@ -55,8 +55,8 @@ export class ConcentrationRiskRule implements InsightRule {
         },
         supportingData: { topDriver, concentrationRatio, totalOutflow, daysToDue },
         accountId: topDriver.accountId,
-        tenantId,
-        companyId,
+        tenant_id,
+        company_id,
         snapshotSequence
       }];
     }

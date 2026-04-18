@@ -14,11 +14,11 @@ export class PostingRuleService {
     private readonly auditService: AuditService,
   ) {}
 
-  async listRules(tenantId: string, companyId: string): Promise<any[]> {
-    return this.ruleRepo.listRules(tenantId, companyId);
+  async listRules(tenant_id: string, company_id: string): Promise<any[]> {
+    return this.ruleRepo.listRules(tenant_id, company_id);
   }
 
-  async createRule(tenantId: string, companyId: string, data: any, userId: string): Promise<any> {
+  async createRule(tenant_id: string, company_id: string, data: any, user_id: string): Promise<any> {
     // 1. Validate accounts exist
     const hasDebit = data.lines.some((l: any) => l.side === PostingSide.DEBIT);
     const hasCredit = data.lines.some((l: any) => l.side === PostingSide.CREDIT);
@@ -28,7 +28,7 @@ export class PostingRuleService {
 
     // 2. Validation: Accounts
     for (const line of data.lines) {
-      const coa = await this.coaRepo.findById(tenantId, companyId, line.accountId);
+      const coa = await this.coaRepo.findById(tenant_id, company_id, line.accountId);
       if (!coa) throw new BadRequestException(`Account ${line.accountId} not found for rule`);
     }
 
@@ -37,55 +37,55 @@ export class PostingRuleService {
     // If dynamic, we assume the expression is designed to balance.
     // Real implementation would have an expression evaluator placeholder here.
 
-    const rule = await this.ruleRepo.createRule(tenantId, companyId, data);
+    const rule = await this.ruleRepo.createRule(tenant_id, company_id, data);
 
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: 'FINANCE',
       action: 'CREATE_POSTING_RULE',
-      entityType: 'PostingRule',
-      entityId: rule.id,
-      afterState: rule,
-      metadata: { companyId },
+      entity_type: 'PostingRule',
+      entity_id: rule.id,
+      after_state: rule,
+      metadata: { company_id },
     });
 
     return rule;
   }
 
-  async activateRule(tenantId: string, companyId: string, ruleId: string, userId: string): Promise<any> {
-    const rule = await this.ruleRepo.updateStatus(tenantId, companyId, ruleId, PostingRuleStatus.ACTIVE);
+  async activateRule(tenant_id: string, company_id: string, ruleId: string, user_id: string): Promise<any> {
+    const rule = await this.ruleRepo.updateStatus(tenant_id, company_id, ruleId, PostingRuleStatus.ACTIVE);
 
-    // 4. Versioning Safeguard: Deactivate other rules for same eventType
-    const allRules = await this.ruleRepo.findByEventType(tenantId, companyId, rule.eventType);
+    // 4. Versioning Safeguard: Deactivate other rules for same event_type
+    const allRules = await this.ruleRepo.findByEventType(tenant_id, company_id, rule.event_type);
     for (const other of allRules) {
       if (other.id !== ruleId && other.status === PostingRuleStatus.ACTIVE) {
-        await this.ruleRepo.update(tenantId, companyId, other.id, {
+        await this.ruleRepo.update(tenant_id, company_id, other.id, {
           status: PostingRuleStatus.INACTIVE,
           effectiveTo: new Date(),
         });
         
         await this.auditService.log({
-          tenantId,
-          userId: 'SYSTEM', // System-triggered deactivation
+          tenant_id,
+          user_id: 'SYSTEM', // System-triggered deactivation
           module: 'FINANCE',
           action: 'DEACTIVATE_POSTING_RULE',
-          entityType: 'PostingRule',
-          entityId: other.id,
-          metadata: { companyId, deactivatedBy: ruleId },
+          entity_type: 'PostingRule',
+          entity_id: other.id,
+          metadata: { company_id, deactivatedBy: ruleId },
         });
       }
     }
 
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: 'FINANCE',
       action: 'ACTIVATE_POSTING_RULE',
-      entityType: 'PostingRule',
-      entityId: ruleId,
-      afterState: rule,
-      metadata: { companyId },
+      entity_type: 'PostingRule',
+      entity_id: ruleId,
+      after_state: rule,
+      metadata: { company_id },
     });
 
     return rule;

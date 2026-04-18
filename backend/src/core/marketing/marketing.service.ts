@@ -18,297 +18,297 @@ export class MarketingService {
     private readonly auditService: AuditService,
   ) {}
 
-  async getDashboard(tenantId: string) {
-    return this.repository.getDashboard(tenantId);
+  async getDashboard(tenant_id: string) {
+    return this.repository.getDashboard(tenant_id);
   }
 
-  async getChannelPerformance(tenantId: string) {
-    return this.repository.getChannelPerformance(tenantId);
+  async getChannelPerformance(tenant_id: string) {
+    return this.repository.getChannelPerformance(tenant_id);
   }
 
-  async getCampaigns(tenantId: string) {
-    return this.repository.getCampaigns(tenantId);
+  async getCampaigns(tenant_id: string) {
+    return this.repository.getCampaigns(tenant_id);
   }
 
   async createCampaign(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateCampaignDto,
-    actorId: string,
+    actor_id: string,
   ) {
     const campaign = await this.repository.createCampaign(
-      tenantId,
+      tenant_id,
       dto,
-      actorId,
+      actor_id,
     );
     await this.auditService.log({
-      tenantId,
-      userId: actorId,
+      tenant_id,
+      user_id: actor_id,
       module: "marketing",
       action: "CREATE",
-      entityType: "CAMPAIGN",
-      entityId: campaign.id,
+      entity_type: "CAMPAIGN",
+      entity_id: campaign.id,
       metadata: { name: dto.name, objective: dto.objective },
     });
     return campaign;
   }
 
   async updateCampaignStatus(
-    tenantId: string,
+    tenant_id: string,
     campaignId: string,
     dto: UpdateCampaignStatusDto,
-    actorId: string,
+    actor_id: string,
   ) {
     const campaign = await this.repository.updateCampaignStatus(
-      tenantId,
+      tenant_id,
       campaignId,
       dto,
-      actorId,
+      actor_id,
     );
     await this.auditService.log({
-      tenantId,
-      userId: actorId,
+      tenant_id,
+      user_id: actor_id,
       module: "marketing",
       action: "UPDATE_STATUS",
-      entityType: "CAMPAIGN",
-      entityId: campaignId,
+      entity_type: "CAMPAIGN",
+      entity_id: campaignId,
       metadata: { status: dto.status },
     });
     return campaign;
   }
 
-  async getExecutions(tenantId: string) {
-    return this.repository.getExecutions(tenantId);
+  async getExecutions(tenant_id: string) {
+    return this.repository.getExecutions(tenant_id);
   }
 
   async scheduleExecution(
-    tenantId: string,
+    tenant_id: string,
     dto: ScheduleExecutionDto,
-    actorId: string,
+    actor_id: string,
   ) {
     const execution = await this.repository.scheduleExecution(
-      tenantId,
+      tenant_id,
       dto,
-      actorId,
+      actor_id,
     );
     await this.auditService.log({
-      tenantId,
-      userId: actorId,
+      tenant_id,
+      user_id: actor_id,
       module: "marketing",
       action: "SCHEDULE",
-      entityType: "EXECUTION",
-      entityId: execution.id,
+      entity_type: "EXECUTION",
+      entity_id: execution.id,
       metadata: { campaignId: dto.campaignId, scheduledAt: dto.scheduledAt },
     });
     return execution;
   }
 
   async runExecution(
-    tenantId: string,
+    tenant_id: string,
     executionId: string,
     dto: RunExecutionDto,
-    actorId: string,
+    actor_id: string,
   ) {
     const execution = await this.repository.runExecution(
-      tenantId,
+      tenant_id,
       executionId,
       dto,
-      actorId,
+      actor_id,
     );
     await this.auditService.log({
-      tenantId,
-      userId: actorId,
+      tenant_id,
+      user_id: actor_id,
       module: "marketing",
       action: "RUN",
-      entityType: "EXECUTION",
-      entityId: executionId,
+      entity_type: "EXECUTION",
+      entity_id: executionId,
       metadata: { failed: dto.failed },
     });
     return execution;
   }
 
-  async getLeads(tenantId: string) {
-    return this.repository.getLeads(tenantId);
+  async getLeads(tenant_id: string) {
+    return this.repository.getLeads(tenant_id);
   }
 
-  async captureLead(tenantId: string, dto: CaptureLeadDto, actorId: string) {
-    const lead = await this.repository.captureLead(tenantId, dto, actorId);
+  async captureLead(tenant_id: string, dto: CaptureLeadDto, actor_id: string) {
+    const lead = await this.repository.captureLead(tenant_id, dto, actor_id);
     await this.auditService.log({
-      tenantId,
-      userId: actorId,
+      tenant_id,
+      user_id: actor_id,
       module: "marketing",
       action: "CAPTURE",
-      entityType: "LEAD",
-      entityId: lead.id,
+      entity_type: "LEAD",
+      entity_id: lead.id,
       metadata: { source: dto.source, email: dto.email },
     });
     return lead;
   }
 
   async markLeadHandoffReady(
-    tenantId: string,
-    leadId: string,
-    actorId: string,
+    tenant_id: string,
+    lead_id: string,
+    actor_id: string,
   ) {
     const lead = await this.repository.markLeadHandoffReady(
-      tenantId,
-      leadId,
-      actorId,
+      tenant_id,
+      lead_id,
+      actor_id,
     );
     await this.auditService.log({
-      tenantId,
-      userId: actorId,
+      tenant_id,
+      user_id: actor_id,
       module: "marketing",
       action: "HANDOFF_READY",
-      entityType: "LEAD",
-      entityId: leadId,
+      entity_type: "LEAD",
+      entity_id: lead_id,
     });
     return lead;
   }
 
-  async handoffLeadToSales(tenantId: string, leadId: string, actorId: string) {
+  async handoffLeadToSales(tenant_id: string, lead_id: string, actor_id: string) {
     const lead = await this.repository.handoffLeadToSales(
-      tenantId,
-      leadId,
-      actorId,
+      tenant_id,
+      lead_id,
+      actor_id,
     );
     await this.auditService.log({
-      tenantId,
-      userId: actorId,
+      tenant_id,
+      user_id: actor_id,
       module: "marketing",
       action: "HANDOFF_TO_SALES",
-      entityType: "LEAD",
-      entityId: leadId,
+      entity_type: "LEAD",
+      entity_id: lead_id,
     });
     return lead;
   }
 
-  async getWorkflows(tenantId: string) {
-    return this.repository.getWorkflows(tenantId);
+  async getWorkflows(tenant_id: string) {
+    return this.repository.getWorkflows(tenant_id);
   }
 
   async createWorkflow(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateWorkflowDto,
-    actorId: string,
+    actor_id: string,
   ) {
     const workflow = await this.repository.createWorkflow(
-      tenantId,
+      tenant_id,
       dto,
-      actorId,
+      actor_id,
     );
     await this.auditService.log({
-      tenantId,
-      userId: actorId,
+      tenant_id,
+      user_id: actor_id,
       module: "marketing",
       action: "CREATE",
-      entityType: "WORKFLOW",
-      entityId: workflow.id,
+      entity_type: "WORKFLOW",
+      entity_id: workflow.id,
       metadata: { name: dto.name, trigger: dto.trigger },
     });
     return workflow;
   }
 
   async updateWorkflowStatus(
-    tenantId: string,
+    tenant_id: string,
     workflowId: string,
     dto: UpdateWorkflowStatusDto,
-    actorId: string,
+    actor_id: string,
   ) {
     const workflow = await this.repository.updateWorkflowStatus(
-      tenantId,
+      tenant_id,
       workflowId,
       dto,
-      actorId,
+      actor_id,
     );
     await this.auditService.log({
-      tenantId,
-      userId: actorId,
+      tenant_id,
+      user_id: actor_id,
       module: "marketing",
       action: "UPDATE_STATUS",
-      entityType: "WORKFLOW",
-      entityId: workflowId,
+      entity_type: "WORKFLOW",
+      entity_id: workflowId,
       metadata: { status: dto.status },
     });
     return workflow;
   }
 
-  async getConnectedAccounts(tenantId: string) {
-    return this.repository.getConnectedAccounts(tenantId);
+  async getConnectedAccounts(tenant_id: string) {
+    return this.repository.getConnectedAccounts(tenant_id);
   }
 
   async connectAccount(
-    tenantId: string,
+    tenant_id: string,
     dto: ConnectAccountDto,
-    actorId: string,
+    actor_id: string,
   ) {
     const account = await this.repository.connectAccount(
-      tenantId,
+      tenant_id,
       dto,
-      actorId,
+      actor_id,
     );
     await this.auditService.log({
-      tenantId,
-      userId: actorId,
+      tenant_id,
+      user_id: actor_id,
       module: "marketing",
       action: "CONNECT",
-      entityType: "ACCOUNT",
-      entityId: account.id,
-      metadata: { provider: dto.provider, accountName: dto.accountName },
+      entity_type: "ACCOUNT",
+      entity_id: account.id,
+      metadata: { provider: dto.provider, account_name: dto.account_name },
     });
     return account;
   }
 
   async updateAccountStatus(
-    tenantId: string,
+    tenant_id: string,
     accountId: string,
     dto: UpdateAccountStatusDto,
-    actorId: string,
+    actor_id: string,
   ) {
     const account = await this.repository.updateAccountStatus(
-      tenantId,
+      tenant_id,
       accountId,
       dto,
-      actorId,
+      actor_id,
     );
     await this.auditService.log({
-      tenantId,
-      userId: actorId,
+      tenant_id,
+      user_id: actor_id,
       module: "marketing",
       action: "UPDATE_STATUS",
-      entityType: "ACCOUNT",
-      entityId: accountId,
+      entity_type: "ACCOUNT",
+      entity_id: accountId,
       metadata: { status: dto.status },
     });
     return account;
   }
 
-  async getAttribution(tenantId: string) {
-    return this.repository.getAttribution(tenantId);
+  async getAttribution(tenant_id: string) {
+    return this.repository.getAttribution(tenant_id);
   }
 
-  async getAlerts(tenantId: string) {
-    return this.repository.getAlerts(tenantId);
+  async getAlerts(tenant_id: string) {
+    return this.repository.getAlerts(tenant_id);
   }
 
-  async acknowledgeAlert(tenantId: string, alertId: string) {
-    return this.repository.acknowledgeAlert(tenantId, alertId);
+  async acknowledgeAlert(tenant_id: string, alertId: string) {
+    return this.repository.acknowledgeAlert(tenant_id, alertId);
   }
 
-  async runHealthSweep(tenantId: string, actorId: string) {
-    const findings = await this.repository.runHealthSweep(tenantId, actorId);
+  async runHealthSweep(tenant_id: string, actor_id: string) {
+    const findings = await this.repository.runHealthSweep(tenant_id, actor_id);
     await this.auditService.log({
-      tenantId,
-      userId: actorId,
+      tenant_id,
+      user_id: actor_id,
       module: "marketing",
       action: "RUN_HEALTH_SWEEP",
-      entityType: "SYSTEM",
-      entityId: "marketing-health",
+      entity_type: "SYSTEM",
+      entity_id: "marketing-health",
       metadata: { findingsCount: findings.length },
     });
     return findings;
   }
 
-  async getAuditEvents(tenantId: string) {
-    return this.repository.getAuditEvents(tenantId);
+  async getAuditEvents(tenant_id: string) {
+    return this.repository.getAuditEvents(tenant_id);
   }
 }

@@ -3,11 +3,11 @@ import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
 export class CreateAdjustmentDto {
   @IsString()
   @IsNotEmpty()
-  itemId: string;
+  item_id: string;
 
   @IsString()
   @IsNotEmpty()
-  locationId: string;
+  location_id: string;
 
   @IsString()
   @IsOptional()
@@ -22,5 +22,5 @@ export class CreateAdjustmentDto {
 
   @IsString()
   @IsOptional()
-  requestedBy?: string;
+  requested_by?: string;
 }

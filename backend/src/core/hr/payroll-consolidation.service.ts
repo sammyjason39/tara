@@ -7,12 +7,12 @@ export class PayrollConsolidationService {
 
   constructor(private readonly repository: IHRRepository) {}
 
-  async getConsolidatedReport(tenantId: string, baseCurrency: string = "USD") {
-    this.logger.log(`Generating consolidated payroll report for tenant ${tenantId} in ${baseCurrency}`);
+  async getConsolidatedReport(tenant_id: string, baseCurrency: string = "USD") {
+    this.logger.log(`Generating consolidated payroll report for tenant ${tenant_id} in ${baseCurrency}`);
 
     const [runs, rates] = await Promise.all([
-      this.repository.getPayrollRuns(tenantId),
-      this.repository.getExchangeRates(tenantId),
+      this.repository.getPayrollRuns(tenant_id),
+      this.repository.getExchangeRates(tenant_id),
     ]);
 
     // Filter to latest manual rates for simplicity in this version
@@ -25,7 +25,7 @@ export class PayrollConsolidationService {
     const consolidated = runs.map((run) => {
       return {
         id: run.id,
-        period: `${run.periodStart.toISOString().substring(0, 10)} to ${run.periodEnd.toISOString().substring(0, 10)}`,
+        period: `${run.period_start.toISOString().substring(0, 10)} to ${run.period_end.toISOString().substring(0, 10)}`,
         status: run.status,
         totalGross: Number(run.totalGrossPay),
         totalNet: Number(run.totalNetPay),

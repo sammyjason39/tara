@@ -14,8 +14,8 @@ export class FiscalPeriodGuard {
   /**
    * Validates if a fiscal period is open for posting.
    */
-  async canPost(tenantId: string, companyId: string, fiscalPeriodId: string): Promise<boolean> {
-    const period = await this.fiscalRepo.findById(tenantId, companyId, fiscalPeriodId);
+  async canPost(tenant_id: string, company_id: string, fiscalPeriodId: string): Promise<boolean> {
+    const period = await this.fiscalRepo.findById(tenant_id, company_id, fiscalPeriodId);
     
     if (!period) {
       this.logger.error(`Fiscal period ${fiscalPeriodId} not found.`);

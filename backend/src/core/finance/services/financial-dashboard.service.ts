@@ -27,22 +27,22 @@ export class FinancialDashboardService {
     private readonly systemLogger: LoggerService,
   ) {}
 
-  async getDashboardSummary(tenantId: string, companyId: string, filters: any) {
+  async getDashboardSummary(tenant_id: string, company_id: string, filters: any) {
     // 1. Fetch Summary
-    const summary = await this.reportingEngine.getSummary(tenantId, companyId, filters);
+    const summary = await this.reportingEngine.getSummary(tenant_id, company_id, filters);
 
     // 2. Anomaly Detection: Sequence Mismatch
     // We check if the returned sequence is consistent with the latest available for the period
-    const latestSnapshot = await this.prisma.accountBalanceSnapshot.findFirst({
+    const latestSnapshot = await this.prisma.finance_account_balance_snapshots.findFirst({
       where: { 
-        tenantId, 
-        fiscalPeriodId: filters.periodId 
+        tenant_id: tenant_id, 
+        fiscal_period_id: filters.periodId 
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { created_at: 'desc' },
     });
 
     if (latestSnapshot && summary.sequence < (latestSnapshot as any).snapshotSequence) {
-      this.handleAnomaly(tenantId, companyId, 'SEQUENCE_MISMATCH', 
+      this.handleAnomaly(tenant_id, company_id, 'SEQUENCE_MISMATCH', 
         `Dashboard sequence ${summary.sequence} is behind latest ${ (latestSnapshot as any).snapshotSequence }`,
         { requestedPeriod: filters.periodId, currentSequence: summary.sequence, latestSequence: (latestSnapshot as any).snapshotSequence }
       );
@@ -55,7 +55,7 @@ export class FinancialDashboardService {
       const diff = summary.kpis.totalAssets.minus(lPlusE).abs();
       
       if (diff.gt(0.01)) {
-        this.handleAnomaly(tenantId, companyId, 'LEDGER_IMBALANCE',
+        this.handleAnomaly(tenant_id, company_id, 'LEDGER_IMBALANCE',
           `Balance sheet imbalance detected: Assets=${summary.kpis.totalAssets}, L+E=${lPlusE}`,
           { kpis: summary.kpis }
         );
@@ -68,48 +68,48 @@ export class FinancialDashboardService {
     return {
       ...summary,
       snapshotHash,
-      healthStatus: await this.getSystemHealth(tenantId, companyId, filters.periodId),
+      healthStatus: await this.getSystemHealth(tenant_id, company_id, filters.periodId),
     };
   }
 
-  async getHierarchicalReport(tenantId: string, companyId: string, filters: any) {
-    return this.reportingEngine.getHierarchicalReport(tenantId, companyId, filters);
+  async getHierarchicalReport(tenant_id: string, company_id: string, filters: any) {
+    return this.reportingEngine.getHierarchicalReport(tenant_id, company_id, filters);
   }
 
-  async getDrillDown(tenantId: string, companyId: string, filters: any) {
+  async getDrillDown(tenant_id: string, company_id: string, filters: any) {
     // Implement drill-down to ledger lines
     // This would typically involve querying finance_journal_lines
     const { accountId, periodId, snapshotSequence } = filters;
     
-    return this.prisma.journalLine.findMany({
+    return this.prisma.finance_journal_lines.findMany({
       where: {
-        tenantId,
-        accountId,
-        financeJournalEntry: {
-          fiscalPeriodId: periodId,
+        tenant_id: tenant_id,
+        account_id: accountId,
+        finance_journal_entries: {
+          fiscal_period_id: periodId,
           // In a real system, we might filter by ledgerSequence <= snapshotSequence
         }
       },
       include: {
-        financeJournalEntry: true,
+        finance_journal_entries: true,
       },
       take: 100, // Limit for performance
     });
   }
 
-  async exportReport(tenantId: string, companyId: string, filters: any, userId: string) {
-    const data = await this.getDashboardSummary(tenantId, companyId, filters);
+  async exportReport(tenant_id: string, company_id: string, filters: any, user_id: string) {
+    const data = await this.getDashboardSummary(tenant_id, company_id, filters);
     const snapshotHash = (data as any).snapshotHash;
     
     // Add watermark metadata
     const exportId = `EXP-${Date.now()}`;
     const watermark = {
-      generatedBy: userId,
+      generatedBy: user_id,
       timestamp: new Date().toISOString(),
       snapshotSequence: data.sequence,
       snapshotHash, // Step 4: Include in watermark
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
     };
 
     // Requirement 4: Export Integrity (HMAC-SHA256 Signature)
@@ -151,16 +151,16 @@ export class FinancialDashboardService {
     return recomputedSignature === signature;
   }
 
-  async getSystemHealth(tenantId: string, companyId: string, periodId: string) {
+  async getSystemHealth(tenant_id: string, company_id: string, periodId: string) {
     // Fix 4: Health Engine Weighted Scoring Model (Step 4: Rolling Window)
     const windowEnd = new Date();
     const windowStart = new Date(windowEnd.getTime() - 3600000); // Strictly 60 minutes
     
-    const recentAnomalies = await this.prisma.systemLog.findMany({
+    const recentAnomalies = await this.prisma.system_logs.findMany({
       where: {
-        tenantId,
+        tenant_id: tenant_id,
         module: 'FINANCE',
-        createdAt: { gte: windowStart, lte: windowEnd }, 
+        created_at: { gte: windowStart, lte: windowEnd }, 
       },
     });
 
@@ -208,7 +208,7 @@ export class FinancialDashboardService {
       sequence: data.sequence,
       periodId: data.periodId,
       kpis: data.kpis,
-      companyId: data.companyId,
+      company_id: data.company_id,
     };
     return createHash('sha256').update(this.canonicalize(coreData)).digest('hex');
   }
@@ -223,7 +223,7 @@ export class FinancialDashboardService {
     }
 
     if (Array.isArray(obj)) {
-      return '[' + obj.map((item) => this.canonicalize(item)).join(',') + ']';
+      return '[' + obj.map((item: any) => this.canonicalize(item)).join(',') + ']';
     }
 
     const sortedKeys = Object.keys(obj).sort();
@@ -238,12 +238,12 @@ export class FinancialDashboardService {
     return '{' + result + '}';
   }
 
-  private async handleAnomaly(tenantId: string, companyId: string, type: string, message: string, payload: any) {
+  private async handleAnomaly(tenant_id: string, company_id: string, type: string, message: string, payload: any) {
     this.logger.warn(`Anomaly Detected [${type}]: ${message}`);
 
     // 1. Log to SystemLog (Requirement 7)
     await this.systemLogger.log({
-      tenantId,
+      tenant_id,
       module: 'FINANCE',
       level: 'WARN',
       event: `FINANCE_${type}`,
@@ -255,13 +255,13 @@ export class FinancialDashboardService {
     // We notify "Finance Admin" users or similar (simplified for this pass)
     // In a real system, we'd resolve recipients based on permissions
     await this.notificationService.createNotification({
-      tenantId,
-      userId: 'FINANCE_ADMIN_GROUP', // Representing a group or system alert
+      tenant_id,
+      user_id: 'FINANCE_ADMIN_GROUP', // Representing a group or system alert
       title: `Critical Finance Anomaly: ${type}`,
       message,
       type: 'FINANCE_ALERT',
       priority: 'HIGH',
-      eventReferenceId: `anomaly-${type}-${Date.now()}`,
+      event_reference_id: `anomaly-${type}-${Date.now()}`,
     });
   }
 }

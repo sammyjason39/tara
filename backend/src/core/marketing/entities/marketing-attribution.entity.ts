@@ -1,12 +1,12 @@
 export class MarketingAttribution {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   campaignId: string;
-  leadId: string;
+  lead_id: string;
   opportunityId?: string;
   salesOrderId?: string;
   revenueAttributed: number;
   spend: number;
   roiPercent: number;
-  createdAt: Date;
+  created_at: Date;
 }

@@ -28,11 +28,11 @@ export class CaptureLeadDto {
 
   @IsString()
   @IsNotEmpty()
-  companyName: string;
+  company_name: string;
 
   @IsString()
   @IsNotEmpty()
-  contactName: string;
+  contact_name: string;
 
   @IsEmail()
   @IsOptional()

@@ -25,11 +25,11 @@ export class CreateDeviceDto {
 
   @IsOptional()
   @IsString()
-  locationId?: string;
+  location_id?: string;
 
   @IsOptional()
   @IsString()
-  ownerId?: string;
+  owner_id?: string;
 
   @IsOptional()
   @IsObject()
@@ -38,10 +38,10 @@ export class CreateDeviceDto {
 
 export class CreateDeviceEventDto {
   @IsString()
-  deviceId: string;
+  device_id: string;
 
   @IsString()
-  eventType: string;
+  event_type: string;
 
   @IsObject()
   payload: any;

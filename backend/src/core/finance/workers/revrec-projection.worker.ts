@@ -8,8 +8,8 @@ export class RevRecProjectionWorker {
   /**
    * Generates a forecast of revenue recognition for upcoming months.
    */
-  async generateForecast(tenantId: string, companyId: string, monthsForward: number = 12) {
-    this.logger.log(`Generating Revenue Projection for Tenant ${tenantId}, looking ${monthsForward} months ahead.`);
+  async generateForecast(tenant_id: string, company_id: string, monthsForward: number = 12) {
+    this.logger.log(`Generating Revenue Projection for Tenant ${tenant_id}, looking ${monthsForward} months ahead.`);
 
     // Logic:
     // 1. Fetch all ACTIVE/PENDING schedules

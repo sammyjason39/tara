@@ -49,9 +49,9 @@ export enum AccountingDirection {
 
 export class FinanceSubledgerEntry {
   id: string;
-  tenantId: string;
-  companyId: string;
-  sourceModule: string;     // e.g., 'ACCOUNTS_PAYABLE', 'INVENTORY'
+  tenant_id: string;
+  company_id: string;
+  source_module: string;     // e.g., 'ACCOUNTS_PAYABLE', 'INVENTORY'
   
   // Business Reference (Standardized)
   referenceType: string;    // e.g., 'INVOICE', 'BILL', 'BANK_TX'
@@ -96,11 +96,11 @@ export class FinanceSubledgerEntry {
   reversedByEntryId?: string; // Link to the entry that corrected this one
   
   // Metadata
-  branchId?: string;
-  locationId?: string;
+  branch_id?: string;
+  location_id?: string;
   departmentId?: string;
   projectId?: string;
   
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

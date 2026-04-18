@@ -10,18 +10,18 @@ export class AuthMockRepository implements IAuthRepository {
     {
       id: "usr-superadmin-001",
       email: "superadmin@zenvix.com",
-      passwordHash:
+      password_hash:
         "$2a$10$yycoCL97bRvbcXdNjKXqP.J3fmu2HBt5yq4eKO4Vh0pwbYoD4ZWD2",
-      firstName: "Superadmin",
-      lastName: "Zenvix",
+      first_name: "Superadmin",
+      last_name: "Zenvix",
       status: "active",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
       userCompanies: [
         {
           id: uuidv4(),
-          userId: "usr-superadmin-001",
-          tenantId: "global",
+          user_id: "usr-superadmin-001",
+          tenant_id: "global",
           role: UserRole.SUPERADMIN,
           isDefault: true,
         },
@@ -30,18 +30,18 @@ export class AuthMockRepository implements IAuthRepository {
     {
       id: "7f15f139-8652-4796-a2b9-9fbf25515681",
       email: "admin@zenvix.com",
-      passwordHash:
+      password_hash:
         "$2a$10$Zvew.WpJmKKJlqIYTjCGgutQ41d5xn96.KZFJjrG5wuW1PqQcxoky",
-      firstName: "Admin",
-      lastName: "Zenvix",
+      first_name: "Admin",
+      last_name: "Zenvix",
       status: "active",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
       userCompanies: [
         {
           id: uuidv4(),
-          userId: "7f15f139-8652-4796-a2b9-9fbf25515681",
-          tenantId: "global",
+          user_id: "7f15f139-8652-4796-a2b9-9fbf25515681",
+          tenant_id: "global",
           role: UserRole.SUPERADMIN,
           isDefault: true,
         },
@@ -50,18 +50,18 @@ export class AuthMockRepository implements IAuthRepository {
     {
       id: "usr-demo-001",
       email: "demo@zenvix.com",
-      passwordHash:
+      password_hash:
         "$2a$10$2ElqQbxQQvBLhApdgDQNouw1/KHiXFA9HlBacoGNV8dFuhVkt9sBW",
-      firstName: "Demo",
-      lastName: "User",
+      first_name: "Demo",
+      last_name: "User",
       status: "active",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
       userCompanies: [
         {
           id: uuidv4(),
-          userId: "usr-demo-001",
-          tenantId: "tenant-a",
+          user_id: "usr-demo-001",
+          tenant_id: "tenant-a",
           role: UserRole.OWNER,
           isDefault: true,
         },
@@ -70,18 +70,18 @@ export class AuthMockRepository implements IAuthRepository {
     {
       id: "user-owner-a",
       email: "owner-a@company.com",
-      passwordHash:
+      password_hash:
         "$2a$10$X7h6nL6v6B7Bv6B7Bv6B7Bv6B7Bv6B7Bv6B7Bv6B7Bv6B7Bv6B7B",
-      firstName: "Owner",
-      lastName: "A",
+      first_name: "Owner",
+      last_name: "A",
       status: "active",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
       userCompanies: [
         {
           id: uuidv4(),
-          userId: "user-owner-a",
-          tenantId: "tenant-a",
+          user_id: "user-owner-a",
+          tenant_id: "tenant-a",
           role: UserRole.OWNER,
           isDefault: true,
         },
@@ -89,27 +89,27 @@ export class AuthMockRepository implements IAuthRepository {
     },
   ];
 
-  async findByEmail(_tenantId: string, email: string): Promise<User | null> {
+  async findByEmail(_tenant_id: string, email: string): Promise<User | null> {
     return this.users.find((u) => u.email === email) || null;
   }
 
-  async findById(_tenantId: string, id: string): Promise<User | null> {
+  async findById(_tenant_id: string, id: string): Promise<User | null> {
     const user = this.users.find((u) => u.id === id);
     if (!user) return null;
     return user;
   }
 
-  async create(_tenantId: string, data: any): Promise<User> {
+  async create(_tenant_id: string, data: any): Promise<User> {
     const user: User = {
       id: uuidv4(),
       email: data.email,
-      passwordHash: data.passwordHash,
-      firstName: data.firstName,
-      lastName: data.lastName,
+      password_hash: data.password_hash,
+      first_name: data.first_name,
+      last_name: data.last_name,
       phone: data.phone,
       status: "active",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
       userCompanies: [],
     };
     this.users.push(user);
@@ -117,7 +117,7 @@ export class AuthMockRepository implements IAuthRepository {
   }
 
   async update(
-    _tenantId: string,
+    _tenant_id: string,
     id: string,
     data: Partial<User>,
   ): Promise<User> {
@@ -127,7 +127,7 @@ export class AuthMockRepository implements IAuthRepository {
     this.users[index] = {
       ...this.users[index],
       ...data,
-      updatedAt: new Date(),
+      updated_at: new Date(),
     };
     return this.users[index];
   }

@@ -28,7 +28,7 @@ export class PoLineItemDto {
 
   @IsNumber()
   @Min(0)
-  unitPrice: number;
+  unit_price: number;
 }
 
 export class CreateDraftPoDto {

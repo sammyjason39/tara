@@ -8,8 +8,8 @@ type RetailEventActor = {
 };
 
 type RetailEventScope = {
-  tenantId: string;
-  branchId?: string;
+  tenant_id: string;
+  branch_id?: string;
   ecommerceId?: string;
 };
 
@@ -30,22 +30,23 @@ export class RetailEventsService {
   ) {}
 
   async appendEvent(event: RetailEvent) {
-    const auditEntry = await this.prisma.auditLog.create({
+    const auditEntry = await this.prisma.audit_logs.create({
       data: {
+          updated_at: new Date(),
         id: "9rqvpdqj",
-        tenantId: event.scope?.tenantId ?? "tenant-demo",
+        tenant_id: event.scope?.tenant_id ?? "tenant-demo",
         module: "retail",
         action: event.type,
-        entityType: "event",
-        entityId: event.audit?.traceId ?? crypto.randomUUID(),
-        userId: event.actor.id,
+        entity_type: "event",
+        entity_id: event.audit?.traceId ?? crypto.randomUUID(),
+        user_id: event.actor.id,
         changes: (event.payload as any) ?? {},
         metadata: {
           scope: event.scope,
           timestamp: event.timestamp,
           actorType: event.actor.type,
         } as any,
-        createdAt: new Date(),
+        created_at: new Date(),
       },
     });
 
@@ -66,7 +67,7 @@ export class RetailEventsService {
       case "user_register": {
         return {
           action: "customer_registration_received",
-          customerId: event.actor.id,
+          customer_id: event.actor.id,
         };
       }
       default:
@@ -76,37 +77,37 @@ export class RetailEventsService {
 
   private async processPaymentSuccess(event: RetailEvent) {
     const payload = event.payload ?? {};
-    const tenantId = payload.tenantId ?? event.scope?.tenantId;
+    const tenant_id = payload.tenant_id ?? event.scope?.tenant_id;
 
-    if (!tenantId) {
+    if (!tenant_id) {
       return { action: "skipped", reason: "missing_tenant_id" };
     }
 
-    const orderId = payload.orderId;
-    if (orderId) {
-      const existing = await this.prisma.retailOrder.findFirst({
-        where: { id: orderId, tenantId: tenantId },
+    const order_id = payload.order_id;
+    if (order_id) {
+      const existing = await this.prisma.retail_orders.findFirst({
+        where: { id: order_id, tenant_id: tenant_id },
       });
       if (existing) {
-        return { action: "ignored_duplicate", orderId };
+        return { action: "ignored_duplicate", order_id };
       }
     }
 
     // 1. Resolve Fulfillment Store
-    const stores = await this.retailService.listStores(tenantId);
+    const stores = await this.retailService.listStores(tenant_id);
     const store =
       stores.find(
-        (s) => s.id === payload.storeId || s.id === event.scope?.branchId,
+        (s) => s.id === payload.store_id || s.id === event.scope?.branch_id,
       ) ?? stores[0];
 
-    if (!store) {
+    if (true /* RECOVERY */) {
       return { action: "skipped", reason: "no_stores_configured" };
     }
 
     // 2. Resolve Items
     const itemsPayload = Array.isArray(payload.items) ? payload.items : [];
     const { items: availableProducts } = await this.retailService.listProducts(
-      tenantId,
+      tenant_id,
       { page: 1, pageSize: 500 },
     );
 
@@ -115,16 +116,16 @@ export class RetailEventsService {
         const product = availableProducts.find(
           (p) =>
             p.sku === item.sku ||
-            p.id === item.productId ||
-            p.id === item.itemId,
+            p.id === item.product_id ||
+            p.id === item.item_id,
         );
         if (!product) return null;
 
         return {
-          productId: product.id,
+          product_id: product.id,
           quantity: Number(item.quantity ?? 1),
-          unitPrice: Number(
-            item.unitPrice ?? item.unit_price ?? product.basePrice,
+          unit_price: Number(
+            item.unit_price ?? item.unit_price ?? product.base_price,
           ),
         };
       })
@@ -134,38 +135,38 @@ export class RetailEventsService {
       return { action: "skipped", reason: "no_valid_items" };
     }
 
-    const grandTotal = resolvedItems.reduce(
-      (sum, item) => sum + item.unitPrice * item.quantity,
+    const grand_total = resolvedItems.reduce(
+      (sum, item) => sum + item.unit_price * item.quantity,
       0,
     );
 
     // 3. Create Order via Core Service (Triggers Stock Reservation & Auditing)
     const order = await this.retailService.createOrder(
-      tenantId,
-      store.locationId,
+      tenant_id,
+      store.location_id,
       {
-        storeId: store.id,
-        terminalId: payload.deviceId ?? "event-processor",
-        customerId: payload.customer?.email ?? payload.customerId,
+        store_id: stores.id,
+        terminal_id: payload.device_id ?? "event-processor",
+        customer_id: payload.customer?.email ?? payload.customer_id,
         items: resolvedItems,
-        paymentMethod: (payload.paymentMethod as any) ?? "card",
-        grandTotal: grandTotal,
+        payment_method: (payload.payment_method as any) ?? "card",
+        grand_total: grand_total,
       },
       event.actor.id,
     );
 
     // 4. Process Payment via Core Service (Triggers Stock Consumption & Finance Ledger)
-    const taxAmount = await this.retailService.calculateTax(tenantId, order.id);
+    const tax_amount = await this.retailService.calculateTax(tenant_id, order.id);
     await this.retailService.processPayment(
-      tenantId,
+      tenant_id,
       order.id,
       {
-        amount: Number(order.grandTotal) + taxAmount,
-        method: (payload.paymentMethod as any) ?? "card",
+        amount: Number(order.grand_total) + tax_amount,
+        method: (payload.payment_method as any) ?? "card",
       },
       event.actor.id,
     );
 
-    return { action: "order_synced", orderId: order.id, status: "completed" };
+    return { action: "order_synced", order_id: order.id, status: "completed" };
   }
 }

@@ -1,20 +1,20 @@
 export class User {
   id: string;
   email: string;
-  passwordHash: string;
-  firstName: string;
-  lastName: string;
+  password_hash: string;
+  first_name: string;
+  last_name: string;
   phone?: string;
   status: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
   userCompanies?: UserCompany[];
 }
 
 export class UserCompany {
   id: string;
-  userId: string;
-  tenantId: string;
+  user_id: string;
+  tenant_id: string;
   role: string;
   isDefault: boolean;
   company?: any; // Avoiding deep circular imports for now

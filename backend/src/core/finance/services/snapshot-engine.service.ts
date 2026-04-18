@@ -15,14 +15,14 @@ export class SnapshotEngineService {
   ) {}
 
   // Scheduled nightly via @Cron 
-  async generateDailySnapshots(tenantId: string, fiscalPeriodId: string) {
-    this.logger.log(`Generating DAILY_EOD snapshot for tenant ${tenantId}, period ${fiscalPeriodId}`);
+  async generateDailySnapshots(tenant_id: string, fiscalPeriodId: string) {
+    this.logger.log(`Generating DAILY_EOD snapshot for tenant ${tenant_id}, period ${fiscalPeriodId}`);
     // Query repository and compress active dimensional balances into a reporting JSON blob
   }
 
   // Immutable HARD_LOCK snapshot for rapid reporting
-  async generatePeriodCloseSnapshot(tenantId: string, fiscalPeriodId: string) {
-    this.logger.log(`Generating PERIOD_CLOSE snapshot for tenant ${tenantId}, period ${fiscalPeriodId}`);
+  async generatePeriodCloseSnapshot(tenant_id: string, fiscalPeriodId: string) {
+    this.logger.log(`Generating PERIOD_CLOSE snapshot for tenant ${tenant_id}, period ${fiscalPeriodId}`);
     // Immutable HARD_LOCK snapshot for rapid reporting
   }
 
@@ -30,10 +30,10 @@ export class SnapshotEngineService {
    * Phase 6: Snapshot Rebuild Support
    * Recomputes AccountBalance from journal history.
    */
-  async rebuildSnapshotFromJournals(tenantId: string, companyId: string): Promise<void> {
-    this.logger.log(`Rebuilding snapshots from journal history for tenant ${tenantId}, company ${companyId}...`);
+  async rebuildSnapshotFromJournals(tenant_id: string, company_id: string): Promise<void> {
+    this.logger.log(`Rebuilding snapshots from journal history for tenant ${tenant_id}, company ${company_id}...`);
 
-    const journals = await this.journalRepo.findAllOrderedByDate(tenantId, companyId);
+    const journals = await this.journalRepo.findAllOrderedByDate(tenant_id, company_id);
     
     // Clear existing balances (In real DB: BEGIN; DELETE FROM finance_account_balances WHERE tenant_id = $1)
     // For mock, we'll just re-aggregate.
@@ -43,19 +43,19 @@ export class SnapshotEngineService {
     for (const journal of journals) {
       const lines = await this.journalRepo.findLines(journal.id);
       for (const line of lines) {
-        const key = `${line.accountId}-${journal.fiscalPeriodId}-${line.branchId}-${line.locationId}`;
+        const key = `${line.accountId}-${journal.fiscalPeriodId}-${line.branch_id}-${line.location_id}`;
         let bal = balanceMap.get(key) || {
-          tenantId,
-          companyId,
+          tenant_id,
+          company_id,
           fiscalPeriodId: journal.fiscalPeriodId,
           accountId: line.accountId,
-          branchId: line.branchId,
-          locationId: line.locationId,
+          branch_id: line.branch_id,
+          location_id: line.location_id,
           debitTotal: 0,
           creditTotal: 0,
           netBalance: 0,
           version: 1,
-          updatedAt: new Date(),
+          updated_at: new Date(),
         };
 
         if (line.side === PostingSide.DEBIT) bal.debitTotal += line.amount;
@@ -68,9 +68,9 @@ export class SnapshotEngineService {
 
     // Persist recomputed balances
     for (const bal of balanceMap.values()) {
-      await this.accountBalanceRepo.updateBalance(tenantId, companyId, bal);
+      await this.accountBalanceRepo.updateBalance(tenant_id, company_id, bal);
     }
 
-    this.logger.log(`Snapshot rebuild completed for tenant ${tenantId} company ${companyId}.`);
+    this.logger.log(`Snapshot rebuild completed for tenant ${tenant_id} company ${company_id}.`);
   }
 }

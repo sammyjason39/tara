@@ -1,11 +1,11 @@
 export class BudgetScenario {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   name: string;
-  fiscalYear: number;
+  fiscal_year: number;
   status: string;
-  totalBudget: number;
+  total_budget: number;
   description?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

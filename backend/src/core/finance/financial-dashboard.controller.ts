@@ -17,26 +17,26 @@ export class FinancialDashboardController {
   @Get('summary')
   @Throttle({ default: { limit: 60, ttl: 60000 } })
   async getSummary(@Req() req: any, @Query() query: any) {
-    const { tenantId, userId } = req.tenantContext;
-    const companyId = query.companyId || tenantId;
+    const { tenant_id, user_id } = req.tenantContext;
+    const company_id = query.company_id || tenant_id;
 
     // Requirement 5: Validate allowedCompanies
-    this.validateCompanyAccess(req.user, companyId);
+    this.validateCompanyAccess(req.user, company_id);
 
-    const data = await this.dashboardService.getDashboardSummary(tenantId, companyId, query);
+    const data = await this.dashboardService.getDashboardSummary(tenant_id, company_id, query);
 
     // Requirement 1 & 8: Backend Audit Enforcement (Resilient)
     // Requirement 2: Audit Enrichment (After State)
     await this.audit.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: 'FINANCE',
       action: 'FINANCE_DASHBOARD_VIEW',
-      entityType: 'FINANCE_SUMMARY',
-      entityId: query.periodId || 'LATEST',
+      entity_type: 'FINANCE_SUMMARY',
+      entity_id: query.periodId || 'LATEST',
       metadata: { filters: query, snapshotSequence: data.sequence },
-      afterState: { kpis: data.kpis, healthStatus: data.healthStatus },
-      idempotencyKey: this.generateEventIdempotencyKey(userId, 'DASHBOARD_VIEW', query),
+      after_state: { kpis: data.kpis, healthStatus: data.healthStatus },
+      idempotency_key: this.generateEventIdempotencyKey(user_id, 'DASHBOARD_VIEW', query),
     });
 
     return data;
@@ -45,22 +45,22 @@ export class FinancialDashboardController {
   @Get('drilldown')
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   async getDrillDown(@Req() req: any, @Query() query: any) {
-    const { tenantId, userId } = req.tenantContext;
-    const companyId = query.companyId || tenantId;
+    const { tenant_id, user_id } = req.tenantContext;
+    const company_id = query.company_id || tenant_id;
 
-    this.validateCompanyAccess(req.user, companyId);
+    this.validateCompanyAccess(req.user, company_id);
 
-    const data = await this.dashboardService.getDrillDown(tenantId, companyId, query);
+    const data = await this.dashboardService.getDrillDown(tenant_id, company_id, query);
 
     await this.audit.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: 'FINANCE',
       action: 'FINANCE_DRILLDOWN_VIEW',
-      entityType: 'FINANCE_LEDGER',
-      entityId: query.accountId,
+      entity_type: 'FINANCE_LEDGER',
+      entity_id: query.accountId,
       metadata: { filters: query },
-      idempotencyKey: this.generateEventIdempotencyKey(userId, 'DRILLDOWN_VIEW', query),
+      idempotency_key: this.generateEventIdempotencyKey(user_id, 'DRILLDOWN_VIEW', query),
     });
 
     return data;
@@ -68,24 +68,24 @@ export class FinancialDashboardController {
 
   @Post('export')
   async exportReport(@Req() req: any, @Body() body: any) {
-    const { tenantId, userId } = req.tenantContext;
-    const companyId = body.companyId || tenantId;
+    const { tenant_id, user_id } = req.tenantContext;
+    const company_id = body.company_id || tenant_id;
 
-    this.validateCompanyAccess(req.user, companyId);
+    this.validateCompanyAccess(req.user, company_id);
 
-    const data = await this.dashboardService.exportReport(tenantId, companyId, body, userId);
+    const data = await this.dashboardService.exportReport(tenant_id, company_id, body, user_id);
 
     await this.audit.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: 'FINANCE',
       action: 'FINANCE_EXPORT',
-      entityType: 'FINANCE_REPORT',
-      entityId: body.periodId,
+      entity_type: 'FINANCE_REPORT',
+      entity_id: body.periodId,
       metadata: { filters: body, exportId: data.exportId },
-      beforeState: { summaryKpis: data.reportData?.kpis },
-      afterState: { watermark: data.watermark },
-      idempotencyKey: this.generateEventIdempotencyKey(userId, 'EXPORT', body),
+      before_state: { summaryKpis: data.reportData?.kpis },
+      after_state: { watermark: data.watermark },
+      idempotency_key: this.generateEventIdempotencyKey(user_id, 'EXPORT', body),
     });
 
     return data;
@@ -102,42 +102,42 @@ export class FinancialDashboardController {
   }
 
   @Get('health')
-  async getHealth(@Req() req: any, @Query('companyId') companyId: string) {
-    const { tenantId } = req.tenantContext;
-    return this.dashboardService.getSystemHealth(tenantId, companyId || tenantId, 'LATEST');
+  async getHealth(@Req() req: any, @Query('company_id') company_id: string) {
+    const { tenant_id } = req.tenantContext;
+    return this.dashboardService.getSystemHealth(tenant_id, company_id || tenant_id, 'LATEST');
   }
 
   @Post('repair-chain')
   async repairChain(@Req() req: any, @Body() body: { fromTimestamp?: string }) {
-    const { tenantId, userId } = req.tenantContext;
+    const { tenant_id, user_id } = req.tenantContext;
     if (req.user.role !== 'SUPERADMIN') {
       throw new ForbiddenException('Only SuperAdmins can trigger audit chain repairs');
     }
     return this.auditChain.repairChain(
-      tenantId, 
-      userId, 
-      { approvedBy: userId, reason: 'ADMIN_FORCE_REPAIR' },
+      tenant_id, 
+      user_id, 
+      { approvedBy: user_id, reason: 'ADMIN_FORCE_REPAIR' },
       body.fromTimestamp ? new Date(body.fromTimestamp) : undefined
     );
   }
 
   private validateCompanyAccess(user: any, requestedCompanyId: string) {
-    // Requirement 4: tenantId from session ONLY (already in req.tenantContext)
+    // Requirement 4: tenant_id from session ONLY (already in req.tenantContext)
     // Requirement 5: validate allowedCompanies
     const userCompanies = user.userCompanies || [];
-    const isAllowed = userCompanies.some((uc: any) => uc.tenantId === requestedCompanyId);
+    const isAllowed = userCompanies.some((uc: any) => uc.tenant_id === requestedCompanyId);
     
     if (!isAllowed && user.role !== 'SUPERADMIN') {
       throw new ForbiddenException(`Access Denied: You do not have permission to access company ${requestedCompanyId}`);
     }
   }
 
-  private generateEventIdempotencyKey(userId: string, action: string, params: any): string {
-    // Requirement 1: generate event-level idempotencyKey
+  private generateEventIdempotencyKey(user_id: string, action: string, params: any): string {
+    // Requirement 1: generate event-level idempotency_key
     // Using a stable hash of user, action, parameters, and time (hourly) to deduplicate views
     // but allowing fresh logs every hour if the user keeps the tab open.
     const hourPrefix = new Date().toISOString().slice(0, 13);
-    const source = `${userId}:${action}:${JSON.stringify(params)}:${hourPrefix}`;
+    const source = `${user_id}:${action}:${JSON.stringify(params)}:${hourPrefix}`;
     return createHash('sha256').update(source).digest('hex');
   }
 }

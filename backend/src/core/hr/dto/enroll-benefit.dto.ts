@@ -3,7 +3,7 @@ import { IsString, IsNotEmpty, IsOptional, IsNumber } from 'class-validator';
 export class EnrollBenefitDto {
   @IsString()
   @IsNotEmpty()
-  employeeId: string;
+  employee_id: string;
 
   @IsString()
   @IsNotEmpty()
@@ -11,5 +11,5 @@ export class EnrollBenefitDto {
 
   @IsNumber()
   @IsOptional()
-  coverageAmount?: number;
+  coverage_amount?: number;
 }

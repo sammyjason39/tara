@@ -46,7 +46,7 @@ export class InventoryMockRepository implements IInventoryRepository {
   }
 
   async createItem(tenant_id: string, data: CreateItemDto): Promise<InventoryItem> {
-    const item = { id: "item-" + Math.random(), tenant_id, ...data, createdAt: new Date() };
+    const item = { id: "item-" + Math.random(), tenant_id, ...data, created_at: new Date() };
     this.items.push(item);
     return item as any;
   }
@@ -60,19 +60,19 @@ export class InventoryMockRepository implements IInventoryRepository {
   }
 
   async intakeStock(tenant_id: string, data: StockIntakeDto, tx?: any): Promise<StockMovement> {
-    const move = { id: "move-" + Math.random(), tenant_id, ...data, type: "RECEIPT", createdAt: new Date() };
+    const move = { id: "move-" + Math.random(), tenant_id, ...data, type: "RECEIPT", created_at: new Date() };
     this.movements.push(move);
     return move as any;
   }
 
   async transferStock(tenant_id: string, data: TransferStockDto): Promise<StockMovement[]> {
-    const move = { id: "move-" + Math.random(), tenant_id, ...data, type: "TRANSFER", createdAt: new Date() };
+    const move = { id: "move-" + Math.random(), tenant_id, ...data, type: "TRANSFER", created_at: new Date() };
     this.movements.push(move);
     return [move as any];
   }
 
-  async deleteItem(tenant_id: string, itemId: string): Promise<void> {
-    this.items = this.items.filter((i) => i.id !== itemId);
+  async deleteItem(tenant_id: string, item_id: string): Promise<void> {
+    this.items = this.items.filter((i) => i.id !== item_id);
   }
 
   async batchDeleteItems(tenant_id: string, itemIds: string[]): Promise<void> {
@@ -104,7 +104,7 @@ export class InventoryMockRepository implements IInventoryRepository {
   }
 
   async createAdjustment(tenant_id: string, data: CreateAdjustmentDto, tx?: any): Promise<InventoryAdjustment> {
-    const adj = { id: "adj-" + Math.random(), tenant_id, ...data, status: "pending", createdAt: new Date() };
+    const adj = { id: "adj-" + Math.random(), tenant_id, ...data, status: "pending", created_at: new Date() };
     this.adjustments.push(adj);
     return adj as any;
   }
@@ -140,38 +140,38 @@ export class InventoryMockRepository implements IInventoryRepository {
     const request: MovementRequest = {
       id: "mov-" + Math.random(),
       tenant_id: tenant_id,
-      productId: data.productId,
+      product_id: data.product_id,
       fromLocationId: data.fromLocationId,
       toLocationId: data.toLocationId,
       quantity: data.quantity,
       priority: (data.priority as any) || "MEDIUM",
       status: "PENDING",
-      requestedBy: "system",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      requested_by: "system",
+      created_at: new Date(),
+      updated_at: new Date(),
     };
     this.movementRequests.push(request);
     return request;
   }
 
   async getNextSequence(tenant_id: string, category: string): Promise<number> { return 1; }
-  async updateItemStatus(tenant_id: string, itemId: string, status: string): Promise<InventoryItem> { return {} as any; }
+  async updateItemStatus(tenant_id: string, item_id: string, status: string): Promise<InventoryItem> { return {} as any; }
   async getPendingItems(tenant_id: string): Promise<InventoryItem[]> { return []; }
   async findHighestSkuByCategory(tenant_id: string, category: string): Promise<string | null> { return null; }
 
-  async reserveStock(tenant_id: string, productId: string, locationId: string, quantity: number, referenceId: string, referenceType: string, tx?: any): Promise<void> { return; }
-  async releaseStock(tenant_id: string, productId: string, locationId: string, quantity: number, referenceId: string, referenceType: string, tx?: any): Promise<void> { return; }
-  async consumeFromReservation(tenant_id: string, productId: string, locationId: string, quantity: number, referenceId: string, referenceType: string, tx?: any): Promise<void> { return; }
-  async transferOut(tenant_id: string, productId: string, fromLocationId: string, toLocationId: string, quantity: number, referenceId: string, referenceType: string, tx?: any): Promise<StockMovement> { return {} as any; }
-  async transferIn(tenant_id: string, productId: string, fromLocationId: string, toLocationId: string, quantity: number, referenceId: string, referenceType: string, tx?: any): Promise<StockMovement> { return {} as any; }
-  async takeSnapshot(tenant_id: string, locationId?: string): Promise<void> { return; }
+  async reserveStock(tenant_id: string, product_id: string, location_id: string, quantity: number, referenceId: string, referenceType: string, tx?: any): Promise<void> { return; }
+  async releaseStock(tenant_id: string, product_id: string, location_id: string, quantity: number, referenceId: string, referenceType: string, tx?: any): Promise<void> { return; }
+  async consumeFromReservation(tenant_id: string, product_id: string, location_id: string, quantity: number, referenceId: string, referenceType: string, tx?: any): Promise<void> { return; }
+  async transferOut(tenant_id: string, product_id: string, fromLocationId: string, toLocationId: string, quantity: number, referenceId: string, referenceType: string, tx?: any): Promise<StockMovement> { return {} as any; }
+  async transferIn(tenant_id: string, product_id: string, fromLocationId: string, toLocationId: string, quantity: number, referenceId: string, referenceType: string, tx?: any): Promise<StockMovement> { return {} as any; }
+  async takeSnapshot(tenant_id: string, location_id?: string): Promise<void> { return; }
 
-  async updateStockReserved(tenant_id: string, productId: string, locationId: string, quantity: number, type: 'increment' | 'decrement', tx?: any): Promise<void> { return; }
-  async updateStockInTransit(tenant_id: string, productId: string, fromLocationId: string, toLocationId: string, quantity: number, type: 'increment' | 'decrement', tx?: any): Promise<void> { return; }
+  async updateStockReserved(tenant_id: string, product_id: string, location_id: string, quantity: number, type: 'increment' | 'decrement', tx?: any): Promise<void> { return; }
+  async updateStockInTransit(tenant_id: string, product_id: string, fromLocationId: string, toLocationId: string, quantity: number, type: 'increment' | 'decrement', tx?: any): Promise<void> { return; }
   async findProductByCode(tenant_id: string, code: string): Promise<any | null> { return null; }
 
   async createAgenticEvent(tenant_id: string, data: CreateAgenticEventDto): Promise<AgenticEvent> {
-    const event = { id: "evt-" + Math.random(), tenant_id, ...data, createdAt: new Date() };
+    const event = { id: "evt-" + Math.random(), tenant_id, ...data, created_at: new Date() };
     this.agenticEvents.push(event);
     return event as any;
   }

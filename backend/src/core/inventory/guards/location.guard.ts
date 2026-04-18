@@ -18,9 +18,9 @@ export class LocationGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const tenantId = request.tenantContext?.tenantId || request.tenantContext?.tenant_id;
+    const tenant_id = request.tenantContext?.tenant_id || request.tenantContext?.tenant_id;
     
-    if (!tenantId) {
+    if (!tenant_id) {
       throw new ForbiddenException('Tenant context missing');
     }
 
@@ -35,10 +35,10 @@ export class LocationGuard implements CanActivate {
     }
 
     // Verify location ownership
-    const location = await this.prisma.location.findFirst({
+    const location = await this.prisma.locations.findFirst({
       where: {
         id: location_id,
-        tenantId: tenantId,
+        tenant_id: tenant_id,
       },
     });
 

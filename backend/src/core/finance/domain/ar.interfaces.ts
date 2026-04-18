@@ -9,23 +9,23 @@ export enum InvoiceStatus {
 
 export interface ARInvoiceLine {
   id: string;
-  productId: string;
+  product_id: string;
   description: string;
   quantity: number;
-  unitPrice: number;
+  unit_price: number;
   total: number;
-  taxAmount: number;
+  tax_amount: number;
 }
 
 export interface ARInvoice {
   id: string;
-  tenantId: string;
-  companyId: string;
-  customerId: string;
+  tenant_id: string;
+  company_id: string;
+  customer_id: string;
   invoiceNumber: string;
   status: InvoiceStatus;
   currency: string;
-  totalAmount: number;
+  total_amount: number;
   balanceDue: number;
   issueDate: Date;
   dueDate: Date;
@@ -34,9 +34,9 @@ export interface ARInvoice {
 
 export interface ARPayment {
   id: string;
-  tenantId: string;
-  companyId: string;
-  customerId: string;
+  tenant_id: string;
+  company_id: string;
+  customer_id: string;
   paymentNumber: string;
   amount: number;
   unallocatedAmount: number;
@@ -54,18 +54,18 @@ export interface ARPaymentAllocation {
 }
 
 export interface ARAgingBucket {
-  customerId: string;
+  customer_id: string;
   bucket0_30: number;
   bucket31_60: number;
   bucket61_90: number;
   bucket91_plus: number;
-  updatedAt: Date;
+  updated_at: Date;
 }
 
 export interface ARCustomerBalance {
-  customerId: string;
-  tenantId: string;
-  companyId: string;
+  customer_id: string;
+  tenant_id: string;
+  company_id: string;
   totalBalance: number;
   unallocatedPayments: number;
   creditLimit: number;

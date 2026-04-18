@@ -1,6 +1,6 @@
 export class PricingRule {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   name: string;
   priority: number; // Lower is higher priority
   logic: string; // e.g. "MARKUP_PERCENT:20", "MARGIN_PERCENT:15", "FIXED:100"
@@ -8,6 +8,6 @@ export class PricingRule {
   ceilingPrice?: number;
   conditions?: any; // JSON for customer group, location, etc.
   isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

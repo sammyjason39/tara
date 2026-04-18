@@ -18,21 +18,21 @@ export class InventoryMovementListener implements OnModuleInit {
 
   onModuleInit() {
     this.eventBus.subscribe('STOCK_MOVEMENT_CREATED', 'InventoryMovementListener.handle', async (event: DomainEvent) => {
-      if (event.eventType === 'STOCK_MOVEMENT_CREATED') {
+      if (event.event_type === 'STOCK_MOVEMENT_CREATED') {
         await this.handleStockMovement(event);
       }
     });
   }
 
   private async handleStockMovement(event: DomainEvent) {
-    const { tenantId, entityId: inventoryTransactionId, payload } = event;
+    const { tenant_id, entity_id: inventoryTransactionId, payload } = event;
     const entryType = this.mapTypeToEntryType(payload.type);
     
     this.logger.log(`Finance Domain: Processing stock movement for transaction ${inventoryTransactionId} (Type: ${entryType})`);
     
     try {
       // 1. Idempotency Check (inventoryTransactionId + entryType)
-      const existing = await this.repository.findEntryBySourceEvent(tenantId, inventoryTransactionId, entryType, event.tx);
+      const existing = await this.repository.findEntryBySourceEvent(tenant_id, inventoryTransactionId, entryType, event.tx);
       if (existing) {
         this.logger.warn(`Duplicate event detected. Skipping processing for movement: ${inventoryTransactionId}`);
         return;
@@ -45,14 +45,14 @@ export class InventoryMovementListener implements OnModuleInit {
       }
 
       // 3. Record in Financial Sub-ledger
-      const entry = await this.repository.createEntry(tenantId, {
+      const entry = await this.repository.createEntry(tenant_id, {
         inventoryTransactionId,
         sourceEventId: inventoryTransactionId,
         postingRequestId: uuid(),
         entryType,
         status: 'PENDING',
         skuId: payload.skuId,
-        locationId: payload.locationId,
+        location_id: payload.location_id,
         qty,
         unitCost: new Prisma.Decimal((payload.provisionalCost || 0).toString()),
         amount: new Prisma.Decimal((payload.provisionalCost || 0).toString()).mul(Math.abs(qty)),
@@ -65,10 +65,10 @@ export class InventoryMovementListener implements OnModuleInit {
 
       // 4. Trigger Costing Engine (Only for Issues/Movements needing valuation)
       if (entryType === 'INVENTORY_ISSUE') {
-        await this.costingEngine.processEntry(tenantId, entry.id, event.tx, event.correlationId);
+        await this.costingEngine.processEntry(tenant_id, entry.id, event.tx, event.correlation_id);
       } else {
         // Receipts/Adjustments might be auto-costed if provisional is final
-        await this.costingEngine.processEntry(tenantId, entry.id, event.tx, event.correlationId);
+        await this.costingEngine.processEntry(tenant_id, entry.id, event.tx, event.correlation_id);
       }
 
     } catch (error) {

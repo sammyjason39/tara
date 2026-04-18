@@ -7,7 +7,7 @@ export class BulletinService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createPost(params: {
-    tenantId: string;
+    tenant_id: string;
     authorId: string;
     title: string;
     body: string;
@@ -16,88 +16,88 @@ export class BulletinService {
     scopeType?: string;
     scopeId?: string;
   }) {
-    return this.prisma.bulletinPost.create({
+    return this.prisma.bulletin_posts.create({
       data: {
         id: uuidv4(),
-        updatedAt: new Date(),
-        tenantId: params.tenantId,
-        authorId: params.authorId,
+        updated_at: new Date(),
+        tenant_id: params.tenant_id,
+        author_id: params.authorId,
         title: params.title,
         body: params.body,
         category: params.category ?? 'general',
-        isPinned: params.isPinned ?? false,
-        scopeType: params.scopeType ?? 'company',
-        scopeId: params.scopeId ?? null,
+        is_pinned: params.isPinned ?? false,
+        scope_type: params.scopeType ?? 'company',
+        scope_id: params.scopeId ?? null,
       },
     });
   }
 
-  async getPosts(tenantId: string, filters: any) {
+  async getPosts(tenant_id: string, filters: any) {
     const page = filters.page ?? 1;
     const limit = filters.limit ? parseInt(filters.limit) : 100;
     const skip = (page - 1) * limit;
 
     const where: any = { 
-      tenantId,
-      deletedAt: null,
+      tenant_id: tenant_id,
+      deleted_at: null,
       status: 'published',
     };
 
     if (filters.category) where.category = filters.category;
-    if (filters.authorId) where.authorId = filters.authorId;
+    if (filters.authorId) where.author_id = filters.authorId;
 
     const [data, total] = await Promise.all([
-      this.prisma.bulletinPost.findMany({
+      this.prisma.bulletin_posts.findMany({
         where,
         orderBy: [
-          { isPinned: 'desc' },
-          { createdAt: 'desc' },
+          { is_pinned: 'desc' },
+          { created_at: 'desc' },
         ],
         include: {
           _count: {
             select: { 
-              bulletinReactions: true, 
-              bulletinComments: true,
-              bulletinReads: true 
+              bulletin_reactions: true, 
+              bulletin_comments: true,
+              bulletin_reads: true 
             }
           },
-          bulletinReactions: {
-            select: { type: true, userId: true }
+          bulletin_reactions: {
+            select: { type: true, user_id: true }
           }
         },
         skip,
         take: limit,
       }),
-      this.prisma.bulletinPost.count({ where }),
+      this.prisma.bulletin_posts.count({ where }),
     ]);
 
     // Map to include counts by type
     const enrichedData = (data as any[]).map(post => {
-      const likes = post.bulletinReactions.filter((r: any) => r.type === 'LIKE').length;
-      const dislikes = post.bulletinReactions.filter((r: any) => r.type === 'DISLIKE').length;
+      const likes = post.bulletin_reactions.filter((r: any) => r.type === 'LIKE').length;
+      const dislikes = post.bulletin_reactions.filter((r: any) => r.type === 'DISLIKE').length;
       return {
         ...post,
         likesCount: likes,
         dislikesCount: dislikes,
-        commentsCount: post._count.bulletinComments,
+        commentsCount: post._count.bulletin_comments,
       };
     });
 
     return { data: enrichedData, total, page, limit };
   }
 
-  async getPostById(tenantId: string, id: string) {
-    const post = await this.prisma.bulletinPost.findFirst({
-      where: { id, tenantId, deletedAt: null },
+  async getPostById(tenant_id: string, id: string) {
+    const post = await this.prisma.bulletin_posts.findFirst({
+      where: { id, tenant_id: tenant_id, deleted_at: null },
       include: {
-        bulletinComments: {
-          orderBy: { createdAt: 'desc' },
+        bulletin_comments: {
+          orderBy: { created_at: 'desc' },
         },
-        bulletinReactions: {
-          select: { type: true, userId: true }
+        bulletin_reactions: {
+          select: { type: true, user_id: true }
         },
         _count: {
-          select: { bulletinReactions: true, bulletinReads: true, bulletinComments: true },
+          select: { bulletin_reactions: true, bulletin_reads: true, bulletin_comments: true },
         },
       },
     });
@@ -106,124 +106,128 @@ export class BulletinService {
 
     return {
       ...post,
-      likesCount: post.bulletinReactions.filter((r: any) => r.type === 'LIKE').length,
-      dislikesCount: post.bulletinReactions.filter((r: any) => r.type === 'DISLIKE').length,
-      commentsCount: post._count.bulletinComments,
+      likesCount: post.bulletin_reactions.filter((r: any) => r.type === 'LIKE').length,
+      dislikesCount: post.bulletin_reactions.filter((r: any) => r.type === 'DISLIKE').length,
+      commentsCount: post._count.bulletin_comments,
     };
   }
 
   async addComment(params: {
-    tenantId: string;
+    tenant_id: string;
     postId: string;
     authorId: string;
     body: string;
   }) {
-    return this.prisma.bulletinComment.create({
+    return this.prisma.bulletin_comments.create({
       data: {
         id: uuidv4(),
-        
-        tenantId: params.tenantId,
-        postId: params.postId,
-        authorId: params.authorId,
+        created_at: new Date(),
+        updated_at: new Date(),
+        tenant_id: params.tenant_id,
+        post_id: params.postId,
+        author_id: params.authorId,
         body: params.body,
       },
     });
   }
 
   async toggleReaction(params: {
-    tenantId: string;
+    tenant_id: string;
     postId: string;
-    userId: string;
+    user_id: string;
     type: string; // 'LIKE' or 'DISLIKE'
   }) {
-    const existing = await this.prisma.bulletinReaction.findFirst({
+    const existing = await this.prisma.bulletin_reactions.findFirst({
       where: {
-        postId: params.postId,
-        userId: params.userId,
-        tenantId: params.tenantId,
+        post_id: params.postId,
+        user_id: params.user_id,
+        tenant_id: params.tenant_id,
       },
     });
 
     if (existing) {
       // If clicking same type, remove it
       if (existing.type === params.type) {
-        return this.prisma.bulletinReaction.delete({
+        return this.prisma.bulletin_reactions.delete({
           where: { id: existing.id },
         });
       }
       // If clicking different type, update it
-      return this.prisma.bulletinReaction.update({
+      return this.prisma.bulletin_reactions.update({
         where: { id: existing.id },
-        data: { type: params.type },
+        data: { type: params.type, updated_at: new Date() },
       });
     }
 
     // New reaction
-    return this.prisma.bulletinReaction.create({
+    return this.prisma.bulletin_reactions.create({
       data: {
         id: uuidv4(),
-        
-        postId: params.postId,
-        userId: params.userId,
-        tenantId: params.tenantId,
+        created_at: new Date(),
+        updated_at: new Date(),
+        post_id: params.postId,
+        user_id: params.user_id,
+        tenant_id: params.tenant_id,
         type: params.type,
       },
     });
   }
 
-  async updatePost(tenantId: string, id: string, data: any) {
-    return this.prisma.bulletinPost.update({
-      where: { id, tenantId },
+  async updatePost(tenant_id: string, id: string, data: any) {
+    return this.prisma.bulletin_posts.update({
+      where: { id, tenant_id: tenant_id },
       data: {
         ...data,
-        updatedAt: new Date(),
+        updated_at: new Date(),
       },
     });
   }
 
-  async deletePost(tenantId: string, id: string) {
-    return this.prisma.bulletinPost.update({
-      where: { id, tenantId },
+  async deletePost(tenant_id: string, id: string) {
+    return this.prisma.bulletin_posts.update({
+      where: { id, tenant_id: tenant_id },
       data: {
-        deletedAt: new Date(),
+        deleted_at: new Date(),
         status: 'archived',
       },
     });
   }
 
   // Categories management
-  async getCategories(tenantId: string) {
-    return this.prisma.bulletinCategory.findMany({
-      where: { tenantId },
+  async getCategories(tenant_id: string) {
+    return this.prisma.bulletin_categories.findMany({
+      where: { tenant_id: tenant_id },
       orderBy: { name: 'asc' },
     });
   }
 
-  async createCategory(tenantId: string, data: { name: string; code: string; color?: string }) {
-    return this.prisma.bulletinCategory.create({
+  async createCategory(tenant_id: string, data: { name: string; code: string; color?: string }) {
+    return this.prisma.bulletin_categories.create({
       data: {
-        tenantId,
+        id: uuidv4(),
+        updated_at: new Date(),
+        tenant_id: tenant_id,
         ...data,
       },
     });
   }
 
-  async updateCategory(tenantId: string, id: string, data: any) {
-    return this.prisma.bulletinCategory.update({
-      where: { id, tenantId },
-      data,
+  async updateCategory(tenant_id: string, id: string, data: any) {
+    return this.prisma.bulletin_categories.update({
+      where: { id, tenant_id: tenant_id },
+      data: { ...data, updated_at: new Date() },
     });
   }
 
-  async deleteCategory(tenantId: string, id: string) {
+  async deleteCategory(tenant_id: string, id: string) {
     // Check if any posts use this category code
-    const category = await this.prisma.bulletinCategory.findFirst({ where: { id, tenantId } });
+    const category = await this.prisma.bulletin_categories.findFirst({ where: { id, tenant_id: tenant_id } });
     if (!category) return null;
 
     // We don't strictly enforce relational integrity with string codes here, 
     // but we could update posts or just let it be.
-    return this.prisma.bulletinCategory.delete({
-      where: { id, tenantId },
+    return this.prisma.bulletin_categories.delete({
+      where: { id, tenant_id: tenant_id },
     });
   }
 }

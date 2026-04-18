@@ -8,43 +8,43 @@ export class TalentSourcingService {
 
   constructor(private readonly repository: IHRRepository) {}
 
-  async ingestLead(tenantId: string, dto: IngestTalentLeadDto) {
+  async ingestLead(tenant_id: string, dto: IngestTalentLeadDto) {
     this.logger.log(`Ingesting talent lead: ${dto.name} from ${dto.source || "LINKEDIN"}`);
 
     // AI Lead Scoring Logic
-    const leadScore = await this.calculateLeadScore(tenantId, dto);
+    const leadScore = await this.calculateLeadScore(tenant_id, dto);
 
-    return this.repository.createTalentLead(tenantId, {
+    return this.repository.createTalentLead(tenant_id, {
       ...dto,
       leadScore,
       status: "LEAD",
     });
   }
 
-  async convertToCandidate(tenantId: string, leadId: string, requisitionId: string) {
-    this.logger.log(`Converting lead ${leadId} to candidate for requisition ${requisitionId}`);
+  async convertToCandidate(tenant_id: string, lead_id: string, requisitionId: string) {
+    this.logger.log(`Converting lead ${lead_id} to candidate for requisition ${requisitionId}`);
     
-    const lead = await this.repository.getTalentLeadById(tenantId, leadId);
+    const lead = await this.repository.getTalentLeadById(tenant_id, lead_id);
     if (!lead) throw new NotFoundException("Talent lead not found");
 
     // 1. Create candidate record
-    const candidate = await this.repository.createCandidate(tenantId, {
-      firstName: lead.name.split(' ')[0],
-      lastName: lead.name.split(' ').slice(1).join(' ') || lead.name,
+    const candidate = await this.repository.createCandidate(tenant_id, {
+      first_name: lead.name.split(' ')[0],
+      last_name: lead.name.split(' ').slice(1).join(' ') || lead.name,
       email: lead.email,
       phone: lead.phone,
       requisitionId,
       source: lead.source,
       status: "lead_converted",
       metadata: {
-        leadId: lead.id,
+        lead_id: lead.id,
         originalLeadScore: lead.leadScore,
         headline: lead.headline,
       }
     });
 
     // 2. Update lead status
-    await this.repository.updateTalentLead(tenantId, leadId, {
+    await this.repository.updateTalentLead(tenant_id, lead_id, {
       status: "CONVERTED",
       metadata: {
         ...((lead as any).metadata || {}),
@@ -56,7 +56,7 @@ export class TalentSourcingService {
     return candidate;
   }
 
-  private async calculateLeadScore(tenantId: string, dto: IngestTalentLeadDto): Promise<number> {
+  private async calculateLeadScore(tenant_id: string, dto: IngestTalentLeadDto): Promise<number> {
     let score = 50; // Base score
 
     // 1. Headline Keywords (+/-) - Hierarchical weighting
@@ -80,7 +80,7 @@ export class TalentSourcingService {
     // 2. Skill Matching (Proactive Ontology Check)
     if (dto.skills && dto.skills.length > 0) {
       // Check if skills match existing high-demand skills in the tenant
-      const knownSkills = await this.repository.getSkills(tenantId);
+      const knownSkills = await this.repository.getSkills(tenant_id);
       const knownSkillNames = knownSkills.map(s => s.name.toLowerCase());
       
       let matchedSkillsCount = 0;

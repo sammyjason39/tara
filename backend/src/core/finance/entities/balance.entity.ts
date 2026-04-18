@@ -5,7 +5,7 @@ import { Prisma } from "@prisma/client";
  * Represents the current financial balance for a tenant
  */
 export class Balance {
-  tenantId: string;
+  tenant_id: string;
   totalBalance: Prisma.Decimal;
   currency: string;
   lastUpdated: Date;

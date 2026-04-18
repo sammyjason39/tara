@@ -3,7 +3,7 @@ export type DriverType = 'INVOICE' | 'BILL';
 export interface Driver {
   id: string;
   accountId: string;
-  accountName: string;
+  account_name: string;
   documentType: DriverType;
   documentNumber: string;
   amount: number;
@@ -12,8 +12,8 @@ export interface Driver {
 
 export interface RiskMarker {
   type: 'DEFICIT' | 'SAFETY_BUFFER';
-  startDate: string;
-  endDate: string;
+  start_date: string;
+  end_date: string;
   severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 }
 

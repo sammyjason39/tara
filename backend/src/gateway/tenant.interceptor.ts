@@ -24,25 +24,25 @@ export class TenantInterceptor implements NestInterceptor {
     }
 
     // Extract tenant ID from header (required)
-    const tenantId = request.headers["x-tenant-id"];
+    const tenant_id = request.headers["x-tenant-id"];
 
-    if (!tenantId) {
+    if (!tenant_id) {
       throw new BadRequestException(
         "Missing required header: x-tenant-id. All requests must include a tenant identifier.",
       );
     }
 
     // Extract valid headers
-    const locationId = request.headers["x-location-id"];
-    const userId = request.headers["x-actor-id"];
+    const location_id = request.headers["x-location-id"];
+    const user_id = request.headers["x-actor-id"];
     const role = request.headers["x-user-role"];
 
     // Attach tenant context to request object
     const tenantContext: TenantContext = {
-      tenantId: tenantId as string,
-      companyId: (request.headers["x-company-id"] as string) || "default",
-      locationId: locationId as string | undefined,
-      userId: userId as string | undefined,
+      tenant_id: tenant_id as string,
+      company_id: (request.headers["x-company-id"] as string) || "default",
+      location_id: location_id as string | undefined,
+      user_id: user_id as string | undefined,
       role: role as string | undefined,
     };
 

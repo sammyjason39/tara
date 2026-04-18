@@ -12,17 +12,17 @@ import jwt from "jsonwebtoken";
 
 type ConnectorScope = {
   channelId: string;
-  tenantId: string;
-  branchId: string;
+  tenant_id: string;
+  branch_id: string;
   connector?: string | null;
   gatewayUrl?: string | null;
 };
 
 type CustomerAuthPayload = {
   sub: string;
-  tenantId: string;
+  tenant_id: string;
   connectorId: string;
-  branchId: string;
+  branch_id: string;
   scope: string;
 };
 
@@ -43,36 +43,36 @@ export class RetailPublicAuthService {
   ) {}
 
   async validateConnector(
-    tenantId: string,
+    tenant_id: string,
     clientId: string | undefined,
     clientSecret: string | undefined,
   ): Promise<ConnectorScope> {
     const channel = await this.gatewayService.authenticateChannel(
-      tenantId,
+      tenant_id,
       clientId,
       clientSecret,
     );
 
     const credentials = channel.credentials as {
-      branchId?: string;
+      branch_id?: string;
       connector?: string;
       gatewayUrl?: string;
     } | null;
 
     return {
       channelId: channel.id,
-      tenantId: channel.tenantId,
-      branchId: credentials?.branchId ?? "branch_main",
+      tenant_id: channel.tenant_id,
+      branch_id: credentials?.branch_id ?? "branch_main",
       connector: credentials?.connector ?? channel.name ?? null,
       gatewayUrl: credentials?.gatewayUrl ?? null,
     };
   }
 
   async registerCustomer(
-    tenantId: string,
+    tenant_id: string,
     scope: ConnectorScope,
     payload: { name: string; email: string; password: string; phone?: string },
-    meta: { ip?: string | null; userAgent?: string | null },
+    meta: { ip?: string | null; user_agent?: string | null },
   ) {
     const normalizedEmail = payload.email.trim().toLowerCase();
     const passwordValue = payload.password.trim();
@@ -81,18 +81,18 @@ export class RetailPublicAuthService {
       throw new ForbiddenException("Password must be at least 8 characters");
     }
 
-    const existing = await this.prisma.retailCustomer.findFirst({
-      where: { tenantId: tenantId, email: normalizedEmail },
+    const existing = await this.prisma.retail_customers.findFirst({
+      where: { tenant_id: tenant_id, email: normalizedEmail },
     });
     if (existing) {
       throw new ForbiddenException("Email already registered");
     }
 
-    const customer = await this.prisma.retailCustomer.create({
+    const customer = await this.prisma.retail_customers.create({
       data: {
         id: '7wsfk54f',
-        updatedAt: new Date(),
-        tenantId: tenantId,
+        updated_at: new Date(),
+        tenant_id: tenant_id,
         name: payload.name.trim(),
         email: normalizedEmail,
         phone: payload.phone?.trim() || null,
@@ -102,19 +102,19 @@ export class RetailPublicAuthService {
       },
     });
 
-    const passwordHash = await bcrypt.hash(passwordValue, 12);
-    await this.prisma.retailCustomerAuth.create({
+    const password_hash = await bcrypt.hash(passwordValue, 12);
+    await this.prisma.retail_customer_auth.create({
       data: {
         id: '7jmki1z9',
-        updatedAt: new Date(),
-        customerId: customer.id,
-        passwordHash,
-        passwordUpdatedAt: new Date(),
+        updated_at: new Date(),
+        customer_id: customer.id,
+        password_hash: password_hash,
+        password_updated_at: new Date(),
       },
     });
 
     const tokens = await this.issueTokens(
-      { id: customer.id, tenantId: tenantId },
+      { id: customer.id, tenant_id: tenant_id },
       scope,
       meta,
     );
@@ -123,27 +123,27 @@ export class RetailPublicAuthService {
   }
 
   async loginCustomer(
-    tenantId: string,
+    tenant_id: string,
     scope: ConnectorScope,
     payload: { email: string; password: string },
-    meta: { ip?: string | null; userAgent?: string | null },
+    meta: { ip?: string | null; user_agent?: string | null },
   ) {
     const normalizedEmail = payload.email.trim().toLowerCase();
-    const customer = await this.prisma.retailCustomer.findFirst({
-      where: { tenantId: tenantId, email: normalizedEmail },
+    const customer = await this.prisma.retail_customers.findFirst({
+      where: { tenant_id: tenant_id, email: normalizedEmail },
     });
     if (!customer) {
       throw new UnauthorizedException("Invalid credentials");
     }
 
-    const auth = await this.prisma.retailCustomerAuth.findUnique({
-      where: { customerId: customer.id },
+    const auth = await this.prisma.retail_customer_auth.findUnique({
+      where: { customer_id: customer.id },
     });
     if (!auth) {
       throw new UnauthorizedException("Invalid credentials");
     }
 
-    if (auth.lockedUntil && auth.lockedUntil > new Date()) {
+    if (auth.locked_until && auth.locked_until > new Date()) {
       throw new ForbiddenException(
         "Account temporarily locked. Try again later.",
       );
@@ -151,17 +151,17 @@ export class RetailPublicAuthService {
 
     const passwordMatch = await bcrypt.compare(
       payload.password,
-      auth.passwordHash,
+      auth.password_hash,
     );
     if (!passwordMatch) {
-      const nextAttempts = auth.failedAttempts + 1;
+      const nextAttempts = auth.failed_attempts + 1;
       const shouldLock = nextAttempts >= this.maxLoginAttempts;
-      await this.prisma.retailCustomerAuth.update({
-        where: { customerId: customer.id },
+      await this.prisma.retail_customer_auth.update({
+        where: { customer_id: customer.id },
         data: {
-          failedAttempts: nextAttempts,
-          lastFailedAt: new Date(),
-          lockedUntil: shouldLock
+          failed_attempts: nextAttempts,
+          last_failed_at: new Date(),
+          locked_until: shouldLock
             ? new Date(Date.now() + this.lockoutMinutes * 60 * 1000)
             : null,
         },
@@ -169,17 +169,17 @@ export class RetailPublicAuthService {
       throw new UnauthorizedException("Invalid credentials");
     }
 
-    await this.prisma.retailCustomerAuth.update({
-      where: { customerId: customer.id },
+    await this.prisma.retail_customer_auth.update({
+      where: { customer_id: customer.id },
       data: {
-        failedAttempts: 0,
-        lastFailedAt: null,
-        lockedUntil: null,
+        failed_attempts: 0,
+        last_failed_at: null,
+        locked_until: null,
       },
     });
 
     const tokens = await this.issueTokens(
-      { id: customer.id, tenantId: tenantId },
+      { id: customer.id, tenant_id: tenant_id },
       scope,
       meta,
     );
@@ -188,37 +188,37 @@ export class RetailPublicAuthService {
   }
 
   async refreshTokens(
-    tenantId: string,
+    tenant_id: string,
     scope: ConnectorScope,
     refreshToken: string,
-    meta: { ip?: string | null; userAgent?: string | null },
+    meta: { ip?: string | null; user_agent?: string | null },
   ) {
     const refreshHash = this.hashToken(refreshToken);
-    const session = await this.prisma.retailCustomerSession.findFirst({
+    const session = await this.prisma.retail_customer_sessions.findFirst({
       where: {
-        tokenHash: refreshHash,
-        revokedAt: null,
-        expiresAt: { gt: new Date() },
+        token_hash: refreshHash,
+        revoked_at: null,
+        expires_at: { gt: new Date() },
       },
     });
     if (!session) {
       throw new UnauthorizedException("Invalid refresh token");
     }
 
-    const customer = await this.prisma.retailCustomer.findFirst({
-      where: { id: session.customerId, tenantId: tenantId },
+    const customer = await this.prisma.retail_customers.findFirst({
+      where: { id: session.customer_id, tenant_id: tenant_id },
     });
     if (!customer) {
       throw new UnauthorizedException("Invalid session");
     }
 
-    await this.prisma.retailCustomerSession.update({
+    await this.prisma.retail_customer_sessions.update({
       where: { id: session.id },
-      data: { revokedAt: new Date() },
+      data: { revoked_at: new Date() },
     });
 
     const tokens = await this.issueTokens(
-      { id: customer.id, tenantId: tenantId },
+      { id: customer.id, tenant_id: tenant_id },
       scope,
       meta,
     );
@@ -239,8 +239,8 @@ export class RetailPublicAuthService {
   }
 
   async getCustomerFromToken(payload: CustomerAuthPayload) {
-    const customer = await this.prisma.retailCustomer.findFirst({
-      where: { id: payload.sub, tenantId: payload.tenantId },
+    const customer = await this.prisma.retail_customers.findFirst({
+      where: { id: payload.sub, tenant_id: payload.tenant_id },
     });
     if (!customer) {
       throw new NotFoundException("Customer not found");
@@ -249,16 +249,16 @@ export class RetailPublicAuthService {
   }
 
   private async issueTokens(
-    customer: { id: string; tenantId: string },
+    customer: { id: string; tenant_id: string },
     scope: ConnectorScope,
-    meta: { ip?: string | null; userAgent?: string | null },
+    meta: { ip?: string | null; user_agent?: string | null },
   ) {
-    const accessToken = jwt.sign(
+    const accessToken = (jwt.sign as any)(
       {
         sub: customer.id,
-        tenantId: customer.tenantId,
+        tenant_id: customer.tenant_id,
         connectorId: scope.channelId,
-        branchId: scope.branchId,
+        branch_id: scope.branch_id,
         scope: "retail.public",
       },
       this.jwtSecret,
@@ -270,16 +270,16 @@ export class RetailPublicAuthService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + this.refreshTokenTtlDays);
 
-    await this.prisma.retailCustomerSession.create({
+    await this.prisma.retail_customer_sessions.create({
       data: {
         id: 'al4zz5uh',
-        updatedAt: new Date(),
-        customerId: customer.id,
-        tenantId: customer.tenantId,
-        tokenHash: refreshHash,
-        expiresAt,
-        ipAddress: meta.ip ?? null,
-        userAgent: meta.userAgent ?? null,
+        updated_at: new Date(),
+        customer_id: customer.id,
+        tenant_id: customer.tenant_id,
+        token_hash: refreshHash,
+        expires_at: expiresAt,
+        ip_address: meta.ip ?? null,
+        user_agent: meta.user_agent ?? null,
       },
     });
 
@@ -292,9 +292,9 @@ export class RetailPublicAuthService {
 
   private async revokeRefreshToken(refreshToken: string) {
     const refreshHash = this.hashToken(refreshToken);
-    await this.prisma.retailCustomerSession.updateMany({
-      where: { tokenHash: refreshHash, revokedAt: null },
-      data: { revokedAt: new Date() },
+    await this.prisma.retail_customer_sessions.updateMany({
+      where: { token_hash: refreshHash, revoked_at: null },
+      data: { revoked_at: new Date() },
     });
   }
 

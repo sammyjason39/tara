@@ -42,7 +42,7 @@ export class EcommerceConnectorGuard implements CanActivate {
       // Path 1: Channel-based authentication
       const secretHash = this.hashSecret(clientSecret);
 
-      const channels = await this.prisma.retailChannel.findMany({
+      const channels = await this.prisma.retail_channels.findMany({
         where: {
           NOT: { credentials: { equals: undefined } },
           status: "active",
@@ -70,13 +70,13 @@ export class EcommerceConnectorGuard implements CanActivate {
 
       if (match) {
         const credentials = match.credentials as {
-          branchId?: string;
+          branch_id?: string;
           domain?: string;
         } | null;
         scope = {
           ecommerceId: match.id,
-          tenantId: match.tenantId,
-          branchId: credentials?.branchId ?? "branch_main",
+          tenant_id: match.tenant_id,
+          branch_id: credentials?.branch_id ?? "branch_main",
           domain: credentials?.domain ?? match.name ?? "",
           status: match.status,
         };
@@ -85,18 +85,18 @@ export class EcommerceConnectorGuard implements CanActivate {
       // Path 2: Gateway-based authentication (distinct from Channel)
       const apiKeyHash = this.hashSecret(apiKey);
 
-      const connector = await this.prisma.ecommerceConnector.findFirst({
-        where: { apiKey: apiKeyHash, deletedAt: null, status: "active" },
+      const connector = await this.prisma.ecommerce_connectors.findFirst({
+        where: { api_key: apiKeyHash, deleted_at: null, status: "active" },
         include: { stores: { select: { id: true } } },
       });
 
       if (connector) {
         scope = {
           ecommerceId: connector.id,
-          tenantId: connector.tenantId,
-          branchId: connector.stores[0]?.id || "branch_main",
-          branchIds: connector.stores.map((b: any) => b.id),
-          inventoryPoolId: connector.inventoryPoolId,
+          tenant_id: connector.tenant_id,
+          branch_id: connector[0]?.id || "branch_main",
+          branchIds: connector.map((b: any) => b.id),
+          inventoryPoolId: connector.inventory_pool_id,
           domain: connector.domain,
           status: connector.status,
         };

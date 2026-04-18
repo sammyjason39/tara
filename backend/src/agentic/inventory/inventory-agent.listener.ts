@@ -30,34 +30,34 @@ export class InventoryAgentListener implements OnModuleInit {
   }
 
   private async handleStockMovement(event: DomainEvent) {
-    const { tenantId, payload } = event;
-    const { productId, locationId, quantity } = payload;
+    const { tenant_id, payload } = event;
+    const { product_id, location_id, quantity } = payload;
 
-    this.logger.debug(`Agent analyzing movement: ${quantity} for Product ${productId}`);
+    this.logger.debug(`Agent analyzing movement: ${quantity} for Product ${product_id}`);
 
     // Check for spikes
-    const isSpike = await this.anomalyDetector.detectSpike(tenantId, productId, locationId, quantity);
+    const isSpike = await this.anomalyDetector.detectSpike(tenant_id, product_id, location_id, quantity);
     if (isSpike) {
-      await this.inventoryRepo.createAgenticEvent(tenantId, {
-        eventType: 'STOCK_SPIKE_DETECTED',
-        entityId: productId,
-        entityType: 'PRODUCT',
+      await this.inventoryRepo.createAgenticEvent(tenant_id, {
+        event_type: 'STOCK_SPIKE_DETECTED',
+        entity_id: product_id,
+        entity_type: 'PRODUCT',
         payload: {
-          locationId,
+          location_id,
           qty: quantity,
-          correlationId: event.correlationId,
+          correlation_id: event.correlation_id,
         },
       });
     }
 
     // Trigger proactive replenishment check
-    const recommendation = await this.replenishment.evaluateReplenishment(tenantId, productId, locationId);
+    const recommendation = await this.replenishment.evaluateReplenishment(tenant_id, product_id, location_id);
     if (recommendation) {
-      this.logger.log(`Replenishment recommended: ${recommendation.recommendedQty} for Product ${productId}`);
-      await this.inventoryRepo.createAgenticEvent(tenantId, {
-        eventType: 'REPLENISHMENT_RECOMMENDED',
-        entityId: productId,
-        entityType: 'PRODUCT',
+      this.logger.log(`Replenishment recommended: ${recommendation.recommendedQty} for Product ${product_id}`);
+      await this.inventoryRepo.createAgenticEvent(tenant_id, {
+        event_type: 'REPLENISHMENT_RECOMMENDED',
+        entity_id: product_id,
+        entity_type: 'PRODUCT',
         payload: recommendation,
       });
     }

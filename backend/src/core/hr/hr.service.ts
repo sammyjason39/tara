@@ -40,7 +40,7 @@ import { NotificationService } from "../../shared/comms/notification.service";
  * HR Service
  * Business logic layer for HR operations
  *
- * CRITICAL: All methods require tenantId as the first argument
+ * CRITICAL: All methods require tenant_id as the first argument
  */
 @Injectable()
 export class HRService {
@@ -56,83 +56,83 @@ export class HRService {
 
   // Employee Management
   async getEmployees(
-    tenantId: string,
-    locationId?: string,
+    tenant_id: string,
+    location_id?: string,
     page: number = 1,
     limit: number = 20,
   ): Promise<{ data: Employee[]; total: number }> {
-    return this.hrRepository.getEmployees(tenantId, locationId, page, limit);
+    return this.hrRepository.getEmployees(tenant_id, location_id, page, limit);
   }
 
   async getGlobalEmployees(
-    locationId?: string,
+    location_id?: string,
     page: number = 1,
     limit: number = 20,
   ): Promise<{ data: Employee[]; total: number }> {
-    return this.hrRepository.getGlobalEmployees(locationId, page, limit);
+    return this.hrRepository.getGlobalEmployees(location_id, page, limit);
   }
 
   async getEmployeeById(
-    tenantId: string,
-    employeeId: string,
+    tenant_id: string,
+    employee_id: string,
   ): Promise<Employee | null> {
-    return this.hrRepository.getEmployeeById(tenantId, employeeId);
+    return this.hrRepository.getEmployeeById(tenant_id, employee_id);
   }
 
-  async getGlobalEmployeeById(employeeId: string): Promise<Employee | null> {
-    return this.hrRepository.getGlobalEmployeeById(employeeId);
+  async getGlobalEmployeeById(employee_id: string): Promise<Employee | null> {
+    return this.hrRepository.getGlobalEmployeeById(employee_id);
   }
 
   async createEmployee(
-    tenantId: string,
+    tenant_id: string,
     data: CreateEmployeeDto,
-    userId?: string,
+    user_id?: string,
   ): Promise<Employee> {
-    const eventReferenceId = `EVT-HR-EMP-NEW-${Date.now()}`;
+    const event_reference_id = `EVT-HR-EMP-NEW-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      const employee = await this.hrRepository.createEmployee(tenantId, data, tx);
+      const employee = await this.hrRepository.createEmployee(tenant_id, data, tx);
       
       // 1. Audit Logging (Transactional)
       await this.auditService.log({
-        tenantId,
-        userId: userId || "SYSTEM",
+        tenant_id,
+        user_id: user_id || "SYSTEM",
         module: "HR",
         action: "CREATE",
-        entityType: "EMPLOYEE",
-        entityId: employee.id,
-        afterState: employee,
-        eventReferenceId,
+        entity_type: "EMPLOYEE",
+        entity_id: employee.id,
+        after_state: employee,
+        event_reference_id,
         metadata: {
-          firstName: employee.firstName,
-          lastName: employee.lastName,
-          role: employee.roleTitle,
+          first_name: employee.first_name,
+          last_name: employee.last_name,
+          role: employee.role_title,
         },
       }, tx);
 
       // 2. System Logging
       await this.loggerService.log({
-        tenantId,
+        tenant_id,
         module: "HR",
         level: "INFO",
         event: "EMPLOYEE_CREATED",
-        message: `Employee created: ${employee.firstName} ${employee.lastName}`,
-        payload: { employeeId: employee.id },
-        userId,
+        message: `Employee created: ${employee.first_name} ${employee.last_name}`,
+        payload: { employee_id: employee.id },
+        user_id,
       });
 
       // 3. Domain Event
       await this.eventBus.publish({
-        eventType: EVENT_NAMES.EMPLOYEE_CREATED,
-        tenantId,
-        entityId: employee.id,
-        entityType: "EMPLOYEE",
-        sourceModule: "HR",
-        userId,
-        eventReferenceId,
+        event_type: EVENT_NAMES.EMPLOYEE_CREATED,
+        tenant_id,
+        entity_id: employee.id,
+        entity_type: "EMPLOYEE",
+        source_module: "HR",
+        user_id,
+        event_reference_id,
         payload: {
-          firstName: employee.firstName,
-          lastName: employee.lastName,
-          departmentId: employee.departmentId,
+          first_name: employee.first_name,
+          last_name: employee.last_name,
+          department_id: employee.department_id,
         },
       }, tx);
 
@@ -141,53 +141,53 @@ export class HRService {
   }
 
   async hireCandidate(
-    tenantId: string,
+    tenant_id: string,
     candidateId: string,
     data?: any,
   ): Promise<Employee> {
-    const eventReferenceId = `EVT-HR-EMP-HIRE-${Date.now()}`;
+    const event_reference_id = `EVT-HR-EMP-HIRE-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      const employee = await this.hrRepository.hireCandidate(tenantId, candidateId, data || {}, tx);
+      const employee = await this.hrRepository.hireCandidate(tenant_id, candidateId, data || {}, tx);
       
       // 1. Audit Logging (Transactional)
       await this.auditService.log({
-        tenantId,
-        userId: data?.actorId || "SYSTEM",
+        tenant_id,
+        user_id: data?.actor_id || "SYSTEM",
         module: "HR",
         action: "HIRE",
-        entityType: "EMPLOYEE",
-        entityId: employee.id,
-        afterState: employee,
-        eventReferenceId,
+        entity_type: "EMPLOYEE",
+        entity_id: employee.id,
+        after_state: employee,
+        event_reference_id,
         metadata: {
           candidateId,
-          position: employee.roleTitle,
+          positions: employee.role_title,
         },
       }, tx);
 
       // 1b. Notification
       await this.notificationService.createNotification({
-        tenantId,
-        userId: data?.actorId || "SYSTEM",
+        tenant_id,
+        user_id: data?.actor_id || "SYSTEM",
         title: "New Hire Processed",
-        message: `Candidate ${candidateId} has been hired as ${employee.roleTitle}`,
+        message: `Candidate ${candidateId} has been hired as ${employee.role_title}`,
         type: "HR_HIRE",
         priority: "NORMAL",
-        eventReferenceId,
+        event_reference_id,
       });
 
       // 2. Domain Event
       await this.eventBus.publish({
-        eventType: EVENT_NAMES.EMPLOYEE_CREATED,
-        tenantId,
-        entityId: employee.id,
-        entityType: "EMPLOYEE",
-        sourceModule: "HR",
-        userId: data?.actorId,
-        eventReferenceId,
+        event_type: EVENT_NAMES.EMPLOYEE_CREATED,
+        tenant_id,
+        entity_id: employee.id,
+        entity_type: "EMPLOYEE",
+        source_module: "HR",
+        user_id: data?.actor_id,
+        event_reference_id,
         payload: {
           candidateId,
-          employeeId: employee.id,
+          employee_id: employee.id,
         },
       }, tx);
 
@@ -196,60 +196,60 @@ export class HRService {
   }
 
   async updateEmployee(
-    tenantId: string,
-    employeeId: string,
+    tenant_id: string,
+    employee_id: string,
     data: UpdateEmployeeDto,
-    userId?: string,
+    user_id?: string,
   ): Promise<Employee> {
-    const eventReferenceId = `EVT-HR-EMP-UPD-${Date.now()}`;
+    const event_reference_id = `EVT-HR-EMP-UPD-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
       // Fetch before state for high-fidelity audit
-      const beforeState = await this.hrRepository.getEmployeeById(tenantId, employeeId);
+      const before_state = await this.hrRepository.getEmployeeById(tenant_id, employee_id);
       
       const employee = await this.hrRepository.updateEmployee(
-        tenantId,
-        employeeId,
+        tenant_id,
+        employee_id,
         data,
         tx,
       );
 
       // 1. Audit Logging (Transactional)
-      if (userId) {
+      if (user_id) {
         await this.auditService.log({
-          tenantId,
-          userId,
+          tenant_id,
+          user_id,
           module: "HR",
           action: "UPDATE",
-          entityType: "EMPLOYEE",
-          entityId: employee.id,
-          beforeState,
-          afterState: employee,
-          eventReferenceId,
+          entity_type: "EMPLOYEE",
+          entity_id: employee.id,
+          before_state,
+          after_state: employee,
+          event_reference_id,
           metadata: { updates: data },
         }, tx);
       }
 
       // 2. System Logging
       await this.loggerService.log({
-        tenantId,
+        tenant_id,
         module: "HR",
         level: "INFO",
         event: "EMPLOYEE_UPDATED",
         message: `Employee updated: ${employee.id}`,
-        payload: { employeeId: employee.id },
-        userId,
+        payload: { employee_id: employee.id },
+        user_id,
       });
 
       // 3. Domain Event
       await this.eventBus.publish({
-        eventType: "HR.EMPLOYEE_UPDATED",
-        tenantId,
-        entityId: employee.id,
-        entityType: "EMPLOYEE",
-        sourceModule: "HR",
-        userId,
-        eventReferenceId,
-        payload: { employeeId: employee.id, updates: data },
+        event_type: "HR.EMPLOYEE_UPDATED",
+        tenant_id,
+        entity_id: employee.id,
+        entity_type: "EMPLOYEE",
+        source_module: "HR",
+        user_id,
+        event_reference_id,
+        payload: { employee_id: employee.id, updates: data },
       }, tx);
 
       return employee;
@@ -258,60 +258,60 @@ export class HRService {
 
 
   async deactivateEmployee(
-    tenantId: string,
-    employeeId: string,
-    userId?: string,
+    tenant_id: string,
+    employee_id: string,
+    user_id?: string,
   ): Promise<Employee> {
-    const eventReferenceId = `EVT-HR-EMP-DEACT-${Date.now()}`;
+    const event_reference_id = `EVT-HR-EMP-DEACT-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      const beforeState = await this.hrRepository.getEmployeeById(tenantId, employeeId);
+      const before_state = await this.hrRepository.getEmployeeById(tenant_id, employee_id);
       
       const employee = await this.hrRepository.deactivateEmployee(
-        tenantId,
-        employeeId,
+        tenant_id,
+        employee_id,
         tx,
       );
 
       // 1. Audit Logging (Transactional)
-      if (userId) {
+      if (user_id) {
         await this.auditService.log({
-          tenantId,
-          userId,
+          tenant_id,
+          user_id,
           module: "HR",
           action: "DEACTIVATE",
-          entityType: "EMPLOYEE",
-          entityId: employee.id,
-          beforeState,
-          afterState: employee,
-          eventReferenceId,
+          entity_type: "EMPLOYEE",
+          entity_id: employee.id,
+          before_state,
+          after_state: employee,
+          event_reference_id,
         }, tx);
       }
 
       // 2. System Logging
       await this.loggerService.log({
-        tenantId,
+        tenant_id,
         module: "HR",
         level: "INFO",
         event: "EMPLOYEE_DEACTIVATED",
-        message: `Employee deactivated: ${employee.firstName} ${employee.lastName}`,
-        payload: { employeeId: employee.id },
-        userId,
+        message: `Employee deactivated: ${employee.first_name} ${employee.last_name}`,
+        payload: { employee_id: employee.id },
+        user_id,
       });
 
       // 3. Domain Event (Transactional)
       await this.eventBus.publish({
-        eventType: "HR.EMPLOYEE_DEACTIVATED",
-        tenantId,
-        entityId: employee.id,
-        entityType: "EMPLOYEE",
-        sourceModule: "HR",
-        userId,
-        eventReferenceId,
+        event_type: "HR.EMPLOYEE_DEACTIVATED",
+        tenant_id,
+        entity_id: employee.id,
+        entity_type: "EMPLOYEE",
+        source_module: "HR",
+        user_id,
+        event_reference_id,
         payload: { 
           reason: "Deactivated",
-          fullName: `${employee.firstName} ${employee.lastName}`,
+          full_name: `${employee.first_name} ${employee.last_name}`,
           email: employee.email,
-          departmentId: employee.departmentId
+          department_id: employee.department_id
         },
       }, tx);
 
@@ -320,53 +320,53 @@ export class HRService {
   }
 
   async promoteEmployee(
-    tenantId: string,
-    employeeId: string,
+    tenant_id: string,
+    employee_id: string,
     data: any,
-    userId?: string,
+    user_id?: string,
   ): Promise<Employee> {
-    const eventReferenceId = `EVT-HR-EMP-PROM-${Date.now()}`;
+    const event_reference_id = `EVT-HR-EMP-PROM-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      const beforeState = await this.hrRepository.getEmployeeById(tenantId, employeeId);
-      const employee = await this.hrRepository.promoteEmployee(tenantId, employeeId, data, tx);
+      const before_state = await this.hrRepository.getEmployeeById(tenant_id, employee_id);
+      const employee = await this.hrRepository.promoteEmployee(tenant_id, employee_id, data, tx);
       
       // 1. Audit Logging (Transactional)
-      if (userId) {
+      if (user_id) {
         await this.auditService.log({
-          tenantId,
-          userId,
+          tenant_id,
+          user_id,
           module: "HR",
           action: "PROMOTE",
-          entityType: "EMPLOYEE",
-          entityId: employeeId,
-          beforeState,
-          afterState: employee,
-          eventReferenceId,
+          entity_type: "EMPLOYEE",
+          entity_id: employee_id,
+          before_state,
+          after_state: employee,
+          event_reference_id,
           metadata: data,
         }, tx);
       }
 
       // 2. System Logging
       await this.loggerService.log({
-        tenantId,
+        tenant_id,
         module: "HR",
         level: "INFO",
         event: "EMPLOYEE_PROMOTED",
         message: `Employee promoted: ${employee.id}`,
-        payload: { employeeId: employee.id, newRole: data.newRole },
-        userId,
+        payload: { employee_id: employee.id, newRole: data.newRole },
+        user_id,
       });
 
       // 3. Domain Event (Transactional)
       await this.eventBus.publish({
-        eventType: "HR.EMPLOYEE_PROMOTED",
-        tenantId,
-        entityId: employeeId,
-        entityType: "EMPLOYEE",
-        sourceModule: "HR",
-        userId,
-        eventReferenceId,
-        payload: { ...data, employeeId },
+        event_type: "HR.EMPLOYEE_PROMOTED",
+        tenant_id,
+        entity_id: employee_id,
+        entity_type: "EMPLOYEE",
+        source_module: "HR",
+        user_id,
+        event_reference_id,
+        payload: { ...data, employee_id },
       }, tx);
 
       return employee;
@@ -374,64 +374,64 @@ export class HRService {
   }
 
   async transferEmployee(
-    tenantId: string,
-    employeeId: string,
+    tenant_id: string,
+    employee_id: string,
     data: any,
-    userId?: string,
+    user_id?: string,
   ): Promise<Employee> {
-    const eventReferenceId = `EVT-HR-EMP-XFER-${Date.now()}`;
+    const event_reference_id = `EVT-HR-EMP-XFER-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      const beforeState = await this.hrRepository.getEmployeeById(tenantId, employeeId);
-      const employee = await this.hrRepository.transferEmployee(tenantId, employeeId, data, tx);
+      const before_state = await this.hrRepository.getEmployeeById(tenant_id, employee_id);
+      const employee = await this.hrRepository.transferEmployee(tenant_id, employee_id, data, tx);
       
       // 1. Audit Logging (Transactional)
-      if (userId) {
+      if (user_id) {
         await this.auditService.log({
-          tenantId,
-          userId,
+          tenant_id,
+          user_id,
           module: "HR",
           action: "TRANSFER",
-          entityType: "EMPLOYEE",
-          entityId: employeeId,
-          beforeState,
-          afterState: employee,
-          eventReferenceId,
+          entity_type: "EMPLOYEE",
+          entity_id: employee_id,
+          before_state,
+          after_state: employee,
+          event_reference_id,
           metadata: data,
         }, tx);
       }
 
       // 2. System Logging
       await this.loggerService.log({
-        tenantId,
+        tenant_id,
         module: "HR",
         level: "INFO",
         event: "EMPLOYEE_TRANSFERRED",
         message: `Employee transferred: ${employee.id} to ${data.targetLocation || data.targetDepartment}`,
-        payload: { employeeId: employee.id, transferData: data },
-        userId,
+        payload: { employee_id: employee.id, transferData: data },
+        user_id,
       });
 
       // 1b. Notification
       await this.notificationService.createNotification({
-        tenantId,
-        userId: userId || "SYSTEM",
+        tenant_id,
+        user_id: user_id || "SYSTEM",
         title: "Employee Transferred",
-        message: `Employee ${employeeId} has been transferred.`,
+        message: `Employee ${employee_id} has been transferred.`,
         type: "HR_TRANSFER",
         priority: "NORMAL",
-        eventReferenceId,
+        event_reference_id,
       });
 
       // 3. Domain Event (Transactional)
       await this.eventBus.publish({
-        eventType: EVENT_NAMES.EMPLOYEE_TRANSFERRED,
-        tenantId,
-        entityId: employeeId,
-        entityType: "EMPLOYEE",
-        sourceModule: "HR",
-        userId,
-        eventReferenceId,
-        payload: { ...data, employeeId },
+        event_type: EVENT_NAMES.EMPLOYEE_TRANSFERRED,
+        tenant_id,
+        entity_id: employee_id,
+        entity_type: "EMPLOYEE",
+        source_module: "HR",
+        user_id,
+        event_reference_id,
+        payload: { ...data, employee_id },
       }, tx);
 
       return employee;
@@ -439,51 +439,51 @@ export class HRService {
   }
 
   async suspendEmployee(
-    tenantId: string,
-    employeeId: string,
+    tenant_id: string,
+    employee_id: string,
     reason: string,
-    userId?: string,
+    user_id?: string,
   ): Promise<Employee> {
-    const eventReferenceId = `EVT-HR-EMP-SUSP-${Date.now()}`;
+    const event_reference_id = `EVT-HR-EMP-SUSP-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      const beforeState = await this.hrRepository.getEmployeeById(tenantId, employeeId);
-      const employee = await this.hrRepository.suspendEmployee(tenantId, employeeId, reason, tx);
+      const before_state = await this.hrRepository.getEmployeeById(tenant_id, employee_id);
+      const employee = await this.hrRepository.suspendEmployee(tenant_id, employee_id, reason, tx);
       
       // 1. Audit Logging (Transactional)
       await this.auditService.log({
-        tenantId,
-        userId: userId || "SYSTEM",
+        tenant_id,
+        user_id: user_id || "SYSTEM",
         module: "HR",
         action: "SUSPEND",
-        entityType: "EMPLOYEE",
-        entityId: employeeId,
-        beforeState,
-        afterState: employee,
-        eventReferenceId,
+        entity_type: "EMPLOYEE",
+        entity_id: employee_id,
+        before_state,
+        after_state: employee,
+        event_reference_id,
         metadata: { reason },
       }, tx);
 
       // 2. System Logging
       await this.loggerService.log({
-        tenantId,
+        tenant_id,
         module: "HR",
         level: "WARN",
         event: "EMPLOYEE_SUSPENDED",
         message: `Employee suspended: ${employee.id} - Reason: ${reason}`,
-        payload: { employeeId: employee.id, reason },
-        userId,
+        payload: { employee_id: employee.id, reason },
+        user_id,
       });
 
       // 3. Domain Event (Transactional)
       await this.eventBus.publish({
-        eventType: EVENT_NAMES.EMPLOYEE_SUSPENDED,
-        tenantId,
-        entityId: employeeId,
-        entityType: "EMPLOYEE",
-        sourceModule: "HR",
-        userId,
-        eventReferenceId,
-        payload: { employeeId, reason },
+        event_type: EVENT_NAMES.EMPLOYEE_SUSPENDED,
+        tenant_id,
+        entity_id: employee_id,
+        entity_type: "EMPLOYEE",
+        source_module: "HR",
+        user_id,
+        event_reference_id,
+        payload: { employee_id, reason },
       }, tx);
 
       return employee;
@@ -495,10 +495,10 @@ export class HRService {
    * Bulk import employees from file (CSV/Excel)
    */
   async importEmployees(
-    tenantId: string,
+    tenant_id: string,
     buffer: Buffer,
     fileType: "csv" | "xlsx",
-    userId: string,
+    user_id: string,
   ): Promise<{ imported: number; errors: any[] }> {
     const { data, errors } =
       fileType === "csv"
@@ -514,18 +514,18 @@ export class HRService {
 
     let importedCount = 0;
     for (const employeeData of data) {
-      // Ensure tenantId is set for creation if repo doesn't handle it automagically
-      await this.createEmployee(tenantId, employeeData, userId);
+      // Ensure tenant_id is set for creation if repo doesn't handle it automagically
+      await this.createEmployee(tenant_id, employeeData, user_id);
       importedCount++;
     }
 
     await this.auditService.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: "hr",
       action: "IMPORT",
-      entityType: "EMPLOYEE",
-      entityId: "bulk-import",
+      entity_type: "EMPLOYEE",
+      entity_id: "bulk-import",
       metadata: { count: importedCount, fileType },
     });
 
@@ -535,13 +535,13 @@ export class HRService {
   /**
    * Export Employee list to Excel
    */
-  async exportEmployees(tenantId: string, userId: string): Promise<Buffer> {
-    const employees = await this.getEmployees(tenantId);
+  async exportEmployees(tenant_id: string, user_id: string): Promise<Buffer> {
+    const employees = await this.getEmployees(tenant_id);
 
     const columns = [
       { header: "Employee ID", key: "id", width: 15 },
-      { header: "First Name", key: "firstName", width: 20 },
-      { header: "Last Name", key: "lastName", width: 20 },
+      { header: "First Name", key: "first_name", width: 20 },
+      { header: "Last Name", key: "last_name", width: 20 },
       { header: "Email", key: "email", width: 30 },
       { header: "Role", key: "role", width: 15 },
       { header: "Department", key: "department", width: 20 },
@@ -551,64 +551,64 @@ export class HRService {
     ];
 
     return this.fileProcessingService.generateExcel(employees.data, columns, {
-      traceId: `HR-${tenantId}-${userId}-${Date.now()}`,
+      traceId: `HR-${tenant_id}-${user_id}-${Date.now()}`,
       watermark: { text: "ZENVIX CONFIDENTIAL" },
     });
   }
 
   // Attendance Management
   async getAttendance(
-    tenantId: string,
-    locationId?: string,
-    employeeId?: string,
-    startDate?: string,
-    endDate?: string,
+    tenant_id: string,
+    location_id?: string,
+    employee_id?: string,
+    start_date?: string,
+    end_date?: string,
     page: number = 1,
     limit: number = 50,
   ): Promise<{ data: Attendance[]; total: number }> {
     return this.hrRepository.getAttendance(
-      tenantId,
-      locationId,
-      employeeId,
-      startDate,
-      endDate,
+      tenant_id,
+      location_id,
+      employee_id,
+      start_date,
+      end_date,
       page,
       limit,
     );
   }
 
   async getGlobalAttendance(
-    employeeId?: string,
-    startDate?: string,
-    endDate?: string,
+    employee_id?: string,
+    start_date?: string,
+    end_date?: string,
     page: number = 1,
     limit: number = 50,
   ): Promise<{ data: Attendance[]; total: number }> {
     return this.hrRepository.getGlobalAttendance(
-      employeeId,
-      startDate,
-      endDate,
+      employee_id,
+      start_date,
+      end_date,
       page,
       limit,
     );
   }
 
-  async clockIn(
-    tenantId: string,
-    employeeId: string,
-    locationId: string,
-    shiftId?: string,
+  async clock_in(
+    tenant_id: string,
+    employee_id: string,
+    location_id: string,
+    shift_id?: string,
     method: string = "manual",
     metadata?: any,
-    userId?: string,
+    user_id?: string,
   ): Promise<Attendance> {
-    const eventReferenceId = `EVT-HR-ATT-IN-${Date.now()}`;
+    const event_reference_id = `EVT-HR-ATT-IN-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      const attendance = await this.hrRepository.clockIn(
-        tenantId,
-        employeeId,
-        locationId,
-        shiftId,
+      const attendance = await this.hrRepository.clock_in(
+        tenant_id,
+        employee_id,
+        location_id,
+        shift_id,
         method,
         metadata,
         tx,
@@ -616,65 +616,65 @@ export class HRService {
 
       // 1. Audit Logging (Transactional)
       await this.auditService.log({
-        tenantId,
-        userId: userId || employeeId,
+        tenant_id,
+        user_id: user_id || employee_id,
         module: "HR",
         action: "CLOCK_IN",
-        entityType: "ATTENDANCE",
-        entityId: attendance.id,
-        afterState: attendance,
-        eventReferenceId,
-        metadata: { locationId, shiftId },
+        entity_type: "ATTENDANCE",
+        entity_id: attendance.id,
+        after_state: attendance,
+        event_reference_id,
+        metadata: { location_id, shift_id },
       }, tx);
 
       // 2. Domain Event
       await this.eventBus.publish({
-        eventType: EVENT_NAMES.CLOCK_IN,
-        tenantId,
-        entityId: attendance.id,
-        entityType: "ATTENDANCE",
-        sourceModule: "HR",
-        userId: userId || employeeId,
-        eventReferenceId,
-        payload: { employeeId, locationId, shiftId },
+        event_type: EVENT_NAMES.CLOCK_IN,
+        tenant_id,
+        entity_id: attendance.id,
+        entity_type: "ATTENDANCE",
+        source_module: "HR",
+        user_id: user_id || employee_id,
+        event_reference_id,
+        payload: { employee_id, location_id, shift_id },
       }, tx);
 
       return attendance;
     });
   }
 
-  async clockOut(
-    tenantId: string,
-    employeeId: string,
-    userId?: string,
+  async clock_out(
+    tenant_id: string,
+    employee_id: string,
+    user_id?: string,
   ): Promise<Attendance> {
-    const eventReferenceId = `EVT-HR-ATT-OUT-${Date.now()}`;
+    const event_reference_id = `EVT-HR-ATT-OUT-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      const attendance = await this.hrRepository.clockOut(tenantId, employeeId, tx);
+      const attendance = await this.hrRepository.clock_out(tenant_id, employee_id, tx);
 
       // 1. Audit Logging (Transactional)
       await this.auditService.log({
-        tenantId,
-        userId: userId || employeeId,
+        tenant_id,
+        user_id: user_id || employee_id,
         module: "HR",
         action: "CLOCK_OUT",
-        entityType: "ATTENDANCE",
-        entityId: attendance.id,
-        afterState: attendance,
-        eventReferenceId,
-        metadata: { employeeId },
+        entity_type: "ATTENDANCE",
+        entity_id: attendance.id,
+        after_state: attendance,
+        event_reference_id,
+        metadata: { employee_id },
       }, tx);
 
       // 2. Domain Event
       await this.eventBus.publish({
-        eventType: EVENT_NAMES.CLOCK_OUT,
-        tenantId,
-        entityId: attendance.id,
-        entityType: "ATTENDANCE",
-        sourceModule: "HR",
-        userId: userId || employeeId,
-        eventReferenceId,
-        payload: { employeeId, duration: 0 },
+        event_type: EVENT_NAMES.CLOCK_OUT,
+        tenant_id,
+        entity_id: attendance.id,
+        entity_type: "ATTENDANCE",
+        source_module: "HR",
+        user_id: user_id || employee_id,
+        event_reference_id,
+        payload: { employee_id, duration: 0 },
       }, tx);
 
       return attendance;
@@ -683,62 +683,62 @@ export class HRService {
 
   // Leave Management
   async getLeaveRequests(
-    tenantId: string,
-    locationId?: string,
+    tenant_id: string,
+    location_id?: string,
     status?: string,
-    employeeId?: string,
+    employee_id?: string,
   ): Promise<LeaveRequest[]> {
     return this.hrRepository.getLeaveRequests(
-      tenantId,
-      locationId,
+      tenant_id,
+      location_id,
       status,
-      employeeId,
+      employee_id,
     );
   }
 
   async getGlobalLeaveRequests(
     status?: string,
-    employeeId?: string,
+    employee_id?: string,
   ): Promise<LeaveRequest[]> {
-    return this.hrRepository.getGlobalLeaveRequests(status, employeeId);
+    return this.hrRepository.getGlobalLeaveRequests(status, employee_id);
   }
 
   async createLeaveRequest(
-    tenantId: string,
+    tenant_id: string,
     data: CreateLeaveRequestDto,
-    userId?: string,
+    user_id?: string,
   ): Promise<LeaveRequest> {
-    const eventReferenceId = `EVT-HR-LEAVE-NEW-${Date.now()}`;
+    const event_reference_id = `EVT-HR-LEAVE-NEW-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      const request = await this.hrRepository.createLeaveRequest(tenantId, data, tx);
-      if (userId) {
+      const request = await this.hrRepository.createLeaveRequest(tenant_id, data, tx);
+      if (user_id) {
         await this.auditService.log({
-          tenantId,
-          userId,
+          tenant_id,
+          user_id,
           module: "HR",
           action: "CREATE",
-          entityType: "LEAVE_REQUEST",
-          entityId: request.id,
-          eventReferenceId,
+          entity_type: "LEAVE_REQUEST",
+          entity_id: request.id,
+          event_reference_id,
           metadata: {
-            employeeId: data.employeeId,
-            type: data.leaveType,
-            startDate: data.startDate,
-            endDate: data.endDate,
+            employee_id: data.employee_id,
+            type: data.leave_type,
+            start_date: data.start_date,
+            end_date: data.end_date,
           },
         }, tx);
       }
 
       // Domain Event
       await this.eventBus.publish({
-        eventType: EVENT_NAMES.LEAVE_REQUESTED,
-        tenantId,
-        entityId: request.id,
-        entityType: "LEAVE_REQUEST",
-        sourceModule: "HR",
-        userId,
-        eventReferenceId,
-        payload: { employeeId: data.employeeId, leaveType: data.leaveType },
+        event_type: EVENT_NAMES.LEAVE_REQUESTED,
+        tenant_id,
+        entity_id: request.id,
+        entity_type: "LEAVE_REQUEST",
+        source_module: "HR",
+        user_id,
+        event_reference_id,
+        payload: { employee_id: data.employee_id, leave_type: data.leave_type },
       }, tx);
 
       return request;
@@ -746,18 +746,18 @@ export class HRService {
   }
 
   async approveLeaveRequest(
-    tenantId: string,
-    requestId: string,
+    tenant_id: string,
+    request_id: string,
     reviewerId: string,
     notes?: string,
-    userId?: string,
+    user_id?: string,
   ): Promise<LeaveRequest> {
-    const eventReferenceId = `EVT-HR-LEAVE-APP-${Date.now()}`;
+    const event_reference_id = `EVT-HR-LEAVE-APP-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      const beforeState = await this.hrRepository.getLeaveRequestById(tenantId, requestId);
+      const before_state = await this.hrRepository.getLeaveRequestById(tenant_id, request_id);
       const request = await this.hrRepository.approveLeaveRequest(
-        tenantId,
-        requestId,
+        tenant_id,
+        request_id,
         reviewerId,
         notes,
         tx,
@@ -765,50 +765,50 @@ export class HRService {
       
       // 1. Audit Logging (Transactional)
       await this.auditService.log({
-        tenantId,
-        userId: userId || reviewerId,
+        tenant_id,
+        user_id: user_id || reviewerId,
         module: "HR",
         action: "APPROVE_LEAVE",
-        entityType: "LEAVE_REQUEST",
-        entityId: requestId,
-        beforeState,
-        afterState: request,
-        eventReferenceId,
+        entity_type: "LEAVE_REQUEST",
+        entity_id: request_id,
+        before_state,
+        after_state: request,
+        event_reference_id,
         metadata: { notes },
       }, tx);
 
       // 2. System Logging
       await this.loggerService.log({
-        tenantId,
+        tenant_id,
         module: "HR",
         level: "INFO",
         event: "LEAVE_APPROVED",
-        message: `Leave request ${requestId} approved by ${reviewerId}`,
-        payload: { requestId, reviewerId },
-        userId,
+        message: `Leave request ${request_id} approved by ${reviewerId}`,
+        payload: { request_id, reviewerId },
+        user_id,
       });
 
       // 1c. Notification
       await this.notificationService.createNotification({
-        tenantId,
-        userId: request.employeeId,
+        tenant_id,
+        user_id: request.employee_id,
         title: "Leave Approved",
-        message: `Your leave request ${requestId} has been approved.`,
+        message: `Your leave request ${request_id} has been approved.`,
         type: "HR_LEAVE_APPROVAL",
         priority: "NORMAL",
-        eventReferenceId,
+        event_reference_id,
       });
 
       // 3. Domain Event (Transactional)
       await this.eventBus.publish({
-        eventType: EVENT_NAMES.LEAVE_APPROVED,
-        tenantId,
-        entityId: requestId,
-        entityType: "LEAVE_REQUEST",
-        sourceModule: "HR",
-        userId,
-        eventReferenceId,
-        payload: { employeeId: request.employeeId, reviewerId, notes },
+        event_type: EVENT_NAMES.LEAVE_APPROVED,
+        tenant_id,
+        entity_id: request_id,
+        entity_type: "LEAVE_REQUEST",
+        source_module: "HR",
+        user_id,
+        event_reference_id,
+        payload: { employee_id: request.employee_id, reviewerId, notes },
       }, tx);
 
       return request;
@@ -816,71 +816,71 @@ export class HRService {
   }
 
   async rejectLeaveRequest(
-    tenantId: string,
-    requestId: string,
+    tenant_id: string,
+    request_id: string,
     reviewerId: string,
     notes: string,
-    userId?: string,
+    user_id?: string,
   ): Promise<LeaveRequest> {
-    const eventReferenceId = `EVT-HR-LEAVE-REJ-${Date.now()}`;
+    const event_reference_id = `EVT-HR-LEAVE-REJ-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      const beforeState = await this.hrRepository.getLeaveRequestById(tenantId, requestId);
+      const before_state = await this.hrRepository.getLeaveRequestById(tenant_id, request_id);
       const request = await this.hrRepository.rejectLeaveRequest(
-        tenantId,
-        requestId,
+        tenant_id,
+        request_id,
         reviewerId,
         notes,
         tx,
       );
       
       // 1. Audit Logging (Transactional)
-      if (userId || reviewerId) {
+      if (user_id || reviewerId) {
         await this.auditService.log({
-          tenantId,
-          userId: userId || reviewerId,
+          tenant_id,
+          user_id: user_id || reviewerId,
           module: "HR",
           action: "REJECT_LEAVE",
-          entityType: "LEAVE_REQUEST",
-          entityId: requestId,
-          beforeState,
-          afterState: request,
-          eventReferenceId,
+          entity_type: "LEAVE_REQUEST",
+          entity_id: request_id,
+          before_state,
+          after_state: request,
+          event_reference_id,
           metadata: { notes },
         }, tx);
       }
 
       // 2. System Logging
       await this.loggerService.log({
-        tenantId,
+        tenant_id,
         module: "HR",
         level: "INFO",
         event: "LEAVE_REJECTED",
-        message: `Leave request ${requestId} rejected by ${reviewerId}`,
-        payload: { requestId, reviewerId },
-        userId,
+        message: `Leave request ${request_id} rejected by ${reviewerId}`,
+        payload: { request_id, reviewerId },
+        user_id,
       });
 
       // 1c. Notification
       await this.notificationService.createNotification({
-        tenantId,
-        userId: request.employeeId,
+        tenant_id,
+        user_id: request.employee_id,
         title: "Leave Rejected",
-        message: `Your leave request ${requestId} has been rejected.`,
+        message: `Your leave request ${request_id} has been rejected.`,
         type: "HR_LEAVE_REJECTION",
         priority: "NORMAL",
-        eventReferenceId,
+        event_reference_id,
       });
 
       // 3. Domain Event (Transactional)
       await this.eventBus.publish({
-        eventType: EVENT_NAMES.LEAVE_REJECTED,
-        tenantId,
-        entityId: requestId,
-        entityType: "LEAVE_REQUEST",
-        sourceModule: "HR",
-        userId,
-        eventReferenceId,
-        payload: { employeeId: request.employeeId, reviewerId, notes },
+        event_type: EVENT_NAMES.LEAVE_REJECTED,
+        tenant_id,
+        entity_id: request_id,
+        entity_type: "LEAVE_REQUEST",
+        source_module: "HR",
+        user_id,
+        event_reference_id,
+        payload: { employee_id: request.employee_id, reviewerId, notes },
       }, tx);
 
       return request;
@@ -889,64 +889,64 @@ export class HRService {
 
   // Payroll Management
   async getPayroll(
-    tenantId: string,
-    locationId?: string,
-    employeeId?: string,
+    tenant_id: string,
+    location_id?: string,
+    employee_id?: string,
     period?: string,
   ): Promise<Payroll[]> {
     return this.hrRepository.getPayroll(
-      tenantId,
-      locationId,
-      employeeId,
+      tenant_id,
+      location_id,
+      employee_id,
       period,
     );
   }
 
   async getGlobalPayroll(
-    employeeId: string,
+    employee_id: string,
     period?: string,
   ): Promise<Payroll[]> {
-    return this.hrRepository.getGlobalPayroll(employeeId, period);
+    return this.hrRepository.getGlobalPayroll(employee_id, period);
   }
 
   async calculatePayroll(
-    tenantId: string,
-    employeeId: string,
+    tenant_id: string,
+    employee_id: string,
     period: string,
-    userId?: string,
+    user_id?: string,
   ): Promise<Payroll> {
-    const eventReferenceId = `EVT-HR-PAY-CALC-${Date.now()}`;
+    const event_reference_id = `EVT-HR-PAY-CALC-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
       const payroll = await this.hrRepository.calculatePayroll(
-        tenantId,
-        employeeId,
+        tenant_id,
+        employee_id,
         period,
         tx,
       );
       
       // 1. Audit Logging (Transactional)
       await this.auditService.log({
-        tenantId,
-        userId: userId || "SYSTEM",
+        tenant_id,
+        user_id: user_id || "SYSTEM",
         module: "HR",
         action: "CALCULATE",
-        entityType: "PAYROLL",
-        entityId: payroll.id,
-        afterState: payroll,
-        eventReferenceId,
-        metadata: { employeeId, period },
+        entity_type: "PAYROLL",
+        entity_id: payroll.id,
+        after_state: payroll,
+        event_reference_id,
+        metadata: { employee_id, period },
       }, tx);
 
       // 3. Domain Event (Transactional)
       await this.eventBus.publish({
-        eventType: EVENT_NAMES.PAYROLL_CALCULATED,
-        tenantId,
-        entityId: payroll.id,
-        entityType: "PAYROLL",
-        sourceModule: "HR",
-        userId,
-        eventReferenceId,
-        payload: { employeeId, period, totalAmount: payroll.netPay },
+        event_type: EVENT_NAMES.PAYROLL_CALCULATED,
+        tenant_id,
+        entity_id: payroll.id,
+        entity_type: "PAYROLL",
+        source_module: "HR",
+        user_id,
+        event_reference_id,
+        payload: { employee_id, period, total_amount: payroll.netPay },
       }, tx);
 
       return payroll;
@@ -954,8 +954,8 @@ export class HRService {
   }
 
   // Organization Management
-  async getDepartments(tenantId: string): Promise<Department[]> {
-    return this.hrRepository.getDepartments(tenantId);
+  async getDepartments(tenant_id: string): Promise<Department[]> {
+    return this.hrRepository.getDepartments(tenant_id);
   }
 
   async getGlobalDepartments(): Promise<Department[]> {
@@ -963,50 +963,50 @@ export class HRService {
   }
 
   async getDepartmentById(
-    tenantId: string,
-    departmentId: string,
+    tenant_id: string,
+    department_id: string,
   ): Promise<Department | null> {
-    return this.hrRepository.getDepartmentById(tenantId, departmentId);
+    return this.hrRepository.getDepartmentById(tenant_id, department_id);
   }
 
   async createDepartment(
-    tenantId: string,
+    tenant_id: string,
     data: CreateDepartmentDto,
-    userId?: string,
+    user_id?: string,
   ): Promise<Department> {
-    const department = await this.hrRepository.createDepartment(tenantId, data);
+    const department = await this.hrRepository.createDepartment(tenant_id, data);
     
     // 1. Audit Logging
     await this.auditService.log({
-      tenantId,
-      userId: userId || "SYSTEM",
+      tenant_id,
+      user_id: user_id || "SYSTEM",
       module: "HR",
       action: "CREATE",
-      entityType: "DEPARTMENT",
-      entityId: department.id,
-      afterState: department,
+      entity_type: "DEPARTMENT",
+      entity_id: department.id,
+      after_state: department,
       metadata: { name: department.name },
     });
 
     // 2. System Logging
     await this.loggerService.log({
-      tenantId,
+      tenant_id,
       module: "HR",
       level: "INFO",
       event: "DEPARTMENT_CREATED",
       message: `Department created: ${department.name}`,
-      payload: { departmentId: department.id },
-      userId,
+      payload: { department_id: department.id },
+      user_id,
     });
 
     // 3. Domain Event
     await this.eventBus.publish({
-      eventType: EVENT_NAMES.DEPARTMENT_CREATED,
-      tenantId,
-      entityId: department.id,
-      entityType: "DEPARTMENT",
-      sourceModule: "HR",
-      userId,
+      event_type: EVENT_NAMES.DEPARTMENT_CREATED,
+      tenant_id,
+      entity_id: department.id,
+      entity_type: "DEPARTMENT",
+      source_module: "HR",
+      user_id,
       payload: { name: department.name },
     });
 
@@ -1015,10 +1015,10 @@ export class HRService {
 
   // Recruitment Management
   async getRequisitions(
-    tenantId: string,
+    tenant_id: string,
     status?: string,
   ): Promise<JobRequisition[]> {
-    return this.hrRepository.getRequisitions(tenantId, status);
+    return this.hrRepository.getRequisitions(tenant_id, status);
   }
 
   async getGlobalRequisitions(status?: string): Promise<JobRequisition[]> {
@@ -1026,22 +1026,22 @@ export class HRService {
   }
 
   async createRequisition(
-    tenantId: string,
+    tenant_id: string,
     data: CreateRequisitionDto,
-    userId?: string,
+    user_id?: string,
     tx?: Prisma.TransactionClient,
   ): Promise<JobRequisition> {
-    const eventReferenceId = `EVT-HR-REQ-NEW-${Date.now()}`;
+    const event_reference_id = `EVT-HR-REQ-NEW-${Date.now()}`;
     const execute = async (contextTx: Prisma.TransactionClient) => {
-      const requisition = await this.hrRepository.createRequisition(tenantId, data, contextTx);
+      const requisition = await this.hrRepository.createRequisition(tenant_id, data, contextTx);
       await this.auditService.log({
-        tenantId, userId: userId || "SYSTEM", module: "HR", action: "CREATE", entityType: "REQUISITION", entityId: requisition.id, afterState: requisition, eventReferenceId, metadata: { title: data.title, departmentId: data.departmentId },
+        tenant_id, user_id: user_id || "SYSTEM", module: "HR", action: "CREATE", entity_type: "REQUISITION", entity_id: requisition.id, after_state: requisition, event_reference_id, metadata: { title: data.title, department_id: data.department_id },
       }, contextTx);
       await this.loggerService.log({
-        tenantId, module: "HR", level: "INFO", event: "REQUISITION_CREATED", message: `Job Requisition created: ${requisition.title}`, payload: { requisitionId: requisition.id }, userId,
+        tenant_id, module: "HR", level: "INFO", event: "REQUISITION_CREATED", message: `Job Requisition created: ${requisition.title}`, payload: { requisitionId: requisition.id }, user_id,
       });
       await this.eventBus.publish({
-        eventType: EVENT_NAMES.REQUISITION_CREATED, tenantId, entityId: requisition.id, entityType: "REQUISITION", sourceModule: "HR", userId, eventReferenceId, payload: { title: requisition.title, departmentId: requisition.departmentId },
+        event_type: EVENT_NAMES.REQUISITION_CREATED, tenant_id, entity_id: requisition.id, entity_type: "REQUISITION", source_module: "HR", user_id, event_reference_id, payload: { title: requisition.title, department_id: requisition.department_id },
       }, contextTx);
       return requisition;
     };
@@ -1053,26 +1053,26 @@ export class HRService {
 
 
   async updateRequisition(
-    tenantId: string,
+    tenant_id: string,
     id: string,
     data: Partial<JobRequisition>,
-    userId?: string,
+    user_id?: string,
     tx?: Prisma.TransactionClient,
   ): Promise<JobRequisition> {
-    const eventReferenceId = `EVT-HR-REQ-UPD-${Date.now()}`;
+    const event_reference_id = `EVT-HR-REQ-UPD-${Date.now()}`;
     const execute = async (contextTx: Prisma.TransactionClient) => {
-      const beforeState = await this.hrRepository.getRequisitionById(tenantId, id);
-      const requisition = await this.hrRepository.updateRequisition(tenantId, id, data, contextTx);
-      if (userId) {
+      const before_state = await this.hrRepository.getRequisitionById(tenant_id, id);
+      const requisition = await this.hrRepository.updateRequisition(tenant_id, id, data, contextTx);
+      if (user_id) {
         await this.auditService.log({
-          tenantId, userId, module: "HR", action: "UPDATE", entityType: "REQUISITION", entityId: id, beforeState, afterState: requisition, eventReferenceId, metadata: data,
+          tenant_id, user_id, module: "HR", action: "UPDATE", entity_type: "REQUISITION", entity_id: id, before_state, after_state: requisition, event_reference_id, metadata: data,
         }, contextTx);
       }
       await this.loggerService.log({
-        tenantId, module: "HR", level: "INFO", event: "REQUISITION_UPDATED", message: `Job Requisition updated: ${id}`, payload: { requisitionId: id, updates: data }, userId,
+        tenant_id, module: "HR", level: "INFO", event: "REQUISITION_UPDATED", message: `Job Requisition updated: ${id}`, payload: { requisitionId: id, updates: data }, user_id,
       });
       await this.eventBus.publish({
-        eventType: "HR.REQUISITION_UPDATED", tenantId, entityId: id, entityType: "REQUISITION", sourceModule: "HR", userId, eventReferenceId, payload: data,
+        event_type: "HR.REQUISITION_UPDATED", tenant_id, entity_id: id, entity_type: "REQUISITION", source_module: "HR", user_id, event_reference_id, payload: data,
       }, contextTx);
       return requisition;
     };
@@ -1084,18 +1084,18 @@ export class HRService {
 
 
 
-  async getCandidates(tenantId: string, status?: string): Promise<Candidate[]> {
-    return this.hrRepository.getCandidates(tenantId, status);
+  async getCandidates(tenant_id: string, status?: string): Promise<Candidate[]> {
+    return this.hrRepository.getCandidates(tenant_id, status);
   }
 
-  async updateCandidate(tenantId: string, id: string, data: any, userId?: string, tx?: Prisma.TransactionClient): Promise<Candidate> {
-    const eventReferenceId = `EVT-HR-CAND-UPD-${Date.now()}`;
+  async updateCandidate(tenant_id: string, id: string, data: any, user_id?: string, tx?: Prisma.TransactionClient): Promise<Candidate> {
+    const event_reference_id = `EVT-HR-CAND-UPD-${Date.now()}`;
     const execute = async (contextTx: Prisma.TransactionClient) => {
-      const beforeState = await this.hrRepository.getCandidateById(tenantId, id);
-      const candidate = await this.hrRepository.updateCandidate(tenantId, id, data, contextTx);
-      if (userId) {
+      const before_state = await this.hrRepository.getCandidateById(tenant_id, id);
+      const candidate = await this.hrRepository.updateCandidate(tenant_id, id, data, contextTx);
+      if (user_id) {
         await this.auditService.log({
-          tenantId, userId, module: "HR", action: "UPDATE", entityType: "CANDIDATE", entityId: id, beforeState, afterState: candidate, eventReferenceId, metadata: data,
+          tenant_id, user_id, module: "HR", action: "UPDATE", entity_type: "CANDIDATE", entity_id: id, before_state, after_state: candidate, event_reference_id, metadata: data,
         }, contextTx);
       }
       return candidate;
@@ -1104,17 +1104,17 @@ export class HRService {
     return this.prisma.$transaction(execute);
   }
 
-  async getInterviews(tenantId: string, candidateId?: string): Promise<Interview[]> {
-    return this.hrRepository.getInterviews(tenantId, candidateId);
+  async getInterviews(tenant_id: string, candidateId?: string): Promise<Interview[]> {
+    return this.hrRepository.getInterviews(tenant_id, candidateId);
   }
 
-  async scheduleInterview(tenantId: string, data: any, userId?: string, tx?: Prisma.TransactionClient): Promise<Interview> {
-    const eventReferenceId = `EVT-HR-INT-NEW-${Date.now()}`;
+  async scheduleInterview(tenant_id: string, data: any, user_id?: string, tx?: Prisma.TransactionClient): Promise<Interview> {
+    const event_reference_id = `EVT-HR-INT-NEW-${Date.now()}`;
     const execute = async (contextTx: Prisma.TransactionClient) => {
-      const interview = await this.hrRepository.scheduleInterview(tenantId, data, contextTx);
-      if (userId) {
+      const interview = await this.hrRepository.scheduleInterview(tenant_id, data, contextTx);
+      if (user_id) {
         await this.auditService.log({
-          tenantId, userId, module: "HR", action: "SCHEDULE", entityType: "INTERVIEW", entityId: interview.id, afterState: interview, eventReferenceId, metadata: data,
+          tenant_id, user_id, module: "HR", action: "SCHEDULE", entity_type: "INTERVIEW", entity_id: interview.id, after_state: interview, event_reference_id, metadata: data,
         }, contextTx);
       }
       return interview;
@@ -1123,14 +1123,14 @@ export class HRService {
     return this.prisma.$transaction(execute);
   }
 
-  async updateInterviewStatus(tenantId: string, id: string, status: string, userId?: string, tx?: Prisma.TransactionClient): Promise<Interview> {
-    const eventReferenceId = `EVT-HR-INT-UPD-${Date.now()}`;
+  async updateInterviewStatus(tenant_id: string, id: string, status: string, user_id?: string, tx?: Prisma.TransactionClient): Promise<Interview> {
+    const event_reference_id = `EVT-HR-INT-UPD-${Date.now()}`;
     const execute = async (contextTx: Prisma.TransactionClient) => {
-        const beforeState = await this.hrRepository.getInterviewById(tenantId, id);
-        const interview = await this.hrRepository.updateInterviewStatus(tenantId, id, status, contextTx);
-        if (userId) {
+        const before_state = await this.hrRepository.getInterviewById(tenant_id, id);
+        const interview = await this.hrRepository.updateInterviewStatus(tenant_id, id, status, contextTx);
+        if (user_id) {
             await this.auditService.log({
-                tenantId, userId, module: "HR", action: "UPDATE_STATUS", entityType: "INTERVIEW", entityId: id, beforeState, afterState: interview, eventReferenceId, metadata: { status },
+                tenant_id, user_id, module: "HR", action: "UPDATE_STATUS", entity_type: "INTERVIEW", entity_id: id, before_state, after_state: interview, event_reference_id, metadata: { status },
             }, contextTx);
         }
         return interview;
@@ -1139,57 +1139,57 @@ export class HRService {
     return this.prisma.$transaction(execute);
   }
 
-  async getTalentLeads(tenantId: string, status?: string): Promise<TalentLead[]> {
-    return this.hrRepository.getTalentLeads(tenantId, status);
+  async getTalentLeads(tenant_id: string, status?: string): Promise<TalentLead[]> {
+    return this.hrRepository.getTalentLeads(tenant_id, status);
   }
 
-  async createTalentLead(tenantId: string, data: any): Promise<TalentLead> {
-    return this.hrRepository.createTalentLead(tenantId, data);
+  async createTalentLead(tenant_id: string, data: any): Promise<TalentLead> {
+    return this.hrRepository.createTalentLead(tenant_id, data);
   }
 
-  async updateTalentLead(tenantId: string, id: string, data: any): Promise<TalentLead> {
-    return this.hrRepository.updateTalentLead(tenantId, id, data);
+  async updateTalentLead(tenant_id: string, id: string, data: any): Promise<TalentLead> {
+    return this.hrRepository.updateTalentLead(tenant_id, id, data);
   }
 
-  async createCandidate(tenantId: string, data: any, userId?: string): Promise<Candidate> {
-    const eventReferenceId = `EVT-HR-CAND-NEW-${Date.now()}`;
+  async createCandidate(tenant_id: string, data: any, user_id?: string): Promise<Candidate> {
+    const event_reference_id = `EVT-HR-CAND-NEW-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      const candidate = await this.hrRepository.createCandidate(tenantId, data, tx);
+      const candidate = await this.hrRepository.createCandidate(tenant_id, data, tx);
       
       // 1. Audit Logging (Transactional)
-      if (userId) {
+      if (user_id) {
         await this.auditService.log({
-          tenantId,
-          userId,
+          tenant_id,
+          user_id,
           module: "HR",
           action: "CREATE",
-          entityType: "CANDIDATE",
-          entityId: candidate.id,
-          afterState: candidate,
-          eventReferenceId,
+          entity_type: "CANDIDATE",
+          entity_id: candidate.id,
+          after_state: candidate,
+          event_reference_id,
         }, tx);
       }
 
       // 2. System Logging
       await this.loggerService.log({
-        tenantId,
+        tenant_id,
         module: "HR",
         level: "INFO",
         event: "CANDIDATE_CREATED",
-        message: `Candidate profile created for: ${candidate.firstName} ${candidate.lastName}`,
+        message: `Candidate profile created for: ${candidate.first_name} ${candidate.last_name}`,
         payload: { candidateId: candidate.id },
-        userId,
+        user_id,
       });
 
       // 3. Domain Event (Transactional)
       await this.eventBus.publish({
-        eventType: EVENT_NAMES.CANDIDATE_APPLIED,
-        tenantId,
-        entityId: candidate.id,
-        entityType: "CANDIDATE",
-        sourceModule: "HR",
-        userId,
-        eventReferenceId,
+        event_type: EVENT_NAMES.CANDIDATE_APPLIED,
+        tenant_id,
+        entity_id: candidate.id,
+        entity_type: "CANDIDATE",
+        source_module: "HR",
+        user_id,
+        event_reference_id,
         payload: { requisitionId: candidate.requisitionId, source: candidate.source },
       }, tx);
 
@@ -1204,19 +1204,19 @@ export class HRService {
 
 
   async convertLeadToCandidate(
-    tenantId: string,
-    leadId: string,
+    tenant_id: string,
+    lead_id: string,
     requisitionId: string,
-    userId?: string,
+    user_id?: string,
   ): Promise<Candidate> {
-    const eventReferenceId = `EVT-HR-CAND-CONV-${Date.now()}`;
+    const event_reference_id = `EVT-HR-CAND-CONV-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      const lead = await this.hrRepository.getTalentLeadById(tenantId, leadId);
+      const lead = await this.hrRepository.getTalentLeadById(tenant_id, lead_id);
       if (!lead) throw new Error("Lead not found");
 
-      const candidate = await this.hrRepository.createCandidate(tenantId, {
-        firstName: lead.name.split(" ")[0],
-        lastName: lead.name.split(" ").slice(1).join(" ") || "N/A",
+      const candidate = await this.hrRepository.createCandidate(tenant_id, {
+        first_name: lead.name.split(" ")[0],
+        last_name: lead.name.split(" ").slice(1).join(" ") || "N/A",
         email: lead.email,
         phone: lead.phone,
         requisitionId,
@@ -1224,41 +1224,41 @@ export class HRService {
       }, tx);
 
       // 1. Audit Logging (Transactional)
-      if (userId) {
+      if (user_id) {
         await this.auditService.log({
-          tenantId,
-          userId,
+          tenant_id,
+          user_id,
           module: "HR",
           action: "CONVERT_LEAD",
-          entityType: "CANDIDATE",
-          entityId: candidate.id,
-          afterState: candidate,
-          eventReferenceId,
-          metadata: { leadId },
+          entity_type: "CANDIDATE",
+          entity_id: candidate.id,
+          after_state: candidate,
+          event_reference_id,
+          metadata: { lead_id },
         }, tx);
       }
 
       // 2. System Logging
       await this.loggerService.log({
-        tenantId,
+        tenant_id,
         module: "HR",
         level: "INFO",
         event: "TALENT_LEAD_CONVERTED",
-        message: `Talent Lead ${leadId} converted to Candidate ${candidate.id}`,
-        payload: { leadId, candidateId: candidate.id },
-        userId,
+        message: `Talent Lead ${lead_id} converted to Candidate ${candidate.id}`,
+        payload: { lead_id, candidateId: candidate.id },
+        user_id,
       });
 
       // 3. Domain Event (Transactional)
       await this.eventBus.publish({
-        eventType: EVENT_NAMES.CANDIDATE_CONVERTED,
-        tenantId,
-        entityId: candidate.id,
-        entityType: "CANDIDATE",
-        sourceModule: "HR",
-        userId,
-        eventReferenceId,
-        payload: { leadId, requisitionId },
+        event_type: EVENT_NAMES.CANDIDATE_CONVERTED,
+        tenant_id,
+        entity_id: candidate.id,
+        entity_type: "CANDIDATE",
+        source_module: "HR",
+        user_id,
+        event_reference_id,
+        payload: { lead_id, requisitionId },
       }, tx);
 
       return candidate;
@@ -1267,50 +1267,50 @@ export class HRService {
 
 
   // Headcount & Compensation Management
-  async getPositions(tenantId: string, deptId?: string): Promise<Position[]> {
-    return this.hrRepository.getPositions(tenantId, deptId);
+  async getPositions(tenant_id: string, deptId?: string): Promise<Position[]> {
+    return this.hrRepository.getPositions(tenant_id, deptId);
   }
 
-  async updatePosition(tenantId: string, id: string, data: any, userId?: string): Promise<Position> {
-    const eventReferenceId = `EVT-HR-POS-UPD-${Date.now()}`;
+  async updatePosition(tenant_id: string, id: string, data: any, user_id?: string): Promise<Position> {
+    const event_reference_id = `EVT-HR-POS-UPD-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      const beforeState = await this.hrRepository.getPositionById(tenantId, id);
-      const position = await this.hrRepository.updatePosition(tenantId, id, data, tx);
+      const before_state = await this.hrRepository.getPositionById(tenant_id, id);
+      const position = await this.hrRepository.updatePosition(tenant_id, id, data, tx);
       
       // 1. Audit Logging (Transactional)
       await this.auditService.log({
-        tenantId,
-        userId: userId || "SYSTEM",
+        tenant_id,
+        user_id: user_id || "SYSTEM",
         module: "HR",
         action: "UPDATE",
-        entityType: "POSITION",
-        entityId: position.id,
-        beforeState,
-        afterState: position,
-        eventReferenceId,
+        entity_type: "POSITION",
+        entity_id: position.id,
+        before_state,
+        after_state: position,
+        event_reference_id,
         metadata: data,
       }, tx);
 
       // 2. System Logging
       await this.loggerService.log({
-        tenantId,
+        tenant_id,
         module: "HR",
         level: "INFO",
         event: "POSITION_UPDATED",
         message: `Position updated: ${position.id}`,
-        payload: { positionId: position.id },
-        userId,
+        payload: { position_id: position.id },
+        user_id,
       });
 
       // 3. Domain Event (Transactional)
       await this.eventBus.publish({
-        eventType: EVENT_NAMES.POSITION_UPDATED,
-        tenantId,
-        entityId: id,
-        entityType: "POSITION",
-        sourceModule: "HR",
-        userId,
-        eventReferenceId,
+        event_type: EVENT_NAMES.POSITION_UPDATED,
+        tenant_id,
+        entity_id: id,
+        entity_type: "POSITION",
+        source_module: "HR",
+        user_id,
+        event_reference_id,
         payload: data,
       }, tx);
 
@@ -1318,52 +1318,52 @@ export class HRService {
     });
   }
 
-  async getCompensation(tenantId: string, employeeId: string): Promise<Compensation | null> {
-    return this.hrRepository.getCompensation(tenantId, employeeId);
+  async getCompensation(tenant_id: string, employee_id: string): Promise<Compensation | null> {
+    return this.hrRepository.getCompensation(tenant_id, employee_id);
   }
 
-  async updateCompensation(tenantId: string, employeeId: string, data: any, userId?: string): Promise<Compensation> {
-    const eventReferenceId = `EVT-HR-COMP-UPD-${Date.now()}`;
+  async updateCompensation(tenant_id: string, employee_id: string, data: any, user_id?: string): Promise<Compensation> {
+    const event_reference_id = `EVT-HR-COMP-UPD-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      const beforeState = await this.hrRepository.getCompensation(tenantId, employeeId);
-      const compensation = await this.hrRepository.updateCompensation(tenantId, employeeId, data, tx);
+      const before_state = await this.hrRepository.getCompensation(tenant_id, employee_id);
+      const compensation = await this.hrRepository.updateCompensation(tenant_id, employee_id, data, tx);
       
       // 1. Audit Logging (Transactional)
-      if (userId) {
+      if (user_id) {
         await this.auditService.log({
-          tenantId,
-          userId,
+          tenant_id,
+          user_id,
           module: "HR",
           action: "UPDATE",
-          entityType: "COMPENSATION",
-          entityId: compensation.id,
-          beforeState,
-          afterState: compensation,
-          eventReferenceId,
+          entity_type: "COMPENSATION",
+          entity_id: compensation.id,
+          before_state,
+          after_state: compensation,
+          event_reference_id,
           metadata: data,
         }, tx);
       }
 
       // 2. System Logging
       await this.loggerService.log({
-        tenantId,
+        tenant_id,
         module: "HR",
         level: "INFO",
         event: "COMPENSATION_UPDATED",
-        message: `Compensation updated for employee: ${employeeId}`,
-        payload: { employeeId, compensationId: compensation.id },
-        userId,
+        message: `Compensation updated for employee: ${employee_id}`,
+        payload: { employee_id, compensationId: compensation.id },
+        user_id,
       });
 
       // 3. Domain Event (Transactional)
       await this.eventBus.publish({
-        eventType: EVENT_NAMES.DEPARTMENT_UPDATED, // Use Dept update for compensation context
-        tenantId,
-        entityId: employeeId,
-        entityType: "COMPENSATION",
-        sourceModule: "HR",
-        userId,
-        eventReferenceId,
+        event_type: EVENT_NAMES.DEPARTMENT_UPDATED, // Use Dept update for compensation context
+        tenant_id,
+        entity_id: employee_id,
+        entity_type: "COMPENSATION",
+        source_module: "HR",
+        user_id,
+        event_reference_id,
         payload: data,
       }, tx);
 
@@ -1373,53 +1373,53 @@ export class HRService {
 
 
   // Performance Management
-  async getPerformanceCycles(tenantId: string): Promise<PerformanceCycle[]> {
-    return this.hrRepository.getPerformanceCycles(tenantId);
+  async getPerformanceCycles(tenant_id: string): Promise<PerformanceCycle[]> {
+    return this.hrRepository.getPerformanceCycles(tenant_id);
   }
 
   async createPerformanceCycle(
-    tenantId: string,
+    tenant_id: string,
     data: CreatePerformanceCycleDto,
-    userId?: string,
+    user_id?: string,
   ): Promise<PerformanceCycle> {
     const cycle = await this.hrRepository.createPerformanceCycle(
-      tenantId,
+      tenant_id,
       data,
     );
     
     // 1. Audit Logging
-    if (userId) {
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "HR",
         action: "CREATE",
-        entityType: "PERFORMANCE_CYCLE",
-        entityId: cycle.id,
-        afterState: cycle,
+        entity_type: "PERFORMANCE_CYCLE",
+        entity_id: cycle.id,
+        after_state: cycle,
         metadata: { name: data.name },
       });
     }
 
     // 2. System Logging
     await this.loggerService.log({
-      tenantId,
+      tenant_id,
       module: "HR",
       level: "INFO",
       event: "PERFORMANCE_CYCLE_CREATED",
       message: `Performance Cycle created: ${data.name}`,
       payload: { cycleId: cycle.id },
-      userId,
+      user_id,
     });
 
     // 3. Domain Event
     await this.eventBus.publish({
-      eventType: EVENT_NAMES.PERFORMANCE_CYCLE_CREATED,
-      tenantId,
-      entityId: cycle.id,
-      entityType: "PERFORMANCE_CYCLE",
-      sourceModule: "HR",
-      userId,
+      event_type: EVENT_NAMES.PERFORMANCE_CYCLE_CREATED,
+      tenant_id,
+      entity_id: cycle.id,
+      entity_type: "PERFORMANCE_CYCLE",
+      source_module: "HR",
+      user_id,
       payload: { name: data.name },
     });
 
@@ -1427,73 +1427,73 @@ export class HRService {
   }
 
   async updatePerformanceCycle(
-    tenantId: string,
+    tenant_id: string,
     id: string,
     data: Partial<PerformanceCycle>,
-    userId?: string,
+    user_id?: string,
   ): Promise<PerformanceCycle> {
-    const beforeState = await this.hrRepository.getPerformanceCycleById?.(tenantId, id);
+    const before_state = await this.hrRepository.getPerformanceCycleById?.(tenant_id, id);
     const cycle = await this.hrRepository.updatePerformanceCycle(
-      tenantId,
+      tenant_id,
       id,
       data,
     );
     
     // 1. Audit Logging
-    if (userId) {
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "HR",
         action: "UPDATE",
-        entityType: "PERFORMANCE_CYCLE",
-        entityId: id,
-        beforeState,
-        afterState: cycle,
+        entity_type: "PERFORMANCE_CYCLE",
+        entity_id: id,
+        before_state,
+        after_state: cycle,
         changes: data,
       });
     }
 
     // 2. System Logging
     await this.loggerService.log({
-      tenantId,
+      tenant_id,
       module: "HR",
       level: "INFO",
       event: "PERFORMANCE_CYCLE_UPDATED",
       message: `Performance Cycle updated: ${id}`,
       payload: { cycleId: id },
-      userId,
+      user_id,
     });
 
     // 3. Domain Event
     await this.eventBus.publish({
-      eventType: "HR.PERFORMANCE_CYCLE_UPDATED",
-      tenantId,
-      entityId: id,
-      entityType: "PERFORMANCE_CYCLE",
-      sourceModule: "HR",
-      userId,
+      event_type: "HR.PERFORMANCE_CYCLE_UPDATED",
+      tenant_id,
+      entity_id: id,
+      entity_type: "PERFORMANCE_CYCLE",
+      source_module: "HR",
+      user_id,
       payload: data,
     });
 
     return cycle;
   }
 
-  async getPerformanceReviews(tenantId: string, cycleId?: string, employeeId?: string): Promise<PerformanceReview[]> {
-    return this.hrRepository.getPerformanceReviews(tenantId, cycleId, employeeId);
+  async getPerformanceReviews(tenant_id: string, cycleId?: string, employee_id?: string): Promise<PerformanceReview[]> {
+    return this.hrRepository.getPerformanceReviews(tenant_id, cycleId, employee_id);
   }
 
-  async getGlobalPerformanceReviews(cycleId?: string, employeeId?: string): Promise<PerformanceReview[]> {
-    return this.hrRepository.getGlobalPerformanceReviews(cycleId, employeeId);
+  async getGlobalPerformanceReviews(cycleId?: string, employee_id?: string): Promise<PerformanceReview[]> {
+    return this.hrRepository.getGlobalPerformanceReviews(cycleId, employee_id);
   }
 
-  async submitPerformanceReview(tenantId: string, data: SubmitReviewDto, userId?: string, tx?: Prisma.TransactionClient): Promise<PerformanceReview> {
-    const eventReferenceId = `EVT-HR-PERF-REV-${Date.now()}`;
+  async submitPerformanceReview(tenant_id: string, data: SubmitReviewDto, user_id?: string, tx?: Prisma.TransactionClient): Promise<PerformanceReview> {
+    const event_reference_id = `EVT-HR-PERF-REV-${Date.now()}`;
     const execute = async (contextTx: Prisma.TransactionClient) => {
-      const review = await this.hrRepository.submitPerformanceReview(tenantId, data, contextTx);
-      if (userId) {
+      const review = await this.hrRepository.submitPerformanceReview(tenant_id, data, contextTx);
+      if (user_id) {
         await this.auditService.log({
-          tenantId, userId, module: "HR", action: "SUBMIT", entityType: "PERFORMANCE_REVIEW", entityId: review.id, afterState: review, eventReferenceId, metadata: { employeeId: data.employeeId, rating: data.rating },
+          tenant_id, user_id, module: "HR", action: "SUBMIT", entity_type: "PERFORMANCE_REVIEW", entity_id: review.id, after_state: review, event_reference_id, metadata: { employee_id: data.employee_id, rating: data.rating },
         }, contextTx);
       }
       return review;
@@ -1503,55 +1503,55 @@ export class HRService {
     return this.prisma.$transaction(execute);
   }
 
-  async getPositionById(tenantId: string, id: string): Promise<Position | null> {
-    return this.hrRepository.getPositionById(tenantId, id);
+  async getPositionById(tenant_id: string, id: string): Promise<Position | null> {
+    return this.hrRepository.getPositionById(tenant_id, id);
   }
 
   // Case Management
-  async getCases(tenantId: string, locationId?: string, status?: string, employeeId?: string): Promise<HRCase[]> {
-    return this.hrRepository.getCases(tenantId, locationId, status, employeeId);
+  async getCases(tenant_id: string, location_id?: string, status?: string, employee_id?: string): Promise<HRCase[]> {
+    return this.hrRepository.getCases(tenant_id, location_id, status, employee_id);
   }
 
-  async getCaseById(tenantId: string, id: string): Promise<HRCase | null> {
-    return this.hrRepository.getCaseById(tenantId, id);
+  async getCaseById(tenant_id: string, id: string): Promise<HRCase | null> {
+    return this.hrRepository.getCaseById(tenant_id, id);
   }
 
-  async createCase(tenantId: string, data: CreateCaseDto, userId?: string, tx?: Prisma.TransactionClient): Promise<HRCase> {
-    const hrCase = await this.hrRepository.createCase(tenantId, data, tx);
+  async createCase(tenant_id: string, data: CreateCaseDto, user_id?: string, tx?: Prisma.TransactionClient): Promise<HRCase> {
+    const hrCase = await this.hrRepository.createCase(tenant_id, data, tx);
     
     // 1. Audit Logging
-    if (userId) {
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "HR",
         action: "CREATE",
-        entityType: "CASE",
-        entityId: hrCase.id,
-        afterState: hrCase,
+        entity_type: "CASE",
+        entity_id: hrCase.id,
+        after_state: hrCase,
         metadata: { title: data.title, type: data.type },
       });
     }
 
     // 2. System Logging
     await this.loggerService.log({
-      tenantId,
+      tenant_id,
       module: "HR",
       level: "INFO",
       event: "CASE_CREATED",
       message: `HR Case created: ${data.title}`,
       payload: { caseId: hrCase.id },
-      userId,
+      user_id,
     });
 
     // 3. Domain Event
     await this.eventBus.publish({
-      eventType: EVENT_NAMES.CASE_CREATED,
-      tenantId,
-      entityId: hrCase.id,
-      entityType: "CASE",
-      sourceModule: "HR",
-      userId,
+      event_type: EVENT_NAMES.CASE_CREATED,
+      tenant_id,
+      entity_id: hrCase.id,
+      entity_type: "CASE",
+      source_module: "HR",
+      user_id,
       payload: { title: data.title, type: data.type },
     });
 
@@ -1559,49 +1559,49 @@ export class HRService {
   }
 
    async updateCase(
-    tenantId: string,
+    tenant_id: string,
     id: string,
     data: Partial<HRCase>,
-    userId?: string,
+    user_id?: string,
     tx?: Prisma.TransactionClient,
   ): Promise<HRCase> {
-    const beforeState = await this.hrRepository.getCaseById(tenantId, id);
-    const hrCase = await this.hrRepository.updateCase(tenantId, id, data, tx);
+    const before_state = await this.hrRepository.getCaseById(tenant_id, id);
+    const hrCase = await this.hrRepository.updateCase(tenant_id, id, data, tx);
     
     // 1. Audit Logging
-    if (userId) {
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "HR",
         action: "UPDATE",
-        entityType: "CASE",
-        entityId: id,
-        beforeState,
-        afterState: hrCase,
+        entity_type: "CASE",
+        entity_id: id,
+        before_state,
+        after_state: hrCase,
         changes: data,
       });
     }
 
     // 2. System Logging
     await this.loggerService.log({
-      tenantId,
+      tenant_id,
       module: "HR",
       level: "INFO",
       event: "CASE_UPDATED",
       message: `HR Case updated: ${id}`,
       payload: { caseId: id, updates: data },
-      userId,
+      user_id,
     });
 
     // 3. Domain Event
     await this.eventBus.publish({
-      eventType: "HR.CASE_UPDATED",
-      tenantId,
-      entityId: id,
-      entityType: "CASE",
-      sourceModule: "HR",
-      userId,
+      event_type: "HR.CASE_UPDATED",
+      tenant_id,
+      entity_id: id,
+      entity_type: "CASE",
+      source_module: "HR",
+      user_id,
       payload: data,
     });
 
@@ -1610,107 +1610,107 @@ export class HRService {
 
   // Contract Management
   async getContracts(
-    tenantId: string,
-    locationId?: string,
-    employeeId?: string,
+    tenant_id: string,
+    location_id?: string,
+    employee_id?: string,
   ): Promise<Contract[]> {
-    return this.hrRepository.getContracts(tenantId, locationId, employeeId);
+    return this.hrRepository.getContracts(tenant_id, location_id, employee_id);
   }
 
-  async getGlobalContracts(employeeId?: string): Promise<Contract[]> {
-    return this.hrRepository.getGlobalContracts(employeeId);
+  async getGlobalContracts(employee_id?: string): Promise<Contract[]> {
+    return this.hrRepository.getGlobalContracts(employee_id);
   }
 
   async createContract(
-    tenantId: string,
+    tenant_id: string,
     data: CreateContractDto,
-    userId?: string,
+    user_id?: string,
     tx?: Prisma.TransactionClient,
   ): Promise<Contract> {
-    const contract = await this.hrRepository.createContract(tenantId, data, tx);
+    const contract = await this.hrRepository.createContract(tenant_id, data, tx);
     
     // 1. Audit Logging
-    if (userId) {
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "HR",
         action: "CREATE",
-        entityType: "CONTRACT",
-        entityId: contract.id,
-        afterState: contract,
-        metadata: { employeeId: data.employeeId, type: data.type },
+        entity_type: "CONTRACT",
+        entity_id: contract.id,
+        after_state: contract,
+        metadata: { employee_id: data.employee_id, type: data.type },
       });
     }
 
     // 2. System Logging
     await this.loggerService.log({
-      tenantId,
+      tenant_id,
       module: "HR",
       level: "INFO",
       event: "CONTRACT_CREATED",
-      message: `Employment contract created for employee: ${data.employeeId}`,
-      payload: { contractId: contract.id, employeeId: data.employeeId },
-      userId,
+      message: `Employment contract created for employee: ${data.employee_id}`,
+      payload: { contractId: contract.id, employee_id: data.employee_id },
+      user_id,
     });
 
     // 3. Domain Event
     await this.eventBus.publish({
-      eventType: EVENT_NAMES.CONTRACT_CREATED,
-      tenantId,
-      entityId: contract.id,
-      entityType: "CONTRACT",
-      sourceModule: "HR",
-      userId,
-      payload: { employeeId: data.employeeId, type: data.type },
+      event_type: EVENT_NAMES.CONTRACT_CREATED,
+      tenant_id,
+      entity_id: contract.id,
+      entity_type: "CONTRACT",
+      source_module: "HR",
+      user_id,
+      payload: { employee_id: data.employee_id, type: data.type },
     });
 
     return contract;
   }
 
    async updateContract(
-    tenantId: string,
+    tenant_id: string,
     id: string,
     data: Partial<Contract>,
-    userId?: string,
+    user_id?: string,
   ): Promise<Contract> {
-    const beforeState = await this.hrRepository.getContractById?.(tenantId, id);
-    const contract = await this.hrRepository.updateContract(tenantId, id, data);
+    const before_state = await this.hrRepository.getContractById?.(tenant_id, id);
+    const contract = await this.hrRepository.updateContract(tenant_id, id, data);
     
     // 1. Audit Logging
-    if (userId) {
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "HR",
         action: "UPDATE",
-        entityType: "CONTRACT",
-        entityId: id,
-        beforeState,
-        afterState: contract,
+        entity_type: "CONTRACT",
+        entity_id: id,
+        before_state,
+        after_state: contract,
         changes: data,
       });
     }
 
     // 2. System Logging
     await this.loggerService.log({
-      tenantId,
+      tenant_id,
       module: "HR",
       level: "INFO",
       event: "CONTRACT_UPDATED",
       message: `Employment contract updated: ${id}`,
       payload: { contractId: id, updates: data },
-      userId,
+      user_id,
     });
 
     // 3. Domain Event
     await this.eventBus.publish({
-      eventType: "HR.CONTRACT_UPDATED",
-      tenantId,
-      entityId: id,
-      entityType: "CONTRACT",
-      sourceModule: "HR",
-      userId,
+      event_type: "HR.CONTRACT_UPDATED",
+      tenant_id,
+      entity_id: id,
+      entity_type: "CONTRACT",
+      source_module: "HR",
+      user_id,
       payload: data,
     });
 
@@ -1718,139 +1718,139 @@ export class HRService {
   }
 
   // Location Management
-  async getLocations(tenantId: string): Promise<any[]> {
-    return this.hrRepository.getLocations(tenantId);
+  async getLocations(tenant_id: string): Promise<any[]> {
+    return this.hrRepository.getLocations(tenant_id);
   }
 
   // Training Management
-  async getTrainingPrograms(tenantId: string): Promise<any[]> {
-    return this.hrRepository.getTrainingPrograms(tenantId);
+  async getTrainingPrograms(tenant_id: string): Promise<any[]> {
+    return this.hrRepository.getTrainingPrograms(tenant_id);
   }
 
-  async createTrainingProgram(tenantId: string, data: any, userId?: string): Promise<any> {
-    const program = await this.hrRepository.createTrainingProgram(tenantId, data);
+  async createTrainingProgram(tenant_id: string, data: any, user_id?: string): Promise<any> {
+    const program = await this.hrRepository.createTrainingProgram(tenant_id, data);
     
     // 1. Audit Logging
-    if (userId) {
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "hr",
         action: "CREATE",
-        entityType: "TRAINING_PROGRAM",
-        entityId: program.id,
-        afterState: program,
+        entity_type: "TRAINING_PROGRAM",
+        entity_id: program.id,
+        after_state: program,
       });
     }
 
     // 2. System Logging
     await this.loggerService.log({
-      tenantId,
+      tenant_id,
       module: "HR",
       level: "INFO",
       event: "TRAINING_PROGRAM_CREATED",
       message: `Training program created: ${data.title || program.id}`,
       payload: { programId: program.id },
-      userId,
+      user_id,
     });
 
     // 3. Domain Event
     await this.eventBus.publish({
-      eventType: "HR.TRAINING_PROGRAM_CREATED",
-      tenantId,
-      entityId: program.id,
-      entityType: "TRAINING_PROGRAM",
-      sourceModule: "HR",
-      userId,
+      event_type: "HR.TRAINING_PROGRAM_CREATED",
+      tenant_id,
+      entity_id: program.id,
+      entity_type: "TRAINING_PROGRAM",
+      source_module: "HR",
+      user_id,
       payload: { title: data.title },
     });
 
     return program;
   }
 
-  async getTrainingAssignments(tenantId: string): Promise<any[]> {
-    return this.hrRepository.getTrainingAssignments(tenantId);
+  async getTrainingAssignments(tenant_id: string): Promise<any[]> {
+    return this.hrRepository.getTrainingAssignments(tenant_id);
   }
 
-  async createTrainingAssignment(tenantId: string, data: any, userId?: string): Promise<any> {
-    const assignment = await this.hrRepository.createTrainingAssignment(tenantId, data);
+  async createTrainingAssignment(tenant_id: string, data: any, user_id?: string): Promise<any> {
+    const assignment = await this.hrRepository.createTrainingAssignment(tenant_id, data);
     
     // 1. Audit Logging
-    if (userId) {
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "hr",
         action: "CREATE",
-        entityType: "TRAINING_ASSIGNMENT",
-        entityId: assignment.id,
-        afterState: assignment,
+        entity_type: "TRAINING_ASSIGNMENT",
+        entity_id: assignment.id,
+        after_state: assignment,
       });
     }
 
     // 2. System Logging
     await this.loggerService.log({
-      tenantId,
+      tenant_id,
       module: "HR",
       level: "INFO",
       event: "TRAINING_ASSIGNMENT_CREATED",
       message: `Training assigned: ${assignment.id}`,
-      payload: { assignmentId: assignment.id, employeeId: data.employeeId },
-      userId,
+      payload: { assignmentId: assignment.id, employee_id: data.employee_id },
+      user_id,
     });
 
     // 3. Domain Event
     await this.eventBus.publish({
-      eventType: "HR.TRAINING_ASSIGNED",
-      tenantId,
-      entityId: assignment.id,
-      entityType: "TRAINING_ASSIGNMENT",
-      sourceModule: "HR",
-      userId,
-      payload: { employeeId: data.employeeId, programId: data.programId },
+      event_type: "HR.TRAINING_ASSIGNED",
+      tenant_id,
+      entity_id: assignment.id,
+      entity_type: "TRAINING_ASSIGNMENT",
+      source_module: "HR",
+      user_id,
+      payload: { employee_id: data.employee_id, programId: data.programId },
     });
 
     return assignment;
   }
 
-  async updateTrainingAssignment(tenantId: string, id: string, data: any, userId?: string): Promise<any> {
-    const beforeState = await this.hrRepository.getTrainingAssignmentById?.(tenantId, id);
-    const assignment = await this.hrRepository.updateTrainingAssignment(tenantId, id, data);
+  async updateTrainingAssignment(tenant_id: string, id: string, data: any, user_id?: string): Promise<any> {
+    const before_state = await this.hrRepository.getTrainingAssignmentById?.(tenant_id, id);
+    const assignment = await this.hrRepository.updateTrainingAssignment(tenant_id, id, data);
     
     // 1. Audit Logging
-    if (userId) {
+    if (user_id) {
       await this.auditService.log({
-        tenantId,
-        userId,
+        tenant_id,
+        user_id,
         module: "hr",
         action: "UPDATE",
-        entityType: "TRAINING_ASSIGNMENT",
-        entityId: assignment.id,
-        beforeState,
-        afterState: assignment,
+        entity_type: "TRAINING_ASSIGNMENT",
+        entity_id: assignment.id,
+        before_state,
+        after_state: assignment,
         changes: data,
       });
     }
 
     // 2. System Logging
     await this.loggerService.log({
-      tenantId,
+      tenant_id,
       module: "HR",
       level: "INFO",
       event: "TRAINING_STATUS_UPDATED",
       message: `Training assignment ${id} updated to status: ${data.status}`,
       payload: { assignmentId: id, status: data.status },
-      userId,
+      user_id,
     });
 
     // 3. Domain Event
     await this.eventBus.publish({
-      eventType: "HR.TRAINING_STATUS_UPDATED",
-      tenantId,
-      entityId: id,
-      entityType: "TRAINING_ASSIGNMENT",
-      sourceModule: "HR",
-      userId,
+      event_type: "HR.TRAINING_STATUS_UPDATED",
+      tenant_id,
+      entity_id: id,
+      entity_type: "TRAINING_ASSIGNMENT",
+      source_module: "HR",
+      user_id,
       payload: { status: data.status },
     });
 
@@ -1858,63 +1858,63 @@ export class HRService {
   }
 
   // Analytics & Reporting
-  async getHeadcountTrend(tenantId: string): Promise<any[]> {
-    return this.hrRepository.getHeadcountTrend(tenantId);
+  async getHeadcountTrend(tenant_id: string): Promise<any[]> {
+    return this.hrRepository.getHeadcountTrend(tenant_id);
   }
 
-  async getTurnoverStats(tenantId: string): Promise<any> {
-    return this.hrRepository.getTurnoverStats(tenantId);
+  async getTurnoverStats(tenant_id: string): Promise<any> {
+    return this.hrRepository.getTurnoverStats(tenant_id);
   }
 
-  async getDepartmentAnalytics(tenantId: string): Promise<any[]> {
-    return this.hrRepository.getDepartmentAnalytics(tenantId);
+  async getDepartmentAnalytics(tenant_id: string): Promise<any[]> {
+    return this.hrRepository.getDepartmentAnalytics(tenant_id);
   }
 
-  async getCompensationAnalytics(tenantId: string): Promise<any> {
-    return this.hrRepository.getCompensationAnalytics(tenantId);
+  async getCompensationAnalytics(tenant_id: string): Promise<any> {
+    return this.hrRepository.getCompensationAnalytics(tenant_id);
   }
 
-  async getExperienceRate(tenantId: string): Promise<any> {
-    return this.hrRepository.getExperienceRate(tenantId);
+  async getExperienceRate(tenant_id: string): Promise<any> {
+    return this.hrRepository.getExperienceRate(tenant_id);
   }
 
-  async getActualLaborCostHistory(tenantId: string, departmentId: string, monthLimit: number): Promise<any[]> {
-    return this.hrRepository.getActualLaborCostHistory(tenantId, departmentId, monthLimit);
+  async getActualLaborCostHistory(tenant_id: string, department_id: string, monthLimit: number): Promise<any[]> {
+    return this.hrRepository.getActualLaborCostHistory(tenant_id, department_id, monthLimit);
   }
 
 
   /**
    * Resolves the full business context of an HR related event.
    * Used by Chat and Mail modules to display 'Rich Event Context' 
-   * based on the eventReferenceId.
+   * based on the event_reference_id.
    */
-  async resolveEventContext(tenantId: string, eventReferenceId: string): Promise<any> {
-    const auditLog = await this.prisma.auditLog.findFirst({
+  async resolveEventContext(tenant_id: string, event_reference_id: string): Promise<any> {
+    const auditLog = await this.prisma.audit_logs.findFirst({
       where: {
-        tenantId,
-        eventReferenceId,
+        tenant_id: tenant_id,
+        event_reference_id: event_reference_id,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { created_at: 'desc' },
     });
 
     if (!auditLog) return null;
 
-    const domainEvent = await this.prisma.domainEvent.findFirst({
+    const domainEvent = await this.prisma.domain_events.findFirst({
       where: {
-        tenantId,
-        eventReferenceId,
+        tenant_id: tenant_id,
+        event_reference_id: event_reference_id,
       },
     });
 
     return {
-      referenceId: eventReferenceId,
+      referenceId: event_reference_id,
       action: auditLog.action,
-      entityType: auditLog.entityType,
-      entityId: auditLog.entityId,
-      timestamp: auditLog.createdAt,
-      actorId: auditLog.userId,
-      data: auditLog.afterState || auditLog.metadata,
-      eventType: domainEvent?.eventType,
+      entity_type: auditLog.entity_type,
+      entity_id: auditLog.entity_id,
+      timestamp: auditLog.created_at,
+      actor_id: auditLog.user_id,
+      data: auditLog.after_state || auditLog.metadata,
+      event_type: domainEvent?.event_type,
       payload: domainEvent?.payload,
     };
   }

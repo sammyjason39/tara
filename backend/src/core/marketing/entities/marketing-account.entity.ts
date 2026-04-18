@@ -1,12 +1,12 @@
 export class MarketingConnectedAccount {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   provider: "meta" | "google";
-  accountName: string;
+  account_name: string;
   status: "connected" | "expired" | "disconnected";
   tokenExpiresAt: Date;
   scopes: string[];
   lastSyncAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

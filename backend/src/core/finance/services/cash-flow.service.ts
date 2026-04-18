@@ -11,7 +11,7 @@ export class CashFlowService {
     private readonly statementRepo: IAccountStatementProjectionRepository,
   ) {}
 
-  async generate(tenantId: string, companyId: string, periodId: string): Promise<any> {
+  async generate(tenant_id: string, company_id: string, periodId: string): Promise<any> {
     const cashAccounts = ['1001', '1002'];
     let totalInflow = new Prisma.Decimal(0);
     let totalOutflow = new Prisma.Decimal(0);
@@ -23,7 +23,7 @@ export class CashFlowService {
     };
 
     for (const accId of cashAccounts) {
-      const entries = await this.statementRepo.findByAccount(tenantId, companyId, accId);
+      const entries = await this.statementRepo.findByAccount(tenant_id, company_id, accId);
       for (const entry of entries) {
         const amount = entry.signedAmount || new Prisma.Decimal(0);
         if (amount.gt(0)) totalInflow = totalInflow.plus(amount);

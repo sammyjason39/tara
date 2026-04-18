@@ -6,17 +6,17 @@ import { AssetCategory } from '../domain/asset.interfaces';
 export class AssetCategoryMockRepository implements IAssetCategoryRepository {
   private categories: AssetCategory[] = [];
 
-  async findById(tenantId: string, companyId: string, id: string): Promise<AssetCategory | null> {
+  async findById(tenant_id: string, company_id: string, id: string): Promise<AssetCategory | null> {
     // In actual multitenant, id is enough if UUID, but keeping company for consistency
-    return this.categories.find(c => c.id === id) || null;
+    return this.categories.find((c: any) => c.id === id) || null;
   }
 
-  async findAll(tenantId: string, companyId: string): Promise<AssetCategory[]> {
+  async findAll(tenant_id: string, company_id: string): Promise<AssetCategory[]> {
     return this.categories;
   }
 
   async save(category: AssetCategory): Promise<AssetCategory> {
-    const index = this.categories.findIndex(c => c.id === category.id);
+    const index = this.categories.findIndex((c: any) => c.id === category.id);
     if (index >= 0) {
       this.categories[index] = category;
     } else {

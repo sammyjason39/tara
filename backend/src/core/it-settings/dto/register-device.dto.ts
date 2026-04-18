@@ -24,11 +24,11 @@ export class RegisterDeviceDto {
 
   @IsString()
   @IsNotEmpty()
-  locationId: string;
+  location_id: string;
 
   @IsString()
   @IsOptional()
-  ipAddress?: string;
+  ip_address?: string;
 
   @IsString()
   @IsOptional()

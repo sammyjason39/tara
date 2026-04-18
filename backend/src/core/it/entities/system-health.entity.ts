@@ -1,6 +1,6 @@
 export class SystemHealth {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   component:
     | "identity"
     | "database"

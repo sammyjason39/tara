@@ -1,14 +1,14 @@
 export class HRCase {
   id: string;
-  tenantId: string;
-  employeeId: string;
-  departmentId?: string;
+  tenant_id: string;
+  employee_id: string;
+  department_id?: string;
   title: string;
   type: string;
   status: "open" | "in_progress" | "resolved" | "closed";
   priority: "low" | "medium" | "high" | "critical";
-  ownerId?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date;
+  owner_id?: string;
+  created_at: Date;
+  updated_at: Date;
+  deleted_at?: Date;
 }

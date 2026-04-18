@@ -6,12 +6,12 @@ import { Asset } from '../domain/asset.interfaces';
 export class AssetMockRepository implements IAssetRepository {
   private assets: Asset[] = [];
 
-  async findById(tenantId: string, companyId: string, id: string): Promise<Asset | null> {
-    return this.assets.find(a => a.tenantId === tenantId && a.companyId === companyId && a.id === id) || null;
+  async findById(tenant_id: string, company_id: string, id: string): Promise<Asset | null> {
+    return this.assets.find(a => a.tenant_id === tenant_id && a.company_id === company_id && a.id === id) || null;
   }
 
-  async findAll(tenantId: string, companyId: string): Promise<Asset[]> {
-    return this.assets.filter(a => a.tenantId === tenantId && a.companyId === companyId);
+  async findAll(tenant_id: string, company_id: string): Promise<Asset[]> {
+    return this.assets.filter(a => a.tenant_id === tenant_id && a.company_id === company_id);
   }
 
   async save(asset: Asset): Promise<Asset> {
@@ -24,8 +24,8 @@ export class AssetMockRepository implements IAssetRepository {
     return asset;
   }
 
-  async updateStatus(tenantId: string, companyId: string, id: string, status: any): Promise<void> {
-    const asset = await this.findById(tenantId, companyId, id);
+  async updateStatus(tenant_id: string, company_id: string, id: string, status: any): Promise<void> {
+    const asset = await this.findById(tenant_id, company_id, id);
     if (asset) asset.status = status;
   }
 }

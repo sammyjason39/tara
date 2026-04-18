@@ -65,14 +65,14 @@ export class LedgerPostingService {
     private readonly hashingService: HashingService,
   ) {}
 
-  async enqueuePosting(tenantId: string, companyId: string, eventType: string, sourceEventId: string, payload: any, sequenceKey?: string, sequenceNumber?: number, tx?: Prisma.TransactionClient): Promise<string> {
-    const isDuplicate = await this.ledgerRepo.checkIdempotency(tenantId, companyId, sourceEventId, tx);
+  async enqueuePosting(tenant_id: string, company_id: string, event_type: string, sourceEventId: string, payload: any, sequenceKey?: string, sequenceNumber?: number, tx?: Prisma.TransactionClient): Promise<string> {
+    const isDuplicate = await this.ledgerRepo.checkIdempotency(tenant_id, company_id, sourceEventId, tx);
     if (isDuplicate) {
       this.logger.warn(`Idempotency trigger: ignoring duplicate event ${sourceEventId}`);
       return 'DUPLICATE_IGNORED';
     }
     try {
-      await this.ledgerRepo.createIdempotency(tenantId, companyId, sourceEventId, tx);
+      await this.ledgerRepo.createIdempotency(tenant_id, company_id, sourceEventId, tx);
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
         this.logger.warn(`Idempotency race: duplicate caught by constraint for ${sourceEventId}`);
@@ -81,8 +81,8 @@ export class LedgerPostingService {
       throw err;
     }
 
-    const posting = await this.ledgerRepo.createPosting(tenantId, companyId, {
-      eventType,
+    const posting = await this.ledgerRepo.createPosting(tenant_id, company_id, {
+      event_type,
       sourceEventId,
       status: LedgerPostingStatus.PENDING,
       payload,
@@ -90,28 +90,28 @@ export class LedgerPostingService {
       sequenceNumber,
     }, tx);
     
-    this.worker.triggerProcess(tenantId, companyId).catch(() => {});
+    this.worker.triggerProcess(tenant_id, company_id).catch(() => {});
     return posting.id;
   }
 
-  async processEvent(tenantId: string, companyId: string, postingId: string): Promise<void> {
-    const startTime = Date.now();
-    const posting = await this.ledgerRepo.findById(tenantId, companyId, postingId);
+  async processEvent(tenant_id: string, company_id: string, postingId: string): Promise<void> {
+    const start_time = Date.now();
+    const posting = await this.ledgerRepo.findById(tenant_id, company_id, postingId);
     if (!posting || posting.status !== LedgerPostingStatus.PENDING) return;
 
     try {
-      let eventLog = await this.eventLogRepo.findBySourceEventId(tenantId, companyId, posting.sourceEventId);
+      let eventLog = await this.eventLogRepo.findBySourceEventId(tenant_id, company_id, posting.sourceEventId);
       if (eventLog && eventLog.status === 'POSTED') {
-        await this.ledgerRepo.updateStatus(tenantId, companyId, posting.id, LedgerPostingStatus.COMPLETED);
+        await this.ledgerRepo.updateStatus(tenant_id, company_id, posting.id, LedgerPostingStatus.COMPLETED);
         return;
       }
 
       // Status is already PROCESSING due to repo.claimPostings
-      const rule = await this.ruleRepo.findRule(tenantId, companyId, posting.eventType);
-      if (!rule) throw new Error(`No rule for ${posting.eventType}`);
+      const rule = await this.ruleRepo.findRule(tenant_id, company_id, posting.event_type);
+      if (!rule) throw new Error(`No rule for ${posting.event_type}`);
 
       const fiscalPeriodId = posting.payload.fiscalPeriodId;
-      const fiscalPeriod = await this.fiscalRepo.findById(tenantId, companyId, fiscalPeriodId);
+      const fiscalPeriod = await this.fiscalRepo.findById(tenant_id, company_id, fiscalPeriodId);
       if (!fiscalPeriod || 
           fiscalPeriod.status === FiscalPeriodStatus.HARD_LOCK || 
           fiscalPeriod.status === FiscalPeriodStatus.CLOSED ||
@@ -133,12 +133,12 @@ export class LedgerPostingService {
         else totalCredit = totalCredit.plus(line.amount);
       }
 
-      await this.journalValidator.validate({ tenantId, companyId, lines: postingLines, totalDebit, totalCredit, sourceEventId: posting.sourceEventId });
+      await this.journalValidator.validate({ tenant_id, company_id, lines: postingLines, totalDebit, totalCredit, sourceEventId: posting.sourceEventId });
 
       let postedJournal: any;
       await this.uow.execute(async (tx: Prisma.TransactionClient) => {
         const journalRepoTx = new JournalDbRepository(tx);
-        const lastHash = await journalRepoTx.getLastEntryHash(tenantId, companyId);
+        const lastHash = await journalRepoTx.getLastEntryHash(tenant_id, company_id);
         const journalId = crypto.randomUUID();
         const timestamp = new Date();
         
@@ -153,10 +153,10 @@ export class LedgerPostingService {
           })),
         });
 
-        postedJournal = await journalRepoTx.createEntry({ tenantId, companyId } as any, {
+        postedJournal = await journalRepoTx.createEntry({ tenant_id, company_id } as any, {
           id: journalId,
-          tenantId,
-          companyId,
+          tenant_id,
+          company_id,
           fiscalPeriodId,
           status: JournalStatus.POSTED,
           journalType: JournalType.NORMAL,
@@ -167,14 +167,14 @@ export class LedgerPostingService {
           postingDate: timestamp,
         });
 
-        await journalRepoTx.createLines({ tenantId, companyId } as any, postedJournal.id, postingLines);
-        await this.ledgerRepo.updateStatus(tenantId, companyId, posting.id, LedgerPostingStatus.COMPLETED);
+        await journalRepoTx.createLines({ tenant_id, company_id } as any, postedJournal.id, postingLines);
+        await this.ledgerRepo.updateStatus(tenant_id, company_id, posting.id, LedgerPostingStatus.COMPLETED);
       });
 
       if (postedJournal) {
           this.projectionWorker.onJournalPosted({
-              tenantId,
-              companyId,
+              tenant_id,
+              company_id,
               journalId: postedJournal.id,
               fiscalPeriodId: postedJournal.fiscalPeriodId,
               ledgerSequence: postedJournal.ledgerSequence,
@@ -184,7 +184,7 @@ export class LedgerPostingService {
 
     } catch (error) {
        this.logger.error(`Process Failed: ${error.message}`);
-       await this.ledgerRepo.updateStatus(tenantId, companyId, postingId, LedgerPostingStatus.FAILED, 0, error.message);
+       await this.ledgerRepo.updateStatus(tenant_id, company_id, postingId, LedgerPostingStatus.FAILED, 0, error.message);
        throw error;
     }
   }

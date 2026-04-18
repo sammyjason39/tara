@@ -47,8 +47,8 @@ export class InventorySubledgerService implements IInventorySubledgerService {
     return this.repository.createEntry(tenant_id, data);
   }
 
-  async getSkuValuation(tenant_id: string, skuId: string, locationId: string) {
-    const valuation = await this.repository.getCurrentValuation(tenant_id, skuId, locationId);
+  async getSkuValuation(tenant_id: string, skuId: string, location_id: string) {
+    const valuation = await this.repository.getCurrentValuation(tenant_id, skuId, location_id);
     return {
       ...valuation,
       unitCost: Number(valuation.unitCost),

@@ -27,26 +27,26 @@ export class HRMutationInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();
     const { method, path, body, headers } = request;
-    const tenantId = headers['x-tenant-id'] || body.tenantId;
-    const userId = headers['x-user-id'] || 'system';
+    const tenant_id = headers['x-tenant-id'] || body.tenant_id;
+    const user_id = headers['x-user-id'] || 'system';
 
     // Only intercept mutations
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
       return next.handle().pipe(
         tap({
           next: async (data) => {
-            const entityId = data?.id || body?.id || 'n/a';
-            const entityType = this.extractEntityType(path);
+            const entity_id = data?.id || body?.id || 'n/a';
+            const entity_type = this.extractEntityType(path);
 
             // 1. Audit Logging (Compliance Trace)
             try {
               await this.auditService.log({
-                tenantId,
-                userId,
+                tenant_id,
+                user_id,
                 module: 'HR',
                 action: method === 'POST' ? 'CREATE' : method === 'DELETE' ? 'DELETE' : 'UPDATE',
-                entityType,
-                entityId,
+                entity_type,
+                entity_id,
                 metadata: {
                   path,
                   method,
@@ -60,17 +60,17 @@ export class HRMutationInterceptor implements NestInterceptor {
             // 2. System Logging (Observability)
             try {
               await this.loggerService.log({
-                tenantId,
+                tenant_id,
                 module: 'HR',
                 level: 'INFO',
                 event: `HR_${method}_MUTATION`,
-                message: `HR Mutation: ${method} ${path} by ${userId}`,
+                message: `HR Mutation: ${method} ${path} by ${user_id}`,
                 payload: {
-                  entityType,
-                  entityId,
+                  entity_type,
+                  entity_id,
                   status: 'SUCCESS',
                 },
-                userId,
+                user_id,
               });
             } catch (err) {
               this.logger.error(`System logging failed: ${err.message}`);
@@ -79,13 +79,13 @@ export class HRMutationInterceptor implements NestInterceptor {
           error: async (err) => {
              // Log failures too
              await this.loggerService.log({
-                tenantId,
+                tenant_id,
                 module: 'HR',
                 level: 'ERROR',
                 event: `HR_${method}_FAILURE`,
                 message: `HR Mutation Failed: ${method} ${path} - ${err.message}`,
                 payload: { body, error: err.message },
-                userId,
+                user_id,
                 errorStack: err.stack,
               });
           }

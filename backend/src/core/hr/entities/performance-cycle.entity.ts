@@ -1,12 +1,12 @@
 export class PerformanceCycle {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   name: string;
   status: "active" | "completed" | "draft";
-  startDate: Date;
-  endDate: Date;
+  start_date: Date;
+  end_date: Date;
   dueDate: Date;
-  createdAt: Date;
-  updatedAt: Date;
-  deletedAt?: Date;
+  created_at: Date;
+  updated_at: Date;
+  deleted_at?: Date;
 }

@@ -49,12 +49,12 @@ export abstract class IInventoryRepository {
   ): Promise<InventoryItem>;
   abstract getBalances(
     tenant_id: string,
-    locationId?: string,
+    location_id?: string,
     departmentId?: string,
   ): Promise<StockBalance[]>;
   abstract getMovements(
     tenant_id: string,
-    itemId?: string,
+    item_id?: string,
   ): Promise<StockMovement[]>;
 
   abstract intakeStock(
@@ -94,7 +94,7 @@ export abstract class IInventoryRepository {
   abstract getIntegrationEvents(tenant_id: string): Promise<any[]>;
   abstract createIntegrationEvent(tenant_id: string, data: any): Promise<any>;
   abstract consumeStock(tenant_id: string, data: any, tx?: any): Promise<any>;
-  abstract deleteItem(tenant_id: string, itemId: string): Promise<void>;
+  abstract deleteItem(tenant_id: string, item_id: string): Promise<void>;
   abstract batchDeleteItems(
     tenant_id: string,
     itemIds: string[],
@@ -119,7 +119,7 @@ export abstract class IInventoryRepository {
   ): Promise<number>;
   abstract updateItemStatus(
     tenant_id: string,
-    itemId: string,
+    item_id: string,
     status: string,
   ): Promise<InventoryItem>;
   abstract getPendingItems(tenant_id: string): Promise<InventoryItem[]>;
@@ -132,8 +132,8 @@ export abstract class IInventoryRepository {
 
   abstract reserveStock(
     tenant_id: string,
-    productId: string,
-    locationId: string,
+    product_id: string,
+    location_id: string,
     quantity: number,
     referenceId: string,
     referenceType: string,
@@ -142,8 +142,8 @@ export abstract class IInventoryRepository {
 
   abstract releaseStock(
     tenant_id: string,
-    productId: string,
-    locationId: string,
+    product_id: string,
+    location_id: string,
     quantity: number,
     referenceId: string,
     referenceType: string,
@@ -152,8 +152,8 @@ export abstract class IInventoryRepository {
 
   abstract consumeFromReservation(
     tenant_id: string,
-    productId: string,
-    locationId: string,
+    product_id: string,
+    location_id: string,
     quantity: number,
     referenceId: string,
     referenceType: string,
@@ -162,7 +162,7 @@ export abstract class IInventoryRepository {
 
   abstract transferOut(
     tenant_id: string,
-    productId: string,
+    product_id: string,
     fromLocationId: string,
     toLocationId: string,
     quantity: number,
@@ -174,7 +174,7 @@ export abstract class IInventoryRepository {
 
   abstract transferIn(
     tenant_id: string,
-    productId: string,
+    product_id: string,
     fromLocationId: string,
     toLocationId: string,
     quantity: number,
@@ -186,7 +186,7 @@ export abstract class IInventoryRepository {
 
   abstract takeSnapshot(
     tenant_id: string,
-    locationId: string
+    location_id: string
   ): Promise<void>;
 
   abstract findProductByCode(

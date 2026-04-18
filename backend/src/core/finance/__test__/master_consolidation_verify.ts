@@ -31,7 +31,7 @@ async function masterConsolidation() {
       PrismaService,
       // Mocking repositories for logical verification
       { provide: 'IArInvoiceRepository', useValue: { findByNumber: () => null, create: (t, c, d) => ({ id: 'INV-001', ...d }) } },
-      { provide: 'IPayableRepository', useValue: { findById: () => ({ totalAmount: 1000, vendorName: 'V1' }), update: () => {} } },
+      { provide: 'IPayableRepository', useValue: { findById: () => ({ total_amount: 1000, vendorName: 'V1' }), update: () => {} } },
       { provide: 'IJournalRepository', useValue: { getLastEntryHash: () => 'PREV_HASH', findMany: () => [] } },
       { provide: 'IAccountBalanceRepository', useValue: { getBalance: () => ({ closingBalance: 5000 }) } },
       { provide: 'ITrialBalanceProjectionRepository', useValue: { findAll: () => [] } },
@@ -58,8 +58,8 @@ async function masterConsolidation() {
   console.log('[Phase 1-3] Simulating Invoice Creation & Workflow Gating...');
   const inv = await services.invoice.createInvoice('T1', 'C1', {
       invoiceNumber: 'INV-MASTER-001',
-      customerId: 'CUST-1',
-      totalAmount: 1000,
+      customer_id: 'CUST-1',
+      total_amount: 1000,
       currency: 'IDR',
       dueDate: new Date()
   } as any);
@@ -83,7 +83,7 @@ async function masterConsolidation() {
   console.log('--- CONSOLIDATION COMPLETE / DOMAIN SEALED ---');
 }
 
-masterConsolidation().catch(err => {
+masterConsolidation().catch(er(r: any) => {
     console.error(`CONSOLIDATION FAILED: ${err.message}`);
     process.exit(1);
 });

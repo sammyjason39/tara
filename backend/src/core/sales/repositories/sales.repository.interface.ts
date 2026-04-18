@@ -48,71 +48,80 @@ export type SalesExecutiveForecast = {
 };
 
 export abstract class ISalesRepository {
-  abstract getDashboard(tenantId: string): Promise<SalesDashboard>;
-  abstract getManagerMetrics(tenantId: string): Promise<SalesManagerMetrics>;
+  abstract getDashboard(tenant_id: string): Promise<SalesDashboard>;
+  abstract getManagerMetrics(tenant_id: string): Promise<SalesManagerMetrics>;
   abstract getExecutiveForecast(
-    tenantId: string,
+    tenant_id: string,
   ): Promise<SalesExecutiveForecast>;
-  abstract getNextBestActions(tenantId: string): Promise<SalesNextAction[]>;
+  abstract getNextBestActions(tenant_id: string): Promise<SalesNextAction[]>;
 
-  abstract getLeads(tenantId: string): Promise<SalesLead[]>;
-  abstract createLead(tenantId: string, dto: CreateLeadDto): Promise<SalesLead>;
+  abstract getSalesAnalytics(tenant_id: string, period?: string): Promise<any>;
+  abstract getForecast(tenant_id: string, user_id?: string): Promise<any>;
+  abstract getPipelineVelocity(tenant_id: string): Promise<any>;
+  abstract getSLAPerformance(tenant_id: string): Promise<any>;
+
+  abstract getLeads(tenant_id: string, status?: string): Promise<SalesLead[]>;
+  abstract createLead(tenant_id: string, dto: CreateLeadDto, tx?: any): Promise<SalesLead>;
   abstract updateLeadStatus(
-    tenantId: string,
-    leadId: string,
+    tenant_id: string,
+    lead_id: string,
     dto: UpdateLeadStatusDto,
   ): Promise<SalesLead>;
   abstract convertLead(
-    tenantId: string,
-    leadId: string,
-    actorId: string,
+    tenant_id: string,
+    lead_id: string,
+    actor_id: string,
   ): Promise<SalesOpportunity>;
 
-  abstract getOpportunities(tenantId: string): Promise<SalesOpportunity[]>;
+  abstract getOpportunities(tenant_id: string, stage?: string): Promise<SalesOpportunity[]>;
   abstract createOpportunity(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateOpportunityDto,
+    tx?: any
   ): Promise<SalesOpportunity>;
   abstract moveOpportunityStage(
-    tenantId: string,
+    tenant_id: string,
     opportunityId: string,
     dto: MoveOpportunityStageDto,
   ): Promise<SalesOpportunity>;
   abstract closeOpportunity(
-    tenantId: string,
+    tenant_id: string,
     opportunityId: string,
     dto: CloseOpportunityDto,
   ): Promise<SalesOpportunity | SalesOrder>;
 
-  abstract getQuotes(tenantId: string): Promise<SalesQuote[]>;
+  abstract getQuotes(tenant_id: string, dealId?: string): Promise<SalesQuote[]>;
   abstract createQuote(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateQuoteDto,
   ): Promise<SalesQuote>;
-  abstract submitQuote(tenantId: string, quoteId: string): Promise<SalesQuote>;
+  abstract submitQuote(tenant_id: string, quoteId: string): Promise<SalesQuote>;
   abstract decideQuote(
-    tenantId: string,
+    tenant_id: string,
     quoteId: string,
     dto: QuoteDecisionDto,
   ): Promise<SalesQuote>;
 
-  abstract getTimeline(tenantId: string): Promise<SalesTimelineEvent[]>;
+  abstract getTimeline(tenant_id: string): Promise<SalesTimelineEvent[]>;
   abstract createTimelineEvent(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateTimelineEventDto,
   ): Promise<SalesTimelineEvent>;
 
-  abstract getTasks(tenantId: string): Promise<SalesTask[]>;
-  abstract createTask(tenantId: string, dto: CreateTaskDto): Promise<SalesTask>;
-  abstract completeTask(tenantId: string, taskId: string): Promise<SalesTask>;
+  abstract getTasks(tenant_id: string): Promise<SalesTask[]>;
+  abstract createTask(tenant_id: string, dto: CreateTaskDto): Promise<SalesTask>;
+  abstract completeTask(tenant_id: string, taskId: string): Promise<SalesTask>;
 
-  abstract getOrders(tenantId: string): Promise<SalesOrder[]>;
+  abstract getDeals(tenant_id: string, status?: string): Promise<any[]>;
+  abstract createDeal(tenant_id: string, dto: any, tx?: any): Promise<any>;
 
-  abstract getAlerts(tenantId: string): Promise<SalesAlert[]>;
+  abstract getOrders(tenant_id: string): Promise<SalesOrder[]>;
+
+  abstract getAlerts(tenant_id: string): Promise<SalesAlert[]>;
   abstract runSlaSweep(
-    tenantId: string,
-    actorId: string,
+    tenant_id: string,
+    actor_id: string,
   ): Promise<SalesAlert[]>;
 
-  abstract getAuditEvents(tenantId: string): Promise<SalesAuditEvent[]>;
+  abstract getAuditEvents(tenant_id: string): Promise<SalesAuditEvent[]>;
 }

@@ -29,7 +29,7 @@ export class PostingValidatorService {
 
     const isValid = errors.length === 0;
     if (!isValid) {
-      this.logger.error(`Draft validation failed for Request ${draft.requestId}: ${errors.join(', ')}`);
+      this.logger.error(`Draft validation failed for Request ${draft.request_id}: ${errors.join(', ')}`);
     }
 
     return { isValid, errors };

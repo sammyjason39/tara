@@ -29,7 +29,7 @@ export class ConsolidationReportService {
   ) {}
 
   async getConsolidatedReport(
-    tenantId: string, 
+    tenant_id: string, 
     groupId: string, 
     type: 'PROFIT_LOSS' | 'BALANCE_SHEET', 
     fiscalPeriodId: string,
@@ -42,26 +42,26 @@ export class ConsolidationReportService {
     // 2. Check Snapshot Cache
     // Note: In a real system, we'd need to check if ANY member company's checkpoint has advanced.
     // For simplicity in Phase 13 mock, we use a global latest checkpoint or specific group logic.
-    const cached = await this.snapshotRepo.getLatest(tenantId, groupId, fiscalPeriodId);
+    const cached = await this.snapshotRepo.getLatest(tenant_id, groupId, fiscalPeriodId);
     if (cached && cached.reportParametersHash === paramsHash) {
        return JSON.parse(Buffer.from(cached.compressedData!, 'base64').toString('utf-8'));
     }
 
     // 3. Resolve all member companies (recursive)
-    const members = await this.resolveGroupMembers(tenantId, groupId);
+    const members = await this.resolveGroupMembers(tenant_id, groupId);
     if (members.length === 0) throw new Error(`No members found for group ${groupId}`);
 
     // 4. Aggregate Reports
     let consolidatedReport: any;
     if (type === 'PROFIT_LOSS') {
-      consolidatedReport = await this.aggregatePL(tenantId, members, fiscalPeriodId, options);
+      consolidatedReport = await this.aggregatePL(tenant_id, members, fiscalPeriodId, options);
     } else {
-      consolidatedReport = await this.aggregateBS(tenantId, members, fiscalPeriodId, options);
+      consolidatedReport = await this.aggregateBS(tenant_id, members, fiscalPeriodId, options);
     }
 
     // 5. Apply Eliminations if enabled
     if (options.eliminations) {
-      await this.applyEliminations(tenantId, members, consolidatedReport);
+      await this.applyEliminations(tenant_id, members, consolidatedReport);
     }
 
     const finalReport = {
@@ -70,7 +70,7 @@ export class ConsolidationReportService {
     };
 
     // 6. Cache Snapshot
-    await this.snapshotRepo.create(tenantId, {
+    await this.snapshotRepo.create(tenant_id, {
       groupId,
       fiscalPeriodId,
       reportParametersHash: paramsHash,
@@ -82,7 +82,7 @@ export class ConsolidationReportService {
   }
 
 
-  private async resolveGroupMembers(tenantId: string, groupId: string): Promise<CompanyGroupMember[]> {
+  private async resolveGroupMembers(tenant_id: string, groupId: string): Promise<CompanyGroupMember[]> {
     const list: CompanyGroupMember[] = [];
     const queue = [groupId];
     const visited = new Set<string>();
@@ -105,14 +105,14 @@ export class ConsolidationReportService {
     return list;
   }
 
-  private async aggregatePL(tenantId: string, members: CompanyGroupMember[], fiscalPeriodId: string, options: any): Promise<any> {
+  private async aggregatePL(tenant_id: string, members: CompanyGroupMember[], fiscalPeriodId: string, options: any): Promise<any> {
     let totalRevenue = 0;
     let totalExpense = 0;
     let nciProfit = 0;
     const details: any[] = [];
 
     for (const member of members) {
-      const report = await this.plService.generate(tenantId, member.companyId, fiscalPeriodId);
+      const report = await this.plService.generate(tenant_id, member.company_id, fiscalPeriodId);
       const weight = 1.0; 
       const share = member.ownershipPercentage || 0;
 
@@ -124,7 +124,7 @@ export class ConsolidationReportService {
 
       details.push(...report.details.map((d: any) => ({
         ...d,
-        companyId: member.companyId,
+        company_id: member.company_id,
         amount: d.amount * weight,
         parentShare: d.amount * share,
         nciShare: d.amount * (1 - share)
@@ -135,7 +135,7 @@ export class ConsolidationReportService {
 
     return {
       reportType: 'CONSOLIDATED_PROFIT_LOSS',
-      tenantId,
+      tenant_id,
       fiscalPeriodId,
       summary: {
         totalRevenue,
@@ -148,7 +148,7 @@ export class ConsolidationReportService {
     };
   }
 
-  private async aggregateBS(tenantId: string, members: CompanyGroupMember[], fiscalPeriodId: string, options: any): Promise<any> {
+  private async aggregateBS(tenant_id: string, members: CompanyGroupMember[], fiscalPeriodId: string, options: any): Promise<any> {
     let totalAssets = 0;
     let totalLiabilities = 0;
     let totalEquity = 0;
@@ -156,8 +156,8 @@ export class ConsolidationReportService {
     const sections: Record<string, any[]> = { ASSET: [], LIABILITY: [], EQUITY: [] };
 
     for (const member of members) {
-      const report = await this.bsService.generate(tenantId, member.companyId, fiscalPeriodId);
-      const plReport = await this.plService.generate(tenantId, member.companyId, fiscalPeriodId);
+      const report = await this.bsService.generate(tenant_id, member.company_id, fiscalPeriodId);
+      const plReport = await this.plService.generate(tenant_id, member.company_id, fiscalPeriodId);
       
       const share = member.ownershipPercentage || 0;
       const weight = 1.0; // 100% consolidation
@@ -172,14 +172,14 @@ export class ConsolidationReportService {
       for (const key of Object.keys(sections)) {
         sections[key].push(...report.sections[key].map((s: any) => ({
           ...s,
-          companyId: member.companyId,
+          company_id: member.company_id,
           amount: s.amount * weight
         })));
       }
       // Add Net Income and NCI as virtual lines
       sections.EQUITY.push({
         accountId: 'VIRTUAL_NET_INCOME',
-        companyId: member.companyId,
+        company_id: member.company_id,
         amount: plReport.summary.netProfit * share,
         isVirtual: true
       });
@@ -195,7 +195,7 @@ export class ConsolidationReportService {
 
     return {
       reportType: 'CONSOLIDATED_BALANCE_SHEET',
-      tenantId,
+      tenant_id,
       fiscalPeriodId,
       summary: {
         totalAssets,
@@ -209,9 +209,9 @@ export class ConsolidationReportService {
     };
   }
 
-  private async asyncApplyEliminations(tenantId: string, members: CompanyGroupMember[], report: any): Promise<void> {
-    const rules = await this.eliminationRepo.listRules(tenantId);
-    const memberIds = new Set(members.map(m => m.companyId));
+  private async asyncApplyEliminations(tenant_id: string, members: CompanyGroupMember[], report: any): Promise<void> {
+    const rules = await this.eliminationRepo.listRules(tenant_id);
+    const memberIds = new Set(members.map(m => m.company_id));
     const eliminationJournals: any[] = [];
 
     for (const rule of rules) {
@@ -220,10 +220,10 @@ export class ConsolidationReportService {
           // Detect amount to eliminate (mock look-up)
           let amountA = 0;
           if (report.reportType === 'CONSOLIDATED_PROFIT_LOSS') {
-             amountA = report.details.find((d: any) => d.companyId === rule.companyA && d.accountId === accA)?.amount || 0;
+             amountA = report.details.find((d: any) => d.company_id === rule.companyA && d.accountId === accA)?.amount || 0;
           } else {
-             amountA = report.sections.ASSET.find((l: any) => l.companyId === rule.companyA && l.accountId === accA)?.amount ||
-                       report.sections.LIABILITY.find((l: any) => l.companyId === rule.companyA && l.accountId === accA)?.amount || 0;
+             amountA = report.sections.ASSET.find((l: any) => l.company_id === rule.companyA && l.accountId === accA)?.amount ||
+                       report.sections.LIABILITY.find((l: any) => l.company_id === rule.companyA && l.accountId === accA)?.amount || 0;
           }
 
           if (amountA !== 0) {
@@ -232,8 +232,8 @@ export class ConsolidationReportService {
                id: `ELIM-${rule.id}-${accA}`,
                description: `Intercompany elim: ${rule.companyA}:${accA} <=> ${rule.companyB}:${accB}`,
                lines: [
-                 { companyId: rule.companyA, accountId: accA, amount: -amountA, side: amountA > 0 ? 'ELIM_CREDIT' : 'ELIM_DEBIT' },
-                 { companyId: rule.companyB, accountId: accB, amount: amountA, side: amountA > 0 ? 'ELIM_DEBIT' : 'ELIM_CREDIT' }
+                 { company_id: rule.companyA, accountId: accA, amount: -amountA, side: amountA > 0 ? 'ELIM_CREDIT' : 'ELIM_DEBIT' },
+                 { company_id: rule.companyB, accountId: accB, amount: amountA, side: amountA > 0 ? 'ELIM_DEBIT' : 'ELIM_CREDIT' }
                ]
             });
 
@@ -252,8 +252,8 @@ export class ConsolidationReportService {
     report.eliminationJournals = eliminationJournals;
   }
 
-  private async applyEliminations(tenantId: string, members: CompanyGroupMember[], report: any): Promise<void> {
-    await this.asyncApplyEliminations(tenantId, members, report);
+  private async applyEliminations(tenant_id: string, members: CompanyGroupMember[], report: any): Promise<void> {
+    await this.asyncApplyEliminations(tenant_id, members, report);
   }
 
   private computeHash(payload: any): string {

@@ -52,14 +52,14 @@ export class HashingService {
    * Generates a deterministic SHA-256 hash for a Period Closing event.
    */
   generateClosingHash(input: {
-    tenantId: string;
+    tenant_id: string;
     periodId: string;
     netIncome: Prisma.Decimal;
     closedAt: Date;
     closedBy: string;
   }): string {
     const payload = [
-      input.tenantId,
+      input.tenant_id,
       input.periodId,
       input.netIncome.toString(),
       input.closedAt.toISOString(),

@@ -35,92 +35,92 @@ export type MarketingChannelPerformance = {
 };
 
 export abstract class IMarketingRepository {
-  abstract getDashboard(tenantId: string): Promise<MarketingDashboard>;
+  abstract getDashboard(tenant_id: string): Promise<MarketingDashboard>;
   abstract getChannelPerformance(
-    tenantId: string,
+    tenant_id: string,
   ): Promise<MarketingChannelPerformance[]>;
 
-  abstract getCampaigns(tenantId: string): Promise<MarketingCampaign[]>;
+  abstract getCampaigns(tenant_id: string): Promise<MarketingCampaign[]>;
   abstract createCampaign(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateCampaignDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<MarketingCampaign>;
   abstract updateCampaignStatus(
-    tenantId: string,
+    tenant_id: string,
     campaignId: string,
     dto: UpdateCampaignStatusDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<MarketingCampaign>;
 
-  abstract getExecutions(tenantId: string): Promise<MarketingExecution[]>;
+  abstract getExecutions(tenant_id: string): Promise<MarketingExecution[]>;
   abstract scheduleExecution(
-    tenantId: string,
+    tenant_id: string,
     dto: ScheduleExecutionDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<MarketingExecution>;
   abstract runExecution(
-    tenantId: string,
+    tenant_id: string,
     executionId: string,
     dto: RunExecutionDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<MarketingExecution>;
 
-  abstract getLeads(tenantId: string): Promise<MarketingLead[]>;
+  abstract getLeads(tenant_id: string): Promise<MarketingLead[]>;
   abstract captureLead(
-    tenantId: string,
+    tenant_id: string,
     dto: CaptureLeadDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<MarketingLead>;
   abstract markLeadHandoffReady(
-    tenantId: string,
-    leadId: string,
-    actorId: string,
+    tenant_id: string,
+    lead_id: string,
+    actor_id: string,
   ): Promise<MarketingLead>;
   abstract handoffLeadToSales(
-    tenantId: string,
-    leadId: string,
-    actorId: string,
+    tenant_id: string,
+    lead_id: string,
+    actor_id: string,
   ): Promise<MarketingLead>;
 
-  abstract getWorkflows(tenantId: string): Promise<MarketingWorkflow[]>;
+  abstract getWorkflows(tenant_id: string): Promise<MarketingWorkflow[]>;
   abstract createWorkflow(
-    tenantId: string,
+    tenant_id: string,
     dto: CreateWorkflowDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<MarketingWorkflow>;
   abstract updateWorkflowStatus(
-    tenantId: string,
+    tenant_id: string,
     workflowId: string,
     dto: UpdateWorkflowStatusDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<MarketingWorkflow>;
 
   abstract getConnectedAccounts(
-    tenantId: string,
+    tenant_id: string,
   ): Promise<MarketingConnectedAccount[]>;
   abstract connectAccount(
-    tenantId: string,
+    tenant_id: string,
     dto: ConnectAccountDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<MarketingConnectedAccount>;
   abstract updateAccountStatus(
-    tenantId: string,
+    tenant_id: string,
     accountId: string,
     dto: UpdateAccountStatusDto,
-    actorId: string,
+    actor_id: string,
   ): Promise<MarketingConnectedAccount>;
 
-  abstract getAttribution(tenantId: string): Promise<MarketingAttribution[]>;
-  abstract getAlerts(tenantId: string): Promise<MarketingAlert[]>;
+  abstract getAttribution(tenant_id: string): Promise<MarketingAttribution[]>;
+  abstract getAlerts(tenant_id: string): Promise<MarketingAlert[]>;
   abstract acknowledgeAlert(
-    tenantId: string,
+    tenant_id: string,
     alertId: string,
   ): Promise<MarketingAlert>;
   abstract runHealthSweep(
-    tenantId: string,
-    actorId: string,
+    tenant_id: string,
+    actor_id: string,
   ): Promise<MarketingAlert[]>;
 
-  abstract getAuditEvents(tenantId: string): Promise<MarketingAuditEvent[]>;
+  abstract getAuditEvents(tenant_id: string): Promise<MarketingAuditEvent[]>;
 }

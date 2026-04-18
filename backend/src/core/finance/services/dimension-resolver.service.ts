@@ -9,7 +9,7 @@ export class DimensionResolverService {
    */
   async resolveDimensions(payload: any, metadata?: any): Promise<Record<string, string | undefined>> {
     return {
-      dimensionBranchId: payload.branchId || metadata?.terminalBranchId || 'DEFAULT-BR',
+      dimensionBranchId: payload.branch_id || metadata?.terminalBranchId || 'DEFAULT-BR',
       dimensionDepartmentId: payload.departmentId || 'DEFAULT-DEPT',
       dimensionProjectId: payload.projectId,
       dimensionChannelId: payload.channelId || 'DIRECT',

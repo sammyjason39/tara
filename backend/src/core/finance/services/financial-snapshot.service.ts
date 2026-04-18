@@ -27,12 +27,12 @@ export class FinancialSnapshotService {
    * Generates a structural checkpoint (snapshotSequence) and captures full projection state.
    * Reports can hydrate from this state and replay journals forward for efficiency.
    */
-  async generateCheckpoint(tenantId: string, companyId: string): Promise<FinancialSnapshot> {
+  async generateCheckpoint(tenant_id: string, company_id: string): Promise<FinancialSnapshot> {
     // 1. Get the latest processed sequence for projections
-    const latestProcessedSeq = await this.checkpointRepo.getCheckpoint(tenantId, companyId, 'ALL_PROJECTIONS');
+    const latestProcessedSeq = await this.checkpointRepo.getCheckpoint(tenant_id, company_id, 'ALL_PROJECTIONS');
 
     // 2. Capture full Trial Balance state
-    const tbState = await this.trialBalanceRepo.findAll(tenantId, companyId);
+    const tbState = await this.trialBalanceRepo.findAll(tenant_id, company_id);
     
     // 3. Normalize and sort for deterministic hashing (Period-aware)
     const normalizedState = tbState.map(s => ({
@@ -53,29 +53,29 @@ export class FinancialSnapshotService {
     const serializedState = JSON.stringify(tbState.sort((a,b) => a.accountId.localeCompare(b.accountId)));
 
     // 5. Create Snapshot
-    const snapshot = await this.snapshotRepo.create(tenantId, companyId, {
+    const snapshot = await this.snapshotRepo.create(tenant_id, company_id, {
       snapshotSequence: latestProcessedSeq,
       snapshotDate: new Date(),
       trialBalanceStateHash: stateHash,
       compressedTrialBalanceState: serializedState, // In prod this might be GZIPed
     });
 
-    this.logger.log(`Created stateful financial snapshot for tenant ${tenantId} company ${companyId} at sequence ${latestProcessedSeq} (hash: ${stateHash.substring(0, 8)})`);
+    this.logger.log(`Created stateful financial snapshot for tenant ${tenant_id} company ${company_id} at sequence ${latestProcessedSeq} (hash: ${stateHash.substring(0, 8)})`);
     return {
       ...snapshot,
       snapshotSequence: snapshot.snapshotSequence || 0
     } as any;
   }
 
-  async getLatestCheckpoint(tenantId: string, companyId: string): Promise<FinancialSnapshot | null> {
-    return this.snapshotRepo.findLatest(tenantId, companyId);
+  async getLatestCheckpoint(tenant_id: string, company_id: string): Promise<FinancialSnapshot | null> {
+    return this.snapshotRepo.findLatest(tenant_id, company_id);
   }
 
   /**
    * Periodically verifies that snapshots were not corrupted by rebuilding state from ledger.
    */
-  async snapshotIntegrityAudit(tenantId: string, companyId: string): Promise<void> {
-    const snapshot = await this.getLatestCheckpoint(tenantId, companyId);
+  async snapshotIntegrityAudit(tenant_id: string, company_id: string): Promise<void> {
+    const snapshot = await this.getLatestCheckpoint(tenant_id, company_id);
     if (!snapshot) return;
 
     // 1. Rebuild state from ledger using the sequence stored in snapshot
@@ -83,10 +83,10 @@ export class FinancialSnapshotService {
     // For this audit, we compute what the TB should be based on the immutable journal entries
     // up to snapshot.snapshotSequence.
     
-    this.logger.log(`Starting integrity audit for snapshot ${snapshot.id} (tenant: ${tenantId}, company: ${companyId}). Current hash: ${snapshot.trialBalanceStateHash}`);
+    this.logger.log(`Starting integrity audit for snapshot ${snapshot.id} (tenant: ${tenant_id}, companies: ${company_id}). Current hash: ${snapshot.trialBalanceStateHash}`);
 
     // Fetch all journals up to this sequence
-    const journals = await this.journalRepo.findBySequenceRange(tenantId, companyId, 1, snapshot.snapshotSequence);
+    const journals = await this.journalRepo.findBySequenceRange(tenant_id, company_id, 1, snapshot.snapshotSequence);
     
     // Simple in-memory aggregation for audit (Period-aware)
     const expectedTotals: Map<string, { accountId: string, fiscalPeriodId: string, debitTotal: Prisma.Decimal, creditTotal: Prisma.Decimal }> = new Map();
@@ -126,7 +126,7 @@ export class FinancialSnapshotService {
     // 3. Compare with snapshot hash
     if (rebuiltHash !== snapshot.trialBalanceStateHash) {
       this.logger.error(`INTEGRITY FAILURE: Snapshot ${snapshot.id} hash mismatch.`);
-      throw new SnapshotIntegrityError(tenantId, snapshot.snapshotSequence);
+      throw new SnapshotIntegrityError(tenant_id, snapshot.snapshotSequence);
     }
 
     this.logger.log(`Integrity audit passed for snapshot ${snapshot.id}`);
@@ -134,8 +134,8 @@ export class FinancialSnapshotService {
 }
 
 export class SnapshotIntegrityError extends Error {
-  constructor(tenantId: string, sequence: number) {
-    super(`Snapshot integrity violation for tenant ${tenantId} at sequence ${sequence}`);
+  constructor(tenant_id: string, sequence: number) {
+    super(`Snapshot integrity violation for tenant ${tenant_id} at sequence ${sequence}`);
     this.name = 'SnapshotIntegrityError';
   }
 }

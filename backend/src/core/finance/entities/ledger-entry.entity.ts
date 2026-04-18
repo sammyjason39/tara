@@ -6,14 +6,14 @@ import { Prisma } from '@prisma/client';
  */
 export class LedgerEntry {
   id: string;
-  tenantId: string;
-  locationId?: string;
+  tenant_id: string;
+  location_id?: string;
   amount: Prisma.Decimal;
   type: "debit" | "credit" | "DEBIT" | "CREDIT" | any;
   description: string;
   timestamp?: Date;
   effectiveDate: Date; // Business date for reporting (Audit Hardening)
-  createdAt?: string;
+  created_at?: string;
   balance: Prisma.Decimal; // Running balance after this transaction
   category?: string;
   account?: string;

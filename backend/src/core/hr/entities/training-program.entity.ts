@@ -1,12 +1,12 @@
 export class TrainingProgram {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   name: string;
   status: string;
   completionRate: number;
   dueDate?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 
   assignments?: any[];
   skills?: any[];

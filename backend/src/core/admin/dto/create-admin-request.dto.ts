@@ -21,5 +21,5 @@ export class CreateAdminRequestDto {
 
   @IsString()
   @IsOptional()
-  requestedBy?: string;
+  requested_by?: string;
 }

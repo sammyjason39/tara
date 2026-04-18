@@ -7,11 +7,11 @@ export class AnalyticsService {
 
   constructor(private readonly repository: IHRRepository) {}
 
-  async predictTurnover(tenantId: string) {
-    this.logger.log(`Predicting turnover for tenant ${tenantId}`);
+  async predictTurnover(tenant_id: string) {
+    this.logger.log(`Predicting turnover for tenant ${tenant_id}`);
     
-    const trend = await this.repository.getHeadcountTrend(tenantId);
-    const turnoverStats = await this.repository.getTurnoverStats(tenantId);
+    const trend = await this.repository.getHeadcountTrend(tenant_id);
+    const turnoverStats = await this.repository.getTurnoverStats(tenant_id);
 
     // Heuristic prediction: Trailing 3-month average + 1% baseline
     const trailingAvg = turnoverStats.turnoverRate || 2.5;
@@ -25,10 +25,10 @@ export class AnalyticsService {
     };
   }
 
-  async getFlightRisks(tenantId: string) {
-    this.logger.log(`Analyzing flight risks for tenant ${tenantId}`);
+  async getFlightRisks(tenant_id: string) {
+    this.logger.log(`Analyzing flight risks for tenant ${tenant_id}`);
     
-    const riskData = await this.repository.getRetentionRiskData(tenantId);
+    const riskData = await this.repository.getRetentionRiskData(tenant_id);
     
     return riskData.map(data => {
       let riskScore = 0;
@@ -67,10 +67,10 @@ export class AnalyticsService {
     }).sort((a, b) => b.riskScore - a.riskScore);
   }
 
-  async getWorkforceInsights(tenantId: string) {
+  async getWorkforceInsights(tenant_id: string) {
     const [engagement, turnover] = await Promise.all([
-      this.repository.getEngagementMetrics(tenantId),
-      this.predictTurnover(tenantId),
+      this.repository.getEngagementMetrics(tenant_id),
+      this.predictTurnover(tenant_id),
     ]);
 
     return {

@@ -10,17 +10,17 @@ export class ArCustomerService {
     private readonly customerRepo: IArCustomerRepository,
   ) {}
 
-  async createCustomer(tenantId: string, companyId: string, dto: CreateCustomerDto): Promise<IArCustomer> {
-    return this.customerRepo.create(tenantId, companyId, dto);
+  async createCustomer(tenant_id: string, company_id: string, dto: CreateCustomerDto): Promise<IArCustomer> {
+    return this.customerRepo.create(tenant_id, company_id, dto);
   }
 
-  async getCustomer(tenantId: string, companyId: string, id: string): Promise<IArCustomer> {
-    const customer = await this.customerRepo.findById(tenantId, companyId, id);
+  async getCustomer(tenant_id: string, company_id: string, id: string): Promise<IArCustomer> {
+    const customer = await this.customerRepo.findById(tenant_id, company_id, id);
     if (!customer) throw new NotFoundException('Customer not found');
     return customer;
   }
 
-  async listCustomers(tenantId: string, companyId: string): Promise<IArCustomer[]> {
-    return this.customerRepo.findAll(tenantId, companyId);
+  async listCustomers(tenant_id: string, company_id: string): Promise<IArCustomer[]> {
+    return this.customerRepo.findAll(tenant_id, company_id);
   }
 }

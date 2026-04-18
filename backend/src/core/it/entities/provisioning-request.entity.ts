@@ -1,7 +1,7 @@
 export class ProvisioningRequest {
   id: string;
-  tenantId: string;
-  employeeId?: string;
+  tenant_id: string;
+  employee_id?: string;
   supplierId?: string;
   supplierBranchId?: string;
   scope: "quote" | "invoice" | "delivery_proof" | "full_portal";
@@ -9,8 +9,8 @@ export class ProvisioningRequest {
   description?: string;
   reason: string;
   status: "requested" | "provisioned" | "revoked";
-  requestedBy: string;
+  requested_by: string;
   provisionedBy?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

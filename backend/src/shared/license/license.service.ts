@@ -10,10 +10,10 @@ export class LicenseService {
    * Verify if a tenant has an active and enabled license for a module.
    * Throws ForbiddenException if license is missing, disabled, or expired.
    */
-  async verifyLicense(tenantId: string, moduleCode: string): Promise<boolean> {
-    const license = await this.prisma.moduleLicense.findUnique({
+  async verifyLicense(tenant_id: string, moduleCode: string): Promise<boolean> {
+    const license = await this.prisma.module_licenses.findUnique({
       where: {
-        tenantId_moduleCode: { tenantId, moduleCode },
+        tenant_id_module_code: { tenant_id: tenant_id, module_code: moduleCode },
       },
     });
 
@@ -21,7 +21,7 @@ export class LicenseService {
       throw new ForbiddenException(`No license found for module: ${moduleCode}`);
     }
 
-    if (!license.isEnabled) {
+    if (!license.is_enabled) {
       throw new ForbiddenException(`Module ${moduleCode} is disabled for this organization`);
     }
 
@@ -29,7 +29,7 @@ export class LicenseService {
       throw new ForbiddenException(`License for ${moduleCode} is not active (Status: ${license.status})`);
     }
 
-    if (license.endDate && new Date() > license.endDate) {
+    if (license.end_date && new Date() > license.end_date) {
       throw new ForbiddenException(`License for ${moduleCode} has expired`);
     }
 
@@ -39,11 +39,11 @@ export class LicenseService {
   /**
    * Get all active licenses for a tenant.
    */
-  async getTenantLicenses(tenantId: string) {
-    return this.prisma.moduleLicense.findMany({
-      where: { tenantId, status: 'active' },
+  async getTenantLicenses(tenant_id: string) {
+    return this.prisma.module_licenses.findMany({
+      where: { tenant_id: tenant_id, status: 'active' },
       include: {
-        moduleDefinition: true,
+        module_definitions: true,
       },
     });
   }
@@ -51,13 +51,13 @@ export class LicenseService {
   /**
    * Get license details for a specific module.
    */
-  async getLicense(tenantId: string, moduleCode: string) {
-    const license = await this.prisma.moduleLicense.findUnique({
+  async getLicense(tenant_id: string, moduleCode: string) {
+    const license = await this.prisma.module_licenses.findUnique({
       where: {
-        tenantId_moduleCode: { tenantId, moduleCode },
+        tenant_id_module_code: { tenant_id: tenant_id, module_code: moduleCode },
       },
       include: {
-        moduleDefinition: true,
+        module_definitions: true,
       },
     });
 
@@ -71,25 +71,26 @@ export class LicenseService {
   /**
    * Toggle a module's enabled status.
    */
-  async toggleModule(tenantId: string, moduleCode: string, enabled: boolean, userId: string) {
-    const license = await this.prisma.moduleLicense.update({
+  async toggleModule(tenant_id: string, moduleCode: string, enabled: boolean, user_id: string) {
+    const license = await this.prisma.module_licenses.update({
       where: {
-        tenantId_moduleCode: { tenantId, moduleCode },
+        tenant_id_module_code: { tenant_id: tenant_id, module_code: moduleCode },
       },
       data: {
-        isEnabled: enabled,
+        is_enabled: enabled,
       },
     });
 
     // Audit the action
-    await this.prisma.moduleLicenseLog.create({
+    await this.prisma.module_license_logs.create({
       data: {
+          updated_at: new Date(),
         id: uuidv4(),
         
-        licenseId: license.id,
-        tenantId,
+        license_id: license.id,
+        tenant_id: tenant_id,
         action: enabled ? 'ENABLE_MODULE' : 'DISABLE_MODULE',
-        performedBy: userId,
+        performed_by: user_id,
         notes: `Module ${moduleCode} ${enabled ? 'enabled' : 'disabled'} by user`,
       },
     });

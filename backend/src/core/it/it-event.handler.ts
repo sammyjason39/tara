@@ -19,7 +19,7 @@ export class ITEventHandler implements OnModuleInit {
   }
 
   private async handleEvent(event: DomainEvent) {
-    switch (event.eventType) {
+    switch (event.event_type) {
       case 'candidate.hired':
         await this.handleCandidateHired(event);
         break;
@@ -36,14 +36,14 @@ export class ITEventHandler implements OnModuleInit {
   }
 
   private async handleCandidateHired(event: DomainEvent) {
-    this.logger.log(`Handling candidate.hired for tenant ${event.tenantId}, entity ${event.entityId}`);
+    this.logger.log(`Handling candidate.hired for tenant ${event.tenant_id}, entity ${event.entity_id}`);
     
     const { payload } = event;
-    const employeeId = event.entityId;
+    const employee_id = event.entity_id;
 
     try {
-      await this.itService.createProvisioningRequest(event.tenantId, {
-        employeeId: employeeId,
+      await this.itService.createProvisioningRequest(event.tenant_id, {
+        employee_id: employee_id,
         type: 'ACCOUNT_CREATION',
         scope: 'full_portal' as any,
         reason: 'NEW_HIRE',
@@ -58,7 +58,7 @@ export class ITEventHandler implements OnModuleInit {
         }
       }, 'SYSTEM_EVENT_BUS');
       
-      this.logger.log(`Provisioning request created for employee ${employeeId}`);
+      this.logger.log(`Provisioning request created for employee ${employee_id}`);
 
       // SaaS Provisioning (e.g., Slack)
       await this.webhookService.dispatch(
@@ -66,11 +66,11 @@ export class ITEventHandler implements OnModuleInit {
         {
           action: "ACTIVATE",
           service: "SLACK",
-          employeeId,
+          employee_id,
           email: payload.email,
           fullName: payload.fullName,
         },
-        event.tenantId
+        event.tenant_id
       );
     } catch (error) {
       this.logger.error(`Failed to handle candidate hired automation: ${error.message}`);
@@ -78,14 +78,14 @@ export class ITEventHandler implements OnModuleInit {
   }
 
   private async handleEmployeeSuspended(event: DomainEvent) {
-    this.logger.log(`Handling employee.suspended for tenant ${event.tenantId}, entity ${event.entityId}`);
+    this.logger.log(`Handling employee.suspended for tenant ${event.tenant_id}, entity ${event.entity_id}`);
     
     const { payload } = event;
-    const employeeId = event.entityId;
+    const employee_id = event.entity_id;
 
     try {
-      await this.itService.createProvisioningRequest(event.tenantId, {
-        employeeId: employeeId,
+      await this.itService.createProvisioningRequest(event.tenant_id, {
+        employee_id: employee_id,
         type: 'ACCESS_REVOCATION',
         scope: 'full_portal' as any,
         reason: 'SUSPENSION',
@@ -99,18 +99,18 @@ export class ITEventHandler implements OnModuleInit {
         }
       }, 'SYSTEM_EVENT_BUS');
       
-      this.logger.log(`Access revocation request created for employee ${employeeId}`);
+      this.logger.log(`Access revocation request created for employee ${employee_id}`);
 
       // SaaS Revocation
       await this.webhookService.dispatch(
         "https://api.zenvix.io/hooks/saas/revoke",
         {
           action: "DEACTIVATE",
-          employeeId,
+          employee_id,
           email: payload.email,
           reason: payload.reason,
         },
-        event.tenantId
+        event.tenant_id
       );
     } catch (error) {
       this.logger.error(`Failed to handle employee suspended automation: ${error.message}`);
@@ -118,14 +118,14 @@ export class ITEventHandler implements OnModuleInit {
   }
 
   private async handleEmployeeTerminated(event: DomainEvent) {
-    this.logger.log(`Handling employee.terminated for tenant ${event.tenantId}, entity ${event.entityId}`);
+    this.logger.log(`Handling employee.terminated for tenant ${event.tenant_id}, entity ${event.entity_id}`);
     
     const { payload } = event;
-    const employeeId = event.entityId;
+    const employee_id = event.entity_id;
 
     try {
-      await this.itService.createProvisioningRequest(event.tenantId, {
-        employeeId: employeeId,
+      await this.itService.createProvisioningRequest(event.tenant_id, {
+        employee_id: employee_id,
         type: 'ACCESS_REVOCATION',
         scope: 'full_portal' as any,
         reason: 'TERMINATION',
@@ -139,18 +139,18 @@ export class ITEventHandler implements OnModuleInit {
         }
       }, 'SYSTEM_EVENT_BUS');
       
-      this.logger.log(`Access revocation request created for terminated employee ${employeeId}`);
+      this.logger.log(`Access revocation request created for terminated employee ${employee_id}`);
 
       // SaaS Revocation
       await this.webhookService.dispatch(
         "https://api.zenvix.io/hooks/saas/revoke",
         {
           action: "TERMINATE",
-          employeeId,
+          employee_id,
           email: payload.email,
           reason: payload.reason,
         },
-        event.tenantId
+        event.tenant_id
       );
     } catch (error) {
       this.logger.error(`Failed to handle employee terminated automation: ${error.message}`);

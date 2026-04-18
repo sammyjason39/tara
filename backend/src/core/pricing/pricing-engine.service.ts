@@ -20,8 +20,8 @@ export class PricingEngineService {
    * Calculates the real-time price for an SKU based on cost and active rules.
    * L0 (Cost) -> L1 (Internal) -> L2 (Sales Exposure)
    */
-  async calculatePrice(tenant_id: string, skuId: string, locationId: string): Promise<PricingQuoteDto> {
-    const cacheKey = `${tenant_id}:${skuId}:${locationId}`;
+  async calculatePrice(tenant_id: string, skuId: string, location_id: string): Promise<PricingQuoteDto> {
+    const cacheKey = `${tenant_id}:${skuId}:${location_id}`;
     const cached = this.cache.get(cacheKey);
 
     if (cached && cached.expiry > Date.now()) {
@@ -30,7 +30,7 @@ export class PricingEngineService {
 
     // ... (rest of the logic remains same, will wrap in the file)
     // 1. Fetch L0: Real-time Cost from Sub-ledger
-    const valuation = await this.inventorySubledger.getSkuValuation(tenant_id, skuId, locationId);
+    const valuation = await this.inventorySubledger.getSkuValuation(tenant_id, skuId, location_id);
     const baseCost = valuation.unitCost;
 
     // 2. Fetch active rules sorted by priority
@@ -40,7 +40,7 @@ export class PricingEngineService {
       this.logger.warn(`No active pricing rules for tenant ${tenant_id}. Using cost as price.`);
       return {
         skuId,
-        locationId,
+        location_id,
         baseCost,
         salesPrice: baseCost,
         ruleId: 'NONE',
@@ -77,7 +77,7 @@ export class PricingEngineService {
 
     const quote: PricingQuoteDto = {
       skuId,
-      locationId,
+      location_id,
       baseCost,
       salesPrice,
       ruleId: rule.id,
@@ -97,7 +97,7 @@ export class PricingEngineService {
   /**
    * Exposure Layer API for POS/Orders
    */
-  async getQuote(tenant_id: string, skuId: string, locationId: string): Promise<PricingQuoteDto> {
-    return this.calculatePrice(tenant_id, skuId, locationId);
+  async getQuote(tenant_id: string, skuId: string, location_id: string): Promise<PricingQuoteDto> {
+    return this.calculatePrice(tenant_id, skuId, location_id);
   }
 }

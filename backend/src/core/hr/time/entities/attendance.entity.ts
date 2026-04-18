@@ -1,12 +1,12 @@
 export interface AttendanceRecord {
   id: string;
-  tenantId: string;
-  employeeId: string;
+  tenant_id: string;
+  employee_id: string;
   date: string;
   clockInTime?: Date;
   clockOutTime?: Date;
-  locationId?: string;
+  location_id?: string;
   status: 'PRESENT' | 'ABSENT' | 'LATE' | 'HALF_DAY';
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }

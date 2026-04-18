@@ -87,15 +87,15 @@ export class FinanceMockRepository extends IFinanceRepository {
     // Add mock employees and compensations
     this.employees.push({
       id: "emp-1",
-      tenantId: "tenant-001",
-      firstName: "John",
-      lastName: "Doe",
+      tenant_id: "tenant-001",
+      first_name: "John",
+      last_name: "Doe",
       status: "active",
       department: { name: "Engineering" }
     });
 
     this.compensations.push({
-      employeeId: "emp-1",
+      employee_id: "emp-1",
       baseSalary: 10000,
       allowances: [{ name: "Housing", amount: 2000 }],
       bonuses: [{ name: "Performance", amount: 1000 }]
@@ -103,8 +103,8 @@ export class FinanceMockRepository extends IFinanceRepository {
   }
 
   private createMockLedgerEntries(
-    tenantId: string,
-    locationId: string,
+    tenant_id: string,
+    location_id: string,
     entries: any[],
   ) {
     // Simplified for brevity, reusing logic from previous implementation if needed
@@ -112,9 +112,9 @@ export class FinanceMockRepository extends IFinanceRepository {
     const baseDate = new Date();
     entries.forEach((e, i) => {
       this.ledgerEntries.push({
-        id: `${tenantId}-leg-${i}`,
-        tenantId,
-        locationId,
+        id: `${tenant_id}-leg-${i}`,
+        tenant_id,
+        location_id,
         amount: new Prisma.Decimal(e.amount),
         type: e.type,
         description: e.description,
@@ -130,29 +130,29 @@ export class FinanceMockRepository extends IFinanceRepository {
   // --- Implementation ---
 
   async getLedger(
-    tenantId: string,
-    locationId?: string,
+    tenant_id: string,
+    location_id?: string,
   ): Promise<LedgerEntry[]> {
     return this.ledgerEntries.filter(
       (e) =>
-        e.tenantId === tenantId && (!locationId || e.locationId === locationId),
+        e.tenant_id === tenant_id && (!location_id || e.location_id === location_id),
     );
   }
 
   async createTransaction(
-    tenantId: string,
+    tenant_id: string,
     data: CreateTransactionDto,
     tx?: Prisma.TransactionClient,
   ): Promise<Transaction> {
     const txn: Transaction = {
-      id: `${tenantId}-txn-${Date.now()}`,
-      tenantId,
-      locationId: data.locationId ?? "default",
+      id: `${tenant_id}-txn-${Date.now()}`,
+      tenant_id,
+      location_id: data.location_id ?? "default",
       amount: new Prisma.Decimal(data.amount),
       type: data.type,
       description: data.description,
       category: data.category,
-      createdAt: new Date(),
+      created_at: new Date(),
       status: "approved",
       createdBy: "system",
     };
@@ -160,14 +160,14 @@ export class FinanceMockRepository extends IFinanceRepository {
     return txn;
   }
 
-  async createJournal(tenantId: string, data: any, tx?: Prisma.TransactionClient): Promise<any> {
+  async createJournal(tenant_id: string, data: any, tx?: Prisma.TransactionClient): Promise<any> {
     const journal = {
-      id: `${tenantId}-jr-${Date.now()}`,
-      tenantId,
+      id: `${tenant_id}-jr-${Date.now()}`,
+      tenant_id,
       description: data.description,
       ref: data.ref,
       status: "POSTED",
-      createdAt: new Date(),
+      created_at: new Date(),
       lines: data.lines.map((l: any, i: number) => ({
         id: `line-${i}`,
         ...l,
@@ -176,9 +176,9 @@ export class FinanceMockRepository extends IFinanceRepository {
     return journal;
   }
 
-  async getBalance(tenantId: string): Promise<Balance> {
+  async getBalance(tenant_id: string): Promise<Balance> {
     return {
-      tenantId,
+      tenant_id,
       totalBalance: new Prisma.Decimal(100000), // Mock fixed balance
       currency: "USD",
       lastUpdated: new Date(),
@@ -189,49 +189,49 @@ export class FinanceMockRepository extends IFinanceRepository {
   }
 
   async getTransactionById(
-    tenantId: string,
-    transactionId: string,
+    tenant_id: string,
+    transaction_id: string,
   ): Promise<Transaction | null> {
     return (
       this.transactions.find(
-        (t) => t.tenantId === tenantId && t.id === transactionId,
+        (t) => t.tenant_id === tenant_id && t.id === transaction_id,
       ) || null
     );
   }
 
   // Money Sources
-  async listMoneySources(tenantId: string): Promise<FinanceMoneySourceRow[]> {
+  async listMoneySources(tenant_id: string): Promise<FinanceMoneySourceRow[]> {
     return this.moneySources;
   }
 
   // Treasury
-  async listTransfers(tenantId: string): Promise<TreasuryTransfer[]> {
-    return this.transfers.filter((t: any) => t.tenantId === tenantId);
+  async listTransfers(tenant_id: string): Promise<TreasuryTransfer[]> {
+    return this.transfers.filter((t: any) => t.tenant_id === tenant_id);
   }
 
   async createTransfer(
-    tenantId: string,
+    tenant_id: string,
     data: Partial<TreasuryTransfer>,
     tx?: Prisma.TransactionClient,
   ): Promise<TreasuryTransfer> {
     const transfer: TreasuryTransfer = {
       id: `TR-${Date.now()}`,
-      tenantId,
+      tenant_id,
       fromSourceId: data.fromSourceId!,
       toSourceId: data.toSourceId!,
       amount: data.amount!,
       currency: data.currency || "IDR",
       status: data.status || "PENDING",
-      requestedBy: data.requestedBy || "system",
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      requested_by: data.requested_by || "system",
+      created_at: new Date(),
+      updated_at: new Date(),
     };
     this.transfers.push(transfer);
     return transfer;
   }
 
   async reconcileSettlement(
-    tenantId: string,
+    tenant_id: string,
     sourceId: string,
     amount: number,
     tx?: Prisma.TransactionClient,
@@ -249,15 +249,15 @@ export class FinanceMockRepository extends IFinanceRepository {
   }
 
   // Assets
-  async listAssets(tenantId: string): Promise<Asset[]> {
+  async listAssets(tenant_id: string): Promise<Asset[]> {
     return this.assets; // No tenant filter for simplicity in mock, or add filtering
   }
 
-  async getAssetById(tenantId: string, assetId: string): Promise<Asset | null> {
-    return this.assets.find((a) => a.tenantId === tenantId && a.id === assetId) || null;
+  async getAssetById(tenant_id: string, assetId: string): Promise<Asset | null> {
+    return this.assets.find((a) => a.tenant_id === tenant_id && a.id === assetId) || null;
   }
 
-  async createAsset(tenantId: string, asset: Partial<Asset>, tx?: Prisma.TransactionClient): Promise<Asset> {
+  async createAsset(tenant_id: string, asset: Partial<Asset>, tx?: Prisma.TransactionClient): Promise<Asset> {
     const newAsset = {
       ...asset,
       id: `ast-${Date.now()}`,
@@ -268,7 +268,7 @@ export class FinanceMockRepository extends IFinanceRepository {
   }
 
   async updateAsset(
-    tenantId: string,
+    tenant_id: string,
     assetId: string,
     updates: Partial<Asset>,
     tx?: Prisma.TransactionClient,
@@ -280,19 +280,19 @@ export class FinanceMockRepository extends IFinanceRepository {
   }
 
   // Capex
-  async listCapexRequests(tenantId: string): Promise<CapexRequest[]> {
+  async listCapexRequests(tenant_id: string): Promise<CapexRequest[]> {
     return this.capexRequests;
   }
 
   async getCapexRequestById(
-    tenantId: string,
+    tenant_id: string,
     id: string,
   ): Promise<CapexRequest | null> {
-    return this.capexRequests.find((c) => c.id === id) || null;
+    return this.capexRequests.find((c: any) => c.id === id) || null;
   }
 
   async createCapexRequest(
-    tenantId: string,
+    tenant_id: string,
     request: Partial<CapexRequest>,
     tx?: Prisma.TransactionClient,
   ): Promise<CapexRequest> {
@@ -306,23 +306,23 @@ export class FinanceMockRepository extends IFinanceRepository {
   }
 
   async updateCapexRequest(
-    tenantId: string,
+    tenant_id: string,
     id: string,
     updates: Partial<CapexRequest>,
     tx?: Prisma.TransactionClient,
   ): Promise<CapexRequest | null> {
-    const idx = this.capexRequests.findIndex((c) => c.id === id);
+    const idx = this.capexRequests.findIndex((c: any) => c.id === id);
     if (idx === -1) return null;
     this.capexRequests[idx] = { ...this.capexRequests[idx], ...updates };
     return this.capexRequests[idx];
   }
 
-  async listCapexBudgets(tenantId: string): Promise<FinanceCapexBudgetRow[]> {
+  async listCapexBudgets(tenant_id: string): Promise<FinanceCapexBudgetRow[]> {
     return this.capexBudgets;
   }
 
   async setCapexBudget(
-    tenantId: string,
+    tenant_id: string,
     budget: FinanceCapexBudgetRow,
   ): Promise<void> {
     const idx = this.capexBudgets.findIndex(
@@ -337,7 +337,7 @@ export class FinanceMockRepository extends IFinanceRepository {
 
   // Depreciation & Events
   async listAssetDepreciationEntries(
-    tenantId: string,
+    tenant_id: string,
     assetId?: string,
   ): Promise<AssetDepreciationEntry[]> {
     return this.depreciationEntries.filter(
@@ -346,7 +346,7 @@ export class FinanceMockRepository extends IFinanceRepository {
   }
 
   async createDepreciationEntry(
-    tenantId: string,
+    tenant_id: string,
     entry: Partial<AssetDepreciationEntry>,
     tx?: Prisma.TransactionClient,
   ): Promise<AssetDepreciationEntry> {
@@ -359,14 +359,14 @@ export class FinanceMockRepository extends IFinanceRepository {
   }
 
   async listAssetEvents(
-    tenantId: string,
+    tenant_id: string,
     assetId?: string,
   ): Promise<AssetEvent[]> {
     return this.assetEvents.filter((e) => !assetId || e.assetId === assetId);
   }
 
   async createAssetEvent(
-    tenantId: string,
+    tenant_id: string,
     event: Partial<AssetEvent>,
     tx?: Prisma.TransactionClient,
   ): Promise<AssetEvent> {
@@ -376,12 +376,12 @@ export class FinanceMockRepository extends IFinanceRepository {
   }
 
   async getAssetAuditPack(
-    tenantId: string,
+    tenant_id: string,
     assetId: string,
   ): Promise<AssetAuditPack> {
     return {
       assetId,
-      capexRequest: this.capexRequests.find((c) =>
+      capexRequest: this.capexRequests.find((c: any) =>
         c.assetDescription.includes(assetId),
       ), // rough match
       depreciationEntries: this.depreciationEntries.filter(
@@ -395,12 +395,12 @@ export class FinanceMockRepository extends IFinanceRepository {
   }
 
   // Receivables
-  async listReceivables(tenantId: string): Promise<FinanceReceivableRow[]> {
+  async listReceivables(tenant_id: string): Promise<FinanceReceivableRow[]> {
     return this.receivables;
   }
 
   async createReceivable(
-    tenantId: string,
+    tenant_id: string,
     invoice: Partial<ReceivableInvoice>,
     tx?: Prisma.TransactionClient,
   ): Promise<ReceivableInvoice> {
@@ -420,13 +420,13 @@ export class FinanceMockRepository extends IFinanceRepository {
       dueDate: newInv.dueDate,
       status: "DRAFT",
       agingDays: 0,
-      updatedAt: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     });
     return newInv;
   }
 
   async updateReceivable(
-    tenantId: string,
+    tenant_id: string,
     id: string,
     updates: Partial<ReceivableInvoice>,
     tx?: Prisma.TransactionClient,
@@ -441,12 +441,12 @@ export class FinanceMockRepository extends IFinanceRepository {
   }
 
   // Payables
-  async listPayables(tenantId: string): Promise<FinancePayableRow[]> {
+  async listPayables(tenant_id: string): Promise<FinancePayableRow[]> {
     return this.payables;
   }
 
   async createPayable(
-    tenantId: string,
+    tenant_id: string,
     bill: Partial<PayableBill>,
     tx?: Prisma.TransactionClient,
   ): Promise<PayableBill> {
@@ -465,13 +465,13 @@ export class FinanceMockRepository extends IFinanceRepository {
       currency: "USD",
       dueDate: newBill.dueDate,
       status: "RECEIVED",
-      updatedAt: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     });
     return newBill;
   }
 
   async updatePayable(
-    tenantId: string,
+    tenant_id: string,
     id: string,
     updates: Partial<PayableBill>,
     tx?: Prisma.TransactionClient,
@@ -483,7 +483,7 @@ export class FinanceMockRepository extends IFinanceRepository {
   }
 
   // Payments
-  async listPayments(tenantId: string): Promise<FinancePaymentRow[]> {
+  async listPayments(tenant_id: string): Promise<FinancePaymentRow[]> {
     return this.payments.map((p) => ({
       id: p.id,
       beneficiary: p.beneficiary,
@@ -496,7 +496,7 @@ export class FinanceMockRepository extends IFinanceRepository {
   }
 
   async createPaymentRequest(
-    tenantId: string,
+    tenant_id: string,
     request: Partial<PaymentRequest>,
     tx?: Prisma.TransactionClient,
   ): Promise<PaymentRequest> {
@@ -510,7 +510,7 @@ export class FinanceMockRepository extends IFinanceRepository {
   }
 
   async updatePaymentStatus(
-    tenantId: string,
+    tenant_id: string,
     id: string,
     status: string,
     tx?: Prisma.TransactionClient,
@@ -520,12 +520,12 @@ export class FinanceMockRepository extends IFinanceRepository {
   }
 
   // Documents
-  async listDocuments(tenantId: string): Promise<FinanceDocumentRow[]> {
+  async listDocuments(tenant_id: string): Promise<FinanceDocumentRow[]> {
     return this.documents;
   }
 
   async createDocument(
-    tenantId: string,
+    tenant_id: string,
     doc: Partial<FinanceDocumentRow>,
     tx?: Prisma.TransactionClient,
   ): Promise<FinanceDocumentRow> {
@@ -535,33 +535,33 @@ export class FinanceMockRepository extends IFinanceRepository {
   }
 
   // Policies & Periods
-  async listPolicies(tenantId: string): Promise<FinancePolicyRow[]> {
+  async listPolicies(tenant_id: string): Promise<FinancePolicyRow[]> {
     return this.policies;
   }
 
-  async listPeriods(tenantId: string): Promise<AccountingPeriod[]> {
+  async listPeriods(tenant_id: string): Promise<AccountingPeriod[]> {
     return this.periods;
   }
 
   // Insights & Alerts
-  async getInsights(tenantId: string): Promise<FinanceInsight[]> {
+  async getInsights(tenant_id: string): Promise<FinanceInsight[]> {
     return [];
   }
 
-  async getAlerts(tenantId: string): Promise<FinanceAlert[]> {
+  async getAlerts(tenant_id: string): Promise<FinanceAlert[]> {
     return this.alerts;
   }
 
   // Payroll
   async listPayrollEntries(
-    tenantId: string,
+    tenant_id: string,
     period?: string,
   ): Promise<PayrollEntry[]> {
     return this.payroll;
   }
 
   async createPayrollEntry(
-    tenantId: string,
+    tenant_id: string,
     entry: Partial<PayrollEntry>,
     tx?: Prisma.TransactionClient,
   ): Promise<PayrollEntry> {
@@ -571,7 +571,7 @@ export class FinanceMockRepository extends IFinanceRepository {
   }
 
   async updatePayrollEntry(
-    tenantId: string,
+    tenant_id: string,
     id: string,
     updates: Partial<PayrollEntry>,
     tx?: Prisma.TransactionClient,
@@ -583,16 +583,16 @@ export class FinanceMockRepository extends IFinanceRepository {
   }
 
   async estimatePayroll(
-    tenantId: string,
+    tenant_id: string,
     period: string,
   ): Promise<PayrollEstimate[]> {
     const estimatesMap = new Map<string, PayrollEstimate>();
 
     for (const emp of this.employees) {
-      if (emp.tenantId !== tenantId || emp.status !== "active") continue;
+      if (emp.tenant_id !== tenant_id || emp.status !== "active") continue;
       
       const deptName = emp.department?.name || "Unassigned";
-      const compensation = this.compensations.find(c => c.employeeId === emp.id);
+      const compensation = this.compensations.find((c: any) => c.employee_id === emp.id);
       
       let gross = new Prisma.Decimal(0);
       if (compensation) {
@@ -638,25 +638,25 @@ export class FinanceMockRepository extends IFinanceRepository {
   }
 
   async executePayrollRun(
-    tenantId: string,
+    tenant_id: string,
     period: string,
-    userId: string,
+    user_id: string,
     tx?: Prisma.TransactionClient,
   ): Promise<void> {
-    const estimates = await this.estimatePayroll(tenantId, period);
+    const estimates = await this.estimatePayroll(tenant_id, period);
     if (estimates.length === 0) return;
 
     estimates.forEach(est => {
       this.payroll.push({
         id: `pay-${Date.now()}-${Math.random()}`,
-        tenantId,
-        employeeId: "various",
+        tenant_id,
+        employee_id: "various",
         period,
         baseSalary: est.totalGross,
         netSalary: est.totalNet,
         status: "PAID",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       });
     });
   }

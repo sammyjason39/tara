@@ -8,8 +8,8 @@ export class CashFlowProjectionWorker {
    * Aggregates cash data and generates a forecast.
    * Runs as a scheduled job in production.
    */
-  async generateProjection(tenantId: string, companyId: string) {
-    this.logger.log(`Generating Cash Flow Projection for Tenant ${tenantId}`);
+  async generateProjection(tenant_id: string, company_id: string) {
+    this.logger.log(`Generating Cash Flow Projection for Tenant ${tenant_id}`);
 
     // Logic: 
     // 1. Fetch current bank balances from Ledger
@@ -18,8 +18,8 @@ export class CashFlowProjectionWorker {
     // 4. Calculate Net Cash Flow
 
     const mockProjection = {
-      tenantId,
-      companyId,
+      tenant_id,
+      company_id,
       baseCurrency: 'USD',
       dailyForecast: [
         { date: '2026-03-17', opening: 50000, inflow: 5000, outflow: 2000, closing: 53000 },

@@ -6,10 +6,10 @@ export class CreateFiscalYearDto {
   year: number;
 
   @IsDateString()
-  startDate: string;
+  start_date: string;
 
   @IsDateString()
-  endDate: string;
+  end_date: string;
 }
 
 export class UpdateFiscalPeriodDto {

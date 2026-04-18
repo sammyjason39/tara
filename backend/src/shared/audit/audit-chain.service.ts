@@ -17,21 +17,21 @@ export class AuditChainService {
    * Detects and repairs broken audit chains without silent overwrites.
    */
   async repairChain(
-    tenantId: string, 
-    userId: string, 
+    tenant_id: string, 
+    user_id: string, 
     approval: { approvedBy: string; reason: string },
     fromTimestamp?: Date
   ) {
-    this.logger.log(`[AuditChainService] Starting chain repair for tenant ${tenantId}. Requested by: ${userId}, Approved by: ${approval.approvedBy}`);
+    this.logger.log(`[AuditChainService] Starting chain repair for tenant ${tenant_id}. Requested by: ${user_id}, Approved by: ${approval.approvedBy}`);
 
     // Step 3: Repair Authorization Hardened Log
     await this.audit.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: 'SYSTEM',
       action: 'AUDIT_CHAIN_REPAIR_REQUEST',
-      entityType: 'AUDIT_CHAIN',
-      entityId: tenantId,
+      entity_type: 'AUDIT_CHAIN',
+      entity_id: tenant_id,
       severity: 'WARN',
       metadata: { 
         ...approval,
@@ -41,12 +41,12 @@ export class AuditChainService {
 
     this.audit.incrementRepairCount();
 
-    const logs = await this.prisma.auditLog.findMany({
+    const logs = await this.prisma.audit_logs.findMany({
       where: {
-        tenantId,
-        createdAt: fromTimestamp ? { gte: fromTimestamp } : undefined,
+        tenant_id: tenant_id,
+        created_at: fromTimestamp ? { gte: fromTimestamp } : undefined,
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { created_at: 'asc' },
     });
 
     let corruptionDetected = false;
@@ -55,15 +55,15 @@ export class AuditChainService {
 
     // If starting from a point, find the hash of the entry just before it
     if (fromTimestamp) {
-      const prevLog = await this.prisma.auditLog.findFirst({
+      const prevLog = await this.prisma.audit_logs.findFirst({
         where: {
-          tenantId,
-          createdAt: { lt: fromTimestamp },
+          tenant_id: tenant_id,
+          created_at: { lt: fromTimestamp },
         },
-        orderBy: { createdAt: 'desc' },
-        select: { hashChain: true },
+        orderBy: { created_at: 'desc' },
+        select: { hash_chain: true },
       });
-      lastHash = prevLog?.hashChain || 'GENESIS';
+      lastHash = prevLog?.hash_chain || 'GENESIS';
     }
 
     const affectedRange = {
@@ -75,54 +75,54 @@ export class AuditChainService {
       const expectedPrevHash = lastHash;
       
       // Check for corruption
-      if (log.previousHash !== expectedPrevHash) {
+      if (log.previous_hash !== expectedPrevHash) {
         corruptionDetected = true;
         
         // Recompute the correct hash for this entry
         const logData = JSON.stringify({
-          tenantId: log.tenantId,
-          userId: log.userId,
+          tenant_id: log.tenant_id,
+          user_id: log.user_id,
           action: log.action,
-          entityId: log.entityId,
-          correlationId: log.correlationId,
+          entity_id: log.entity_id,
+          correlation_id: log.correlation_id,
           previousHash: expectedPrevHash,
         });
         const recomputedHash = createHash('sha256').update(logData).digest('hex');
 
         // Update with safe repair tracking
-        await this.prisma.auditLog.update({
+        await this.prisma.audit_logs.update({
           where: { id: log.id },
           data: {
             status: 'REPAIRED',
-            originalHash: log.hashChain,
-            recomputedHash: recomputedHash,
-            previousHash: expectedPrevHash,
-            hashChain: recomputedHash,
+            original_hash: log.hash_chain,
+            recomputed_hash: recomputedHash,
+            previous_hash: expectedPrevHash,
+            hash_chain: recomputedHash,
           },
         });
 
-        this.logger.warn(`[AuditChainService] Repaired log ${log.id}. Found mismatch: ${log.previousHash} !== ${expectedPrevHash}`);
+        this.logger.warn(`[AuditChainService] Repaired log ${log.id}. Found mismatch: ${log.previous_hash} !== ${expectedPrevHash}`);
         repairedCount++;
         lastHash = recomputedHash;
       } else {
-        lastHash = log.hashChain || 'CORRUPT_NULL';
+        lastHash = log.hash_chain || 'CORRUPT_NULL';
       }
     }
 
     // Requirement: Audit event for repair
     await this.audit.log({
-      tenantId,
-      userId,
+      tenant_id,
+      user_id,
       module: 'SYSTEM',
       action: 'AUDIT_CHAIN_REPAIR',
-      entityType: 'AUDIT_CHAIN',
-      entityId: tenantId,
+      entity_type: 'AUDIT_CHAIN',
+      entity_id: tenant_id,
       severity: 'CRITICAL', // Fix 2: Mandatory Critical Severity
       metadata: {
         affectedRange,
         repairedCount,
         corruptionDetected,
-        triggeredBy: userId,
+        triggeredBy: user_id,
       },
     });
 

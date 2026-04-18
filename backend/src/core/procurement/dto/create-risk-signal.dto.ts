@@ -13,7 +13,7 @@ export class CreateRiskSignalDto {
 
   @IsString()
   @IsNotEmpty()
-  entityId: string;
+  entity_id: string;
 
   @IsString()
   @IsOptional()

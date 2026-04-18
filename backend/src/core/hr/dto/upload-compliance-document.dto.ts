@@ -2,7 +2,7 @@ import { IsString, IsOptional, IsDateString, IsUrl, IsObject } from "class-valid
 
 export class UploadComplianceDocumentDto {
   @IsString()
-  employeeId: string;
+  employee_id: string;
 
   @IsString()
   documentType: string;

@@ -32,7 +32,7 @@ export class IdempotencyInterceptor implements NestInterceptor {
     }
 
     // 2. Read x-idempotency-key from headers
-    const idempotencyKey = headers['x-idempotency-key'] as string;
+    const idempotency_key = headers['x-idempotency-key'] as string;
     
     // PHASE P1: ENFORCE MANDATORY IDEMPOTENCY FOR CRITICAL HR ENDPOINTS
     const isCriticalHREndpoint = 
@@ -41,16 +41,16 @@ export class IdempotencyInterceptor implements NestInterceptor {
       url.includes('/api/hr/leave-requests') && method === 'POST' ||
       url.includes('/api/hr/employees') && method === 'POST';
 
-    if (!idempotencyKey) {
+    if (!idempotency_key) {
       if (isCriticalHREndpoint) {
         throw new BadRequestException('x-idempotency-key is required for this critical HR operation.');
       }
       return next.handle();
     }
 
-    const tenantId = request.tenantContext?.tenantId;
-    if (!tenantId) {
-      // If tenantId is missing, we can't safely scope the idempotency key.
+    const tenant_id = request.tenantContext?.tenant_id;
+    if (!tenant_id) {
+      // If tenant_id is missing, we can't safely scope the idempotency key.
       // We skip and let TenantGuard handle the missing context.
       return next.handle();
     }
@@ -62,11 +62,11 @@ export class IdempotencyInterceptor implements NestInterceptor {
       .digest('hex');
 
     // 4. Check if key exists
-    const existingEntry = await this.prisma.sysIdempotencyKey.findUnique({
+    const existingEntry = await this.prisma.sys_idempotency_keys.findUnique({
       where: {
-        tenantId_key: {
-          tenantId,
-          key: idempotencyKey,
+        tenant_id_key: {
+          tenant_id: tenant_id,
+          key: idempotency_key,
         },
       },
     });
@@ -75,8 +75,8 @@ export class IdempotencyInterceptor implements NestInterceptor {
       const now = new Date();
       // PHASE 2: Check for 5-minute guard period after expiry
       const isExpiredWithGrace = 
-        existingEntry.expiresAt && 
-        now.getTime() > existingEntry.expiresAt.getTime() + (5 * 60 * 1000);
+        existingEntry.expires_at && 
+        now.getTime() > existingEntry.expires_at.getTime() + (5 * 60 * 1000);
 
       if (!isExpiredWithGrace) {
         // Return stored response (de-facto active)
@@ -84,31 +84,32 @@ export class IdempotencyInterceptor implements NestInterceptor {
           throw new ConflictException('Request with this idempotency key is already in progress.');
         }
         
-        if (existingEntry.requestHash && existingEntry.requestHash !== requestHash) {
+        if (existingEntry.request_hash && existingEntry.request_hash !== requestHash) {
            throw new ConflictException('Idempotency key reuse detected with different request payload.');
         }
 
-        return of(existingEntry.responseSnapshot);
+        return of(existingEntry.response_snapshot);
       }
       
       // If de-facto expired (beyond 5m grace), we allow the record to be overwritten (by deletion first for unique constraint)
-      await this.prisma.sysIdempotencyKey.delete({
+      await this.prisma.sys_idempotency_keys.delete({
         where: { id: existingEntry.id },
       });
     }
 
     // 5. Store PENDING entry
-    await this.prisma.sysIdempotencyKey.create({
+    await this.prisma.sys_idempotency_keys.create({
       data: {
+          updated_at: new Date(),
         id: uuidv4(),
         
-        tenantId,
-        key: idempotencyKey,
+        tenant_id: tenant_id,
+        key: idempotency_key,
         endpoint: url,
-        requestHash,
+        request_hash: requestHash,
         status: 'PENDING',
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h expiry
-        responseSnapshot: {}, 
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h expiry
+        response_snapshot: {}, 
       },
     });
 
@@ -116,26 +117,26 @@ export class IdempotencyInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap({
         next: async (response) => {
-          await this.prisma.sysIdempotencyKey.update({
+          await this.prisma.sys_idempotency_keys.update({
             where: {
-              tenantId_key: {
-                tenantId,
-                key: idempotencyKey,
+              tenant_id_key: {
+                tenant_id: tenant_id,
+                key: idempotency_key,
               },
             },
             data: {
               status: 'COMPLETED',
-              responseSnapshot: response || { success: true },
+              response_snapshot: response || { success: true },
             },
           });
         },
         error: async (err) => {
           // On failure, remove the key so the user can actually retry the operation
-          await this.prisma.sysIdempotencyKey.delete({
+          await this.prisma.sys_idempotency_keys.delete({
             where: {
-              tenantId_key: {
-                tenantId,
-                key: idempotencyKey,
+              tenant_id_key: {
+                tenant_id: tenant_id,
+                key: idempotency_key,
               },
             },
           }).catch(() => {}); // Ignore delete errors

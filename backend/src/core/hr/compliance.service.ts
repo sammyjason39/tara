@@ -14,20 +14,20 @@ export class ComplianceService {
     private readonly ocrService: OcrService,
   ) {}
 
-  async uploadDocument(tenantId: string, dto: UploadComplianceDocumentDto, userId: string) {
-    this.logger.log(`Uploading compliance document for employee ${dto.employeeId}`);
+  async uploadDocument(tenant_id: string, dto: UploadComplianceDocumentDto, user_id: string) {
+    this.logger.log(`Uploading compliance document for employee ${dto.employee_id}`);
 
-    const doc = await this.repository.uploadComplianceDocument(tenantId, dto);
+    const doc = await this.repository.uploadComplianceDocument(tenant_id, dto);
 
     await this.eventBus.publish({
-      eventType: "compliance.document_uploaded",
-      tenantId,
-      entityId: doc.id,
-      entityType: "COMPLIANCE_DOCUMENT",
-      sourceModule: "HR",
-      userId,
+      event_type: "compliance.document_uploaded",
+      tenant_id,
+      entity_id: doc.id,
+      entity_type: "COMPLIANCE_DOCUMENT",
+      source_module: "HR",
+      user_id,
       payload: {
-        employeeId: doc.employeeId,
+        employee_id: doc.employee_id,
         documentType: doc.documentType,
       },
     });
@@ -35,13 +35,13 @@ export class ComplianceService {
     return doc;
   }
 
-  async uploadAndClassify(tenantId: string, employeeId: string, fileData: any) {
-    this.logger.log(`Uploading and auto-classifying document for employee ${employeeId}`);
+  async uploadAndClassify(tenant_id: string, employee_id: string, fileData: any) {
+    this.logger.log(`Uploading and auto-classifying document for employee ${employee_id}`);
 
     const ocrResult = await this.ocrService.extractData(fileData.fileUrl, fileData.documentType || "UNKNOWN");
     
-    const doc = await this.repository.uploadComplianceDocument(tenantId, {
-      employeeId,
+    const doc = await this.repository.uploadComplianceDocument(tenant_id, {
+      employee_id,
       documentType: fileData.documentType || "OTHER",
       documentNumber: ocrResult.fields.document_number || `SIM-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
       fileUrl: fileData.fileUrl,
@@ -54,11 +54,11 @@ export class ComplianceService {
     });
 
     // Cache in employee metadata
-    const employee = await this.repository.getEmployeeById(tenantId, employeeId);
+    const employee = await this.repository.getEmployeeById(tenant_id, employee_id);
     if (employee) {
-      const currentMetadata = (employee as any).documentsMetadata || {};
-      await this.repository.updateEmployee(tenantId, employeeId, {
-        documentsMetadata: {
+      const currentMetadata = (employee as any).documents_metadata || {};
+      await this.repository.updateEmployee(tenant_id, employee_id, {
+        documents_metadata: {
           ...currentMetadata,
           [doc.documentType]: {
             lastVerifiedAt: new Date(),
@@ -72,47 +72,47 @@ export class ComplianceService {
     return doc;
   }
 
-  async verifyDocument(tenantId: string, id: string, verifiedBy: string, status: string) {
+  async verifyDocument(tenant_id: string, id: string, verified_by: string, status: string) {
     this.logger.log(`Verifying compliance document ${id} with status ${status}`);
 
-    const doc = await this.repository.verifyDocument(tenantId, id, verifiedBy, status);
+    const doc = await this.repository.verifyDocument(tenant_id, id, verified_by, status);
 
     await this.eventBus.publish({
-      eventType: "compliance.document_verified",
-      tenantId,
-      entityId: doc.id,
-      entityType: "COMPLIANCE_DOCUMENT",
-      sourceModule: "HR",
-      userId: verifiedBy,
+      event_type: "compliance.document_verified",
+      tenant_id,
+      entity_id: doc.id,
+      entity_type: "COMPLIANCE_DOCUMENT",
+      source_module: "HR",
+      user_id: verified_by,
       payload: {
-        employeeId: doc.employeeId,
-        status: doc.verificationStatus,
+        employee_id: doc.employee_id,
+        status: doc.verification_status,
       },
     });
 
     return doc;
   }
 
-  async checkExpirations(tenantId: string) {
-    const documents = await this.repository.getGlobalComplianceStatus(tenantId);
+  async checkExpirations(tenant_id: string) {
+    const documents = await this.repository.getGlobalComplianceStatus(tenant_id);
     const now = new Date();
     const expiredDocs = documents.filter(
-      (d: any) => d.expiryDate && new Date(d.expiryDate) < now && d.verificationStatus !== "EXPIRED",
+      (d: any) => d.expiryDate && new Date(d.expiryDate) < now && d.verification_status !== "EXPIRED",
     );
 
     for (const doc of expiredDocs) {
-      this.logger.warn(`Document ${doc.id} for employee ${doc.employeeId} has expired`);
-      await this.repository.verifyDocument(tenantId, doc.id, "SYSTEM", "EXPIRED");
+      this.logger.warn(`Document ${doc.id} for employee ${doc.employee_id} has expired`);
+      await this.repository.verifyDocument(tenant_id, doc.id, "SYSTEM", "EXPIRED");
       
       await this.eventBus.publish({
-        eventType: "compliance.document_expired",
-        tenantId,
-        entityId: doc.id,
-        entityType: "COMPLIANCE_DOCUMENT",
-        sourceModule: "HR",
-        userId: "SYSTEM",
+        event_type: "compliance.document_expired",
+        tenant_id,
+        entity_id: doc.id,
+        entity_type: "COMPLIANCE_DOCUMENT",
+        source_module: "HR",
+        user_id: "SYSTEM",
         payload: {
-          employeeId: doc.employeeId,
+          employee_id: doc.employee_id,
           documentType: doc.documentType,
         },
       });
@@ -121,10 +121,10 @@ export class ComplianceService {
     return expiredDocs.length;
   }
 
-  async auditCompliance(tenantId: string) {
-    this.logger.log(`Running global compliance audit for tenant ${tenantId}`);
+  async auditCompliance(tenant_id: string) {
+    this.logger.log(`Running global compliance audit for tenant ${tenant_id}`);
 
-    const allDocs = await this.repository.getGlobalComplianceStatus(tenantId);
+    const allDocs = await this.repository.getGlobalComplianceStatus(tenant_id);
     const now = new Date();
     
     const auditResults = {
@@ -136,7 +136,7 @@ export class ComplianceService {
     };
 
     for (const doc of allDocs) {
-      if (doc.verificationStatus === 'PENDING') {
+      if (doc.verification_status === 'PENDING') {
         auditResults.pendingVerification++;
       }
 
@@ -148,7 +148,7 @@ export class ComplianceService {
           auditResults.expired++;
           (auditResults.criticalAlerts as any[]).push({
             id: doc.id,
-            employeeId: doc.employeeId,
+            employee_id: doc.employee_id,
             type: doc.documentType,
             issue: 'EXPIRED',
           });
@@ -161,28 +161,28 @@ export class ComplianceService {
     return auditResults;
   }
 
-  async triggerOcr(tenantId: string, documentId: string, userId: string) {
+  async triggerOcr(tenant_id: string, documentId: string, user_id: string) {
     this.logger.log(`Triggering OCR for document ${documentId}`);
 
-    const docs = await this.repository.getGlobalComplianceStatus(tenantId);
+    const docs = await this.repository.getGlobalComplianceStatus(tenant_id);
     const doc = docs.find((d: any) => d.id === documentId);
     if (!doc) throw new Error("Document not found");
 
     const ocrResult = await this.ocrService.extractData(doc.fileUrl, doc.documentType);
 
     // Update document with OCR results in metadata
-    const updated = await this.repository.verifyDocument(tenantId, documentId, "OCR_ENGINE", doc.verificationStatus, {
+    const updated = await this.repository.verifyDocument(tenant_id, documentId, "OCR_ENGINE", doc.verification_status, {
       ...((doc as any).metadata || {}),
       ocr_extraction: ocrResult,
     });
 
     await this.eventBus.publish({
-      eventType: "compliance.ocr_completed",
-      tenantId,
-      entityId: doc.id,
-      entityType: "COMPLIANCE_DOCUMENT",
-      sourceModule: "HR",
-      userId,
+      event_type: "compliance.ocr_completed",
+      tenant_id,
+      entity_id: doc.id,
+      entity_type: "COMPLIANCE_DOCUMENT",
+      source_module: "HR",
+      user_id,
       payload: {
         confidence: ocrResult.confidence,
         extractedFields: ocrResult.fields,
@@ -190,11 +190,11 @@ export class ComplianceService {
     });
 
     // Cache results in employee document metadata
-    const employee = await this.repository.getEmployeeById(tenantId, doc.employeeId);
+    const employee = await this.repository.getEmployeeById(tenant_id, doc.employee_id);
     if (employee) {
-      const currentMetadata = (employee as any).documentsMetadata || {};
-      await this.repository.updateEmployee(tenantId, doc.employeeId, {
-        documentsMetadata: {
+      const currentMetadata = (employee as any).documents_metadata || {};
+      await this.repository.updateEmployee(tenant_id, doc.employee_id, {
+        documents_metadata: {
           ...currentMetadata,
           [doc.documentType]: {
             lastOcrAt: new Date(),

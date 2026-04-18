@@ -1,11 +1,11 @@
 export class Department {
   id: string;
-  tenantId: string;
+  tenant_id: string;
   name: string;
   code: string;
   headId?: string;
   description?: string;
   status: "active" | "inactive";
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
 }
