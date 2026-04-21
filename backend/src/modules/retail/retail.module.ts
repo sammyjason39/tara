@@ -16,6 +16,8 @@ import { RetailPublicAuthService } from "./retail-public-auth.service";
 import { RetailPublicCustomerService } from "./retail-public-customer.service";
 import { RetailEventsService } from "./retail-events.service";
 import { EcommerceHubService } from "./ecommerce-hub.service";
+import { RetailPrintService } from "./retail-print.service";
+import { RetailExportService } from "./retail-export.service";
 import { IRetailRepository } from "./repositories/retail.repository.interface";
 import { RetailMockRepository } from "./repositories/retail.mock.repository";
 import { RetailDbRepository } from "./repositories/retail.db.repository";
@@ -30,12 +32,16 @@ import { AuditModule } from "../../shared/audit/audit.module";
 import { RetailSeeder } from "./seeders/retail.seeder";
 
 import { PersistenceModule } from "../../persistence/persistence.module";
+import { FinanceModule } from "../../core/finance/finance.module";
+import { PaymentModule } from "../../core/payment/payment.module";
 
 @Module({
   imports: [
     PersistenceModule,
     AdminModule,
     forwardRef(() => InventoryModule),
+    FinanceModule,
+    PaymentModule,
     EventsModule,
     AuditModule,
   ],
@@ -59,6 +65,8 @@ import { PersistenceModule } from "../../persistence/persistence.module";
     CustomerAuthGuard,
     EcommerceConnectorGuard,
     EcommerceHubService,
+    RetailPrintService,
+    RetailExportService,
     RetailSeeder,
     {
       provide: IRetailRepository,
@@ -73,6 +81,6 @@ import { PersistenceModule } from "../../persistence/persistence.module";
       useClass: EcommerceHubDbRepository,
     },
   ],
-  exports: [RetailService, RetailInfrastructureService, RetailSeeder],
+  exports: [RetailService, RetailInfrastructureService, RetailPrintService, RetailSeeder],
 })
 export class RetailModule {}

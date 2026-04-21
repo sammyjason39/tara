@@ -48,7 +48,7 @@ export default function SalesOrderDesk() {
       <PageHeader
         title="Sales Orders"
         subtitle="Closed-won opportunities converted to orders with finance and inventory handoff status."
-        primaryAction={<Button variant="outline">Create from Opportunity</Button>}
+        primaryAction={<Button disabled title="Not available yet" variant="outline">Create from Opportunity</Button>}
         secondaryActions={
           <Input
             placeholder="Search orders"

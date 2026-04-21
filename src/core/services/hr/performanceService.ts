@@ -6,8 +6,8 @@ import { workflowService } from "./workflowService";
 export const performanceService = {
   async getCycleOverview(tenantId: string, actor: SessionContext) {
     const [cycles, reviews] = await Promise.all([
-      apiRequest<PerformanceCycle[]>("/hr/performance/cycles", "GET", actor),
-      apiRequest<PerformanceReview[]>("/hr/performance/reviews", "GET", actor),
+      apiRequest<PerformanceCycle[]>("/v1/hr/performance/cycles", "GET", actor),
+      apiRequest<PerformanceReview[]>("/v1/hr/performance/reviews", "GET", actor),
     ]);
 
     return {
@@ -76,3 +76,4 @@ export const performanceService = {
     });
   },
 };
+

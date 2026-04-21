@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -29,18 +30,12 @@ const quickActions = [
   {
     title: "Review approvals",
     description: "Purchase orders and expense claims",
+    route: "/core/workflow/inbox",
   },
   {
-    title: "Launch incident bridge",
-    description: "Create war-room and notify teams",
-  },
-  {
-    title: "Provision new tenant",
-    description: "Onboard a new organization",
-  },
-  {
-    title: "Publish system bulletin",
-    description: "Notify all users in-app",
+    title: "Onboard tenant",
+    description: "Initialize a new organization",
+    route: "/auth/onboarding",
   },
 ];
 
@@ -74,6 +69,7 @@ const IconMap: Record<string, any> = {
 
 export default function CoreDashboard() {
   const session = useSession();
+  const navigate = useNavigate();
   const [selectedDetail, setSelectedDetail] = useState<{
     title: string;
     detail: string;
@@ -117,12 +113,22 @@ export default function CoreDashboard() {
           title="Executive Overview"
           subtitle="Consolidated operations, risk, and platform health across all tenants."
           primaryAction={
-            <Button>
+            <Button onClick={() => navigate("/core/reports")}>
               Open reports
               <ArrowUpRight className="ml-2 h-4 w-4" />
             </Button>
           }
-          secondaryActions={<Button variant="outline">Export summary</Button>}
+          secondaryActions={
+            <Button variant="outline" onClick={() => {
+              const csv = "data:text/csv;charset=utf-8,KPI,Value,Trend\n" + kpis.map(k => `"${k.label}","${k.value}","${k.delta}"`).join("\n");
+              const link = document.createElement("a");
+              link.href = encodeURI(csv);
+              link.download = "dashboard_summary.csv";
+              link.click();
+            }}>
+              Export summary
+            </Button>
+          }
         />
       }
     >
@@ -229,10 +235,12 @@ export default function CoreDashboard() {
                     size="sm"
                     variant="outline"
                     onClick={() => {
-                      setStatusMessage(
-                        `Admin action [${action.title}] initiated.`,
-                      );
-                      setTimeout(() => setStatusMessage(null), 3000);
+                      if (action.route) {
+                        navigate(action.route);
+                      } else {
+                        setStatusMessage(`Action [${action.title}] pending implementation.`);
+                        setTimeout(() => setStatusMessage(null), 3000);
+                      }
                     }}
                   >
                     Open
@@ -372,7 +380,7 @@ export default function CoreDashboard() {
               <Button variant="outline" onClick={() => setSelectedDetail(null)}>
                 Close
               </Button>
-              <Button>View Full Report</Button>
+              <Button onClick={() => navigate("/core/reports")}>View Full Report</Button>
             </div>
           </div>
         </DialogContent>

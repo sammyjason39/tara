@@ -46,7 +46,7 @@ interface RequestWithTenant extends Request {
   tenantContext: TenantContext;
 }
 
-@Controller("inventory")
+@Controller("v1/inventory")
 @UseInterceptors(TenantInterceptor)
 @UseGuards(
   ModuleStateGuard,
@@ -436,24 +436,78 @@ export class InventoryController {
   @RequireInventoryRole(InventoryRole.SUPERVISOR)
   async initiateTransfer(
     @Req() request: RequestWithTenant,
-    @Body() dto: { product_id: string; fromLocationId: string; toLocationId: string; quantity: number; referenceId: string; referenceType: string },
+    @Body() dto: any,
     @Query("correlation_id") correlation_id?: string,
   ) {
     const { tenant_id: tenant_id, user_id } = request.tenantContext;
-    await this.inventoryService.initiateTransfer(tenant_id, dto, user_id || "system", correlation_id);
-    return { success: true, message: "Transfer initiated (In-Transit)" };
+    const result = await this.inventoryService.initiateTransfer(tenant_id, dto, user_id || "system", correlation_id);
+    return { success: true, message: "Transfer initiated (In-Transit)", ...result };
   }
 
   @Post("transfer/complete")
   @RequireInventoryRole(InventoryRole.SUPERVISOR)
   async completeTransfer(
     @Req() request: RequestWithTenant,
-    @Body() dto: { product_id: string; fromLocationId: string; toLocationId: string; quantity: number; referenceId: string; referenceType: string },
+    @Body() dto: any,
     @Query("correlation_id") correlation_id?: string,
   ) {
     const { tenant_id: tenant_id, user_id } = request.tenantContext;
-    await this.inventoryService.completeTransfer(tenant_id, dto, user_id || "system", correlation_id);
-    return { success: true, message: "Transfer completed (Received)" };
+    const data = await this.inventoryService.completeTransfer(tenant_id, dto, user_id || "system", correlation_id);
+    return { success: true, message: "Transfer completed (Received)", data };
+  }
+
+  // --- Stock Transfer Lifecycle (Grading to Production) ---
+
+  @Get("stock-transfers")
+  async getTransfers(@Req() request: RequestWithTenant) {
+    const { tenant_id: tenant_id } = request.tenantContext;
+    const data = await this.inventoryService.getAllTransfers(tenant_id);
+    return { success: true, tenant_id, count: data.length, data };
+  }
+
+  @Post("stock-transfers")
+  @RequireInventoryRole(InventoryRole.SUPERVISOR)
+  async createStockTransfer(
+    @Req() request: RequestWithTenant,
+    @Body() dto: any,
+  ) {
+    const { tenant_id: tenant_id, user_id } = request.tenantContext;
+    const data = await this.inventoryService.createTransfer(tenant_id, dto, user_id || "system");
+    return { success: true, tenant_id, message: "Stock transfer requested", data };
+  }
+
+  @Put("stock-transfers/:id/pick")
+  @RequireInventoryRole(InventoryRole.SUPERVISOR)
+  async pickStockTransfer(
+    @Req() request: RequestWithTenant,
+    @Param("id") id: string,
+  ) {
+    const { tenant_id: tenant_id, user_id } = request.tenantContext;
+    const data = await this.inventoryService.pickTransfer(tenant_id, id, user_id || "system");
+    return { success: true, tenant_id, message: "Transfer picked", data };
+  }
+
+  @Put("stock-transfers/:id/ship")
+  @RequireInventoryRole(InventoryRole.SUPERVISOR)
+  async shipStockTransfer(
+    @Req() request: RequestWithTenant,
+    @Param("id") id: string,
+    @Body() body: { tracking_number: string },
+  ) {
+    const { tenant_id: tenant_id, user_id } = request.tenantContext;
+    const data = await this.inventoryService.shipTransfer(tenant_id, id, body.tracking_number, user_id || "system");
+    return { success: true, tenant_id, message: "Transfer shipped (In-Transit)", data };
+  }
+
+  @Put("stock-transfers/:id/receive")
+  @RequireInventoryRole(InventoryRole.SUPERVISOR)
+  async receiveStockTransfer(
+    @Req() request: RequestWithTenant,
+    @Param("id") id: string,
+  ) {
+    const { tenant_id: tenant_id, user_id } = request.tenantContext;
+    const data = await this.inventoryService.receiveTransfer(tenant_id, id, user_id || "system");
+    return { success: true, tenant_id, message: "Transfer received", data };
   }
 
   @Post("snapshots")
@@ -710,6 +764,15 @@ export class InventoryController {
     };
   }
 
+  @Post("audit/initiate")
+  @RequireInventoryRole(InventoryRole.MANAGER)
+  async initiateAudit(
+    @Req() request: RequestWithTenant,
+    @Body() body: { locationCode: string; departmentCode?: string; scope: string },
+  ) {
+    return this.createAuditCycle(request, body);
+  }
+
   @Put("audit-cycles/:id")
   @RequireInventoryRole(InventoryRole.SUPERVISOR)
   async updateAuditCycle(
@@ -829,3 +892,4 @@ export class InventoryController {
     };
   }
 }
+

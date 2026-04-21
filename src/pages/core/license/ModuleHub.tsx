@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { useSession } from "@/core/security/session";
+import { apiRequest } from "@/core/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -27,16 +28,15 @@ export default function ModuleHub() {
   const fetchLicenses = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/license/my-modules", {
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
-      });
-      const data = await response.json();
+      const data = await apiRequest<any[]>("/license/my-modules", "GET", session);
       setLicenses(data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch licenses:", error);
+      toast({
+        title: "Connection Error",
+        description: error.message || "Failed to load module licenses.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -48,27 +48,19 @@ export default function ModuleHub() {
 
   const handleToggle = async (moduleCode: string, currentEnabled: boolean) => {
     try {
-      const response = await fetch(`/api/license/toggle/${moduleCode}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
-        body: JSON.stringify({ enabled: !currentEnabled }),
+      await apiRequest(`/license/toggle/${moduleCode}`, "POST", session, { 
+        enabled: !currentEnabled 
       });
-
-      if (response.ok) {
-        toast({
-          title: "Module Updated",
-          description: `${moduleCode} has been ${!currentEnabled ? "enabled" : "disabled"}.`,
-        });
-        fetchLicenses();
-      }
-    } catch (error) {
+      
       toast({
-        title: "Error",
-        description: "Failed to update module status.",
+        title: "Module Updated",
+        description: `${moduleCode} has been ${!currentEnabled ? "enabled" : "disabled"}.`,
+      });
+      fetchLicenses();
+    } catch (error: any) {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Could not change module status.",
         variant: "destructive",
       });
     }
@@ -90,75 +82,97 @@ export default function ModuleHub() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Module License Center"
-        subtitle="Manage your platform extensions, verify subscriptions, and toggle core features."
+        title="Modules Activation Center"
+        subtitle="Manage platform extensions and industry verticals. Core modules are always active."
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {loading ? (
-          Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-64 rounded-xl border bg-muted animate-pulse" />
-          ))
-        ) : licenses.length === 0 ? (
-          <div className="col-span-full py-12 text-center text-muted-foreground border-2 border-dashed rounded-xl">
-            <Layout className="h-12 w-12 mx-auto mb-4 opacity-20" />
-            <p>No module licenses found for this organization.</p>
-            <Button variant="link" className="mt-2">Visit Market Hub</Button>
+      {(() => {
+        const coreCodes = ["finance", "hr", "it", "procurement", "inventory", "sales", "marketing"];
+        const coreModules = licenses.filter(l => coreCodes.includes(l.moduleCode.toLowerCase()));
+        const industryModules = licenses.filter(l => !coreCodes.includes(l.moduleCode.toLowerCase()));
+
+        return (
+          <div className="space-y-12">
+            {/* Industry Verticals Segment */}
+            <section className="space-y-6">
+              <div className="flex items-center gap-2 border-b pb-2">
+                <Layout className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-bold">Industry Verticals</h2>
+                <Badge variant="secondary" className="ml-2">Dynamic Activation</Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {industryModules.map((license) => (
+                  <Card key={license.id} className="overflow-hidden border-2 hover:border-primary/50 transition-colors">
+                    <CardHeader className="pb-4">
+                      <div className="flex justify-between items-start">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <Layout className="h-5 w-5 text-primary" />
+                        </div>
+                        {getStatusBadge(license.status)}
+                      </div>
+                      <CardTitle className="mt-4">{license.module.name}</CardTitle>
+                      <CardDescription className="line-clamp-2">
+                        {license.module.description || "Industry-specific business flow."}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardFooter className="bg-muted/30 pt-4 flex justify-between items-center">
+                      <div className="flex items-center space-x-2">
+                        <Switch 
+                          id={`toggle-${license.moduleCode}`} 
+                          checked={license.isEnabled}
+                          onCheckedChange={() => handleToggle(license.moduleCode, license.isEnabled)}
+                        />
+                        <Label htmlFor={`toggle-${license.moduleCode}`} className="text-xs uppercase font-bold tracking-wider">
+                          {license.isEnabled ? "Enabled" : "Disabled"}
+                        </Label>
+                      </div>
+                    </CardFooter>
+                  </Card>
+                ))}
+                {industryModules.length === 0 && !loading && (
+                    <div className="col-span-full py-8 text-center text-muted-foreground border-2 border-dashed rounded-xl">
+                        <p>No industry modules available for activation.</p>
+                    </div>
+                )}
+              </div>
+            </section>
+
+            {/* Platform Core Segment */}
+            <section className="space-y-6 opacity-80">
+              <div className="flex items-center gap-2 border-b pb-2">
+                <Shield className="h-5 w-5 text-muted-foreground" />
+                <h2 className="text-xl font-bold text-muted-foreground">Platform Core</h2>
+                <Badge variant="outline" className="ml-2">Always Active</Badge>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {coreModules.map((license) => (
+                  <Card key={license.id} className="overflow-hidden border bg-muted/20 grayscale-[0.5]">
+                    <CardHeader className="pb-4">
+                      <div className="flex justify-between items-start">
+                        <div className="p-2 rounded-lg bg-muted">
+                          <Shield className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <Badge variant="outline" className="bg-background">Core System</Badge>
+                      </div>
+                      <CardTitle className="mt-4 text-muted-foreground">{license.module.name}</CardTitle>
+                      <CardDescription>
+                        Standard departmental service.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardFooter className="bg-muted/10 pt-4 flex justify-between items-center">
+                      <div className="flex items-center space-x-2">
+                        <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px] font-black uppercase">
+                          Permanent
+                        </Badge>
+                      </div>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            </section>
           </div>
-        ) : (
-          licenses.map((license) => (
-            <Card key={license.id} className="overflow-hidden border-2 hover:border-primary/50 transition-colors">
-              <CardHeader className="pb-4">
-                <div className="flex justify-between items-start">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <Layout className="h-5 w-5 text-primary" />
-                  </div>
-                  {getStatusBadge(license.status)}
-                </div>
-                <CardTitle className="mt-4">{license.module.name}</CardTitle>
-                <CardDescription className="line-clamp-2">
-                  {license.module.description || "Enterprise grade business module extension."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between text-sm py-2 border-y">
-                  <div className="flex items-center text-muted-foreground">
-                    <Clock className="h-4 w-4 mr-2" />
-                    Valid Through
-                  </div>
-                  <span className="font-medium">
-                    {license.endDate ? new Date(license.endDate).toLocaleDateString() : "Life-time"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center text-muted-foreground">
-                    <Shield className="h-4 w-4 mr-2" />
-                    Seats
-                  </div>
-                  <span className="font-medium">
-                    {license.usedSeats} / {license.maxSeats || "∞"}
-                  </span>
-                </div>
-              </CardContent>
-              <CardFooter className="bg-muted/30 pt-4 flex justify-between items-center">
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id={`toggle-${license.moduleCode}`} 
-                    checked={license.isEnabled}
-                    onCheckedChange={() => handleToggle(license.moduleCode, license.isEnabled)}
-                  />
-                  <Label htmlFor={`toggle-${license.moduleCode}`} className="text-xs uppercase font-bold tracking-wider">
-                    {license.isEnabled ? "Enabled" : "Disabled"}
-                  </Label>
-                </div>
-                <Button variant="ghost" size="sm">
-                  <Settings className="h-4 w-4 mr-1" /> Config
-                </Button>
-              </CardFooter>
-            </Card>
-          ))
-        )}
-      </div>
+        );
+      })()}
 
       <WorkspacePanel title="Subscription Intelligence" className="bg-slate-900 text-slate-50 border-none shadow-2xl">
         <div className="flex flex-col md:flex-row gap-8 items-center">

@@ -484,7 +484,7 @@ const InventoryVisibility = () => {
     [barcodeInput, inventory, toast],
   );
 
-  const submitOpname = useCallback(() => {
+  const submitOpname = useCallback(async () => {
     if (opnameEntries.length === 0) {
       toast({
         title: "Empty Audit",
@@ -494,28 +494,60 @@ const InventoryVisibility = () => {
       return;
     }
 
-    // Security & Audit Requirement: Submission triggers approval workflow
-    // Simulation: Generate report and notify higher role
-    const variances = opnameEntries.filter(
-      (e) => Number(e.counted) !== e.expected,
-    );
+    if (!tenantId || !session || !selectedStoreId) {
+      toast({
+        title: "Context Missing",
+        description: "Tenant or Store context not found.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    toast({
-      title: "Audit Report Generated",
-      description: `Opname submitted. ${variances.length} variance(s) pending approval (OWNER/ADMIN).`,
-    });
+    try {
+      setIsUpdating(true);
+      const adjustments = opnameEntries.map((e) => ({
+        sku: e.sku,
+        actualCount: Number(e.counted),
+      }));
 
-    // Log for auditing
-    console.log("AUDIT_LOG_OPNAME_SUBMIT", {
-      actor: session?.userId,
-      location: locationId,
-      timestamp: new Date().toISOString(),
-      entries: opnameEntries,
-    });
+      await retailService.submitOpname(
+        tenantId,
+        session,
+        selectedStoreId,
+        adjustments,
+      );
 
-    setOpnameActive(false);
-    setOpnameEntries([]);
-  }, [opnameEntries, toast, session?.userId, locationId]);
+      const variances = opnameEntries.filter(
+        (e) => Number(e.counted) !== e.expected,
+      );
+
+      toast({
+        title: "Audit Synchronized",
+        description: `Opname submitted. ${variances.length} variance(s) recorded in the ledger.`,
+      });
+
+      setOpnameActive(false);
+      setOpnameEntries([]);
+      fetchInventory(); // Refresh view
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Submission Failed",
+        description: "Failed to persist opname data to the edge.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [
+    opnameEntries,
+    toast,
+    tenantId,
+    session,
+    selectedStoreId,
+    fetchInventory,
+  ]);
+
 
   const handleCountChange = useCallback((index: number, value: string) => {
     setOpnameEntries((prev) =>

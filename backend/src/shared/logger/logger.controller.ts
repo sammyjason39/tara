@@ -2,7 +2,7 @@ import { Controller, Get, Delete, Query, Req } from '@nestjs/common';
 import { LoggerService } from './logger.service';
 import { LogQueryDto } from './dto/log-query.dto';
 
-@Controller('logs')
+@Controller('v1/logs')
 export class LoggerController {
   constructor(private readonly loggerService: LoggerService) {}
 

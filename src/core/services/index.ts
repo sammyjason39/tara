@@ -76,10 +76,10 @@ export const shiftService = {
 
 export const notificationService = {
   send: (tenantId: string, session: SessionContext, payload: any) =>
-    apiRequest("/notifications", "POST", session, payload),
+    apiRequest("/v1/notifications", "POST", session, payload),
 
   list: (tenantId: string, session: SessionContext) =>
-    apiRequest("/notifications", "GET", session),
+    apiRequest("/v1/notifications", "GET", session),
 };
 
 /* ============================================================================ */
@@ -88,5 +88,6 @@ export const notificationService = {
 
 export const auditService = {
   log: (tenantId: string, session: SessionContext, payload: any) =>
-    apiRequest("/audit/log", "POST", session, payload),
+    apiRequest("/v1/audit/log", "POST", session, payload),
 };
+

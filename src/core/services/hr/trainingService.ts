@@ -11,12 +11,12 @@ const ensureTenantAccess = (tenantId: string, actor: SessionContext) => {
 export const trainingService = {
   async listPrograms(tenantId: string, actor: SessionContext): Promise<TrainingProgram[]> {
     ensureTenantAccess(tenantId, actor);
-    return apiRequest<TrainingProgram[]>("/hr/training/programs", "GET", actor);
+    return apiRequest<TrainingProgram[]>("/v1/hr/training/programs", "GET", actor);
   },
 
   async listAssignments(tenantId: string, actor: SessionContext): Promise<TrainingAssignment[]> {
     ensureTenantAccess(tenantId, actor);
-    return apiRequest<TrainingAssignment[]>("/hr/training/assignments", "GET", actor);
+    return apiRequest<TrainingAssignment[]>("/v1/hr/training/assignments", "GET", actor);
   },
 
   async getComplianceStatus(tenantId: string, actor: SessionContext) {
@@ -37,7 +37,7 @@ export const trainingService = {
     payload: { employeeId: string; programId: string; status?: TrainingAssignment["status"] },
   ) {
     ensureTenantAccess(tenantId, actor);
-    return apiRequest<TrainingAssignment>("/hr/training/assignments", "POST", actor, payload);
+    return apiRequest<TrainingAssignment>("/v1/hr/training/assignments", "POST", actor, payload);
   },
 
   async createProgram(
@@ -46,7 +46,7 @@ export const trainingService = {
     payload: Omit<TrainingProgram, "id" | "tenantId" | "createdAt" | "updatedAt">,
   ) {
     ensureTenantAccess(tenantId, actor);
-    return apiRequest<TrainingProgram>("/hr/training/programs", "POST", actor, payload);
+    return apiRequest<TrainingProgram>("/v1/hr/training/programs", "POST", actor, payload);
   },
 
   async bulkAssign(
@@ -83,3 +83,4 @@ export const trainingService = {
     return apiRequest<TrainingAssignment>(`/hr/training/assignments/${assignmentId}`, "PATCH", actor, { status: "completed" });
   },
 };
+

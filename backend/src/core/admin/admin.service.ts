@@ -1,11 +1,14 @@
 import { Injectable } from "@nestjs/common";
-import { CreateAdminRequestDto } from "./dto/create-admin-request.dto";
+import { CreateAdminRequestDto, AdminRequestType } from "./dto/create-admin-request.dto";
 import { ToggleModuleDto } from "./dto/toggle-module.dto";
 import { IAdminRepository } from "./repositories/admin.repository.interface";
 import { AuditService } from "../../shared/audit/audit.service";
+import * as jwt from "jsonwebtoken";
 
 @Injectable()
 export class AdminService {
+  private readonly jwtSecret = process.env.JWT_SECRET || "dev-secret-key-do-not-use-in-prod";
+
   constructor(
     private readonly repository: IAdminRepository,
     private readonly auditService: AuditService,
@@ -78,5 +81,78 @@ export class AdminService {
 
   async getAuditEvents(tenant_id: string) {
     return this.repository.getAuditEvents(tenant_id);
+  }
+
+  async getStuckEvents(tenant_id: string) {
+    // Stale = PENDING and older than 5 mins, or FAILED
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    return this.repository.getStuckEvents(tenant_id, fiveMinutesAgo);
+  }
+
+  async retryEvent(tenant_id: string, event_id: string, actor_id?: string) {
+    const result = await this.repository.retryEvent(tenant_id, event_id);
+    if (actor_id) {
+      await this.auditService.log({
+        tenant_id,
+        user_id: actor_id,
+        module: "admin",
+        action: "RETRY_EVENT",
+        entity_type: "OUTBOX_EVENT",
+        entity_id: event_id,
+      });
+    }
+    return result;
+  }
+
+  async getSyncStatus(tenant_id: string) {
+    return this.repository.getSyncStatus(tenant_id);
+  }
+
+  async getIotDevices(tenant_id: string) {
+    return this.repository.getIotDevices(tenant_id);
+  }
+
+  async createInvitation(
+    tenant_id: string,
+    dto: { email: string; role: string; justification?: string },
+    actor_id: string,
+  ) {
+    // 1. Generate Link Token
+    const token = (jwt.sign as any)(
+      { 
+        email: dto.email, 
+        role: dto.role, 
+        tenant_id,
+        type: AdminRequestType.INVITATION
+      }, 
+      this.jwtSecret, 
+      { expiresIn: "7d" }
+    );
+
+    const magicLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/invite?token=${token}`;
+
+    // 2. Persist as an Admin Request for Audit/Tracking
+    const request = await this.repository.createRequest(tenant_id, {
+      type: AdminRequestType.INVITATION,
+      title: `Admin Invitation: ${dto.email}`,
+      detail: `Invited as ${dto.role}. Justification: ${dto.justification || "N/A"}. Link: ${magicLink}`,
+    });
+
+    // 3. Log Audit
+    await this.auditService.log({
+      tenant_id,
+      user_id: actor_id,
+      module: "admin",
+      action: "INVITE",
+      entity_type: "ADMIN_INVITATION",
+      entity_id: request.id,
+      metadata: { email: dto.email, role: dto.role, token_preview: token.substring(0, 10) + "..." },
+    });
+
+    return { 
+      success: true, 
+      magic_link: magicLink, 
+      request_id: request.id 
+    };
   }
 }

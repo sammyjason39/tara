@@ -160,7 +160,7 @@ export default function RetailManagement() {
                     "7-Day Velocity",
                     "Quarterly Consensus",
                   ].map((tab) => (
-                    <Button
+                    <Button disabled title="Not available yet"
                       key={tab}
                       variant="ghost"
                       size="sm"

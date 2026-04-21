@@ -4,7 +4,7 @@ import type { LeaveRequest, LeaveType } from "@/core/types/hr/leave";
 
 export const leaveService = {
   async listLeaveRequests(tenantId: string, actor: SessionContext): Promise<LeaveRequest[]> {
-    return apiRequest<LeaveRequest[]>("/hr/leave-requests", "GET", actor);
+    return apiRequest<LeaveRequest[]>("/v1/hr/leave-requests", "GET", actor);
   },
 
   async createLeaveRequest(tenantId: string, actor: SessionContext, payload: {
@@ -26,7 +26,7 @@ export const leaveService = {
       reason: payload.reason,
     };
 
-    return apiRequest<LeaveRequest>("/hr/leave-requests", "POST", actor, requestPayload);
+    return apiRequest<LeaveRequest>("/v1/hr/leave-requests", "POST", actor, requestPayload);
   },
 
   async approveLeaveRequest(tenantId: string, actor: SessionContext, requestId: string) {
@@ -42,3 +42,4 @@ export const leaveService = {
     });
   }
 };
+

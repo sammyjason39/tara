@@ -14,7 +14,7 @@ interface RequestWithTenant extends Request {
  * Explorer Controller
  * Platform-wide intelligence and search
  */
-@Controller("explorer")
+@Controller("v1/explorer")
 @UseInterceptors(TenantInterceptor)
 @UseGuards(TenantGuard)
 export class ExplorerController {

@@ -7,29 +7,29 @@ export interface WarehouseStats {
   lastAuditDate?: Date;
 }
 
-export interface IWarehouseRepository {
+export abstract class IWarehouseRepository {
   /**
    * Find all warehouse locations for a tenant
    */
-  findAll(tenant_id: string): Promise<Location[]>;
+  abstract findAll(tenant_id: string): Promise<Location[]>;
 
   /**
    * Find a specific warehouse by ID
    */
-  findById(tenant_id: string, id: string): Promise<Location | null>;
+  abstract findById(tenant_id: string, id: string): Promise<Location | null>;
 
   /**
    * Get financial and operational stats for a specific warehouse
    */
-  getInventoryStats(tenant_id: string, location_id: string): Promise<WarehouseStats>;
+  abstract getInventoryStats(tenant_id: string, location_id: string): Promise<WarehouseStats>;
 
   /**
    * Update compliance status (e.g., for audits or safety checks)
    */
-  updateComplianceStatus(tenant_id: string, id: string, status: string): Promise<Location>;
+  abstract updateComplianceStatus(tenant_id: string, id: string, status: string): Promise<Location>;
 
   /**
    * IoT Placeholder: Register a sensor gateway for this warehouse
    */
-  registerSensorGateway?(tenant_id: string, location_id: string, gatewayId: string): Promise<void>;
+  abstract registerSensorGateway?(tenant_id: string, location_id: string, gatewayId: string): Promise<void>;
 }

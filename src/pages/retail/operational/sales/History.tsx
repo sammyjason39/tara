@@ -285,7 +285,7 @@ export default function RetailHistory() {
                       <div className="p-2 rounded-lg bg-muted">
                         <PaymentIcon className="h-4 w-4 text-muted-foreground" />
                       </div>
-                      <Button variant="ghost" size="icon">
+                      <Button disabled title="Not available yet" variant="ghost" size="icon">
                         <Eye className="h-4 w-4" />
                       </Button>
                     </div>
@@ -371,7 +371,7 @@ export default function RetailHistory() {
               </div>
 
               {selectedTransaction.status === 'completed' && (
-                <Button variant="outline" className="w-full">
+                <Button disabled title="Not available yet" variant="outline" className="w-full">
                   <RotateCcw className="mr-2 h-4 w-4" />
                   Issue Refund
                 </Button>

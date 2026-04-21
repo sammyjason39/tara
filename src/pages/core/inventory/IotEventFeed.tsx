@@ -144,7 +144,7 @@ export default function IotEventFeed() {
                 <p className="text-xs text-muted-foreground uppercase">Status: High Signal Noise · 4.2°C</p>
              </div>
 
-             <Button variant="ghost" className="w-full text-xs text-muted-foreground hover:text-foreground">
+             <Button onClick={(e) => { e.preventDefault(); alert("Detailed View:\n\nMetadata: " + (typeof window !== "undefined" ? window.location.pathname : "N/A")); }} variant="ghost" className="w-full text-xs text-muted-foreground hover:text-foreground">
                 <Database className="h-3 w-3 mr-2" /> View Audit Records
              </Button>
           </div>

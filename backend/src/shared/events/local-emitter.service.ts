@@ -68,4 +68,18 @@ export class LocalEmitterService implements OnModuleInit {
   on(eventName: string, handler: (event: LocalEvent) => void) {
     this.emitter.on(eventName, handler);
   }
+
+  /**
+   * Visibility: Returns registration stats for the local event fabric.
+   * Useful for debugging "dead" event listeners.
+   */
+  getMetrics() {
+    const events = this.emitter.eventNames();
+    return {
+      active_events: events,
+      listener_count: events.reduce((acc, name) => acc + this.emitter.listenerCount(name), 0),
+      is_alive: true,
+      last_event_at: new Date().toISOString()
+    };
+  }
 }

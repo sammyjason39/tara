@@ -170,6 +170,14 @@ export class InventoryMockRepository implements IInventoryRepository {
   async updateStockInTransit(tenant_id: string, product_id: string, fromLocationId: string, toLocationId: string, quantity: number, type: 'increment' | 'decrement', tx?: any): Promise<void> { return; }
   async findProductByCode(tenant_id: string, code: string): Promise<any | null> { return null; }
 
+  async lookupByBarcode(tenant_id: string, barcode: string): Promise<any | null> {
+    return this.items.find(i => i.tenant_id === tenant_id && i.barcode === barcode) || null;
+  }
+
+  async quickAdjust(tenant_id: string, item_id: string, location_id: string, delta: number, user_id: string): Promise<any> {
+    return { id: 'lvl-' + Math.random(), on_hand: 100 + delta };
+  }
+
   async createAgenticEvent(tenant_id: string, data: CreateAgenticEventDto): Promise<AgenticEvent> {
     const event = { id: "evt-" + Math.random(), tenant_id, ...data, created_at: new Date() };
     this.agenticEvents.push(event);
@@ -177,4 +185,10 @@ export class InventoryMockRepository implements IInventoryRepository {
   }
 
   async requestProcurement(tenant_id: string, data: any): Promise<any> { return {}; }
+
+  // --- Stock Transfer Lifecycle ---
+  async getTransfers(tenant_id: string): Promise<any[]> { return []; }
+  async getTransferById(tenant_id: string, id: string): Promise<any | null> { return null; }
+  async createStockTransfer(tenant_id: string, data: any, tx?: any): Promise<any> { return { id: "mock-id", ...data }; }
+  async updateStockTransfer(tenant_id: string, id: string, data: any, tx?: any): Promise<any> { return { id, ...data }; }
 }

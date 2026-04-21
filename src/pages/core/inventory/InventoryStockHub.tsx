@@ -53,8 +53,9 @@ import { ExportButton } from "@/components/shared/ExportButton";
 import { ImportDialog } from "@/components/shared/ImportDialog";
 import { Upload } from "lucide-react";
 import { ItemCreationTab } from "@/components/shared/ItemCreationTab";
+import { TransferDesk } from "./TransferDesk";
 
-type ViewMode = "total" | "branch" | "ecommerce";
+type ViewMode = "total" | "branch" | "ecommerce" | "transfers";
 
 const ITEM_CATEGORIES = [
   "ITEM",
@@ -346,6 +347,7 @@ export default function InventoryStockHub() {
                 <TabsTrigger value="total">Total</TabsTrigger>
                 <TabsTrigger value="branch">Branch</TabsTrigger>
                 <TabsTrigger value="ecommerce">Ecommerce</TabsTrigger>
+                <TabsTrigger value="transfers">Manage Transfers</TabsTrigger>
               </TabsList>
             </Tabs>
             <Input
@@ -375,110 +377,114 @@ export default function InventoryStockHub() {
         onClear={clearStatus}
       />
 
-      <WorkspacePanel
-        title="Location + Department Inventory"
-        description="Drill-down stock records across hierarchy layers."
-      >
-        <div className="flex items-center justify-between mb-4 px-1">
-          <FilterBar searchValue={search} onSearchChange={setSearch} />
-          {selectedIds.length > 0 && (
-            <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
-              <span className="text-sm font-medium text-primary">
-                {selectedIds.length} selected
-              </span>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    Batch Actions <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    className="gap-2"
-                    onClick={() => setIsBatchIntakeOpen(true)}
-                  >
-                    <PackagePlus className="h-4 w-4" /> Batch Intake
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="gap-2"
-                    onClick={() => setIsBatchTransferOpen(true)}
-                  >
-                    <ArrowRightLeft className="h-4 w-4" /> Batch Transfer
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="gap-2 text-destructive"
-                    onClick={handleBatchDelete}
-                  >
-                    <Trash2 className="h-4 w-4" /> Delete Selected
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
-        </div>
-        <DataTableShell total={filteredBalances.length} page={1} pageSize={10}>
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="p-3 text-left w-10">
-                  <Checkbox
-                    checked={
-                      selectedIds.length === filteredBalances.length &&
-                      filteredBalances.length > 0
-                    }
-                    onCheckedChange={toggleSelectAll}
-                  />
-                </th>
-                <th className="p-3 text-left">SKU</th>
-                <th className="p-3 text-left">Item</th>
-                <th className="p-3 text-left">Location</th>
-                <th className="p-3 text-left">Department</th>
-                <th className="p-3 text-right">Qty</th>
-                <th className="p-3 text-left">Reorder</th>
-                <th className="p-3 text-left">Module Tags</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredBalances.map((balance) => {
-                const item = itemById[balance.itemId];
-                if (!item) return null;
-                const isSelected = selectedIds.includes(balance.id);
-                return (
-                  <tr
-                    key={balance.id}
-                    className={`cursor-pointer border-t hover:bg-muted/50 transition-colors ${isSelected ? "bg-primary/5" : ""}`}
-                    onClick={() => setSelectedBalance({ balance, item })}
-                  >
-                    <td className="p-3" onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={() => toggleSelect(balance.id)}
-                      />
-                    </td>
-                    <td className="p-3 font-medium">{item.sku}</td>
-                    <td className="p-3">{item.name}</td>
-                    <td className="p-3 text-muted-foreground">
-                      {balance.locationCode}
-                    </td>
-                    <td className="p-3 text-muted-foreground">
-                      {balance.departmentCode ?? "GENERAL"}
-                    </td>
-                    <td className="p-3 text-right font-mono font-bold">
-                      {balance.quantity.toLocaleString()}
-                    </td>
-                    <td className="p-3 text-muted-foreground">
-                      {balance.reorderPoint}
-                    </td>
-                    <td className="p-3 text-xs text-muted-foreground">
-                      {(item.moduleTags || []).join(", ")}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </DataTableShell>
-      </WorkspacePanel>
+      {viewMode === "transfers" ? (
+        <TransferDesk />
+      ) : (
+        <WorkspacePanel
+          title="Location + Department Inventory"
+          description="Drill-down stock records across hierarchy layers."
+        >
+          <div className="flex items-center justify-between mb-4 px-1">
+            <FilterBar searchValue={search} onSearchChange={setSearch} />
+            {selectedIds.length > 0 && (
+              <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
+                <span className="text-sm font-medium text-primary">
+                  {selectedIds.length} selected
+                </span>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button disabled title="Not available yet" variant="outline" size="sm" className="gap-2">
+                      Batch Actions <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      className="gap-2"
+                      onClick={() => setIsBatchIntakeOpen(true)}
+                    >
+                      <PackagePlus className="h-4 w-4" /> Batch Intake
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="gap-2"
+                      onClick={() => setIsBatchTransferOpen(true)}
+                    >
+                      <ArrowRightLeft className="h-4 w-4" /> Batch Transfer
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="gap-2 text-destructive"
+                      onClick={handleBatchDelete}
+                    >
+                      <Trash2 className="h-4 w-4" /> Delete Selected
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
+          </div>
+          <DataTableShell total={filteredBalances.length} page={1} pageSize={10}>
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
+                <tr>
+                  <th className="p-3 text-left w-10">
+                    <Checkbox
+                      checked={
+                        selectedIds.length === filteredBalances.length &&
+                        filteredBalances.length > 0
+                      }
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </th>
+                  <th className="p-3 text-left">SKU</th>
+                  <th className="p-3 text-left">Item</th>
+                  <th className="p-3 text-left">Location</th>
+                  <th className="p-3 text-left">Department</th>
+                  <th className="p-3 text-right">Qty</th>
+                  <th className="p-3 text-left">Reorder</th>
+                  <th className="p-3 text-left">Module Tags</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredBalances.map((balance) => {
+                  const item = itemById[balance.itemId];
+                  if (!item) return null;
+                  const isSelected = selectedIds.includes(balance.id);
+                  return (
+                    <tr
+                      key={balance.id}
+                      className={`cursor-pointer border-t hover:bg-muted/50 transition-colors ${isSelected ? "bg-primary/5" : ""}`}
+                      onClick={() => setSelectedBalance({ balance, item })}
+                    >
+                      <td className="p-3" onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleSelect(balance.id)}
+                        />
+                      </td>
+                      <td className="p-3 font-medium">{item.sku}</td>
+                      <td className="p-3">{item.name}</td>
+                      <td className="p-3 text-muted-foreground">
+                        {balance.locationCode}
+                      </td>
+                      <td className="p-3 text-muted-foreground">
+                        {balance.departmentCode ?? "GENERAL"}
+                      </td>
+                      <td className="p-3 text-right font-mono font-bold">
+                        {balance.quantity.toLocaleString()}
+                      </td>
+                      <td className="p-3 text-muted-foreground">
+                        {balance.reorderPoint}
+                      </td>
+                      <td className="p-3 text-xs text-muted-foreground">
+                        {(item.moduleTags || []).join(", ")}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </DataTableShell>
+        </WorkspacePanel>
+      )}
       <Dialog
         open={!!selectedBalance}
         onOpenChange={(open) => { if (!open) setSelectedBalance(null); }}

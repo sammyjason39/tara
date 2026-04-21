@@ -1,6 +1,8 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../persistence/prisma.service';
 import { Decimal } from '@prisma/client/runtime/library';
+import { v4 as uuidv4 } from 'uuid';
+
 
 @Injectable()
 export class BudgetingService {
@@ -52,7 +54,7 @@ export class BudgetingService {
     await this.prisma.finance_budget_actuals.create({
         data: {
           updated_at: new Date(),
-        id: '5df6fynr',
+        id: uuidv4(),
             budget_line_id: budgetLineId,
             amount: actualAmount,
             as_of_date: new Date(),
@@ -84,3 +86,4 @@ export class BudgetingService {
       return results;
   }
 }
+

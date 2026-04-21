@@ -8,8 +8,10 @@ import {
   Param, 
   UseGuards, 
   Headers,
-  Req 
+  Req,
+  Res 
 } from "@nestjs/common";
+import { Response } from "express";
 import { HrPayrollService } from "../hr-payroll.service";
 import { Roles } from "../../../shared/decorators/roles.decorator";
 import { RolesGuard } from "../../../shared/guards/roles.guard";
@@ -17,7 +19,7 @@ import { TenantGuard } from "../../../shared/guards/tenant.guard";
 import { UserRole } from "../../../shared/roles";
 import { Prisma } from "@prisma/client";
 
-@Controller("api/hr/payroll")
+@Controller("v1/hr/payroll")
 @UseGuards(RolesGuard, TenantGuard)
 export class HrPayrollController {
   constructor(private readonly payrollService: HrPayrollService) {}
@@ -71,4 +73,55 @@ export class HrPayrollController {
   async getCompensationAnalytics(@Headers("x-tenant-id") tenant_id: string) {
     return this.payrollService.getCompensationAnalytics(tenant_id);
   }
+
+  @Post(":id/approve")
+  @Roles(UserRole.ADMIN)
+  async approvePayroll(
+    @Headers("x-tenant-id") tenant_id: string,
+    @Param("id") run_id: string,
+    @Req() req: any,
+  ) {
+    const user_id = req.user?.id;
+    return this.payrollService.approvePayroll(tenant_id, run_id, user_id);
+  }
+
+  @Post(":id/export-bank")
+  @Roles(UserRole.ADMIN)
+  async exportBankFile(
+    @Headers("x-tenant-id") tenant_id: string,
+    @Param("id") run_id: string,
+  ) {
+    return this.payrollService.generateBankFile(tenant_id, run_id);
+  }
+
+  @Post(":id/confirm")
+  @Roles(UserRole.ADMIN)
+  async confirmDisbursement(
+    @Headers("x-tenant-id") tenant_id: string,
+    @Param("id") run_id: string,
+    @Req() req: any,
+  ) {
+    const user_id = req.user?.id;
+    return this.payrollService.confirmDisbursement(tenant_id, run_id, user_id);
+  }
+
+  @Get(":id/payslip/:employee_id")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.MEMBER)
+  async getPayslip(
+    @Headers("x-tenant-id") tenant_id: string,
+    @Param("id") run_id: string,
+    @Param("employee_id") employee_id: string,
+    @Res() res: Response,
+  ) {
+    const pdfBuffer = await this.payrollService.generatePayslip(tenant_id, run_id, employee_id);
+    
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename=payslip_${employee_id}_${run_id}.pdf`,
+      "Content-Length": pdfBuffer.length,
+    });
+    
+    res.end(pdfBuffer);
+  }
 }
+

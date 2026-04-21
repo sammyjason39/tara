@@ -194,6 +194,25 @@ export abstract class IInventoryRepository {
     code: string
   ): Promise<any | null>;
 
+  abstract lookupByBarcode(
+    tenant_id: string, 
+    barcode: string
+  ): Promise<any | null>;
+
+  abstract quickAdjust(
+    tenant_id: string,
+    item_id: string,
+    location_id: string,
+    delta: number,
+    user_id: string
+  ): Promise<any>;
+
+  // --- Stock Transfer Lifecycle ---
+  abstract getTransfers(tenant_id: string): Promise<any[]>;
+  abstract getTransferById(tenant_id: string, id: string): Promise<any | null>;
+  abstract createStockTransfer(tenant_id: string, data: any, tx?: any): Promise<any>;
+  abstract updateStockTransfer(tenant_id: string, id: string, data: any, tx?: any): Promise<any>;
+
   // --- Agentic Layer ---
   abstract createAgenticEvent(
     tenant_id: string,

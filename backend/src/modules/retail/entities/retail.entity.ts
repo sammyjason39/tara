@@ -205,7 +205,10 @@ export class RetailShift {
   end_time?: Date;
   opening_cash: Prisma.Decimal;
   closing_cash?: Prisma.Decimal;
-  expected_cash?: Prisma.Decimal;
+  expected_cash: Prisma.Decimal;
+  actual_cash?: Prisma.Decimal;
+  variance?: Prisma.Decimal;
+  reconciliation_reason?: string;
   status: "open" | "closed" | "reconciled";
   notes?: string;
 }

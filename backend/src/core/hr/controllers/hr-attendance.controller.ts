@@ -14,7 +14,7 @@ import { RolesGuard } from "../../../shared/guards/roles.guard";
 import { TenantGuard } from "../../../shared/guards/tenant.guard";
 import { UserRole } from "../../../shared/roles";
 
-@Controller("api/hr/attendance")
+@Controller("v1/hr/attendance")
 @UseGuards(RolesGuard, TenantGuard)
 export class HrAttendanceController {
   constructor(private readonly attendanceService: HrAttendanceService) {}
@@ -60,3 +60,4 @@ export class HrAttendanceController {
     return this.attendanceService.clock_out(tenant_id, employee_id, user_id);
   }
 }
+

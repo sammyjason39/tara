@@ -15,6 +15,7 @@ import {
   UpdateEcommerceStoreDto,
   CreateInventoryPoolDto,
   UpdateProductDto,
+  CheckoutDto,
 } from "../dto/retail.dto";
 
 export abstract class IRetailRepository {
@@ -151,6 +152,26 @@ export abstract class IRetailRepository {
     metadata?: any,
   ): Promise<RetailOrder>;
 
+  abstract atomicCheckout(
+    tenant_id: string,
+    data: CheckoutDto,
+    user_id: string,
+    idempotency_key?: string,
+  ): Promise<RetailOrder>;
+
+  abstract voidOrder(
+    tenant_id: string,
+    order_id: string,
+    user_id: string,
+  ): Promise<RetailOrder>;
+
+  abstract cancelOrder(
+    tenant_id: string,
+    order_id: string,
+    user_id: string,
+  ): Promise<RetailOrder>;
+
+
   // ============================================================
   // INVENTORY / STOCK
   // ============================================================
@@ -211,6 +232,29 @@ export abstract class IRetailRepository {
     tenant_id: string,
     store_id?: string,
   ): Promise<RetailShift[]>;
+
+  abstract getShift(
+    tenant_id: string,
+    shift_id: string,
+  ): Promise<RetailShift | null>;
+
+  abstract updateShiftStatus(
+    tenant_id: string,
+    shift_id: string,
+    status: string,
+  ): Promise<RetailShift>;
+
+  abstract reconcileShift(
+    tenant_id: string,
+    shift_id: string,
+    data: {
+      actual_cash: Prisma.Decimal;
+      variance: Prisma.Decimal;
+      reason: string;
+    },
+    tx?: Prisma.TransactionClient,
+  ): Promise<RetailShift>;
+
 
   // ============================================================
   // PROMOTIONS
@@ -303,8 +347,19 @@ export abstract class IRetailRepository {
   abstract processReturn(
     tenant_id: string,
     order_id: string,
-    data: { itemIds: string[]; shift_id?: string },
+    data: {
+      itemIds: string[];
+      shift_id?: string;
+      conditions?: Array<{
+        productId: string;
+        condition: "good" | "damaged_repairable" | "damaged_unrepairable";
+        notes?: string;
+      }>;
+    },
+    tx?: Prisma.TransactionClient,
   ): Promise<{ success: boolean }>;
+
+
 
   // ============================================================
   // INVENTORY OPERATIONS

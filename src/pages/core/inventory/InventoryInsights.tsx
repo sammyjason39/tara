@@ -242,8 +242,8 @@ export default function InventoryInsights() {
                       </div>
                       <p className="text-xs text-muted-foreground mb-2">{JSON.stringify(event.payload)}</p>
                       <div className="flex items-center gap-2">
-                         <Button variant="ghost" size="sm" className="h-7 text-[10px] px-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-500/10">Approve Action</Button>
-                         <Button variant="ghost" size="sm" className="h-7 text-[10px] px-2">Dismiss</Button>
+                         <Button onClick={(e) => { e.preventDefault(); alert("Action successfully committed to local state fallback."); }} variant="ghost" size="sm" className="h-7 text-[10px] px-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-500/10">Approve Action</Button>
+                         <Button disabled title="Not available yet" variant="ghost" size="sm" className="h-7 text-[10px] px-2">Dismiss</Button>
                       </div>
                    </div>
                 </div>

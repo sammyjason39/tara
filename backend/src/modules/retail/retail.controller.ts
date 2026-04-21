@@ -15,6 +15,7 @@ import {
   HttpCode,
   HttpStatus,
   Patch,
+  Headers,
 } from "@nestjs/common";
 import { Request } from "express";
 import { RetailService } from "./retail.service";
@@ -23,6 +24,7 @@ import {
   CreateStoreDto,
   UpdateStoreDto,
   CreateOrderDto,
+  CheckoutDto,
   OpenShiftDto,
   CloseShiftDto,
   CreateEcommerceStoreDto,
@@ -33,6 +35,7 @@ import {
   RegisterBranchDeviceDto,
   RegisterCCTVCameraDto,
   RegisterBranchSensorDto,
+  ReconcileShiftDto,
 } from "./dto/retail.dto";
 import { TenantContext } from "../../gateway/tenant-context.interface";
 import { ModuleStateGuard } from "../../core/auth/guards/module-state.guard";
@@ -40,8 +43,8 @@ import {
   BranchGatingGuard,
   SkipBranchCheck,
 } from "../../core/auth/guards/branch-gating.guard";
-import { LocationGuard } from "../../shared/guards/location.guard";
 import { RequiredModule } from "../../shared/decorators/required-module.decorator";
+import { LocationGuard } from "../../shared/guards/location.guard";
 
 interface RequestWithTenant extends Request {
   tenantContext: TenantContext;
@@ -186,10 +189,7 @@ export class RetailController {
 
   @Get("inventory-pools")
   async listInventoryPools(@Req() request: RequestWithTenant) {
-    const { tenant_id, role, location_id } = request.tenantContext;
-
-    // In a multi-site retail setup, we might want to restrict pools.
-    // Usually pools are shared, but if we need isolation:
+    const { tenant_id } = request.tenantContext;
     const pools = await this.retailService.listInventoryPools(tenant_id);
     return this.respond(tenant_id, pools);
   }
@@ -429,6 +429,22 @@ export class RetailController {
     return this.respond(tenant_id, order);
   }
 
+  @Post("checkout")
+  async checkout(
+    @Req() request: RequestWithTenant,
+    @Body() data: CheckoutDto,
+    @Headers("x-idempotency-key") idempotencyKey?: string,
+  ) {
+    const { tenant_id, user_id } = request.tenantContext;
+    const order = await this.retailService.checkout(
+      tenant_id,
+      data,
+      user_id!,
+      idempotencyKey,
+    );
+    return this.respond(tenant_id, order);
+  }
+
   @Get("shifts/active")
   async getActiveShift(
     @Req() request: RequestWithTenant,
@@ -481,6 +497,23 @@ export class RetailController {
     );
     return this.respond(tenant_id, shift);
   }
+
+  @Post("shifts/:id/reconcile")
+  async reconcileShift(
+    @Req() request: RequestWithTenant,
+    @Param("id") shift_id: string,
+    @Body() data: ReconcileShiftDto,
+  ) {
+    const { tenant_id, user_id } = request.tenantContext;
+    const shift = await this.retailService.reconcileShift(
+      tenant_id,
+      shift_id,
+      data,
+      user_id!,
+    );
+    return this.respond(tenant_id, shift);
+  }
+
 
   @Get("shifts")
   async listShifts(@Req() request: RequestWithTenant) {
@@ -769,7 +802,11 @@ export class RetailController {
   async processReturn(
     @Req() request: RequestWithTenant,
     @Param("id") order_id: string,
-    @Body() data: { itemIds: string[]; shift_id?: string },
+    @Body() data: { 
+      itemIds: string[]; 
+      shift_id?: string;
+      conditions?: Array<{ productId: string; condition: 'good' | 'damaged_repairable' | 'damaged_unrepairable'; notes?: string }>;
+    },
   ) {
     const { tenant_id, user_id } = request.tenantContext;
     const result = await this.retailService.processReturn(
@@ -780,6 +817,35 @@ export class RetailController {
     );
     return this.respond(tenant_id, result);
   }
+
+  @Post("orders/:id/void")
+  async voidOrder(
+    @Req() request: RequestWithTenant,
+    @Param("id") order_id: string,
+  ) {
+    const { tenant_id, user_id } = request.tenantContext;
+    const order = await this.retailService.voidOrder(
+      tenant_id,
+      order_id,
+      user_id!,
+    );
+    return this.respond(tenant_id, order);
+  }
+
+  @Post("orders/:id/cancel")
+  async cancelOrder(
+    @Req() request: RequestWithTenant,
+    @Param("id") order_id: string,
+  ) {
+    const { tenant_id, user_id } = request.tenantContext;
+    const order = await this.retailService.cancelOrder(
+      tenant_id,
+      order_id,
+      user_id!,
+    );
+    return this.respond(tenant_id, order);
+  }
+
 
   @Post("inventory/opname")
   async submitOpname(
@@ -832,7 +898,34 @@ export class RetailController {
      const { tenant_id } = request.tenantContext;
      if (!tenant_id || tenant_id === 'mock') throw new Error("Invalid tenant context for export");
      const csv = await this.retailExport.generateReturnCsv(tenant_id);
-     return csv; // We will handle response types from NestJS interceptors
+     return csv;
+  }
+
+  @Get("audit/export")
+  @HttpCode(HttpStatus.OK)
+  async exportAudit(@Req() request: RequestWithTenant) {
+     const { tenant_id } = request.tenantContext;
+     const csv = await this.retailExport.generateAuditCsv(tenant_id);
+     return csv;
+  }
+
+  @Get("dashboard/export")
+  @HttpCode(HttpStatus.OK)
+  async exportDashboard(@Req() request: RequestWithTenant) {
+     const { tenant_id } = request.tenantContext;
+     const csv = await this.retailExport.generateDashboardKpiCsv(tenant_id);
+     return csv;
+  }
+
+  @Get("orders/:id/print")
+  @HttpCode(HttpStatus.OK)
+  async printOrder(
+    @Req() request: RequestWithTenant,
+    @Param("id") order_id: string,
+  ) {
+    const { tenant_id } = request.tenantContext;
+    const buffer = await this.retailService.printOrder(tenant_id, order_id);
+    return buffer;
   }
 
 }

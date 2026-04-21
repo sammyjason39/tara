@@ -1,9 +1,14 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageShell } from "@/core/ui/PageShell";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { Lock, Settings2 } from "lucide-react";
+import { RequestModal } from "@/core/ui/RequestModal";
+import { adminService } from "@/core/services/adminService";
+import { useSession } from "@/core/security/session";
+import { useToast } from "@/hooks/use-toast";
 
 type ModuleItem = {
   id: string;
@@ -74,14 +79,38 @@ const moduleGroups: { title: string; items: ModuleItem[] }[] = [
 ];
 
 export default function CoreModules() {
+  const session = useSession();
+  const { toast } = useToast();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleRequestAccess = async (data: { title: string; reason: string }) => {
+    try {
+      await adminService.createRequest(session.tenant_id, session, {
+        type: "MODULE_ACCESS",
+        title: data.title,
+        description: data.reason,
+      });
+      toast({
+        title: "Request Sent",
+        description: `Your request for ${data.title} has been logged.`,
+      });
+    } catch (err) {
+      toast({
+        title: "Submission Failed",
+        description: "Unable to process module request.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <PageShell
       header={
         <PageHeader
           title="Modules"
           subtitle="Control which capabilities are enabled for each tenant."
-          primaryAction={<Button>Request module access</Button>}
-          secondaryActions={<Button variant="outline">View licensing</Button>}
+          primaryAction={<Button onClick={() => setIsModalOpen(true)}>Request module access</Button>}
+          secondaryActions={<Button onClick={(e) => { e.preventDefault(); alert("Detailed View:\n\nMetadata: " + (typeof window !== "undefined" ? window.location.pathname : "N/A")); }} variant="outline">View licensing</Button>}
         />
       }
     >
@@ -130,6 +159,15 @@ export default function CoreModules() {
           </WorkspacePanel>
         ))}
       </div>
+      
+      <RequestModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleRequestAccess}
+        title="Request Module Access"
+        description="Submit a request to the system administrator to enable new capabilities for your tenant."
+        defaultTitle="Module Access Request"
+      />
     </PageShell>
   );
 }

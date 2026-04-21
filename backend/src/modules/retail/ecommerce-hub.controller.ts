@@ -26,7 +26,7 @@ interface RequestWithTenant extends Request {
   tenantContext: TenantContext;
 }
 
-@Controller("retail/ecommerce-hub")
+@Controller("v1/retail/ecommerce-hub")
 @UseInterceptors(TenantInterceptor)
 export class EcommerceHubController {
   constructor(private readonly hubService: EcommerceHubService) {}
@@ -219,3 +219,4 @@ function safeChannel(channel: any) {
     : null;
   return { ...rest, credentials: safeCreds };
 }
+

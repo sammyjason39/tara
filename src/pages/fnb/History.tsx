@@ -253,7 +253,7 @@ export default function CafeHistory() {
                 <span className="text-sm text-muted-foreground">Server: {selectedOrder.server}</span>
               </div>
 
-              <Button variant="outline" className="w-full gap-2">
+              <Button onClick={(e) => { e.preventDefault(); window.print(); }} variant="outline" className="w-full gap-2">
                 <Receipt size={16} />
                 Reprint Receipt
               </Button>

@@ -94,10 +94,11 @@ export const itService = {
     tenantId: string,
     session: SessionContext,
   ): Promise<SystemHealth[]> {
-    return apiRequest<SystemHealth[]>("/it/system-health", "GET", session);
+    return apiRequest<SystemHealth[]>("/v1/it/system-health", "GET", session);
   },
 
   async getOverview(tenantId: string, session: SessionContext): Promise<any> {
-    return apiRequest<any>("/it/overview", "GET", session);
+    return apiRequest<any>("/v1/it/overview", "GET", session);
   },
 };
+

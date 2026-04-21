@@ -24,9 +24,27 @@ export class Rfc7807ExceptionFilter implements ExceptionFilter {
 
     if (status === 400) {
       fs.appendFileSync(
-        path.join(process.cwd(), "debug_400.log"),
+        path.join(process.cwd(), "logs", "debug_400.log"),
         `[${new Date().toISOString()}] 400 Error at ${request.url}\nException: ${JSON.stringify(exception, null, 2)}\nResponse: ${JSON.stringify(exception instanceof HttpException ? exception.getResponse() : {}, null, 2)}\n\n`
       );
+    }
+
+    if (status >= 500) {
+      // CRITICAL: Log 500 errors with full context
+      const tenantId = request.headers['x-tenant-id'] || (request as any).tenantContext?.tenant_id || 'NONE';
+      const userId = request.headers['x-user-id'] || 'NONE';
+      const requestId = request.headers['x-request-id'] || 'NONE';
+
+      const errorLog = `
+[${new Date().toISOString()}] 500 ERROR | ${request.method} ${request.url}
+Request ID: ${requestId}
+Tenant: ${tenantId}
+User: ${userId}
+Message: ${exception.message || exception}
+Stack: ${exception.stack || 'No Stack Trace'}
+--------------------------------------------------------------------------------`;
+      fs.appendFileSync(path.join(process.cwd(), "logs", "system_errors.log"), errorLog);
+      console.error(`[SYSTEM_CRITICAL_FAILURE] [RID:${requestId}] ${request.method} ${request.url}`, exception);
     }
 
     const exceptionResponse =
@@ -56,6 +74,7 @@ export class Rfc7807ExceptionFilter implements ExceptionFilter {
           errors: (exceptionResponse as any).errors,
         }),
       timestamp: new Date().toISOString(),
+      request_id: request.headers['x-request-id'], // Include for debugging correlation
     };
 
     response.status(status).json(rfc7807Response);

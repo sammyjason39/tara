@@ -40,10 +40,14 @@ import { StaffDetailsModal } from "./staff-assignments/components/StaffDetailsMo
 import { RoleModificationModal } from "./staff-assignments/components/RoleModificationModal";
 import { AuditTrailModal } from "./pricing-promo-desk/components/AuditTrailModal";
 
+import { useNavigate } from "react-router-dom";
+
 const StaffAssignments = () => {
   const session = useSession();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+
   const [staff, setStaff] = useState<Employee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -119,16 +123,16 @@ const StaffAssignments = () => {
     if (!selectedStaffForRoleEdit) return;
 
     try {
-      // Create an updated employee payload
-      const updatedEmployee = {
-        ...selectedStaffForRoleEdit,
-        roleTitle: newRole,
-      };
+      // Update employee properties via HR Service
+      await hrService.updateEmployee(
+        session.tenantId!,
+        session,
+        selectedStaffForRoleEdit.id,
+        { roleTitle: newRole }
+      );
 
-      // Attempt to hit HrService if the update method existed. Mock update:
-      // await hrService.updateEmployee(session.tenantId!, session, updatedEmployee);
       setStaff((prev) =>
-        prev.map((s) => (s.id === updatedEmployee.id ? updatedEmployee : s)),
+        prev.map((s) => (s.id === selectedStaffForRoleEdit.id ? { ...s, roleTitle: newRole } : s)),
       );
 
       // Append proof of modification leveraging existing governance framework with 'Superadmin / Owner Bypass' mode.
@@ -138,6 +142,7 @@ const StaffAssignments = () => {
         true,
         `Role Modified to ${newRole}: ${reason}`,
       );
+
 
       toast({
         title: "Ledger Updated",
@@ -155,10 +160,12 @@ const StaffAssignments = () => {
   const handleProvision = () => {
     toast({
       title: "Provisioning Initialized",
-      description:
-        "Redirecting to Zenvix HR Gateway for secure biometric onboarding...",
+      description: "Redirecting to Zenvix HR Talent Hub for secure biometric onboarding...",
     });
+    // Redirect to Core HR recruitment/onboarding path
+    navigate("/core/hr/talent");
   };
+
 
   const activeCount = staff.filter((s) => s.status === "active").length;
   const filteredStaff = staff.filter(
@@ -268,7 +275,7 @@ const StaffAssignments = () => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
-                <Button
+                <Button disabled title="Not available yet"
                   variant="outline"
                   className="h-12 px-5 rounded-xl gap-2 font-black italic border-slate-100 hover:bg-slate-50 text-[10px] uppercase tracking-widest"
                 >
@@ -477,7 +484,7 @@ const StaffAssignments = () => {
                       3 staff members have not completed biometric onboarding
                       for new POS hardware.
                     </div>
-                    <Button
+                    <Button disabled title="Not available yet"
                       variant="ghost"
                       size="sm"
                       className="h-8 w-full border border-white/10 text-white font-black italic text-[9px] gap-1 hover:bg-white/10 rounded-xl uppercase tracking-widest"
@@ -501,7 +508,7 @@ const StaffAssignments = () => {
                     Synchronized with Global HR directory. All changes reflect
                     in core reports.
                   </p>
-                  <Button className="w-full bg-white text-blue-600 hover:bg-slate-100 font-black italic h-12 rounded-2xl shadow-xl uppercase tracking-widest text-[10px]">
+                  <Button onClick={() => window.location.reload()} className="w-full bg-white text-blue-600 hover:bg-slate-100 font-black italic h-12 rounded-2xl shadow-xl uppercase tracking-widest text-[10px]">
                     Force Sync
                   </Button>
                 </CardContent>

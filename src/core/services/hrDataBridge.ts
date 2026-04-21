@@ -40,7 +40,7 @@ export function registerHrModuleProvider(provider: ModuleBridge) {
 const mockStaff: StaffRecord[] = [
   {
     id: "staff-001",
-    tenantId: "tenant-demo",
+    tenantId: "tenant-001",
     fullName: "Amelia Hart",
     departmentId: "dept-ops",
     roleTitle: "Regional Manager",
@@ -48,7 +48,7 @@ const mockStaff: StaffRecord[] = [
   },
   {
     id: "staff-002",
-    tenantId: "tenant-demo",
+    tenantId: "tenant-002",
     fullName: "Victor Lim",
     departmentId: "dept-fin",
     roleTitle: "Finance Controller",
@@ -58,6 +58,7 @@ const mockStaff: StaffRecord[] = [
 
 export function getStaffList(tenantId: string): StaffRecord[] {
   if (moduleProvider) return moduleProvider.getStaffList(tenantId);
+  // Support both tenant-specific and generic demo data if tenantId is 'tenant-demo'
   return mockStaff.filter((staff) => staff.tenantId === tenantId);
 }
 

@@ -19,7 +19,7 @@ interface RequestWithTenant extends Request {
   tenantContext: TenantContext;
 }
 
-@Controller("zenvix-workflow")
+@Controller("v1/workflow")
 // @UseInterceptors(TenantInterceptor)
 // @UseGuards(TenantGuard)
 export class WorkflowController {

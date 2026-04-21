@@ -1,9 +1,21 @@
-import { Controller, Get, Param, Query, Req } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Req, Res, UseGuards, Body } from '@nestjs/common';
 import { AuditService, AuditQueryDto } from './audit.service';
+import { ReportingService } from '../reporting/reporting.service';
+import { Response } from 'express';
+import { TenantInterceptor } from '../../gateway/tenant.interceptor';
+import { RolesGuard } from '../guards/roles.guard';
+import { Roles } from '../decorators/roles.decorator';
+import { UserRole } from '../roles';
 
-@Controller('audit')
+
+@Controller('v1/audit')
+@UseGuards(TenantInterceptor, RolesGuard)
 export class AuditController {
-  constructor(private readonly auditService: AuditService) {}
+  constructor(
+    private readonly auditService: AuditService,
+    private readonly reportingService: ReportingService,
+  ) {}
+
 
   @Get('logs')
   query(@Req() req: any, @Query() filters: AuditQueryDto) {
@@ -27,9 +39,28 @@ export class AuditController {
     );
   }
 
+  @Post('repair')
+  @Roles(UserRole.SUPERADMIN)
+  async repair(
+    @Req() req: any,
+    @Body() body: { reason: string; permission_by?: string }
+  ) {
+    const { tenant_id, user_id } = req.tenantContext;
+    const result = await this.auditService.repairChain({
+      tenant_id,
+      actor_id: user_id || 'system',
+      reason: body.reason,
+      permission_by: body.permission_by,
+      permission_at: body.permission_by ? new Date() : undefined,
+      source_ip: req.ip,
+      request_id: req.headers['x-request-id'] as string,
+    });
+    return result;
+  }
+
   @Get('system/metrics')
+  @Roles(UserRole.SUPERADMIN, UserRole.OWNER)
   async getMetrics(@Req() req: any) {
-    // In production, restrict to SUPERADMIN/Auditor
     return this.auditService.getMetrics();
   }
 
@@ -37,4 +68,29 @@ export class AuditController {
   async getPublicAnchors() {
     return this.auditService.getPublicAnchors();
   }
+
+  @Get('export')
+  async export(
+    @Req() req: any,
+    @Query() filters: AuditQueryDto,
+    @Query('format') format: 'pdf' | 'csv' = 'csv',
+    @Res() res: Response,
+  ) {
+    const { data } = await this.auditService.query(req.tenant_id, { ...filters, limit: 1000 });
+    const headers = ['Action', 'Module', 'Entity Type', 'User ID', 'Created At', 'Severity'];
+    const title = `Audit Trail Report - ${req.tenant_id}`;
+
+    if (format === 'pdf') {
+      const buffer = await this.reportingService.generatePdf(title, headers, data);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=audit-report-${Date.now()}.pdf`);
+      res.send(buffer);
+    } else {
+      const buffer = await this.reportingService.generateExcel(title, headers, data);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=audit-report-${Date.now()}.xlsx`);
+      res.send(buffer);
+    }
+  }
 }
+

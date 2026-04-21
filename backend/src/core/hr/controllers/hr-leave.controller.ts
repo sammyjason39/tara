@@ -17,7 +17,7 @@ import { TenantGuard } from "../../../shared/guards/tenant.guard";
 import { UserRole } from "../../../shared/roles";
 import { CreateLeaveRequestDto } from "../dto";
 
-@Controller("api/hr/leaves")
+@Controller("v1/hr/leaves")
 @UseGuards(RolesGuard, TenantGuard)
 export class HrLeaveController {
   constructor(private readonly leaveService: HrLeaveService) {}
@@ -68,3 +68,4 @@ export class HrLeaveController {
     return this.leaveService.rejectLeaveRequest(tenant_id, id, user_id, notes, user_id);
   }
 }
+

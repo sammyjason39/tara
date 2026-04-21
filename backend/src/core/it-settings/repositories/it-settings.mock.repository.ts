@@ -136,33 +136,6 @@ export class ITSettingsMockRepository extends IITSettingsRepository {
         updated_at: new Date(),
       },
     );
-    // Tenant comp-demo-a settings
-    this.settings.push({
-      id: "comp-demo-a-set-1",
-      tenant_id: "comp-demo-a",
-      key: "company.timezone",
-      value: "Asia/Jakarta",
-      category: "general",
-      isPublic: true,
-      description: "Company timezone",
-      created_at: new Date(),
-      updated_at: new Date(),
-    });
-
-    // Tenant comp-demo-a devices
-    this.devices.push({
-      id: "comp-demo-a-dev-1",
-      tenant_id: "comp-demo-a",
-      location_id: "loc-demo-1",
-      deviceType: "pos",
-      deviceName: "HQ POS Terminal",
-      ip_address: "192.168.1.100",
-      macAddress: "00:1B:44:11:3A:AA",
-      status: "online",
-      lastSeen: new Date(),
-      created_at: new Date(),
-      updated_at: new Date(),
-    });
   }
 
   async getDevices(tenant_id: string, location_id?: string): Promise<Device[]> {

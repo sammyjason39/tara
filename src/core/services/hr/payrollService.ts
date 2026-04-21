@@ -7,7 +7,7 @@ export const payrollService = {
    * Create (prepare) a payroll cycle/run
    */
   async prepareCycle(tenantId: string, actor: SessionContext, periodStart: string, periodEnd: string): Promise<PayrollRun> {
-    return apiRequest<PayrollRun>("/hr/payroll-runs", "POST", actor, {
+    return apiRequest<PayrollRun>("/v1/hr/payroll-runs", "POST", actor, {
       periodStart,
       periodEnd,
     });
@@ -18,7 +18,7 @@ export const payrollService = {
    * Note: this is a safe no-op call — the backend will prep for payroll
    */
   async lockAttendance(tenantId: string, actor: SessionContext, periodStart: string, periodEnd: string) {
-    return apiRequest<{ success: boolean }>("/hr/payroll-runs", "POST", actor, {
+    return apiRequest<{ success: boolean }>("/v1/hr/payroll-runs", "POST", actor, {
       periodStart,
       periodEnd,
     });
@@ -39,7 +39,7 @@ export const payrollService = {
    * List all payroll runs for current tenant
    */
   async listRuns(tenantId: string, actor: SessionContext): Promise<PayrollRun[]> {
-    const response = await apiRequest<{ data?: PayrollRun[] } | PayrollRun[]>("/hr/payroll-runs", "GET", actor);
+    const response = await apiRequest<{ data?: PayrollRun[] } | PayrollRun[]>("/v1/hr/payroll-runs", "GET", actor);
     // Handle nested `data` from backend response shape
     if (response && typeof response === "object" && !Array.isArray(response) && (response as any).data) {
       return (response as any).data as PayrollRun[];
@@ -62,35 +62,31 @@ export const payrollService = {
   },
 
   /**
-   * Approve a payroll run (Finance Admin/Owner/Superadmin only)
+   * Approve a payroll run
    */
-  async approveRun(tenantId: string, actor: SessionContext, runId: string) {
-    return apiRequest<PayrollRun>(`/hr/payroll-runs/${runId}/approve`, "PATCH", actor);
+  async approvePayroll(actor: SessionContext, runId: string): Promise<PayrollRun> {
+    return apiRequest<PayrollRun>(`/v1/hr/payroll/${runId}/approve`, "POST", actor);
   },
 
   /**
-   * Export journal entries for a payroll run (opens download)
+   * Generate and download bank file
    */
-  async exportJournal(tenantId: string, actor: SessionContext, runId: string) {
-    window.open(`/api/hr/payroll-runs/${runId}/export`, "_blank");
+  async exportBankFile(actor: SessionContext, runId: string): Promise<string> {
+    return apiRequest<string>(`/v1/hr/payroll/${runId}/export-bank`, "POST", actor);
   },
 
   /**
-   * Generate a payslip for an employee for a period
+   * Confirm disbursement and post to ledger
    */
-  async generatePayslip(
-    tenantId: string,
-    actor: SessionContext,
-    employeeId: string,
-    periodStart: string,
-    periodEnd: string,
-    components: any[],
-  ) {
-    return apiRequest<any>(
-      `/hr/payroll/${employeeId}/calculate`,
-      "POST",
-      actor,
-      { period: periodStart },
-    );
+  async confirmDisbursement(actor: SessionContext, runId: string): Promise<any> {
+    return apiRequest<any>(`/v1/hr/payroll/${runId}/confirm`, "POST", actor);
+  },
+
+  /**
+   * Get employee payslip
+   */
+  async getPayslip(actor: SessionContext, runId: string, employeeId: string): Promise<any> {
+    return apiRequest<any>(`/v1/hr/payroll/${runId}/payslip/${employeeId}`, "GET", actor);
   },
 };
+

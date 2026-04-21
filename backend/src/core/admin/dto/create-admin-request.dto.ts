@@ -4,6 +4,7 @@ export enum AdminRequestType {
   ACCESS = "access",
   MODULE_TOGGLE = "module_toggle",
   COMPLIANCE = "compliance",
+  INVITATION = "invitation",
   OTHER = "other",
 }
 

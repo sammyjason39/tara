@@ -19,39 +19,39 @@ import type {
 
 export const salesService = {
   listLeads: (tenantId: string, session: SessionContext) => 
-    apiRequest<SalesLead[]>("/sales/leads", "GET", session),
+    apiRequest<SalesLead[]>("/v1/sales/leads", "GET", session),
   
   listOpportunities: (tenantId: string, session: SessionContext) => 
-    apiRequest<SalesOpportunity[]>("/sales/opportunities", "GET", session),
+    apiRequest<SalesOpportunity[]>("/v1/sales/opportunities", "GET", session),
   
   listQuotes: (tenantId: string, session: SessionContext) => 
-    apiRequest<SalesQuote[]>("/sales/quotes", "GET", session),
+    apiRequest<SalesQuote[]>("/v1/sales/quotes", "GET", session),
   
   listTimelineEvents: (tenantId: string, session: SessionContext) => 
-    apiRequest<SalesTimelineEvent[]>("/sales/timeline", "GET", session),
+    apiRequest<SalesTimelineEvent[]>("/v1/sales/timeline", "GET", session),
   
   listTasks: (tenantId: string, session: SessionContext) => 
-    apiRequest<SalesTask[]>("/sales/tasks", "GET", session),
+    apiRequest<SalesTask[]>("/v1/sales/tasks", "GET", session),
   
   listAlerts: (tenantId: string, session: SessionContext) => 
-    apiRequest<SalesAlert[]>("/sales/alerts", "GET", session),
+    apiRequest<SalesAlert[]>("/v1/sales/alerts", "GET", session),
   
   listOrders: (tenantId: string, session: SessionContext) => 
-    apiRequest<SalesOrder[]>("/sales/orders", "GET", session),
+    apiRequest<SalesOrder[]>("/v1/sales/orders", "GET", session),
   
   listAuditEvents: (tenantId: string, session: SessionContext) => 
-    apiRequest<SalesAuditEvent[]>("/sales/audit-events", "GET", session),
+    apiRequest<SalesAuditEvent[]>("/v1/sales/audit-events", "GET", session),
 
   async getDashboard(tenantId: string, session: SessionContext): Promise<SalesDashboardMetrics> {
-    return apiRequest<SalesDashboardMetrics>("/sales/dashboard", "GET", session);
+    return apiRequest<SalesDashboardMetrics>("/v1/sales/dashboard", "GET", session);
   },
 
   async getManagerMetrics(tenantId: string, session: SessionContext): Promise<SalesManagerMetrics> {
-    return apiRequest<SalesManagerMetrics>("/sales/manager-metrics", "GET", session);
+    return apiRequest<SalesManagerMetrics>("/v1/sales/manager-metrics", "GET", session);
   },
 
   async getExecutiveForecast(tenantId: string, session: SessionContext): Promise<SalesExecutiveForecast> {
-    return apiRequest<SalesExecutiveForecast>("/sales/executive-forecast", "GET", session);
+    return apiRequest<SalesExecutiveForecast>("/v1/sales/executive-forecast", "GET", session);
   },
 
   async getPipelineByStage(tenantId: string, session: SessionContext) {
@@ -59,7 +59,7 @@ export const salesService = {
   },
 
   async getNextBestActions(tenantId: string, session: SessionContext): Promise<SalesNextAction[]> {
-    return apiRequest<SalesNextAction[]>("/sales/nba", "GET", session);
+    return apiRequest<SalesNextAction[]>("/v1/sales/nba", "GET", session);
   },
 
   async createLead(
@@ -76,7 +76,7 @@ export const salesService = {
       priority?: SalesLead["priority"];
     },
   ): Promise<SalesLead> {
-    return apiRequest<SalesLead>("/sales/leads", "POST", session, payload);
+    return apiRequest<SalesLead>("/v1/sales/leads", "POST", session, payload);
   },
 
   async syncLeadFromMarketing(
@@ -90,7 +90,7 @@ export const salesService = {
       potentialValue: number;
     },
   ): Promise<SalesLead> {
-    return apiRequest<SalesLead>("/sales/leads/sync-marketing", "POST", session, payload);
+    return apiRequest<SalesLead>("/v1/sales/leads/sync-marketing", "POST", session, payload);
   },
 
   async updateLeadStatus(
@@ -130,7 +130,7 @@ export const salesService = {
       notes?: string;
     },
   ): Promise<SalesQuote> {
-    return apiRequest<SalesQuote>("/sales/quotes", "POST", session, payload);
+    return apiRequest<SalesQuote>("/v1/sales/quotes", "POST", session, payload);
   },
 
   async submitQuoteForApproval(
@@ -190,7 +190,7 @@ export const salesService = {
       detail?: string;
     },
   ): Promise<SalesTimelineEvent> {
-    return apiRequest<SalesTimelineEvent>("/sales/timeline", "POST", session, payload);
+    return apiRequest<SalesTimelineEvent>("/v1/sales/timeline", "POST", session, payload);
   },
 
   async createTask(
@@ -205,7 +205,7 @@ export const salesService = {
       priority: SalesTask["priority"];
     },
   ): Promise<SalesTask> {
-    return apiRequest<SalesTask>("/sales/tasks", "POST", session, payload);
+    return apiRequest<SalesTask>("/v1/sales/tasks", "POST", session, payload);
   },
 
   async markTaskDone(tenantId: string, session: SessionContext, taskId: string) {
@@ -213,7 +213,7 @@ export const salesService = {
   },
 
   async runSlaSweep(tenantId: string, session: SessionContext) {
-    return apiRequest<SalesAlert[]>("/sales/sla-sweep", "POST", session);
+    return apiRequest<SalesAlert[]>("/v1/sales/sla-sweep", "POST", session);
   },
 
   async acknowledgeAlert(tenantId: string, session: SessionContext, alertId: string) {

@@ -20,6 +20,8 @@ import {
   UpdateEcommerceStoreDto,
   CreateInventoryPoolDto,
   UpdateProductDto,
+  CheckoutDto,
+  ReconcileShiftDto,
 } from "../dto/retail.dto";
 
 @Injectable()
@@ -480,6 +482,41 @@ export class RetailMockRepository implements IRetailRepository {
   ): Promise<RetailOrder> {
     return {} as any;
   }
+  async atomicCheckout(
+
+    tenant_id: string,
+    data: CheckoutDto,
+    user_id: string,
+    idempotency_key?: string,
+  ): Promise<RetailOrder> {
+    const orderId = uuidv4();
+    const order: RetailOrder = {
+      id: orderId,
+      tenant_id,
+      store_id: data.store_id,
+      device_id: data.terminal_id,
+      cashier_id: user_id,
+      customer_id: data.customer_id,
+      status: "paid" as any,
+      subtotal: new Prisma.Decimal(data.grand_total),
+      tax: new Prisma.Decimal(0),
+      total_amount: new Prisma.Decimal(data.grand_total),
+      payment_method: data.payment_method,
+      items: (data.items || []).map((item) => ({
+        id: uuidv4(),
+        product_id: item.product_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total_price: Number(item.quantity) * Number(item.unit_price),
+      })),
+      created_at: new Date(),
+      updated_at: new Date(),
+    } as any;
+    this.orders.push(order);
+    return order;
+  }
+
+
   async updateOrderStatus(
     tenant_id: string,
     order_id: string,
@@ -560,8 +597,56 @@ export class RetailMockRepository implements IRetailRepository {
   ): Promise<RetailShift> {
     return {} as any;
   }
+
+  async reconcileShift(
+    tenant_id: string,
+    shift_id: string,
+    data: {
+      actual_cash: Prisma.Decimal;
+      variance: Prisma.Decimal;
+      reason: string;
+    },
+    tx?: Prisma.TransactionClient,
+  ): Promise<RetailShift> {
+    const shift = this.shifts.find(s => s.id === shift_id && s.tenant_id === tenant_id);
+    if (!shift) throw new Error("Shift not found");
+    
+    shift.status = "reconciled" as any;
+    (shift as any).actual_cash = data.actual_cash;
+    (shift as any).variance = data.variance;
+    (shift as any).reconciliation_reason = data.reason;
+    
+    return shift;
+  }
+
   async listShifts(tenant_id: string, store_id?: string): Promise<RetailShift[]> {
-    return [];
+    return this.shifts.filter(
+      (s) => s.tenant_id === tenant_id && (!store_id || s.store_id === store_id),
+    );
+  }
+
+  async getShift(
+    tenant_id: string,
+    shift_id: string,
+  ): Promise<RetailShift | null> {
+    const shift = this.shifts.find(
+      (s) => s.id === shift_id && s.tenant_id === tenant_id,
+    );
+    return shift || null;
+  }
+
+  async updateShiftStatus(
+    tenant_id: string,
+    shift_id: string,
+    status: string,
+  ): Promise<RetailShift> {
+    const index = this.shifts.findIndex(
+      (s) => s.id === shift_id && s.tenant_id === tenant_id,
+    );
+    if (index === -1) throw new Error("Shift not found");
+
+    this.shifts[index].status = status as any;
+    return this.shifts[index];
   }
   async listPromotions(tenant_id: string): Promise<any[]> {
     return [];
@@ -795,10 +880,35 @@ export class RetailMockRepository implements IRetailRepository {
   async processReturn(
     tenant_id: string,
     order_id: string,
-    data: any,
+    data: {
+      itemIds: string[];
+      shift_id?: string;
+      conditions?: Array<{
+        productId: string;
+        condition: "good" | "damaged_repairable" | "damaged_unrepairable";
+        notes?: string;
+      }>;
+    },
   ): Promise<{ success: boolean }> {
     return { success: true };
   }
+
+  async voidOrder(
+    tenant_id: string,
+    order_id: string,
+    user_id: string,
+  ): Promise<RetailOrder> {
+    return {} as any;
+  }
+
+  async cancelOrder(
+    tenant_id: string,
+    order_id: string,
+    user_id: string,
+  ): Promise<RetailOrder> {
+    return {} as any;
+  }
+
   async submitOpname(
     tenant_id: string,
     data: any,
@@ -887,4 +997,6 @@ export class RetailMockRepository implements IRetailRepository {
   async logEvent(tenant_id: string, data: any): Promise<any> {
     return {};
   }
+
 }
+

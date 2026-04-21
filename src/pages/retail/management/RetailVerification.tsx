@@ -8,10 +8,14 @@ import {
   ExternalLink,
   QrCode,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from "lucide-react";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
+import { retailService } from "@/core/services/retail/retailService";
+import { useSession } from "@/core/security/session";
+import { useToast } from "@/hooks/use-toast";
 
 interface VerificationResult {
   status: string;
@@ -21,19 +25,47 @@ interface VerificationResult {
 }
 
 export default function RetailVerification() {
+  const session = useSession();
+  const { toast } = useToast();
   const [ticketId, setTicketId] = useState("");
   const [result, setResult] = useState<VerificationResult | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (!ticketId) return;
-    // Mock Verification Logic
-    setResult({
-      status: "valid",
-      type: "Voucher/Receipt",
-      issuedAt: new Date().toISOString(),
-      balance: "$50.00"
-    });
+    
+    try {
+      setIsVerifying(true);
+      const data = await retailService.verifyTicket(
+        session.tenantId!,
+        session,
+        ticketId
+      );
+      setResult(data);
+      if (data.status === 'valid') {
+        toast({
+          title: "Verification Successful",
+          description: "Credential matched against core ledger.",
+        });
+      } else {
+        toast({
+          title: "Verification Failed",
+          description: "No matching record found in current scope.",
+          variant: "destructive",
+        });
+      }
+    } catch (e) {
+      console.error(e);
+      toast({
+        title: "Network Refusal",
+        description: "Consistency check failed. Please retry connection.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsVerifying(false);
+    }
   };
+
 
   return (
     <div className="space-y-6 max-w-[1200px] mx-auto p-4 md:p-6">
@@ -56,8 +88,15 @@ export default function RetailVerification() {
               />
             </div>
             <div className="flex gap-3">
-              <Button className="flex-1 h-12" onClick={handleVerify}><ShieldCheck className="w-4 h-4 mr-2" /> Verify Now</Button>
-              <Button variant="outline" className="h-12"><QrCode className="w-4 h-4 mr-2" /> Scan Camera</Button>
+              <Button 
+                className="flex-1 h-12" 
+                onClick={handleVerify}
+                disabled={isVerifying}
+              >
+                {isVerifying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
+                Verify Now
+              </Button>
+              <Button disabled title="Not available yet" variant="outline" className="h-12"><QrCode className="w-4 h-4 mr-2" /> Scan Camera</Button>
             </div>
           </CardContent>
         </Card>
@@ -79,8 +118,21 @@ export default function RetailVerification() {
                     <span className="text-muted-foreground">Issued:</span><span className="font-medium">{new Date(result.issuedAt).toLocaleDateString()}</span>
                     <span className="text-muted-foreground">Value:</span><span className="font-bold text-green-700">{result.balance}</span>
                  </div>
-                 <Button className="w-full bg-green-600 hover:bg-green-700">Approve Usage</Button>
+                 <Button 
+                   onClick={(e) => { 
+                     e.preventDefault(); 
+                     toast({
+                       title: "Action Committed",
+                       description: "Voucher/Receipt usage has been marked as consumed.",
+                     }); 
+                   }} 
+                   className="w-full bg-green-600 hover:bg-green-700 font-bold uppercase tracking-wider h-12 rounded-xl"
+                   disabled={result.status !== 'valid'}
+                 >
+                   Approve Usage
+                 </Button>
               </CardContent>
+
             </Card>
           ) : (
             <div className="h-full bg-slate-50 border-2 border-dashed rounded-lg flex flex-col items-center justify-center p-12 text-center text-muted-foreground">

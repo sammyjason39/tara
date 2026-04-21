@@ -109,7 +109,7 @@ const SensorModal = ({ sensor, onClose }: SensorModalProps) => (
                   </div>
                 ))}
             </div>
-            <Button className="w-full h-10 rounded-xl bg-slate-900 text-white font-black italic uppercase text-[10px] tracking-widest gap-2">
+            <Button disabled title="Not available yet" className="w-full h-10 rounded-xl bg-slate-900 text-white font-black italic uppercase text-[10px] tracking-widest gap-2">
               <Settings2 className="w-3.5 h-3.5" /> Configure Threshold
             </Button>
           </div>

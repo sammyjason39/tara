@@ -5,7 +5,7 @@ import { workflowService } from "./workflowService";
 
 export const caseService = {
   async listCases(tenantId: string, actor: SessionContext): Promise<HRCase[]> {
-    return apiRequest<HRCase[]>("/hr/cases", "GET", actor);
+    return apiRequest<HRCase[]>("/v1/hr/cases", "GET", actor);
   },
 
   async getCase(tenantId: string, caseId: string, actor: SessionContext): Promise<HRCase | undefined> {
@@ -17,7 +17,7 @@ export const caseService = {
     actor: SessionContext,
     payload: Omit<HRCase, "id" | "tenantId" | "createdAt" | "updatedAt">,
   ): Promise<HRCase> {
-    return apiRequest<HRCase>("/hr/cases", "POST", actor, payload);
+    return apiRequest<HRCase>("/v1/hr/cases", "POST", actor, payload);
   },
 
   async updateStatus(tenantId: string, actor: SessionContext, caseId: string, status: HRCase["status"]) {
@@ -38,3 +38,4 @@ export const caseService = {
     });
   },
 };
+

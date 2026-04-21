@@ -14,7 +14,7 @@ import { RolesGuard } from "../../../shared/guards/roles.guard";
 import { TenantGuard } from "../../../shared/guards/tenant.guard";
 import { UserRole } from "../../../shared/roles";
 
-@Controller("api/sales/operational")
+@Controller("v1/sales/operational")
 @UseGuards(RolesGuard, TenantGuard)
 export class SalesOperationalController {
   constructor(private readonly salesService: SalesOperationalService) {}
@@ -66,3 +66,4 @@ export class SalesOperationalController {
     return this.salesService.getQuotes(tenant_id, dealId);
   }
 }
+

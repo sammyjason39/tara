@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: zenvix_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - zenvix_net
+    # Port 5432 is intentionally NOT exposed for security
+
+  db_backup:
+    image: postgres:15
+    container_name: zenvix_db_backup
+    restart: always
+    depends_on:
+      - db
+    volumes:
+      - ./backups:/backups
+    entrypoint: >
+      bash -c "while true; do
+        echo \"[$(date)] Starting daily backup...\"
+        pg_dump -h db -U ${POSTGRES_USER} ${POSTGRES_DB} > /backups/backup_$(date +%F_%H%M%S).sql;
+        echo \"[$(date)] Backup completed successfully.\"
+        sleep 86400;
+      done"
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - zenvix_net
+
+volumes:
+  postgres_data:
+
+networks:
+  zenvix_net:

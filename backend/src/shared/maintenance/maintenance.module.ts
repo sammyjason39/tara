@@ -1,11 +1,19 @@
 import { Module } from '@nestjs/common';
 import { IdempotencyCleanupService } from './idempotency-cleanup.service';
 import { OutboxWorkerService } from './outbox-worker.service';
+import { MonitoringJobService } from './monitoring-job.service';
 import { PersistenceModule } from '../../persistence/persistence.module';
 
 @Module({
-  imports: [PersistenceModule],
-  providers: [IdempotencyCleanupService, OutboxWorkerService],
-  exports: [IdempotencyCleanupService, OutboxWorkerService],
+  providers: [
+    IdempotencyCleanupService, 
+    OutboxWorkerService,
+    MonitoringJobService
+  ],
+  exports: [
+    IdempotencyCleanupService, 
+    OutboxWorkerService,
+    MonitoringJobService
+  ],
 })
 export class MaintenanceModule {}

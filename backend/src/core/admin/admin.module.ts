@@ -4,8 +4,10 @@ import { AdminController } from "./admin.controller";
 import { AdminService } from "./admin.service";
 import { IAdminRepository } from "./repositories/admin.repository.interface";
 import { AdminPrismaRepository } from "./repositories/admin.prisma.repository";
+import { MaintenanceModule } from "../../shared/maintenance/maintenance.module";
 
 @Module({
+  imports: [MaintenanceModule],
   controllers: [AdminController],
   providers: [
     AdminService,

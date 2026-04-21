@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
+import { v4 as uuidv4 } from "uuid";
 import { IRetailRepository } from "./repositories/retail.repository.interface";
 import { SkuGeneratorService } from "../../core/inventory/sku-generator.service";
+import { RetailPrintService } from "./retail-print.service";
 import { TransactionType } from "../../core/finance/dto/create-transaction.dto";
 import {
   RetailStore,
@@ -12,6 +14,7 @@ import {
   CreateStoreDto,
   UpdateStoreDto,
   CreateOrderDto,
+  CheckoutDto,
   OpenShiftDto,
   CloseShiftDto,
   CreateEcommerceStoreDto,
@@ -21,21 +24,30 @@ import {
   RegisterBranchDeviceDto,
   RegisterCCTVCameraDto,
   RegisterBranchSensorDto,
+  ReconcileShiftDto,
 } from "./dto/retail.dto";
 import { randomBytes, createHash } from "crypto";
 import { AuditService } from "../../shared/audit/audit.service";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../persistence/prisma.service";
 import { EventBusService } from "../../shared/events/event-bus.service";
+import { InventoryService } from "../../core/inventory/inventory.service";
+import { IFinanceRepository } from "../../core/finance/repositories/finance.repository.interface";
+import { PaymentService } from "../../core/payment/payment.service";
+import { CreatePaymentTransactionDto } from "../../core/payment/dto/create-payment-transaction.dto";
 
 @Injectable()
 export class RetailService {
   constructor(
     private readonly retailRepository: IRetailRepository,
+    private readonly inventoryService: InventoryService,
+    private readonly financeRepository: IFinanceRepository,
+    private readonly paymentService: PaymentService,
     private readonly auditService: AuditService,
     private readonly skuGenerator: SkuGeneratorService,
     private readonly prisma: PrismaService,
     private readonly eventBus: EventBusService,
+    private readonly retailPrint: RetailPrintService,
   ) {}
 
   // Stores (Physical Branches)
@@ -374,33 +386,79 @@ export class RetailService {
       metadata: { total: order.grand_total, itemCount: order.items.length },
     });
 
-    // 2. Transition to RESERVED if items can be locked
-    try {
-      await this.reserveOrderStock(tenant_id, order);
-      return this.updateOrderStatus(tenant_id, order.id, "reserved", {
-        reservation_expires_at: new Date(
-          Date.now() + 15 * 60 * 1000,
-        ).toISOString(), // 15 min lock
-      });
-    } catch (e) {
-      // If reservation fails, we might mark as cancelled or keep as pending
-      return order;
-    }
+    return order;
   }
 
-  async reserveOrderStock(tenant_id: string, order: RetailOrder) {
-    for (const item of order.items) {
-      const res = await this.retailRepository.reserveStock(
-        tenant_id,
-        order.location_id || "default",
-        item.product_id,
-        item.quantity,
-      );
-      if (!res.success) {
-        throw new Error(`Insufficient stock for product ${item.product_id}`);
+  async checkout(
+    tenant_id: string,
+    data: CheckoutDto,
+    user_id: string,
+    idempotency_key?: string,
+  ): Promise<any> {
+    const order = await this.retailRepository.atomicCheckout(
+      tenant_id,
+      data,
+      user_id,
+      idempotency_key,
+    );
+
+    // DELEGATE PAYMENT TO PaymentService
+    const paymentDto: CreatePaymentTransactionDto = {
+      type: "pos_payment",
+      destination: data.store_id, // Route to the store
+      externalReference: order.id,
+      amount: Number(data.grand_total),
+      currency: "IDR",
+    };
+
+    let paymentResult: any = null;
+    if (data.payment_method === "GATEWAY") {
+       paymentResult = await this.paymentService.createGatewayPayment(tenant_id, paymentDto, user_id);
+    } else if (data.payment_method === "EDC") {
+       paymentResult = await this.paymentService.confirmEDC(tenant_id, {...paymentDto, externalRef: data.external_ref}, user_id);
+    } else {
+       paymentResult = await this.paymentService.processCash(tenant_id, paymentDto, user_id);
+    }
+
+    // REAL-TIME SALES BONUS INTEGRATION (If Paid immediately)
+    if (order.status === "paid" || order.status === "completed") {
+      const bonusRate = 0.02; // 2% commission (standard)
+      const bonusAmount = new Prisma.Decimal(order.grand_total.toString()).mul(bonusRate);
+
+      if (bonusAmount.gt(0) && order.cashier_id) {
+        await this.prisma.hr_sales_bonuses.create({
+          data: {
+            id: `BON-${order.id.slice(-8).toUpperCase()}-${Date.now().toString().slice(-4)}`,
+            tenant_id,
+            employee_id: order.cashier_id,
+            order_id: order.id,
+            amount: bonusAmount,
+            status: "PENDING",
+            created_at: new Date(),
+          },
+        });
       }
     }
+
+    await this.auditService.log({
+      tenant_id,
+      user_id,
+      module: "retail",
+      action: "CHECKOUT",
+      entity_type: "ORDER",
+      entity_id: order.id,
+      metadata: { 
+        total: order.grand_total, 
+        method: data.payment_method,
+        idempotency_key: idempotency_key || "N/A"
+      },
+    });
+
+    return data.payment_method === "GATEWAY" 
+      ? { ...order, client_secret: paymentResult?.client_secret, transaction_id: paymentResult?.transaction_id }
+      : order;
   }
+
 
   async calculateTax(
     tenant_id: string,
@@ -464,6 +522,55 @@ export class RetailService {
     }
     return order;
   }
+
+  async voidOrder(
+    tenant_id: string,
+    order_id: string,
+    user_id: string,
+  ): Promise<RetailOrder> {
+    const order = await this.retailRepository.voidOrder(
+      tenant_id,
+      order_id,
+      user_id,
+    );
+
+    await this.eventBus.publish({
+      event_type: "RETAIL_ORDER_VOIDED",
+      tenant_id,
+      entity_id: order_id,
+      entity_type: "ORDER",
+      source_module: "retail",
+      payload: { order_id, total: order.grand_total },
+      user_id,
+    });
+
+    return order;
+  }
+
+  async cancelOrder(
+    tenant_id: string,
+    order_id: string,
+    user_id: string,
+  ): Promise<RetailOrder> {
+    const order = await this.retailRepository.cancelOrder(
+      tenant_id,
+      order_id,
+      user_id,
+    );
+
+    await this.eventBus.publish({
+      event_type: "RETAIL_ORDER_CANCELLED",
+      tenant_id,
+      entity_id: order_id,
+      entity_type: "ORDER",
+      source_module: "retail",
+      payload: { order_id },
+      user_id,
+    });
+
+    return order;
+  }
+
 
   async getStockStatus(tenant_id: string, product_id: string) {
     return this.retailRepository.checkStock(tenant_id, product_id);
@@ -534,6 +641,39 @@ export class RetailService {
       shift_id,
       data,
     );
+
+    // Phase 1: Variance Alerting logic
+    const variance = (data.counted_cash ?? data.closing_cash) - Number(shift.expected_cash || 0);
+    
+    if (Math.abs(variance) > 0.01) {
+        // Raise Audit Alert
+        await this.auditService.log({
+            tenant_id,
+            user_id,
+            module: "retail",
+            action: "SHIFT_VARIANCE_DETECTED",
+            entity_type: "SHIFT",
+            entity_id: shift_id,
+            metadata: { 
+                expected: shift.expected_cash, 
+                counted: data.counted_cash ?? data.closing_cash, 
+                variance,
+                notes: data.notes 
+            },
+        });
+
+        // Trigger Event for downstream monitoring/notifications
+        await this.eventBus.publish({
+            event_type: 'RETAIL_SHIFT_VARIANCE',
+            tenant_id,
+            entity_id: shift_id,
+            entity_type: 'SHIFT',
+            source_module: 'retail',
+            payload: { shift_id, variance, expected: shift.expected_cash },
+            user_id
+        });
+    }
+
     await this.auditService.log({
       tenant_id,
       user_id,
@@ -541,13 +681,98 @@ export class RetailService {
       action: "CLOSE_SHIFT",
       entity_type: "SHIFT",
       entity_id: shift_id,
-      metadata: { closing_cash: data.closing_cash },
+      metadata: { closing_cash: data.closing_cash, variance },
     });
     return shift;
   }
 
   async listShifts(tenant_id: string, store_id?: string): Promise<RetailShift[]> {
     return this.retailRepository.listShifts(tenant_id, store_id);
+  }
+
+  async reconcileShift(
+    tenant_id: string,
+    shift_id: string,
+    data: ReconcileShiftDto,
+    user_id: string,
+  ): Promise<RetailShift> {
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Fetch shift
+      const shift = await tx.retail_shifts.findFirst({
+        where: { id: shift_id, tenant_id },
+        include: { stores: true },
+      });
+
+      if (!shift) throw new NotFoundException("Shift not found");
+      if (shift.status !== "closed") {
+        throw new Error("Shift must be closed before reconciliation");
+      }
+
+      const expected = Number(shift.expected_cash || 0);
+      const actual = data.actual_amount;
+      const variance = actual - expected;
+      const shiftData = shift as any;
+      const location_id = shiftData.location_id || shiftData.stores?.location_id || "loc-central";
+
+      // 2. Finance Posting (Location-Aware)
+      if (Math.abs(variance) > 0.0001) {
+        await this.financeRepository.createJournal(
+          tenant_id,
+          {
+            ref: `RECON-${shift_id.slice(-6).toUpperCase()}`,
+            description: `Shift Recon: ${data.reason}`,
+            lines: [
+              {
+                accountCode: "1001", // Cash
+                debit: variance > 0 ? Math.abs(variance) : 0,
+                credit: variance < 0 ? Math.abs(variance) : 0,
+                description: `Cash Variance: ${data.reason}`,
+                location_id, // Location Awareness
+              },
+              {
+                accountCode: "6999", // Over/Short
+                debit: variance < 0 ? Math.abs(variance) : 0,
+                credit: variance > 0 ? Math.abs(variance) : 0,
+                description: `Shift Variance Correction`,
+                location_id, // Location Awareness
+              },
+            ],
+          },
+          tx,
+        );
+      }
+
+      // 3. Update Retail State
+      const updated = await this.retailRepository.reconcileShift(
+        tenant_id,
+        shift_id,
+        {
+          actual_cash: new Prisma.Decimal(actual),
+          variance: new Prisma.Decimal(variance),
+          reason: data.reason,
+        },
+        tx,
+      );
+
+      // 4. Audit
+      await this.auditService.log({
+        tenant_id,
+        user_id,
+        module: "retail",
+        action: "RECONCILE_SHIFT",
+        entity_type: "SHIFT",
+        entity_id: shift_id,
+        metadata: {
+          actual,
+          expected,
+          variance,
+          reason: data.reason,
+          location_id,
+        },
+      });
+
+      return updated;
+    });
   }
 
   // Promotions
@@ -962,48 +1187,110 @@ export class RetailService {
     data: { amount: Prisma.Decimal; method: string; shift_id?: string },
     user_id: string,
   ): Promise<any> {
-    // 1. Process payment via Repository (Atomically handles DB, Stock, and Finance ledgers)
-    const result = await this.retailRepository.processPayment(
-      tenant_id,
-      order_id,
-      data,
-    );
-
-    // 2. Publish Sales Event
-    if (result.success && result.movements) {
-      await this.eventBus.publish({
-        event_type: "RETAIL_SALE_COMPLETED",
-        tenant_id: tenant_id,
-        entity_id: order_id,
-        entity_type: "ORDER",
-        source_module: "retail",
-        payload: {
-          order_id,
-          location_id: result.movements[0]?.from_location_id || "default",
-          movements: result.movements,
-          amount: data.amount,
-          method: data.method,
-        },
-        user_id,
-      });
-    }
-
-    // 3. Audit Logging
     const order = await this.retailRepository.getOrder(tenant_id, order_id);
-    if (order) {
-      await this.auditService.log({
-        tenant_id,
-        user_id,
-        module: "retail",
-        action: "PAYMENT_COMPLETE",
-        entity_type: "ORDER",
-        entity_id: order_id,
-        metadata: {
-          total: order.grand_total,
-          payment_method: data.method,
+    if (!order) throw new NotFoundException("Order not found");
+
+    // ATOMIC CHECKOUT TRANSACTION
+    const result = await this.prisma.$transaction(async (tx) => {
+      // 1. Atomic Stock Deduction for each item
+      const movements = [];
+      for (const item of order.items) {
+        const move = await this.inventoryService.consumeStock(
+          tenant_id,
+          {
+            item_id: item.product_id,
+            location_id: (order as any).location_id || "default",
+            quantity: Number(item.quantity),
+            referenceId: order_id,
+            referenceType: "POS_SALE",
+            performedBy: user_id,
+          },
+          user_id,
+          tx,
+        );
+        movements.push(move);
+      }
+
+      // 2. Create Payment Record
+      await tx.payment_transactions.create({
+        data: {
+          id: uuidv4(),
+          tenant_id: tenant_id,
+          type: "RETAIL_SALE",
+          amount: data.amount,
+          currency: "IDR",
+          destination: "STORE_CASHIER",
+          status: "PAID",
+          channel: data.method,
+          source: order.id,
+          idempotency_key: `PAY-${order.id}`,
+          created_by: user_id,
         },
       });
-    }
+
+      // 3. Create Financial Journal Entry
+      await this.financeRepository.createJournal(
+        tenant_id,
+        {
+          ref: order.id,
+          description: `POS Sale - Order ${order.id}`,
+          lines: [
+            {
+              accountCode: "1001", // Cash/Bank
+              debit: data.amount,
+              credit: 0,
+              description: `POS Payment - ${data.method}`,
+            },
+            {
+              accountCode: "4000", // Sales Revenue
+              debit: 0,
+              credit: order.grand_total,
+              description: `POS Sale Revenue`,
+            },
+          ],
+        },
+        tx,
+      );
+
+      // 4. Update Order Status
+      const updatedOrder = await tx.retail_orders.update({
+        where: { id: order_id },
+        data: { status: "paid" },
+      });
+
+      return { success: true, movements, order: updatedOrder };
+    });
+
+    // 5. Post-transaction tasks (Events, Audits)
+    await this.eventBus.publish({
+      event_type: "RETAIL_SALE_COMPLETED",
+      tenant_id: tenant_id,
+      entity_id: order_id,
+      entity_type: "ORDER",
+      source_module: "retail",
+      payload: {
+        order_id,
+        location_id: result.movements[0]?.location_id || "default",
+        movements: result.movements,
+        amount: data.amount,
+        method: data.method,
+      },
+      user_id,
+    });
+
+    await this.auditService.log({
+      tenant_id,
+      user_id,
+      module: "retail",
+      action: "PAYMENT_COMPLETE",
+      entity_type: "ORDER",
+      entity_id: order_id,
+      metadata: {
+        total: order.grand_total,
+        payment_method: data.method,
+        movementsCount: result.movements.length,
+      },
+    });
 
     return result;
   }
@@ -1011,55 +1298,123 @@ export class RetailService {
   async processReturn(
     tenant_id: string,
     order_id: string,
-    data: { itemIds: string[]; shift_id?: string },
+    data: { 
+        itemIds: string[]; 
+        shift_id?: string;
+        conditions?: Array<{ productId: string; condition: 'good' | 'damaged_repairable' | 'damaged_unrepairable'; notes?: string }> 
+    },
     user_id: string,
   ): Promise<{ success: boolean }> {
-    // 1. Get Order Details
-    const order = await this.retailRepository.getOrder(tenant_id, order_id);
-    if (!order) throw new NotFoundException("Order not found");
+    return await this.prisma.$transaction(async (tx) => {
+        // 1. Get Order Details with items
+        const order = await tx.retail_orders.findUnique({
+            where: { id: order_id, tenant_id: tenant_id },
+            include: { retail_order_items: true, stores: true }
+        });
+        if (!order) throw new NotFoundException("Order not found");
 
-    // 2. Emit Return Completed Event instead of calling Inventory and Finance
-    await this.eventBus.publish({
-      event_type: "RETAIL_RETURN_COMPLETED",
-      tenant_id: tenant_id,
-      entity_id: order_id,
-      entity_type: "ORDER",
-      source_module: "retail",
-      payload: {
-        order_id,
-        store_id: order.store_id || "default",
-        grand_total: order.grand_total,
-        returnedItems: data.itemIds.map((item_id) => {
-          const orderItem = order.items.find((i) => i.product_id === item_id);
-          return {
-            product_id: item_id,
-            quantity: orderItem?.quantity || 1,
-            unit_price: Number(orderItem?.unit_price || 0),
-          };
-        }),
-      },
-      user_id,
+        const location_id = order.stores?.location_id || 'default_loc';
+
+        // 2. Filter items and check idempotency (delegated to repository for flag updates)
+        // Note: Repository.processReturn handles the flag and basic checks
+        await this.retailRepository.processReturn(tenant_id, order_id, data, tx);
+
+        let totalRefundAmount = 0;
+        let totalTaxReversal = 0;
+        let totalCogsReversal = 0;
+
+        // 3. Process Stock and Calculate Financials
+        for (const itemId of data.itemIds) {
+            const item = order.retail_order_items.find(i => i.id === itemId);
+            if (!item) continue;
+
+            const conditionData = data.conditions?.find(c => c.productId === item.product_id) || { condition: 'good' as const, notes: 'No notes provided' };
+            const q = Number(item.quantity);
+            const unitPrice = Number(item.unit_price);
+            const unitCost = Number(item.unit_cost || 0); // Historical cost captured at checkout
+
+            // Calculate per-item tax reversal based on order's tax ratio
+            const orderTotal = Number(order.total_amount);
+            const orderTax = Number(order.tax);
+            const taxRatio = orderTotal > 0 ? orderTax / orderTotal : 0;
+            const itemTax = (unitPrice * q) * taxRatio;
+
+            totalRefundAmount += (unitPrice * q);
+            totalTaxReversal += itemTax;
+            totalCogsReversal += (unitCost * q);
+
+            // 4. Restore Inventory via InventoryService (Standardized way)
+            // This ensures movement logs and condition routing are applied correctly
+            await this.inventoryService.intakeStock(tenant_id, {
+                item_id: item.product_id,
+                location_id: location_id,
+                quantity: q,
+                unitCost: unitCost,
+                reason: `RETURN: ${conditionData.condition}`,
+                referenceType: 'RETAIL_ORDER',
+                referenceId: order_id,
+                createdBy: user_id
+            }, user_id, tx);
+
+            // 5. Emit Enhanced Condition Events
+            if (conditionData.condition === 'damaged_repairable') {
+                await this.eventBus.publish({
+                    event_type: 'INVENTORY_REPAIR_NEEDED',
+                    tenant_id,
+                    entity_id: item.product_id,
+                    entity_type: 'PRODUCT',
+                    source_module: 'retail',
+                    payload: { order_id, notes: conditionData.notes },
+                    user_id
+                });
+            } else if (conditionData.condition === 'damaged_unrepairable') {
+                await this.eventBus.publish({
+                    event_type: 'INVENTORY_WASTE_DETECTED',
+                    tenant_id,
+                    entity_id: item.product_id,
+                    entity_type: 'PRODUCT',
+                    source_module: 'retail',
+                    payload: { order_id, notes: conditionData.notes },
+                    user_id
+                });
+            }
+        }
+
+        // 6. Create Journal Entries (The 6-Line Reversal)
+        // Revenue Reversal (Debit Returns, Debit Tax, Credit Cash/AR)
+        await this.financeRepository.createJournal(tenant_id, {
+            sourceEventId: `RET-${order_id}-${Date.now()}`,
+            referenceType: 'RETAIL_RETURN',
+            referenceId: order_id,
+            description: `Return Reversal for Order ${order.id}`,
+            lines: [
+                { accountId: '4100-SALES-RETURNS', debit: totalRefundAmount, credit: 0 },
+                { accountId: '2100-TAX-PAYABLE', debit: totalTaxReversal, credit: 0 },
+                { accountId: '1010-CASH-ON-HAND', debit: 0, credit: totalRefundAmount + totalTaxReversal },
+                // COGS/Inventory Reversal (Debit Inventory, Credit COGS)
+                { accountId: '1300-INVENTORY', debit: totalCogsReversal, credit: 0 },
+                { accountId: '5100-COGS', debit: 0, credit: totalCogsReversal }
+            ]
+        }, tx);
+
+        // 7. Audit Log
+        await this.auditService.log({
+            tenant_id,
+            user_id,
+            module: "retail",
+            action: "RETURN_COMPLETE",
+            entity_type: "ORDER",
+            entity_id: order_id,
+            metadata: { 
+                refundedItems: data.itemIds.length, 
+                refundTotal: totalRefundAmount,
+                taxReversed: totalTaxReversal,
+                cogsReversed: totalCogsReversal
+            },
+        });
+
+        return { success: true };
     });
-
-    // 4. Call Repository
-    const result = await this.retailRepository.processReturn(
-      tenant_id,
-      order_id,
-      data,
-    );
-
-    // 5. Audit Log
-    await this.auditService.log({
-      tenant_id,
-      user_id,
-      module: "retail",
-      action: "RETURN_PROCESS",
-      entity_type: "ORDER",
-      entity_id: order_id,
-      metadata: { refundedItems: data.itemIds.length },
-    });
-
-    return result;
   }
 
   // Inventory Operations
@@ -1269,5 +1624,28 @@ export class RetailService {
 
   async logEvent(tenant_id: string, data: any) {
     return this.retailRepository.logEvent(tenant_id, data);
+  }
+
+  async printOrder(tenant_id: string, order_id: string): Promise<Buffer> {
+    const order = await this.retailRepository.getOrder(tenant_id, order_id);
+    if (!order) throw new NotFoundException("Order not found");
+
+    const store = await this.retailRepository.getStore(tenant_id, order.store_id);
+    
+    return this.retailPrint.generateReceiptPayload({
+      storeName: store?.name || "Zenvix Retail",
+      address: store?.address || "Digital Store", 
+      orderNumber: order.id.slice(0, 8).toUpperCase(),
+      date: new Date(order.created_at),
+      items: order.items.map(item => ({
+        name: item.name,
+        quantity: Number(item.quantity),
+        price: Number(item.unit_price),
+        total: Number(item.total_price)
+      })),
+      tax: Number(order.tax_total),
+      total: Number(order.grand_total),
+      paymentMethod: order.payment_method || "CASH"
+    });
   }
 }

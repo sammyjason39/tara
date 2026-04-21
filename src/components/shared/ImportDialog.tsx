@@ -20,7 +20,7 @@ import {
 import { toast } from "sonner";
 import { useSession } from "@/core/security/session";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { apiUrl } from "@/lib/api-config";
+import { apiRequest } from "@/core/api/apiClient";
 
 interface ImportDialogProps {
   open: boolean;
@@ -62,16 +62,7 @@ export function ImportDialog({
     formData.append("file", file);
 
     try {
-      const response = await fetch(apiUrl(endpoint), {
-        method: "POST",
-        headers: {
-          "x-tenant-id": session.tenantId,
-          Authorization: `Bearer ${session.token}`,
-        },
-        body: formData,
-      });
-
-      const data = await response.json();
+      const data = await apiRequest<any>(endpoint, "POST", session, formData);
       setResults(data);
 
       if (data.success) {

@@ -10,7 +10,8 @@ import React, {
 import * as storage from "@/lib/local-storage";
 import { type SessionContext } from "@/core/security/session";
 import { type Role, Roles } from "@/core/security/roles";
-import { apiUrl } from "@/lib/api-config";
+import { apiRequest } from "@/core/api/apiClient";
+import { retailService } from "@/core/services/retail/retailService";
 
 interface UserProfile {
   id: string;
@@ -61,13 +62,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (storedToken) {
       // Validate token and fetch user
-      fetch(apiUrl("/auth/me"), {
-        headers: { Authorization: `Bearer ${storedToken}` },
-      })
-        .then((res) => res.json())
+      apiRequest<any>("/v1/auth/me", "GET", { token: storedToken } as any)
         .then((data) => {
-          if (data.success && data.data) {
-            setUser(data.data);
+          if (data) {
+            setUser(data);
             if (storedSession) {
               const parsedSession = JSON.parse(storedSession) as SessionContext;
               setSessionState({
@@ -75,17 +73,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 permissions: parsedSession.permissions || [],
               });
             } else if (
-              data.data.userCompanies &&
-              data.data.userCompanies.length > 0
+              data.userCompanies &&
+              data.userCompanies.length > 0
             ) {
               // Auto-select default company
               const defaultCompany =
-                data.data.userCompanies.find((c: any) => c.isDefault) ||
-                data.data.userCompanies[0];
+                data.userCompanies.find((c: any) => c.isDefault) ||
+                data.userCompanies[0];
               const newSession = {
-                userId: data.data.id,
+                userId: data.id,
                 tenantId: defaultCompany.tenantId,
-                locationId: "", // Default to global scope
+                locationId: "", 
                 role: defaultCompany.role as Role,
                 departmentId: "dept-default",
                 token: storedToken,
@@ -127,14 +125,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (credentials: any) => {
       try {
-        const res = await fetch(apiUrl("/auth/login"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(credentials),
-        });
-        const data = await res.json();
+        const data = await apiRequest<any>("/v1/auth/login", "POST", null, credentials);
 
-        if (data.success) {
+        if (data.token) {
           localStorage.setItem("ZENVIX_TOKEN", data.token);
           setUser(data.user);
 
@@ -148,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               tenantId: defaultCompany.tenantId,
               locationId: "",
               role: defaultCompany.role as Role,
-              departmentId: "dept-default",
+              departmentId: "dept-ret",
               token: data.token,
               permissions: [
                 "VIEW_FINANCIALS",
@@ -164,7 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           return { success: true };
         }
-        return { success: false, error: data.message || "Login failed" };
+        return { success: false, error: "Login failed" };
       } catch (e: any) {
         return { success: false, error: e.message };
       }
@@ -174,15 +167,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerUser = useCallback(async (formData: any) => {
     try {
-      const res = await fetch(apiUrl("/auth/register"), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-      const data = await res.json();
-      return data.success
-        ? { success: true }
-        : { success: false, error: data.message };
+      await apiRequest("/v1/auth/register", "POST", null, formData);
+      return { success: true };
     } catch (e: any) {
       return { success: false, error: e.message };
     }
@@ -192,24 +178,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async (formData: any) => {
       try {
         const token = localStorage.getItem("ZENVIX_TOKEN");
-        const res = await fetch(apiUrl("/auth/company/provision"), {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(formData),
-        });
-        const json = await res.json();
+        const json = await apiRequest<any>("/v1/auth/company/provision", "POST", { token } as any, formData);
 
-        if (json.success) {
+        if (json) {
           // Create active session based on provisioned data
           const newSession = {
             userId: user?.id || "unknown",
-            tenantId: json.data.tenantId,
-            locationId: json.data.locationId,
-            role: Roles.SUPERADMIN, // Owner mapped to Superadmin effectively for frontend
-            departmentId: json.data.departmentId,
+            tenantId: json.tenantId || json.data?.tenantId,
+            locationId: json.locationId || json.data?.locationId,
+            role: Roles.SUPERADMIN, 
+            departmentId: json.departmentId || json.data?.departmentId,
             token: token as string,
             permissions: [
               "VIEW_FINANCIALS",
@@ -223,15 +201,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(newSession);
 
           // Reload user to get updated userCompanies
-          const meRes = await fetch(apiUrl("/auth/me"), {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const meData = await meRes.json();
-          if (meData.success) setUser(meData.data);
+          const meData = await apiRequest<any>("/v1/auth/me", "GET", { token } as any);
+          if (meData) setUser(meData);
 
           return { success: true, session: newSession };
         }
-        return { success: false, error: json.message };
+        return { success: false, error: "Provisioning failed" };
       } catch (e: any) {
         return { success: false, error: e.message };
       }
@@ -239,22 +214,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user, setSession],
   );
 
-  /* Replaced by useCallback above */
-
   const updateLocation = useCallback(
     (locationId: string) => {
-      // IMPORTANT: Use functional updater to avoid depending on `session` in deps.
-      // If `session` is in the dep array, updateLocation gets a new reference every
-      // time session changes, which would cascade re-renders to all consumers.
       setSessionState((prev) => {
-        if (!prev || prev.locationId === locationId) return prev; // No change, no re-render
+        if (!prev || prev.locationId === locationId) return prev;
         const next = { ...prev, locationId };
         localStorage.setItem("ZENVIX_SESSION", JSON.stringify(next));
         return next;
       });
     },
-    [], // Stable: no deps needed with functional updater
+    [],
   );
+
+  // Auto-resolve locationId if missing but tenantId is present
+  useEffect(() => {
+    if (session && session.tenantId && !session.locationId) {
+      console.log("[AuthContext] Missing locationId, attempting auto-resolution...");
+      retailService.listStores(session.tenantId, session)
+        .then(stores => {
+          if (stores && stores.length > 0) {
+            console.log("[AuthContext] Auto-resolved locationId:", stores[0].id);
+            updateLocation(stores[0].id);
+          }
+        })
+        .catch(err => {
+          console.error("[AuthContext] Location resolution failed:", err);
+        });
+    }
+  }, [session, updateLocation]);
 
   const value = useMemo(
     () => ({

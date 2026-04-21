@@ -30,37 +30,37 @@ const mapMethodToChannel = (method: string): PaymentTransaction["channel"] => {
 
 export const paymentService = {
   listTransactions: async (tenantId: string, session: SessionContext) =>
-    apiRequest<PaymentTransaction[]>("/payment/transactions", "GET", session),
+    apiRequest<PaymentTransaction[]>("/v1/payment/transactions", "GET", session),
 
   listProviders: async (tenantId: string, session: SessionContext) =>
-    apiRequest<PaymentProvider[]>("/payment/providers", "GET", session),
+    apiRequest<PaymentProvider[]>("/v1/payment/providers", "GET", session),
 
   listRoutingPolicies: async (tenantId: string, session: SessionContext) =>
-    apiRequest<RoutingPolicy[]>("/payment/routing-policies", "GET", session),
+    apiRequest<RoutingPolicy[]>("/v1/payment/routing-policies", "GET", session),
 
   listDevices: async (tenantId: string, session: SessionContext) =>
-    apiRequest<PosDevice[]>("/payment/devices", "GET", session),
+    apiRequest<PosDevice[]>("/v1/payment/devices", "GET", session),
 
   listDevicePools: async (tenantId: string, session: SessionContext) =>
-    apiRequest<DevicePool[]>("/payment/device-pools", "GET", session),
+    apiRequest<DevicePool[]>("/v1/payment/device-pools", "GET", session),
 
   listSettlements: async (tenantId: string, session: SessionContext) =>
-    apiRequest<SettlementRecord[]>("/payment/settlements", "GET", session),
+    apiRequest<SettlementRecord[]>("/v1/payment/settlements", "GET", session),
 
   listRefunds: async (tenantId: string, session: SessionContext) =>
-    apiRequest<PaymentRefund[]>("/payment/refunds", "GET", session),
+    apiRequest<PaymentRefund[]>("/v1/payment/refunds", "GET", session),
 
   listDisputes: async (tenantId: string, session: SessionContext) =>
-    apiRequest<PaymentDispute[]>("/payment/disputes", "GET", session),
+    apiRequest<PaymentDispute[]>("/v1/payment/disputes", "GET", session),
 
   listChargebacks: async (tenantId: string, session: SessionContext) =>
-    apiRequest<PaymentChargeback[]>("/payment/chargebacks", "GET", session),
+    apiRequest<PaymentChargeback[]>("/v1/payment/chargebacks", "GET", session),
 
   listEvidencePacks: async (tenantId: string, session: SessionContext) =>
-    apiRequest<EvidencePack[]>("/payment/evidence-packs", "GET", session),
+    apiRequest<EvidencePack[]>("/v1/payment/evidence-packs", "GET", session),
 
   listAuditEvents: async (tenantId: string, session: SessionContext) =>
-    apiRequest<PaymentAuditEvent[]>("/payment/audit-events", "GET", session),
+    apiRequest<PaymentAuditEvent[]>("/v1/payment/audit-events", "GET", session),
 
   async getDashboard(
     tenantId: string,
@@ -368,3 +368,4 @@ export const paymentService = {
     return approvedPayment;
   },
 };
+

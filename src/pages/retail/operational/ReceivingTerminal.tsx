@@ -446,7 +446,7 @@ const ReceivingTerminal = () => {
                   <span className="underline">PO-X282</span> requires immediate
                   supervisor sign-off.
                 </p>
-                <Button className="w-full text-[10px] font-black italic uppercase h-12 bg-red-600 text-white hover:bg-red-700 transition-all rounded-xl shadow-lg shadow-red-200">
+                <Button disabled title="Not available yet" className="w-full text-[10px] font-black italic uppercase h-12 bg-red-600 text-white hover:bg-red-700 transition-all rounded-xl shadow-lg shadow-red-200">
                   FLAG INTAKE ERRORS
                 </Button>
               </CardContent>

@@ -10,14 +10,29 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
+import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
+import { useState } from "react";
 
 export default function RetailInventory() {
+  const [feedback, setFeedback] = useState<{ message: string | null; error: string | null }>({
+    message: null,
+    error: null,
+  });
+
+  const clearFeedback = () => setFeedback({ message: null, error: null });
+  const showComingSoon = () => setFeedback({ message: "This feature is coming soon in the next update.", error: null });
+
   return (
     <div className="space-y-6 max-w-[1400px] mx-auto p-4 md:p-6">
+      <FeedbackAlert 
+        message={feedback.message} 
+        error={feedback.error} 
+        onClear={clearFeedback} 
+      />
       <PageHeader 
         title="Inventory Operations" 
         subtitle="Operational Stock Management & Receiving"
-        primaryAction={<Button><Package className="w-4 h-4 mr-2" /> New Stock Count</Button>}
+        primaryAction={<Button disabled title="Not available yet"><Package className="w-4 h-4 mr-2" /> New Stock Count</Button>}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -40,7 +55,7 @@ export default function RetailInventory() {
                   </div>
                   <div className="flex items-center gap-3">
                     <Badge variant="outline" className="capitalize">{ship.status}</Badge>
-                    <Button size="sm" variant="ghost">Process <ArrowDownLeft className="w-3 h-3 ml-1" /></Button>
+                    <Button disabled title="Not available yet" size="sm" variant="ghost">Process <ArrowDownLeft className="w-3 h-3 ml-1" /></Button>
                   </div>
                 </div>
               ))}
@@ -57,7 +72,7 @@ export default function RetailInventory() {
                   <CardContent>
                     <div className="flex items-center justify-between">
                       <Badge className="bg-orange-100 text-orange-700">DUE TODAY</Badge>
-                      <Button size="sm">Start Count</Button>
+                      <Button disabled title="Not available yet" size="sm">Start Count</Button>
                     </div>
                   </CardContent>
                </Card>
@@ -69,7 +84,7 @@ export default function RetailInventory() {
                   <CardContent>
                     <div className="flex items-center justify-between">
                       <Badge variant="outline">Schedule: Feb 28</Badge>
-                      <Button size="sm" variant="ghost">View Details</Button>
+                      <Button onClick={(e) => { e.preventDefault(); showComingSoon(); }} size="sm" variant="ghost">View Details</Button>
                     </div>
                   </CardContent>
                </Card>
@@ -107,7 +122,7 @@ export default function RetailInventory() {
               <p className="text-xs opacity-80 leading-relaxed">
                 Use the operational scanner to intake local courier shipments not tracked via Enterprise Logistics.
               </p>
-              <Button variant="secondary" className="w-full text-blue-700">Open Scanner</Button>
+              <Button onClick={(e) => { e.preventDefault(); showComingSoon(); }} variant="secondary" className="w-full text-blue-700">Open Scanner</Button>
             </CardContent>
           </Card>
         </div>

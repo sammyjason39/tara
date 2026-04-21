@@ -15,6 +15,8 @@ import {
 import { useEffect, useState } from "react";
 import { useSession } from "@/core/security/session";
 import { financeService } from "@/core/services";
+import { reportingService } from "@/core/services/reportingService";
+import { useToast } from "@/hooks/use-toast";
 
 const statusTone = (status: string) => {
   if (status === "Complete" || status === "Ready") {
@@ -28,6 +30,7 @@ const statusTone = (status: string) => {
 
 export default function CoreFinance() {
   const session = useSession();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<{
     financialSummary: any[];
@@ -72,6 +75,16 @@ export default function CoreFinance() {
     moduleContributions,
   } = data;
   const retailStats = moduleContributions?.retail;
+
+  const handleDownloadTaxPackage = async () => {
+    try {
+      toast({ title: "Tax Package", description: "Generating full compliance documentation..." });
+      await reportingService.generateReport(session, { report_type: 'TAX_COMPLIANCE', format: 'PDF' });
+      toast({ title: "Generation Queued", description: "Check the Reports page for status." });
+    } catch (err) {
+      toast({ title: "Error", description: "Reporting engine unavailable.", variant: "destructive" });
+    }
+  };
 
   return (
     <PageShell
@@ -212,7 +225,7 @@ export default function CoreFinance() {
                   </div>
                 </div>
               ))}
-              <Button variant="outline" className="w-full">
+              <Button onClick={() => toast({ title: "Full Queue", description: "Redirecting to detailed billing ledger..." })} variant="outline" className="w-full">
                 View full queue
               </Button>
             </div>
@@ -252,7 +265,7 @@ export default function CoreFinance() {
                   <ShieldCheck className="h-4 w-4" />
                   Tax documentation package ready
                 </div>
-                <Button size="sm" variant="outline">
+                <Button onClick={handleDownloadTaxPackage} size="sm" variant="outline">
                   Download
                 </Button>
               </div>

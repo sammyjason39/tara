@@ -30,7 +30,7 @@ export const workflowService = {
       metadata?: any;
     },
   ): Promise<WorkflowRequest> {
-    return apiRequest<WorkflowRequest>("/workflow/request", "POST", session, input);
+    return apiRequest<WorkflowRequest>("/v1/workflow/request", "POST", session, input);
   },
 
   async listInbox(
@@ -45,7 +45,7 @@ export const workflowService = {
     tenantId: string,
     session: SessionContext,
   ): Promise<WorkflowRequest[]> {
-    return apiRequest<WorkflowRequest[]>("/workflow/list", "GET", session);
+    return apiRequest<WorkflowRequest[]>("/v1/workflow/list", "GET", session);
   },
 
   async approveRequest(
@@ -68,3 +68,4 @@ export const workflowService = {
 };
 
 export type { WorkflowRequest };
+

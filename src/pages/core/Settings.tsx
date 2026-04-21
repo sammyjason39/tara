@@ -18,6 +18,9 @@ import { PageShell } from "@/core/ui/PageShell";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
+import { useSession } from "@/core/security/session";
+import { orgSettingsService, OrgProfile, TenantPreferences } from "@/core/services/orgSettingsService";
+import { useToast } from "@/hooks/use-toast";
 
 const SETTINGS_TABS = [
   { value: "general", label: "General" },
@@ -36,16 +39,61 @@ function isSettingsTab(value?: string): value is SettingsTab {
 
 export default function CoreSettings() {
   const navigate = useNavigate();
+  const session = useSession();
+  const { toast } = useToast();
   const { tab } = useParams<{ tab?: string }>();
+  
   const [activeTab, setActiveTab] = useState<SettingsTab>(
     isSettingsTab(tab) ? tab : DEFAULT_TAB,
   );
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
+  const [profile, setProfile] = useState<OrgProfile | null>(null);
+  const [preferences, setPreferences] = useState<TenantPreferences | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const clearStatus = () => {
-    setStatusMessage(null);
-    setErrorMessage(null);
+  useEffect(() => {
+    async function init() {
+      try {
+        const [p, pref] = await Promise.all([
+          orgSettingsService.getProfile(session),
+          orgSettingsService.getPreferences(session)
+        ]);
+        setProfile(p);
+        setPreferences(pref);
+      } catch (err) {
+        console.error("Failed to load settings:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    init();
+  }, [session]);
+
+  const handleSaveProfile = async () => {
+    if (!profile) return;
+    setSaving(true);
+    try {
+      await orgSettingsService.updateProfile(session, profile);
+      toast({ title: "Success", description: "Organization profile updated." });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to update profile.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSavePreferences = async () => {
+    if (!preferences) return;
+    setSaving(true);
+    try {
+      await orgSettingsService.updatePreferences(session, preferences);
+      toast({ title: "Success", description: "System preferences updated." });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to update preferences.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   useEffect(() => {
@@ -71,19 +119,13 @@ export default function CoreSettings() {
             subtitle="Manage organization configuration, compliance, and access controls."
             primaryAction={
               <Button
-                onClick={() => {
-                  try {
-                    // Logic to save settings would go here.
-                    setStatusMessage("Settings updated successfully.");
-                  } catch (err) {
-                    setErrorMessage("Failed to update settings.");
-                  }
-                }}
+                loading={saving}
+                onClick={activeTab === 'general' ? handleSaveProfile : handleSavePreferences}
               >
                 Save changes
               </Button>
             }
-            secondaryActions={<Button variant="outline">Reset</Button>}
+            secondaryActions={<Button disabled title="Not available yet" variant="outline">Reset</Button>}
           />
         }
         left={
@@ -115,11 +157,15 @@ export default function CoreSettings() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="org-name">Organization name</Label>
-                  <Input id="org-name" placeholder="Enter organization name" />
+                  <Input 
+                    id="org-name" 
+                    value={profile?.name || ''} 
+                    onChange={(e) => setProfile(p => p ? { ...p, name: e.target.value } : null)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="org-legal">Legal entity</Label>
-                  <Input id="org-legal" placeholder="Enter legal entity name" />
+                  <Input id="org-legal" placeholder="Enter legal entity name" disabled />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="org-email">Primary email</Label>
@@ -127,11 +173,12 @@ export default function CoreSettings() {
                     id="org-email"
                     type="email"
                     placeholder="email@company.com"
+                    disabled
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="org-phone">Phone</Label>
-                  <Input id="org-phone" placeholder="+1 (000) 000-0000" />
+                  <Input id="org-phone" placeholder="+1 (000) 000-0000" disabled />
                 </div>
               </div>
               <div className="space-y-2">
@@ -139,6 +186,7 @@ export default function CoreSettings() {
                 <Textarea
                   id="org-address"
                   placeholder="Street, city, state, postal code"
+                  disabled
                 />
               </div>
             </WorkspacePanel>
@@ -173,7 +221,10 @@ export default function CoreSettings() {
                 </div>
                 <div className="space-y-2">
                   <Label>Currency</Label>
-                  <Select defaultValue="usd">
+                  <Select 
+                    value={profile?.currency?.toLowerCase() || 'usd'}
+                    onValueChange={(val) => setProfile(p => p ? { ...p, currency: val.toUpperCase() } : null)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select currency" />
                     </SelectTrigger>
@@ -207,7 +258,10 @@ export default function CoreSettings() {
                       Force manager approval for any refund workflow.
                     </p>
                   </div>
-                  <Switch />
+                  <Switch 
+                    checked={preferences?.require_refund_approval || false} 
+                    onCheckedChange={(checked) => setPreferences(prev => prev ? { ...prev, require_refund_approval: checked } : null)}
+                  />
                 </div>
                 <div className="flex items-center justify-between rounded-lg border p-4">
                   <div>
@@ -218,7 +272,24 @@ export default function CoreSettings() {
                       Require a second approver for access changes.
                     </p>
                   </div>
-                  <Switch />
+                  <Switch 
+                    checked={preferences?.dual_control_roles || false} 
+                    onCheckedChange={(checked) => setPreferences(prev => prev ? { ...prev, dual_control_roles: checked } : null)}
+                  />
+                </div>
+                <div className="flex items-center justify-between rounded-lg border p-4">
+                  <div>
+                    <p className="text-sm font-medium">
+                      Biometric Attendance
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Enable integration with hardware biometric devices for staff clock-in.
+                    </p>
+                  </div>
+                  <Switch 
+                    checked={preferences?.enable_biometric_attendance || false} 
+                    onCheckedChange={(checked) => setPreferences(prev => prev ? { ...prev, enable_biometric_attendance: checked } : null)}
+                  />
                 </div>
               </div>
             </WorkspacePanel>
@@ -275,7 +346,7 @@ export default function CoreSettings() {
                     Create roles to control access by team and function.
                   </p>
                 </div>
-                <Button variant="outline">Create role</Button>
+                <Button disabled title="Not available yet" variant="outline">Create role</Button>
               </div>
             </WorkspacePanel>
           </TabsContent>
@@ -294,7 +365,7 @@ export default function CoreSettings() {
                     Add approved providers to extend your workspace.
                   </p>
                 </div>
-                <Button variant="outline">Browse integrations</Button>
+                <Button disabled title="Not available yet" variant="outline">Browse integrations</Button>
               </div>
             </WorkspacePanel>
           </TabsContent>

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { useSession } from "@/core/security/session";
+import { apiRequest } from "@/core/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -78,17 +79,16 @@ export default function MailHub() {
   const fetchMessages = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/comms/mail/messages?folder=${activeFolder}`, {
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
-      });
-      const data = await response.json();
+      const data = await apiRequest<any>(`/comms/mail/messages?folder=${activeFolder}`, "GET", session);
       setMessages(data.data || []);
       setUserAccount(data.account);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch mail:", error);
+      toast({
+        title: "Sync Error",
+        description: error.message || "Failed to synchronize mail account.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -102,13 +102,7 @@ export default function MailHub() {
     setSelectedMail(mail);
     if (!mail.isRead) {
       try {
-        await fetch(`/api/comms/mail/${mail.id}/read`, {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${session.token}`,
-            "x-tenant-id": session.tenantId,
-          },
-        });
+        await apiRequest(`/comms/mail/${mail.id}/read`, "PATCH", session);
         setMessages(prev => prev.map(m => m.id === mail.id ? { ...m, isRead: true } : m));
         await fetchCounts();
       } catch (e) {
@@ -120,57 +114,47 @@ export default function MailHub() {
   const handleToggleStar = async (e: React.MouseEvent, mailId: string) => {
     e.stopPropagation();
     try {
-      await fetch(`/api/comms/mail/${mailId}/star`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
-      });
+      await apiRequest(`/comms/mail/${mailId}/star`, "PATCH", session);
       setMessages(prev => prev.map(m => m.id === mailId ? { ...m, isStarred: !m.isStarred } : m));
       if (selectedMail && selectedMail.id === mailId) {
         setSelectedMail({ ...selectedMail, isStarred: !selectedMail.isStarred });
       }
-    } catch (e) {
-      toast({ title: "Error", description: "Failed to update star status.", variant: "destructive" });
+    } catch (e: any) {
+      toast({ 
+        title: "Action Failed", 
+        description: e.message || "Failed to update star status.", 
+        variant: "destructive" 
+      });
     }
   };
 
   const handleDeleteMail = async (id: string) => {
     try {
-      const response = await fetch(`/api/comms/mail/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
+      await apiRequest(`/comms/mail/${id}`, "DELETE", session);
+      toast({ title: "Updated", description: "Message status updated." });
+      setSelectedMail(null);
+      fetchMessages();
+    } catch (e: any) {
+      toast({ 
+        title: "Deletion Failed", 
+        description: e.message || "Operation failed.", 
+        variant: "destructive" 
       });
-      if (response.ok) {
-        toast({ title: "Updated", description: "Message status updated." });
-        setSelectedMail(null);
-        fetchMessages();
-      }
-    } catch (e) {
-      toast({ title: "Error", description: "Operation failed.", variant: "destructive" });
     }
   };
 
   const handleRestoreMail = async (id: string) => {
     try {
-      const response = await fetch(`/api/comms/mail/${id}/restore`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
+      await apiRequest(`/comms/mail/${id}/restore`, "PATCH", session);
+      toast({ title: "Restored", description: "Message moved back to Inbox." });
+      setSelectedMail(null);
+      fetchMessages();
+    } catch (e: any) {
+      toast({ 
+        title: "Restore Failed", 
+        description: e.message || "Restore operation failed.", 
+        variant: "destructive" 
       });
-      if (response.ok) {
-        toast({ title: "Restored", description: "Message moved back to Inbox." });
-        setSelectedMail(null);
-        fetchMessages();
-      }
-    } catch (e) {
-      toast({ title: "Error", description: "Restore failed.", variant: "destructive" });
     }
   };
 
@@ -181,32 +165,28 @@ export default function MailHub() {
     }
     setIsSending(true);
     try {
-      const response = await fetch("/api/comms/mail/send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
-        body: JSON.stringify({
-          toAddresses: (composeData.to || "").split(/[,;]/).map(a => a.trim()).filter(Boolean),
-          subject: composeData.subject,
-          bodyText: composeData.body,
-          status: status,
-        }),
-      });
+      const payload = {
+        toAddresses: (composeData.to || "").split(/[,;]/).map(a => a.trim()).filter(Boolean),
+        subject: composeData.subject,
+        bodyText: composeData.body,
+        status: status,
+      };
 
-      if (response.ok) {
-        toast({ title: "Success", description: status === 'draft' ? "Draft saved." : "Mail dispatched successfully." });
-        setIsComposeOpen(false);
-        setComposeData({ to: "", subject: "", body: "", status: "sent" });
-        fetchMessages();
-      } else {
-        const errorData = await response.json();
-        toast({ title: "Error", description: errorData.message || "Failed to publish transmission.", variant: "destructive" });
-      }
-    } catch (e) {
-      toast({ title: "Error", description: "Service currently unavailable.", variant: "destructive" });
+      await apiRequest("/comms/mail/send", "POST", session, payload);
+
+      toast({ 
+        title: "Success", 
+        description: status === 'draft' ? "Draft saved." : "Mail dispatched successfully." 
+      });
+      setIsComposeOpen(false);
+      setComposeData({ to: "", subject: "", body: "", status: "sent" });
+      fetchMessages();
+    } catch (e: any) {
+      toast({ 
+        title: "Transmission Failed", 
+        description: e.message || "Service currently unavailable.", 
+        variant: "destructive" 
+      });
     } finally {
       setIsSending(false);
     }
@@ -239,9 +219,9 @@ export default function MailHub() {
           </div>
           <div className="flex items-center gap-4">
              {userAccount && (
-               <Badge variant="outline" className="h-8 px-4 rounded-full border-primary/20 bg-primary/5 text-primary lowercase font-mono">
-                  {userAccount.address}
-               </Badge>
+                <Badge variant="outline" className="h-8 px-4 rounded-full border-primary/20 bg-primary/5 text-primary lowercase font-mono">
+                   {userAccount.address}
+                </Badge>
              )}
              <Button onClick={() => { setComposeData({to:"", subject:"", body:"", status: "sent"}); setIsComposeOpen(true); }} className="h-11 px-8 bg-slate-900 hover:bg-black text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg">
                 <Plus className="h-4 w-4 mr-2" /> Compose
@@ -345,7 +325,7 @@ export default function MailHub() {
                          </Button>
                          {activeFolder === 'trash' && (
                             <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-green-50 hover:text-green-500" onClick={() => handleRestoreMail(selectedMail.id)}>
-                              <RefreshCw className="h-5 w-5" />
+                               <RefreshCw className="h-5 w-5" />
                             </Button>
                          )}
                          <Button variant="ghost" size="icon" className={`h-10 w-10 rounded-xl ${selectedMail.isStarred ? 'text-amber-500' : ''}`} onClick={(e) => handleToggleStar(e, selectedMail.id)}>

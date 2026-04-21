@@ -51,6 +51,9 @@ const CashierPOS = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeShift, setActiveShift] = useState<RetailShift | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [idempotencyKey, setIdempotencyKey] = useState<string>(
+    window.crypto.randomUUID?.() || Math.random().toString(36).substring(2),
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [activePaymentModal, setActivePaymentModal] = useState<
     "none" | "cash" | "electronic"
@@ -223,6 +226,15 @@ const CashierPOS = () => {
   ) => {
     if (cart.length === 0 || !session.tenantId) return;
 
+    if (!activeStore?.id) {
+      toast({
+        title: "Store Context Missing",
+        description: "Please select a store to proceed.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsProcessing(true);
     try {
       const subtotal = cart.reduce(
@@ -231,7 +243,6 @@ const CashierPOS = () => {
       );
       const totalAmount = subtotal * 1.11; // subtotal + 11% tax
 
-      // 1. Create Order in Retail Module
       const paymentMethodMap: Record<
         string,
         "cash" | "card" | "qr" | "wallet"
@@ -242,64 +253,41 @@ const CashierPOS = () => {
         WALLET: "wallet",
       };
 
-      const order = await retailService.createOrder(
+      // Atomic Backend Checkout with Idempotency
+      const order = await retailService.checkout(
         session.tenantId,
         session,
-        activeStore?.id || "",
-        "terminal-pos",
-        cart.map((item) => ({
-          productId: item.id,
-          name: item.name,
-          quantity: item.quantity,
-          unitPrice: item.price,
-        })),
-        paymentMethodMap[method] || "cash",
-        totalAmount,
-        activeShift?.id,
-      );
-
-      // 2. If Electronic, create Payment Execution Request
-      let paymentTxId: string | undefined;
-      if (method !== "CASH") {
-        let paymentChannel: "CARD_POS" | "QR" | "WALLET" = "CARD_POS";
-        if (method === "QRIS") paymentChannel = "QR";
-        if (method === "WALLET") paymentChannel = "WALLET";
-
-        const paymentTx = await paymentService.createExecutionRequest(
-          session.tenantId,
-          session,
-          {
-            type: "POS_PAYMENT",
-            amount: totalAmount,
-            destination: "Retail Terminal",
-            channel: paymentChannel,
-            source: "Retail POS",
-            externalReference: order.id,
-          },
-        );
-        paymentTxId = paymentTx.id;
-
-        // Simulate wait for device/customer interaction
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-      }
-
-      // 3. Process Retail Payment Record
-      await retailService.processPayment(
-        session.tenantId,
-        session,
-        order.id,
-        totalAmount,
-        method === "CASH" ? "cash" : method === "QRIS" ? "qr" : "card",
-        activeShift?.id,
+        {
+          store_id: activeStore.id,
+          terminal_id: "terminal-pos",
+          items: cart.map((item) => ({
+            product_id: item.id,
+            name: item.name,
+            quantity: item.quantity,
+            unit_price: item.price,
+          })),
+          payment_method: paymentMethodMap[method] || "cash",
+          payment_received: receivedAmount || totalAmount,
+          grand_total: totalAmount,
+          shift_id: activeShift?.id || undefined,
+          payment_channel: channel,
+        },
+        idempotencyKey,
       );
 
       setCart([]);
       setActivePaymentModal("none");
+      // Generate new key for the next unique transaction
+      setIdempotencyKey(
+        window.crypto.randomUUID?.() || Math.random().toString(36).substring(2),
+      );
+
       toast({
         title: "Transaction Successful",
-        description: `Order #${order.id.slice(-6)} completed via ${method}.`,
+        description: `Order #${order.id.slice(-6).toUpperCase()} completed via ${method}.`,
       });
     } catch (error) {
+      console.error("Checkout Error:", error);
       toast({
         title: "Transaction Failed",
         description: error instanceof Error ? error.message : "Internal Error.",

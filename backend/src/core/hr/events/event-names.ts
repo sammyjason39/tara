@@ -53,6 +53,8 @@ export const EVENT_NAMES = {
   LEAVE_APPROVED: 'hr.leave.approved.v1',
   LEAVE_REJECTED: 'hr.leave.rejected.v1',
   CLOCK_IN: 'hr.clock.in.v1',
+  CLOCK_IN_UNSCHEDULED: 'hr.clock.in.unscheduled.v1',
+  CLOCK_IN_LATE: 'hr.clock.in.late.v1',
   CLOCK_OUT: 'hr.clock.out.v1',
   SHIFT_ASSIGNED: 'hr.shift.assigned.v1',
   SCHEDULE_CREATED: 'hr.schedule.created.v1',

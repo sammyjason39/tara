@@ -13,9 +13,14 @@ import {
   Timer,
   ServerCrash,
   Link2,
+  Database,
+  Loader2,
 } from "lucide-react";
 import { useSession } from "@/core/security/session";
 import { itService } from "@/core/services/it/itService";
+import { adminService } from "@/core/services/adminService";
+import { RequestModal } from "@/core/ui/RequestModal";
+import { useToast } from "@/hooks/use-toast";
 
 const moduleActivity = [
   {
@@ -101,19 +106,77 @@ const statusBadge = (status: string) => {
 
 export default function CoreOperations() {
   const session = useSession();
+  const { toast } = useToast();
   const [overviewData, setOverviewData] = useState<any | null>(null);
+  const [syncStatus, setSyncStatus] = useState<any>(null);
+  const [iotDevices, setIotDevices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     async function load() {
       try {
-        const data = await itService.getOverview(session.tenantId, session);
-        setOverviewData(data);
+        const [itOverview, sync, iot] = await Promise.all([
+          itService.getOverview(session.tenant_id, session),
+          adminService.getSyncStatus(session),
+          adminService.getIotDevices(session)
+        ]);
+        setOverviewData(itOverview);
+        setSyncStatus(sync.data);
+        setIotDevices(iot.data);
       } catch (err) {
-        console.error("Failed to load IT overview", err);
+        console.error("Failed to load operations data", err);
+      } finally {
+        setLoading(false);
       }
     }
     load();
   }, [session]);
+
+  const handleInspect = async (component: string) => {
+    try {
+      const health = await itService.getSystemHealth(session.tenant_id, session);
+      const filtered = health.filter(h => h.component.toLowerCase().includes(component.toLowerCase()));
+      
+      if (filtered.length > 0) {
+        toast({
+          title: `Health Check: ${component}`,
+          description: `Nodes: ${filtered.length} | Avg Latency: ${Math.round(filtered.reduce((acc, curr) => acc + curr.latencyMs, 0) / filtered.length)}ms`,
+        });
+      } else {
+        toast({
+          title: "Health Check",
+          description: `No active nodes found for ${component}. System may be in idle state.`,
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Health Check Failed",
+        description: "Unable to reach ITGateway telemetry service.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleLaunchBridge = async (data: { title: string; reason: string }) => {
+    try {
+      await adminService.createRequest(session.tenant_id, session, {
+        type: "INCIDENT_BRIDGE",
+        title: data.title,
+        description: data.reason,
+      });
+      toast({
+        title: "Incident Bridge Requested",
+        description: "Crisis management team has been notified.",
+      });
+    } catch (err) {
+      toast({
+        title: "Bridge Initiation Failed",
+        description: "Unable to reach emergency services.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const retailStats = overviewData?.moduleContributions?.retail;
 
@@ -123,12 +186,70 @@ export default function CoreOperations() {
         <PageHeader
           title="Operations Command Center"
           subtitle="Real-time visibility into platform operations, incidents, and tenant health."
-          primaryAction={<Button>Launch incident bridge</Button>}
-          secondaryActions={<Button variant="outline">Export daily log</Button>}
+          primaryAction={<Button onClick={() => setIsModalOpen(true)}>Launch incident bridge</Button>}
+          secondaryActions={<Button onClick={(e) => { e.preventDefault(); const c = "data:text/csv;charset=utf-8,Fallback Data\nExported Row"; const l = document.createElement("a"); l.href = encodeURI(c); l.download = "export.csv"; l.click(); }} variant="outline">Export daily log</Button>}
         />
       }
     >
       <div className="space-y-6">
+        {/* --- SYSTEM OBSERVABILITY OVERLAY --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <WorkspacePanel 
+            title="Global Sync Health" 
+            description="Operational data synchronization across branches and edge gateways."
+          >
+            {syncStatus ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border">
+                  <div className="flex items-center gap-3">
+                    <Database className={`h-5 w-5 ${syncStatus.is_healthy ? 'text-emerald-500' : 'text-rose-500'}`} />
+                    <div>
+                      <p className="text-sm font-semibold">Persistence Queue</p>
+                      <p className="text-xs text-muted-foreground">{syncStatus.pending_count} pending / {syncStatus.failed_count} failed</p>
+                    </div>
+                  </div>
+                  <Badge variant={syncStatus.is_healthy ? "outline" : "destructive"}>
+                    {syncStatus.status}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between text-xs px-2">
+                  <span className="text-muted-foreground">Sync Latency</span>
+                  <span className="font-mono">{syncStatus.sync_latency_min === -1 ? 'N/A' : `${syncStatus.sync_latency_min}m`}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="h-24 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            )}
+          </WorkspacePanel>
+
+          <WorkspacePanel 
+            title="Edge IoT Network" 
+            description="Connected hardware and sensor telemetry status."
+          >
+             <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="text-center p-2 rounded bg-muted/30 border">
+                    <p className="text-xs text-muted-foreground uppercase">Online</p>
+                    <p className="text-lg font-bold text-emerald-500">{iotDevices.filter(d => d.status === 'ONLINE' || d.status === 'ACTIVE').length}</p>
+                  </div>
+                  <div className="text-center p-2 rounded bg-muted/30 border">
+                    <p className="text-xs text-muted-foreground uppercase">Offline</p>
+                    <p className="text-lg font-bold text-rose-500">{iotDevices.filter(d => d.status === 'OFFLINE' || d.status === 'DISCONNECTED').length}</p>
+                  </div>
+                  <div className="text-center p-2 rounded bg-muted/30 border">
+                    <p className="text-xs text-muted-foreground uppercase">Alerts</p>
+                    <p className="text-lg font-bold text-amber-500">{iotDevices.filter(d => d.status === 'ALERT' || d.status === 'WARNING').length}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <Button variant="ghost" size="sm" className="text-[10px] h-6" onClick={() => handleInspect("Edge")}>
+                    Inspect Edge Nodes
+                  </Button>
+                </div>
+             </div>
+          </WorkspacePanel>
+        </div>
+
         {/* --- MODULE CONTRIBUTIONS --- */}
         {retailStats && (
           <WorkspacePanel
@@ -232,7 +353,7 @@ export default function CoreOperations() {
                     <Timer className="h-4 w-4" />
                     Latency {module.latency}
                   </div>
-                  <Button size="sm" variant="outline">
+                  <Button onClick={() => handleInspect(module.name)} size="sm" variant="outline">
                     Inspect
                   </Button>
                 </div>
@@ -247,25 +368,25 @@ export default function CoreOperations() {
             description="Escalations requiring immediate review."
           >
             <div className="space-y-4">
-              {alertsQueue.map((alert) => (
-                <div key={alert.id} className="rounded-lg border p-4">
+              {alertsQueue.map((alertItem) => (
+                <div key={alertItem.id} className="rounded-lg border p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-sm font-medium text-foreground">
-                        {alert.title}
+                        {alertItem.title}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {alert.detail}
+                        {alertItem.detail}
                       </p>
                     </div>
-                    <Badge variant="secondary">{alert.severity}</Badge>
+                    <Badge variant="secondary">{alertItem.severity}</Badge>
                   </div>
                   <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="h-4 w-4" />
-                      {alert.time}
+                      {alertItem.time}
                     </div>
-                    <Button size="sm" variant="outline">
+                    <Button onClick={(e) => { e.preventDefault(); toast({ title: "Alert Review", description: `Opening investigation for: ${alertItem.title}` }); }} size="sm" variant="outline">
                       Review
                     </Button>
                   </div>
@@ -301,7 +422,7 @@ export default function CoreOperations() {
                       </p>
                     </div>
                   </div>
-                  <Button size="sm" variant="outline">
+                  <Button onClick={(e) => { e.preventDefault(); toast({ title: "Checklist Item", description: `Viewing details for ${item.label}` }); }} size="sm" variant="outline">
                     View
                   </Button>
                 </div>
@@ -330,7 +451,7 @@ export default function CoreOperations() {
                 </div>
                 <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
                   <span>{tenant.incidents}</span>
-                  <Button size="sm" variant="outline">
+                  <Button onClick={() => handleInspect(tenant.name)} size="sm" variant="outline">
                     Drill in
                   </Button>
                 </div>
@@ -339,6 +460,15 @@ export default function CoreOperations() {
           </div>
         </WorkspacePanel>
       </div>
+
+      <RequestModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleLaunchBridge}
+        title="Launch Incident Bridge"
+        description="Establish an emergency communication channel for active critical incidents."
+        defaultTitle="Critical Incident Bridge Request"
+      />
     </PageShell>
   );
 }

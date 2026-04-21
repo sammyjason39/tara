@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { useSession } from "@/core/security/session";
+import { apiRequest } from "@/core/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,7 +27,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Search, Info, Loader2 } from "lucide-react";
+import { Search, Info, Loader2, AlertCircle, CheckCircle2, Activity } from "lucide-react";
+import { adminService } from "@/core/services/adminService";
 
 export default function LogHub() {
   const session = useSession();
@@ -46,11 +48,26 @@ export default function LogHub() {
   });
 
   const [selectedLog, setSelectedLog] = useState<any>(null);
+  const [stuckEvents, setStuckEvents] = useState<any>(null);
+  const [integrityStatus, setIntegrityStatus] = useState<any>(null);
+
+  const fetchObservability = useCallback(async () => {
+    try {
+      const [stuck, integrity] = await Promise.all([
+        adminService.getStuckEvents(session),
+        adminService.getAuditIntegrityStatus(session)
+      ]);
+      setStuckEvents(stuck.metrics);
+      setIntegrityStatus(integrity);
+    } catch (err) {
+      console.error("Failed to fetch observability metrics:", err);
+    }
+  }, [session]);
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const queryParams = new URLSearchParams({
+      const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
         ...(filters.module && { module: filters.module }),
@@ -61,16 +78,16 @@ export default function LogHub() {
         ...(filters.endDate && { endDate: filters.endDate }),
       });
 
-      const response = await fetch(`/api/logs?${queryParams}`, {
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
-      });
-      const result = await response.json();
-      setLogs(result.data || []);
-      setTotal(result.total || 0);
-    } catch (error) {
+      const result = await apiRequest<any>(`/logs?${params.toString()}`, "GET", session);
+      
+      if (Array.isArray(result)) {
+        setLogs(result);
+        setTotal(result.length);
+      } else {
+        setLogs(result.data || []);
+        setTotal(result.total || result.data?.length || 0);
+      }
+    } catch (error: any) {
       console.error("Failed to fetch system logs:", error);
     } finally {
       setLoading(false);
@@ -79,7 +96,8 @@ export default function LogHub() {
 
   useEffect(() => {
     fetchLogs();
-  }, [fetchLogs]);
+    fetchObservability();
+  }, [fetchLogs, fetchObservability]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,6 +125,61 @@ export default function LogHub() {
         title="System Logs"
         subtitle="Centralized diagnostics for API requests, background jobs, and application errors."
       />
+
+      {/* --- OBSERVABILITY PANELS --- */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <WorkspacePanel 
+          title="System Integrity" 
+          description="Blockchain-sealed audit log verification."
+        >
+          {integrityStatus ? (
+            <div className={`p-4 rounded-lg flex items-center gap-4 ${integrityStatus.status === 'HEALTHY' ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-rose-500/10 border border-rose-500/20'}`}>
+              {integrityStatus.status === 'HEALTHY' ? (
+                <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+              ) : (
+                <AlertCircle className="h-8 w-8 text-rose-500" />
+              )}
+              <div>
+                <p className="font-semibold text-sm">
+                  Audit Chain Status: {integrityStatus.status}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {integrityStatus.details}
+                </p>
+                <p className="text-[10px] mt-1 opacity-70">
+                  Last Verified: {new Date(integrityStatus.verified_at).toLocaleTimeString()}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-20">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          )}
+        </WorkspacePanel>
+
+        <WorkspacePanel 
+          title="Process Health" 
+          description="Background event queue and worker status."
+        >
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 rounded-lg bg-muted/50 border">
+              <div className="flex items-center gap-2 mb-2">
+                <Activity className="h-4 w-4 text-blue-500" />
+                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Stuck (Processing)</span>
+              </div>
+              <p className="text-2xl font-bold">{stuckEvents?.processing ?? 0}</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/50 border">
+              <div className="flex items-center gap-2 mb-2">
+                <AlertCircle className="h-4 w-4 text-rose-500" />
+                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Deadlocked (Failed)</span>
+              </div>
+              <p className="text-2xl font-bold text-rose-500">{stuckEvents?.failed ?? 0}</p>
+            </div>
+          </div>
+        </WorkspacePanel>
+      </div>
 
       <WorkspacePanel title="System Diagnostics">
         <form onSubmit={handleSearch} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6 items-end">
@@ -217,7 +290,7 @@ export default function LogHub() {
                         {log.durationMs || "-"}
                       </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon">
+                        <Button disabled title="Not available yet" variant="ghost" size="icon">
                           <Info className="h-4 w-4" />
                         </Button>
                       </TableCell>

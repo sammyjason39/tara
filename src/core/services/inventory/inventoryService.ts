@@ -84,7 +84,7 @@ export const inventoryService = {
     tenantId: string,
     session: SessionContext,
   ): Promise<InventoryAlert[]> {
-    return apiRequest<InventoryAlert[]>("/inventory/alerts", "GET", session);
+    return apiRequest<InventoryAlert[]>("/v1/inventory/alerts", "GET", session);
   },
 
   async listIntegrationEvents(
@@ -142,7 +142,7 @@ export const inventoryService = {
       locationId: payload.locationCode,
       departmentId: payload.departmentCode,
     };
-    return apiRequest<any>("/inventory/intake", "POST", session, dto);
+    return apiRequest<any>("/v1/inventory/intake", "POST", session, dto);
   },
 
   async recordDeduction(
@@ -164,7 +164,7 @@ export const inventoryService = {
       locationId: payload.locationCode,
       departmentId: payload.departmentCode,
     };
-    return apiRequest<any>("/inventory/consume", "POST", session, dto);
+    return apiRequest<any>("/v1/inventory/consume", "POST", session, dto);
   },
 
   async recordTransfer(
@@ -189,7 +189,7 @@ export const inventoryService = {
       quantity: payload.quantity,
       reason: payload.reason,
     };
-    return apiRequest<any>("/inventory/transfer", "POST", session, dto);
+    return apiRequest<any>("/v1/inventory/transfer", "POST", session, dto);
   },
 
   async requestAdjustment(
@@ -210,7 +210,7 @@ export const inventoryService = {
       requestedDelta: payload.requestedDelta,
       reason: payload.reason,
     };
-    return apiRequest<any>("/inventory/adjustments", "POST", session, dto);
+    return apiRequest<any>("/v1/inventory/adjustments", "POST", session, dto);
   },
 
   async approveAdjustment(
@@ -260,7 +260,15 @@ export const inventoryService = {
       scope: "LOCATION" | "DEPARTMENT" | "ITEM";
     },
   ) {
-    return apiRequest<any>("/inventory/audit-cycles", "POST", session, payload);
+    return apiRequest<any>("/v1/inventory/audit-cycles", "POST", session, payload);
+  },
+
+  async initiateAudit(
+    tenantId: string,
+    session: SessionContext,
+    payload: { location_code: string; department_code?: string; scope: string },
+  ) {
+    return apiRequest<any>("/v1/inventory/audit/initiate", "POST", session, payload);
   },
 
   async closeAuditCycle(
@@ -282,16 +290,16 @@ export const inventoryService = {
   },
 
   async runLowStockScan(tenantId: string, session: SessionContext) {
-    return apiRequest<any>("/inventory/scans/low-stock", "POST", session, {});
+    return apiRequest<any>("/v1/inventory/scans/low-stock", "POST", session, {});
   },
 
   async runExpiryScan(tenantId: string, session: SessionContext) {
-    return apiRequest<any>("/inventory/scans/expiry", "POST", session, {});
+    return apiRequest<any>("/v1/inventory/scans/expiry", "POST", session, {});
   },
 
   // Missing implementation for listProcurementReceiptQueue and processProcurementReceipt
   async listProcurementReceiptQueue(tenantId: string, session: SessionContext) {
-    return apiRequest<any[]>("/inventory/procurement-receipts", "GET", session);
+    return apiRequest<any[]>("/v1/inventory/procurement-receipts", "GET", session);
   },
 
   async processProcurementReceipt(
@@ -320,7 +328,7 @@ export const inventoryService = {
     session: SessionContext,
     itemIds: string[],
   ) {
-    return apiRequest<any>("/inventory/items/batch-delete", "POST", session, {
+    return apiRequest<any>("/v1/inventory/items/batch-delete", "POST", session, {
       itemIds,
     });
   },
@@ -330,7 +338,7 @@ export const inventoryService = {
     session: SessionContext,
     items: any[],
   ) {
-    return apiRequest<any>("/inventory/batch-intake", "POST", session, {
+    return apiRequest<any>("/v1/inventory/batch-intake", "POST", session, {
       items,
     });
   },
@@ -374,7 +382,7 @@ export const inventoryService = {
       capacity: number;
     },
   ): Promise<WarehouseBin> {
-    return apiRequest<WarehouseBin>("/warehouse/bins", "POST", session, payload);
+    return apiRequest<WarehouseBin>("/v1/warehouse/bins", "POST", session, payload);
   },
 
   async getBinStock(
@@ -408,7 +416,7 @@ export const inventoryService = {
     tenantId: string,
     session: SessionContext,
   ): Promise<InventoryIotEvent[]> {
-    return apiRequest<InventoryIotEvent[]>("/inventory/iot/events", "GET", session);
+    return apiRequest<InventoryIotEvent[]>("/v1/inventory/iot/events", "GET", session);
   },
 
   async recordIotScan(
@@ -435,6 +443,56 @@ export const inventoryService = {
     tenantId: string,
     session: SessionContext,
   ): Promise<AgenticEvent[]> {
-    return apiRequest<AgenticEvent[]>("/inventory/agentic/events", "GET", session);
+    return apiRequest<AgenticEvent[]>("/v1/inventory/agentic/events", "GET", session);
+  },
+
+  // --- NEW Stock Transfer Lifecycle (Grading to Production) ---
+  async listStockTransfers(
+    tenantId: string,
+    session: SessionContext,
+  ): Promise<any[]> {
+    return apiRequest<any[]>("/v1/inventory/stock-transfers", "GET", session);
+  },
+
+  async createStockTransfer(
+    tenantId: string,
+    session: SessionContext,
+    payload: {
+      item_id: string;
+      from_location_id: string;
+      to_location_id: string;
+      quantity: number;
+      reason: string;
+    },
+  ) {
+    return apiRequest<any>("/v1/inventory/stock-transfers", "POST", session, payload);
+  },
+
+  async pickStockTransfer(
+    tenantId: string,
+    session: SessionContext,
+    id: string,
+  ) {
+    return apiRequest<any>(`/v1/inventory/stock-transfers/${id}/pick`, "PUT", session, {});
+  },
+
+  async shipStockTransfer(
+    tenantId: string,
+    session: SessionContext,
+    id: string,
+    trackingNumber: string,
+  ) {
+    return apiRequest<any>(`/v1/inventory/stock-transfers/${id}/ship`, "PUT", session, {
+      tracking_number: trackingNumber,
+    });
+  },
+
+  async receiveStockTransfer(
+    tenantId: string,
+    session: SessionContext,
+    id: string,
+  ) {
+    return apiRequest<any>(`/v1/inventory/stock-transfers/${id}/receive`, "PUT", session, {});
   },
 };
+

@@ -1,0 +1,329 @@
+import { useState, useEffect, useMemo } from "react";
+import { useSession } from "@/core/security/session";
+import { schedulingService } from "@/core/services/hr/schedulingService";
+import { staffService } from "@/core/services/hr/staffService";
+import { type Employee } from "@/core/types/hr/employee";
+import { PageHeader } from "@/core/ui/PageHeader";
+import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  CalendarDays,
+  Clock,
+  AlertTriangle,
+  UserCheck,
+  ArrowLeftRight,
+  ShieldAlert,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Loader2,
+  Filter,
+} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ZenTooltip } from "@/core/ui/ZenTooltip";
+import { format, addDays, startOfWeek, eachDayOfInterval, isSameDay } from "date-fns";
+
+export default function SchedulingStudio() {
+  const session = useSession();
+  const [viewDate, setViewDate] = useState(new Date());
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isBypassMode, setIsBypassMode] = useState(false);
+  const [selectedCell, setSelectedCell] = useState<{ employeeId: string; date: string } | null>(null);
+  const [isOverrideOpen, setIsOverrideOpen] = useState(false);
+  const [overrideForm, setOverrideForm] = useState({
+    coveringEmployeeId: "",
+    reason: "",
+  });
+
+  const weekDays = useMemo(() => {
+    const start = startOfWeek(viewDate, { weekStartsOn: 1 });
+    return eachDayOfInterval({
+      start,
+      end: addDays(start, 6),
+    });
+  }, [viewDate]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const result = await staffService.listStaff(session.tenantId, session, {}, { page: 1, pageSize: 50 });
+        setEmployees(result.items);
+      } catch (err) {
+        console.error("Failed to load employees for scheduling", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, [session.tenantId]);
+
+  const handlePrevWeek = () => setViewDate((prev) => addDays(prev, -7));
+  const handleNextWeek = () => setViewDate((prev) => addDays(prev, 7));
+  const handleToday = () => setViewDate(new Date());
+
+  const handleCellClick = (employeeId: string, date: Date) => {
+    setSelectedCell({ employeeId, date: format(date, "yyyy-MM-dd") });
+    if (isBypassMode) {
+      setIsOverrideOpen(true);
+    }
+  };
+
+  const submitOverride = async () => {
+    if (!selectedCell || !overrideForm.coveringEmployeeId || !overrideForm.reason) return;
+    
+    try {
+      await schedulingService.submitOverride(
+        session.tenantId,
+        session,
+        selectedCell.employeeId,
+        overrideForm.coveringEmployeeId,
+        "shift-default", // Simplified for demo
+        selectedCell.date,
+        overrideForm.reason
+      );
+      setIsOverrideOpen(false);
+      setSelectedCell(null);
+      setOverrideForm({ coveringEmployeeId: "", reason: "" });
+      // In a real app, we'd trigger a refresh of the schedule data here
+    } catch (err) {
+      console.error("Override failed", err);
+    }
+  };
+
+  return (
+    <div className="space-y-6 max-w-[1600px] mx-auto animate-in fade-in duration-500">
+      <PageHeader
+        title="Scheduling Studio"
+        subtitle="Manage workforce rosters with high-density visualization and emergency override protocols."
+        primaryAction={
+          <div className="flex items-center gap-2">
+            <ZenTooltip content="Enable instant manager-authorized shift changes bypassing standard workflow.">
+              <Button
+                variant={isBypassMode ? "destructive" : "outline"}
+                className={`transition-all duration-300 ${isBypassMode ? "ring-2 ring-destructive/20 shadow-lg shadow-destructive/10" : ""}`}
+                onClick={() => setIsBypassMode(!isBypassMode)}
+              >
+                {isBypassMode ? <ShieldAlert className="w-4 h-4 mr-2 animate-pulse" /> : <Clock className="w-4 h-4 mr-2" />}
+                {isBypassMode ? "HR Bypass Active" : "Operational Mode"}
+              </Button>
+            </ZenTooltip>
+          </div>
+        }
+      />
+
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Main Scheduler */}
+        <div className="flex-1 space-y-6">
+          <WorkspacePanel 
+            title="Roster Grid" 
+            headerActions={
+              <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
+                <Button variant="ghost" size="icon" onClick={handlePrevWeek}><ChevronLeft className="w-4 h-4" /></Button>
+                <Button variant="ghost" className="text-xs font-bold px-4" onClick={handleToday}>
+                  {format(weekDays[0], "MMM dd")} - {format(weekDays[6], "MMM dd, yyyy")}
+                </Button>
+                <Button variant="ghost" size="icon" onClick={handleNextWeek}><ChevronRight className="w-4 h-4" /></Button>
+              </div>
+            }
+          >
+            <div className="overflow-x-auto rounded-xl border bg-card/50 backdrop-blur-sm shadow-sm relative">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-muted/30">
+                    <th className="p-4 text-left border-b sticky left-0 z-10 bg-muted/30 min-w-[200px] backdrop-blur-md">Professional</th>
+                    {weekDays.map((date) => (
+                      <th key={date.toISOString()} className={`p-4 text-center border-b border-l min-w-[140px] ${isSameDay(date, new Date()) ? "bg-primary/5" : ""}`}>
+                        <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{format(date, "EEE")}</div>
+                        <div className={`text-lg font-black ${isSameDay(date, new Date()) ? "text-primary" : ""}`}>{format(date, "dd")}</div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={8} className="p-12 text-center text-muted-foreground italic">
+                        <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 opacity-50" />
+                        Synchronizing workforce data...
+                      </td>
+                    </tr>
+                  ) : employees.map((emp) => (
+                    <tr key={emp.id} className="group hover:bg-primary/5 transition-colors duration-150">
+                      <td className="p-4 border-b sticky left-0 z-10 bg-card/80 group-hover:bg-primary/5 backdrop-blur-md transition-colors duration-150">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary/20 to-primary/5 flex items-center justify-center border border-primary/10 shadow-inner">
+                            <span className="text-[10px] font-bold text-primary">{emp.fullName?.split(" ").map(n => n[0]).join("") || "?"}</span>
+                          </div>
+                          <div>
+                            <div className="font-semibold text-sm">{emp.fullName}</div>
+                            <div className="text-[10px] text-muted-foreground uppercase font-medium">{emp.roleTitle}</div>
+                          </div>
+                        </div>
+                      </td>
+                      {weekDays.map((date) => (
+                        <td 
+                          key={date.toISOString()} 
+                          className={`p-2 border-b border-l min-h-[80px] transition-all duration-200 cursor-pointer ${isBypassMode ? "hover:bg-destructive/5" : "hover:bg-primary/5"}`}
+                          onClick={() => handleCellClick(emp.id, date)}
+                        >
+                          <div className="h-full flex flex-col justify-center gap-1.5 p-1 rounded-lg border border-transparent hover:border-muted-foreground/10 group-hover:shadow-sm">
+                            {/* Mock shift display */}
+                            <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1">
+                              <Clock className="w-3 h-3" /> 09:00 - 18:00
+                            </div>
+                            <div className="text-[9px] text-muted-foreground flex items-center gap-1 ml-1 font-medium italic">
+                              <UserCheck className="w-2.5 h-2.5 opacity-50" /> Fully Assigned
+                            </div>
+                          </div>
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </WorkspacePanel>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card className="p-4 bg-gradient-to-br from-card to-background shadow-none border-dashed flex items-center justify-between group hover:border-primary/50 transition-all duration-300">
+              <div>
+                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mb-1">Weekly Coverage</p>
+                <p className="text-2xl font-black text-foreground">98.4%</p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <Badge className="bg-emerald-500 hover:bg-emerald-600">Optimal</Badge>
+              </div>
+            </Card>
+            <Card className="p-4 bg-gradient-to-br from-card to-background shadow-none border-dashed flex items-center justify-between group hover:border-primary/50 transition-all duration-300">
+              <div>
+                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mb-1">Open Shifts</p>
+                <p className="text-2xl font-black text-foreground">12</p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 border border-amber-500/20">
+                <AlertTriangle className="w-5 h-5 text-amber-500" />
+              </div>
+            </Card>
+            <Card className="p-4 bg-gradient-to-br from-card to-background shadow-none border-dashed flex items-center justify-between group hover:border-primary/50 transition-all duration-300">
+              <div>
+                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mb-1">Pending Swaps</p>
+                <p className="text-2xl font-black text-foreground">4</p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 border border-primary/20">
+                <ArrowLeftRight className="w-5 h-5 text-primary" />
+              </div>
+            </Card>
+          </div>
+        </div>
+
+        {/* Sidebar Controls */}
+        <div className="w-full lg:w-80 space-y-6">
+          <WorkspacePanel title="Filters" description="Narrow down the perspective.">
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1.5 block">Department</label>
+                <Select defaultValue="all">
+                  <SelectTrigger className="bg-muted/50 border-none">
+                    <SelectValue placeholder="All Departments" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Departments</SelectItem>
+                    <SelectItem value="it">Information Tech</SelectItem>
+                    <SelectItem value="ops">Operations</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase text-muted-foreground mb-1.5 block">Shift Category</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="outline" size="sm" className="text-[10px] uppercase font-bold tracking-tight">Morning</Button>
+                  <Button variant="outline" size="sm" className="text-[10px] uppercase font-bold tracking-tight">Afternoon</Button>
+                  <Button variant="outline" size="sm" className="text-[10px] uppercase font-bold tracking-tight">Night</Button>
+                  <Button variant="outline" size="sm" className="text-[10px] uppercase font-bold tracking-tight">On-Call</Button>
+                </div>
+              </div>
+              <Button className="w-full mt-2 shadow-sm font-bold uppercase text-[11px] tracking-widest"><Filter className="w-3 h-3 mr-2" /> Apply Global Filter</Button>
+            </div>
+          </WorkspacePanel>
+
+          <WorkspacePanel title="Protocol Alert" icon={<ShieldAlert className="w-4 h-4 text-destructive" />}>
+            <div className="p-3 bg-destructive/5 rounded-lg border border-destructive/20 space-y-2">
+              <p className="text-xs font-semibold text-destructive uppercase tracking-tighter">Emergency Bypass Active</p>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                You are currently in HR-Bypass mode. Every shift change made will be instantly active in the production roster. This requires a digital signature and reason for audit trails.
+              </p>
+            </div>
+          </WorkspacePanel>
+        </div>
+      </div>
+
+      {/* Emergency Override Dialog */}
+      <Dialog open={isOverrideOpen} onOpenChange={setIsOverrideOpen}>
+        <DialogContent className="max-w-md border-destructive/20 shadow-2xl shadow-destructive/10">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <ShieldAlert className="w-5 h-5" />
+              Emergency Shift Override
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">Target Shift</p>
+              <p className="text-sm font-semibold">
+                {selectedCell && employees.find(e => e.id === selectedCell.employeeId)?.fullName}
+              </p>
+              <p className="text-xs text-muted-foreground">{selectedCell?.date}</p>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-foreground">Covering Professional</label>
+              <Select onValueChange={(val) => setOverrideForm(f => ({ ...f, coveringEmployeeId: val }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select relief professional" />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.filter(e => e.id !== selectedCell?.employeeId).map(e => (
+                    <SelectItem key={e.id} value={e.id}>{e.fullName}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-foreground">Operational Reason</label>
+              <Input 
+                placeholder="e.g. Unscheduled Sick Leave - High Priority" 
+                value={overrideForm.reason}
+                onChange={(e) => setOverrideForm(f => ({ ...f, reason: e.target.value }))}
+              />
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button variant="outline" className="flex-1" onClick={() => setIsOverrideOpen(false)}>Cancel</Button>
+              <Button variant="destructive" className="flex-1 font-bold shadow-lg shadow-destructive/20" onClick={submitOverride}>
+                <ShieldAlert className="w-4 h-4 mr-2" />
+                Authorize Override
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

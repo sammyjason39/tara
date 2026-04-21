@@ -1,0 +1,169 @@
+import { useState, useEffect } from "react";
+import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
+import { DataTableShell } from "@/core/ui/DataTableShell";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Calendar as CalendarIcon, 
+  Users, 
+  Clock, 
+  Plus, 
+  ChevronLeft, 
+  ChevronRight,
+  MoreVertical,
+  Save
+} from "lucide-react";
+import { useSession } from "@/core/security/session";
+import { apiRequest } from "@/core/api/apiClient";
+import { toast } from "@/hooks/use-toast";
+import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
+
+interface WorkforceSchedulerProps {
+  departmentId: string;
+  title?: string;
+}
+
+export function WorkforceScheduler({ departmentId, title = "Team Schedule" }: WorkforceSchedulerProps) {
+  const session = useSession();
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [shifts, setShifts] = useState<any[]>([]);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [loading, setLoading] = useState(true);
+
+  // Generate week view
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
+  const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const data = await apiRequest<any>(`/hr/employees?departmentId=${departmentId}`, "GET", session);
+        setEmployees(data?.data || data || []);
+
+        // Fetch shifts for the selected week
+        // Note: Real implementation would query WorkShifts
+      } catch (err: any) {
+        console.error("Failed to load workforce data", err);
+        toast({
+          title: "Synchronization Error",
+          description: err.message || "Failed to load team data.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [departmentId, session]);
+
+  const handlePrevWeek = () => setCurrentDate(addDays(currentDate, -7));
+  const handleNextWeek = () => setCurrentDate(addDays(currentDate, 7));
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between bg-muted/30 p-4 rounded-xl border border-dashed">
+        <div className="flex items-center gap-4">
+            <div className="p-2 bg-primary/10 rounded-lg">
+                <CalendarIcon className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+                <h3 className="font-bold">{title}</h3>
+                <p className="text-xs text-muted-foreground">Week of {format(weekStart, "MMMM dd, yyyy")}</p>
+            </div>
+        </div>
+        <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handlePrevWeek}>
+                <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleNextWeek}>
+                <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button size="sm" className="bg-primary shadow-lg shadow-primary/20">
+                <Plus className="h-4 w-4 mr-2" /> Assign Shift
+            </Button>
+        </div>
+      </div>
+
+      <WorkspacePanel className="p-0 overflow-hidden border-none shadow-xl bg-background/50 backdrop-blur-md">
+        <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+                <thead>
+                    <tr className="border-b bg-muted/20">
+                        <th className="p-4 text-left w-64 border-r sticky left-0 bg-background/95 z-10">Employee</th>
+                        {days.map(day => (
+                            <th key={day.toString()} className="p-4 text-center min-w-[120px]">
+                                <div className="text-xs uppercase font-bold text-muted-foreground">
+                                    {format(day, "EEE")}
+                                </div>
+                                <div className={`text-lg font-black mt-1 ${format(day, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd") ? 'text-primary' : ''}`}>
+                                    {format(day, "dd")}
+                                </div>
+                            </th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {loading ? (
+                        <tr>
+                            <td colSpan={8} className="p-12 text-center text-muted-foreground animate-pulse italic">
+                                Loading team schedule...
+                            </td>
+                        </tr>
+                    ) : employees.length === 0 ? (
+                        <tr>
+                            <td colSpan={8} className="p-12 text-center text-muted-foreground italic">
+                                No employees assigned to this department.
+                            </td>
+                        </tr>
+                    ) : (
+                        employees.map((emp) => (
+                            <tr key={emp.id} className="border-b hover:bg-muted/5 transition-colors">
+                                <td className="p-4 border-r sticky left-0 bg-background/95 z-10">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-[10px] font-bold">
+                                            {emp.firstName?.[0]}{emp.lastName?.[0]}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold leading-none">{emp.firstName} {emp.lastName}</p>
+                                            <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-tighter">{emp.jobRole || "Staff"}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                {days.map(day => (
+                                    <td key={day.toString()} className="p-2 h-20 group relative">
+                                        {/* Mock Shift Card */}
+                                        <div className="h-full w-full rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2 text-[10px] flex flex-col justify-between group-hover:bg-emerald-500/20 cursor-pointer transition-all">
+                                            <div className="flex justify-between items-start">
+                                                <span className="font-bold text-emerald-600">Morning</span>
+                                                <Clock className="h-3 w-3 text-emerald-400 opacity-0 group-hover:opacity-100" />
+                                            </div>
+                                            <span className="text-emerald-700 font-medium">08:00 - 16:00</span>
+                                        </div>
+                                        
+                                        {/* Action Overlay */}
+                                        <div className="absolute inset-0 flex items-center justify-center bg-background/80 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                                                <MoreVertical className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </td>
+                                ))}
+                            </tr>
+                        ))
+                    )}
+                </tbody>
+            </table>
+        </div>
+      </WorkspacePanel>
+
+      <div className="flex justify-end gap-3 mt-4">
+          <Button variant="ghost" size="sm" className="text-muted-foreground">Discard Changes</Button>
+          <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700">
+              <Save className="h-4 w-4 mr-2" /> Publish Schedule
+          </Button>
+      </div>
+    </div>
+  );
+}

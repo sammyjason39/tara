@@ -12,7 +12,9 @@ import {
   Search,
   Timer,
   FileText,
+  CheckCircle,
 } from "lucide-react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -75,8 +77,9 @@ const AVAILABLE_STAFF = [
 
 const ShiftControl = () => {
   const session = useSession();
-  const { activeStore } = useRetail();
+  const { activeStore, activeShift, refreshState } = useRetail();
   const [shifts, setShifts] = useState<RetailShift[]>([]);
+
   const [scheduledShifts, setScheduledShifts] =
     useState<ScheduledShift[]>(MOCK_DRAFT_SHIFTS);
   const [isLoading, setIsLoading] = useState(true);
@@ -186,7 +189,30 @@ const ShiftControl = () => {
     }
   };
 
+  const handleReconcileActive = async () => {
+
+    if (!activeShift) return;
+    try {
+      setIsLoading(true);
+      await retailService.reconcileShift(session.tenantId!, session, activeShift.id);
+      toast({
+        title: "Reconciliation Complete",
+        description: "The shift has been audited and reconciled successfully.",
+      });
+      await refreshState();
+    } catch (e) {
+      toast({
+        title: "Reconciliation Failed",
+        description: "An error occurred during fiscal reconciliation.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (isLoading) {
+
     return (
       <div className="flex h-[400px] items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -226,11 +252,19 @@ const ShiftControl = () => {
                   })
             }
             disabled={draftCount === 0}
-            className={`h-11 px-6 rounded-xl font-black italic uppercase text-xs tracking-widest gap-2 shadow-lg transition-all ${draftCount > 0 ? "bg-indigo-600 hover:bg-indigo-700 text-white" : "bg-slate-200 text-slate-500"}`}
-          >
             <Calendar className="w-4 h-4" /> Publish to Grid ({draftCount})
           </Button>
+
+          {activeShift && (
+            <Button
+              onClick={handleReconcileActive}
+              className="h-11 px-6 rounded-xl font-black italic uppercase text-xs tracking-widest gap-2 shadow-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <CheckCircle className="w-4 h-4" /> Reconcile Active Shift
+            </Button>
+          )}
         </div>
+
       </div>
 
       <div className="flex-1 w-full bg-slate-50 p-6 lg:p-8">
@@ -378,7 +412,7 @@ const ShiftControl = () => {
                     Traffic peak detected at 17:00. Suggested: Add 2 cashiers to
                     Front End.
                   </p>
-                  <Button className="w-full bg-white text-indigo-900 hover:bg-white/90 h-12 font-black italic uppercase tracking-widest rounded-xl text-[10px]">
+                  <Button disabled title="Not available yet" className="w-full bg-white text-indigo-900 hover:bg-white/90 h-12 font-black italic uppercase tracking-widest rounded-xl text-[10px]">
                     Auto-Generate Next Week
                   </Button>
                 </div>

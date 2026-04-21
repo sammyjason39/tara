@@ -35,7 +35,7 @@ export class RetailEventsService {
       data: {
           updated_at: new Date(),
         id: "9rqvpdqj",
-        tenant_id: event.scope?.tenant_id ?? "tenant-demo",
+        tenant_id: event.scope?.tenant_id!,
         module: "retail",
         action: event.type,
         entity_type: "event",

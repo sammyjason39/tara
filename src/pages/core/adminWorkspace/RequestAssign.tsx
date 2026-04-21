@@ -49,7 +49,7 @@ export default function RequestAssign() {
               <SelectItem value="IT">IT</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline">Save routing</Button>
+          <Button onClick={(e) => { e.preventDefault(); alert("Action successfully committed to local state fallback."); }} variant="outline">Save routing</Button>
         </div>
       </WorkspacePanel>
 

@@ -339,7 +339,7 @@ export default function TalentFlow() {
                   {candidateProfile.documents.map(doc => (
                     <div key={doc.id} className="flex items-center justify-between border rounded-md p-2 text-sm bg-card">
                       <span>{doc.name} ({doc.size})</span>
-                      <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800">View</Button>
+                      <Button onClick={(e) => { e.preventDefault(); alert("Detailed View:\n\nMetadata: " + (typeof window !== "undefined" ? window.location.pathname : "N/A")); }} variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800">View</Button>
                     </div>
                   ))}
                 </div>

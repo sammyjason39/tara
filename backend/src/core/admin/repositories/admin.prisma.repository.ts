@@ -117,6 +117,68 @@ export class AdminPrismaRepository extends IAdminRepository {
     return events.map(e => this.mapAuditEvent(e));
   }
 
+  async getStuckEvents(tenant_id: string, staleSince: Date): Promise<any[]> {
+    return this.prisma.sys_outbox_events.findMany({
+      where: {
+        tenant_id,
+        OR: [
+          { status: "FAILED" },
+          { status: "PENDING", created_at: { lt: staleSince } }
+        ]
+      },
+      orderBy: { created_at: 'desc' }
+    });
+  }
+
+  async retryEvent(tenant_id: string, event_id: string): Promise<any> {
+    return this.prisma.sys_outbox_events.update({
+      where: { id: event_id, tenant_id },
+      data: {
+        status: "PENDING",
+        attempts: 0,
+        updated_at: new Date(),
+        next_retry_at: new Date()
+      }
+    });
+  }
+
+  async getSyncStatus(tenant_id: string): Promise<any> {
+    const [pending, failed, lastProcessed] = await Promise.all([
+      this.prisma.sys_outbox_events.count({ where: { tenant_id, status: "PENDING" } }),
+      this.prisma.sys_outbox_events.count({ where: { tenant_id, status: "FAILED" } }),
+      this.prisma.sys_outbox_events.findFirst({
+        where: { tenant_id, status: "PROCESSED" },
+        orderBy: { updated_at: "desc" },
+        select: { updated_at: true }
+      })
+    ]);
+
+    const isHealthy = pending < 100 && failed < 10;
+    const latencyMinutes = lastProcessed 
+      ? Math.floor((Date.now() - lastProcessed.updated_at.getTime()) / 60000)
+      : -1;
+
+    return {
+      status: isHealthy ? "HEALTHY" : "DEGRADED",
+      pending_count: pending,
+      failed_count: failed,
+      last_sync_at: lastProcessed?.updated_at || null,
+      sync_latency_min: latencyMinutes,
+      is_healthy: isHealthy
+    };
+  }
+
+  async getIotDevices(tenant_id: string): Promise<any[]> {
+    return this.prisma.it_devices.findMany({
+      where: { tenant_id },
+      include: {
+        locations: { select: { name: true } },
+        employees: { select: { first_name: true, last_name: true } }
+      },
+      orderBy: { updated_at: 'desc' }
+    });
+  }
+
   private mapModuleStatus(s: any): AdminModuleStatus {
     return {
       id: s.id,

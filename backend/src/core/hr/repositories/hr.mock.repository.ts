@@ -44,6 +44,12 @@ import { CreatePerformanceCycleDto } from "../dto/create-performance-cycle.dto";
 import { SubmitReviewDto } from "../dto/submit-review.dto";
 import { CreateCaseDto } from "../dto/create-case.dto";
 import { CreateContractDto } from "../dto/create-contract.dto";
+import { CreateBudgetScenarioDto } from "../dto/create-budget-scenario.dto";
+import { CreateHeadcountPlanDto } from "../dto/create-headcount-plan.dto";
+import { CreateWorkScheduleDto } from "../dto/create-work-schedule.dto";
+import { CreateWorkShiftDto } from "../dto/create-work-shift.dto";
+import { UpdateWorkScheduleDto } from "../dto/update-work-schedule.dto";
+import { UpdateWorkShiftDto } from "../dto/update-work-shift.dto";
 
 @Injectable()
 export class HRMockRepository extends IHRRepository {
@@ -81,6 +87,7 @@ export class HRMockRepository extends IHRRepository {
   private performanceCycles: PerformanceCycle[] = [];
   private leaveRequests: LeaveRequest[] = [];
   private payrolls: Payroll[] = [];
+  private disbursementLogs: any[] = [];
 
   // Get By ID Methods
   async getEmployeeById(tenant_id: string, employee_id: string): Promise<Employee | null> {
@@ -194,22 +201,38 @@ export class HRMockRepository extends IHRRepository {
     return { data: filtered.slice((page - 1) * limit, page * limit), total: filtered.length };
   }
   async clock_in(tenant_id: string, employee_id: string, location_id: string, shift_id?: string, method?: string, metadata?: any, tx?: Prisma.TransactionClient): Promise<Attendance> {
-    const a: Attendance = { id: `att-${Date.now()}`, tenant_id, employee_id, location_id, clock_in: new Date(), status: "present", date: new Date(), created_at: new Date(), updated_at: new Date() } as any;
+    const a: Attendance = { 
+      id: `att-${Date.now()}`, 
+      tenant_id, 
+      employee_id, 
+      location_id, 
+      check_in_time: new Date(), 
+      status: "present", 
+      date: new Date(), 
+      type: "manual",
+      lateness_minutes: 0,
+      early_leave_minutes: 0,
+      overtime_minutes: 0,
+      is_locked: false,
+      work_duration_minutes: 0,
+      created_at: new Date(), 
+      updated_at: new Date() 
+    } as any;
     this.attendance.push(a); return a;
   }
   async clock_out(tenant_id: string, employee_id: string, tx?: Prisma.TransactionClient): Promise<Attendance> {
-    const att = this.attendance.find((a) => a.employee_id === employee_id && a.tenant_id === tenant_id && !a.clock_out);
-    if (!att) throw new Error("No active clock-in found"); att.clock_out = new Date(); return att;
+    const att = this.attendance.find((a) => a.employee_id === employee_id && a.tenant_id === tenant_id && !a.check_out_time);
+    if (!att) throw new Error("No active clock-in found"); att.check_out_time = new Date(); return att;
   }
   async assignShift(tenant_id: string, employee_id: string, shift_id: string, location_id: string, date: string, tx?: Prisma.TransactionClient): Promise<void> { return; }
 
   // Global Scheduling
   async getWorkSchedules(tenant_id: string, location_id?: string, status?: string): Promise<any[]> { return []; }
-  async createWorkSchedule(tenant_id: string, data: any, tx?: Prisma.TransactionClient): Promise<any> { return { id: `sch-${Date.now()}`, ...data }; }
-  async updateWorkSchedule(tenant_id: string, id: string, data: any, tx?: Prisma.TransactionClient): Promise<any> { return { id, ...data }; }
+  async createWorkSchedule(tenant_id: string, data: CreateWorkScheduleDto, tx?: Prisma.TransactionClient): Promise<any> { return { id: `sch-${Date.now()}`, ...data }; }
+  async updateWorkSchedule(tenant_id: string, id: string, data: UpdateWorkScheduleDto, tx?: Prisma.TransactionClient): Promise<any> { return { id, ...data }; }
   async getWorkShifts(tenant_id: string, scheduleId?: string, employee_id?: string): Promise<any[]> { return []; }
-  async createWorkShift(tenant_id: string, data: any, tx?: Prisma.TransactionClient): Promise<any> { return { id: `shf-${Date.now()}`, ...data }; }
-  async updateWorkShift(tenant_id: string, id: string, data: any, tx?: Prisma.TransactionClient): Promise<any> { return { id, ...data }; }
+  async createWorkShift(tenant_id: string, data: CreateWorkShiftDto, tx?: Prisma.TransactionClient): Promise<any> { return { id: `shf-${Date.now()}`, ...data }; }
+  async updateWorkShift(tenant_id: string, id: string, data: UpdateWorkShiftDto, tx?: Prisma.TransactionClient): Promise<any> { return { id, ...data }; }
   async approveWorkSchedule(tenant_id: string, id: string, approved_by: string, tx?: Prisma.TransactionClient): Promise<any> { return { id, status: "APPROVED" }; }
 
   // Leave Management
@@ -236,7 +259,24 @@ export class HRMockRepository extends IHRRepository {
     this.payrolls.push(pa); return pa;
   }
   async getPayrollRuns(tenant_id: string): Promise<PayrollRun[]> { return this.runs.filter(r => r.tenant_id === tenant_id); }
+  async getPayrollRunById(tenant_id: string, id: string): Promise<PayrollRun | null> {
+    return this.runs.find(r => r.id === id && r.tenant_id === tenant_id) || null;
+  }
+  async updatePayrollRun(tenant_id: string, id: string, updates: Partial<PayrollRun>, tx?: Prisma.TransactionClient): Promise<PayrollRun> {
+    const idx = this.runs.findIndex(r => r.id === id && r.tenant_id === tenant_id);
+    if (idx === -1) throw new Error("Payroll run not found");
+    this.runs[idx] = { ...this.runs[idx], ...updates, updated_at: new Date() } as any;
+    return this.runs[idx];
+  }
   async getPayrollLines(tenant_id: string, runId: string): Promise<PayrollLine[]> { return this.lines.filter(l => l.payrollRunId === runId); }
+  async createDisbursementLog(tenant_id: string, data: any, tx?: Prisma.TransactionClient): Promise<any> {
+    const log = { id: `log-${Date.now()}`, tenant_id, ...data, created_at: new Date(), updated_at: new Date() };
+    this.disbursementLogs.push(log);
+    return log;
+  }
+  async getDisbursementLogs(tenant_id: string, runId: string): Promise<any[]> {
+    return this.disbursementLogs.filter(l => l.payrollRunId === runId);
+  }
 
   // Organization Management
   async getLocations(tenant_id: string): Promise<any[]> { return []; }
@@ -456,18 +496,35 @@ export class HRMockRepository extends IHRRepository {
   async createComplianceReport(tenant_id: string, data: any): Promise<any> { return {}; }
 
   // Strategic Workforce & Succession
+  // Strategic Workforce & Succession
   async getBudgetScenarios(tenant_id: string): Promise<BudgetScenario[]> { return this.scenarios.filter((s) => s.tenant_id === tenant_id); }
-  async createBudgetScenario(tenant_id: string, data: any): Promise<BudgetScenario> {
-    const s: BudgetScenario = { id: `bc-${Date.now()}`, tenant_id, ...data, status: "DRAFT", created_at: new Date(), updated_at: new Date() };
+  
+  async createBudgetScenario(tenant_id: string, data: CreateBudgetScenarioDto): Promise<BudgetScenario> {
+    const s: BudgetScenario = { id: `bc-${Date.now()}`, tenant_id, ...data, status: "DRAFT", created_at: new Date(), updated_at: new Date() } as any;
     this.scenarios.push(s); return s;
   }
+
   async getHeadcountPlans(tenant_id: string, scenario_id: string): Promise<HeadcountPlan[]> { return this.plans.filter((p) => p.scenario_id === scenario_id && p.tenant_id === tenant_id); }
+  
+  async createHeadcountPlan(tenant_id: string, data: CreateHeadcountPlanDto): Promise<HeadcountPlan> {
+    const plan: HeadcountPlan = { id: `hcp-${Date.now()}`, tenant_id, ...data, status: "ACTIVE", created_at: new Date(), updated_at: new Date() } as any;
+    this.plans.push(plan);
+    return plan;
+  }
+
   async updateHeadcountPlan(t: string, id: string, data: any): Promise<HeadcountPlan> {
     const idx = this.plans.findIndex((p) => p.id === id && p.tenant_id === t);
     if (idx === -1) throw new Error("Not found");
     this.plans[idx] = { ...this.plans[idx], ...data, updated_at: new Date() }; return this.plans[idx];
   }
+
   async getExchangeRates(tenant_id: string): Promise<ExchangeRate[]> { return this.rates.filter(r => r.tenant_id === tenant_id); }
+
+  async createExchangeRate(tenant_id: string, data: any): Promise<ExchangeRate> {
+    const rate: ExchangeRate = { id: `exr-${Date.now()}`, tenant_id, ...data, updated_at: new Date() } as any;
+    this.rates.push(rate);
+    return rate;
+  }
   async getSuccessionPlans(tenant_id: string): Promise<SuccessionPlan[]> { return this.successionPlans.filter((p) => p.tenant_id === tenant_id); }
   async getSuccessionPlan(t: string, pid: string): Promise<SuccessionPlan | null> {
     const p = this.successionPlans.find(p => p.position_id === pid && p.tenant_id === t);
@@ -499,6 +556,7 @@ export class HRMockRepository extends IHRRepository {
   // Miscellaneous
   async updatePositionJobPost(tenant_id: string, position_id: string, data: any): Promise<any> { return {}; }
   async getPositionJobPost(tenant_id: string, position_id: string): Promise<any> { return {}; }
+  
   async executePayrollTransaction(tenant_id: string, period: string, activeEmployees: any[], tx?: Prisma.TransactionClient): Promise<any> {
     const totalNetPay = activeEmployees.length * 4000;
     const run = { 
@@ -514,5 +572,52 @@ export class HRMockRepository extends IHRRepository {
     };
     this.runs.push(run as any);
     return run;
+  }
+
+  async createPayrollRun(tenant_id: string, data: any, tx?: Prisma.TransactionClient): Promise<PayrollRun> {
+    const run: PayrollRun = { id: `run-${Date.now()}`, tenant_id, ...data, status: "DRAFT", created_at: new Date(), updated_at: new Date() } as any;
+    this.runs.push(run);
+    return run;
+  }
+
+  async getOverviewMetrics(tenant_id: string): Promise<any> {
+    return {
+      totalEmployees: this.employees.length,
+      activeRequests: this.leaveRequests.filter(r => r.status === "pending").length,
+      monthlyPayroll: 50000,
+      turnoverRate: 0.05
+    };
+  }
+
+  async getRetailOverviewMetrics(tenant_id: string): Promise<any> {
+    return {
+      totalStaff: this.employees.length,
+      shiftsToday: 12,
+      laborCostToday: 1200
+    };
+  }
+
+  async isModuleActive(tenant_id: string, module_key: string): Promise<boolean> {
+    return true;
+  }
+
+  async getTenantSettings(tenant_id: string): Promise<any> {
+    return { currency: "USD", timezone: "UTC" };
+  }
+
+  async getShiftTemplates(tenant_id: string, location_id?: string): Promise<any[]> {
+    return [];
+  }
+
+  async createShiftTemplate(tenant_id: string, data: any): Promise<any> {
+    return { id: `tmpl-${Date.now()}`, ...data };
+  }
+
+  async deleteShiftTemplate(tenant_id: string, id: string): Promise<any> {
+    return { success: true };
+  }
+
+  async getStrategicHeadcount(tenant_id: string): Promise<any> {
+    return { current: this.employees.length, target: 50, gap: 50 - this.employees.length };
   }
 }

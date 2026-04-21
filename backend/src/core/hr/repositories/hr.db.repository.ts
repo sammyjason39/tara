@@ -48,6 +48,12 @@ import { CreatePerformanceCycleDto } from "../dto/create-performance-cycle.dto";
 import { SubmitReviewDto } from "../dto/submit-review.dto";
 import { CreateCaseDto } from "../dto/create-case.dto";
 import { CreateContractDto } from "../dto/create-contract.dto";
+import { CreateBudgetScenarioDto } from "../dto/create-budget-scenario.dto";
+import { CreateHeadcountPlanDto } from "../dto/create-headcount-plan.dto";
+import { CreateWorkScheduleDto } from "../dto/create-work-schedule.dto";
+import { CreateWorkShiftDto } from "../dto/create-work-shift.dto";
+import { UpdateWorkScheduleDto } from "../dto/update-work-schedule.dto";
+import { UpdateWorkShiftDto } from "../dto/update-work-shift.dto";
 
 @Injectable()
 export class HRDbRepository implements IHRRepository {
@@ -656,70 +662,28 @@ export class HRDbRepository implements IHRRepository {
     return payrolls.map(this.mapPayroll);
   }
 
-  async calculatePayroll(
-    tenant_id: string,
-    employee_id: string,
-    period: string,
-    tx?: Prisma.TransactionClient,
-  ): Promise<Payroll> {
+  async getPayrollRuns(tenant_id: string): Promise<PayrollRun[]> {
+    return this.prisma.hr_payroll_runs.findMany({
+      where: { tenant_id },
+      orderBy: { created_at: "desc" },
+    }) as any;
+  }
+
+  async getPayrollRunById(tenant_id: string, id: string): Promise<PayrollRun | null> {
+    return this.prisma.hr_payroll_runs.findUnique({
+      where: { id, tenant_id },
+    }) as any;
+  }
+
+  async updatePayrollRun(tenant_id: string, id: string, data: Partial<PayrollRun>, tx?: Prisma.TransactionClient): Promise<PayrollRun> {
     const db = tx ?? this.prisma;
-    // Get employee details
-    const employee = await db.employees.findFirst({
-      where: { id: employee_id, tenant_id: tenant_id },
-    });
-
-    if (!employee) {
-      throw new Error("Employee not found");
-    }
-
-    // Simple calculation (in real system, this would be more complex)
-    const base_salary = employee.base_salary ? Number(employee.base_salary) : 0;
-    const grossPay = base_salary;
-    const adjustments = base_salary * 0.1; // 10% deductions
-    const netPay = grossPay - adjustments;
-
-    // Create or get payroll run for this period
-    const [period_start, period_end] = this.getPeriodDates(period);
-    let payrollRun = await this.prisma.hr_payroll_runs.findFirst({
-      where: {
-        tenant_id: tenant_id,
-        period_start: period_start,
-        period_end: period_end,
-      },
-    });
-
-    if (!payrollRun) {
-      payrollRun = await db.hr_payroll_runs.create({
-        data: {
-          id: uuidv4(),
-          tenant_id: tenant_id,
-          period_start: period_start,
-          period_end: period_end,
-          status: "draft",
-          updated_at: new Date(),
-        },
-      });
-    }
-
-    if (!payrollRun) throw new Error("Failed to create payroll run");
-
-    const payrollLine = await db.payroll_lines.create({
+    return db.hr_payroll_runs.update({
+      where: { id, tenant_id },
       data: {
-        id: uuidv4(),
-        tenant_id: tenant_id,
-        payroll_run_id: payrollRun.id,
-        employee_id: employee_id,
-        gross_pay: new Prisma.Decimal(grossPay.toString()),
-        adjustments: new Prisma.Decimal(adjustments.toString()),
-        net_pay: new Prisma.Decimal(netPay.toString()),
+        ...data,
         updated_at: new Date(),
-      },
-      include: {
-        hr_payroll_runs: true,
-      },
-    });
-
-    return this.mapPayroll(payrollLine);
+      } as any,
+    }) as any;
   }
 
   // ============================================================
@@ -1115,13 +1079,28 @@ export class HRDbRepository implements IHRRepository {
       tenant_id: a.tenant_id,
       employee_id: a.employee_id,
       location_id: a.location_id,
-      clock_in: a.clock_in,
-      clock_out: a.clock_out,
       date: a.date,
+      check_in: a.check_in,
+      check_out: a.check_out,
+      check_in_time: a.check_in_time,
+      check_out_time: a.check_out_time,
       status: a.status as any,
-      notes: (a as any).notes,
+      type: a.type,
+      source: a.source,
+      device_id: a.device_id,
+      lateness_minutes: a.lateness_minutes,
+      early_leave_minutes: a.early_leave_minutes,
+      overtime_minutes: a.overtime_minutes,
+      is_locked: a.is_locked,
+      metadata: a.metadata,
+      audit_log: a.audit_log,
       created_at: a.created_at,
       updated_at: a.updated_at,
+      deleted_at: a.deleted_at,
+      shift_id: a.shift_id,
+      work_duration_minutes: a.work_duration_minutes,
+      work_schedule_id: a.work_schedule_id,
+      work_shift_id: a.work_shift_id,
     };
   }
 
@@ -1426,18 +1405,43 @@ export class HRDbRepository implements IHRRepository {
       updated_at: r.updated_at,
     };
   }
-
   private mapLine(l: any): PayrollLine {
     return {
       id: l.id,
       tenant_id: l.tenant_id,
       payrollRunId: l.payroll_run_id,
       employee_id: l.employee_id,
+      base_salary: Number(l.base_salary),
+      total_work_hours: l.total_work_hours,
+      overtime_pay: Number(l.overtime_pay),
+      sales_bonus: Number(l.sales_bonus),
+      manual_bonus: Number(l.manual_bonus),
+      gross_income: Number(l.gross_income),
       grossPay: Number(l.gross_pay),
       netPay: Number(l.net_pay),
+      tax_amount: Number(l.tax_amount),
       adjustments: Number(l.adjustments || 0),
+      deductions_total: Number(l.deductions_total),
+      breakdown_json: (l.breakdown_json as any) || {},
+      checksum: l.checksum || undefined,
       created_at: l.created_at,
       updated_at: l.updated_at,
+    };
+  }
+
+  private mapDisbursementLog(l: any): any {
+    return {
+      id: l.id,
+      tenant_id: l.tenant_id,
+      payrollRunId: l.payroll_run_id,
+      status: l.status,
+      bankFileName: l.bank_file_name,
+      disbursedAt: l.disbursed_at,
+      disbursedBy: l.disbursed_by,
+      totalAmount: l.total_amount,
+      errorMessage: l.error_message,
+      createdAt: l.created_at,
+      updatedAt: l.updated_at,
     };
   }
 
@@ -1878,89 +1882,6 @@ export class HRDbRepository implements IHRRepository {
     return this.mapEmployee(result as any);
   }
 
-  async executePayrollTransaction(tenant_id: string, period: string, activeEmployees: any[]): Promise<any> {
-    const [year, month] = period.split("-").map(Number);
-    const period_start = new Date(year, month - 1, 1);
-    const period_end = new Date(year, month, 0);
-
-    return this.prisma.$transaction(async (tx) => {
-      // 1. Create Payroll Run
-      const payrollRun = await tx.hr_payroll_runs.create({
-        data: {
-        tenant_id: tenant_id,
-          period_start: period_start,
-          period_end: period_end,
-          status: "processing",
-        },
-      });
-
-      // 2. Create Payroll Lines and calculate totals
-      let totalGross = 0;
-      let totalNet = 0;
-
-      for (const emp of activeEmployees) {
-        const base_salary = Number(emp.base_salary || 0);
-        const adjustments = base_salary * 0.1; // Default 10% deduction for now
-        const netPay = base_salary - adjustments;
-
-        totalGross += base_salary;
-        totalNet += netPay;
-
-        await tx.payroll_lines.create({
-          data: {
-        tenant_id: tenant_id,
-            payroll_run_id: payrollRun.id,
-            employee_id: emp.id,
-            gross_pay: base_salary,
-            adjustments,
-            net_pay: netPay,
-          },
-        });
-      }
-
-      // 3. Finance/Ledger Integration: Create Ledger Posting Entry
-      await tx.finance_ledger_postings.create({
-        data: {
-          id: uuidv4(),
-          tenant_id,
-          source_event_id: payrollRun.id,
-          event_type: "PAYROLL_EXECUTION",
-          status: "PENDING",
-          payload: {
-            period,
-            totalGross,
-            totalNet,
-            employeeCount: activeEmployees.length,
-          },
-          updated_at: new Date(),
-        },
-      });
-
-      // 4. Create Outbox Event for reliable emission
-      await tx.sys_outbox_events.create({
-        data: {
-        tenant_id: tenant_id,
-          type: 'hr.payroll.executed.v1',
-          payload: {
-            payrollRunId: payrollRun.id,
-            period,
-            totalGross,
-            totalNet,
-            processedCount: activeEmployees.length,
-          },
-        },
-      });
-
-      return {
-        payrollRunId: payrollRun.id,
-        totalGross,
-        totalNet,
-        processedCount: activeEmployees.length,
-      };
-    }, {
-      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-    });
-  }
 
 
   async updatePosition(tenant_id: string, id: string, data: any, tx?: Prisma.TransactionClient): Promise<Position> {
@@ -2407,126 +2328,39 @@ export class HRDbRepository implements IHRRepository {
 
 
 
-  // Strategic Workforce Planning
-  async getBudgetScenarios(tenant_id: string): Promise<BudgetScenario[]> {
-    const scenarios = await this.prisma.hr_budget_scenarios.findMany({
-      where: { tenant_id: tenant_id },
-      orderBy: { fiscal_year: "desc" },
-    });
-    return scenarios.map((s: any) => this.mapScenario(s));
-  }
-
-  async createBudgetScenario(tenant_id: string, data: any): Promise<BudgetScenario> {
-    const created = await this.prisma.hr_budget_scenarios.create({
-      data: {
-        id: undefined as any,
-        tenant_id: tenant_id,
-        name: data.name,
-        fiscal_year: data.fiscal_year,
-        status: data.status || "DRAFT",
-        total_budget: data.total_budget || 0,
-        description: data.description,
-      },
-    });
-    return this.mapScenario(created);
-  }
-
-  async updateBudgetScenario(tenant_id: string, id: string, data: any): Promise<BudgetScenario> {
-    try {
-      const updated = await this.prisma.hr_budget_scenarios.update({
-        where: { id, tenant_id: tenant_id },
-        data: data as Prisma.hr_budget_scenariosUpdateInput,
-      });
-      return this.mapScenario(updated);
-    } catch (error) {
-      handlePrismaFkError(error, 'BudgetScenario');
-    }
-  }
-
-  async getHeadcountPlans(tenant_id: string, scenario_id: string): Promise<HeadcountPlan[]> {
-    const plans = await this.prisma.hr_headcount_plans.findMany({
-      where: {
-        scenario_id: scenario_id,
-      },
-      orderBy: { planned_hire_date: "asc" },
-    });
-    return plans.map((p: any) => this.mapPlan(p));
-  }
-
-  async createHeadcountPlan(tenant_id: string, data: any): Promise<HeadcountPlan> {
-    // Verify scenario belongs to tenant
-    const scenario = await this.prisma.hr_budget_scenarios.findFirst({
-      where: { id: data.scenario_id, tenant_id: tenant_id },
-    });
-    if (!scenario) throw new Error("Scenario not found");
-
-    const created = await this.prisma.hr_headcount_plans.create({
-      data: {
-        id: undefined as any, // Bypass required ID check if types are stubborn
-        tenant_id: tenant_id,
-        scenario_id: data.scenario_id,
-        department_id: data.department_id,
-        position_title: data.position_title,
-        target_headcount: data.target_headcount || 1,
-        projected_salary: data.projected_salary,
-        planned_hire_date: new Date(data.planned_hire_date),
-      },
-    });
-    return this.mapPlan(created);
-  }
-
-  async updateHeadcountPlan(tenant_id: string, id: string, data: any): Promise<HeadcountPlan> {
-    const updated = await this.prisma.hr_headcount_plans.update({
-      where: {
-        id,
-      },
-      data: {
-        ...data,
-        planned_hire_date: data.planned_hire_date ? new Date(data.planned_hire_date) : undefined,
-      } as any,
-    });
-    return this.mapPlan(updated);
-  }
-
-  // Global Multi-Currency Payroll
-  async getExchangeRates(tenant_id: string): Promise<ExchangeRate[]> {
-    const rates = await this.prisma.hr_exchange_rates.findMany({
-      where: { tenant_id: tenant_id },
-      orderBy: { effective_at: "desc" },
-    });
-    return rates.map((r: any) => this.mapRate(r));
-  }
-
-  async updateExchangeRate(tenant_id: string, data: any): Promise<ExchangeRate> {
-    const rate = await this.prisma.hr_exchange_rates.create({
-      data: {
-        id: undefined as any,
-        tenant_id: tenant_id,
-        from_currency: data.from_currency || data.fromCurrency,
-        to_currency: data.to_currency || data.toCurrency,
-        rate: data.rate,
-        effective_at: data.effective_at ? new Date(data.effective_at) : (data.effectiveDate ? new Date(data.effectiveDate) : new Date()),
-        updated_at: new Date(),
-      },
-    });
-    return this.mapRate(rate);
-  }
-
-  async getPayrollRuns(tenant_id: string): Promise<PayrollRun[]> {
-    const runs = await this.prisma.hr_payroll_runs.findMany({
-      where: { tenant_id: tenant_id },
-      orderBy: { period_start: "desc" },
-    });
-    return runs.map((r: any) => this.mapRun(r));
-  }
 
   async getPayrollLines(tenant_id: string, runId: string): Promise<PayrollLine[]> {
     const lines = await this.prisma.payroll_lines.findMany({
-      where: {
-        payroll_run_id: runId,
+      where: { tenant_id, payroll_run_id: runId },
+    });
+    return lines.map(line => this.mapLine(line));
+  }
+
+  async createDisbursementLog(tenant_id: string, data: any, tx?: Prisma.TransactionClient): Promise<any> {
+    const db = tx ?? this.prisma;
+    const log = await db.payroll_disbursement_logs.create({
+      data: {
+        id: uuidv4(),
+        tenant_id: tenant_id,
+        payroll_run_id: data.payrollRunId,
+        status: data.status || "INITIATED",
+        bank_file_name: data.bankFileName,
+        disbursed_at: data.disbursedAt ? new Date(data.disbursedAt) : undefined,
+        disbursed_by: data.disbursedBy,
+        total_amount: data.totalAmount ? new Prisma.Decimal(data.totalAmount.toString()) : undefined,
+        error_message: data.errorMessage,
+        updated_at: new Date(),
       },
     });
-    return lines.map((l: any) => this.mapLine(l));
+    return this.mapDisbursementLog(log);
+  }
+
+  async getDisbursementLogs(tenant_id: string, runId: string): Promise<any[]> {
+    const logs = await this.prisma.payroll_disbursement_logs.findMany({
+      where: { tenant_id, payroll_run_id: runId },
+      orderBy: { created_at: "desc" },
+    });
+    return logs.map(log => this.mapDisbursementLog(log));
   }
 
   async createPayrollRun(tenant_id: string, data: any): Promise<PayrollRun> {
@@ -2848,26 +2682,248 @@ export class HRDbRepository implements IHRRepository {
 
   // AI-Generated Job Descriptions
   async updatePositionJobPost(tenant_id: string, position_id: string, data: any): Promise<any> {
-    const updated = await this.prisma.positions.update({
+    return this.prisma.positions.update({
       where: { id: position_id, tenant_id: tenant_id },
-      data: {
-        job_post_metadata: {
-          ...(typeof (await this.prisma.positions.findUnique({ where: { id: position_id } }))?.job_post_metadata === 'object' 
-            ? ((await this.prisma.positions.findUnique({ where: { id: position_id } }))?.job_post_metadata as any) 
-            : {}),
-          jobPost: data,
-        },
+      data: { 
+        job_post_metadata: data,
+        updated_at: new Date()
       },
     });
-    return updated.job_post_metadata;
   }
 
   async getPositionJobPost(tenant_id: string, position_id: string): Promise<any> {
-    const pos = await this.prisma.positions.findUnique({
+    const pos = await this.prisma.positions.findFirst({
       where: { id: position_id, tenant_id: tenant_id },
       select: { job_post_metadata: true },
     });
-    return (pos?.job_post_metadata as any)?.jobPost || null;
+    return pos?.job_post_metadata;
+  }
+
+  // ============================================================
+  // HARDENING & WORKFORCE EXTENSION
+  // ============================================================
+
+  async getOverviewMetrics(tenant_id: string): Promise<any> {
+    const [
+      totalEmployees,
+      activeEmployees,
+      pendingLeaveCount,
+      openCasesCount,
+      openRequisitions,
+    ] = await Promise.all([
+      this.prisma.employees.count({ where: { tenant_id } }),
+      this.prisma.employees.count({ where: { tenant_id, status: "active" } }),
+      this.prisma.leave_requests.count({
+        where: { tenant_id, status: "PENDING" },
+      }),
+      this.prisma.hr_cases.count({ where: { tenant_id, status: "OPEN" } }),
+      this.prisma.job_requisitions.count({ where: { tenant_id, status: "OPEN" } }),
+    ]);
+
+    return {
+      totalEmployees,
+      activeEmployees,
+      pendingLeaveRequests: pendingLeaveCount,
+      openCases: openCasesCount,
+      openRequisitions,
+    };
+  }
+
+  async isModuleActive(tenant_id: string, module_key: string): Promise<boolean> {
+    const status = await this.prisma.admin_module_statuses.findFirst({
+      where: {
+        tenant_id,
+        module_key,
+      },
+    });
+    return status ? status.enabled : false;
+  }
+
+  async getRetailOverviewMetrics(tenant_id: string): Promise<any> {
+    const retailDept = await this.prisma.departments.findFirst({
+      where: {
+        tenant_id,
+        OR: [
+          { name: { contains: "Retail", mode: "insensitive" } },
+          { code: { contains: "RET", mode: "insensitive" } },
+        ],
+      },
+      select: { id: true, name: true },
+    });
+
+    const retailStaffCount = retailDept
+      ? await this.prisma.employees.count({
+          where: { tenant_id, department_id: retailDept.id, status: "active" },
+        })
+      : 0;
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [activeShifts, completedShifts, pendingShiftClosures] = await Promise.all([
+      this.prisma.retail_shifts.count({
+        where: {
+          tenant_id,
+          start_time: { gte: todayStart },
+          end_time: null,
+        },
+      }),
+      this.prisma.retail_shifts.count({
+        where: {
+          tenant_id,
+          start_time: { gte: todayStart },
+          end_time: { not: null },
+        },
+      }),
+      this.prisma.retail_shifts.count({
+        where: {
+          tenant_id,
+          end_time: null,
+          start_time: { lte: new Date(Date.now() - 8 * 60 * 60 * 1000) },
+        },
+      }),
+    ]);
+
+    return {
+      moduleId: "retail",
+      moduleName: "Retail Operations",
+      retailStaffCount,
+      departmentName: retailDept?.name ?? "Retail",
+      activeShiftsToday: activeShifts,
+      completedShiftsToday: completedShifts,
+      pendingShiftClosures,
+    };
+  }
+
+  async getTenantSettings(tenant_id: string): Promise<any> {
+    return this.prisma.tenant_settings.findUnique({
+      where: { tenant_id },
+    });
+  }
+
+  // ============================================================
+  // SHIFT TEMPLATES
+  // ============================================================
+
+  async getShiftTemplates(tenant_id: string, location_id?: string): Promise<any[]> {
+    return this.prisma.$queryRaw`
+      SELECT * FROM hr_shift_templates 
+      WHERE tenant_id = ${tenant_id}
+      ${location_id ? Prisma.sql`AND location_id = ${location_id}` : Prisma.empty}
+      ORDER BY start_time ASC
+    `;
+  }
+
+  async createShiftTemplate(tenant_id: string, data: any): Promise<any> {
+    return (this.prisma as any).hr_shift_templates.create({
+      data: {
+        ...data,
+        tenant_id,
+      },
+    });
+  }
+
+  async deleteShiftTemplate(tenant_id: string, id: string): Promise<any> {
+    return (this.prisma as any).hr_shift_templates.delete({
+      where: { id, tenant_id },
+    });
+  }
+
+  // ============================================================
+  // PLANNING & EXCHANGE RATES
+  // ============================================================
+
+  async getBudgetScenarios(tenant_id: string): Promise<BudgetScenario[]> {
+    return this.prisma.hr_budget_scenarios.findMany({
+      where: { tenant_id },
+      orderBy: { fiscal_year: "desc" },
+    }) as any;
+  }
+
+  async createBudgetScenario(tenant_id: string, data: CreateBudgetScenarioDto): Promise<BudgetScenario> {
+    return this.prisma.hr_budget_scenarios.create({
+      data: {
+        id: uuidv4(),
+        tenant_id,
+        ...data,
+        updated_at: new Date(),
+      },
+    }) as any;
+  }
+
+  async getHeadcountPlans(tenant_id: string, scenario_id: string): Promise<HeadcountPlan[]> {
+    return this.prisma.hr_headcount_plans.findMany({
+      where: {
+        scenario_id,
+        tenant_id,
+      },
+      orderBy: { planned_hire_date: "asc" },
+    }) as any;
+  }
+
+  async createHeadcountPlan(tenant_id: string, data: CreateHeadcountPlanDto): Promise<HeadcountPlan> {
+    return this.prisma.hr_headcount_plans.create({
+      data: {
+        id: uuidv4(),
+        tenant_id,
+        ...data,
+        planned_hire_date: new Date(data.planned_hire_date),
+        updated_at: new Date(),
+      },
+    }) as any;
+  }
+
+  async getExchangeRates(tenant_id: string): Promise<ExchangeRate[]> {
+    return this.prisma.hr_exchange_rates.findMany({
+      where: { tenant_id },
+      orderBy: { effective_at: "desc" },
+    }) as any;
+  }
+
+  async createExchangeRate(tenant_id: string, data: any): Promise<ExchangeRate> {
+    return this.prisma.hr_exchange_rates.create({
+      data: {
+        id: uuidv4(),
+        tenant_id,
+        from_currency: data.fromCurrency,
+        to_currency: data.toCurrency,
+        rate: data.rate,
+        effective_at: data.effective_at || data.effectiveDate ? new Date(data.effective_at || data.effectiveDate) : new Date(),
+        updated_at: new Date(),
+      },
+    }) as any;
+  }
+
+  // ============================================================
+  // ANALYTICS
+  // ============================================================
+
+  async getStrategicHeadcount(tenant_id: string): Promise<any> {
+    const [active, total] = await Promise.all([
+      this.prisma.employees.count({ where: { tenant_id, status: 'active', deleted_at: null } }),
+      this.prisma.employees.count({ where: { tenant_id, deleted_at: null } }),
+    ]);
+
+    return {
+      active,
+      total,
+      utilization: total > 0 ? Number((active / total).toFixed(2)) : 0,
+    };
+  }
+
+  // ============================================================
+  // MAPPING UTILITIES
+  // ============================================================
+
+
+  async updateHeadcountPlan(tenant_id: string, id: string, data: any): Promise<HeadcountPlan> {
+    return this.prisma.hr_headcount_plans.update({
+      where: { id, tenant_id },
+      data: {
+        ...data,
+        updated_at: new Date(),
+      },
+    }) as any;
   }
 
   async getPositionSkills(tenant_id: string, position_id: string): Promise<PositionSkill[]> {

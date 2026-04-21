@@ -155,7 +155,7 @@ export const RegisterStoreDialog: React.FC<RegisterStoreDialogProps> = ({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button
+          <Button disabled title="Not available yet"
             variant="ghost"
             size="sm"
             className="h-8 text-blue-600 font-black italic gap-1"

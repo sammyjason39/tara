@@ -288,7 +288,7 @@ export default function FinanceDocs() {
                 </div>
               </div>
               <div className="pt-2">
-                <Button variant="default" className="w-full gap-2"><UploadCloud className="w-4 h-4 rotate-180" /> Access Original File</Button>
+                <Button disabled title="Not available yet" variant="default" className="w-full gap-2"><UploadCloud className="w-4 h-4 rotate-180" /> Access Original File</Button>
               </div>
             </div>
           </div>

@@ -144,4 +144,43 @@ export abstract class IPaymentRepository {
   abstract getSettlements(tenant_id: string): Promise<PaymentSettlement[]>;
   abstract getEvidencePacks(tenant_id: string): Promise<PaymentEvidencePack[]>;
   abstract getAuditEvents(tenant_id: string): Promise<PaymentAuditEvent[]>;
+
+  // Unified Gateway & Settings
+  abstract getPaymentSettings(tenant_id: string): Promise<any>;
+  abstract updatePaymentSettings(tenant_id: string, data: any): Promise<any>;
+  abstract getGatewayAccount(
+    tenant_id: string,
+    provider: string,
+  ): Promise<any>;
+  abstract upsertGatewayAccount(tenant_id: string, data: any): Promise<any>;
+  abstract updateTransactionStatus(
+    tenant_id: string,
+    id: string,
+    data: {
+      status: "PENDING" | "PAID" | "FAILED" | "SETTLED" | "REFUNDED";
+      external_ref?: string;
+      platform_fee_pending?: number;
+      platform_fee_realized?: number;
+      gateway_fee?: number;
+      net_amount?: number;
+      retry_count?: number;
+      last_checked_at?: Date;
+    },
+    actor_id: string,
+  ): Promise<PaymentTransaction>;
+
+  abstract checkAndInsertWebhookEvent(
+    event_id: string,
+    provider: string,
+    payload: any,
+  ): Promise<boolean>;
+
+  abstract createPlatformFeeLedger(
+    tenant_id: string,
+    transaction_id: string,
+    amount: number,
+    provider: string,
+  ): Promise<void>;
+
+  abstract findPendingTransactions(): Promise<PaymentTransaction[]>;
 }

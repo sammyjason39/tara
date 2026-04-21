@@ -30,3 +30,7 @@ export * from './update-position.dto';
 export * from './upload-compliance-document.dto';
 export * from './generate-description.dto';
 export * from './publish-job-post.dto';
+export * from './create-work-schedule.dto';
+export * from './create-work-shift.dto';
+export * from './update-work-schedule.dto';
+export * from './update-work-shift.dto';

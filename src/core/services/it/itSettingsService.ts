@@ -42,7 +42,7 @@ export const itSettingsService = {
     session: SessionContext,
     data: any,
   ): Promise<ITDevice> {
-    return apiRequest<ITDevice>("/it-settings/devices", "POST", session, data);
+    return apiRequest<ITDevice>("/v1/it-settings/devices", "POST", session, data);
   },
 
   async updateDeviceStatus(
@@ -85,3 +85,4 @@ export const itSettingsService = {
     );
   },
 };
+

@@ -15,7 +15,7 @@ interface RequestWithUser extends Request {
   user?: any;
 }
 
-@Controller("auth")
+@Controller("v1/auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

@@ -28,10 +28,16 @@ import { PricingModule } from "./core/pricing/pricing.module";
 import { AgenticModule } from "./agentic/agentic.module";
 import { WorkflowEngineModule } from "./core/workflow/workflow.module";
 import { MaintenanceModule } from "./shared/maintenance/maintenance.module";
+import { IotModule } from "./shared/iot/iot.module";
+import { ReportingModule } from "./shared/reporting/reporting.module";
+import { SettingsModule } from "./core/settings/settings.module";
+
 
 import { APP_GUARD } from "@nestjs/core";
 import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 import { ScheduleModule } from "@nestjs/schedule";
+import { ConfigModule } from "@nestjs/config";
+import { validate } from "./config/env.validation";
 
 /**
  * App Module
@@ -49,7 +55,12 @@ import { ScheduleModule } from "@nestjs/schedule";
  */
 @Module({
   imports: [
-    ScheduleModule.forRoot(),
+    ConfigModule.forRoot({
+      validate,
+      isGlobal: true,
+    }),
+    // Disable cron jobs in Vercel to prevent side effects in serverless functions
+    ...(process.env.VERCEL === "1" ? [] : [ScheduleModule.forRoot()]),
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
@@ -83,6 +94,10 @@ import { ScheduleModule } from "@nestjs/schedule";
     AgenticModule,
     WorkflowEngineModule,
     MaintenanceModule,
+    IotModule,
+    ReportingModule,
+    SettingsModule,
+
   ],
 
   controllers: [HealthController],

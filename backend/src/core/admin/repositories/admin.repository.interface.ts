@@ -21,4 +21,8 @@ export abstract class IAdminRepository {
     resolvedBy: string,
   ): Promise<AdminRequest>;
   abstract getAuditEvents(tenant_id: string): Promise<AdminAuditEvent[]>;
+  abstract getStuckEvents(tenant_id: string, staleSince: Date): Promise<any[]>;
+  abstract retryEvent(tenant_id: string, event_id: string): Promise<any>;
+  abstract getSyncStatus(tenant_id: string): Promise<any>;
+  abstract getIotDevices(tenant_id: string): Promise<any[]>;
 }

@@ -4,7 +4,7 @@ import { Download, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "@/core/security/session";
 import { WatermarkConfigDialog } from "./WatermarkConfigDialog";
-import { apiUrl } from "@/lib/api-config";
+import { apiRequest } from "@/core/api/apiClient";
 
 interface ExportButtonProps {
   endpoint: string;
@@ -44,18 +44,10 @@ export function ExportButton({
         url += (url.includes("?") ? "&" : "?") + params.toString();
       }
 
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          "x-tenant-id": session.tenantId,
-          "x-location-id": session.locationId || "",
-          Authorization: `Bearer ${session.token}`,
-        },
+      const blob = await apiRequest<Blob>(url, "GET", session, null, { 
+        responseType: "blob" 
       });
 
-      if (!response.ok) throw new Error("Export failed");
-
-      const blob = await response.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = downloadUrl;

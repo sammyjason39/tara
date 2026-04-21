@@ -7,7 +7,7 @@ export const attendanceService = {
     // Calling backend to get attendance records and calculating stats
     // Or ideally backend provides a stats endpoint
     const today = new Date().toISOString().split("T")[0];
-    const records = await apiRequest<AttendanceRecord[]>("/hr/attendance", "GET", session);
+    const records = await apiRequest<AttendanceRecord[]>("/v1/hr/attendance", "GET", session);
     const todayRecords = records.filter(r => r.date === today);
     
     return {
@@ -28,10 +28,12 @@ export const attendanceService = {
       deviceId: string;
       coordinates?: { lat: number; lng: number };
       verificationMethod: AttendanceEvent["verificationMethod"];
+      reason?: string;
   }) {
-    return apiRequest<AttendanceRecord>("/hr/attendance/clock-in", "POST", actor, {
+    return apiRequest<AttendanceRecord>("/v1/hr/attendance/clock-in", "POST", actor, {
       locationId: input.locationId,
-      employeeId: actor.userId
+      employeeId: actor.userId,
+      reason: input.reason
     });
   },
 
@@ -41,7 +43,7 @@ export const attendanceService = {
       coordinates?: { lat: number; lng: number };
       verificationMethod: AttendanceEvent["verificationMethod"];
   }) {
-    return apiRequest<AttendanceRecord>("/hr/attendance/clock-out", "POST", actor, {
+    return apiRequest<AttendanceRecord>("/v1/hr/attendance/clock-out", "POST", actor, {
       employeeId: actor.userId
     });
   },
@@ -61,3 +63,4 @@ export const attendanceService = {
     return apiRequest<AttendanceRecord[]>(`/hr/attendance${query}`, "GET", actor);
   }
 };
+

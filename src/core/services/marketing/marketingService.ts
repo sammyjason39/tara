@@ -16,35 +16,35 @@ import type {
 
 export const marketingService = {
   listCampaigns: async (tenantId: string, session: SessionContext) => 
-    apiRequest<MarketingCampaign[]>("/marketing/campaigns", "GET", session),
+    apiRequest<MarketingCampaign[]>("/v1/marketing/campaigns", "GET", session),
   
   listExecutions: async (tenantId: string, session: SessionContext) => 
-    apiRequest<CampaignExecutionRun[]>("/marketing/executions", "GET", session),
+    apiRequest<CampaignExecutionRun[]>("/v1/marketing/executions", "GET", session),
   
   listLeads: async (tenantId: string, session: SessionContext) => 
-    apiRequest<MarketingLead[]>("/marketing/leads", "GET", session),
+    apiRequest<MarketingLead[]>("/v1/marketing/leads", "GET", session),
   
   listWorkflows: async (tenantId: string, session: SessionContext) => 
-    apiRequest<NurtureWorkflow[]>("/marketing/workflows", "GET", session),
+    apiRequest<NurtureWorkflow[]>("/v1/marketing/workflows", "GET", session),
   
   listConnectedAccounts: async (tenantId: string, session: SessionContext) => 
-    apiRequest<ConnectedAccount[]>("/marketing/accounts", "GET", session),
+    apiRequest<ConnectedAccount[]>("/v1/marketing/accounts", "GET", session),
   
   listAttribution: async (tenantId: string, session: SessionContext) => 
-    apiRequest<AttributionRecord[]>("/marketing/attribution", "GET", session),
+    apiRequest<AttributionRecord[]>("/v1/marketing/attribution", "GET", session),
   
   listAlerts: async (tenantId: string, session: SessionContext) => 
-    apiRequest<MarketingAlert[]>("/marketing/alerts", "GET", session),
+    apiRequest<MarketingAlert[]>("/v1/marketing/alerts", "GET", session),
   
   listAuditEvents: async (tenantId: string, session: SessionContext) => 
-    apiRequest<MarketingAuditEvent[]>("/marketing/audit-events", "GET", session),
+    apiRequest<MarketingAuditEvent[]>("/v1/marketing/audit-events", "GET", session),
 
   async getDashboard(tenantId: string, session: SessionContext): Promise<MarketingDashboardMetrics> {
-    return apiRequest<MarketingDashboardMetrics>("/marketing/dashboard", "GET", session);
+    return apiRequest<MarketingDashboardMetrics>("/v1/marketing/dashboard", "GET", session);
   },
 
   async getChannelPerformance(tenantId: string, session: SessionContext) {
-    return apiRequest<any[]>("/marketing/channel-performance", "GET", session);
+    return apiRequest<any[]>("/v1/marketing/channel-performance", "GET", session);
   },
 
   async createCampaign(
@@ -61,7 +61,7 @@ export const marketingService = {
       audience: string;
     },
   ): Promise<MarketingCampaign> {
-    return apiRequest<MarketingCampaign>("/marketing/campaigns", "POST", session, payload);
+    return apiRequest<MarketingCampaign>("/v1/marketing/campaigns", "POST", session, payload);
   },
 
   async updateCampaignStatus(
@@ -83,7 +83,7 @@ export const marketingService = {
       notes?: string;
     },
   ): Promise<CampaignExecutionRun> {
-    return apiRequest<CampaignExecutionRun>("/marketing/executions", "POST", session, payload);
+    return apiRequest<CampaignExecutionRun>("/v1/marketing/executions", "POST", session, payload);
   },
 
   async runExecution(
@@ -110,7 +110,7 @@ export const marketingService = {
       employeeBand?: string;
     },
   ): Promise<MarketingLead> {
-    return apiRequest<MarketingLead>("/leads", "POST", session, payload);
+    return apiRequest<MarketingLead>("/v1/leads", "POST", session, payload);
   },
 
   async markLeadHandoffReady(
@@ -134,7 +134,7 @@ export const marketingService = {
     session: SessionContext,
     payload: Pick<NurtureWorkflow, "name" | "trigger" | "steps">,
   ): Promise<NurtureWorkflow> {
-    return apiRequest<NurtureWorkflow>("/marketing/workflows", "POST", session, payload);
+    return apiRequest<NurtureWorkflow>("/v1/marketing/workflows", "POST", session, payload);
   },
 
   async updateWorkflowStatus(
@@ -151,7 +151,7 @@ export const marketingService = {
     session: SessionContext,
     payload: { provider: ConnectedProvider; accountName: string; scopes: string[] },
   ): Promise<ConnectedAccount> {
-    return apiRequest<ConnectedAccount>("/marketing/accounts", "POST", session, payload);
+    return apiRequest<ConnectedAccount>("/v1/marketing/accounts", "POST", session, payload);
   },
 
   async updateAccountStatus(
@@ -168,6 +168,7 @@ export const marketingService = {
   },
 
   async runHealthSweep(tenantId: string, session: SessionContext) {
-    return apiRequest<MarketingAlert[]>("/marketing/health-sweep", "POST", session);
+    return apiRequest<MarketingAlert[]>("/v1/marketing/health-sweep", "POST", session);
   },
 };
+

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { useSession } from "@/core/security/session";
+import { apiRequest } from "@/core/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,7 +27,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { FilterBar } from "@/core/tools/FilterBar";
 import { Search, Info, Loader2 } from "lucide-react";
 
 export default function AuditHub() {
@@ -51,7 +51,7 @@ export default function AuditHub() {
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      const queryParams = new URLSearchParams({
+      const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
         ...(filters.module && { module: filters.module }),
@@ -62,16 +62,16 @@ export default function AuditHub() {
         ...(filters.endDate && { endDate: filters.endDate }),
       });
 
-      const response = await fetch(`/api/audit/logs?${queryParams}`, {
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
-      });
-      const result = await response.json();
-      setLogs(result.data || []);
-      setTotal(result.total || 0);
-    } catch (error) {
+      const result = await apiRequest<any>(`/audit/logs?${params.toString()}`, "GET", session);
+      
+      if (Array.isArray(result)) {
+        setLogs(result);
+        setTotal(result.length);
+      } else {
+        setLogs(result.data || []);
+        setTotal(result.total || result.data?.length || 0);
+      }
+    } catch (error: any) {
       console.error("Failed to fetch audit logs:", error);
     } finally {
       setLoading(false);
@@ -215,10 +215,10 @@ export default function AuditHub() {
                           <span className="text-muted-foreground ml-1">{log.entityId}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="font-mono text-xs">{log.userId.split("-")[0]}...</TableCell>
+                      <TableCell className="font-mono text-xs">{log.userId?.split("-")[0] || "anon"}...</TableCell>
                       <TableCell>{getSeverityBadge(log.severity)}</TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="icon">
+                        <Button disabled title="Not available yet" variant="ghost" size="icon">
                           <Info className="h-4 w-4" />
                         </Button>
                       </TableCell>

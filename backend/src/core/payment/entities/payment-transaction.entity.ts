@@ -34,11 +34,28 @@ export class PaymentTransaction {
     | "settled"
     | "failed"
     | "rejected"
-    | "cancelled";
+    | "cancelled"
+    | "refunded";
+  
+  // Unified Gateway Fields
+  method?: "CASH" | "EDC" | "GATEWAY";
+  provider?: "STRIPE" | "XENDIT" | "MIDTRANS" | "MANUAL";
+  paymentStatus?: "PENDING" | "PAID" | "FAILED" | "SETTLED" | "REFUNDED";
+  externalRef?: string;
+  platformFee?: number;
+  platformFeePending?: number;
+  platformFeeRealized?: number;
+  gatewayFee?: number;
+  netAmount?: number;
+  feeAbsorbedBy?: "MERCHANT" | "CUSTOMER";
+  retryCount?: number;
+  lastCheckedAt?: Date;
+
   retryAttempts: PaymentRetryAttempt[];
   settlementId?: string;
   ledgerSyncTriggeredAt?: Date;
   evidencePackId?: string;
+  expiresAt?: Date;
   createdBy: string;
   approvedBy?: string;
   approvedAt?: Date;

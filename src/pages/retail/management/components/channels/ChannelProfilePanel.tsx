@@ -544,7 +544,7 @@ export const ChannelProfilePanel: React.FC<Props> = ({
                     </p>
                   </div>
                   <div className="px-5 pb-4">
-                    <Button
+                    <Button disabled title="Not available yet"
                       variant="outline"
                       className="w-full h-11 rounded-xl font-black italic gap-2 border-red-200 text-red-600 hover:bg-red-50"
                     >

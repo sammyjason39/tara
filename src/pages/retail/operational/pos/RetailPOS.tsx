@@ -150,33 +150,42 @@ export default function RetailPOS() {
     });
   };
 
+  const [idempotencyKey, setIdempotencyKey] = useState<string>(
+    window.crypto.randomUUID?.() || Math.random().toString(36).substring(2),
+  );
+
   const processCheckout = async () => {
     if (!activeStore || !session.tenantId) return;
     try {
-      const order = await retailService.createOrder(
+      // Atomic Backend Checkout with Idempotency
+      const order = await retailService.checkout(
         session.tenantId,
         session,
-        activeStore.id,
-        activeDeviceId,
-        cart.map((i) => ({
-          productId: i.itemId,
-          quantity: i.quantity,
-          unitPrice: i.price,
-          name: i.name,
-        })),
-        "card",
-        total,
+        {
+          store_id: activeStore.id,
+          terminal_id: activeDeviceId || "terminal-pos",
+          items: cart.map((i) => ({
+            product_id: i.itemId,
+            name: i.name,
+            quantity: i.quantity,
+            unit_price: i.price,
+          })),
+          payment_method: "card",
+          payment_received: total,
+          grand_total: total,
+        },
+        idempotencyKey,
       );
-      await retailService.processPayment(
-        session.tenantId,
-        session,
-        order.id,
-        total,
-        "card",
+
+      setStatusMessage(
+        `Order #${order.id.slice(-6).toUpperCase()} processed successfully!`,
       );
-      setStatusMessage(`Order #${order.id} processed successfully!`);
       setCart([]);
+      setIdempotencyKey(
+        window.crypto.randomUUID?.() || Math.random().toString(36).substring(2),
+      );
     } catch (err: unknown) {
+      console.error("Checkout Error:", err);
       setAccessError(err instanceof Error ? err.message : "Checkout failed");
     }
   };

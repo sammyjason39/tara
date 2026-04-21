@@ -358,7 +358,7 @@ export default function InvoiceCapture() {
                     <FileText className="h-4 w-4 text-primary" />
                     <p className="text-sm font-medium">Original Invoice.pdf</p>
                   </div>
-                  <Button size="sm" variant="ghost">View</Button>
+                  <Button onClick={(e) => { e.preventDefault(); alert("Detailed View:\n\nMetadata: " + (typeof window !== "undefined" ? window.location.pathname : "N/A")); }} size="sm" variant="ghost">View</Button>
                 </div>
                 <p className="text-xs text-muted-foreground italic mt-2">
                   Hash: SHA256:{selectedInvoice?.id.slice(-12)}...

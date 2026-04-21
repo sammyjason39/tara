@@ -43,9 +43,12 @@ export class AssetDbRepository implements IAssetRepository {
         depreciation_method: asset.depreciationMethod,
         residual_value: new Prisma.Decimal(asset.residualValue.toString()),
         status: asset.status,
+        accumulated_depreciation: asset.accumulatedDepreciation ? new Prisma.Decimal(asset.accumulatedDepreciation.toString()) : new Prisma.Decimal(0),
+        revaluation_reserve: asset.revaluationReserve ? new Prisma.Decimal(asset.revaluationReserve.toString()) : new Prisma.Decimal(0),
         carrying_value: asset.carryingValue ? new Prisma.Decimal(asset.carryingValue.toString()) : new Prisma.Decimal(asset.acquisitionCost.toString()),
         updated_at: new Date(),
       }
+
     });
     return this.mapToDomain(created);
   }
@@ -68,12 +71,15 @@ export class AssetDbRepository implements IAssetRepository {
       department: item.department,
       acquisitionCost: item.acquisition_cost,
       acquisitionDate: item.acquisition_date,
-      usefulLifeYears: item.useful_life_years,
+      usefulLifeMonths: item.useful_life_years * 12,
       depreciationMethod: item.depreciation_method,
       residualValue: item.residual_value,
       status: item.status,
+      accumulatedDepreciation: item.accumulated_depreciation,
+      revaluationReserve: item.revaluation_reserve,
       carryingValue: item.carrying_value,
       updated_at: item.updated_at,
     } as unknown as Asset;
+
   }
 }

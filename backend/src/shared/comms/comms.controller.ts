@@ -1,10 +1,12 @@
-import { Controller, Get, Post, Patch, Delete, Body, Query, Req, Param } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Query, Req, Param, UseGuards } from '@nestjs/common';
 import { BulletinService } from './bulletin.service';
 import { MailService } from './mail.service';
 import { ChatService } from './chat.service';
 import { NotificationService } from './notification.service';
+import { TenantGuard } from '../guards/tenant.guard';
 
-@Controller('comms')
+@Controller('v1/comms')
+@UseGuards(TenantGuard)
 export class CommsController {
   constructor(
     private readonly bulletinService: BulletinService,

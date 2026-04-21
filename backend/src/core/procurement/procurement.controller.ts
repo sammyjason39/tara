@@ -42,7 +42,7 @@ interface RequestWithTenant extends Request {
   tenantContext: TenantContext;
 }
 
-@Controller("procurement")
+@Controller("v1/procurement")
 @UseInterceptors(TenantInterceptor)
 @UseGuards(ModuleStateGuard, BranchGatingGuard, TenantGuard)
 @RequiredModule("procurement")
@@ -469,3 +469,4 @@ export class ProcurementController {
     return { success: true, tenant_id, count: data.length, data };
   }
 }
+

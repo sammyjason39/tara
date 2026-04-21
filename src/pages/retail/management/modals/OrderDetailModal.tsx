@@ -29,14 +29,16 @@ interface OrderDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   onStatusChange?: (orderId: string, newStatus: OrderStatus) => void;
+  onVoid?: (orderId: string) => void;
+  onRefund?: (orderId: string, items: string[]) => void;
 }
 
-export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
-  order,
-  isOpen,
-  onClose,
+
   onStatusChange,
+  onVoid,
+  onRefund,
 }) => {
+
   if (!order) return null;
 
   const getStatusColor = (status: OrderStatus) => {
@@ -272,7 +274,31 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                   Confirm Receipt
                 </Button>
               )}
+
+              {/* Advanced Actions (Void/Refund) */}
+              {(order.status === "paid" || order.status === "processing") && onVoid && (
+                <Button
+                  variant="ghost"
+                  onClick={() => onVoid(order.id)}
+                  className="h-14 w-14 rounded-2xl border border-red-100 text-red-600 hover:bg-red-50"
+                  title="Void Order"
+                >
+                  <XCircle className="w-5 h-5" />
+                </Button>
+              )}
+
+              {order.status === "complete" && onRefund && (
+                <Button
+                  variant="ghost"
+                  onClick={() => onRefund(order.id, order.items.map(i => i.product_id))}
+                  className="h-14 w-14 rounded-2xl border border-orange-100 text-orange-600 hover:bg-orange-50"
+                  title="Initiate Refund"
+                >
+                  <CheckCircle2 className="w-5 h-5" />
+                </Button>
+              )}
             </div>
+
           </div>
         </div>
       </DialogContent>

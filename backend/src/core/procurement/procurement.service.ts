@@ -259,8 +259,42 @@ export class ProcurementService {
 
   async approveLegalContract(tenant_id: string, contractId: string, user_id?: string) {
     const contract = await this.repository.approveLegalContract(tenant_id, contractId);
-    await this.repository.createAuditEvent(tenant_id, user_id || "system", "contract.legal_approved", "CONTRACT", contractId, "Legal team approved the contract");
+    
+    // Hardened Audit Entry
+    await this.auditService.log({
+      tenant_id,
+      user_id: user_id || "system",
+      module: "PROCUREMENT",
+      action: "LEGAL_CONTRACT_APPROVED",
+      entity_type: "CONTRACT",
+      entity_id: contractId,
+      metadata: {
+        approver_id: user_id,
+        timestamp: new Date().toISOString(),
+      },
+    });
+
+    await this.repository.createAuditEvent(tenant_id, user_id || "system", "contract.legal_approved", "CONTRACT", contractId, `Legal team approval granted by ${user_id || 'system'}`);
     return contract;
+  }
+
+  async recordSupplierVetting(tenant_id: string, supplierId: string, user_id: string, results: any) {
+    // Record vetting in repository (if method exists, else use prisma)
+    const log = await this.auditService.log({
+      tenant_id,
+      user_id,
+      module: "PROCUREMENT",
+      action: "SUPPLIER_VETTING_RECORDED",
+      entity_type: "SUPPLIER",
+      entity_id: supplierId,
+      metadata: {
+        vetting_results: results,
+        status: results.status || "COMPLETED",
+      },
+    });
+
+    await this.repository.createAuditEvent(tenant_id, user_id, "supplier.vetting_completed", "SUPPLIER", supplierId, `Vetting status: ${results.status}`);
+    return { success: true, log_id: log.id };
   }
 
   async signContract(tenant_id: string, contractId: string, data: SignContractDto, user_id?: string) {

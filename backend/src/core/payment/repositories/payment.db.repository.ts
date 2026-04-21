@@ -199,6 +199,14 @@ export class PaymentDbRepository implements IPaymentRepository {
         idempotency_key: key,
         status: "APPROVAL_PENDING",
         created_by: actor_id,
+
+        // Unified Gateway Fields
+        method: dto.method ?? "GATEWAY",
+        provider: dto.provider ?? "STRIPE",
+        payment_status: "PENDING",
+        external_ref: dto.externalRef,
+        platform_fee_pending: 0,
+        platform_fee_realized: 0,
       },
     });
 
@@ -889,6 +897,17 @@ export class PaymentDbRepository implements IPaymentRepository {
       channel: t.channel as any,
       idempotency_key: t.idempotency_key,
       status: t.status as any,
+
+      // Unified Gateway Fields
+      method: (t as any).method as any,
+      provider: (t as any).provider as any,
+      paymentStatus: (t as any).payment_status as any,
+      externalRef: (t as any).external_ref || undefined,
+      platformFee: (t as any).platform_fee ? Number((t as any).platform_fee) : undefined,
+      gatewayFee: (t as any).gateway_fee ? Number((t as any).gateway_fee) : undefined,
+      netAmount: (t as any).net_amount ? Number((t as any).net_amount) : undefined,
+      feeAbsorbedBy: (t as any).fee_absorbed_by as any,
+
       retryAttempts: (t as any).paymentRetryAttempts || [],
       settlementId: t.settlement_id || undefined,
       evidencePackId: t.evidence_pack_id || undefined,
@@ -934,5 +953,148 @@ export class PaymentDbRepository implements IPaymentRepository {
       created_at: d.created_at,
       updated_at: d.updated_at,
     };
+  }
+
+  async getPaymentSettings(tenant_id: string): Promise<any> {
+    let settings = await this.prisma.payment_settings.findUnique({
+      where: { tenant_id },
+    });
+
+    if (!settings) {
+      settings = await this.prisma.payment_settings.create({
+        data: {
+          tenant_id,
+          fee_absorption_mode: "MERCHANT",
+          is_gateway_active: false,
+        },
+      });
+    }
+
+    return settings;
+  }
+
+  async updatePaymentSettings(tenant_id: string, data: any): Promise<any> {
+    return this.prisma.payment_settings.upsert({
+      where: { tenant_id },
+      create: {
+        tenant_id,
+        ...data,
+      },
+      update: data,
+    });
+  }
+
+  async getGatewayAccount(tenant_id: string, provider: string): Promise<any> {
+    return this.prisma.payment_gateway_accounts.findUnique({
+      where: { tenant_id },
+    });
+  }
+
+  async upsertGatewayAccount(tenant_id: string, data: any): Promise<any> {
+    return this.prisma.payment_gateway_accounts.upsert({
+      where: { tenant_id },
+      create: {
+        tenant_id,
+        ...data,
+      },
+      update: data,
+    });
+  }
+
+  async updateTransactionStatus(
+    tenant_id: string,
+    id: string,
+    data: {
+      status: "PENDING" | "PAID" | "FAILED" | "SETTLED" | "REFUNDED";
+      external_ref?: string;
+      platform_fee_pending?: number;
+      platform_fee_realized?: number;
+      gateway_fee?: number;
+      net_amount?: number;
+      retry_count?: number;
+      last_checked_at?: Date;
+    },
+    actor_id: string,
+  ): Promise<PaymentTransaction> {
+    const updated = await this.prisma.payment_transactions.update({
+      where: { id, tenant_id },
+      data: {
+        payment_status: data.status,
+        external_ref: data.external_ref,
+        platform_fee_pending: data.platform_fee_pending,
+        platform_fee_realized: data.platform_fee_realized,
+        gateway_fee: data.gateway_fee,
+        net_amount: data.net_amount,
+        retry_count: data.retry_count,
+        last_checked_at: data.last_checked_at,
+        updated_at: new Date(),
+      },
+    });
+
+    await this.addAudit(
+      tenant_id,
+      actor_id,
+      "transaction.status_sync",
+      "TRANSACTION",
+      id,
+      `${data.status} (by ${actor_id})`,
+    );
+
+    return this.mapTransaction(updated as PrismaTransaction);
+  }
+
+  async checkAndInsertWebhookEvent(
+    event_id: string,
+    provider: string,
+    payload: any,
+  ): Promise<boolean> {
+    try {
+      await this.prisma.payment_webhook_events.create({
+        data: {
+          id: uuidv4(),
+          event_id,
+          provider,
+          payload: payload ? JSON.stringify(payload) : "{}",
+        },
+      });
+      return true;
+    } catch (error) {
+      // P2002 is Prisma error for Unique Constraint Violation
+      if (error.code === "P2002") {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  async createPlatformFeeLedger(
+    tenant_id: string,
+    transaction_id: string,
+    amount: number,
+    provider: string,
+  ): Promise<void> {
+    await this.prisma.platform_fee_ledger.create({
+      data: {
+        id: uuidv4(),
+        tenant_id,
+        payment_transaction_id: transaction_id,
+        amount,
+        provider,
+      },
+    });
+  }
+
+  async findPendingTransactions(): Promise<PaymentTransaction[]> {
+    const txs = await this.prisma.payment_transactions.findMany({
+      where: {
+        payment_status: "PENDING",
+        method: "GATEWAY",
+      },
+      include: {
+        payment_retry_attempts: true,
+      },
+    });
+
+    return txs.map((tx) => this.mapTransaction(tx));
   }
 }

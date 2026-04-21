@@ -133,4 +133,52 @@ export class AuditChainService {
       affectedRange,
     };
   }
+
+  /**
+   * Proactive Integrity Verification
+   * Checks the hash chain for a tenant without modifying data.
+   */
+  async verifyIntegrity(tenant_id: string): Promise<{
+    status: 'HEALTHY' | 'CORRUPT';
+    totalLogs: number;
+    brokenCount: number;
+    firstBrokenId?: string;
+    details: string;
+  }> {
+    this.logger.log(`[AuditChainService] Verifying integrity for tenant ${tenant_id}`);
+
+    const logs = await this.prisma.audit_logs.findMany({
+      where: { tenant_id },
+      orderBy: { created_at: 'asc' },
+      select: { id: true, previous_hash: true, hash_chain: true },
+    });
+
+    if (logs.length === 0) {
+      return { status: 'HEALTHY', totalLogs: 0, brokenCount: 0, details: 'No logs found' };
+    }
+
+    let brokenCount = 0;
+    let firstBrokenId = undefined;
+    let lastHash = 'GENESIS';
+
+    for (const log of logs) {
+      if (log.previous_hash !== lastHash) {
+        brokenCount++;
+        if (!firstBrokenId) firstBrokenId = log.id;
+      }
+      lastHash = log.hash_chain || 'NULL';
+    }
+
+    const status = brokenCount === 0 ? 'HEALTHY' : 'CORRUPT';
+    
+    return {
+      status,
+      totalLogs: logs.length,
+      brokenCount,
+      firstBrokenId,
+      details: status === 'HEALTHY' 
+        ? 'All audit links verified successfully.' 
+        : `Detected ${brokenCount} broken links in the audit chain.`
+    };
+  }
 }

@@ -1,7 +1,7 @@
 import { Controller, Post, Body, Headers, Param } from '@nestjs/common';
 import { TimeAndAttendanceService } from './time.service';
 
-@Controller('api/hr/time')
+@Controller('hr/time')
 export class TimeAndAttendanceController {
   constructor(private readonly timeService: TimeAndAttendanceService) {}
 
@@ -30,8 +30,19 @@ export class TimeAndAttendanceController {
     @Headers('x-tenant-id') tenant_id: string,
     @Body('employee_id') employee_id: string,
     @Body('location_id') location_id: string,
+    @Body('shift_id') shift_id?: string,
+    @Body('source') source?: string,
+    @Body('device_id') device_id?: string,
+    @Body('reason') reason?: string,
+    @Body('metadata') metadata?: any,
   ) {
-    const result = await this.timeService.clock_in(tenant_id, employee_id, location_id);
+    const result = await this.timeService.clock_in(tenant_id, employee_id, location_id, {
+      shift_id,
+      source,
+      device_id,
+      reason,
+      metadata,
+    });
     return { success: true, data: result };
   }
 
@@ -39,9 +50,10 @@ export class TimeAndAttendanceController {
   async clock_out(
     @Headers('x-tenant-id') tenant_id: string,
     @Body('employee_id') employee_id: string,
+    @Body('metadata') metadata?: any,
   ) {
-    await this.timeService.clock_out(tenant_id, employee_id);
-    return { success: true, message: 'Clocked out successfully' };
+    const result = await this.timeService.clock_out(tenant_id, employee_id, metadata);
+    return { success: true, data: result };
   }
 
   @Post('shift/assign')

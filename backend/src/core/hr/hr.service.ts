@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { IHRRepository } from "./repositories/hr.repository.interface";
+import { ContractGeneratorService, ContractType } from "./contract-generator.service";
 import { PrismaService } from "../../persistence/prisma.service";
 import { Employee } from "./entities/employee.entity";
 import { Attendance } from "./entities/attendance.entity";
@@ -52,6 +53,7 @@ export class HRService {
     private readonly eventBus: EventBusService,
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
+    private readonly contractGenerator: ContractGeneratorService,
   ) {}
 
   // Employee Management
@@ -909,49 +911,6 @@ export class HRService {
     return this.hrRepository.getGlobalPayroll(employee_id, period);
   }
 
-  async calculatePayroll(
-    tenant_id: string,
-    employee_id: string,
-    period: string,
-    user_id?: string,
-  ): Promise<Payroll> {
-    const event_reference_id = `EVT-HR-PAY-CALC-${Date.now()}`;
-    return this.prisma.$transaction(async (tx: any) => {
-      const payroll = await this.hrRepository.calculatePayroll(
-        tenant_id,
-        employee_id,
-        period,
-        tx,
-      );
-      
-      // 1. Audit Logging (Transactional)
-      await this.auditService.log({
-        tenant_id,
-        user_id: user_id || "SYSTEM",
-        module: "HR",
-        action: "CALCULATE",
-        entity_type: "PAYROLL",
-        entity_id: payroll.id,
-        after_state: payroll,
-        event_reference_id,
-        metadata: { employee_id, period },
-      }, tx);
-
-      // 3. Domain Event (Transactional)
-      await this.eventBus.publish({
-        event_type: EVENT_NAMES.PAYROLL_CALCULATED,
-        tenant_id,
-        entity_id: payroll.id,
-        entity_type: "PAYROLL",
-        source_module: "HR",
-        user_id,
-        event_reference_id,
-        payload: { employee_id, period, total_amount: payroll.netPay },
-      }, tx);
-
-      return payroll;
-    });
-  }
 
   // Organization Management
   async getDepartments(tenant_id: string): Promise<Department[]> {
@@ -1609,6 +1568,25 @@ export class HRService {
   }
 
   // Contract Management
+  async generateContractPDF(
+    tenant_id: string,
+    type: ContractType,
+    data: any,
+    user_id: string,
+  ): Promise<Buffer> {
+    // 1. Log sensitive access
+    await this.auditService.logSensitiveAccess({
+      tenant_id,
+      user_id,
+      module: "HR",
+      entity_type: type === ContractType.EMPLOYMENT ? "EMPLOYEE_CONTRACT" : "SUPPLIER_CONTRACT",
+      entity_id: data.employee_id || data.supplier_id || "generated-doc",
+      metadata: { contractType: type },
+    });
+
+    // 2. Generate PDF using service
+    return this.contractGenerator.generateContractPDF(tenant_id, type, data);
+  }
   async getContracts(
     tenant_id: string,
     location_id?: string,

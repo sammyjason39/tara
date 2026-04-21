@@ -57,7 +57,7 @@ export const hrService = {
     session: SessionContext,
     employee: Partial<Employee>,
   ): Promise<Employee> {
-    return apiRequest<Employee>("/hr/employees", "POST", session, employee);
+    return apiRequest<Employee>("/v1/hr/employees", "POST", session, employee);
   },
 
   /**
@@ -157,3 +157,4 @@ export const hrService = {
     );
   },
 };
+

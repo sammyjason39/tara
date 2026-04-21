@@ -28,7 +28,7 @@ interface RequestWithTenant extends Request {
   tenantContext: TenantContext;
 }
 
-@Controller("it")
+@Controller("v1/it")
 @UseInterceptors(TenantInterceptor)
 @UseGuards(ModuleStateGuard, BranchGatingGuard, TenantGuard)
 @RequiredModule("it")
@@ -315,3 +315,4 @@ export class ITController {
     return { success: true, count: data.length, data };
   }
 }
+

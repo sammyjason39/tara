@@ -156,4 +156,29 @@ export class OutboxWorkerService {
     if (this.totalProcessedInWindow < 10) return false;
     return (this.errorCount / this.totalProcessedInWindow) > this.ERROR_THRESHOLD;
   }
+
+  /**
+   * Visibility: Returns health metrics for the Event Outbox.
+   */
+  async getOutboxSummary(tenant_id: string) {
+    const stats = await this.prisma.sys_outbox_events.groupBy({
+      by: ['status'],
+      where: { tenant_id },
+      _count: true
+    });
+
+    const summary: any = { total: 0, pending: 0, failed: 0, processed: 0 };
+    stats.forEach(s => {
+      const statusKey = s.status.toLowerCase();
+      summary[statusKey] = s._count;
+      summary.total += s._count;
+    });
+
+    return {
+      ...summary,
+      error_threshold: this.ERROR_THRESHOLD,
+      is_degraded: this.checkDegradation(),
+      processed_in_window: this.totalProcessedInWindow
+    };
+  }
 }

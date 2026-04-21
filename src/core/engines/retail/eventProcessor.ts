@@ -32,7 +32,7 @@ export async function processRetailEvent(event: RetailEvent) {
     case "payment_success": {
       const payload = event.payload as PaymentSuccessPayload;
       const tenantId =
-        payload.tenantId ?? event.scope?.tenantId ?? "tenant-demo";
+        payload.tenantId ?? event.scope?.tenantId;
       const orderId = payload.orderId ?? `ord-${Date.now()}`;
       const storeId = payload.storeId ?? event.scope?.branchId ?? "store-001";
 

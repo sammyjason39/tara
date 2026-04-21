@@ -21,14 +21,20 @@ import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import FilterBar from "@/core/tools/FilterBar";
 import DataTableShell from "@/core/tools/DataTableShell";
-import { UserPlus } from "lucide-react";
+import { UserPlus, UserMinus, UserCheck, Loader2, Mail, Shield } from "lucide-react";
+import { useSession } from "@/core/security/session";
+import { hrService } from "@/core/services/hrService";
+import { useToast } from "@/hooks/use-toast";
+import { Separator } from "@/components/ui/separator";
+
+type StaffStatus = "Active" | "Inactive" | "On Leave" | "Suspended";
 
 type StaffRow = {
   id: string;
   name: string;
   role: string;
   location: string;
-  status: "Active" | "Inactive" | "On Leave";
+  status: StaffStatus;
 };
 
 const staffRows: StaffRow[] = [
@@ -62,12 +68,14 @@ const staffRows: StaffRow[] = [
   },
 ];
 
-const statusTone = (status: StaffRow["status"]) => {
+const statusTone = (status: StaffStatus) => {
   switch (status) {
     case "Active":
       return "bg-emerald-50 text-emerald-700 border-emerald-200";
     case "On Leave":
       return "bg-amber-50 text-amber-700 border-amber-200";
+    case "Suspended":
+      return "bg-rose-50 text-rose-700 border-rose-200";
     case "Inactive":
     default:
       return "bg-slate-50 text-slate-600 border-slate-200";
@@ -75,9 +83,38 @@ const statusTone = (status: StaffRow["status"]) => {
 };
 
 export default function CoreStaff() {
+  const session = useSession();
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedStaff, setSelectedStaff] = useState<StaffRow | null>(null);
+  const [isActionLoading, setIsActionLoading] = useState(false);
+
+  const handleToggleStatus = async () => {
+    if (!selectedStaff) return;
+    setIsActionLoading(true);
+    try {
+      const newStatus = selectedStaff.status === "Active" ? "Suspended" : "Active";
+      await hrService.updateEmployeeStatus(session, selectedStaff.id, newStatus);
+      
+      toast({
+        title: "Status Updated",
+        description: `${selectedStaff.name} is now ${newStatus}.`,
+      });
+      
+      // Update local state for demo purposes since we don't have a refetch here
+      setSelectedStaff({ ...selectedStaff, status: newStatus as StaffStatus });
+    } catch (err) {
+      toast({
+        title: "Action Failed",
+        description: "Unable to update staff status.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
 
   const filtered = staffRows.filter((row) => {
     const matchesSearch =
@@ -96,7 +133,7 @@ export default function CoreStaff() {
           title="Staff Directory"
           subtitle="Manage roles, assignments, and access for every team member."
           primaryAction={
-            <Button>
+            <Button onClick={() => toast({ title: "Staff Management", description: "Opening onboarding workflow..." })}>
               <UserPlus className="mr-2 h-4 w-4" />
               Add Staff
             </Button>
@@ -107,11 +144,64 @@ export default function CoreStaff() {
         <div className="p-4">
           <WorkspacePanel
             title="Staff profile"
-            description="Select a team member to view details, assignments, and access."
+            description="Detailed team member view and management."
           >
-            <div className="flex h-64 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
-              No staff selected
-            </div>
+            {selectedStaff ? (
+              <div className="space-y-6">
+                <div className="flex flex-col items-center text-center py-4">
+                  <div className="h-20 w-20 rounded-full bg-indigo-100 flex items-center justify-center mb-3">
+                    <span className="text-2xl font-bold text-indigo-700">
+                      {selectedStaff.name.charAt(0)}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-lg">{selectedStaff.name}</h3>
+                  <p className="text-sm text-muted-foreground">{selectedStaff.role}</p>
+                  <Badge variant="outline" className={`mt-2 ${statusTone(selectedStaff.status)}`}>
+                    {selectedStaff.status}
+                  </Badge>
+                </div>
+                
+                <Separator />
+                
+                <div className="space-y-4 text-sm">
+                  <div className="flex items-center gap-3">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span>{selectedStaff.name.toLowerCase().replace(" ", ".")}@zenvix.id</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Shield className="h-4 w-4 text-muted-foreground" />
+                    <span>{selectedStaff.location}</span>
+                  </div>
+                </div>
+
+                <div className="grid gap-2 pt-4">
+                  <Button 
+                    variant={selectedStaff.status === "Active" ? "outline" : "default"}
+                    onClick={handleToggleStatus}
+                    disabled={isActionLoading}
+                    className="w-full"
+                  >
+                    {isActionLoading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : selectedStaff.status === "Active" ? (
+                      <UserMinus className="mr-2 h-4 w-4" />
+                    ) : (
+                      <UserCheck className="mr-2 h-4 w-4" />
+                    )}
+                    {selectedStaff.status === "Active" ? "Suspend Access" : "Activate Access"}
+                  </Button>
+                  <Button variant="ghost" size="sm" className="w-full text-muted-foreground">
+                    Reset Password
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex h-64 flex-col items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground p-6 text-center">
+                <Shield className="h-12 w-12 mb-3 opacity-20" />
+                No staff selected
+                <p className="text-[10px] mt-2">Select a row from the directory to manage access.</p>
+              </div>
+            )}
           </WorkspacePanel>
         </div>
       }
@@ -157,7 +247,7 @@ export default function CoreStaff() {
             <div className="mt-6 flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed py-12 text-center text-sm text-muted-foreground">
               <p className="font-medium text-foreground">No staff members found</p>
               <p>Try adjusting filters or add a new team member.</p>
-              <Button variant="outline" className="mt-2">
+              <Button onClick={() => toast({ title: "Staff Onboarding", description: "Redirecting to hiring module..." })} variant="outline" className="mt-2">
                 Add Staff
               </Button>
             </div>
@@ -175,7 +265,11 @@ export default function CoreStaff() {
                   </TableHeader>
                   <TableBody>
                     {filtered.map((row) => (
-                      <TableRow key={row.id} className="hover:bg-muted/40">
+                      <TableRow 
+                        key={row.id} 
+                        className={`hover:bg-muted/40 cursor-pointer ${selectedStaff?.id === row.id ? 'bg-muted' : ''}`}
+                        onClick={() => setSelectedStaff(row)}
+                      >
                         <TableCell className="font-medium">{row.name}</TableCell>
                         <TableCell className="text-muted-foreground">{row.role}</TableCell>
                         <TableCell className="text-muted-foreground">

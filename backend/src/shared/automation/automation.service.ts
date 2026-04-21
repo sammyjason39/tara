@@ -136,4 +136,23 @@ export class AutomationService implements OnModuleInit {
       metadata: { actionType: rule.actionType },
     }, (event as any).tx);
   }
+
+  /**
+   * Visibility: Manually trigger the automation engine with a custom event.
+   */
+  async triggerManual(tenant_id: string, data: { event_type: string, payload: any }, user_id: string) {
+    const event: DomainEvent = {
+      event_type: data.event_type,
+      tenant_id,
+      entity_id: 'manual-trigger',
+      entity_type: 'MANUAL',
+      source_module: 'ADMIN_WORKFLOW',
+      payload: data.payload,
+      user_id,
+      created_at: new Date()
+    };
+
+    await this.processEvent(event);
+    return { success: true, message: `Automation loop triggered for ${data.event_type}` };
+  }
 }

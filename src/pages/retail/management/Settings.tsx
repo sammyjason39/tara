@@ -453,7 +453,7 @@ export default function RetailSettings() {
                     <p className="text-sm text-muted-foreground">No device paired</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm">Pair Device</Button>
+                <Button disabled title="Not available yet" variant="outline" size="sm">Pair Device</Button>
               </div>
             </div>
           </CardContent>

@@ -438,6 +438,10 @@ export class OrderItemDto {
   @IsNotEmpty()
   product_id: string;
 
+  @IsOptional()
+  @IsString()
+  variant_id?: string;
+
   /**
    * Decimal(19,4)-safe quantity.
    * Accepts numeric inputs (e.g. 1.25 or "1.2500") from POS terminals.
@@ -544,6 +548,28 @@ export class CloseShiftDto {
     toClassOnly: true,
   })
   closing_cash: number;
+
+  @IsOptional()
+  @IsNumber()
+  counted_cash?: number;
+
+  @IsOptional()
+  @IsNumber()
+  variance?: number;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
+}
+
+export class ReconcileShiftDto {
+  @IsNumber()
+  @IsNotEmpty()
+  actual_amount: number;
+
+  @IsString()
+  @IsNotEmpty()
+  reason: string;
 
   @IsOptional()
   @IsString()
@@ -766,4 +792,53 @@ export class RegisterBranchSensorDto {
   @IsOptional()
   @IsString()
   location?: string;
+}
+export class CheckoutDto {
+  @IsString()
+  @IsNotEmpty()
+  store_id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  terminal_id: string;
+
+  @IsOptional()
+  @IsString()
+  customer_id?: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OrderItemDto)
+  items: OrderItemDto[];
+
+  @IsString()
+  @IsNotEmpty()
+  @IsEnum(["cash", "card", "qr", "wallet", "CASH", "EDC", "GATEWAY"])
+  payment_method: string;
+
+  @IsOptional()
+  @IsString()
+  external_ref?: string;
+
+  /**
+   * Decimal(19,4)-safe payment received.
+   */
+  @Transform(toDecimalString)
+  @Matches(DECIMAL_19_4_RE)
+  payment_received: string;
+
+  /**
+   * Decimal(19,4)-safe grand total.
+   */
+  @Transform(toDecimalString)
+  @Matches(DECIMAL_19_4_RE)
+  grand_total: string;
+
+  @IsOptional()
+  @IsString()
+  shift_id?: string;
+
+  @IsOptional()
+  @IsString()
+  payment_channel?: string;
 }

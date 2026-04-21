@@ -15,7 +15,7 @@ import { RetailPublicAuthService } from "./retail-public-auth.service";
 import { ChannelCredentialsGuard } from "./guards/channel-credentials.guard";
 import { CustomerAuthGuard } from "./guards/customer-auth.guard";
 
-@Controller("retail/public/auth")
+@Controller("v1/retail/public/auth")
 @UseInterceptors(TenantInterceptor)
 export class RetailPublicAuthController {
   constructor(private readonly authService: RetailPublicAuthService) {}
@@ -139,3 +139,4 @@ export class RetailPublicAuthController {
     return { success: true, data: this.toPublicCustomer(customer) };
   }
 }
+

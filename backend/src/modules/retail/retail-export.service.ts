@@ -33,4 +33,43 @@ export class RetailExportService {
 
     return csvHeader + csvRows;
   }
+
+  async generateAuditCsv(tenantId: string) {
+    this.logger.log(`Generating Retail Audit CSV for tenant ${tenantId}`);
+    const logs = await this.prisma.audit_logs.findMany({
+      where: {
+        tenant_id: tenantId,
+        module: "RETAIL",
+      },
+      orderBy: { created_at: "desc" },
+    });
+
+    const header = "Date,User ID,Action,Resource,Status,Meta\n";
+    const rows = logs
+      .map((log: any) =>
+        `${log.created_at.toISOString()},${log.user_id},${log.action},${log.resource_type},${log.status},"${JSON.stringify(log.metadata).replace(/"/g, '""')}"`
+      )
+      .join("\n");
+
+    return header + rows;
+  }
+
+  async generateDashboardKpiCsv(tenantId: string) {
+    this.logger.log(`Generating Dashboard KPI CSV for tenant ${tenantId}`);
+    const shifts = await this.prisma.retail_shifts.findMany({
+      where: { tenant_id: tenantId },
+      orderBy: { end_time: "desc" },
+      take: 50,
+    });
+
+    const header = "Shift ID,Started At,Ended At,Opening Cash,Closing Cash,Expected Cash,Variance\n";
+    const rows = shifts
+      .map((s: any) => {
+        const variance = s.closing_cash ? Number(s.closing_cash) - Number(s.expected_cash || 0) : 0;
+        return `${s.id},${s.start_time.toISOString()},${s.end_time ? s.end_time.toISOString() : "OPEN"},${s.opening_cash},${s.closing_cash || 0},${s.expected_cash || 0},${variance}`;
+      })
+      .join("\n");
+
+    return header + rows;
+  }
 }

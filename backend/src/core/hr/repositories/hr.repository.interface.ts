@@ -9,6 +9,8 @@ import { CreatePerformanceCycleDto } from "../dto/create-performance-cycle.dto";
 import { SubmitReviewDto } from "../dto/submit-review.dto";
 import { CreateCaseDto } from "../dto/create-case.dto";
 import { CreateContractDto } from "../dto/create-contract.dto";
+import { CreateBudgetScenarioDto } from "../dto/create-budget-scenario.dto";
+import { CreateHeadcountPlanDto } from "../dto/create-headcount-plan.dto";
 import { Employee } from "../entities/employee.entity";
 import { Attendance } from "../entities/attendance.entity";
 import { LeaveRequest } from "../entities/leave-request.entity";
@@ -99,9 +101,13 @@ export abstract class IHRRepository {
   // Payroll Management
   abstract getPayroll(tenant_id: string, location_id?: string, employee_id?: string, period?: string): Promise<Payroll[]>;
   abstract getGlobalPayroll(employee_id: string, period?: string): Promise<Payroll[]>;
-  abstract calculatePayroll(tenant_id: string, employee_id: string, period: string, tx?: Prisma.TransactionClient): Promise<Payroll>;
   abstract getPayrollRuns(tenant_id: string): Promise<PayrollRun[]>;
+  abstract getPayrollRunById(tenant_id: string, id: string): Promise<PayrollRun | null>;
+  abstract createPayrollRun(tenant_id: string, data: any, tx?: Prisma.TransactionClient): Promise<PayrollRun>;
+  abstract updatePayrollRun(tenant_id: string, id: string, data: Partial<PayrollRun>, tx?: Prisma.TransactionClient): Promise<PayrollRun>;
   abstract getPayrollLines(tenant_id: string, runId: string): Promise<PayrollLine[]>;
+  abstract createDisbursementLog(tenant_id: string, data: any, tx?: Prisma.TransactionClient): Promise<any>;
+  abstract getDisbursementLogs(tenant_id: string, runId: string): Promise<any[]>;
 
   // Organization Management
   abstract getLocations(tenant_id: string): Promise<any[]>;
@@ -118,7 +124,6 @@ export abstract class IHRRepository {
   abstract createCandidate(tenant_id: string, data: any, tx?: Prisma.TransactionClient): Promise<Candidate>;
   abstract updateCandidate(tenant_id: string, id: string, data: any, tx?: Prisma.TransactionClient): Promise<Candidate>;
   abstract hireCandidate(tenant_id: string, candidateId: string, data: any, tx?: Prisma.TransactionClient): Promise<Employee>;
-  abstract executePayrollTransaction(tenant_id: string, period: string, activeEmployees: any[], tx?: Prisma.TransactionClient): Promise<any>;
   abstract getTalentLeads(tenant_id: string, status?: string): Promise<TalentLead[]>;
   abstract createTalentLead(tenant_id: string, data: any): Promise<TalentLead>;
   abstract updateTalentLead(tenant_id: string, id: string, data: any): Promise<TalentLead>;
@@ -197,10 +202,12 @@ export abstract class IHRRepository {
 
   // Strategic Workforce & Succession
   abstract getBudgetScenarios(tenant_id: string): Promise<BudgetScenario[]>;
-  abstract createBudgetScenario(tenant_id: string, data: any): Promise<BudgetScenario>;
+  abstract createBudgetScenario(tenant_id: string, data: CreateBudgetScenarioDto): Promise<BudgetScenario>;
   abstract getHeadcountPlans(tenant_id: string, scenario_id: string): Promise<HeadcountPlan[]>;
+  abstract createHeadcountPlan(tenant_id: string, data: CreateHeadcountPlanDto): Promise<HeadcountPlan>;
   abstract updateHeadcountPlan(tenant_id: string, id: string, data: any): Promise<HeadcountPlan>;
   abstract getExchangeRates(tenant_id: string): Promise<ExchangeRate[]>;
+  abstract createExchangeRate(tenant_id: string, data: any): Promise<ExchangeRate>;
   abstract getSuccessionPlans(tenant_id: string): Promise<SuccessionPlan[]>;
   abstract getSuccessionPlan(tenant_id: string, position_id: string): Promise<SuccessionPlan | null>;
   abstract createSuccessionPlan(tenant_id: string, data: any): Promise<SuccessionPlan>;
@@ -223,4 +230,17 @@ export abstract class IHRRepository {
   // Miscellaneous
   abstract updatePositionJobPost(tenant_id: string, position_id: string, data: any): Promise<any>;
   abstract getPositionJobPost(tenant_id: string, position_id: string): Promise<any>;
+
+  // Hardening & Workforce Extension
+  abstract getOverviewMetrics(tenant_id: string): Promise<any>;
+  abstract getRetailOverviewMetrics(tenant_id: string): Promise<any>;
+  abstract isModuleActive(tenant_id: string, module_key: string): Promise<boolean>;
+  abstract getTenantSettings(tenant_id: string): Promise<any>;
+
+  // Shift Templates
+  abstract getShiftTemplates(tenant_id: string, location_id?: string): Promise<any[]>;
+  abstract createShiftTemplate(tenant_id: string, data: any): Promise<any>;
+  abstract deleteShiftTemplate(tenant_id: string, id: string): Promise<any>;
+
+  abstract getStrategicHeadcount(tenant_id: string): Promise<any>;
 }

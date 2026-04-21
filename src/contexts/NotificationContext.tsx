@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
-import { apiUrl } from '@/lib/api-config';
+import { apiRequest } from '@/core/api/apiClient';
 import { toast } from '@/hooks/use-toast';
 
 export interface Notification {
@@ -46,14 +46,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const fetchNotifications = useCallback(async () => {
     if (!session?.token) return;
     try {
-      const res = await fetch(apiUrl('/comms/notifications'), {
-        headers: {
-          'x-tenant-id': session.tenantId,
-          'Authorization': `Bearer ${session.token}`
-        }
-      });
-      const data = await res.json();
-      if (data.data) {
+      const data = await apiRequest<any>('/comms/notifications', 'GET', session);
+      if (data && Array.isArray(data)) {
+        setNotifications(data);
+      } else if (data?.data) {
         setNotifications(data.data);
       }
     } catch (err) {
@@ -64,14 +60,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const fetchCounts = useCallback(async () => {
     if (!session?.token) return;
     try {
-      const res = await fetch(apiUrl('/comms/notifications/counts'), {
-        headers: {
-          'x-tenant-id': session.tenantId,
-          'Authorization': `Bearer ${session.token}`
-        }
-      });
-      const data = await res.json();
-      if (data.total !== undefined) {
+      const data = await apiRequest<any>('/comms/notifications/counts', 'GET', session);
+      if (data && data.total !== undefined) {
         setUnreadCounts(data);
       }
     } catch (err) {
@@ -119,47 +109,41 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const markAsRead = async (id: string | null) => {
     if (!session?.token || !id) return;
     try {
-      const res = await fetch(apiUrl(`/comms/notifications/${id}/read`), {
-        method: 'PATCH',
-        headers: {
-          'x-tenant-id': session.tenantId,
-          'Authorization': `Bearer ${session.token}`
-        }
-      });
-      if (res.ok) {
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-        // We'll trust the next sync_counts for the actual number, but we can optimistically update
-        setUnreadCounts(prev => ({
-            ...prev,
-            notifications: Math.max(0, prev.notifications - 1),
-            total: Math.max(0, prev.total - 1)
-        }));
-      }
-    } catch (err) {
+      await apiRequest(`/comms/notifications/${id}/read`, 'PATCH', session);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+      // We'll trust the next sync_counts for the actual number, but we can optimistically update
+      setUnreadCounts(prev => ({
+          ...prev,
+          notifications: Math.max(0, prev.notifications - 1),
+          total: Math.max(0, prev.total - 1)
+      }));
+    } catch (err: any) {
       console.error('[NotificationContext] Mark Read Fail:', err);
+      toast({
+        title: "Sync Error",
+        description: err.message || "Failed to update notification status.",
+        variant: "destructive"
+      });
     }
   };
 
   const markAllAsRead = async () => {
     if (!session?.token) return;
     try {
-      const res = await fetch(apiUrl('/comms/notifications/read-all'), {
-        method: 'POST',
-        headers: {
-          'x-tenant-id': session.tenantId,
-          'Authorization': `Bearer ${session.token}`
-        }
-      });
-      if (res.ok) {
-        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-        setUnreadCounts(prev => ({
-            ...prev,
-            notifications: 0,
-            total: prev.chat + prev.mail
-        }));
-      }
-    } catch (err) {
+      await apiRequest('/comms/notifications/read-all', 'POST', session);
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCounts(prev => ({
+          ...prev,
+          notifications: 0,
+          total: prev.chat + prev.mail
+      }));
+    } catch (err: any) {
         console.error('[NotificationContext] Mark All Read Fail:', err);
+        toast({
+          title: "Sync Error",
+          description: err.message || "Failed to clear notifications.",
+          variant: "destructive"
+        });
     }
   };
 

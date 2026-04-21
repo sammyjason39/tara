@@ -1,9 +1,14 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageShell } from "@/core/ui/PageShell";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { CreditCard, Monitor, Calculator } from "lucide-react";
+import { RequestModal } from "@/core/ui/RequestModal";
+import { adminService } from "@/core/services/adminService";
+import { useSession } from "@/core/security/session";
+import { useToast } from "@/hooks/use-toast";
 
 type IntegrationItem = {
   id: string;
@@ -111,14 +116,38 @@ const IntegrationRow = ({
 );
 
 export default function CoreIntegrations() {
+  const session = useSession();
+  const { toast } = useToast();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleRequestIntegration = async (data: { title: string; reason: string }) => {
+    try {
+      await adminService.createRequest(session.tenant_id, session, {
+        type: "INTEGRATION_REQUEST",
+        title: data.title,
+        description: data.reason,
+      });
+      toast({
+        title: "Request Sent",
+        description: `Your request for ${data.title} has been logged.`,
+      });
+    } catch (err) {
+      toast({
+        title: "Submission Failed",
+        description: "Unable to process integration request.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <PageShell
       header={
         <PageHeader
           title="Integrations"
           subtitle="Connect enterprise systems to keep finance, operations, and devices aligned."
-          primaryAction={<Button>Request new integration</Button>}
-          secondaryActions={<Button variant="outline">Sync all</Button>}
+          primaryAction={<Button onClick={() => setIsModalOpen(true)}>Request new integration</Button>}
+          secondaryActions={<Button onClick={() => window.location.reload()} variant="outline">Sync all</Button>}
         />
       }
     >
@@ -168,6 +197,15 @@ export default function CoreIntegrations() {
           </div>
         </WorkspacePanel>
       </div>
+      
+      <RequestModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleRequestIntegration}
+        title="Request New Integration"
+        description="Explain why you need this integration and our engineering team will review the request."
+        defaultTitle="New Integration Request"
+      />
     </PageShell>
   );
 }

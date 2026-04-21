@@ -50,7 +50,7 @@ export const RetailContextSwitcher = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
+        <Button disabled title="Not available yet"
           variant="outline"
           className="h-12 border-2 border-slate-200 rounded-2xl flex items-center gap-3 px-4 hover:bg-slate-50 hover:border-blue-400 transition-all shadow-sm"
         >

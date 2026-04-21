@@ -12,6 +12,7 @@ import { HRService } from '../hr.service';
 import { IHRRepository } from '../repositories/hr.repository.interface';
 import { AuditService } from '../../../shared/audit/audit.service';
 import { EventBusService } from '../../../shared/events/event-bus.service';
+import { HrPayrollService } from '../hr-payroll.service';
 import { EVENT_NAMES } from '../events/event-names';
 import { ComplianceEngineService } from '../../../modules/compliance/compliance.service';
 import {
@@ -302,6 +303,7 @@ export class ExecutePayrollCommandHandler implements ICommandHandler<ExecutePayr
 
   constructor(
     private readonly repository: IHRRepository,
+    private readonly hrPayrollService: HrPayrollService,
     private readonly complianceEngine: ComplianceEngineService,
     private readonly eventBus: EventBusService,
   ) {}
@@ -335,9 +337,13 @@ export class ExecutePayrollCommandHandler implements ICommandHandler<ExecutePayr
     }
     
     // PHASE 2: TRANSACTIONAL PAYROLL
-    const transactionResult = await this.repository.executePayrollTransaction(tenant_id, period, activeEmployees);
-
-    // Event emission moved to Outbox Pattern (Repository level write)
+    // Loop through active employees and calculate payroll for each
+    // In a real production system, this would be queued or parallelized
+    const payrollRunId = `RUN-${tenant_id}-${period}`;
+    
+    for (const emp of activeEmployees) {
+      await this.hrPayrollService.calculatePayroll(tenant_id, emp.id, period);
+    }
 
     return {
       tenant_id,
@@ -348,8 +354,8 @@ export class ExecutePayrollCommandHandler implements ICommandHandler<ExecutePayr
       totalGrossPay,
       complianceModulesRun,
       status: 'COMPLETED',
-      payrollRunId: transactionResult.payrollRunId,
-      message: `Payroll executed and posted to ledger for ${period}.`,
+      payrollRunId,
+      message: `Payroll executed and lines calculated for ${period}.`,
     };
   }
 }

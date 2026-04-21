@@ -28,6 +28,7 @@ import {
   stock_movements as PrismaStockMovement,
   agentic_events as PrismaAgenticEvent,
   item_masters as ItemMaster,
+  Prisma,
 } from "@prisma/client";
 
 @Injectable()
@@ -113,11 +114,11 @@ export class InventoryDbRepository implements IInventoryRepository {
       tenant_id: p.tenant_id,
       sku: p.sku,
       name: p.name,
-      category: p.productCategory?.name as any,
+      category: p.product_categories?.name as any,
       uom: p.unit,
       barcode: p.barcode,
       qrCode: p.barcode,
-      moduleTags: (p as any).module_tags || [],
+      moduleTags: p.module_tags || [],
       departmentId: p.department_id || undefined,
       active: p.status === "active",
       created_at: p.created_at,
@@ -170,11 +171,11 @@ export class InventoryDbRepository implements IInventoryRepository {
       tenant_id: product.tenant_id,
       sku: product.sku,
       name: product.name,
-      category: (product as any).product_categories.name as any,
+      category: product.product_categories.name as any,
       uom: product.unit,
       barcode: product.barcode,
       qrCode: product.barcode,
-      moduleTags: (product as any).moduleTags || [],
+      moduleTags: product.module_tags || [],
       active: product.status === "active",
       departmentId: product.department_id || undefined,
       created_at: product.created_at,
@@ -251,31 +252,31 @@ export class InventoryDbRepository implements IInventoryRepository {
     providedTx?: any
   ): Promise<StockMovement> {
     const execute = async (tx: any) => {
-      // 1. Lock Row (or create if missing)
-      let level = await this.getLock(tx, tenant_id, data.item_id, data.location_id);
-      
-      if (!level) {
-        level = await tx.stock_levels.create({
-          data: {
-            id: uuidv4(),
-            updated_at: new Date(),
-            tenant_id: tenant_id,
+      // 1. Atomic Upsert
+      const level = await tx.stock_levels.upsert({
+        where: {
+          location_id_product_id_department_id: {
             location_id: data.location_id,
-            department_id: data.departmentId || null,
             product_id: data.item_id,
-            on_hand: data.quantity,
-            available: data.quantity,
+            department_id: data.departmentId || "DEFAULT",
           },
-        });
-      } else {
-        await tx.stock_levels.update({
-          where: { id: level.id },
-          data: {
-            on_hand: { increment: data.quantity },
-            available: { increment: data.quantity },
-          },
-        });
-      }
+        },
+        create: {
+          id: uuidv4(),
+          updated_at: new Date(),
+          tenant_id: tenant_id,
+          location_id: data.location_id,
+          department_id: data.departmentId || "DEFAULT",
+          product_id: data.item_id,
+          on_hand: data.quantity,
+          available: data.quantity,
+        },
+        update: {
+          on_hand: { increment: data.quantity },
+          available: { increment: data.quantity },
+          updated_at: new Date(),
+        },
+      });
 
       // 2. Create movement
       const movement = await tx.stock_movements.create({
@@ -304,10 +305,10 @@ export class InventoryDbRepository implements IInventoryRepository {
         quantity: movement.quantity,
         unitCost: Number(movement.unitCost),
         reason: "Intake",
-        destinationLocationId: movement.toLocationId!,
-        destinationDepartmentId: movement.toDepartmentId || undefined,
-        referenceId: movement.referenceId,
-        createdBy: movement.performedBy,
+        destinationLocationId: movement.to_location_id!,
+        destinationDepartmentId: movement.to_department_id || undefined,
+        referenceId: movement.reference_id,
+        createdBy: movement.performed_by,
         created_at: movement.created_at,
       };
     };
@@ -317,21 +318,23 @@ export class InventoryDbRepository implements IInventoryRepository {
 
   async consumeStock(tenant_id: string, data: any, providedTx?: any): Promise<any> {
     const execute = async (tx: any) => {
-      // 1. Lock and check
-      const level = await this.getLock(tx, tenant_id, data.item_id, data.location_id);
-      if (!level) throw new Error(`StockLevel not found for consumption`);
-      if (level.available < data.quantity) throw new Error(`Insufficient available stock (Available: ${level.available}, Requested: ${data.quantity})`);
+      // 1. Atomic Update with inline balance check
+      const affectedRows = await tx.$executeRaw`
+        UPDATE stock_levels 
+        SET on_hand = on_hand - ${data.quantity}, 
+            available = available - ${data.quantity},
+            updated_at = NOW()
+        WHERE tenant_id = ${tenant_id}
+          AND product_id = ${data.item_id}
+          AND location_id = ${data.location_id}
+          AND on_hand >= ${data.quantity}
+      `;
 
-      // 2. Decrement stock level
-      await tx.stock_levels.update({
-        where: { id: level.id },
-        data: {
-          on_hand: { decrement: data.quantity },
-          available: { decrement: data.quantity },
-        },
-      });
+      if (affectedRows === 0) {
+        throw new Error(`Insufficient stock or balance not found for product ${data.item_id} at location ${data.location_id}`);
+      }
 
-      // 3. Create movement
+      // 2. Create movement
       const movement = await tx.stock_movements.create({
         data: {
           id: uuidv4(),
@@ -775,11 +778,11 @@ export class InventoryDbRepository implements IInventoryRepository {
           tenant_id: product.tenant_id,
           sku: product.sku,
           name: product.name,
-          category: (product as any).product_categories.name as any,
+          category: product.product_categories.name as any,
           uom: product.unit,
           barcode: product.barcode,
           qrCode: product.barcode,
-          moduleTags: (product as any).moduleTags || [],
+          moduleTags: product.module_tags || [],
           departmentId: product.department_id || undefined,
           active: product.status === "active",
           created_at: product.created_at,
@@ -901,17 +904,6 @@ export class InventoryDbRepository implements IInventoryRepository {
 
   // --- Financial-Grade Hardening ---
 
-  private async getLock(tx: any, tenant_id: string, product_id: string, location_id: string) {
-    const rows: any[] = await tx.$queryRaw`
-      SELECT id, on_hand AS "onHand", reserved, available, in_transit AS "inTransit"
-      FROM stock_levels 
-      WHERE tenant_id = ${tenant_id} 
-        AND product_id = ${product_id} 
-        AND location_id = ${location_id}
-      FOR UPDATE
-    `;
-    return rows[0] || null;
-  }
 
   async reserveStock(
     tenant_id: string,
@@ -920,25 +912,30 @@ export class InventoryDbRepository implements IInventoryRepository {
     quantity: number,
     referenceId: string,
     referenceType: string,
-    tx?: any
+    tx?: any,
   ): Promise<void> {
     const execute = async (t: any) => {
-      const level = await this.getLock(t, tenant_id, product_id, location_id);
-      if (!level) throw new Error(`StockLevel not found for reservation`);
-      
-      // Strict Invariant: available >= quantity
-      if (level.available < quantity) {
-        throw new Error(`Insufficient available stock for reservation (Available: ${level.available}, Requested: ${quantity})`);
+      // 1. Atomic reservation
+      const updateResult = await t.$executeRaw`
+        UPDATE stock_levels 
+        SET 
+          reserved = reserved + ${quantity},
+          available = available - ${quantity},
+          updated_at = NOW()
+        WHERE 
+          tenant_id = ${tenant_id} AND 
+          product_id = ${product_id} AND 
+          location_id = ${location_id} AND 
+          available >= ${quantity}
+      `;
+
+      if (updateResult === 0) {
+        throw new Error(
+          `Insufficient available stock at ${location_id} for reservation`,
+        );
       }
 
-      await t.stock_levels.update({
-        where: { id: level.id },
-        data: {
-          reserved: { increment: quantity },
-          available: { decrement: quantity },
-        },
-      });
-
+      // 2. Create reservation record
       await t.stock_reservations.create({
         data: {
           id: uuidv4(),
@@ -947,13 +944,14 @@ export class InventoryDbRepository implements IInventoryRepository {
           product_id: product_id,
           location_id: location_id,
           quantity,
-          status: 'PENDING',
+          status: "PENDING",
           reference_id: referenceId,
           reference_type: referenceType,
           expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000), // Default 24h
         },
       });
 
+      // 3. Create movement for audit
       await t.stock_movements.create({
         data: {
           id: uuidv4(),
@@ -962,12 +960,12 @@ export class InventoryDbRepository implements IInventoryRepository {
           product_id: product_id,
           location_id: location_id,
           to_location_id: location_id,
-          quantity,
-          type: 'RESERVE',
+          quantity: 0, // Reservation doesn't change on_hand
+          type: "RESERVE",
           reference_id: referenceId,
           reference_type: referenceType,
-          reservation_id: referenceId, // Linking for audit
-          performed_by: 'system',
+          reservation_id: referenceId,
+          performed_by: "system",
         },
       });
     };
@@ -981,36 +979,40 @@ export class InventoryDbRepository implements IInventoryRepository {
     quantity: number,
     referenceId: string,
     referenceType: string,
-    tx?: any
+    tx?: any,
   ): Promise<void> {
     const execute = async (t: any) => {
-      const level = await this.getLock(t, tenant_id, product_id, location_id);
-      if (!level) throw new Error(`StockLevel not found for release`);
-      
-      // Strict Invariant: reserved >= quantity
-      if (level.reserved < quantity) {
-        throw new Error(`Insufficient reserved stock for release (Reserved: ${level.reserved}, Requested: ${quantity})`);
+      // 1. Atomic release
+      const updateResult = await t.$executeRaw`
+        UPDATE stock_levels 
+        SET 
+          reserved = reserved - ${quantity},
+          available = available + ${quantity},
+          updated_at = NOW()
+        WHERE 
+          tenant_id = ${tenant_id} AND 
+          product_id = ${product_id} AND 
+          location_id = ${location_id} AND 
+          reserved >= ${quantity}
+      `;
+
+      if (updateResult === 0) {
+        throw new Error(`Insufficient reserved stock at ${location_id} for release`);
       }
 
-      await t.stock_levels.update({
-        where: { id: level.id },
-        data: {
-          reserved: { decrement: quantity },
-          available: { increment: quantity },
-        },
-      });
-
-      // Update Reservation Record
+      // 2. Update reservation status
       await t.stock_reservations.updateMany({
-        where: { 
-          tenant_id: tenant_id, 
-          reference_id: referenceId, 
-          product_id: product_id, 
-          status: 'PENDING' 
+        where: {
+          tenant_id,
+          product_id,
+          location_id,
+          reference_id: referenceId,
+          status: "PENDING",
         },
-        data: { status: 'RELEASED' },
+        data: { status: "CANCELLED" },
       });
 
+      // 3. Create movement
       await t.stock_movements.create({
         data: {
           id: uuidv4(),
@@ -1018,13 +1020,12 @@ export class InventoryDbRepository implements IInventoryRepository {
           tenant_id: tenant_id,
           product_id: product_id,
           location_id: location_id,
-          from_location_id: location_id,
-          quantity: -quantity,
-          type: 'RELEASE',
+          to_location_id: location_id,
+          quantity: 0,
+          type: "RELEASE",
           reference_id: referenceId,
           reference_type: referenceType,
-          reservation_id: referenceId,
-          performed_by: 'system',
+          performed_by: "system",
         },
       });
     };
@@ -1038,36 +1039,42 @@ export class InventoryDbRepository implements IInventoryRepository {
     quantity: number,
     referenceId: string,
     referenceType: string,
-    tx?: any
+    tx?: any,
   ): Promise<void> {
     const execute = async (t: any) => {
-      const level = await this.getLock(t, tenant_id, product_id, location_id);
-      if (!level) throw new Error(`StockLevel not found for consumption`);
-      
-      // Strict Invariants
-      if (level.reserved < quantity) throw new Error(`Insufficient reserved stock (Reserved: ${level.reserved}, Requested: ${quantity})`);
-      if (level.on_hand < quantity) throw new Error(`Insufficient on-hand stock (OnHand: ${level.onHand}, Requested: ${quantity})`);
+      // 1. Atomic consumption from reservation
+      const updateResult = await t.$executeRaw`
+        UPDATE stock_levels 
+        SET 
+          on_hand = on_hand - ${quantity},
+          reserved = reserved - ${quantity},
+          updated_at = NOW()
+        WHERE 
+          tenant_id = ${tenant_id} AND 
+          product_id = ${product_id} AND 
+          location_id = ${location_id} AND 
+          reserved >= ${quantity} AND 
+          on_hand >= ${quantity}
+      `;
 
-      await t.stock_levels.update({
-        where: { id: level.id },
-        data: {
-          on_hand: { decrement: quantity },
-          reserved: { decrement: quantity },
-          // available remains the same since both onHand and reserved drop by same amount
-        },
-      });
+      if (updateResult === 0) {
+        throw new Error(
+          `Insufficient reserved or on-hand stock at ${location_id} for consumption`,
+        );
+      }
 
-      // Update Reservation Record
+      // 2. Update Reservation Record
       await t.stock_reservations.updateMany({
-        where: { 
-          tenant_id: tenant_id, 
-          reference_id: referenceId, 
-          product_id: product_id, 
-          status: 'PENDING' 
+        where: {
+          tenant_id: tenant_id,
+          reference_id: referenceId,
+          product_id: product_id,
+          status: "PENDING",
         },
-        data: { status: 'CONSUMED' },
+        data: { status: "CONSUMED" },
       });
 
+      // 3. Create movement
       await t.stock_movements.create({
         data: {
           id: uuidv4(),
@@ -1077,11 +1084,11 @@ export class InventoryDbRepository implements IInventoryRepository {
           location_id: location_id,
           from_location_id: location_id,
           quantity: -quantity,
-          type: 'CONSUME_RESERVED',
+          type: "CONSUME_RESERVED",
           reference_id: referenceId,
           reference_type: referenceType,
           reservation_id: referenceId,
-          performed_by: 'system',
+          performed_by: "system",
         },
       });
     };
@@ -1097,28 +1104,34 @@ export class InventoryDbRepository implements IInventoryRepository {
     referenceId: string,
     referenceType: string,
     transferGroupId?: string,
-    tx?: any
+    tx?: any,
   ): Promise<StockMovement> {
     const execute = async (t: any) => {
-      const sourceLevel = await this.getLock(t, tenant_id, product_id, fromLocationId);
-      if (!sourceLevel || sourceLevel.on_hand < quantity) throw new Error(`Insufficient stock for transfer out`);
+      // 1. Atomic decrement at Source
+      const sourceUpdate = await t.$executeRaw`
+        UPDATE stock_levels 
+        SET 
+          on_hand = on_hand - ${quantity},
+          available = available - ${quantity},
+          updated_at = NOW()
+        WHERE 
+          tenant_id = ${tenant_id} AND 
+          product_id = ${product_id} AND 
+          location_id = ${fromLocationId} AND 
+          on_hand >= ${quantity}
+      `;
 
-      // 1. Source: Decrement on_hand and available
-      await t.stock_levels.update({
-        where: { id: sourceLevel.id },
-        data: {
-          on_hand: { decrement: quantity },
-          available: { decrement: quantity },
-        },
-      });
+      if (sourceUpdate === 0) {
+        throw new Error(`Insufficient stock at source ${fromLocationId} for transfer`);
+      }
 
-      // 2. Destination: Increment in_transit
+      // 2. Increment in_transit at Destination
       await t.stock_levels.upsert({
         where: {
           location_id_product_id_department_id: {
             location_id: toLocationId,
             product_id: product_id,
-            department_id: (null as any),
+            department_id: "DEFAULT", // Consistent with consumeStock
           },
         },
         create: {
@@ -1127,6 +1140,7 @@ export class InventoryDbRepository implements IInventoryRepository {
           tenant_id: tenant_id,
           location_id: toLocationId,
           product_id: product_id,
+          department_id: "DEFAULT",
           on_hand: 0,
           in_transit: quantity,
           available: 0,
@@ -1146,11 +1160,11 @@ export class InventoryDbRepository implements IInventoryRepository {
           from_location_id: fromLocationId,
           to_location_id: toLocationId,
           quantity: -quantity,
-          type: 'TRANSFER_OUT',
+          type: "TRANSFER_OUT",
           reference_id: referenceId,
           reference_type: referenceType,
           transfer_group_id: transferGroupId,
-          performed_by: 'system',
+          performed_by: "system",
         },
       });
     };
@@ -1166,21 +1180,29 @@ export class InventoryDbRepository implements IInventoryRepository {
     referenceId: string,
     referenceType: string,
     transferGroupId?: string,
-    tx?: any
+    tx?: any,
   ): Promise<StockMovement> {
     const execute = async (t: any) => {
-      const destLevel = await this.getLock(t, tenant_id, product_id, toLocationId);
-      if (!destLevel || destLevel.inTransit < quantity) throw new Error(`Insufficient in-transit stock for transfer in (InTransit: ${destLevel.inTransit}, Requested: ${quantity})`);
+      // 1. Atomic transition: in_transit -> on_hand at Destination
+      const destUpdate = await t.$executeRaw`
+        UPDATE stock_levels 
+        SET 
+          in_transit = in_transit - ${quantity},
+          on_hand = on_hand + ${quantity},
+          available = available + ${quantity},
+          updated_at = NOW()
+        WHERE 
+          tenant_id = ${tenant_id} AND 
+          product_id = ${product_id} AND 
+          location_id = ${toLocationId} AND 
+          in_transit >= ${quantity}
+      `;
 
-      // 1. Decrement in_transit, increment on_hand and available
-      await t.stock_levels.update({
-        where: { id: destLevel.id },
-        data: {
-          in_transit: { decrement: quantity },
-          on_hand: { increment: quantity },
-          available: { increment: quantity },
-        },
-      });
+      if (destUpdate === 0) {
+        throw new Error(
+          `Insufficient in-transit stock at destination ${toLocationId} for receipt`,
+        );
+      }
 
       return t.stock_movements.create({
         data: {
@@ -1192,11 +1214,11 @@ export class InventoryDbRepository implements IInventoryRepository {
           from_location_id: fromLocationId,
           to_location_id: toLocationId,
           quantity: quantity,
-          type: 'TRANSFER_IN',
+          type: "TRANSFER_IN",
           reference_id: referenceId,
           reference_type: referenceType,
           transfer_group_id: transferGroupId,
-          performed_by: 'system',
+          performed_by: "system",
         },
       });
     };
@@ -1262,6 +1284,82 @@ export class InventoryDbRepository implements IInventoryRepository {
         tenant_id: tenant_id,
         OR: [{ barcode: code }, { sku: code }],
       },
+      include: { product_categories: true },
+    });
+  }
+
+  /**
+   * Specialized lookup optimized for scanners.
+   * Enforces Per-Tenant Uniqueness as per Phase 4 requirement.
+   */
+  async lookupByBarcode(tenant_id: string, barcode: string): Promise<any | null> {
+    return this.prisma.item_masters.findFirst({
+      where: {
+        tenant_id: tenant_id,
+        barcode: barcode,
+        status: 'active',
+      },
+      include: { product_categories: true },
+    });
+  }
+
+  /**
+   * Atomic, low-latency stock adjustment for Edge scanners.
+   */
+  async quickAdjust(
+    tenant_id: string,
+    item_id: string,
+    location_id: string,
+    delta: number,
+    user_id: string
+  ): Promise<any> {
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Row Level Lock
+      const level = await this.getLock(tx, tenant_id, item_id, location_id);
+      
+      if (!level) {
+        // Auto-create level for inflow if missing
+        if (delta < 0) throw new Error(`Stock level not found for adjustment`);
+        
+        return tx.stock_levels.create({
+          data: {
+            id: uuidv4(),
+            updated_at: new Date(),
+            tenant_id,
+            product_id: item_id,
+            location_id,
+            on_hand: delta,
+            available: delta,
+          }
+        });
+      }
+
+      // 2. Atomic Update
+      const updated = await tx.stock_levels.update({
+        where: { id: level.id },
+        data: {
+          on_hand: { [delta > 0 ? "increment" : "decrement"]: Math.abs(delta) },
+          available: { [delta > 0 ? "increment" : "decrement"]: Math.abs(delta) },
+        }
+      });
+
+      // 3. Lightweight Movement Log
+      await tx.stock_movements.create({
+        data: {
+          id: uuidv4(),
+          updated_at: new Date(),
+          tenant_id,
+          product_id: item_id,
+          location_id,
+          type: delta > 0 ? "SCAN_IN" : "SCAN_OUT",
+          quantity: delta,
+          reference_type: "EDGE_SCAN",
+          reference_id: `SCAN-${Date.now()}`,
+          performed_by: user_id,
+        }
+      });
+
+      return updated;
     });
   }
 
@@ -1295,5 +1393,67 @@ export class InventoryDbRepository implements IInventoryRepository {
       errorMsg: event.error_msg || undefined,
       created_at: event.created_at,
     };
+  }
+
+  async getTransfers(tenant_id: string): Promise<any[]> {
+    return this.prisma.inventory_transfers.findMany({
+      where: { tenant_id },
+      include: {
+        item_masters: true,
+        from_location: true,
+        to_location: true,
+      },
+      orderBy: { created_at: "desc" },
+    });
+  }
+
+  async getTransferById(tenant_id: string, id: string): Promise<any | null> {
+    return this.prisma.inventory_transfers.findFirst({
+      where: { id, tenant_id },
+      include: {
+        item_masters: true,
+        from_location: true,
+        to_location: true,
+      },
+    });
+  }
+
+  async createStockTransfer(tenant_id: string, data: any, tx?: any): Promise<any> {
+    const db = tx || this.prisma;
+    return db.inventory_transfers.create({
+      data: {
+        ...data,
+        tenant_id,
+        id: uuidv4(),
+        updated_at: new Date(),
+      },
+    });
+  }
+
+  async updateStockTransfer(tenant_id: string, id: string, data: any, tx?: any): Promise<any> {
+    const db = tx || this.prisma;
+    return db.inventory_transfers.update({
+      where: { id, tenant_id },
+      data: {
+        ...data,
+        updated_at: new Date(),
+      },
+    });
+  }
+
+  private async getLock(
+    tx: Prisma.TransactionClient,
+    tenant_id: string,
+    product_id: string,
+    location_id: string,
+  ): Promise<any> {
+    const rows: any[] = await tx.$queryRaw(Prisma.sql`
+      SELECT * FROM stock_levels 
+      WHERE tenant_id = ${tenant_id} 
+      AND product_id = ${product_id} 
+      AND location_id = ${location_id}
+      FOR UPDATE
+    `);
+    return rows[0] || null;
   }
 }

@@ -12,7 +12,7 @@ import { RolesGuard } from "../../../shared/guards/roles.guard";
 import { TenantGuard } from "../../../shared/guards/tenant.guard";
 import { UserRole } from "../../../shared/roles";
 
-@Controller("api/sales/management")
+@Controller("v1/sales/management")
 @UseGuards(RolesGuard, TenantGuard)
 export class SalesManagementController {
   constructor(private readonly salesService: SalesManagementService) {}
@@ -48,3 +48,4 @@ export class SalesManagementController {
     return this.salesService.getSLAPerformance(tenant_id);
   }
 }
+

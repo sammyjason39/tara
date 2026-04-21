@@ -60,15 +60,31 @@ const OrderFulfillment = () => {
     setIsOrderModalOpen(true);
   };
 
-  const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
-    );
-    toast({
-      title: "Signal Dispatched",
-      description: `Order ${orderId} shifted to ${newStatus}.`,
-    });
+  const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
+    try {
+      await retailService.updateOrderStatus(
+        session.tenantId!,
+        session,
+        orderId,
+        newStatus,
+      );
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
+      );
+      toast({
+        title: "Signal Synchronized",
+        description: `Order ${orderId} successfully transitioned to ${newStatus}.`,
+      });
+    } catch (e) {
+      console.error(e);
+      toast({
+        title: "Sync Failure",
+        description: "Failed to propagate order status change to the ledger.",
+        variant: "destructive",
+      });
+    }
   };
+
 
   if (isLoading) {
     return (
@@ -91,13 +107,13 @@ const OrderFulfillment = () => {
           subtitle={`Node: ${session.locationId || "CENTRAL_HUB"} • Velocity: 94.2% • SLA Gaps: MINIMAL`}
         />
         <div className="flex items-center gap-3">
-          <Button
+          <Button disabled title="Not available yet"
             variant="outline"
             className="h-11 rounded-xl px-4 font-black italic border-slate-200 text-xs uppercase tracking-widest gap-2"
           >
             <History className="w-3.5 h-3.5" /> Manifest Archive
           </Button>
-          <Button className="h-11 px-6 rounded-xl bg-slate-900 font-black italic uppercase text-xs tracking-widest gap-2 shadow-lg shadow-slate-900/10 hover:bg-slate-800">
+          <Button disabled title="Not available yet" className="h-11 px-6 rounded-xl bg-slate-900 font-black italic uppercase text-xs tracking-widest gap-2 shadow-lg shadow-slate-900/10 hover:bg-slate-800">
             <Zap className="w-4 h-4 text-amber-400" /> Start Batch Pick
           </Button>
         </div>

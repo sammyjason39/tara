@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Req, UseGuards } from '@nestjs/common';
 import { LicenseService } from './license.service';
 
-@Controller('license')
+@Controller('v1/license')
 export class LicenseController {
   constructor(private readonly licenseService: LicenseService) {}
 

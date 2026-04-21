@@ -48,10 +48,10 @@ import type { TreasuryTransfer } from "@/core/types/finance/treasury";
 export const financeApiClient = {
   // Assets & Capex
   listAssets: (tenantId: string, session: SessionContext) =>
-    apiRequest<FixedAsset[]>("/finance/assets", "GET", session),
+    apiRequest<FixedAsset[]>("/v1/finance/assets", "GET", session),
 
   listCapexRequests: (tenantId: string, session: SessionContext) =>
-    apiRequest<CapexRequest[]>("/finance/capex/requests", "GET", session),
+    apiRequest<CapexRequest[]>("/v1/finance/capex/requests", "GET", session),
 
   listCapexBudgets: (tenantId: string, session: SessionContext) =>
     apiRequest<FinanceCapexBudgetRow[]>(
@@ -64,7 +64,7 @@ export const financeApiClient = {
     tenantId: string,
     session: SessionContext,
     payload: CapexBudgetPayload,
-  ) => apiRequest<void>("/finance/capex/budgets", "POST", session, payload),
+  ) => apiRequest<void>("/v1/finance/capex/budgets", "POST", session, payload),
 
   createCapexRequest: (
     tenantId: string,
@@ -227,7 +227,7 @@ export const financeApiClient = {
 
   // Receivables
   listReceivables: (tenantId: string, session: SessionContext) =>
-    apiRequest<FinanceReceivableRow[]>("/finance/receivables", "GET", session),
+    apiRequest<FinanceReceivableRow[]>("/v1/finance/receivables", "GET", session),
 
   createReceivable: (
     tenantId: string,
@@ -256,13 +256,13 @@ export const financeApiClient = {
 
   // Payables
   listPayables: (tenantId: string, session: SessionContext) =>
-    apiRequest<FinancePayableRow[]>("/finance/payables", "GET", session),
+    apiRequest<FinancePayableRow[]>("/v1/finance/payables", "GET", session),
 
   createPayable: (
     tenantId: string,
     session: SessionContext,
     payload: PayablePayload,
-  ) => apiRequest<PayableBill>("/finance/payables", "POST", session, payload),
+  ) => apiRequest<PayableBill>("/v1/finance/payables", "POST", session, payload),
 
   approvePayable: (tenantId: string, session: SessionContext, id: string) =>
     apiRequest<PayableBill | null>(
@@ -276,7 +276,7 @@ export const financeApiClient = {
 
   // Invoices (Aggregated)
   listInvoices: (tenantId: string, session: SessionContext) =>
-    apiRequest<FinanceInvoiceRow[]>("/finance/invoices", "GET", session),
+    apiRequest<FinanceInvoiceRow[]>("/v1/finance/invoices", "GET", session),
 
   captureInvoice: (
     tenantId: string,
@@ -304,24 +304,24 @@ export const financeApiClient = {
 
   // Journals
   listJournals: (tenantId: string, session: SessionContext) =>
-    apiRequest<FinanceJournalRow[]>("/finance/ledger", "GET", session),
+    apiRequest<FinanceJournalRow[]>("/v1/finance/ledger", "GET", session),
 
   createJournal: (
     tenantId: string,
     session: SessionContext,
     payload: JournalPayload,
-  ) => apiRequest<JournalEntry>("/finance/ledger", "POST", session, payload),
+  ) => apiRequest<JournalEntry>("/v1/finance/ledger", "POST", session, payload),
 
   // Payments
   listPayments: (tenantId: string, session: SessionContext) =>
-    apiRequest<FinancePaymentRow[]>("/finance/payments", "GET", session),
+    apiRequest<FinancePaymentRow[]>("/v1/finance/payments", "GET", session),
 
   createPayment: (
     tenantId: string,
     session: SessionContext,
     payload: PaymentRequestPayload,
   ) =>
-    apiRequest<PaymentRequest>("/finance/payments", "POST", session, payload),
+    apiRequest<PaymentRequest>("/v1/finance/payments", "POST", session, payload),
 
   createPaymentRequest: (
     tenantId: string,
@@ -347,11 +347,11 @@ export const financeApiClient = {
 
   // Documents
   listDocuments: (tenantId: string, session: SessionContext) =>
-    apiRequest<FinanceDocumentRow[]>("/finance/documents", "GET", session),
+    apiRequest<FinanceDocumentRow[]>("/v1/finance/documents", "GET", session),
 
   // Treasury
   listSources: (tenantId: string, session: SessionContext) =>
-    apiRequest<MoneySource[]>("/finance/treasury/sources", "GET", session),
+    apiRequest<MoneySource[]>("/v1/finance/treasury/sources", "GET", session),
 
   listTransfers: (tenantId: string, session: SessionContext) =>
     apiRequest<TreasuryTransfer[]>(
@@ -378,7 +378,7 @@ export const financeApiClient = {
     sourceId: string,
     amount: number,
   ) =>
-    apiRequest<void>("/finance/treasury/reconcile", "POST", session, {
+    apiRequest<void>("/v1/finance/treasury/reconcile", "POST", session, {
       sourceId,
       amount,
     }),
@@ -412,21 +412,21 @@ export const financeApiClient = {
 
   // Policies
   listPolicies: (tenantId: string, session: SessionContext) =>
-    apiRequest<FinancePolicyRow[]>("/finance/policies", "GET", session),
+    apiRequest<FinancePolicyRow[]>("/v1/finance/policies", "GET", session),
 
   createPolicy: (
     tenantId: string,
     session: SessionContext,
     payload: PolicyPayload,
   ) =>
-    apiRequest<FinancePolicyRow>("/finance/policies", "POST", session, payload),
+    apiRequest<FinancePolicyRow>("/v1/finance/policies", "POST", session, payload),
 
   togglePolicy: (tenantId: string, session: SessionContext, id: string) =>
     apiRequest<void>(`/finance/policies/${id}/toggle`, "POST", session),
 
   // Periods
   listPeriods: (tenantId: string, session: SessionContext) =>
-    apiRequest<AccountingPeriod[]>("/finance/periods", "GET", session),
+    apiRequest<AccountingPeriod[]>("/v1/finance/periods", "GET", session),
 
   lockPeriod: (tenantId: string, session: SessionContext, id: string) =>
     apiRequest<void>(`/finance/periods/${id}/lock`, "POST", session),
@@ -528,13 +528,13 @@ export const financeApiClient = {
   },
 
   verifyExport: (session: SessionContext, data: any, signature: string) => 
-    apiRequest<{ valid: boolean }>("/finance/dashboard/verify-export", "POST", session, { data, signature }),
+    apiRequest<{ valid: boolean }>("/v1/finance/dashboard/verify-export", "POST", session, { data, signature }),
 
   getSystemHealth: (session: SessionContext, companyId: string) => 
     apiRequest<any>(`/finance/dashboard/health?companyId=${companyId}`, "GET", session),
 
   repairAuditChain: (session: SessionContext, fromTimestamp?: string) => 
-    apiRequest<any>("/finance/dashboard/repair-chain", "POST", session, { fromTimestamp }),
+    apiRequest<any>("/v1/finance/dashboard/repair-chain", "POST", session, { fromTimestamp }),
 
   // Financial Intelligence (Phase 1: Cashflow Engine)
   getCashflow: (
@@ -574,13 +574,13 @@ export const financeApiClient = {
 
   // Insights & Alerts
   getFinanceInsights: (tenantId: string, session: SessionContext) =>
-    apiRequest<FinanceInsight[]>("/finance/insights", "GET", session),
+    apiRequest<FinanceInsight[]>("/v1/finance/insights", "GET", session),
 
   getInbox: (tenantId: string, session: SessionContext) =>
-    apiRequest<WorkflowRequest[]>("/finance/inbox", "GET", session),
+    apiRequest<WorkflowRequest[]>("/v1/finance/inbox", "GET", session),
 
   getAlerts: (tenantId: string, session: SessionContext) =>
-    apiRequest<FinanceAlert[]>("/finance/alerts", "GET", session),
+    apiRequest<FinanceAlert[]>("/v1/finance/alerts", "GET", session),
 
   // Payroll
   getPayrollEntries: (
@@ -633,5 +633,6 @@ export const financeApiClient = {
     ),
 
   runPayroll: (tenantId: string, session: SessionContext, period: string) =>
-    apiRequest<boolean>("/finance/payroll/run", "POST", session, { period }),
+    apiRequest<boolean>("/v1/finance/payroll/run", "POST", session, { period }),
 };
+

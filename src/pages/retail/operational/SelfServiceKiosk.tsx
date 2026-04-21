@@ -120,36 +120,52 @@ const SelfServiceKiosk = () => {
 
   const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
+  const [idempotencyKey, setIdempotencyKey] = useState<string>(
+    window.crypto.randomUUID?.() || Math.random().toString(36).substring(2),
+  );
+
   const handleCheckout = async () => {
-    if (cart.length === 0) return;
+    if (cart.length === 0 || !session.tenantId) return;
+
+    if (!activeStore?.id) {
+      toast({
+        title: "Store Context Missing",
+        description: "Terminal not bound to a physical location.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsProcessing(true);
     try {
-      const order = await retailService.createOrder(
-        session.tenantId!,
+      // Atomic Backend Checkout with Idempotency
+      await retailService.checkout(
+        session.tenantId,
         session,
-        session.locationId || "unassigned",
-        "kiosk-self-terminal-01",
-        cart.map((item) => ({
-          productId: item.id,
-          name: item.name,
-          quantity: item.quantity,
-          unitPrice: item.price,
-        })),
-        paymentMethod || "card",
-        total,
-      );
-
-      await retailService.processPayment(
-        session.tenantId!,
-        session,
-        order.id,
-        total,
-        paymentMethod || "card",
+        {
+          store_id: activeStore.id,
+          terminal_id: "kiosk-self-terminal-01",
+          items: cart.map((item) => ({
+            product_id: item.id,
+            name: item.name,
+            quantity: item.quantity,
+            unit_price: item.price,
+          })),
+          payment_method: paymentMethod || "card",
+          payment_received: total,
+          grand_total: total,
+          payment_channel: paymentMethod === "qr" ? "QR" : "CARD_POS",
+        },
+        idempotencyKey,
       );
 
       setStep("success");
       setCart([]);
+      setIdempotencyKey(
+        window.crypto.randomUUID?.() || Math.random().toString(36).substring(2),
+      );
     } catch (error: unknown) {
+      console.error("Checkout Error:", error);
       const message = error instanceof Error ? error.message : "Payment failed";
       toast({
         title: "Transaction Failed",

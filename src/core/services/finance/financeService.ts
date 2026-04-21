@@ -223,7 +223,7 @@ export const financeService = {
     tenantId: string,
     session: SessionContext,
   ): Promise<WorkflowRequest[]> {
-    return apiRequest<WorkflowRequest[]>("/finance/inbox", "GET", session);
+    return apiRequest<WorkflowRequest[]>("/v1/finance/inbox", "GET", session);
   },
 
   async getMoneySources(
@@ -255,7 +255,7 @@ export const financeService = {
     tenantId: string,
     session: SessionContext,
   ): Promise<FinanceAlert[]> {
-    return apiRequest<FinanceAlert[]>("/finance/alerts", "GET", session);
+    return apiRequest<FinanceAlert[]>("/v1/finance/alerts", "GET", session);
   },
 
   async createPaymentRequest(
@@ -295,14 +295,14 @@ export const financeService = {
     tenantId: string,
     session: SessionContext,
   ): Promise<Asset[]> {
-    return apiRequest<Asset[]>("/finance/assets", "GET", session);
+    return apiRequest<Asset[]>("/v1/finance/assets", "GET", session);
   },
 
   async listPayments(
     tenantId: string,
     session: SessionContext,
   ): Promise<FinancePaymentRow[]> {
-    return apiRequest<FinancePaymentRow[]>("/finance/payments", "GET", session);
+    return apiRequest<FinancePaymentRow[]>("/v1/finance/payments", "GET", session);
   },
 
   async listCapexRequests(
@@ -600,7 +600,7 @@ export const financeService = {
     tenantId: string,
     session: SessionContext,
   ): Promise<FinanceInvoiceRow[]> {
-    return apiRequest<FinanceInvoiceRow[]>("/finance/invoices", "GET", session);
+    return apiRequest<FinanceInvoiceRow[]>("/v1/finance/invoices", "GET", session);
   },
 
   async capturePayableInvoice(
@@ -636,7 +636,7 @@ export const financeService = {
     tenantId: string,
     session: SessionContext,
   ): Promise<AccountingPeriod[]> {
-    return apiRequest<AccountingPeriod[]>("/finance/periods", "GET", session);
+    return apiRequest<AccountingPeriod[]>("/v1/finance/periods", "GET", session);
   },
 
   async lockPeriod(
@@ -692,7 +692,7 @@ export const financeService = {
     tenantId: string,
     session: SessionContext,
   ): Promise<FinanceInsight[]> {
-    return apiRequest<FinanceInsight[]>("/finance/intelligence/insights", "GET", session);
+    return apiRequest<FinanceInsight[]>("/v1/finance/intelligence/insights", "GET", session);
   },
 
   async getFinanceOverview(
@@ -737,14 +737,14 @@ export const financeService = {
     session: SessionContext,
     payload: { entityType: string; entityId: string; data: any },
   ): Promise<any> {
-    return apiRequest<any>("/finance/operations/workflow/submit", "POST", session, payload);
+    return apiRequest<any>("/v1/finance/operations/workflow/submit", "POST", session, payload);
   },
 
   async evaluateExpense(
     session: SessionContext,
     payload: { amount: number; category: string; departmentId: string },
   ): Promise<any> {
-    return apiRequest<any>("/finance/operations/expense/evaluate", "POST", session, payload);
+    return apiRequest<any>("/v1/finance/operations/expense/evaluate", "POST", session, payload);
   },
 
   async getTaxReport(
@@ -769,5 +769,50 @@ export const financeService = {
   ): Promise<any> {
     return apiRequest<any>(`/finance/compliance/audit/prove/${reportId}?reportHash=${reportHash}`, "GET", session);
   },
+
+  // Reconciliation
+  async uploadBankStatement(
+    session: SessionContext,
+    payload: any
+  ): Promise<any> {
+    return apiRequest<any>("/v1/finance/reconciliation/upload", "POST", session, payload);
+  },
+
+  async autoMatchTransactions(
+    session: SessionContext,
+    statementId?: string
+  ): Promise<any> {
+    return apiRequest<any>("/v1/finance/reconciliation/auto-match", "POST", session, { statementId });
+  },
+
+  async manualMatchTransactions(
+    session: SessionContext,
+    bankTxId: string,
+    journalIds: string[]
+  ): Promise<any> {
+    return apiRequest<any>("/v1/finance/reconciliation/manual-match", "POST", session, { bankTxId, journalIds });
+  },
+
+  async unlinkMatch(
+    session: SessionContext,
+    matchId: string
+  ): Promise<any> {
+    return apiRequest<any>(`/v1/finance/reconciliation/match/${matchId}`, "DELETE", session);
+  },
+
+  async finalizeReconciliation(
+    session: SessionContext,
+    statementId: string
+  ): Promise<any> {
+    return apiRequest<any>("/v1/finance/reconciliation/finalize", "POST", session, { statementId });
+  },
+
+  async getUnmatchedLedger(
+    session: SessionContext,
+    glAccountId: string
+  ): Promise<any[]> {
+    return apiRequest<any[]>(`/v1/finance/reconciliation/unmatched-ledger?glAccountId=${glAccountId}`, "GET", session);
+  },
 };
+
 

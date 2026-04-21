@@ -36,7 +36,7 @@ interface RequestWithTenant extends Request {
   customerAuth?: { sub: string; tenant_id: string };
 }
 
-@Controller("retail/public")
+@Controller("v1/retail/public")
 @UseInterceptors(TenantInterceptor)
 export class RetailPublicGatewayController {
   constructor(private readonly gatewayService: RetailGatewayService) {}
@@ -294,3 +294,4 @@ export class RetailPublicGatewayController {
     }
   }
 }
+

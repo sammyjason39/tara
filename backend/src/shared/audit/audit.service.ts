@@ -98,14 +98,14 @@ export class AuditService implements OnModuleDestroy {
       // 1. Fix 1: Transaction Isolation & Fix 2: Explicit Locking
       // Fetch last hash with FOR UPDATE to prevent race conditions in chain
       const lastLogs: any[] = await tx.$queryRaw`
-        SELECT hashChain FROM audit_logs 
+        SELECT hash_chain FROM audit_logs 
         WHERE tenant_id = ${params.tenant_id} 
         ORDER BY created_at DESC 
         LIMIT 1 
         FOR UPDATE
       `;
 
-      const previousHash = lastLogs.length > 0 ? lastLogs[0].hashChain : 'GENESIS';
+      const previousHash = lastLogs.length > 0 ? lastLogs[0].hash_chain : 'GENESIS';
 
       // 2. Compute current hash
       const logData = JSON.stringify({
@@ -118,7 +118,7 @@ export class AuditService implements OnModuleDestroy {
       });
       const currentHash = createHash('sha256').update(logData).digest('hex');
 
-      const result = await tx.auditLog.create({
+      const result = await tx.audit_logs.create({
         data: {
           id: uuidv4(),
           updated_at: new Date(),
@@ -146,9 +146,9 @@ export class AuditService implements OnModuleDestroy {
       });
 
       // 3. Fix 5: Audit Anchoring (Every 100 records)
-      const count = await tx.auditLog.count({ where: { tenant_id: params.tenant_id } });
+      const count = await tx.audit_logs.count({ where: { tenant_id: params.tenant_id } });
       if (count % 100 === 0) {
-        const anchor = await tx.auditHashAnchor.create({
+        const anchor = await tx.audit_hash_anchors.create({
           data: {
             id: uuidv4(),
             updated_at: new Date(),
@@ -198,6 +198,31 @@ export class AuditService implements OnModuleDestroy {
     }
   }
 
+  /**
+   * Specialized logging for access to sensitive records (PII, Legal, Contracts).
+   * Automatically escalates severity to WARN and flags in metadata.
+   */
+  async logSensitiveAccess(params: {
+    tenant_id: string;
+    user_id: string;
+    module: string;
+    entity_type: string;
+    entity_id: string;
+    metadata?: any;
+  }) {
+    return this.log({
+      ...params,
+      action: "SENSITIVE_ACCESS",
+      severity: "WARN",
+      metadata: {
+        ...params.metadata,
+        is_sensitive_access: true,
+        access_timestamp: new Date().toISOString(),
+      },
+    });
+  }
+
+
   async query(tenant_id: string, filters: AuditQueryDto) {
     const page = filters.page ?? 1;
     const limit = Math.min(filters.limit ?? 50, 200);
@@ -228,6 +253,13 @@ export class AuditService implements OnModuleDestroy {
     ]);
 
     return { data, total, page, limit };
+  }
+
+  async getLogDetail(tenant_id: string, log_id: string) {
+    const log = await this.prisma.audit_logs.findFirst({
+      where: { id: log_id, tenant_id },
+    });
+    return log;
   }
 
   /**
@@ -352,5 +384,110 @@ export class AuditService implements OnModuleDestroy {
   incrementRepairCount() {
     // Increment repair count in metrics
     (this.metrics as any).repairInvocationCount = ((this.metrics as any).repairInvocationCount || 0) + 1;
+  }
+
+  /**
+   * Hardened Audit Chain Repair (Healer)
+   * Recomputes the entire chain for a tenant based on existing record data.
+   * Logs FULL repair metadata to dedicated audit_chain_repairs table.
+   */
+  async repairChain(params: {
+    tenant_id: string;
+    actor_id: string;
+    reason: string;
+    source_ip?: string;
+    request_id?: string;
+    permission_by?: string;
+    permission_at?: Date;
+  }) {
+    const { tenant_id, actor_id, reason } = params;
+
+    const logs = await this.prisma.audit_logs.findMany({
+      where: { tenant_id },
+      orderBy: { created_at: 'asc' },
+    });
+
+    if (logs.length === 0) return { success: true, repairedCount: 0, totalRecords: 0 };
+
+    // REQUIREMENT 1: Capture snapshot of affected records
+    const snapshot = logs.map(l => ({
+      id: l.id,
+      h: l.hash_chain,
+      ph: l.previous_hash
+    }));
+
+    const range_start_id = logs[0].id;
+    const range_end_id = logs[logs.length - 1].id;
+    const previousFinalHash = logs[logs.length - 1].hash_chain;
+
+    let lastHash = 'GENESIS';
+    let repairedCount = 0;
+
+    await this.prisma.$transaction(async (tx: any) => {
+      // REQUIREMENT 2: Persist Repair Signature BEFORE repair starts
+      await tx.audit_chain_repairs.create({
+        data: {
+          id: uuidv4(),
+          tenant_id,
+          actor_id,
+          previous_hash: previousFinalHash || 'UNKNOWN',
+          new_hash: 'REPAIR_IN_PROGRESS', // Will be updated if possible or implied by logs
+          reason,
+          source_ip: params.source_ip,
+          request_id: params.request_id,
+          permission_by: params.permission_by,
+          permission_at: params.permission_at,
+          snapshot_json: snapshot,
+          range_start_id,
+          range_end_id,
+          created_at: new Date(),
+        },
+      });
+
+      for (const log of logs) {
+        const logData = JSON.stringify({
+          tenant_id: log.tenant_id,
+          user_id: log.user_id,
+          action: log.action,
+          entity_id: log.entity_id,
+          correlation_id: log.correlation_id,
+          previousHash: lastHash,
+        });
+        const newHash = createHash('sha256').update(logData).digest('hex');
+
+        if (log.hash_chain !== newHash || log.previous_hash !== lastHash) {
+          await tx.audit_logs.update({
+            where: { id: log.id },
+            data: {
+              hash_chain: newHash,
+              previous_hash: lastHash,
+              updated_at: new Date(),
+            },
+          });
+          repairedCount++;
+        }
+        lastHash = newHash;
+      }
+
+      // Log critical audit entry for the repair itself
+      await this.log({
+        tenant_id,
+        user_id: actor_id,
+        module: 'SYSTEM',
+        action: 'AUDIT_CHAIN_REPAIR',
+        entity_type: 'AUDIT_LOG',
+        entity_id: 'CHAIN',
+        severity: 'CRITICAL',
+        metadata: {
+          repaired_records: repairedCount,
+          total_records: logs.length,
+          reason,
+          request_id: params.request_id,
+        },
+      }, tx);
+    });
+
+    this.incrementRepairCount();
+    return { success: true, repairedCount, totalRecords: logs.length, newFinalHash: lastHash };
   }
 }

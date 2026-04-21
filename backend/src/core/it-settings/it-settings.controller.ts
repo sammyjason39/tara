@@ -20,7 +20,7 @@ interface RequestWithTenant extends Request {
   tenantContext: TenantContext;
 }
 
-@Controller("it-settings")
+@Controller("v1/it-settings")
 @UseInterceptors(TenantInterceptor)
 export class ITSettingsController {
   constructor(private readonly itSettingsService: ITSettingsService) {}
@@ -144,3 +144,4 @@ export class ITSettingsController {
     };
   }
 }
+

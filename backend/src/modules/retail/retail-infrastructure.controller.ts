@@ -18,7 +18,7 @@ interface RequestWithTenant extends Request {
   tenantContext: TenantContext;
 }
 
-@Controller("retail/infrastructure")
+@Controller("v1/retail/infrastructure")
 @UseInterceptors(TenantInterceptor)
 export class RetailInfrastructureController {
   constructor(private readonly infraService: RetailInfrastructureService) {}
@@ -64,3 +64,4 @@ export class RetailInfrastructureController {
     return this.infraService.updateLoadBalancer(tenant_id, lbId, data);
   }
 }
+

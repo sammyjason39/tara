@@ -785,7 +785,7 @@ const CCTVViewerModal: React.FC<Props> = ({
                         />
                       </div>
                     </div>
-                    <Button
+                    <Button disabled title="Not available yet"
                       size="sm"
                       className="h-10 rounded-xl bg-slate-900 text-white font-black italic uppercase text-[10px] tracking-widest gap-2"
                     >
@@ -830,14 +830,14 @@ const CCTVViewerModal: React.FC<Props> = ({
                   </div>
                   <Separator />
                   <div className="flex gap-1.5">
-                    <Button
+                    <Button disabled title="Not available yet"
                       variant="outline"
                       size="sm"
                       className="flex-1 h-8 rounded-xl border-slate-200 font-black italic text-[9px] uppercase tracking-widest gap-1"
                     >
                       <ChevronLeft className="w-3 h-3" /> Prev Day
                     </Button>
-                    <Button
+                    <Button disabled title="Not available yet"
                       variant="outline"
                       size="sm"
                       className="flex-1 h-8 rounded-xl border-slate-200 font-black italic text-[9px] uppercase tracking-widest gap-1"

@@ -26,9 +26,36 @@ export class RolesGuard implements CanActivate {
     }
 
     const userRole = tenantContext.role;
+    const url = request.url;
 
-    // 1. SUPERADMIN BYPASS (As requested: Superadmin can bypass all in the apps)
+    // Explicit System Route Blacklist for OWNER role
+    const SYSTEM_ROUTES = [
+      '/v1/audit/repair',
+      '/v1/admin/infra',
+      '/v1/admin/audit',
+      '/v1/license',
+      '/v1/logs',
+      '/v1/sync',
+      '/v1/audit/verify'
+    ];
+
+    const isSystemRoute = SYSTEM_ROUTES.some(route => url.startsWith(route));
+
+    // 1. RBAC BYPASS LOGIC
+    
+    // SUPERADMIN: Global platform-wide bypass
     if (userRole === UserRole.SUPERADMIN) {
+      return true;
+    }
+
+    // OWNER: Restricted bypass
+    if (userRole === UserRole.OWNER) {
+      // REQUIREMENT: OWNER bypass must be STRICTLY scoped
+      // 1. Block access to system-level endpoints
+      if (isSystemRoute) {
+        throw new ForbiddenException("OWNER role is restricted from system-level infrastructure routes.");
+      }
+      // 2. Ensure tenant isolation (guaranteed by TenantInterceptor/Context in current stack)
       return true;
     }
 

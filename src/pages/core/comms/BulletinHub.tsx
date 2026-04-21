@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { useSession } from "@/core/security/session";
+import { apiRequest } from "@/core/api/apiClient";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -114,39 +115,32 @@ export default function BulletinHub() {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const response = await fetch("/api/comms/bulletin-categories", {
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
-      });
-      const data = await response.json();
+      const data = await apiRequest<BulletinCategory[]>("/comms/bulletin-categories", "GET", session);
       setCategories(data || []);
-      if (data.length > 0 && !newPost.category) {
+      if (data && data.length > 0 && !newPost.category) {
         setNewPost((p) => ({ ...p, category: data[0].code }));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch categories:", error);
     }
-  }, [session.token, session.tenantId, newPost.category]);
+  }, [session, newPost.category]);
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/comms/bulletin", {
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
-      });
-      const data = await response.json();
+      const data = await apiRequest<any>("/comms/bulletin", "GET", session);
       setPosts(data.data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch bulletins:", error);
+      toast({
+        title: "Communication Error",
+        description: "Failed to load bulletin posts.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
-  }, [session.token, session.tenantId]);
+  }, [session]);
 
   useEffect(() => {
     fetchPosts();
@@ -164,33 +158,22 @@ export default function BulletinHub() {
     }
 
     try {
-      const response = await fetch("/api/comms/bulletin", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
-        body: JSON.stringify(newPost),
+      await apiRequest("/comms/bulletin", "POST", session, newPost);
+      setIsCreateOpen(false);
+      setNewPost({
+        title: "",
+        body: "",
+        category: categories[0]?.code || "general",
       });
-
-      if (response.ok) {
-        setIsCreateOpen(false);
-        setNewPost({
-          title: "",
-          body: "",
-          category: categories[0]?.code || "general",
-        });
-        toast({
-          title: "Success",
-          description: "Successfully posted to the board.",
-        });
-        await fetchPosts();
-      }
-    } catch (error) {
+      toast({
+        title: "Success",
+        description: "Successfully posted to the board.",
+      });
+      await fetchPosts();
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to publish.",
+        description: error.message || "Failed to publish.",
         variant: "destructive",
       });
     }
@@ -199,25 +182,14 @@ export default function BulletinHub() {
   const handleReact = async (postId: string, type: "LIKE" | "DISLIKE") => {
     setIsActionLoading(`${postId}-${type}`);
     try {
-      const response = await fetch(`/api/comms/bulletin/${postId}/react`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
-        body: JSON.stringify({ type }),
-      });
-
-      if (response.ok) {
-        await fetchPosts();
-        if (selectedPost) handleViewDetail(selectedPost);
-        toast({ title: "Success", description: "Reaction updated." });
-      }
-    } catch (e) {
+      await apiRequest(`/comms/bulletin/${postId}/react`, "POST", session, { type });
+      await fetchPosts();
+      if (selectedPost) handleViewDetail(selectedPost);
+      toast({ title: "Success", description: "Reaction updated." });
+    } catch (e: any) {
       toast({
-        title: "Error",
-        description: "Action failed.",
+        title: "Action Failed",
+        description: e.message || "Failed to finalize reaction.",
         variant: "destructive",
       });
     } finally {
@@ -229,30 +201,19 @@ export default function BulletinHub() {
     if (!newComment.trim()) return;
     setIsActionLoading(`comment-${postId}`);
     try {
-      const response = await fetch(`/api/comms/bulletin/${postId}/comment`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
-        body: JSON.stringify({ body: newComment }),
+      await apiRequest(`/comms/bulletin/${postId}/comment`, "POST", session, { body: newComment });
+      setNewComment("");
+      setCommentingOn(null);
+      await fetchPosts();
+      if (selectedPost) handleViewDetail(selectedPost);
+      toast({
+        title: "Comment Posted",
+        description: "Your feedback was added.",
       });
-
-      if (response.ok) {
-        setNewComment("");
-        setCommentingOn(null);
-        await fetchPosts();
-        if (selectedPost) handleViewDetail(selectedPost);
-        toast({
-          title: "Comment Posted",
-          description: "Your feedback was added.",
-        });
-      }
-    } catch (e) {
+    } catch (e: any) {
       toast({
         title: "Error",
-        description: "Failed to comment.",
+        description: e.message || "Failed to contribute feedback.",
         variant: "destructive",
       });
     } finally {
@@ -263,53 +224,39 @@ export default function BulletinHub() {
   const handleCreateCategory = async () => {
     if (!newCategory.name || !newCategory.code) return;
     try {
-      const response = await fetch("/api/comms/bulletin-categories", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
-        body: JSON.stringify(newCategory),
+      await apiRequest("/comms/bulletin-categories", "POST", session, newCategory);
+      setNewCategory({ name: "", code: "", color: "#6366f1" });
+      fetchCategories();
+      toast({ title: "Category Created" });
+    } catch (e: any) {
+      toast({
+        title: "Update Failed",
+        description: e.message || "Could not create category.",
+        variant: "destructive",
       });
-      if (response.ok) {
-        setNewCategory({ name: "", code: "", color: "#6366f1" });
-        fetchCategories();
-        toast({ title: "Category Created" });
-      }
-    } catch (e) {
-      console.error(e);
     }
   };
 
   const handleDeleteCategory = async (id: string) => {
     if (!confirm("Are you sure? This will remove the channel group.")) return;
     try {
-      await fetch(`/api/comms/bulletin-categories/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
-      });
+      await apiRequest(`/comms/bulletin-categories/${id}`, "DELETE", session);
       fetchCategories();
       toast({ title: "Category Removed" });
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      toast({
+        title: "Update Failed",
+        description: e.message || "Could not delete category.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleViewDetail = async (post: BulletinPost) => {
     try {
-      const response = await fetch(`/api/comms/bulletin/${post.id}`, {
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
-      });
-      const data = await response.json();
+      const data = await apiRequest<BulletinPost>(`/comms/bulletin/${post.id}`, "GET", session);
       setSelectedPost(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch detail:", error);
       setSelectedPost(post);
     }
@@ -435,13 +382,9 @@ export default function BulletinHub() {
                               className="h-9 w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors rounded-xl opacity-0 group-hover:opacity-100"
                               onClick={() => {
                                 if (confirm("Archive this topic?")) {
-                                  fetch(`/api/comms/bulletin/${post.id}`, {
-                                    method: "DELETE",
-                                    headers: {
-                                      Authorization: `Bearer ${session.token}`,
-                                      "x-tenant-id": session.tenantId,
-                                    },
-                                  }).then(() => fetchPosts());
+                                   apiRequest(`/comms/bulletin/${post.id}`, "DELETE", session)
+                                    .then(() => fetchPosts())
+                                    .catch(e => toast({ title: "Deletion Failed", description: e.message, variant: "destructive" }));
                                 }
                               }}
                             >
@@ -468,7 +411,7 @@ export default function BulletinHub() {
                           <UserIcon className="h-3.5 w-3.5 text-primary" />
                         </div>
                         <span className="text-[10px] font-black uppercase text-slate-500 tracking-tighter">
-                          @{post.authorId.split("-")[0]}
+                          @{post.authorId?.split("-")[0] || "anon"}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -505,7 +448,7 @@ export default function BulletinHub() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className={`h-10 px-4 text-[10px] font-black uppercase tracking-widest transition-all rounded-xl ${isActionLoading?.startsWith(`${post.id}-DISLIKE`) ? "opacity-50" : ""}`}
+                            className={`h-10 px-4 text-[10px) font-black uppercase tracking-widest transition-all rounded-xl ${isActionLoading?.startsWith(`${post.id}-DISLIKE`) ? "opacity-50" : ""}`}
                             onClick={() => handleReact(post.id, "DISLIKE")}
                             disabled={!!isActionLoading}
                           >
@@ -624,7 +567,7 @@ export default function BulletinHub() {
                   categories
                     .filter((cat) =>
                       cat.name
-                        .toLowerCase()
+                        ?.toLowerCase()
                         .includes(channelSearch.toLowerCase()),
                     )
                     .map((cat) => (
@@ -698,7 +641,7 @@ export default function BulletinHub() {
                 <div className="p-10 border-b flex justify-between items-start bg-slate-50/50 dark:bg-slate-950/20 sticky top-0 z-10">
                   <div className="space-y-4">
                     <Badge className="bg-primary/10 text-primary border-none font-black tracking-widest text-[10px] uppercase">
-                      {categories.find((c) => c.code === selectedPost.category)
+                       {categories.find((c) => c.code === selectedPost.category)
                         ?.name || selectedPost.category}
                     </Badge>
                     <h2 className="text-4xl font-black tracking-tighter leading-none">
@@ -711,7 +654,7 @@ export default function BulletinHub() {
                         </div>
                         <div className="text-left">
                           <div className="text-[10px] font-black uppercase tracking-widest">
-                            @{selectedPost.authorId.split("-")[0]}
+                            @{selectedPost.authorId?.split("-")[0] || "anon"}
                           </div>
                           <div className="text-[9px] font-bold text-muted-foreground uppercase">
                             Authoritative Entry
@@ -738,7 +681,7 @@ export default function BulletinHub() {
 
                   <div className="flex gap-4 pt-6 border-t border-slate-100 italic font-bold text-xs text-muted-foreground">
                     <div className="flex items-center gap-2">
-                      <ThumbsUp className="h-4 w-4" /> {selectedPost.likesCount}{" "}
+                       <ThumbsUp className="h-4 w-4" /> {selectedPost.likesCount}{" "}
                       UPVOTES
                     </div>
                     <div className="flex items-center gap-2">
@@ -755,7 +698,7 @@ export default function BulletinHub() {
                     <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 flex items-center">
                       <ChevronRight className="h-4 w-4 mr-2" /> Comments
                     </h4>
-                    {selectedPost.comments?.length > 0 ? (
+                    {selectedPost.comments && selectedPost.comments.length > 0 ? (
                       <div className="space-y-6">
                         {selectedPost.comments.map((comment: BulletinComment) => (
                           <div
@@ -763,12 +706,12 @@ export default function BulletinHub() {
                             className="flex gap-5 animate-in slide-in-from-left duration-500"
                           >
                             <div className="h-10 w-10 shrink-0 rounded-[1.25rem] bg-indigo-500/10 flex items-center justify-center text-indigo-500 font-black text-xs">
-                              {comment.authorId[0].toUpperCase()}
+                              {comment.authorId?.[0]?.toUpperCase() || "A"}
                             </div>
                             <div className="space-y-2 flex-1">
                               <div className="flex justify-between items-center">
                                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">
-                                  @{comment.authorId.split("-")[0]}
+                                  @{comment.authorId?.split("-")[0] || "anon"}
                                 </span>
                                 <span className="text-[9px] font-bold text-muted-foreground opacity-40">
                                   {new Date(
@@ -800,15 +743,12 @@ export default function BulletinHub() {
                       onChange={(e) => setNewComment(e.target.value)}
                     />
                     <Button
-                      className="h-14 px-8 rounded-2xl bg-indigo-500 hover:bg-indigo-600 shadow-xl shadow-indigo-500/20 active:scale-95 transition-all"
+                      size="icon"
+                      className="h-14 w-14 rounded-2xl bg-primary shadow-xl shadow-primary/20 shrink-0"
                       onClick={() => handleAddComment(selectedPost.id)}
                       disabled={!newComment.trim() || !!isActionLoading}
                     >
-                      {isActionLoading === `comment-${selectedPost.id}` ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <Send className="h-5 w-5" />
-                      )}
+                      <Send className="h-6 w-6" />
                     </Button>
                   </div>
                 </div>
@@ -819,160 +759,111 @@ export default function BulletinHub() {
 
         {/* Create Dialog */}
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogContent className="sm:max-w-xl border-none shadow-3xl bg-slate-50 dark:bg-slate-950 p-0 overflow-hidden rounded-[3rem]">
-            <DialogHeader className="p-10 bg-white dark:bg-slate-900 border-b">
-              <div className="flex flex-col gap-4">
-                <DialogTitle className="text-3xl font-black tracking-tighter">
-                  {creationType === "TOPIC"
-                    ? "Start Conversation"
-                    : "Post Announcement"}
-                </DialogTitle>
-                <div className="flex bg-muted p-1 rounded-xl w-fit">
-                  <Button
-                    variant={creationType === "TOPIC" ? "secondary" : "ghost"}
-                    size="sm"
-                    className="text-[10px] font-black h-8 px-3 rounded-lg"
-                    onClick={() => setCreationType("TOPIC")}
-                  >
-                    TOPIC
-                  </Button>
-                  <Button
-                    variant={creationType === "CONTENT" ? "secondary" : "ghost"}
-                    size="sm"
-                    className="text-[10px] font-black h-8 px-3 rounded-lg"
-                    onClick={() => setCreationType("CONTENT")}
-                  >
-                    CONTENT
-                  </Button>
-                </div>
-              </div>
-              <div className="text-[10px] font-black tracking-widest text-muted-foreground uppercase opacity-60 mt-4">
-                Communication Hub
+          <DialogContent className="sm:max-w-2xl border-none shadow-3xl bg-white dark:bg-slate-900 p-0 overflow-hidden rounded-[3rem]">
+            <DialogHeader className="p-10 border-b bg-slate-50 dark:bg-slate-800/20">
+              <DialogTitle className="text-3xl font-black tracking-tighter">
+                {creationType === "TOPIC" ? "Initiate Topic" : "Broadcast Content"}
+              </DialogTitle>
+              <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-1">
+                Public Engagement Protocol
               </div>
             </DialogHeader>
-            <div className="p-10 space-y-8 max-h-[70vh] overflow-y-auto">
-              <div className="grid gap-3">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">
-                  Headline
-                </label>
-                <Input
-                  placeholder="Subject of your post"
-                  className="h-14 text-lg font-black bg-white dark:bg-slate-900 border-none shadow-inner rounded-2xl px-6 focus-visible:ring-1 focus-visible:ring-primary/20"
-                  value={newPost.title}
-                  onChange={(e) =>
-                    setNewPost({ ...newPost, title: e.target.value })
-                  }
-                />
-              </div>
-              <div className="grid gap-3">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">
-                  Channel
-                </label>
-                <select
-                  className="h-14 px-6 rounded-2xl border-none bg-white dark:bg-slate-900 text-sm font-black focus:ring-1 focus:ring-primary/20 outline-none shadow-sm"
-                  value={newPost.category}
-                  onChange={(e) =>
-                    setNewPost({ ...newPost, category: e.target.value })
-                  }
-                >
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.code}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid gap-3">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">
-                  Message
-                </label>
-                <Textarea
-                  placeholder="Share details here..."
-                  className="min-h-[180px] bg-white dark:bg-slate-900 border-none rounded-[2rem] font-bold leading-relaxed p-8 shadow-inner"
-                  value={newPost.body}
-                  onChange={(e) =>
-                    setNewPost({ ...newPost, body: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="flex gap-4 pt-4">
-                <Button
-                  variant="ghost"
-                  onClick={() => setIsCreateOpen(false)}
-                  className="flex-1 h-14 rounded-2xl font-black uppercase tracking-widest text-xs"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCreatePost}
-                  className="flex-[2] h-14 rounded-[1.25rem] bg-slate-900 hover:bg-black text-white shadow-2xl shadow-slate-900/40 font-black uppercase tracking-[0.2em] transition-all active:scale-95"
-                >
-                  Post Now
-                </Button>
-              </div>
+            <div className="p-10 space-y-8">
+               <div className="space-y-2">
+                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Channel</label>
+                 <div className="flex gap-2 flex-wrap">
+                    {categories.map(cat => (
+                      <Badge 
+                        key={cat.id}
+                        variant={newPost.category === cat.code ? "default" : "outline"}
+                        className={`cursor-pointer h-8 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${newPost.category === cat.code ? 'shadow-lg shadow-primary/20' : 'hover:bg-primary/5 hover:border-primary/20'}`}
+                        onClick={() => setNewPost({...newPost, category: cat.code})}
+                      >
+                        {cat.name}
+                      </Badge>
+                    ))}
+                 </div>
+               </div>
+               
+               <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Headline</label>
+                    <Input 
+                      placeholder="Enter a compelling title..." 
+                      className="h-14 border-none bg-slate-50 dark:bg-slate-800 rounded-2xl px-6 text-sm font-black shadow-inner focus-visible:ring-1 focus-visible:ring-primary/20"
+                      value={newPost.title}
+                      onChange={e => setNewPost({...newPost, title: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Context</label>
+                    <Textarea 
+                      placeholder="Share your insights..." 
+                      className="min-h-[200px] border-none bg-slate-50 dark:bg-slate-800 rounded-3xl p-6 text-sm font-medium leading-relaxed shadow-inner"
+                      value={newPost.body}
+                      onChange={e => setNewPost({...newPost, body: e.target.value})}
+                    />
+                  </div>
+               </div>
+               
+               <div className="flex justify-end gap-4 pt-4">
+                  <Button variant="ghost" className="h-12 px-8 font-black uppercase tracking-widest text-[10px] text-rose-500 hover:bg-rose-50" onClick={() => setIsCreateOpen(false)}>Discard</Button>
+                  <Button 
+                    className="h-12 px-10 rounded-2xl bg-slate-900 hover:bg-black text-white shadow-xl font-black uppercase tracking-widest text-[10px]"
+                    onClick={handleCreatePost}
+                  >
+                    Transmit Global <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
+               </div>
             </div>
           </DialogContent>
         </Dialog>
 
-        {/* Category Manage Dialog */}
-        <Dialog
-          open={isCategoryManageOpen}
-          onOpenChange={setIsCategoryManageOpen}
-        >
-          <DialogContent className="sm:max-w-md border-none shadow-3xl bg-slate-50 dark:bg-slate-950 p-0 overflow-hidden rounded-[2.5rem]">
-            <DialogHeader className="p-8 bg-white dark:bg-slate-900 border-b">
-              <DialogTitle className="text-2xl font-black">
-                Manage Channels
-              </DialogTitle>
-            </DialogHeader>
-            <div className="p-8 space-y-6">
-              <div className="grid gap-4">
-                <Input
-                  placeholder="Channel Name (e.g. IT Ops)"
-                  className="rounded-xl border-none shadow-inner"
-                  value={newCategory.name}
-                  onChange={(e) =>
-                    setNewCategory({
-                      ...newCategory,
-                      name: e.target.value,
-                      code: e.target.value.toLowerCase().replace(/\s+/g, "-"),
-                    })
-                  }
-                />
-                <Button
-                  onClick={handleCreateCategory}
-                  className="w-full font-black uppercase tracking-widest h-12"
-                >
-                  Add Channel
-                </Button>
-              </div>
-
-              <div className="space-y-3 pt-4 border-t">
-                {categories.map((cat) => (
-                  <div
-                    key={cat.id}
-                    className="flex justify-between items-center p-3 bg-white dark:bg-slate-900 rounded-xl shadow-sm"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="h-3 w-3 rounded-full"
-                        style={{ backgroundColor: cat.color }}
+        {/* Manage Categories Dialog */}
+        <Dialog open={isCategoryManageOpen} onOpenChange={setIsCategoryManageOpen}>
+          <DialogContent className="sm:max-w-xl border-none shadow-3xl bg-white dark:bg-slate-900 p-0 overflow-hidden rounded-[3rem]">
+             <DialogHeader className="p-10 border-b bg-indigo-500 text-white">
+                <DialogTitle className="text-3xl font-black tracking-tighter">Channel Architect</DialogTitle>
+                <div className="text-[10px] font-black uppercase tracking-widest text-indigo-100 mt-1">Configure Public Interest Groups</div>
+             </DialogHeader>
+             
+             <div className="p-10 space-y-10">
+                <div className="space-y-4 bg-slate-50 dark:bg-slate-800/40 p-6 rounded-[2rem]">
+                   <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Initialize New channel</h4>
+                   <div className="grid grid-cols-2 gap-4">
+                      <Input 
+                        placeholder="Display Name" 
+                        className="h-11 rounded-xl border-none bg-white dark:bg-slate-900 text-xs font-bold"
+                        value={newCategory.name}
+                        onChange={e => setNewCategory({...newCategory, name: e.target.value})}
                       />
-                      <span className="text-xs font-bold">{cat.name}</span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteCategory(cat.id)}
-                      className="h-8 w-8 text-rose-500 rounded-lg"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
+                      <Input 
+                        placeholder="Unique Code" 
+                        className="h-11 rounded-xl border-none bg-white dark:bg-slate-900 text-xs font-mono font-bold"
+                        value={newCategory.code}
+                        onChange={e => setNewCategory({...newCategory, code: e.target.value})}
+                      />
+                   </div>
+                   <Button className="w-full h-11 bg-slate-900 font-black uppercase tracking-widest text-[10px] rounded-xl" onClick={handleCreateCategory}>Establish channel</Button>
+                </div>
+                
+                <div className="space-y-4">
+                   <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Active Infrastructure</h4>
+                   <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                      {categories.map(cat => (
+                        <div key={cat.id} className="flex justify-between items-center p-4 bg-white dark:bg-slate-800 border rounded-2xl">
+                           <div className="flex items-center gap-4">
+                              <div className="h-3 w-3 rounded-full" style={{backgroundColor: cat.color}} />
+                              <span className="text-xs font-black uppercase tracking-widest">{cat.name}</span>
+                           </div>
+                           <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500 hover:bg-rose-50" onClick={() => handleDeleteCategory(cat.id)}>
+                              <Trash2 className="h-4 w-4" />
+                           </Button>
+                        </div>
+                      ))}
+                   </div>
+                </div>
+             </div>
           </DialogContent>
         </Dialog>
       </div>

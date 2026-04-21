@@ -27,6 +27,8 @@ import {
   PayrollEstimate,
   FinanceMoneySourceRow,
   TreasuryTransfer,
+  BankTransaction,
+  PerformanceTreeNode,
 } from "../finance.types";
 
 @Injectable()
@@ -659,6 +661,47 @@ export class FinanceMockRepository extends IFinanceRepository {
         updated_at: new Date().toISOString(),
       });
     });
+  }
+
+  // Bank Reconciliation & Analytics (Phase 5)
+  async ingestBankTransactions(
+    tenant_id: string,
+    transactions: Partial<BankTransaction>[],
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    // Mock ingestion logic
+  }
+
+  async getUnreconciledTransactions(
+    tenant_id: string
+  ): Promise<BankTransaction[]> {
+    return [];
+  }
+
+  async createReconcileMatch(
+    tenant_id: string,
+    transaction_id: string,
+    journal_id: string,
+    score: number,
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    // Mock match logic
+  }
+
+  async getPerformanceTree(
+    tenant_id: string,
+    parentId?: string,
+    type?: string
+  ): Promise<PerformanceTreeNode> {
+    return {
+      id: "root",
+      name: "Global Operations",
+      type: "TENANT",
+      income: new Prisma.Decimal(500000),
+      expense: new Prisma.Decimal(300000),
+      net: new Prisma.Decimal(200000),
+      children: [],
+    };
   }
 }
 

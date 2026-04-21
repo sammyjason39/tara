@@ -4,20 +4,24 @@ import { Badge } from "@/components/ui/badge";
 import { PageShell } from "@/core/ui/PageShell";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
-import { AlertTriangle, Database, KeyRound, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Database, KeyRound, ShieldCheck, Loader2 } from "lucide-react";
 import { useSession } from "@/core/security/session";
 import { adminService } from "@/core/services/adminService";
+import { useToast } from "@/hooks/use-toast";
+import { RequestModal } from "@/core/ui/RequestModal";
 
 export default function CoreAdmin() {
   const session = useSession();
+  const { toast } = useToast();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     async function fetchDashboard() {
       try {
         const result = await adminService.getDashboardMetrics(
-          session.tenantId,
+          session.tenant_id,
           session,
         );
         setData(result);
@@ -28,17 +32,89 @@ export default function CoreAdmin() {
       }
     }
     fetchDashboard();
-  }, [session.tenantId, session]);
+  }, [session.tenant_id, session]);
 
   if (loading || !data) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">Loading admin command center...</p>
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   const { metrics, systemStatus, recentActivity, moduleContributions } = data;
+
+  const handleExport = () => {
+    const csvContent = "data:text/csv;charset=utf-8,Action,Detail,Time\n" + 
+      (recentActivity || []).map((log: any) => `"${log.action || log.title}","${log.detail}","${log.time || log.createdAt}"`).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "audit_report.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({ title: "Report Exported", description: "Audit trail downloaded successfully." });
+  };
+
+  const handleInvite = async () => {
+    const email = window.prompt("Enter admin email to invite:");
+    if (!email) return;
+
+    try {
+      const response = await adminService.createInvitation(session, {
+        email,
+        role: "ADMIN",
+        justification: "System Audit Invitation"
+      });
+
+      if (response.success) {
+        toast({ 
+          title: "Invitation Generated", 
+          description: `Magic Link for ${email} created. Please copy it from the audit log or share manually.`,
+          action: (
+            <Button 
+              contentEditable={false}
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                navigator.clipboard.writeText(response.data.magic_link);
+                toast({ title: "Copied", description: "Magic link copied to clipboard." });
+              }}
+            >
+              Copy Link
+            </Button>
+          )
+        });
+      }
+    } catch (err) {
+      toast({ 
+        title: "Invitation Failed", 
+        description: "Could not generate security token.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleEmergencyRequest = async (data: { title: string; reason: string }) => {
+    try {
+      await adminService.createRequest(session.tenant_id, session, {
+        type: "EMERGENCY_ACTION",
+        title: data.title,
+        description: data.reason,
+      });
+      toast({
+        title: "Emergency Request Logged",
+        description: "Awaiting multi-key authorization for restricted actions.",
+      });
+    } catch (err) {
+      toast({
+        title: "Request Failed",
+        description: "Unable to log emergency override.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <PageShell
@@ -46,9 +122,9 @@ export default function CoreAdmin() {
         <PageHeader
           title="Platform Administration"
           subtitle="Super-admin controls for tenants, security, and platform governance."
-          primaryAction={<Button>Invite admin</Button>}
+          primaryAction={<Button onClick={handleInvite}>Invite admin</Button>}
           secondaryActions={
-            <Button variant="outline">Generate audit report</Button>
+            <Button variant="outline" onClick={handleExport}>Generate audit report</Button>
           }
         />
       }
@@ -93,7 +169,7 @@ export default function CoreAdmin() {
                   <KeyRound className="h-4 w-4" />
                   Configure advanced access policies
                 </div>
-                <Button size="sm" variant="outline">
+                <Button size="sm" variant="outline" onClick={() => toast({ title: "Policy Configuration", description: "Opening advanced access policy editor..." })}>
                   Open
                 </Button>
               </div>
@@ -121,7 +197,7 @@ export default function CoreAdmin() {
                   </p>
                 </div>
               ))}
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => toast({ title: "Audit Trail", description: "Loading full system audit logs..." })}>
                 View full audit trail
               </Button>
             </div>
@@ -156,13 +232,23 @@ export default function CoreAdmin() {
                 <Database className="h-4 w-4" />
                 Emergency actions require elevated approval.
               </div>
-              <Button size="sm" variant="outline" disabled>
+              <Button size="sm" variant="outline" onClick={() => setIsModalOpen(true)}>
                 Request access
               </Button>
             </div>
           </div>
         </WorkspacePanel>
       </div>
+
+      <RequestModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleEmergencyRequest}
+        title="Emergency Access Request"
+        description="Request temporary authorization to perform restricted platform-level actions. Your session will be heavily audited."
+        defaultTitle="Restricted Action Authorization"
+        placeholder="Identify the active incident and the specific restricted action required..."
+      />
     </PageShell>
   );
 }

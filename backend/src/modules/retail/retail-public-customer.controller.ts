@@ -17,7 +17,7 @@ import { CustomerAuthGuard } from "./guards/customer-auth.guard";
 import { RetailPublicAuthService } from "./retail-public-auth.service";
 import { RetailPublicCustomerService } from "./retail-public-customer.service";
 
-@Controller("retail/public")
+@Controller("v1/retail/public")
 @UseInterceptors(TenantInterceptor)
 @UseGuards(ChannelCredentialsGuard, CustomerAuthGuard)
 export class RetailPublicCustomerController {
@@ -134,3 +134,4 @@ export class RetailPublicCustomerController {
     return { success: true, data: payload };
   }
 }
+

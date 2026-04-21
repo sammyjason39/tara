@@ -134,7 +134,7 @@ const PricingPromoDesk = () => {
           >
             <FileText className="w-4 h-4 text-blue-600" /> View Immutable Ledger
           </Button>
-          <Button className="h-11 px-6 rounded-xl bg-slate-900 font-black italic uppercase text-xs tracking-widest gap-2">
+          <Button disabled title="Not available yet" className="h-11 px-6 rounded-xl bg-slate-900 font-black italic uppercase text-xs tracking-widest gap-2">
             <Plus className="w-4 h-4" /> Issue Proposal
           </Button>
         </div>

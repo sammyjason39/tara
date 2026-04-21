@@ -28,13 +28,17 @@ import {
   FinancePolicyRow,
   AccountingPeriod,
   FinanceInsight,
-  FinanceAlert
+  FinanceAlert,
+  BankTransaction,
+  PerformanceTreeNode,
 } from "../finance.types";
 import { CreateJournalDto } from "../dto/create-journal.dto";
 
 @Injectable()
-export class FinanceDbRepository implements IFinanceRepository {
-  constructor(private readonly prisma: PrismaService) {}
+export class FinanceDbRepository extends IFinanceRepository {
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
 
   async getLedger(
     tenant_id: string,
@@ -87,53 +91,115 @@ export class FinanceDbRepository implements IFinanceRepository {
     data: CreateTransactionDto,
     tx?: Prisma.TransactionClient,
   ): Promise<Transaction> {
-    const db = tx ?? this.prisma;
-    // 1. Create Journal Entry (Production Grade Ledger)
-    const journalEntry = await db.finance_journal_entries.create({
+    const execute = async (contextTx: Prisma.TransactionClient) => {
+      // 1. Prepare lines
+      const lines = [
+        {
+          accountCode: data.category === "SALES" ? "4000" : "1001",
+          debit:
+            data.type === "credit"
+              ? 0
+              : Number(data.amount),
+          credit:
+            data.type === "credit"
+              ? Number(data.amount)
+              : 0,
+          description: data.description || "POS Sales",
+        },
+      ];
+
+      // Since createTransaction currently creates a single-sided entry in the legacy implementation,
+      // we must balance it against a suspense or bank account for it to pass the new validation.
+      // For POS Sales, we balance Bank/Cash (1001) against Sales (4000).
+      if (data.category === "SALES") {
+        lines.push({
+          accountCode: "1001",
+          debit: Number(data.amount),
+          credit: 0,
+          description: "Offset - Cash/Bank",
+        });
+      }
+
+      // 2. Create Journal Entry using validated helper
+      const journalEntry = await this.validateAndCreateJournal(
+        tenant_id,
+        {
+          ref: data.referenceId || `TXN-${Date.now()}`,
+          description: data.description || "POS Sales Transaction",
+          lines,
+        },
+        contextTx,
+      );
+
+      return {
+        id: journalEntry.id,
+        tenant_id: journalEntry.tenant_id,
+        location_id: data.location_id ?? "default",
+        amount: new Prisma.Decimal(data.amount),
+        type: data.type,
+        description: journalEntry.description || "",
+        category: data.category || "GENERAL",
+        created_at: journalEntry.created_at,
+        status: "approved" as "approved",
+        createdBy: "system",
+      };
+    };
+
+    return tx ? execute(tx) : this.prisma.$transaction(execute);
+  }
+
+  private async validateAndCreateJournal(
+    tenant_id: string,
+    data: CreateJournalDto,
+    tx: Prisma.TransactionClient,
+  ): Promise<any> {
+    // 1. Total Balancing Check
+    let totalDebit = new Prisma.Decimal(0);
+    let totalCredit = new Prisma.Decimal(0);
+
+    for (const line of data.lines) {
+      totalDebit = totalDebit.plus(new Prisma.Decimal(line.debit || 0));
+      totalCredit = totalCredit.plus(new Prisma.Decimal(line.credit || 0));
+    }
+
+    if (!totalDebit.equals(totalCredit)) {
+      throw new Error(
+        `Unbalanced Journal Entry: Total Debit (${totalDebit}) does not equal Total Credit (${totalCredit})`,
+      );
+    }
+
+    // 2. Create Entry
+    return tx.finance_journal_entries.create({
       data: {
         id: randomUUID(),
         tenant_id: tenant_id,
-        ref: data.referenceId || `TXN-${Date.now()}`,
-        description: data.description || "POS Sales Transaction",
+        ref: data.ref || `JR-${Date.now()}`,
+        description: data.description,
         fiscal_period_id: "FISCAL_AUTO",
         posting_date: new Date(),
-        journal_type: 'SALES',
+        journal_type: "MANUAL",
         status: "POSTED",
         updated_at: new Date(),
         finance_journal_lines: {
-          create: [
-            {
-              id: randomUUID(),
-              tenant_id: tenant_id,
-              account_id: data.category === "SALES" ? "ACC-4000" : "ACC-1001", // Example CoA IDs
-              account_code: data.category === "SALES" ? "4000" : "1001",
-              side: data.type === "credit" ? "CREDIT" : "DEBIT",
-              amount: new Prisma.Decimal(data.amount),
-              description: data.description || "POS Sales",
-              debit: data.type === "credit" ? new Prisma.Decimal(0) : new Prisma.Decimal(data.amount),
-              credit: data.type === "credit" ? new Prisma.Decimal(data.amount) : new Prisma.Decimal(0),
-            },
-          ],
+          create: data.lines.map((line: any) => ({
+            id: randomUUID(),
+            tenant_id: tenant_id,
+            account_id: line.accountId || line.account_id || `ACC-${line.accountCode}`,
+            account_code: line.accountCode || line.account_code,
+            side: new Prisma.Decimal(line.debit || 0).gt(0) ? "DEBIT" : "CREDIT",
+            amount: new Prisma.Decimal(line.debit || 0).gt(0)
+              ? new Prisma.Decimal(line.debit)
+              : new Prisma.Decimal(line.credit),
+            description: line.description,
+            debit: new Prisma.Decimal(line.debit || 0),
+            credit: new Prisma.Decimal(line.credit || 0),
+          })),
         },
       },
       include: {
         finance_journal_lines: true,
       },
     });
-
-    // 2. Return the transaction entity (using DB data)
-    return {
-      id: journalEntry.id,
-      tenant_id: journalEntry.tenant_id,
-      location_id: data.location_id ?? "default",
-      amount: new Prisma.Decimal(data.amount),
-      type: data.type,
-      description: journalEntry.description || "",
-      category: data.category || "GENERAL",
-      created_at: journalEntry.created_at,
-      status: "approved",
-      createdBy: "system",
-    };
   }
 
   async createJournal(
@@ -142,37 +208,7 @@ export class FinanceDbRepository implements IFinanceRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<any> {
     const execute = async (contextTx: Prisma.TransactionClient) => {
-      const journalEntry = await contextTx.finance_journal_entries.create({
-        data: {
-          id: randomUUID(),
-          tenant_id: tenant_id,
-          ref: data.ref || `MAN-${Date.now()}`,
-          description: data.description,
-          fiscal_period_id: "FISCAL_AUTO",
-          posting_date: new Date(),
-          journal_type: 'MANUAL',
-          status: "POSTED",
-          updated_at: new Date(),
-          finance_journal_lines: {
-            create: data.lines.map((line: any) => ({
-              id: randomUUID(),
-              tenant_id: tenant_id,
-              account_id: (line as any).accountId || (line as any).account_id || "ACC-UNKNOWN",
-              account_code: line.accountCode || (line as any).account_code,
-              side: new Prisma.Decimal(line.debit).gt(0) ? "DEBIT" : "CREDIT",
-              amount: new Prisma.Decimal(line.debit).gt(0) ? new Prisma.Decimal(line.debit) : new Prisma.Decimal(line.credit),
-              description: line.description,
-              debit: new Prisma.Decimal(line.debit),
-              credit: new Prisma.Decimal(line.credit),
-            })),
-          },
-        },
-        include: {
-          finance_journal_lines: true,
-        },
-      });
-
-      return journalEntry;
+      return this.validateAndCreateJournal(tenant_id, data, contextTx);
     };
 
     if (tx) return execute(tx);
@@ -685,44 +721,28 @@ export class FinanceDbRepository implements IFinanceRepository {
         },
       });
 
-      await contextTx.finance_journal_entries.create({
-        data: {
-          id: randomUUID(),
-          tenant_id: tenant_id,
+      await this.validateAndCreateJournal(
+        tenant_id,
+        {
           ref: `PAY-${pay.id.substring(0, 8)}`,
           description: `Bill received from ${bill.vendor}`,
-          fiscal_period_id: "FISCAL_AUTO",
-          posting_date: new Date(),
-          journal_type: "PURCHASE",
-          status: "POSTED",
-          finance_journal_lines: {
-            create: [
-              {
-                id: randomUUID(),
-                tenant_id: tenant_id,
-                account_id: "ACC-EXPENSE",
-                account_code: "EXP-GEN",
-                side: "DEBIT",
-                amount: bill.amount!,
-                description: `Expense for ${bill.vendor}`,
-                debit: bill.amount!,
-                credit: 0,
-              },
-              {
-                id: randomUUID(),
-                tenant_id: tenant_id,
-                account_id: "ACC-AP",
-                account_code: "LIAB-AP",
-                side: "CREDIT",
-                amount: bill.amount!,
-                description: "Accounts Payable",
-                debit: 0,
-                credit: bill.amount!,
-              },
-            ],
-          },
+          lines: [
+            {
+              accountCode: "EXP-GEN",
+              debit: Number(bill.amount!),
+              credit: 0,
+              description: `Expense for ${bill.vendor}`,
+            },
+            {
+              accountCode: "LIAB-AP",
+              debit: 0,
+              credit: Number(bill.amount!),
+              description: "Accounts Payable",
+            },
+          ],
         },
-      });
+        contextTx,
+      );
 
       return pay;
     };
@@ -896,6 +916,8 @@ export class FinanceDbRepository implements IFinanceRepository {
       return {
         tenant_id,
         employee_id: emp.id,
+        base_salary: new Prisma.Decimal(gross),
+        gross_income: new Prisma.Decimal(gross),
         gross_pay: new Prisma.Decimal(gross),
         net_pay: new Prisma.Decimal(net),
         adjustments: new Prisma.Decimal(gross - net),
@@ -1317,6 +1339,47 @@ export class FinanceDbRepository implements IFinanceRepository {
       budgetMatched: c.budget_matched,
       created_at: c.created_at.toISOString(),
       requesterId: c.requested_by,
+    };
+  }
+
+  // Bank Reconciliation & Analytics (Phase 5)
+  async ingestBankTransactions(
+    tenant_id: string,
+    transactions: Partial<BankTransaction>[],
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    // To be implemented in Phase 5
+  }
+
+  async getUnreconciledTransactions(
+    tenant_id: string,
+  ): Promise<BankTransaction[]> {
+    return [];
+  }
+
+  async createReconcileMatch(
+    tenant_id: string,
+    transaction_id: string,
+    journal_id: string,
+    score: number,
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    // To be implemented in Phase 5
+  }
+
+  async getPerformanceTree(
+    tenant_id: string,
+    parentId?: string,
+    type?: string,
+  ): Promise<PerformanceTreeNode> {
+    // To be implemented in Phase 5
+    return {
+      id: "root",
+      name: "Total Organization",
+      type: "TENANT",
+      income: new Prisma.Decimal(0),
+      expense: new Prisma.Decimal(0),
+      net: new Prisma.Decimal(0),
     };
   }
 }

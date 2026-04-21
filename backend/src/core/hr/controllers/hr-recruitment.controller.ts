@@ -17,7 +17,7 @@ import { TenantGuard } from "../../../shared/guards/tenant.guard";
 import { UserRole } from "../../../shared/roles";
 import { CreateRequisitionDto } from "../dto";
 
-@Controller("api/hr/recruitment")
+@Controller("v1/hr/recruitment")
 @UseGuards(RolesGuard, TenantGuard)
 export class HrRecruitmentController {
   constructor(private readonly recruitmentService: HrRecruitmentService) {}
@@ -103,3 +103,4 @@ export class HrRecruitmentController {
     return this.recruitmentService.convertLeadToCandidate(tenant_id, lead_id, requisitionId, user_id);
   }
 }
+

@@ -448,6 +448,8 @@ model companies {
   event_deliveries                     event_deliveries[]
   farming_sensor_logs                  farming_sensor_logs[]
   finance_account_balance_snapshots    finance_account_balance_snapshots[]
+  payment_settings                     payment_settings?
+  payment_gateway_accounts            payment_gateway_accounts[]
   finance_account_balances             finance_account_balances[]
   finance_ar_credit_memos              finance_ar_credit_memos[]
   finance_ar_customer_credit_balances  finance_ar_customer_credit_balances[]
@@ -470,6 +472,7 @@ model companies {
   finance_ledger_idempotency           finance_ledger_idempotency[]
   finance_ledger_posting_rules         finance_ledger_posting_rules[]
   finance_ledger_postings              finance_ledger_postings[]
+  finance_recon_matches                finance_recon_matches[]
   finance_settings                     finance_settings?
   finance_system_mappings              finance_system_mappings[]
   finance_tax_configs                  finance_tax_configs[]
@@ -493,6 +496,7 @@ model companies {
   hr_insights                          hr_insights[]
   hr_mentorship_pairs                  hr_mentorship_pairs[]
   hr_payroll_runs                      hr_payroll_runs[]
+  payroll_disbursement_logs            payroll_disbursement_logs[]
   hr_performance_cycles                hr_performance_cycles[]
   hr_performance_goals                 hr_performance_goals[]
   hr_position_skills                   hr_position_skills[]
@@ -507,12 +511,15 @@ model companies {
   hr_talent_leads                      hr_talent_leads[]
   hr_threshold_audits                  hr_threshold_audits[]
   hr_work_schedules                    hr_work_schedules[]
+  hr_shift_templates                   hr_shift_templates[]
+  hr_sales_bonuses                     hr_sales_bonuses[]
   interviews                           interviews[]
   inventory_adjustments                inventory_adjustments[]
   inventory_alerts                     inventory_alerts[]
   inventory_audit_cycles               inventory_audit_cycles[]
   inventory_integration_events         inventory_integration_events[]
   inventory_movement_requests          inventory_movement_requests[]
+  inventory_transfers                  inventory_transfers[]
   inventory_pools                      inventory_pools[]
   inventory_subledger_entries          inventory_subledger_entries[]
   it_device_events                     it_device_events[]
@@ -556,12 +563,16 @@ model companies {
   payment_settlements                  payment_settlements[]
   payment_transactions                 payment_transactions[]
   payroll_adjustment_lines             payroll_adjustment_lines[]
+  payroll_adjustments                  payroll_adjustments[]
+  payroll_payslips                     payroll_payslips[]
   payroll_categories                   payroll_categories[]
   payroll_lines                        payroll_lines[]
   payroll_profiles                     payroll_profiles[]
   performance_reviews                  performance_reviews[]
+  permission_overrides                 permission_overrides[]
   pos_devices                          pos_devices[]
   positions                            positions[]
+  print_job_queue                      print_job_queue[]
   procurement_audit_events             procurement_audit_events[]
   procurement_categories               procurement_categories[]
   procurement_contracts                procurement_contracts[]
@@ -601,6 +612,7 @@ model companies {
   settlement_records                   settlement_records[]
   shift_swap_requests                  shift_swap_requests[]
   shifts                               shifts[]
+  stock_audit_master                   stock_audit_master[]
   stock_levels                         stock_levels[]
   stock_movements                      stock_movements[]
   stock_reservations                   stock_reservations[]
@@ -612,6 +624,7 @@ model companies {
   sync_anchors                         sync_anchors[]
   sys_idempotency_keys                 sys_idempotency_keys[]
   sys_outbox_events                    sys_outbox_events[]
+  sys_report_jobs                      sys_report_jobs[]
   system_logs                          system_logs[]
   tenant_settings                      tenant_settings?
   training_assignments                 training_assignments[]
@@ -624,9 +637,6 @@ model companies {
   workflow_definitions                 workflow_definitions[]
   workflow_instances                   workflow_instances[]
   workflow_requests                    workflow_requests[]
-  permission_overrides                 permission_overrides[]
-  print_job_queue                      print_job_queue[]
-  stock_audit_master                   stock_audit_master[]
 
   @@index([status])
 }
@@ -849,6 +859,7 @@ model employees {
   it_provisioning_requests                                       it_provisioning_requests[]
   leave_requests                                                 leave_requests[]
   payroll_lines                                                  payroll_lines[]
+  payroll_adjustments                                            payroll_adjustments[]
   payroll_profiles                                               payroll_profiles?
   performance_reviews_performance_reviews_employee_idToemployees performance_reviews[]      @relation("performance_reviews_employee_idToemployees")
   performance_reviews_performance_reviews_reviewer_idToemployees performance_reviews[]      @relation("performance_reviews_reviewer_idToemployees")
@@ -858,6 +869,7 @@ model employees {
   schedule_assignments                                           schedule_assignments[]
   stores                                                         stores[]
   training_assignments                                           training_assignments[]
+  hr_sales_bonuses                                               hr_sales_bonuses[]
 
   @@unique([tenant_id, email])
   @@unique([tenant_id, employee_code])
@@ -1092,6 +1104,7 @@ model finance_bank_statements {
   id                        String                      @id @default(uuid())
   tenant_id                 String
   bank_account_id           String
+  gl_account_id             String?
   statement_date            DateTime
   opening_balance           Decimal                     @db.Decimal(19, 4)
   closing_balance           Decimal                     @db.Decimal(19, 4)
@@ -1099,6 +1112,7 @@ model finance_bank_statements {
   created_at                DateTime                    @default(now())
   updated_at                DateTime                    @default(now())
   companies                 companies                   @relation(fields: [tenant_id], references: [id])
+  finance_chart_of_accounts finance_chart_of_accounts?  @relation(fields: [gl_account_id], references: [id])
   finance_bank_transactions finance_bank_transactions[]
 }
 
@@ -1186,6 +1200,7 @@ model finance_chart_of_accounts {
   companies                    companies                      @relation(fields: [tenant_id], references: [id])
   finance_journal_lines        finance_journal_lines[]
   finance_ledger_posting_lines finance_ledger_posting_lines[]
+  finance_bank_statements      finance_bank_statements[]
 
   @@unique([tenant_id, code])
   @@index([tenant_id])
@@ -1500,10 +1515,14 @@ model finance_recon_matches {
   confidence_score          Float
   match_type                String
   status                    String                    @default("SUGGESTED")
-  created_at                DateTime                  @default(now())
-  updated_at                DateTime                  @default(now())
-  finance_bank_transactions finance_bank_transactions @relation(fields: [bank_transaction_id], references: [id])
-  finance_journal_entries   finance_journal_entries?  @relation(fields: [ledger_journal_id], references: [id])
+  created_at                DateTime                    @default(now())
+  updated_at                DateTime                    @default(now())
+  finance_bank_transactions finance_bank_transactions  @relation(fields: [bank_transaction_id], references: [id])
+  finance_journal_entries   finance_journal_entries?   @relation(fields: [ledger_journal_id], references: [id])
+  companies                 companies                  @relation(fields: [tenant_id], references: [id])
+
+  @@unique([tenant_id, bank_transaction_id, ledger_journal_id])
+  @@index([bank_transaction_id])
 }
 
 model finance_settings {
@@ -1537,13 +1556,16 @@ model finance_tax_configs {
   branch_id         String?
   country           String              @default("ID")
   currency          String              @default("IDR")
+  tax_type          String              @default("PERCENT") // PERCENT | BRACKET
+  rules_json        Json?
   is_enabled        Boolean             @default(true)
   created_at        DateTime            @default(now())
   updated_at        DateTime            @default(now())
   companies         companies           @relation(fields: [tenant_id], references: [id])
   finance_tax_rules finance_tax_rules[]
 
-  @@unique([tenant_id, branch_id])
+  @@unique([tenant_id, country, tax_type])
+  @@index([tenant_id])
 }
 
 model finance_tax_rates {
@@ -1647,9 +1669,18 @@ model hr_attendance_records {
   date                  DateTime
   check_in              Json?
   check_out             Json?
+  check_in_time         DateTime?
+  check_out_time        DateTime?
   status                String             @default("present")
   type                  String             @default("web")
+  source                String?
+  device_id             String?
+  lateness_minutes      Int                @default(0)
+  early_leave_minutes   Int                @default(0)
+  overtime_minutes      Int                @default(0)
+  is_locked             Boolean            @default(false)
   metadata              Json?
+  audit_log             Json?
   created_at            DateTime           @default(now())
   updated_at            DateTime           @default(now())
   deleted_at            DateTime?
@@ -1938,9 +1969,11 @@ model hr_mentorship_pairs {
 model hr_payroll_runs {
   id                    String                  @id @default(uuid())
   tenant_id             String
+  location_id           String?
   name                  String?
   period_start          DateTime
   period_end            DateTime
+  frequency             String                  @default("monthly") // weekly, biweekly, monthly
   status                String                  @default("DRAFT")
   total_employees       Int                     @default(0)
   total_gross_pay       Decimal                 @default(0) @db.Decimal(15, 2)
@@ -1950,14 +1983,38 @@ model hr_payroll_runs {
   pay_date              DateTime?
   approved_by           String?
   approved_at           DateTime?
+  idempotency_key       String?                 @unique
   created_at            DateTime                @default(now())
-  updated_at            DateTime                @default(now())
-  hr_compliance_reports hr_compliance_reports[]
-  companies             companies               @relation(fields: [tenant_id], references: [id])
+  updated_at                DateTime                @default(now())
+  hr_compliance_reports     hr_compliance_reports[]
+  payroll_disbursement_logs payroll_disbursement_logs[]
+  companies                 companies               @relation(fields: [tenant_id], references: [id])
+  locations             locations?              @relation(fields: [location_id], references: [id])
   payroll_lines         payroll_lines[]
 
   @@unique([tenant_id, period_start, period_end])
   @@index([tenant_id])
+  @@index([location_id])
+  @@index([status])
+}
+
+model payroll_disbursement_logs {
+  id              String          @id @default(uuid())
+  tenant_id       String
+  payroll_run_id  String
+  status          String          @default("INITIATED")
+  bank_file_name  String?
+  disbursed_at    DateTime?
+  disbursed_by    String?
+  total_amount    Decimal         @default(0) @db.Decimal(15, 2)
+  error_message   String?
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @default(now())
+  hr_payroll_runs hr_payroll_runs @relation(fields: [payroll_run_id], references: [id])
+  companies       companies       @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([payroll_run_id])
 }
 
 model hr_performance_cycles {
@@ -2178,14 +2235,14 @@ model hr_threshold_audits {
 model hr_work_schedules {
   id                    String                  @id @default(uuid())
   tenant_id             String
+  location_id           String?
   department_id         String
   created_by            String
-  status                String                  @default("DRAFT")
+  status                String                  @default("DRAFT") // DRAFT, PLANNED, ACTIVE, LOCKED, COMPLETED
   start_date            DateTime
   end_date              DateTime
   created_at            DateTime                @default(now())
   updated_at            DateTime                @default(now())
-  location_id           String?
   metadata              Json?
   name                  String?
   hr_attendance_records hr_attendance_records[]
@@ -2349,6 +2406,42 @@ model inventory_movement_requests {
   updated_at       DateTime     @default(now())
   item_masters     item_masters @relation(fields: [product_id], references: [id])
   companies        companies    @relation(fields: [tenant_id], references: [id])
+}
+
+model inventory_transfers {
+  id               String   @id @default(uuid())
+  tenant_id        String
+  from_location_id String
+  to_location_id   String
+  item_id          String
+  quantity         Float
+  status           String   @default("REQUESTED") // REQUESTED, PICKED, IN_TRANSIT, RECEIVED, CANCELLED
+  
+  requested_by     String
+  requested_at     DateTime @default(now())
+  
+  picked_by        String?
+  picked_at        DateTime?
+  
+  shipped_by       String?
+  shipped_at       DateTime?
+  tracking_number  String?
+  
+  received_by      String?
+  received_at      DateTime?
+  
+  transfer_group_id String? // For batch shipments
+  
+  created_at       DateTime @default(now())
+  updated_at       DateTime @default(now())
+  
+  companies        companies @relation(fields: [tenant_id], references: [id])
+  from_location    locations @relation("TransferFrom", fields: [from_location_id], references: [id])
+  to_location      locations @relation("TransferTo", fields: [to_location_id], references: [id])
+  item_masters     item_masters @relation(fields: [item_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([status])
 }
 
 model inventory_pool_stock {
@@ -2523,6 +2616,7 @@ model item_masters {
   stock_levels                stock_levels[]
   stock_movements             stock_movements[]
   stock_reservations          stock_reservations[]
+  inventory_transfers         inventory_transfers[]
 
   @@unique([tenant_id, barcode])
   @@unique([tenant_id, sku])
@@ -2636,6 +2730,10 @@ model locations {
   stock_movements_stock_movements_to_location_idTolocations   stock_movements[]       @relation("stock_movements_to_location_idTolocations")
   stock_reservations                                          stock_reservations[]
   stores                                                      stores[]
+  inventory_transfers_from                                    inventory_transfers[]   @relation("TransferFrom")
+  inventory_transfers_to                                      inventory_transfers[]   @relation("TransferTo")
+  hr_payroll_runs                                             hr_payroll_runs[]
+  hr_shift_templates                                          hr_shift_templates[]
 
   @@unique([tenant_id, code])
   @@index([tenant_id])
@@ -3221,6 +3319,23 @@ model payment_transactions {
   provider_id                    String?
   idempotency_key                String                           @unique
   status                         String                           @default("REQUEST_CREATED")
+  
+  // Unified Gateway Fields
+  method                         String?                          @default("GATEWAY") // CASH | EDC | GATEWAY
+  provider                       String?                          @default("STRIPE")
+  payment_status                 String?                          @default("PENDING") // PENDING | PAID | FAILED
+  external_ref                   String?                          @unique // Stripe PI ID or EDC Trace No
+  platform_fee                   Decimal?                         @db.Decimal(15, 2)
+  platform_fee_pending           Decimal?                         @db.Decimal(15, 2)
+  platform_fee_realized          Decimal                          @db.Decimal(15, 2) @default(0)
+  gateway_fee                    Decimal?                         @db.Decimal(15, 2)
+  net_amount                     Decimal?                         @db.Decimal(15, 2)
+  fee_absorbed_by                String?                          @default("MERCHANT") // MERCHANT | CUSTOMER
+
+  last_checked_at                DateTime?
+  retry_count                    Int                              @default(0)
+
+  expires_at                     DateTime?
   ledger_sync_at                 DateTime?
   created_by                     String
   approved_by                    String?
@@ -3248,6 +3363,54 @@ model payment_transactions {
 
   @@index([idempotency_key])
   @@index([status])
+  @@index([tenant_id])
+}
+
+model payment_webhook_events {
+  id         String   @id @default(uuid())
+  provider   String
+  event_id   String
+  payload    Json
+  created_at DateTime @default(now())
+
+  @@unique([provider, event_id])
+  @@index([event_id])
+}
+
+model platform_fee_ledger {
+  id                     String   @id @default(uuid())
+  tenant_id              String
+  payment_transaction_id String
+  amount                 Decimal  @db.Decimal(15, 2)
+  provider               String
+  created_at             DateTime @default(now())
+
+  @@index([tenant_id])
+}
+
+model payment_gateway_accounts {
+  id              String    @id @default(uuid())
+  tenant_id       String    @unique
+  provider        String    // e.g., "stripe"
+  sub_account_id  String?   // Stripe Connect ID
+  status          String    @default("PENDING") // PENDING | ACTIVE | REJECTED
+  metadata        Json?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @default(now())
+  companies       companies @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+}
+
+model payment_settings {
+  id                  String    @id @default(uuid())
+  tenant_id           String    @unique
+  fee_absorption_mode String    @default("MERCHANT") // MERCHANT | CUSTOMER
+  is_gateway_active   Boolean   @default(false)
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @default(now())
+  companies           companies @relation(fields: [tenant_id], references: [id])
+
   @@index([tenant_id])
 }
 
@@ -3288,12 +3451,23 @@ model payroll_lines {
   tenant_id                String
   payroll_run_id           String
   employee_id              String
+  base_salary              Decimal                    @db.Decimal(15, 2)
+  total_work_hours         Float                      @default(0)
+  overtime_pay             Decimal                    @default(0) @db.Decimal(15, 2)
+  sales_bonus              Decimal                    @default(0) @db.Decimal(15, 2)
+  manual_bonus             Decimal                    @default(0) @db.Decimal(15, 2)
+  gross_income             Decimal                    @db.Decimal(15, 2)
   gross_pay                Decimal                    @db.Decimal(15, 2)
   net_pay                  Decimal                    @db.Decimal(15, 2)
+  tax_amount               Decimal                    @default(0) @db.Decimal(15, 2)
   adjustments              Decimal                    @default(0) @db.Decimal(15, 2)
+  deductions_total         Decimal                    @default(0) @db.Decimal(15, 2)
+  breakdown_json           Json?
+  checksum                 String?
   created_at               DateTime                   @default(now())
   updated_at               DateTime                   @default(now())
   payroll_adjustment_lines payroll_adjustment_lines[]
+  payroll_payslips         payroll_payslips?
   employees                employees                  @relation(fields: [employee_id], references: [id])
   hr_payroll_runs          hr_payroll_runs            @relation(fields: [payroll_run_id], references: [id])
   companies                companies                  @relation(fields: [tenant_id], references: [id])
@@ -3911,8 +4085,10 @@ model retail_order_items {
   quantity      Int
   unit_price    Decimal       @db.Decimal(15, 2)
   total_price   Decimal       @db.Decimal(15, 2)
+  unit_cost     Decimal       @default(0) @db.Decimal(15, 2)
   discount      Decimal       @default(0) @db.Decimal(15, 2)
   tenant_id     String
+  returned_at   DateTime?
   updated_at    DateTime      @default(now())
   retail_orders retail_orders @relation(fields: [order_id], references: [id], onDelete: Cascade)
   item_masters  item_masters  @relation(fields: [product_id], references: [id])
@@ -3971,22 +4147,25 @@ model retail_promotions {
 }
 
 model retail_shifts {
-  id            String    @id @default(uuid())
-  tenant_id     String
-  store_id      String
-  employee_id   String
-  start_time    DateTime
-  end_time      DateTime?
-  opening_cash  Decimal   @db.Decimal(15, 2)
-  closing_cash  Decimal?  @db.Decimal(15, 2)
-  expected_cash Decimal?  @db.Decimal(15, 2)
-  status        String    @default("open")
-  notes         String?
-  created_at    DateTime  @default(now())
-  updated_at    DateTime  @default(now())
-  employees     employees @relation(fields: [employee_id], references: [id])
-  stores        stores    @relation(fields: [store_id], references: [id])
-  companies     companies @relation(fields: [tenant_id], references: [id])
+  id                    String    @id @default(uuid())
+  tenant_id             String
+  store_id              String
+  employee_id           String
+  start_time            DateTime
+  end_time              DateTime?
+  opening_cash          Decimal   @db.Decimal(15, 2)
+  closing_cash          Decimal?  @db.Decimal(15, 2)
+  expected_cash         Decimal?  @db.Decimal(15, 2)
+  status                String    @default("open")
+  notes                 String?
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @default(now())
+  actual_cash           Decimal?  @db.Decimal(15, 2)
+  reconciliation_reason String?
+  variance              Decimal?  @db.Decimal(15, 2)
+  employees             employees @relation(fields: [employee_id], references: [id])
+  stores                stores    @relation(fields: [store_id], references: [id])
+  companies             companies @relation(fields: [tenant_id], references: [id])
 
   @@index([employee_id])
   @@index([store_id])
@@ -4549,6 +4728,46 @@ model sys_outbox_events {
   @@index([tenant_id])
 }
 
+model audit_chain_repairs {
+  id            String   @id @default(uuid())
+  tenant_id     String
+  actor_id      String
+  previous_hash String
+  new_hash      String
+  reason        String
+  source_ip     String?
+  request_id    String?
+  permission_by String?
+  permission_at  DateTime?
+  snapshot_json  Json?
+  range_start_id String?
+  range_end_id   String?
+  created_at     DateTime @default(now())
+
+  @@index([tenant_id])
+  @@index([created_at])
+}
+
+model sys_report_jobs {
+  id             String    @id @default(uuid())
+  tenant_id      String
+  user_id        String
+  report_type    String    @default("AUDIT_TRAIL")
+  format         String    @default("PDF")
+  status         String    @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  progress       Int       @default(0)
+  payload        Json?
+  file_path      String?
+  error_message    String?
+  last_progress_at DateTime  @default(now())
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @default(now())
+  companies      companies @relation(fields: [tenant_id], references: [id])
+
+  @@index([status])
+  @@index([tenant_id])
+}
+
 model system_logs {
   id             String     @id @default(uuid())
   tenant_id      String?
@@ -4574,12 +4793,30 @@ model system_logs {
 }
 
 model tenant_settings {
-  id               String          @id @default(uuid())
-  tenant_id        String          @unique
-  procurement_mode ProcurementMode @default(DIRECT)
-  created_at       DateTime        @default(now())
-  updated_at       DateTime        @default(now())
-  companies        companies       @relation(fields: [tenant_id], references: [id])
+  id                    String          @id @default(uuid())
+  tenant_id             String          @unique
+  procurement_mode      ProcurementMode @default(DIRECT)
+  late_grace_minutes    Int             @default(15)
+  overtime_multiplier   Decimal         @default(1.5) @db.Decimal(5, 2)
+  created_at            DateTime        @default(now())
+  updated_at            DateTime        @default(now())
+  companies             companies       @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
+}
+
+model hr_shift_templates {
+  id           String    @id @default(uuid())
+  tenant_id    String
+  location_id  String?
+  name         String
+  start_time   String // HH:mm
+  end_time     String // HH:mm
+  shift_type   String    @default("regular")
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @default(now())
+  companies    companies @relation(fields: [tenant_id], references: [id])
+  locations    locations? @relation(fields: [location_id], references: [id])
 
   @@index([tenant_id])
 }
@@ -4772,6 +5009,57 @@ model workflow_requests {
   @@index([tenant_id])
 }
 
+model permission_overrides {
+  id         String    @id @default(uuid())
+  tenant_id  String
+  user_id    String
+  module     String
+  action     String
+  is_granted Boolean   @default(false)
+  created_at DateTime  @default(now())
+  companies  companies @relation(fields: [tenant_id], references: [id])
+
+  @@unique([tenant_id, user_id, module, action])
+  @@map("permission_overrides")
+}
+
+model print_job_queue {
+  id                 String    @id @default(uuid())
+  tenant_id          String
+  device_id          String
+  shift_summary_json Json
+  status             String    @default("PENDING")
+  created_at         DateTime  @default(now())
+  companies          companies @relation(fields: [tenant_id], references: [id])
+
+  @@map("print_job_queue")
+}
+
+model stock_audit_master {
+  id                String              @id @default(uuid())
+  tenant_id         String
+  location_id       String
+  auditor_id        String
+  status            String              @default("DRAFT")
+  created_at        DateTime            @default(now())
+  stock_audit_lines stock_audit_lines[]
+  companies         companies           @relation(fields: [tenant_id], references: [id])
+
+  @@map("stock_audit_master")
+}
+
+model stock_audit_lines {
+  id                 String             @id @default(uuid())
+  master_id          String
+  product_id         String
+  expected_qty       Decimal            @db.Decimal(19, 4)
+  actual_qty         Decimal            @db.Decimal(19, 4)
+  notes              String?
+  stock_audit_master stock_audit_master @relation(fields: [master_id], references: [id])
+
+  @@map("stock_audit_lines")
+}
+
 enum ChatMessageType {
   TEXT
   FILE
@@ -4813,53 +5101,51 @@ enum ProcurementMode {
   BIDDING
 }
 
-model permission_overrides {
-  id         String    @id @default(uuid())
-  tenant_id  String
-  user_id    String
-  module     String
-  action     String
-  is_granted Boolean   @default(false)
-  created_at DateTime  @default(now())
-  companies  companies @relation(fields: [tenant_id], references: [id])
+model hr_sales_bonuses {
+  id              String    @id @default(uuid())
+  tenant_id       String
+  employee_id     String
+  order_id        String
+  amount          Decimal   @db.Decimal(15, 2)
+  status          String    @default("PENDING")
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @default(now())
+  employees       employees @relation(fields: [employee_id], references: [id])
+  companies       companies @relation(fields: [tenant_id], references: [id])
 
-  @@unique([tenant_id, user_id, module, action])
-  @@map("permission_overrides")
+  @@index([employee_id])
+  @@index([tenant_id])
 }
 
-model print_job_queue {
-  id         String    @id @default(uuid())
-  tenant_id  String
-  device_id String
-  shift_summary_json Json
-  status     String    @default("PENDING")
-  created_at DateTime  @default(now())
-  companies  companies @relation(fields: [tenant_id], references: [id])
+model payroll_adjustments {
+  id              String    @id @default(uuid())
+  tenant_id       String
+  employee_id     String
+  type            String    // BONUS | DEDUCTION
+  source          String    // ATTENDANCE | SALES | ADMIN
+  amount          Decimal   @db.Decimal(15, 2)
+  description     String?
+  reference_id    String?
+  status          String    @default("PENDING")
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @default(now())
+  employees       employees @relation(fields: [employee_id], references: [id])
+  companies       companies @relation(fields: [tenant_id], references: [id])
 
-  @@map("print_job_queue")
+  @@index([employee_id])
+  @@index([tenant_id])
 }
 
-model stock_audit_master {
-  id                String              @id @default(uuid())
-  tenant_id         String
-  location_id       String
-  auditor_id        String
-  status            String              @default("DRAFT")
-  created_at        DateTime            @default(now())
-  stock_audit_lines stock_audit_lines[]
-  companies         companies           @relation(fields: [tenant_id], references: [id])
+model payroll_payslips {
+  id              String        @id @default(uuid())
+  tenant_id       String
+  payroll_line_id String        @unique
+  pdf_url         String?
+  generated_at    DateTime      @default(now())
+  checksum        String
+  metadata        Json?
+  payroll_lines   payroll_lines @relation(fields: [payroll_line_id], references: [id])
+  companies       companies     @relation(fields: [tenant_id], references: [id])
 
-  @@map("stock_audit_master")
-}
-
-model stock_audit_lines {
-  id                 String             @id @default(uuid())
-  master_id          String
-  product_id         String
-  expected_qty       Decimal            @db.Decimal(19, 4)
-  actual_qty         Decimal            @db.Decimal(19, 4)
-  notes              String?
-  stock_audit_master stock_audit_master @relation(fields: [master_id], references: [id])
-
-  @@map("stock_audit_lines")
+  @@index([tenant_id])
 }

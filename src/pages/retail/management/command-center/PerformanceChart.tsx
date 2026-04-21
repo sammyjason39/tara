@@ -34,14 +34,14 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data }) => {
           </div>
         </div>
         <div className="flex gap-2 p-1 bg-slate-50 rounded-xl">
-          <Button
+          <Button disabled title="Not available yet"
             variant="ghost"
             size="sm"
             className="h-8 px-4 rounded-lg bg-white shadow-sm font-black italic text-[10px] uppercase"
           >
             Minute
           </Button>
-          <Button
+          <Button disabled title="Not available yet"
             variant="ghost"
             size="sm"
             className="h-8 px-4 rounded-lg font-black italic text-[10px] text-slate-400 uppercase"

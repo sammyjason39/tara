@@ -26,65 +26,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { useSession } from "@/core/security/session";
+import { apiRequest } from "@/core/api/apiClient";
+import { toast } from "sonner";
 
-const AUDIT_LOGS = [
-  {
-    time: "2026-02-15 14:22:10",
-    type: "FISCAL_VOID",
-    actor: "Siti Rahma (ID: 009)",
-    impact: "-Rp 50,000",
-    hash: "8f2d...b41a",
-    status: "VERIFIED",
-  },
-  {
-    time: "2026-02-15 13:05:44",
-    type: "PERMISSION_CHANGE",
-    actor: "Andi Wijaya (ID: ADMIN)",
-    impact: "ELEVATED",
-    hash: "9a31...fe02",
-    status: "VERIFIED",
-  },
-  {
-    time: "2026-02-15 11:45:12",
-    type: "MANUAL_ADJUST",
-    actor: "System Agent (Auto)",
-    impact: "INV_SYNC",
-    hash: "7c12...da99",
-    status: "VERIFIED",
-  },
-  {
-    time: "2026-02-15 09:00:01",
-    type: "STORE_OPEN",
-    actor: "Budi Santoso (ID: 001)",
-    impact: "NORMAL",
-    hash: "2e44...cc81",
-    status: "VERIFIED",
-  },
-  {
-    time: "2026-02-14 17:48:33",
-    type: "DISCOUNT_APPLIED",
-    actor: "Dewi Kusuma (ID: 012)",
-    impact: "-Rp 125,000",
-    hash: "1b3a...c209",
-    status: "VERIFIED",
-  },
-  {
-    time: "2026-02-14 16:10:05",
-    type: "REFUND_ISSUED",
-    actor: "Reza Pratama (ID: 005)",
-    impact: "-Rp 299,000",
-    hash: "4d5e...a901",
-    status: "VERIFIED",
-  },
-  {
-    time: "2026-02-14 14:00:00",
-    type: "STORE_CLOSE",
-    actor: "Budi Santoso (ID: 001)",
-    impact: "NORMAL",
-    hash: "6c7f...b123",
-    status: "VERIFIED",
-  },
-];
+
+// Replaced static mock with dynamic state
+
 
 const eventColors: Record<string, string> = {
   FISCAL_VOID: "text-red-600 bg-red-50",
@@ -98,18 +46,54 @@ const eventColors: Record<string, string> = {
 
 const ComplianceAuditLedger = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [logs, setLogs] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const session = useSession();
+
+  React.useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        const data = await apiRequest<any[]>("/v1/audit/logs", "GET", session);
+        setLogs(data);
+      } catch (err) {
+        console.error("Failed to fetch audit logs:", err);
+        toast.error("Compliance Stream Offline");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    if (session.tenantId) fetchLogs();
+  }, [session]);
+
+  const handleExport = async (format: 'pdf' | 'csv') => {
+    try {
+      toast.info(`Generating ${format.toUpperCase()} Audit Report...`);
+      const blob = await apiRequest<Blob>(`/v1/audit/export?format=${format}`, "GET", session, null, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `audit-report-${new Date().toISOString()}.${format === 'csv' ? 'xlsx' : 'pdf'}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error("Export Failed");
+    }
+  };
 
   const filteredLogs = useMemo(() => {
-    if (!searchTerm.trim()) return AUDIT_LOGS;
+    const activeData = logs && Array.isArray(logs) ? logs : [];
+    if (!searchTerm.trim()) return activeData;
     const q = searchTerm.toLowerCase();
-    return AUDIT_LOGS.filter(
+    return activeData.filter(
       (l) =>
-        l.type.toLowerCase().includes(q) ||
-        l.actor.toLowerCase().includes(q) ||
-        l.hash.toLowerCase().includes(q) ||
-        l.time.includes(q),
+        (l.action || "").toLowerCase().includes(q) ||
+        (l.user_id || "").toLowerCase().includes(q) ||
+        (l.hash_chain || "").toLowerCase().includes(q) ||
+        new Date(l.created_at).toLocaleString().includes(q),
     );
-  }, [searchTerm]);
+  }, [searchTerm, logs]);
+
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -120,13 +104,20 @@ const ComplianceAuditLedger = () => {
           subtitle="Immutable fiscal record-keeping • Regulatory event log • Chain of custody"
         />
         <div className="flex items-center gap-3">
-          <Button
+          <Button onClick={() => handleExport('csv')}
             variant="outline"
             className="h-11 rounded-xl px-4 font-black italic border-slate-200 text-xs uppercase tracking-widest gap-2"
           >
-            <Download className="w-3.5 h-3.5" /> Export Report
+            <Download className="w-3.5 h-3.5" /> Export XLSX
           </Button>
-          <Button className="h-11 px-5 rounded-xl bg-slate-900 text-white font-black italic uppercase text-xs tracking-widest gap-2">
+          <Button onClick={() => handleExport('pdf')}
+             variant="outline"
+             className="h-11 rounded-xl px-4 font-black italic border-slate-200 text-xs uppercase tracking-widest gap-2"
+          >
+            <FileText className="w-3.5 h-3.5" /> Export PDF
+          </Button>
+
+          <Button disabled title="Not available yet" className="h-11 px-5 rounded-xl bg-slate-900 text-white font-black italic uppercase text-xs tracking-widest gap-2">
             <ExternalLink className="w-3.5 h-3.5" /> Verify Chain
           </Button>
         </div>
@@ -237,13 +228,13 @@ const ComplianceAuditLedger = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button
+            <Button disabled title="Not available yet"
               variant="outline"
               className="h-12 px-5 rounded-xl gap-2 font-black italic border-slate-100 hover:bg-slate-50 uppercase text-[10px] tracking-widest"
             >
               <Calendar className="w-4 h-4" /> Range
             </Button>
-            <Button
+            <Button disabled title="Not available yet"
               variant="outline"
               className="h-12 px-5 rounded-xl gap-2 font-black italic border-slate-100 hover:bg-slate-50 uppercase text-[10px] tracking-widest"
             >
@@ -298,28 +289,32 @@ const ComplianceAuditLedger = () => {
                             <History className="w-3.5 h-3.5" />
                           </div>
                           <div className="text-xs font-bold text-slate-900 font-mono tracking-tight">
-                            {log.time}
+                            {new Date(log.created_at).toLocaleString()}
                           </div>
+
                         </div>
                       </td>
                       <td className="px-8 py-5">
                         <Badge
-                          className={`border-none text-[8px] font-black italic tracking-widest px-3 py-1 ${eventColors[log.type] ?? "bg-slate-100 text-slate-700"}`}
+                          className={`border-none text-[8px] font-black italic tracking-widest px-3 py-1 ${eventColors[log.action] ?? "bg-slate-100 text-slate-700"}`}
                         >
-                          {log.type}
+                          {log.action}
                         </Badge>
+
                       </td>
                       <td className="px-8 py-5">
                         <div className="text-xs font-black italic text-slate-700">
-                          {log.actor}
+                          {log.user_id}
                         </div>
+
                       </td>
                       <td className="px-8 py-5">
                         <div
-                          className={`text-xs font-black italic ${log.impact.startsWith("-") ? "text-red-500" : log.impact === "ELEVATED" ? "text-amber-600" : "text-slate-700"}`}
+                          className={`text-xs font-black italic ${String(log.metadata?.impact || "").startsWith("-") ? "text-red-500" : log.action === "PERMISSION_CHANGE" ? "text-amber-600" : "text-slate-700"}`}
                         >
-                          {log.impact}
+                          {log.metadata?.impact || "N/A"}
                         </div>
+
                       </td>
                       <td className="px-8 py-5 text-center">
                         <div className="flex items-center justify-center gap-2">
@@ -330,7 +325,8 @@ const ComplianceAuditLedger = () => {
                         </div>
                       </td>
                       <td className="px-8 py-5 text-right font-mono text-[10px] text-slate-400">
-                        {log.hash}
+                        {(log.hash_chain || "").substring(0, 8)}...
+
                       </td>
                     </tr>
                   ))
@@ -341,7 +337,7 @@ const ComplianceAuditLedger = () => {
               <div className="text-[10px] font-black italic text-slate-400 uppercase tracking-widest">
                 {filteredLogs.length} records visible
               </div>
-              <Button
+              <Button disabled title="Not available yet"
                 variant="ghost"
                 size="sm"
                 className="font-black italic text-[10px] uppercase text-blue-600 hover:bg-blue-50 rounded-xl gap-2"

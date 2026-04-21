@@ -91,7 +91,7 @@ const DeviceModal = ({ dev, onClose }: DeviceModalProps) => (
               </div>
             )}
             <div className="flex gap-2 pt-1">
-              <Button className="flex-1 h-10 rounded-xl bg-slate-900 text-white font-black italic uppercase text-[10px] tracking-widest gap-2">
+              <Button disabled title="Not available yet" className="flex-1 h-10 rounded-xl bg-slate-900 text-white font-black italic uppercase text-[10px] tracking-widest gap-2">
                 <Settings2 className="w-3.5 h-3.5" /> Configure
               </Button>
               <Button

@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { CreateAdjustmentDto } from "./dto/create-adjustment.dto";
 import { CreateItemDto } from "./dto/create-item.dto";
 import { StockIntakeDto } from "./dto/stock-intake.dto";
@@ -21,6 +21,8 @@ export class InventoryService {
     private readonly prisma: PrismaService,
     private readonly eventBus: EventBusService,
   ) {}
+
+  private readonly logger = new Logger(InventoryService.name);
 
   async getDashboard(tenant_id: string) {
     return this.repository.getDashboard(tenant_id);
@@ -270,84 +272,330 @@ export class InventoryService {
     user_id: string,
     correlation_id?: string
   ) {
-    const groupId = data.transferGroupId || `TRG-${Date.now()}`;
-    const move = await this.repository.transferOut(
-        tenant_id, 
-        data.product_id, 
-        data.fromLocationId, 
-        data.toLocationId, 
-        data.quantity, 
-        data.referenceId, 
-        data.referenceType,
-        groupId
-    );
-    
-    await this.eventBus.publish({
-        event_type: 'STOCK_MOVEMENT_CREATED',
-        tenant_id: tenant_id,
-        entity_id: move.id,
-        entity_type: 'STOCK_MOVEMENT',
-        source_module: 'inventory',
-        payload: {
-            movementId: move.id,
-            tenant_id: tenant_id,
-            product_id: data.product_id,
-            fromLocationId: data.fromLocationId,
-            toLocationId: data.toLocationId,
-            quantity: -data.quantity,
-            type: 'TRANSFER_OUT',
-            referenceId: data.referenceId,
-            referenceType: data.referenceType,
-            transferGroupId: groupId,
-            status: 'IN_TRANSIT',
-            timestamp: new Date().toISOString(),
-        },
-        user_id,
-        correlation_id
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Virtual Transit Pool logic
+      const transitLocation = await this.getOrCreateTransitLocation(tenant_id, data.fromLocationId, data.toLocationId);
+      const groupId = data.transferGroupId || `TRG-${Date.now()}`;
+      
+      const move = await this.repository.transferOut(
+          tenant_id, 
+          data.product_id, 
+          data.fromLocationId, 
+          transitLocation.id, // Move to transit pool
+          data.quantity, 
+          data.referenceId, 
+          data.referenceType,
+          groupId,
+          tx
+      );
+
+      // 2. Update status to SHIPPED (IN_TRANSIT)
+      await tx.inventory_movement_requests.updateMany({
+        where: { tenant_id, id: data.referenceId, status: 'PENDING' },
+        data: { status: 'SHIPPED', updated_at: new Date() }
+      });
+      
+      await this.eventBus.publish({
+          event_type: 'STOCK_MOVEMENT_CREATED',
+          tenant_id: tenant_id,
+          entity_id: move.id,
+          entity_type: 'STOCK_MOVEMENT',
+          source_module: 'inventory',
+          payload: {
+              movementId: move.id,
+              tenant_id: tenant_id,
+              product_id: data.product_id,
+              fromLocationId: data.fromLocationId,
+              transitLocationId: transitLocation.id,
+              toLocationId: data.toLocationId,
+              quantity: -data.quantity,
+              type: 'TRANSFER_OUT',
+              referenceId: data.referenceId,
+              referenceType: data.referenceType,
+              transferGroupId: groupId,
+              status: 'IN_TRANSIT',
+              timestamp: new Date().toISOString(),
+          },
+          user_id,
+          correlation_id
+      });
+
+      return { move, transferGroupId: groupId, transitLocationId: transitLocation.id };
     });
-    return { move, transferGroupId: groupId };
   }
 
   async completeTransfer(
     tenant_id: string,
-    data: { product_id: string; fromLocationId: string; toLocationId: string; quantity: number; referenceId: string; referenceType: string, transferGroupId?: string },
+    data: { product_id: string; fromLocationId: string; toLocationId: string; quantity: number; referenceId: string; referenceType: string, transferGroupId?: string, transitLocationId?: string },
     user_id: string,
     correlation_id?: string
   ) {
-    const move = await this.repository.transferIn(
-        tenant_id, 
-        data.product_id, 
-        data.fromLocationId, 
-        data.toLocationId, 
-        data.quantity, 
-        data.referenceId, 
-        data.referenceType,
-        data.transferGroupId
-    );
-    
-    await this.eventBus.publish({
-        event_type: 'STOCK_MOVEMENT_CREATED',
-        tenant_id: tenant_id,
-        entity_id: move.id,
-        entity_type: 'STOCK_MOVEMENT',
-        source_module: 'inventory',
-        payload: {
-            movementId: move.id,
-            tenant_id: tenant_id,
-            product_id: data.product_id,
-            location_id: data.toLocationId,
-            quantity: data.quantity,
-            type: 'TRANSFER_IN',
-            referenceId: data.referenceId,
-            referenceType: data.referenceType,
-            transferGroupId: data.transferGroupId,
-            status: 'COMPLETED',
-            timestamp: new Date().toISOString(),
-        },
-        user_id,
-        correlation_id
+    return this.prisma.$transaction(async (tx) => {
+      // If transitLocationId not provided, recover it
+      const transitLocationId = data.transitLocationId || (await this.getOrCreateTransitLocation(tenant_id, data.fromLocationId, data.toLocationId)).id;
+      
+      const move = await this.repository.transferIn(
+          tenant_id, 
+          data.product_id, 
+          transitLocationId, // Move FROM transit pool
+          data.toLocationId, 
+          data.quantity, 
+          data.referenceId, 
+          data.referenceType,
+          data.transferGroupId,
+          tx
+      );
+
+      // 2. Update status to COMPLETED (RECEIVED)
+      await tx.inventory_movement_requests.updateMany({
+        where: { tenant_id, id: data.referenceId, status: 'SHIPPED' },
+        data: { status: 'COMPLETED', updated_at: new Date() }
+      });
+      
+      await this.eventBus.publish({
+          event_type: 'STOCK_MOVEMENT_CREATED',
+          tenant_id: tenant_id,
+          entity_id: move.id,
+          entity_type: 'STOCK_MOVEMENT',
+          source_module: 'inventory',
+          payload: {
+              movementId: move.id,
+              tenant_id: tenant_id,
+              product_id: data.product_id,
+              fromLocationId: transitLocationId,
+              toLocationId: data.toLocationId,
+              quantity: data.quantity,
+              type: 'TRANSFER_IN',
+              referenceId: data.referenceId,
+              referenceType: data.referenceType,
+              transferGroupId: data.transferGroupId,
+              status: 'COMPLETED',
+              timestamp: new Date().toISOString(),
+          },
+          user_id,
+          correlation_id
+      });
+      return move;
     });
-    return move;
+  }
+
+  private async getOrCreateTransitLocation(tenant_id: string, fromId: string, toId: string) {
+    const transitName = `Transit Pool (${fromId.substring(0,4)} to ${toId.substring(0,4)})`;
+    const transitCode = `TR-${fromId.substring(0,4)}-${toId.substring(0,4)}`;
+
+    let location = await this.prisma.locations.findFirst({
+        where: { tenant_id, type: 'TRANSIT', code: transitCode }
+    });
+
+    if (!location) {
+        location = await this.prisma.locations.create({
+            data: {
+                id: uuidv4(),
+                tenant_id,
+                name: transitName,
+                code: transitCode,
+                type: 'TRANSIT',
+                address: 'Virtual Transit Zone',
+                updated_at: new Date(),
+            }
+        });
+    }
+
+    return location;
+  }
+
+  // --- NEW Stock Transfer Lifecycle (Grading to Production) ---
+
+  async getAllTransfers(tenant_id: string) {
+    return this.repository.getTransfers(tenant_id);
+  }
+
+  async createTransfer(tenant_id: string, data: any, user_id: string) {
+    const transfer = await this.repository.createStockTransfer(tenant_id, {
+      ...data,
+      status: 'REQUESTED',
+      requested_by: user_id,
+      requested_at: new Date(),
+    });
+
+    await this.auditService.log({
+      tenant_id,
+      user_id,
+      module: 'inventory',
+      action: 'TRANSFER_REQUESTED',
+      entity_type: 'STOCK_TRANSFER',
+      entity_id: transfer.id,
+      metadata: { item_id: data.item_id, quantity: data.quantity }
+    });
+
+    return transfer;
+  }
+
+  async pickTransfer(tenant_id: string, id: string, user_id: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const transfer = await this.repository.getTransferById(tenant_id, id);
+      if (!transfer || transfer.status !== 'REQUESTED') {
+        throw new Error('Transfer not found or not in REQUESTED status');
+      }
+
+      // Reserve stock at source
+      await this.repository.reserveStock(
+        tenant_id,
+        transfer.item_id,
+        transfer.from_location_id,
+        transfer.quantity,
+        transfer.id,
+        'STOCK_TRANSFER',
+        tx
+      );
+
+      const updated = await this.repository.updateStockTransfer(tenant_id, id, {
+        status: 'PICKED',
+        picked_by: user_id,
+        picked_at: new Date(),
+      }, tx);
+
+      await this.auditService.log({
+        tenant_id,
+        user_id,
+        module: 'inventory',
+        action: 'TRANSFER_PICKED',
+        entity_type: 'STOCK_TRANSFER',
+        entity_id: id,
+      }, tx);
+
+      return updated;
+    });
+  }
+
+  async shipTransfer(tenant_id: string, id: string, tracking_number: string, user_id: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const transfer = await this.repository.getTransferById(tenant_id, id);
+      if (!transfer || (transfer.status !== 'REQUESTED' && transfer.status !== 'PICKED')) {
+        throw new Error('Transfer not found or cannot be shipped');
+      }
+
+      const transitLocation = await this.getOrCreateTransitLocation(tenant_id, transfer.from_location_id, transfer.to_location_id);
+      
+      // If was PICKED, release reservation and then transfer out. 
+      // If was REQUESTED, just transfer out (which checks available).
+      if (transfer.status === 'PICKED') {
+        await this.repository.releaseStock(
+            tenant_id,
+            transfer.item_id,
+            transfer.from_location_id,
+            transfer.quantity,
+            transfer.id,
+            'STOCK_TRANSFER',
+            tx
+        );
+      }
+
+      // Atomic movement to Transit Pool
+      await this.repository.transferOut(
+        tenant_id,
+        transfer.item_id,
+        transfer.from_location_id,
+        transitLocation.id,
+        transfer.quantity,
+        transfer.id,
+        'STOCK_TRANSFER',
+        transfer.transfer_group_id || undefined,
+        tx
+      );
+
+      const updated = await this.repository.updateStockTransfer(tenant_id, id, {
+        status: 'IN_TRANSIT',
+        shipped_by: user_id,
+        shipped_at: new Date(),
+        tracking_number,
+      }, tx);
+
+      await this.auditService.log({
+        tenant_id,
+        user_id,
+        module: 'inventory',
+        action: 'TRANSFER_SHIPPED',
+        entity_type: 'STOCK_TRANSFER',
+        entity_id: id,
+        metadata: { tracking_number }
+      }, tx);
+
+      return updated;
+    });
+  }
+
+  async receiveTransfer(tenant_id: string, id: string, user_id: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const transfer = await this.repository.getTransferById(tenant_id, id);
+      if (!transfer || transfer.status !== 'IN_TRANSIT') {
+        throw new Error('Transfer not found or not in IN_TRANSIT status');
+      }
+
+      const transitLocation = await this.getOrCreateTransitLocation(tenant_id, transfer.from_location_id, transfer.to_location_id);
+
+      // Move FROM transit pool to Destination
+      await this.repository.transferIn(
+        tenant_id,
+        transfer.item_id,
+        transitLocation.id,
+        transfer.to_location_id,
+        transfer.quantity,
+        transfer.id,
+        'STOCK_TRANSFER',
+        transfer.transfer_group_id || undefined,
+        tx
+      );
+
+      const updated = await this.repository.updateStockTransfer(tenant_id, id, {
+        status: 'RECEIVED',
+        received_by: user_id,
+        received_at: new Date(),
+      }, tx);
+
+      await this.auditService.log({
+        tenant_id,
+        user_id,
+        module: 'inventory',
+        action: 'TRANSFER_RECEIVED',
+        entity_type: 'STOCK_TRANSFER',
+        entity_id: id,
+      }, tx);
+
+      return updated;
+    });
+  }
+
+  async cleanupExpiredReservations(tenant_id?: string) {
+    const ttlMinutes = 30;
+    const expiryTime = new Date(Date.now() - ttlMinutes * 60 * 1000);
+
+    const where: any = {
+        status: 'PENDING',
+        created_at: { lt: expiryTime }
+    };
+    if (tenant_id) where.tenant_id = tenant_id;
+
+    const expired = await this.prisma.stock_reservations.findMany({ where });
+
+    for (const res of expired) {
+        if (!res.tenant_id) continue;
+        try {
+            await this.repository.releaseStock(
+                res.tenant_id,
+                res.product_id,
+                res.location_id,
+                Number(res.quantity),
+                res.reference_id || 'EXPIRED_RESERVATION',
+                res.reference_type || 'SYSTEM'
+            );
+            this.logger.log(`Released expired reservation ${res.id} for tenant ${res.tenant_id}`);
+        } catch (error) {
+            this.logger.error(`Failed to release reservation ${res.id}: ${error.message}`);
+        }
+    }
+
+    return expired.length;
   }
 
   async runStockSnapshot(tenant_id: string, location_id: string) {
@@ -767,5 +1015,53 @@ export class InventoryService {
   // --- Agentic Layer ---
   async createAgenticEvent(tenant_id: string, data: CreateAgenticEventDto) {
     return this.repository.createAgenticEvent(tenant_id, data);
+  }
+
+  async processScan(
+    tenant_id: string,
+    params: { barcode: string; location_id: string; delta: number },
+    user_id: string,
+    correlation_id?: string
+  ) {
+    this.logger.log(`Processing Edge Scan: ${params.barcode} for tenant ${tenant_id}`);
+    
+    // 1. Efficient Lookup
+    const item = await this.repository.lookupByBarcode(tenant_id, params.barcode);
+    if (!item) {
+        throw new Error(`Item not found for barcode: ${params.barcode}`);
+    }
+
+    // 2. Atomic Adjustment
+    const result = await this.repository.quickAdjust(
+        tenant_id,
+        item.id,
+        params.location_id,
+        params.delta,
+        user_id
+    );
+
+    // 3. Emit Event for downstream logic (e.g. Real-time dashboards, IoT alerts)
+    await this.eventBus.publish({
+        event_type: 'INVENTORY_SCAN_PROCESSED',
+        tenant_id,
+        entity_id: item.id,
+        entity_type: 'ITEM',
+        source_module: 'inventory',
+        payload: {
+            ...params,
+            item_id: item.id,
+            sku: item.sku,
+            newQuantity: result.on_hand,
+            timestamp: new Date().toISOString(),
+        },
+        user_id,
+        correlation_id
+    });
+
+    return {
+        item,
+        adjustment: result,
+        status: 'SUCCESS'
+    };
   }
 }

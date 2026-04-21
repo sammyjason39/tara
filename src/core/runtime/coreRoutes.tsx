@@ -26,6 +26,7 @@ import TalentFlow from "@/pages/core/HR/TalentFlow";
 import SkillTrack from "@/pages/core/HR/SkillTrack";
 import GrowthCycle from "@/pages/core/HR/GrowthCycle";
 import PayCycleStudio from "@/pages/core/HR/PayCycleStudio";
+import SchedulingStudio from "@/pages/core/HR/SchedulingStudio";
 import LexBoard from "@/pages/core/HR/LexBoard";
 import InsightLayer from "@/pages/core/HR/InsightLayer";
 import CaseDesk from "@/pages/core/HR/Cases/CaseDesk";
@@ -795,6 +796,14 @@ export function buildCoreRoutes(): JSX.Element[] {
         element={
           <ProtectedRoute permission="hr.training.manage" scope="COMPANY">
             <SkillTrack />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="scheduling"
+        element={
+          <ProtectedRoute permission="hr.directory.view" scope="COMPANY">
+            <SchedulingStudio />
           </ProtectedRoute>
         }
       />

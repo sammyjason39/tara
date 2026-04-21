@@ -10,5 +10,6 @@ build/
 !DATABASE_SETUP.md
 backend/dist/
 frontend/dist/
+/backups/
 .DS_Store
 Thumbs.db

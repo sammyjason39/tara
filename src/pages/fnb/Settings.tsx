@@ -208,7 +208,7 @@ export default function CafeSettings() {
             <Badge variant="success">Connected</Badge>
           </div>
 
-          <Button variant="outline" className="w-full">
+          <Button onClick={(e) => { e.preventDefault(); window.print(); }} variant="outline" className="w-full">
             Test Print
           </Button>
         </CardContent>

@@ -18,7 +18,7 @@ export default function WarehouseManagement() {
   const [selectedBin, setSelectedBin] = useState<WarehouseBin | null>(null);
   const [binStock, setBinStock] = useState<BinAssignment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [locationId, setLocationId] = useState("LOC-MAIN"); // Mock default
+  const [locationId, setLocationId] = useState(session.locationId || "MAIN"); // Default to session location or "MAIN"
 
   const loadBins = useCallback(async () => {
     try {
@@ -52,7 +52,12 @@ export default function WarehouseManagement() {
         title="Warehouse & Bin Management"
         subtitle="Configure physical storage hierarchy and track stock at the bin level."
         primaryAction={
-          <Button className="flex items-center gap-2">
+          <Button onClick={() => {
+            inventoryService.initiateAudit(session.tenantId, session, {
+              location_code: locationId,
+              scope: "FULL",
+            });
+          }} className="flex items-center gap-2">
             <Plus className="h-4 w-4" /> Create New Bin
           </Button>
         }
@@ -72,7 +77,9 @@ export default function WarehouseManagement() {
                 className="pl-8"
               />
             </div>
-            <Button variant="outline" size="icon">
+            <Button onClick={() => {
+              inventoryService.listAuditCycles(session.tenantId, session);
+            }} variant="outline" size="icon">
               <Search className="h-4 w-4" />
             </Button>
           </div>
@@ -171,7 +178,12 @@ export default function WarehouseManagement() {
                             <span className="font-mono font-semibold">{stock.qty}</span>
                           </td>
                           <td className="p-3 text-right">
-                            <Button variant="ghost" size="sm" className="h-8 text-xs">Transfer</Button>
+                            <Button onClick={() => {
+                              inventoryService.initiateAudit(session.tenantId, session, {
+                                location_code: locationId,
+                                scope: "INCREMENTAL",
+                              });
+                            }} variant="ghost" size="sm" className="h-8 text-xs">Transfer</Button>
                           </td>
                         </tr>
                       ))
@@ -181,10 +193,15 @@ export default function WarehouseManagement() {
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
-                <Button variant="outline" className="flex items-center gap-2">
+                <Button onClick={(e) => { e.preventDefault(); window.print(); }} variant="outline" className="flex items-center gap-2">
                    Print Label
                 </Button>
-                <Button className="flex items-center gap-2">
+                <Button onClick={() => {
+                  inventoryService.initiateAudit(session.tenantId, session, {
+                    location_code: locationId,
+                    scope: "FULL",
+                  });
+                }} className="flex items-center gap-2">
                   <Plus className="h-4 w-4" /> Move Stock In
                 </Button>
               </div>

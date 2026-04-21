@@ -50,6 +50,8 @@ type TenantPaymentStore = {
   settlements: PaymentSettlement[];
   evidence: PaymentEvidencePack[];
   audit: PaymentAuditEvent[];
+  settings: any;
+  gatewayAccounts: Map<string, any>;
 };
 
 @Injectable()
@@ -270,6 +272,13 @@ export class PaymentMockRepository extends IPaymentRepository {
       settlements,
       evidence,
       audit: [],
+      settings: {
+        id: this.id("settings"),
+        tenant_id,
+        fee_absorption_mode: "MERCHANT",
+        is_gateway_active: true,
+      },
+      gatewayAccounts: new Map(),
     };
     this.store.set(tenant_id, seeded);
     return seeded;
@@ -375,6 +384,10 @@ export class PaymentMockRepository extends IPaymentRepository {
       destination: dto.destination,
       source: dto.source,
       channel: dto.channel ?? "bank_transfer",
+      method: dto.method ?? "GATEWAY",
+      provider: dto.provider ?? "STRIPE",
+      paymentStatus: "PENDING",
+      externalRef: dto.externalRef,
       idempotency_key: key,
       status: "approval_pending",
       retryAttempts: [],
@@ -904,5 +917,102 @@ export class PaymentMockRepository extends IPaymentRepository {
 
   async getAuditEvents(tenant_id: string): Promise<PaymentAuditEvent[]> {
     return this.getStore(tenant_id).audit;
+  }
+
+  async getPaymentSettings(tenant_id: string): Promise<any> {
+    return this.getStore(tenant_id).settings;
+  }
+
+  async updatePaymentSettings(tenant_id: string, data: any): Promise<any> {
+    const store = this.getStore(tenant_id);
+    store.settings = { ...store.settings, ...data };
+    return store.settings;
+  }
+
+  async getGatewayAccount(tenant_id: string, provider: string): Promise<any> {
+    return this.getStore(tenant_id).gatewayAccounts.get(provider);
+  }
+
+  async upsertGatewayAccount(tenant_id: string, data: any): Promise<any> {
+    const store = this.getStore(tenant_id);
+    store.gatewayAccounts.set(data.provider || "STRIPE", data);
+    return data;
+  }
+
+  async updateTransactionStatus(
+    tenant_id: string,
+    id: string,
+    data: {
+      status: "PENDING" | "PAID" | "FAILED" | "SETTLED" | "REFUNDED";
+      external_ref?: string;
+      platform_fee?: number;
+      gateway_fee?: number;
+      net_amount?: number;
+    },
+    actor_id: string,
+  ): Promise<PaymentTransaction> {
+    const payment = this.findTransaction(tenant_id, id);
+    payment.paymentStatus = data.status;
+    payment.externalRef = data.external_ref;
+    payment.platformFee = data.platform_fee;
+    payment.gatewayFee = data.gateway_fee;
+    payment.netAmount = data.net_amount;
+    payment.status = data.status === "PAID" ? "settled" : data.status === "FAILED" ? "failed" : data.status === "REFUNDED" ? "refunded" : "executing";
+    payment.updated_at = this.now();
+
+    this.addAudit(
+      tenant_id,
+      actor_id,
+      `gateway.payment_${data.status.toLowerCase()}`,
+      "transaction",
+      payment.id,
+      JSON.stringify(data),
+    );
+
+    return payment;
+  }
+
+  // Idempotency Tracking
+  private readonly webhookEvents = new Set<string>();
+
+  async checkAndInsertWebhookEvent(
+    event_id: string,
+    provider: string,
+    payload: any,
+  ): Promise<boolean> {
+    const key = `${provider}:${event_id}`;
+    if (this.webhookEvents.has(key)) return false;
+    this.webhookEvents.add(key);
+    return true;
+  }
+
+  // Platform Ledger Tracking
+  private readonly platformFeeLedger: any[] = [];
+
+  async createPlatformFeeLedger(
+    tenant_id: string,
+    transaction_id: string,
+    amount: number,
+    provider: string,
+  ): Promise<void> {
+    this.platformFeeLedger.push({
+      id: this.id("fee"),
+      tenant_id,
+      payment_transaction_id: transaction_id,
+      amount,
+      provider,
+      created_at: this.now(),
+    });
+  }
+
+  async findPendingTransactions(): Promise<PaymentTransaction[]> {
+    const pending: PaymentTransaction[] = [];
+    for (const [tenant_id, store] of (this as any).store.entries()) {
+      const txs = store.transactions.filter(
+        (t: any) => t.paymentStatus === "PENDING" && t.method === "GATEWAY",
+      );
+      pending.push(...txs);
+    }
+    return pending;
   }
 }

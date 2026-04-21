@@ -3,6 +3,8 @@ import { IHRRepository } from "./repositories/hr.repository.interface";
 import { UploadComplianceDocumentDto } from "./dto/upload-compliance-document.dto";
 import { EventBusService } from "../../shared/events/event-bus.service";
 import { OcrService } from "./ocr.service";
+import { AuditService } from "../../shared/audit/audit.service";
+import { NotificationService } from "../../shared/comms/notification.service";
 
 @Injectable()
 export class ComplianceService {
@@ -12,6 +14,8 @@ export class ComplianceService {
     private readonly repository: IHRRepository,
     private readonly eventBus: EventBusService,
     private readonly ocrService: OcrService,
+    private readonly auditService: AuditService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async uploadDocument(tenant_id: string, dto: UploadComplianceDocumentDto, user_id: string) {
@@ -104,6 +108,32 @@ export class ComplianceService {
       this.logger.warn(`Document ${doc.id} for employee ${doc.employee_id} has expired`);
       await this.repository.verifyDocument(tenant_id, doc.id, "SYSTEM", "EXPIRED");
       
+      // CRITICAL: Log to global audit chain
+      await this.auditService.log({
+        tenant_id,
+        user_id: "SYSTEM",
+        module: "HR",
+        action: "DOCUMENT_EXPIRED",
+        entity_type: "COMPLIANCE_DOCUMENT",
+        entity_id: doc.id,
+        metadata: {
+          employee_id: doc.employee_id,
+          documentType: doc.documentType,
+          severity: "HIGH",
+        },
+      });
+
+      // Notify HR Manager / Owner
+      await this.notificationService.createNotification({
+        tenant_id,
+        user_id: "SYSTEM", // Broadcast or find specific HR manager
+        title: "Compliance Alert: Document Expired",
+        message: `The ${doc.documentType} for employee ${doc.employee_id} has expired. Immediate action required.`,
+        type: "COMPLIANCE_ALERT",
+        priority: "HIGH",
+        event_reference_id: doc.id,
+      });
+
       await this.eventBus.publish({
         event_type: "compliance.document_expired",
         tenant_id,

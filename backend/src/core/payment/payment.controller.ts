@@ -34,7 +34,7 @@ interface RequestWithTenant extends Request {
   tenantContext: TenantContext;
 }
 
-@Controller("payment")
+@Controller("v1/payment")
 @UseInterceptors(TenantInterceptor)
 @UseGuards(ModuleStateGuard, BranchGatingGuard, TenantGuard)
 @RequiredModule("payment")
@@ -77,6 +77,16 @@ export class PaymentController {
         ...dashboardData,
         moduleContributions,
       },
+    };
+  }
+
+  @Get("status")
+  async getPaymentStatus(@Req() request: RequestWithTenant) {
+    const { tenant_id } = request.tenantContext;
+    return {
+      success: true,
+      tenant_id,
+      data: await this.paymentService.getPaymentStatus(tenant_id),
     };
   }
 
@@ -194,6 +204,24 @@ export class PaymentController {
       data: await this.paymentService.settleTransaction(
         tenant_id,
         paymentId,
+        this.actor_id(request),
+      ),
+    };
+  }
+
+  @Post("transactions/settle-batch")
+  async settleBatch(
+    @Req() request: RequestWithTenant,
+    @Body() dto: { transactionIds: string[] },
+  ) {
+    const { tenant_id } = request.tenantContext;
+    return {
+      success: true,
+      tenant_id,
+      message: "Batch settlement processed",
+      data: await this.paymentService.settleBatch(
+        tenant_id,
+        dto,
         this.actor_id(request),
       ),
     };
@@ -456,4 +484,83 @@ export class PaymentController {
     const data = await this.paymentService.getAuditEvents(tenant_id);
     return { success: true, tenant_id, count: data.length, data };
   }
+
+  @Get("settings")
+  async getSettings(@Req() request: RequestWithTenant) {
+    const { tenant_id } = request.tenantContext;
+    return {
+      success: true,
+      tenant_id,
+      data: await this.paymentService.getPaymentSettings(tenant_id),
+    };
+  }
+
+  @Put("settings")
+  async updateSettings(
+    @Req() request: RequestWithTenant,
+    @Body() data: any,
+  ) {
+    const { tenant_id } = request.tenantContext;
+    return {
+      success: true,
+      tenant_id,
+      message: "Payment settings updated",
+      data: await this.paymentService.updatePaymentSettings(tenant_id, data),
+    };
+  }
+
+  @Post("cash")
+  async processCash(
+    @Req() request: RequestWithTenant,
+    @Body() dto: CreatePaymentTransactionDto,
+  ) {
+    const { tenant_id } = request.tenantContext;
+    return {
+      success: true,
+      tenant_id,
+      message: "Cash payment confirmed",
+      data: await this.paymentService.processCash(
+        tenant_id,
+        dto,
+        this.actor_id(request),
+      ),
+    };
+  }
+
+  @Post("edc")
+  async confirmEDC(
+    @Req() request: RequestWithTenant,
+    @Body() dto: CreatePaymentTransactionDto,
+  ) {
+    const { tenant_id } = request.tenantContext;
+    return {
+      success: true,
+      tenant_id,
+      message: "EDC payment confirmed",
+      data: await this.paymentService.confirmEDC(
+        tenant_id,
+        dto,
+        this.actor_id(request),
+      ),
+    };
+  }
+
+  @Post("gateway/init")
+  async initGateway(
+    @Req() request: RequestWithTenant,
+    @Body() dto: CreatePaymentTransactionDto,
+  ) {
+    const { tenant_id } = request.tenantContext;
+    return {
+      success: true,
+      tenant_id,
+      message: "Gateway sequence started",
+      data: await this.paymentService.createGatewayPayment(
+        tenant_id,
+        dto,
+        this.actor_id(request),
+      ),
+    };
+  }
 }
+

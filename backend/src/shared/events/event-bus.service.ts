@@ -401,11 +401,33 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Safe replay capability for failed events
+   * GET_STUCK_EVENTS_COUNT
+   * Identify events that are effectively orphans or deadlocked in PROCESSING
    */
-  async replayEvent(eventId: string, force: boolean = false) {
-    const event = await this.prisma.domain_events.findUnique({ where: { id: eventId } });
-    if (!event) throw new Error(`Event ${eventId} not found`);
+  async getStuckEventsCount(tenant_id: string) {
+    const timeoutThreshold = new Date(Date.now() - 60000); // 60 seconds
+    const processing = await this.prisma.domain_events.count({
+      where: { 
+        tenant_id, 
+        status: 'PROCESSING',
+        processing_started_at: { lt: timeoutThreshold }
+      }
+    });
+    const failed = await this.prisma.domain_events.count({
+      where: { tenant_id, status: 'FAILED' }
+    });
+    return { processing, failed };
+  }
+
+  /**
+   * Safe replay capability for failed events.
+   * Enforces tenant isolation.
+   */
+  async replayEvent(tenant_id: string, eventId: string, force: boolean = false) {
+    const event = await this.prisma.domain_events.findUnique({ 
+      where: { id: eventId, tenant_id } 
+    });
+    if (!event) throw new Error(`Event ${eventId} not found for tenant ${tenant_id}`);
 
     if (event.status === 'PROCESSED' && !force) {
       this.logger.warn(`Event ${eventId} is already PROCESSED. Skipping replay unless forced.`);
@@ -430,13 +452,14 @@ export class EventBusService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Visibility: Query failed events (DLQ)
+   * Visibility: Query failed events (DLQ) for a specific tenant.
    */
-  async getFailedEvents() {
+  async getFailedSnapshot(tenant_id: string) {
     return this.prisma.domain_events.findMany({
-      where: { status: 'FAILED' },
+      where: { tenant_id, status: 'FAILED' },
       include: { event_deliveries: { where: { status: 'DLQ' } } },
-      orderBy: { created_at: 'desc' }
+      orderBy: { created_at: 'desc' },
+      take: 50
     });
   }
 

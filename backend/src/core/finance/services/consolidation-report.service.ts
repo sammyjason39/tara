@@ -116,18 +116,18 @@ export class ConsolidationReportService {
       const weight = 1.0; 
       const share = member.ownershipPercentage || 0;
 
-      totalRevenue += report.summary.totalRevenue * weight;
-      totalExpense += report.summary.totalExpense * weight;
+      totalRevenue += report.summary.totalRevenue.toNumber() * weight;
+      totalExpense += report.summary.totalExpense.toNumber() * weight;
       
-      const memberNetProfit = report.summary.totalRevenue - report.summary.totalExpense;
+      const memberNetProfit = report.summary.totalRevenue.toNumber() - report.summary.totalExpense.toNumber();
       nciProfit += memberNetProfit * (1 - share);
 
       details.push(...report.details.map((d: any) => ({
         ...d,
         company_id: member.company_id,
-        amount: d.amount * weight,
-        parentShare: d.amount * share,
-        nciShare: d.amount * (1 - share)
+        amount: d.amount.toNumber() * weight,
+        parentShare: d.amount.toNumber() * share,
+        nciShare: d.amount.toNumber() * (1 - share)
       })));
     }
 
@@ -162,10 +162,10 @@ export class ConsolidationReportService {
       const share = member.ownershipPercentage || 0;
       const weight = 1.0; // 100% consolidation
 
-      totalAssets += report.summary.totalAssets * weight;
-      totalLiabilities += report.summary.totalLiabilities * weight;
+      totalAssets += report.summary.totalAssets.toNumber() * weight;
+      totalLiabilities += report.summary.totalLiabilities.toNumber() * weight;
       
-      const memberEquity = report.summary.totalEquity + plReport.summary.netProfit;
+      const memberEquity = report.summary.totalEquity.toNumber() + plReport.summary.netProfit.toNumber();
       totalEquity += memberEquity * share; // Parent portion of equity
       totalNCI += memberEquity * (1 - share); // NCI portion of equity
 
@@ -173,14 +173,14 @@ export class ConsolidationReportService {
         sections[key].push(...report.sections[key].map((s: any) => ({
           ...s,
           company_id: member.company_id,
-          amount: s.amount * weight
+          amount: s.amount.toNumber() * weight
         })));
       }
       // Add Net Income and NCI as virtual lines
       sections.EQUITY.push({
         accountId: 'VIRTUAL_NET_INCOME',
         company_id: member.company_id,
-        amount: plReport.summary.netProfit * share,
+        amount: plReport.summary.netProfit.toNumber() * share,
         isVirtual: true
       });
     }

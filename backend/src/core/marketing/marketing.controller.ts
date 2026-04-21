@@ -33,7 +33,7 @@ interface RequestWithTenant extends Request {
   tenantContext: TenantContext;
 }
 
-@Controller("marketing")
+@Controller("v1/marketing")
 @UseInterceptors(TenantInterceptor)
 @UseGuards(ModuleStateGuard, BranchGatingGuard, TenantGuard)
 @RequiredModule("marketing")
@@ -379,3 +379,4 @@ export class MarketingController {
     return { success: true, tenant_id, count: data.length, data };
   }
 }
+

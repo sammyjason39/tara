@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { useSession } from "@/core/security/session";
+import { apiRequest } from "@/core/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -104,19 +105,18 @@ export default function ChatHub() {
   const fetchRooms = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/comms/chat/rooms", {
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
-      });
-      const data = await response.json();
+      const data = await apiRequest<ChatRoom[]>("/comms/chat/rooms", "GET", session);
       setRooms(data || []);
-      if (data.length > 0 && !selectedRoom) {
+      if (data && data.length > 0 && !selectedRoom) {
         setSelectedRoom(data[0]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch rooms:", error);
+      toast({
+        title: "Sync Error",
+        description: "Failed to establish room list.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -124,40 +124,26 @@ export default function ChatHub() {
 
   const fetchEmployees = useCallback(async () => {
     try {
-      const response = await fetch("/api/hr/employees", {
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
-      });
-      const data = await response.json();
+      const data = await apiRequest<any>("/hr/employees", "GET", session);
       setEmployees(data.data || []);
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to fetch employees:", e);
     }
   }, [session]);
 
   const fetchMessages = useCallback(async (roomId: string) => {
-    // Clear messages immediately to avoid showing stale data from previous room
     setMessages([]);
     try {
-      const response = await fetch(`/api/comms/chat/rooms/${roomId}/messages`, {
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
-      });
-      const data = await response.json();
+      const data = await apiRequest<any>(`/comms/chat/rooms/${roomId}/messages`, "GET", session);
       const messagesArray = Array.isArray(data) ? data : (data?.messages || []);
       
-      // Secondary safety check: only apply if this room is still selected
       setSelectedRoom(current => {
         if (current?.id === roomId) {
           setMessages([...messagesArray].reverse());
         }
         return current;
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch messages:", error);
     }
   }, [session]);
@@ -180,7 +166,6 @@ export default function ChatHub() {
     });
 
     socketRef.current.on("newMessage", (msg: ChatMessage) => {
-      // Only append if the message belongs to the currently active room
       setSelectedRoom(currentRoom => {
         if (currentRoom && msg.roomId === currentRoom.id) {
           setMessages(prev => [...prev, msg]);
@@ -219,33 +204,24 @@ export default function ChatHub() {
     };
 
     try {
-      const response = await fetch("/api/comms/chat/rooms", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.token}`,
-          "x-tenant-id": session.tenantId,
-        },
-        body: JSON.stringify(payload),
+      const room = await apiRequest<ChatRoom>("/comms/chat/rooms", "POST", session, payload);
+      setIsNewRoomOpen(false);
+      setSelectedEmps([]);
+      setGroupName("");
+      toast({ title: "Channel Established", description: "Communication line open." });
+      fetchRooms();
+      setSelectedRoom(room);
+    } catch (e: any) {
+      toast({ 
+        title: "Establishment Failed", 
+        description: e.message || "Failed to open channel.", 
+        variant: "destructive" 
       });
-      if (response.ok) {
-        const room = await response.json();
-        setIsNewRoomOpen(false);
-        setSelectedEmps([]);
-        setGroupName("");
-        toast({ title: "Channel Established", description: "Communication line open." });
-        fetchRooms();
-        setSelectedRoom(room);
-      }
-    } catch (e) {
-      toast({ title: "Error", description: "Failed to open channel.", variant: "destructive" });
     }
   };
 
   const filteredEmployees = employees.filter(emp => {
-    // Only chat with employees who have a user account, and exclude self
     if (!emp.userId || emp.userId === session.userId) return false;
-    
     const matchesSearch = emp.fullName?.toLowerCase().includes(empFilter.search.toLowerCase());
     const matchesDept = empFilter.dept === 'all' || emp.departmentId === empFilter.dept;
     return matchesSearch && matchesDept;
@@ -305,7 +281,7 @@ export default function ChatHub() {
                   onClick={() => setSelectedRoom(room)}
                   className={`p-4 flex gap-4 rounded-2xl cursor-pointer transition-all border-l-4 ${selectedRoom?.id === room.id ? "bg-primary/5 border-l-primary" : "border-l-transparent hover:bg-muted/30"}`}
                 >
-                  <div className={`h-12 w-12 rounded-2xl flex items-center justify-center font-black relative shadow-sm ${room.type === 'DIRECT' ? 'bg-indigo-500/10 text-indigo-500' : 'bg-primary/10 text-primary'}`}>
+                   <div className={`h-12 w-12 rounded-2xl flex items-center justify-center font-black relative shadow-sm ${room.type === 'DIRECT' ? 'bg-indigo-500/10 text-indigo-500' : 'bg-primary/10 text-primary'}`}>
                     {room.name?.[0] || 'C'}
                     {room.unreadCount > 0 && <span className="absolute -top-1 -right-1 h-3 w-3 bg-primary rounded-full border-2 border-white dark:border-slate-900 animate-ping" />}
                   </div>
@@ -351,7 +327,7 @@ export default function ChatHub() {
                          <Video className="h-5 w-5" />
                        </Button>
                        <div className="h-6 w-px bg-slate-100 mx-2" />
-                       <Button variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground"><MoreHorizontal className="h-5 w-5" /></Button>
+                       <Button disabled title="Not available yet" variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground"><MoreHorizontal className="h-5 w-5" /></Button>
                     </div>
                  </div>
 
@@ -373,13 +349,13 @@ export default function ChatHub() {
                                <div className={`absolute top-0 -translate-y-full flex gap-1 p-1 bg-white dark:bg-slate-800 border rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-opacity z-10 ${isMe ? "right-0" : "left-0"}`}>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-6 w-6"><Reply className="h-3 w-3" /></Button>
+                                      <Button disabled title="Not available yet" variant="ghost" size="icon" className="h-6 w-6"><Reply className="h-3 w-3" /></Button>
                                     </TooltipTrigger>
                                     <TooltipContent>Reply</TooltipContent>
                                   </Tooltip>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-6 w-6"><Forward className="h-3 w-3" /></Button>
+                                      <Button disabled title="Not available yet" variant="ghost" size="icon" className="h-6 w-6"><Forward className="h-3 w-3" /></Button>
                                     </TooltipTrigger>
                                     <TooltipContent>Forward</TooltipContent>
                                   </Tooltip>
@@ -436,7 +412,6 @@ export default function ChatHub() {
                 <DialogTitle className="text-3xl font-black tracking-tighter">{activeCreationMode === 'DIRECT' ? 'Direct Link' : 'New Tactical Group'}</DialogTitle>
                 <div className="text-[10px] font-black tracking-widest text-muted-foreground uppercase mt-1">Personnel Selection Required</div>
               </div>
-              {/* Manual Close removed to favor standard Dialog Close or provided header button */}
             </div>
             
             <div className="p-8 flex gap-8">
@@ -547,10 +522,10 @@ export default function ChatHub() {
 
               <div className="flex gap-6 relative z-10 pt-10">
                 <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => setCallStatus("off")}
-                  className="h-20 w-20 rounded-[2.5rem] bg-rose-500 hover:bg-rose-600 text-white shadow-xl shadow-rose-500/20 active:scale-90 transition-all"
+                   variant="ghost" 
+                   size="icon" 
+                   onClick={() => setCallStatus("off")}
+                   className="h-20 w-20 rounded-[2.5rem] bg-rose-500 hover:bg-rose-600 text-white shadow-xl shadow-rose-500/20 active:scale-90 transition-all"
                 >
                   <X className="h-8 w-8" />
                 </Button>

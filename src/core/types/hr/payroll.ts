@@ -1,6 +1,6 @@
 import type { HRAuditFields } from "./base";
 
-export type PayrollRunStatus = "draft" | "calculated" | "approved" | "exported";
+export type PayrollRunStatus = "draft" | "DRAFT" | "calculated" | "APPROVED" | "EXPORTED" | "DISBURSED";
 
 export interface PayrollRun extends HRAuditFields {
   id: string;
@@ -14,6 +14,7 @@ export interface PayrollRun extends HRAuditFields {
   approvalId?: string;
   approvedBy?: string;
   exportedAt?: string;
+  disbursedAt?: string;
 }
 
 export interface PayrollLine extends HRAuditFields {

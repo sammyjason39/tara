@@ -16,7 +16,7 @@ export interface Department {
 
 export const orgService = {
   async getOrgMap(tenantId: string, actor: SessionContext): Promise<Department[]> {
-    const departments = await apiRequest<Department[]>("/hr/departments", "GET", actor);
+    const departments = await apiRequest<Department[]>("/v1/hr/departments", "GET", actor);
     
     // Enriching with some UI-specific metrics if not provided by backend
     return departments.map(d => ({
@@ -32,7 +32,7 @@ export const orgService = {
     actor: SessionContext,
     payload: { id?: string; name: string; code: string; status: "active" | "inactive"; headId?: string },
   ): Promise<Department> {
-    return apiRequest<Department>("/hr/departments", "POST", actor, payload);
+    return apiRequest<Department>("/v1/hr/departments", "POST", actor, payload);
   },
 
   async escalateStaffingRisk(tenantId: string, actor: SessionContext, departmentId: string, reason?: string) {
@@ -73,3 +73,4 @@ export const orgService = {
     });
   },
 };
+

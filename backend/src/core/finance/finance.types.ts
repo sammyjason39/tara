@@ -21,6 +21,34 @@ export interface CapexRequest {
   requesterId: string;
 }
 
+export interface BankStatement {
+  id: string;
+  bankName: string;
+  accountNumber: string;
+  balance: Prisma.Decimal;
+  currency: string;
+  status: 'ACTIVE' | 'ARCHIVED';
+}
+
+export interface BankTransaction {
+  id: string;
+  date: Date;
+  description: string;
+  amount: Prisma.Decimal;
+  reference?: string;
+  status: 'UNRECONCILED' | 'AUTO_MATCHED' | 'MANUAL_MATCHED' | 'RECONCILED';
+}
+
+export interface PerformanceTreeNode {
+  id: string;
+  name: string;
+  type: 'TENANT' | 'BRANCH' | 'STORE' | 'ECOMMERCE' | 'DEPARTMENT';
+  income: Prisma.Decimal;
+  expense: Prisma.Decimal;
+  net: Prisma.Decimal;
+  children?: PerformanceTreeNode[];
+}
+
 export interface FinanceCapexBudgetRow {
   department: string;
   allocatedBudget: Prisma.Decimal;

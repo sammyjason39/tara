@@ -54,7 +54,7 @@ const logEvent = (
   detail: string,
 ) => {
   // Direct API call for audit
-  apiRequest("/procurement/audit-events", "POST", session, {
+  apiRequest("/v1/procurement/audit-events", "POST", session, {
     actorId: session.userId,
     action,
     entityType,
@@ -80,7 +80,7 @@ const createOpenRisk = async (
   entityId: string,
   detail: string,
 ) => {
-  return apiRequest<RiskSignal>("/procurement/risk-signals", "POST", session, {
+  return apiRequest<RiskSignal>("/v1/procurement/risk-signals", "POST", session, {
     code,
     severity,
     status: "OPEN",
@@ -91,19 +91,19 @@ const createOpenRisk = async (
 
 export const procurementService = {
   listSupplierMasters: async (tenantId: string, session: SessionContext) =>
-    apiRequest<SupplierMaster[]>("/procurement/suppliers", "GET", session),
+    apiRequest<SupplierMaster[]>("/v1/procurement/suppliers", "GET", session),
 
   listSupplierBranches: async (tenantId: string, session: SessionContext) =>
-    apiRequest<SupplierBranch[]>("/procurement/branches", "GET", session),
+    apiRequest<SupplierBranch[]>("/v1/procurement/branches", "GET", session),
 
   listSupplierProducts: async (tenantId: string, session: SessionContext) =>
-    apiRequest<SupplierProduct[]>("/procurement/products", "GET", session),
+    apiRequest<SupplierProduct[]>("/v1/procurement/products", "GET", session),
 
   listRequisitions: async (tenantId: string, session: SessionContext) =>
-    apiRequest<Requisition[]>("/procurement/requisitions", "GET", session),
+    apiRequest<Requisition[]>("/v1/procurement/requisitions", "GET", session),
 
   listDraftPurchaseOrders: async (tenantId: string, session: SessionContext) =>
-    apiRequest<DraftPurchaseOrder[]>("/procurement/draft-pos", "GET", session),
+    apiRequest<DraftPurchaseOrder[]>("/v1/procurement/draft-pos", "GET", session),
 
   listFinalPurchaseOrders: async (tenantId: string, session: SessionContext) =>
     apiRequest<FinalPurchaseOrder[]>(
@@ -113,14 +113,14 @@ export const procurementService = {
     ),
 
   listContracts: async (tenantId: string, session: SessionContext) =>
-    apiRequest<ContractRecord[]>("/procurement/contracts", "GET", session),
+    apiRequest<ContractRecord[]>("/v1/procurement/contracts", "GET", session),
 
   listPortalMessages: async (tenantId: string, session: SessionContext) => [], // Backend placeholder
 
   listRatingLogs: async (tenantId: string, session: SessionContext) => [], // Backend placeholder
 
   listRiskSignals: async (tenantId: string, session: SessionContext) =>
-    apiRequest<RiskSignal[]>("/procurement/risk-signals", "GET", session),
+    apiRequest<RiskSignal[]>("/v1/procurement/risk-signals", "GET", session),
 
   listAuditEvents: async (tenantId: string, session: SessionContext) =>
     apiRequest<ProcurementAuditEvent[]>(
@@ -130,19 +130,19 @@ export const procurementService = {
     ),
 
   listCategories: async (tenantId: string, session: SessionContext) =>
-    apiRequest<any[]>("/procurement/categories", "GET", session),
+    apiRequest<any[]>("/v1/procurement/categories", "GET", session),
 
   upsertCategory: async (
     tenantId: string,
     session: SessionContext,
     payload: { id?: string; name: string; description?: string; active?: boolean },
-  ) => apiRequest<any>("/procurement/categories/upsert", "POST", session, payload),
+  ) => apiRequest<any>("/v1/procurement/categories/upsert", "POST", session, payload),
 
   deleteCategory: async (tenantId: string, session: SessionContext, id: string) =>
     apiRequest<any>(`/procurement/categories/${id}`, "DELETE", session),
 
   getOverview: async (tenantId: string, session: SessionContext) =>
-    apiRequest<any>("/procurement/overview", "GET", session),
+    apiRequest<any>("/v1/procurement/overview", "GET", session),
 
   listLegalHandoffs: async (tenantId: string, session: SessionContext) =>
     await procurementIntegrationAdapters.listLegalHandoffs(tenantId, session),
@@ -607,7 +607,7 @@ export const procurementService = {
     const result = await apiRequest<{
       receipt: ReceiptRecord;
       rating: RatingLog;
-    }>("/procurement/receipts", "POST", session, payload);
+    }>("/v1/procurement/receipts", "POST", session, payload);
     return result;
   },
 
@@ -616,7 +616,7 @@ export const procurementService = {
     session: SessionContext,
   ): Promise<RiskSignal[]> {
     ensureTenant(tenantId, session);
-    return apiRequest<RiskSignal[]>("/procurement/risk-scan", "POST", session);
+    return apiRequest<RiskSignal[]>("/v1/procurement/risk-scan", "POST", session);
   },
 
   async getSupplierRecommendations(
@@ -699,3 +699,4 @@ export const procurementService = {
     return { id: handoffId, status: "ACKNOWLEDGED" };
   },
 };
+

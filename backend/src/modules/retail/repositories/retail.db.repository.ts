@@ -19,6 +19,7 @@ import {
   UpdateEcommerceStoreDto,
   CreateInventoryPoolDto,
   UpdateProductDto,
+  CheckoutDto,
 } from "../dto/retail.dto";
 import { v4 as uuidv4 } from "uuid";
 import { createHash } from "crypto";
@@ -970,6 +971,52 @@ export class RetailDbRepository implements IRetailRepository {
     return shifts.map((s: prismaShift) => this.mapShift(s));
   }
 
+  async getShift(
+    tenant_id: string,
+    shift_id: string,
+  ): Promise<RetailShift | null> {
+    const shift = await this.prisma.retail_shifts.findFirst({
+      where: { id: shift_id, tenant_id: tenant_id },
+    });
+    return shift ? this.mapShift(shift) : null;
+  }
+
+  async updateShiftStatus(
+    tenant_id: string,
+    shift_id: string,
+    status: string,
+  ): Promise<RetailShift> {
+    const shift = await this.prisma.retail_shifts.update({
+      where: { id: shift_id, tenant_id: tenant_id },
+      data: { status: status as any },
+    });
+    return this.mapShift(shift);
+  }
+
+  async reconcileShift(
+    tenant_id: string,
+    shift_id: string,
+    data: {
+      actual_cash: Prisma.Decimal;
+      variance: Prisma.Decimal;
+      reason: string;
+    },
+    tx?: Prisma.TransactionClient,
+  ): Promise<RetailShift> {
+    const db = tx || this.prisma;
+    const shift = await db.retail_shifts.update({
+      where: { id: shift_id, tenant_id: tenant_id },
+      data: {
+        status: "reconciled",
+        actual_cash: data.actual_cash,
+        variance: data.variance,
+        reconciliation_reason: data.reason,
+      },
+    });
+    return this.mapShift(shift);
+  }
+
+
   // ============================================================
   // PROMOTIONS
   // ============================================================
@@ -1350,13 +1397,411 @@ export class RetailDbRepository implements IRetailRepository {
   async processReturn(
     tenant_id: string,
     order_id: string,
-    data: { itemIds: string[]; shift_id?: string },
+    data: {
+      itemIds: string[];
+      shift_id?: string;
+      conditions?: Array<{
+        productId: string;
+        condition: "good" | "damaged_repairable" | "damaged_unrepairable";
+        notes?: string;
+      }>;
+    },
+    tx?: Prisma.TransactionClient,
   ): Promise<{ success: boolean }> {
-    await this.prisma.retail_orders.update({
-      where: { id: order_id, tenant_id: tenant_id },
+    const db = tx ?? this.prisma;
+
+    // 1. Fetch Order Items to verify existence and check idempotency
+    const orderItems = await db.retail_order_items.findMany({
+      where: {
+        id: { in: data.itemIds },
+        order_id: order_id,
+        tenant_id: tenant_id,
+      },
+    });
+
+    if (orderItems.length !== data.itemIds.length) {
+      throw new Error("Some items not found in order");
+    }
+
+    // 2. Idempotency Check: Fail if any item already returned
+    const alreadyReturned = orderItems.filter((i) => i.returned_at !== null);
+    if (alreadyReturned.length > 0) {
+      throw new Error(
+        `Items already returned: ${alreadyReturned.map((i) => i.id).join(", ")}`,
+      );
+    }
+
+    // 3. Mark items as returned
+    await db.retail_order_items.updateMany({
+      where: { id: { in: data.itemIds } },
+      data: { returned_at: new Date() },
+    });
+
+    // 4. Update order status to refunded
+    await db.retail_orders.update({
+      where: { id: order_id },
       data: { status: "refunded" },
     });
+
     return { success: true };
+  }
+
+
+  async voidOrder(
+    tenant_id: string,
+    order_id: string,
+    user_id: string,
+  ): Promise<RetailOrder> {
+    const order = await this.prisma.retail_orders.findUnique({
+      where: { id: order_id, tenant_id: tenant_id },
+      include: { retail_order_items: true },
+    });
+
+
+    if (!order) throw new Error("Order not found");
+    if (order.status === "cancelled" || order.status === "refunded") {
+      throw new Error("Order already finalized and cannot be voided");
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Mark as cancelled (voided)
+      const updated = await tx.retail_orders.update({
+        where: { id: order_id },
+        data: { status: "cancelled" },
+      });
+
+      // 2. Full Inventory Restoration
+      // 2. Full Inventory Restoration
+      for (const item of (order as any).retail_order_items) {
+        await tx.stock_levels.updateMany({
+          where: {
+            tenant_id,
+            product_id: item.product_id,
+            location_id: (order as any).store_id,
+          },
+          data: {
+            on_hand: { increment: item.quantity },
+            available: { increment: item.quantity },
+          },
+        });
+      }
+
+
+
+      // 3. Audit Log
+      await tx.audit_logs.create({
+        data: {
+          id: Math.random().toString(36).substring(2, 10),
+          tenant_id: tenant_id,
+          module: "retail",
+          action: "VOID",
+          entity_type: "ORDER",
+          entity_id: order_id,
+          user_id: user_id,
+          created_at: new Date(),
+        },
+      });
+
+      return this.mapOrder(updated);
+    });
+  }
+
+  async cancelOrder(
+    tenant_id: string,
+    order_id: string,
+    user_id: string,
+  ): Promise<RetailOrder> {
+    // Cancellation before payment usually just releases reservations
+    const order = await this.prisma.retail_orders.findUnique({
+      where: { id: order_id, tenant_id: tenant_id },
+      include: { retail_order_items: true },
+    });
+
+
+    if (!order) throw new Error("Order not found");
+
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.retail_orders.update({
+        where: { id: order_id },
+        data: { status: "cancelled" },
+      });
+
+      if (order.status === "reserved") {
+        for (const item of (order as any).retail_order_items) {
+          await tx.stock_levels.updateMany({
+            where: {
+              tenant_id,
+              product_id: item.product_id,
+              location_id: (order as any).store_id,
+            },
+            data: {
+              reserved: { decrement: item.quantity },
+              available: { increment: item.quantity },
+            },
+          });
+        }
+      }
+
+
+
+      return this.mapOrder(updated);
+    });
+  }
+
+
+  async atomicCheckout(
+    tenant_id: string,
+    data: CheckoutDto,
+    user_id: string,
+    idempotency_key?: string,
+  ): Promise<RetailOrder> {
+    return this.prisma.$transaction(async (tx: any) => {
+      // 1. Idempotency Gatekeeper
+      if (idempotency_key) {
+        const existing = await tx.sys_idempotency_keys.findUnique({
+          where: { tenant_id_key: { tenant_id, key: idempotency_key } },
+        });
+
+        if (existing) {
+          if (existing.status === "COMPLETED") {
+            return existing.response_snapshot as unknown as RetailOrder;
+          }
+          if (existing.status === "PENDING") {
+            throw new Error(
+              "Transaction is already being processed. Please wait.",
+            );
+          }
+        }
+
+        // Create initial pending record
+        await tx.sys_idempotency_keys.create({
+          data: {
+            id: uuidv4(),
+            tenant_id,
+            key: idempotency_key,
+            endpoint: "/retail/checkout",
+            status: "PENDING",
+            expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+            response_snapshot: {},
+          },
+        });
+      }
+
+      // 2. Context Verification
+      const store = await tx.stores.findUnique({
+        where: { id: data.store_id, tenant_id },
+      });
+      if (!store) throw new Error("Store not found");
+      if (!store.location_id) {
+        throw new Error(
+          `Store ${store.name} is missing location_id. Atomic checkout aborted to prevent inventory corruption.`,
+        );
+      }
+      const location_id = store.location_id;
+
+      // 3. Fetch Finance Context
+      const [dept, mappings, activePeriod] = await Promise.all([
+        tx.departments.findFirst({ where: { tenant_id, code: "RET" } }),
+        tx.finance_system_mappings.findMany({
+          where: {
+            tenant_id,
+            system_code: { in: ["RETAIL_SALES", "RETAIL_CASH"] },
+            status: "ACTIVE",
+          },
+        }),
+        tx.accounting_periods.findFirst({
+          where: { tenant_id, status: "ACTIVE" },
+        }),
+      ]);
+
+      if (!activePeriod) throw new Error("No active accounting period found.");
+
+      const salesAccountId =
+        mappings.find((m: any) => m.system_code === "RETAIL_SALES")
+          ?.account_id || "ACC-4000";
+      const cashAccountId =
+        mappings.find((m: any) => m.system_code === "RETAIL_CASH")
+          ?.account_id || "ACC-1001";
+
+      let departmentId = dept?.id;
+      if (!departmentId) {
+        const newDept = await tx.departments.create({
+          data: {
+            id: uuidv4(),
+            updated_at: new Date(),
+            tenant_id,
+            name: "Retail Operations",
+            code: "RET",
+            status: "active",
+          },
+        });
+        departmentId = newDept.id;
+      }
+
+      // 4. Process Items & Order
+      let subtotal = 0;
+      const orderId = uuidv4();
+      const itemsData = [];
+
+      for (const item of data.items) {
+        const product = await tx.item_masters.findUnique({
+          where: { id: item.product_id },
+        });
+        if (!product) throw new Error(`Product ${item.product_id} not found`);
+
+        const q = Number(item.quantity);
+        const up = Number(item.unit_price);
+        const itemSubtotal = q * up;
+        subtotal += itemSubtotal;
+
+        // Calculate Unit Cost (Valuation Lock)
+        const costLayers = await tx.cost_layers.findMany({
+          where: { tenant_id, sku_id: product.sku, location_id, remaining_qty: { gt: 0 } }
+        });
+        
+        let totalQty = 0;
+        let totalVal = 0;
+        for (const cl of costLayers) {
+          totalQty += Number(cl.remaining_qty);
+          totalVal += Number(cl.remaining_qty) * Number(cl.unit_cost);
+        }
+        const unitCost = totalQty > 0 ? totalVal / totalQty : 0;
+
+        itemsData.push({
+          tenant_id: tenant_id,
+          variant_id: item.variant_id || null,
+          quantity: new Prisma.Decimal(q),
+          unit_price: new Prisma.Decimal(up),
+          total_price: new Prisma.Decimal(itemSubtotal),
+          unit_cost: new Prisma.Decimal(unitCost),
+          discount: new Prisma.Decimal(0),
+        });
+
+        // 5. ATOMIC STOCK DEDUCTION (Race Condition Prevention)
+        // Note: Raw query field names must match DB (snake_case)
+        const updatedCount = await tx.$executeRaw`
+          UPDATE stock_levels 
+          SET on_hand = on_hand - ${q},
+              updated_at = NOW()
+          WHERE tenant_id = ${tenant_id}
+            AND location_id = ${location_id}
+            AND product_id = ${item.product_id}
+            AND on_hand >= ${q}
+        `;
+
+        if (updatedCount === 0) {
+          throw new Error(
+            `Insufficient stock for product ${product.name} (ID: ${item.product_id})`,
+          );
+        }
+
+        // Stock Movement
+        await tx.stock_movements.create({
+          data: {
+            id: uuidv4(),
+            updated_at: new Date(),
+            tenant_id,
+            product_id: item.product_id,
+            from_location_id: location_id,
+            type: "RETAIL_SALE",
+            reference_id: orderId,
+            quantity: new Prisma.Decimal(q),
+            performed_by: user_id,
+          },
+        });
+      }
+
+      // 6. Create Order (Status: PAID)
+      const order = await tx.retail_orders.create({
+        data: {
+          id: orderId,
+          updated_at: new Date(),
+          tenant_id,
+          store_id: data.store_id,
+          device_id: data.terminal_id,
+          cashier_id: user_id,
+          customer_id: data.customer_id,
+          status: data.payment_method === "GATEWAY" || data.payment_method === "qr" ? "pending" : "paid",
+          subtotal: new Prisma.Decimal(subtotal),
+          tax: new Prisma.Decimal(Number(data.grand_total) - subtotal),
+          total_amount: new Prisma.Decimal(Number(data.grand_total)),
+          payment_method: data.payment_method,
+          retail_order_items: { create: itemsData },
+        },
+        include: {
+          retail_order_items: { include: { item_masters: true } },
+          stores: true,
+        },
+      });
+
+      // 7. Finance Tracking
+      if (data.shift_id) {
+        await tx.retail_shifts.update({
+          where: { id: data.shift_id, tenant_id },
+          data: {
+            expected_cash: {
+              increment:
+                data.payment_method.toLowerCase() === "cash"
+                  ? Number(data.payment_received)
+                  : 0,
+            },
+          },
+        });
+      }
+
+      // Journal Entry
+      await tx.finance_journal_entries.create({
+        data: {
+          id: uuidv4(),
+          updated_at: new Date(),
+          tenant_id,
+          ref_no: `POS-SALE-${orderId.slice(-6).toUpperCase()}`,
+          description: `POS Sale (${data.payment_method})`,
+          fiscal_period_id: activePeriod.id,
+          posting_date: new Date(),
+          status: "POSTED",
+          finance_journal_lines: {
+            create: [
+              {
+                tenant_id,
+                account_id: salesAccountId,
+                memo: `Sale ${orderId}`,
+                side: "CREDIT",
+                amount: new Prisma.Decimal(Number(data.grand_total)),
+                debit: new Prisma.Decimal(0),
+                credit: new Prisma.Decimal(Number(data.grand_total)),
+              },
+              {
+                tenant_id,
+                account_id: cashAccountId,
+                memo: `POS Payment`,
+                side: "DEBIT",
+                amount: new Prisma.Decimal(Number(data.grand_total)),
+                debit: new Prisma.Decimal(Number(data.grand_total)),
+                credit: new Prisma.Decimal(0),
+              },
+            ],
+          },
+        },
+      });
+
+      // Payment Transaction is now delegated to PaymentService (called by RetailService.checkout)
+
+      const result = this.mapOrder(order);
+
+      // 8. Finalize Idempotency
+      if (idempotency_key) {
+        await tx.sys_idempotency_keys.update({
+          where: { tenant_id_key: { tenant_id, key: idempotency_key } },
+          data: {
+            status: "COMPLETED",
+            response_snapshot: result as any,
+          },
+        });
+      }
+
+      return result;
+    });
   }
 
   // ============================================================
@@ -1871,13 +2316,13 @@ export class RetailDbRepository implements IRetailRepository {
       id: o.id,
       tenant_id: o.tenant_id,
       location_id: o.stores?.location_id || "",
-      store_id: o.stores_id,
+      store_id: o.store_id || o.stores_id, // Support both potential keys
       terminal_id: o.device_id,
       cashier_id: o.cashier_id,
       customer_id: o.customer_id,
-      customer_name: o.customer?.name,
+      customer_name: o.retail_customers?.name || o.customer?.name,
       status: o.status as any,
-      items: (o.retail_order_items || o.retailOrderItems || []).map((item: any) => this.mapOrderItem(item)) || [],
+      items: (o.retail_order_items || []).map((item: any) => this.mapOrderItem(item)) || [],
       subtotal: (o.subtotal as unknown as Prisma.Decimal) || new Prisma.Decimal(0) as any,
       tax_total: (o.tax as unknown as Prisma.Decimal) || new Prisma.Decimal(0) as any,
       discount_total: new Prisma.Decimal(0) as any,
@@ -1894,8 +2339,8 @@ export class RetailDbRepository implements IRetailRepository {
     return {
       product_id: item.product_id,
       variant_id: undefined,
-      sku: item.product?.sku || "",
-      name: item.product?.name || "",
+      sku: item.item_masters?.sku || item.product?.sku || "",
+      name: item.item_masters?.name || item.product?.name || "",
       quantity: (item.quantity as unknown as Prisma.Decimal) || new Prisma.Decimal(0) as any,
       unit_price: (item.unit_price as unknown as Prisma.Decimal) || new Prisma.Decimal(0) as any,
       tax_amount: new Prisma.Decimal(0) as any,
@@ -1917,6 +2362,9 @@ export class RetailDbRepository implements IRetailRepository {
       opening_cash: (s.opening_cash as unknown as Prisma.Decimal) || new Prisma.Decimal(0) as any,
       closing_cash: (s.closing_cash as unknown as Prisma.Decimal) || undefined,
       expected_cash: (s.expected_cash as unknown as Prisma.Decimal) || undefined,
+      actual_cash: (s.actual_cash as unknown as Prisma.Decimal) || undefined,
+      variance: (s.variance as unknown as Prisma.Decimal) || undefined,
+      reconciliation_reason: s.reconciliation_reason,
       status: s.status as any,
       notes: s.notes,
     };

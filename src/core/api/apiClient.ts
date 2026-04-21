@@ -12,17 +12,27 @@ export class ApiError extends Error {
   }
 }
 
+export interface ApiRequestOptions {
+  responseType?: "json" | "blob";
+  correlationId?: string;
+  tenantId?: string;
+}
+
 export async function apiRequest<T>(
   path: string,
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" = "GET",
-  session?: SessionContext,
+  session?: SessionContext | null,
   body?: unknown,
-  tenantId?: string,
-  correlationId?: string,
+  options: ApiRequestOptions = {}
 ): Promise<T> {
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
+  const { responseType = "json", correlationId, tenantId } = options;
+  
+  const headers: Record<string, string> = {};
+
+  // For FormData, we let the browser set the Content-Type with boundary
+  if (!(body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
 
   if (correlationId) {
     headers["x-correlation-id"] = correlationId;
@@ -30,9 +40,7 @@ export async function apiRequest<T>(
 
   const finalTenantId = tenantId || session?.tenantId;
   if (finalTenantId) {
-    // Map tenant-demo to comp-demo-a for backend consistency
-    headers["x-tenant-id"] =
-      finalTenantId === "tenant-demo" ? "comp-demo-a" : finalTenantId;
+    headers["x-tenant-id"] = finalTenantId;
   }
 
   if (session) {
@@ -49,12 +57,15 @@ export async function apiRequest<T>(
   console.log(`[apiClient] Request: ${method} ${API_BASE_URL}${path}`, {
     tenantHeader: headers["x-tenant-id"],
     hasAuth: !!headers["Authorization"],
+    responseType
   });
+
+  const fetchBody = body instanceof FormData ? body : (body ? JSON.stringify(body) : undefined);
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: fetchBody,
   });
 
   if (!response.ok) {
@@ -69,6 +80,10 @@ export async function apiRequest<T>(
       errorData,
     );
     throw new ApiError(message, response.status, errorData);
+  }
+
+  if (responseType === "blob") {
+    return (await response.blob()) as unknown as T;
   }
 
   const result = await response.json();

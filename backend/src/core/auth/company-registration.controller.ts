@@ -13,7 +13,7 @@ interface RequestWithUser extends Request {
   user?: any; // To be set via an AuthGuard in actual production, we extract from token directly here for testing
 }
 
-@Controller("auth/company")
+@Controller("v1/auth/company")
 export class CompanyRegistrationController {
   constructor(
     private readonly registrationService: CompanyRegistrationService,

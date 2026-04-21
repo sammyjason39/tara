@@ -25,6 +25,8 @@ import {
   PayrollEstimate,
   FinanceMoneySourceRow,
   TreasuryTransfer,
+  BankTransaction,
+  PerformanceTreeNode,
 } from "../finance.types";
 
 /**
@@ -223,4 +225,26 @@ export abstract class IFinanceRepository {
     updates: Partial<PayrollEntry>,
     tx?: Prisma.TransactionClient,
   ): Promise<PayrollEntry | null>;
+
+  // Bank Reconciliation & Analytics (Phase 5)
+  abstract ingestBankTransactions(
+    tenant_id: string,
+    transactions: Partial<BankTransaction>[],
+    tx?: Prisma.TransactionClient,
+  ): Promise<void>;
+  abstract getUnreconciledTransactions(
+    tenant_id: string
+  ): Promise<BankTransaction[]>;
+  abstract createReconcileMatch(
+    tenant_id: string,
+    transaction_id: string,
+    journal_id: string,
+    score: number,
+    tx?: Prisma.TransactionClient,
+  ): Promise<void>;
+  abstract getPerformanceTree(
+    tenant_id: string,
+    parentId?: string,
+    type?: string
+  ): Promise<PerformanceTreeNode>;
 }

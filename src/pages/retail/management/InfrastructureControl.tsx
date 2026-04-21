@@ -141,7 +141,7 @@ const InfrastructureControl = () => {
                 <Network className="w-6 h-6 text-indigo-600" />
                 <h2 className="text-xl font-black italic uppercase tracking-tighter text-slate-900">Edge Clusters & Load Balancers</h2>
               </div>
-              <Button size="sm" variant="outline" className="rounded-xl font-bold gap-2">
+              <Button disabled title="Not available yet" size="sm" variant="outline" className="rounded-xl font-bold gap-2">
                 <Plus className="w-4 h-4" /> Provision Cluster
               </Button>
             </div>
@@ -158,8 +158,8 @@ const InfrastructureControl = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="icon" className="text-slate-400"><RefreshCw className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="icon" className="text-slate-400"><MoreVertical className="w-4 h-4" /></Button>
+                      <Button disabled title="Not available yet" variant="ghost" size="icon" className="text-slate-400"><RefreshCw className="w-4 h-4" /></Button>
+                      <Button disabled title="Not available yet" variant="ghost" size="icon" className="text-slate-400"><MoreVertical className="w-4 h-4" /></Button>
                     </div>
                   </div>
                   <CardContent className="p-6">

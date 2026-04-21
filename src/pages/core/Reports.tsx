@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageShell } from "@/core/ui/PageShell";
@@ -10,7 +11,20 @@ import {
   ShieldCheck,
   Users,
   Layers,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
+import { useSession } from "@/core/security/session";
+import { reportingService } from "@/core/services/reportingService";
+
+interface ActiveJob {
+  id: string;
+  status: string;
+  progress: number;
+  report_type: string;
+  error?: string;
+}
 
 const categories = [
   {
@@ -85,21 +99,130 @@ const scheduledReports = [
 ];
 
 export default function CoreReports() {
+  const session = useSession();
+  const [activeJobs, setActiveJobs] = useState<ActiveJob[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [reports, setReports] = useState(recentReports); // Fallback to mock for UI baseline
+
+  // Poll for job status
+  useEffect(() => {
+    const processingJobs = activeJobs.filter(j => j.status === 'PENDING' || j.status === 'PROCESSING');
+    if (processingJobs.length === 0) return;
+
+    const interval = setInterval(async () => {
+      const updates = await Promise.all(
+        processingJobs.map(async (job) => {
+          try {
+            const status = await reportingService.getJobStatus(session, job.id);
+            return { ...job, status: status.status, progress: status.progress, error: status.error };
+          } catch (err) {
+            console.error("Job check failed:", job.id, err);
+            return { ...job, status: 'FAILED', error: 'Service Unavailable' };
+          }
+        })
+      );
+
+      setActiveJobs(prev => {
+        const next = [...prev];
+        updates.forEach(update => {
+          const idx = next.findIndex(j => j.id === update.id);
+          if (idx !== -1) next[idx] = update;
+        });
+        return next;
+       });
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [activeJobs, session]);
+
+  const handleGenerate = async (type: string, format: string) => {
+    setLoading(true);
+    try {
+      const res = await reportingService.generateReport(session, { 
+        report_type: type.toUpperCase().replace(/\s+/g, '_'), 
+        format 
+      });
+      
+      if (res.success) {
+        setActiveJobs(prev => [{
+          id: res.job_id,
+          status: 'PENDING',
+          progress: 0,
+          report_type: type
+        }, ...prev]);
+      }
+    } catch (err) {
+      console.error("Failed to generate report:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownload = (jobId: string) => {
+    reportingService.downloadReport(session, jobId);
+  };
+
   return (
     <PageShell
       header={
         <PageHeader
           title="Reports & Analytics"
           subtitle="Generate, schedule, and export executive-ready reports."
-          primaryAction={<Button>New report</Button>}
-          secondaryActions={<Button variant="outline">Manage schedules</Button>}
+          primaryAction={<Button onClick={(e) => { e.preventDefault(); alert("Detailed View:\n\nMetadata: " + (typeof window !== "undefined" ? window.location.pathname : "N/A")); }}>New report</Button>}
+          secondaryActions={<Button disabled title="Not available yet" variant="outline">Manage schedules</Button>}
         />
       }
     >
       <div className="space-y-6">
+        {/* --- ACTIVE JOBS PANEL --- */}
+        {activeJobs.length > 0 && (
+          <WorkspacePanel 
+            title="Active Generation Jobs" 
+            description="Real-time progress of your requested reports."
+          >
+            <div className="space-y-3">
+              {activeJobs.map((job) => (
+                <div key={job.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
+                  <div className="flex items-center gap-3">
+                    {job.status === 'PENDING' || job.status === 'PROCESSING' ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    ) : job.status === 'COMPLETED' ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4 text-rose-500" />
+                    )}
+                    <div>
+                      <p className="text-sm font-medium">{job.report_type} ({job.id.slice(0, 8)})</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="w-32 h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-primary transition-all duration-500" 
+                            style={{ width: `${job.progress}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">{job.progress}%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={job.status === 'FAILED' ? 'destructive' : 'outline'}>
+                      {job.status}
+                    </Badge>
+                    {job.status === 'COMPLETED' && (
+                      <Button size="xs" variant="ghost" onClick={() => handleDownload(job.id)}>
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </WorkspacePanel>
+        )}
+
         <WorkspacePanel
-          title="Report categories"
-          description="Start from a curated template library."
+          title="Report templates"
+          description="Click a format to queue generation."
         >
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {categories.map((category) => {
@@ -113,9 +236,24 @@ export default function CoreReports() {
                     <div className="rounded-lg border bg-muted/50 p-2">
                       <Icon className="h-5 w-5 text-muted-foreground" />
                     </div>
-                    <Button size="sm" variant="outline">
-                      Browse
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button 
+                        size="xs" 
+                        variant="ghost" 
+                        onClick={() => handleGenerate(category.title, 'PDF')}
+                        disabled={loading}
+                      >
+                        PDF
+                      </Button>
+                      <Button 
+                        size="xs" 
+                        variant="ghost" 
+                        onClick={() => handleGenerate(category.title, 'EXCEL')}
+                        disabled={loading}
+                      >
+                        XLS
+                      </Button>
+                    </div>
                   </div>
                   <div className="mt-4 space-y-2">
                     <p className="text-sm font-semibold text-foreground">{category.title}</p>
@@ -130,12 +268,12 @@ export default function CoreReports() {
         </WorkspacePanel>
 
         <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-          <WorkspacePanel
+            <WorkspacePanel
             title="Recent reports"
             description="Latest generated reports across teams."
           >
             <div className="space-y-4">
-              {recentReports.map((report) => (
+              {reports.map((report) => (
                 <div
                   key={report.id}
                   className="flex items-center justify-between rounded-lg border p-4"
@@ -148,9 +286,14 @@ export default function CoreReports() {
                   </div>
                   <div className="flex items-center gap-3">
                     <Badge variant="secondary">{report.status}</Badge>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      onClick={() => handleGenerate(report.title, 'PDF')} 
+                      variant="outline" 
+                      size="sm"
+                      disabled={loading}
+                    >
                       <Download className="mr-2 h-4 w-4" />
-                      Export
+                      Regenerate
                     </Button>
                   </div>
                 </div>
@@ -175,7 +318,7 @@ export default function CoreReports() {
                         Recipients: {schedule.recipients}
                       </p>
                     </div>
-                    <Button size="sm" variant="outline">
+                    <Button disabled title="Not available yet" size="sm" variant="outline">
                       Edit
                     </Button>
                   </div>
@@ -186,7 +329,7 @@ export default function CoreReports() {
                   <FileText className="h-4 w-4" />
                   Schedule a new report delivery
                 </div>
-                <Button size="sm">Create schedule</Button>
+                <Button disabled title="Not available yet" size="sm">Create schedule</Button>
               </div>
             </div>
           </WorkspacePanel>

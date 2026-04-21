@@ -87,6 +87,7 @@ export default function PeopleCore() {
   const contracts = record?.contracts || [];
   const workflows = record?.workflows || [];
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const clearStatus = () => {
     setStatusMessage(null);
@@ -136,13 +137,15 @@ export default function PeopleCore() {
     const loadRetail = async () => {
       if (!record?.employee?.locationId) return;
       try {
-        const shifts = await retailService.listShifts(session.tenantId, session);
-        const empShifts = shifts.filter(s => s.employeeId === employeeId);
-        setRetailShifts(empShifts);
-        const active = empShifts.find(s => !s.closingTime);
-        setActiveShift(active);
-      } catch (err) {
-        console.warn("Could not load retail activity.");
+        const shifts = await retailService.listShifts(session.tenantId, session, {
+          employee_id: employeeId,
+          limit: 10,
+        });
+        setRetailShifts(shifts);
+        const active = shifts.find((s) => s.status === "open");
+        if (active) setActiveShift(active);
+      } catch (e) {
+        console.error("Failed to load retail history", e);
       }
     };
     if (record) {
@@ -236,29 +239,35 @@ export default function PeopleCore() {
           <ZenTooltip content="Escalate this record to Administrative Oversight.">
             <Button
               variant="outline"
+              disabled={isProcessing}
               onClick={async () => {
+                setIsProcessing(true);
                 try {
                   await workflowService.createRequest(employee.tenantId, session, {
-                    entityType: "PERFORMANCE",
+                    entityType: "PERSONNEL_ESCALATION",
                     entityId: employee.id,
-                    makerDept: session.departmentId,
+                    makerDept: session.departmentId || "MGMT",
                     destinationDept: "ADMIN",
-                    notes: "Escalated from PeopleCore",
+                    notes: "Automated administrative escalation from PeopleCore.",
                   });
-                  setStatusMessage("Employee record escalated to ADMIN.");
+                  setStatusMessage("Administrative escalation indexed.");
                 } catch (err) {
-                  setErrorMessage("Escalation failed.");
+                  setErrorMessage("Failed to initiate escalation.");
+                } finally {
+                  setIsProcessing(false);
                 }
               }}
             >
-              Escalate to Admin
+              {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Escalate to Admin"}
             </Button>
           </ZenTooltip>
 
           <ZenTooltip content="Route this profile to the HR FlowGate for review.">
             <Button
               variant="outline"
+              disabled={isProcessing}
               onClick={async () => {
+                setIsProcessing(true);
                 try {
                   await workflowService.createRequest(employee.tenantId, session, {
                     entityType: "PERFORMANCE",
@@ -270,10 +279,12 @@ export default function PeopleCore() {
                   setStatusMessage("Routed to HR FlowGate.");
                 } catch (err) {
                   setErrorMessage("Routing failed.");
+                } finally {
+                  setIsProcessing(false);
                 }
               }}
             >
-              Route to HR
+              {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Route to HR"}
             </Button>
           </ZenTooltip>
           <Button
@@ -718,9 +729,11 @@ export default function PeopleCore() {
                 <div className="flex justify-end pt-4 mt-6 border-t">
                   <Button variant="outline" onClick={() => setDialogOpen(false)} className="mr-3">Cancel</Button>
                   <Button
-                    onClick={() => {
+                    disabled={isProcessing}
+                    onClick={async () => {
+                      setIsProcessing(true);
                       try {
-                        workflowService.createRequest(session.tenantId, session, {
+                        await workflowService.createRequest(session.tenantId, session, {
                           entityType: workflowType,
                           entityId: employee.id,
                           makerDept: session.departmentId,
@@ -799,9 +812,11 @@ export default function PeopleCore() {
               </SelectContent>
             </Select>
             <Button
-              onClick={() => {
+              disabled={isProcessing}
+              onClick={async () => {
+                setIsProcessing(true);
                 try {
-                  staffService.updateEmployee(
+                  await staffService.updateEmployee(
                     session.tenantId,
                     session,
                     employee.id,
@@ -817,10 +832,12 @@ export default function PeopleCore() {
                   setStatusMessage("Employee profile updated successfully.");
                 } catch (err) {
                   setErrorMessage("Failed to update employee profile.");
+                } finally {
+                  setIsProcessing(false);
                 }
               }}
             >
-              Save Changes
+              {isProcessing ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </SheetContent>
@@ -1060,36 +1077,31 @@ export default function PeopleCore() {
                   <Button variant="outline" onClick={() => setActionOpen(false)}>Cancel</Button>
                   <Button
                     variant={actionType === "TERMINATE" ? "destructive" : "default"}
+                    disabled={isProcessing}
                     onClick={async () => {
-                      try {
-                        if (!actionReason && wizardStep === 3) {
-                          setErrorMessage(
-                            "Reason is required for personnel actions.",
-                          );
-                          return;
-                        }
+                      if (!actionReason && wizardStep === 3) {
+                        setErrorMessage("Reason is required for personnel actions.");
+                        return;
+                      }
 
+                      if ((actionType === "MOVE" || actionType === "PROMOTE") && wizardStep < 3) {
+                        setWizardStep(wizardStep + 1);
+                        return;
+                      }
+
+                      setIsProcessing(true);
+                      try {
                         if (actionType === "MOVE") {
-                          if (wizardStep < 3) {
-                            setWizardStep(wizardStep + 1);
-                            return;
-                          }
-                          staffService.requestTransfer(
+                          await staffService.requestTransfer(
                             employee.tenantId,
                             session,
                             employee.id,
                             targetDept,
                             actionReason,
                           );
-                          setStatusMessage(
-                            `Transfer request for ${employee.fullName} to ${targetDept} initiated.`,
-                          );
+                          setStatusMessage(`Transfer request for ${employee.fullName} initiated.`);
                         } else if (actionType === "PROMOTE") {
-                          if (wizardStep < 3) {
-                            setWizardStep(wizardStep + 1);
-                            return;
-                          }
-                          staffService.promoteEmployee(
+                          await staffService.promoteEmployee(
                             employee.tenantId,
                             session,
                             employee.id,
@@ -1099,49 +1111,43 @@ export default function PeopleCore() {
                               notes: actionReason,
                             },
                           );
-                          setStatusMessage(
-                            `Promotion for ${employee.fullName} to ${newRole} triggered.`,
-                          );
+                          setStatusMessage(`Promotion for ${employee.fullName} to ${newRole} triggered.`);
                         } else if (actionType === "SUSPEND") {
-                          staffService.suspendEmployee(
+                          await staffService.suspendEmployee(
                             employee.tenantId,
                             session,
                             employee.id,
                             actionReason,
                           );
-                          setStatusMessage(
-                            `${employee.fullName} record suspended for administrative review.`,
-                          );
+                          setStatusMessage(`${employee.fullName} record suspended for administrative review.`);
                         } else if (actionType === "REMOVE") {
-                          staffService.updateEmployee(
+                          await staffService.updateEmployee(
                             employee.tenantId,
                             session,
                             employee.id,
                             { status: "inactive" },
                           );
-                          setStatusMessage(
-                            `${employee.fullName} record deactivated (inactive).`,
-                          );
+                          setStatusMessage(`${employee.fullName} record deactivated.`);
                         } else if (actionType === "TERMINATE") {
-                          staffService.requestTermination(
+                          await staffService.requestTermination(
                             employee.tenantId,
                             session,
                             employee.id,
                             actionReason,
                           );
-                          setStatusMessage(
-                            `Termination workflow triggered for ${employee.fullName}.`,
-                          );
+                          setStatusMessage(`Termination workflow triggered for ${employee.fullName}.`);
                         }
                         setActionOpen(false);
                         setActionReason("");
                         setWizardStep(1);
                       } catch (err: any) {
                         setErrorMessage(err.message || "Personnel action failed.");
+                      } finally {
+                        setIsProcessing(false);
                       }
                     }}
                   >
-                    {((actionType === "MOVE" || actionType === "PROMOTE") && wizardStep < 3) ? "Next Step" : "Submit for Approval"}
+                    {isProcessing ? "Processing..." : wizardStep < 3 && (actionType === "MOVE" || actionType === "PROMOTE") ? "Next Step" : "Submit for Approval"}
                   </Button>
                 </div>
               </div>

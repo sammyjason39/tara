@@ -13,13 +13,13 @@ const ensureTenantAccess = (tenantId: string, actor: SessionContext) => {
 export const legalService = {
   async listContracts(tenantId: string, actor: SessionContext): Promise<ContractRecord[]> {
     ensureTenantAccess(tenantId, actor);
-    return apiRequest<ContractRecord[]>("/hr/contracts", "GET", actor);
+    return apiRequest<ContractRecord[]>("/v1/hr/contracts", "GET", actor);
   },
 
   async getComplianceCases(tenantId: string, actor: SessionContext) {
     ensureTenantAccess(tenantId, actor);
     // Note: Visa tracking is still missing backend support, keeping stubs for that part
-    const contracts = await apiRequest<ContractRecord[]>("/hr/contracts", "GET", actor);
+    const contracts = await apiRequest<ContractRecord[]>("/v1/hr/contracts", "GET", actor);
     return {
       contracts,
       expiringVisas: [], // Missing backend support for now
@@ -33,7 +33,7 @@ export const legalService = {
     payload: Omit<ContractRecord, "id" | "tenantId" | "createdAt" | "updatedAt">,
   ): Promise<ContractRecord> {
     ensureTenantAccess(tenantId, actor);
-    const record = await apiRequest<ContractRecord>("/hr/contracts", "POST", actor, payload);
+    const record = await apiRequest<ContractRecord>("/v1/hr/contracts", "POST", actor, payload);
     
     workflowService.createRequest(tenantId, actor, {
       entityType: "CONTRACT",
@@ -93,3 +93,4 @@ export const legalService = {
     return record;
   },
 };
+

@@ -47,6 +47,18 @@ export class CreatePaymentTransactionDto {
 
   @IsString()
   @IsOptional()
+  method?: "CASH" | "EDC" | "GATEWAY";
+
+  @IsString()
+  @IsOptional()
+  provider?: "STRIPE" | "MANUAL";
+
+  @IsString()
+  @IsOptional()
+  externalRef?: string;
+
+  @IsString()
+  @IsOptional()
   externalReference?: string;
 
   @IsString()

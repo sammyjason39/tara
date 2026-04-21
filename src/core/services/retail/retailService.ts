@@ -47,27 +47,28 @@ export const retailService = {
   },
 
   async listStores(tenantId: string, session: SessionContext) {
-    return apiRequest<RetailStore[]>("/retail/stores", "GET", session);
+    return apiRequest<RetailStore[]>("/v1/retail/stores", "GET", session);
   },
 
   async listCategories(tenantId: string, session: SessionContext) {
     return apiRequest<{ id: string; name: string }[]>(
-      "/retail/categories",
+      "/v1/retail/categories",
       "GET",
       session,
     );
   },
 
   async getStore(tenantId: string, storeId: string, session: SessionContext) {
-    return apiRequest<RetailStore>(`/retail/stores/${storeId}`, "GET", session);
+    return apiRequest<RetailStore>(`/v1/retail/stores/${storeId}`, "GET", session);
   },
+
 
   async createStore(
     tenantId: string,
     session: SessionContext,
     store: Partial<RetailStore>,
   ) {
-    return apiRequest<RetailStore>("/retail/stores", "POST", session, store);
+    return apiRequest<RetailStore>("/v1/retail/stores", "POST", session, store);
   },
 
   async updateStore(
@@ -196,10 +197,50 @@ export const retailService = {
     storeId?: string,
   ) {
     const path = storeId
-      ? `/retail/orders?store_id=${storeId}`
-      : "/retail/orders";
+      ? `/v1/retail/orders?store_id=${storeId}`
+      : "/v1/retail/orders";
     return apiRequest<RetailOrder[]>(path, "GET", session);
   },
+
+  async updateOrderStatus(
+    tenantId: string,
+    session: SessionContext,
+    orderId: string,
+    status: RetailOrder["status"],
+  ) {
+    return apiRequest<RetailOrder>(
+      `/v1/retail/orders/${orderId}/status`,
+      "PATCH",
+      session,
+      { status },
+    );
+  },
+
+  async voidOrder(
+    tenantId: string,
+    session: SessionContext,
+    orderId: string,
+  ) {
+    return apiRequest<RetailOrder>(
+      `/v1/retail/orders/${orderId}/void`,
+      "POST",
+      session
+    );
+  },
+
+  async cancelOrder(
+    tenantId: string,
+    session: SessionContext,
+    orderId: string,
+  ) {
+    return apiRequest<RetailOrder>(
+      `/v1/retail/orders/${orderId}/cancel`,
+      "POST",
+      session
+    );
+  },
+
+
 
   async listDevices(
     tenantId: string,
@@ -217,7 +258,7 @@ export const retailService = {
     session: SessionContext,
     device: Partial<BranchDevice>,
   ) {
-    return apiRequest<BranchDevice>("/retail/devices", "POST", session, device);
+    return apiRequest<BranchDevice>("/v1/retail/devices", "POST", session, device);
   },
 
   async listCCTVs(tenantId: string, session: SessionContext, storeId?: string) {
@@ -245,7 +286,7 @@ export const retailService = {
     session: SessionContext,
     camera: Partial<CCTVCamera>,
   ) {
-    return apiRequest<CCTVCamera>("/retail/cctvs", "POST", session, camera);
+    return apiRequest<CCTVCamera>("/v1/retail/cctvs", "POST", session, camera);
   },
 
   async listSensors(
@@ -264,7 +305,7 @@ export const retailService = {
     session: SessionContext,
     sensor: Partial<BranchSensor>,
   ) {
-    return apiRequest<BranchSensor>("/retail/sensors", "POST", session, sensor);
+    return apiRequest<BranchSensor>("/v1/retail/sensors", "POST", session, sensor);
   },
 
   async listInventory(
@@ -375,7 +416,7 @@ export const retailService = {
     grandTotal: number,
     shiftId?: string,
   ) {
-    return apiRequest<RetailOrder>("/retail/orders", "POST", session, {
+    return apiRequest<RetailOrder>("/v1/retail/orders", "POST", session, {
       storeId,
       terminalId: deviceId, // Using terminalId to match backend DTO
       items,
@@ -401,7 +442,32 @@ export const retailService = {
         amount,
         method,
         shiftId,
+        department_id: session.departmentId,
       },
+    );
+  },
+
+  async checkout(
+    tenantId: string,
+    session: any,
+    checkoutData: any,
+    idempotencyKey?: string,
+  ) {
+    const headers: Record<string, string> = {};
+    if (idempotencyKey) {
+      headers["x-idempotency-key"] = idempotencyKey;
+    }
+
+    return apiClient.post(
+      "/v1/retail/checkout",
+      checkoutData,
+      {
+        headers: {
+          ...this.getHeaders(tenantId, session),
+          ...headers,
+        },
+      },
+      true,
     );
   },
 
@@ -410,7 +476,7 @@ export const retailService = {
     tenantId: string,
     session: SessionContext,
   ): Promise<RetailPromotion[]> {
-    return apiRequest<RetailPromotion[]>("/retail/promotions", "GET", session);
+    return apiRequest<RetailPromotion[]>("/v1/retail/promotions", "GET", session);
   },
 
   async updatePromotion(
@@ -431,7 +497,7 @@ export const retailService = {
     tenantId: string,
     session: SessionContext,
   ): Promise<RetailChannel[]> {
-    return apiRequest<RetailChannel[]>("/retail/channels", "GET", session);
+    return apiRequest<RetailChannel[]>("/v1/retail/channels", "GET", session);
   },
 
   async syncChannel(
@@ -540,8 +606,22 @@ export const retailService = {
     );
   },
 
+  async verifyTicket(
+    tenantId: string,
+    session: SessionContext,
+    ticketId: string,
+  ) {
+    return apiRequest<{
+      status: "valid" | "invalid" | "expired";
+      type: string;
+      issuedAt: string;
+      balance: string;
+    }>(`/retail/verify/${ticketId}`, "GET", session);
+  },
+
+
   async scanDevices(tenantId: string, session: SessionContext) {
-    return apiRequest<unknown[]>("/retail/devices/scan", "POST", session);
+    return apiRequest<unknown[]>("/v1/retail/devices/scan", "POST", session);
   },
 
   async commitScannedDevice(
@@ -563,7 +643,7 @@ export const retailService = {
     storeId: string,
     openingCash: number,
   ) {
-    return apiRequest<RetailShift>("/retail/shifts/open", "POST", session, {
+    return apiRequest<RetailShift>("/v1/retail/shifts/open", "POST", session, {
       storeId,
       openingCash,
     });
@@ -577,7 +657,7 @@ export const retailService = {
     notes?: string,
   ) {
     return apiRequest<RetailShift>(
-      `/retail/shifts/${shiftId}/close`,
+      `/v1/retail/shifts/${shiftId}/close`,
       "PUT",
       session,
       {
@@ -587,14 +667,38 @@ export const retailService = {
     );
   },
 
+  async reconcileShift(
+    tenantId: string,
+    session: SessionContext,
+    shiftId: string,
+  ) {
+    return apiRequest<RetailShift>(
+      `/v1/retail/shifts/${shiftId}/reconcile`,
+      "POST",
+      session
+    );
+  },
+
+
   async listShifts(
     tenantId: string,
     session: SessionContext,
-    storeId?: string,
+    params?: {
+      store_id?: string;
+      employee_id?: string;
+      limit?: number;
+      offset?: number;
+    },
   ) {
-    const path = storeId
-      ? `/retail/shifts?store_id=${storeId}`
-      : "/retail/shifts";
+    let path = "/retail/shifts";
+    if (params) {
+      const query = new URLSearchParams();
+      if (params.store_id) query.append("store_id", params.store_id);
+      if (params.employee_id) query.append("employee_id", params.employee_id);
+      if (params.limit) query.append("limit", params.limit.toString());
+      if (params.offset) query.append("offset", params.offset.toString());
+      path += `?${query.toString()}`;
+    }
     return apiRequest<RetailShift[]>(path, "GET", session);
   },
 
@@ -604,18 +708,20 @@ export const retailService = {
     orderId: string,
     itemIds: string[],
     shiftId?: string,
+    conditions?: Array<{ productId: string; condition: 'good' | 'damaged_repairable' | 'damaged_unrepairable'; notes?: string }>,
   ) {
     return apiRequest<{ success: boolean }>(
-      `/retail/orders/${orderId}/return`,
+      `/v1/retail/orders/${orderId}/return`,
       "POST",
       session,
       {
         itemIds,
-        clientSecret: undefined,
         shiftId,
+        conditions,
       },
     );
   },
+
 
   async submitOpname(
     tenantId: string,
@@ -715,12 +821,13 @@ export const retailService = {
     },
   ) {
     return apiRequest<RetailProduct>(
-      `/retail/products/${productId}`,
+      `/v1/retail/products/${productId}`,
       "PATCH",
       session,
       data,
     );
   },
+
 
   async listPendingItems(tenantId: string, session: SessionContext) {
     return apiRequest<RetailProduct[]>(
@@ -798,3 +905,4 @@ export const retailService = {
     );
   },
 };
+

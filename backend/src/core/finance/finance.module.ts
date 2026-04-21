@@ -115,6 +115,7 @@ import { ReportingController } from './controllers/reporting.controller';
 import { OperationsController } from './controllers/operations.controller';
 import { ComplianceController } from './controllers/compliance.controller';
 import { FinancialIntelligenceController } from './controllers/financial-intelligence.controller';
+import { ReconciliationController } from './controllers/reconciliation.controller';
 import { InsightService } from './services/insight.service';
 import { ForecastService } from './services/forecast.service';
 import { RecommendationService } from './services/recommendation.service';
@@ -144,6 +145,10 @@ import { PostingGatewayService } from './services/posting-gateway.service';
 import { ConsolidationReportService } from './services/consolidation-report.service';
 import { PostingMonitoringService } from './services/posting-monitoring.service';
 import { HashingService } from './utils/hashing.service';
+import { MatchingService } from './services/matching.service';
+import { BankReconciliationService } from './services/bank-reconciliation.service';
+import { CsvBankProvider, ModularApiBankProvider } from '../../shared/finance/bank-providers';
+import { PayrollSettlementListener } from './listeners/payroll-settlement.listener';
 
 /**
  * Helper to determine which repository class to use based on mode.
@@ -189,9 +194,12 @@ function getRepository(dbClass: any, mockClass: any) {
     ReportingController,
     OperationsController,
     ComplianceController,
+    ReconciliationController,
   ],
   providers: [
     FinanceService,
+    MatchingService,
+    BankReconciliationService,
     CashflowService,
     InsightService,
     ForecastService,
@@ -260,6 +268,9 @@ function getRepository(dbClass: any, mockClass: any) {
     InventoryMovementListener,
     PrePostingValidator,
     AccountingMappingService,
+    CsvBankProvider,
+    ModularApiBankProvider,
+    PayrollSettlementListener,
     {
       provide: 'TAX_STRATEGIES',
       useFactory: () => {
