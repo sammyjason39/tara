@@ -33,9 +33,9 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/prisma ./prisma
 
 # Prepare persistent data directory
-RUN mkdir -p /data/backups /data/logs && \
+RUN mkdir -p /data/backups /data/logs /app/storage/reports && \
     addgroup -S zenvix && adduser -S zenvix -G zenvix && \
-    chown -R zenvix:zenvix /data
+    chown -R zenvix:zenvix /data /app/storage
 
 USER zenvix
 
