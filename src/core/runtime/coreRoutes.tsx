@@ -98,6 +98,10 @@ import NurtureStudio from "@/pages/core/marketing/NurtureStudio";
 import ConnectedAccountsDesk from "@/pages/core/marketing/ConnectedAccountsDesk";
 import MarketingAlerts from "@/pages/core/marketing/MarketingAlerts";
 import MarketingAuditLog from "@/pages/core/marketing/MarketingAuditLog";
+import Customer360Desk from "@/pages/core/marketing/Customer360Desk";
+import AppointmentDesk from "@/pages/core/marketing/AppointmentDesk";
+import FunnelBuilderDesk from "@/pages/core/marketing/FunnelBuilderDesk";
+import OmnichannelInbox from "@/pages/core/marketing/OmnichannelInbox";
 import AdminWorkspaceLayout from "@/pages/core/adminWorkspace/AdminWorkspaceLayout";
 import RequestDesk from "@/pages/core/adminWorkspace/RequestDesk";
 import RequestAssign from "@/pages/core/adminWorkspace/RequestAssign";
@@ -636,6 +640,22 @@ export function buildCoreRoutes(): JSX.Element[] {
         }
       />
       <Route
+        path="customer-360"
+        element={
+          <ProtectedRoute permission="core.marketing.access" scope="COMPANY">
+            <Customer360Desk />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="appointments"
+        element={
+          <ProtectedRoute permission="core.marketing.access" scope="COMPANY">
+            <AppointmentDesk />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="campaigns"
         element={
           <ProtectedRoute permission="core.marketing.access" scope="COMPANY">
@@ -664,6 +684,22 @@ export function buildCoreRoutes(): JSX.Element[] {
         element={
           <ProtectedRoute permission="core.marketing.access" scope="COMPANY">
             <NurtureStudio />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="funnels"
+        element={
+          <ProtectedRoute permission="core.marketing.access" scope="COMPANY">
+            <FunnelBuilderDesk />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="inbox"
+        element={
+          <ProtectedRoute permission="core.marketing.access" scope="COMPANY">
+            <OmnichannelInbox />
           </ProtectedRoute>
         }
       />

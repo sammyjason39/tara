@@ -3,6 +3,7 @@ import { EventBusService, DomainEvent } from "../../shared/events/event-bus.serv
 import { PrismaService } from "../../persistence/prisma.service";
 import { OmnichannelService } from "./omnichannel.service";
 import { Customer360Service } from "./customer-360.service";
+import { v4 as uuidv4 } from "uuid";
 
 @Injectable()
 export class MarketingAutomationEngine implements OnModuleInit {
@@ -93,7 +94,7 @@ export class MarketingAutomationEngine implements OnModuleInit {
       // Log execution
       await this.prisma.marketing_automation_logs.create({
         data: {
-          id: `log-${Date.now()}`,
+          id: uuidv4(),
           rule_id: rule.id,
           contact_id: contact.id,
           status: "SUCCESS",

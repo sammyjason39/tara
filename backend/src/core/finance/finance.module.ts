@@ -53,6 +53,9 @@ import { ArCreditMemoDbRepository } from './ar/repositories/ar-credit-memo.db.re
 import { InventorySubledgerDbRepository } from './subledger/repositories/inventory-subledger.db.repository';
 import { DbUnitOfWork } from './repositories/uow.db';
 import { IFinanceRepository } from './repositories/finance.repository.interface';
+import { IChartOfAccountRepository } from './repositories/interfaces/coa.repository.interface';
+import { IFiscalPeriodRepository } from './repositories/interfaces/fiscal.repository.interface';
+import { ILedgerPostingRepository } from './repositories/interfaces/ledger-posting.repository.interface';
 import { FinanceDbRepository } from './repositories/finance.db.repository';
 import { AssetService } from './services/asset.service';
 import { DepreciationScheduler } from './services/depreciation-scheduler.service';
@@ -444,6 +447,9 @@ function getRepository(dbClass: any, mockClass: any, fallbackClass?: any) {
     IFinanceRepository,
     IInventorySubledgerService,
     PostingGatewayService,
+    'IChartOfAccountRepository', 
+    'IFiscalPeriodRepository',
+    'ILedgerPostingRepository',
   ],
 })
 export class FinanceModule implements OnModuleInit {

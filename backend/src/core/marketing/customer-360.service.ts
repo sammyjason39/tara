@@ -2,7 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../../persistence/prisma.service";
 import { TenantContext } from "../../gateway/tenant-context.interface";
 import { MultiTenancyUtil } from "../../shared/utils/multi-tenancy.util";
-import { MarketingContact } from "./entities/marketing-contact.entity";
+import { v4 as uuidv4 } from "uuid";
 
 @Injectable()
 export class Customer360Service {
@@ -14,7 +14,7 @@ export class Customer360Service {
    * Get unified customer profile with full interaction timeline
    */
   async getUnifiedProfile(ctx: TenantContext, contactId: string) {
-    const contact = await this.prisma.marketing_contacts.findUnique({
+    const contact = await this.prisma.marketing_contacts.findFirst({
       where: { id: contactId, ...MultiTenancyUtil.getScope(ctx) },
       include: {
         messages: { orderBy: { sent_at: "desc" }, take: 20 },
@@ -40,7 +40,7 @@ export class Customer360Service {
     const events: any[] = [];
 
     // Add messages
-    contact.messages.forEach((m: any) => {
+    (contact.messages || []).forEach((m: any) => {
       events.push({
         id: m.id,
         type: "MESSAGE",
@@ -53,7 +53,7 @@ export class Customer360Service {
     });
 
     // Add appointments
-    contact.appointments.forEach((a: any) => {
+    (contact.appointments || []).forEach((a: any) => {
       events.push({
         id: a.id,
         type: "APPOINTMENT",
@@ -64,7 +64,7 @@ export class Customer360Service {
     });
 
     // Add lead creations
-    contact.marketing_leads.forEach((l: any) => {
+    (contact.marketing_leads || []).forEach((l: any) => {
       events.push({
         id: l.id,
         type: "LEAD_CAPTURE",
@@ -83,38 +83,38 @@ export class Customer360Service {
   async syncContactFromEntity(ctx: TenantContext, type: "LEAD" | "RETAIL", entityId: string) {
     let email: string | null = null;
     let phone: string | null = null;
-    let first_name = "";
-    let last_name = "";
+    let first_name = "Unknown";
+    let last_name = "User";
 
     if (type === "LEAD") {
       const lead = await this.prisma.marketing_leads.findUnique({ where: { id: entityId } });
       if (!lead) return;
       email = lead.email;
       phone = lead.phone;
-      const names = lead.contact_name.split(" ");
+      const names = (lead.contact_name || "Unknown User").split(" ");
       first_name = names[0];
-      last_name = names.slice(1).join(" ");
+      last_name = names.slice(1).join(" ") || "User";
     } else {
       const customer = await this.prisma.retail_customers.findUnique({ where: { id: entityId } });
       if (!customer) return;
       email = customer.email;
       phone = customer.phone;
-      const names = customer.name.split(" ");
+      const names = (customer.name || "Unknown User").split(" ");
       first_name = names[0];
-      last_name = names.slice(1).join(" ");
+      last_name = names.slice(1).join(" ") || "User";
     }
 
     // Upsert contact
     const scope = MultiTenancyUtil.getScope(ctx);
     
-    // Find existing by email or phone
+    // Find existing by email or phone within tenant
     const existing = await this.prisma.marketing_contacts.findFirst({
       where: {
-        ...scope,
+        tenant_id: ctx.tenant_id,
         OR: [
           ...(email ? [{ email }] : []),
           ...(phone ? [{ phone }] : []),
-        ]
+        ].filter(Boolean) as any
       }
     });
 
@@ -137,8 +137,8 @@ export class Customer360Service {
     // Create new contact
     const contact = await this.prisma.marketing_contacts.create({
       data: {
-        id: `contact-${Date.now()}`,
-        ...scope,
+        id: uuidv4(),
+        tenant_id: ctx.tenant_id,
         first_name,
         last_name,
         email,

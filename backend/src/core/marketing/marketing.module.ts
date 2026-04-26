@@ -10,8 +10,11 @@ import { Customer360Service } from "./customer-360.service";
 import { OmnichannelService } from "./omnichannel.service";
 import { MarketingAutomationEngine } from "./automation-engine.service";
 import { BookingService } from "./booking.service";
+import { EventsModule } from "../../shared/events/events.module";
+import { AuditModule } from "../../shared/audit/audit.module";
 
 @Module({
+  imports: [EventsModule, AuditModule],
   controllers: [MarketingController],
   providers: [
     PrismaService,

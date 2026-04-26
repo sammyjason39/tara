@@ -26,6 +26,9 @@ import { UpdateAccountStatusDto } from "./dto/update-account-status.dto";
 import { UpdateCampaignStatusDto } from "./dto/update-campaign-status.dto";
 import { UpdateWorkflowStatusDto } from "./dto/update-workflow-status.dto";
 import { MarketingService } from "./marketing.service";
+import { Customer360Service } from "./customer-360.service";
+import { BookingService } from "./booking.service";
+import { OmnichannelService } from "./omnichannel.service";
 import { PrismaService } from "../../persistence/prisma.service";
 import { isModuleActive } from "../../shared/helpers/module-active.helper";
 import { MultiTenancyUtil } from "../../shared/utils/multi-tenancy.util";
@@ -42,6 +45,9 @@ export class MarketingController {
   constructor(
     private readonly marketingService: MarketingService,
     private readonly prisma: PrismaService,
+    private readonly customer360: Customer360Service,
+    private readonly bookingService: BookingService,
+    private readonly omnichannel: OmnichannelService,
   ) {}
 
   private actor_id(request: RequestWithTenant) {
@@ -377,6 +383,68 @@ export class MarketingController {
   async getAuditEvents(@Req() request: RequestWithTenant) {
     const { tenant_id } = request.tenantContext;
     const data = await this.marketingService.getAuditEvents(request.tenantContext);
+    return { success: true, tenant_id, count: data.length, data };
+  }
+
+  // --- Growth Engine: Customer 360 ---
+
+  @Get("customers/:id/profile")
+  async getCustomerProfile(@Param("id") id: string, @Req() request: RequestWithTenant) {
+    const { tenant_id } = request.tenantContext;
+    const data = await this.customer360.getUnifiedProfile(request.tenantContext, id);
+    return { success: true, tenant_id, data };
+  }
+
+  @Post("contacts/sync")
+  async syncContact(@Body() body: { type: "LEAD" | "RETAIL", id: string }, @Req() request: RequestWithTenant) {
+    const { tenant_id } = request.tenantContext;
+    const data = await this.customer360.syncContactFromEntity(request.tenantContext, body.type, body.id);
+    return { success: true, tenant_id, data };
+  }
+
+  // --- Growth Engine: Appointments ---
+
+  @Get("appointments")
+  async getAppointments(@Req() request: RequestWithTenant) {
+    const { tenant_id } = request.tenantContext;
+    const data = await this.bookingService.getAppointments(request.tenantContext);
+    return { success: true, tenant_id, count: data.length, data };
+  }
+
+  @Post("appointments")
+  async createAppointment(@Body() body: any, @Req() request: RequestWithTenant) {
+    const { tenant_id } = request.tenantContext;
+    const data = await this.bookingService.createAppointment(request.tenantContext, body);
+    return { success: true, tenant_id, message: "Appointment created", data };
+  }
+
+  // --- Growth Engine: Omnichannel ---
+
+  @Post("messages/send")
+  async sendMessage(@Body() body: { contactId: string, channel: string, content: string }, @Req() request: RequestWithTenant) {
+    const { tenant_id } = request.tenantContext;
+    const data = await this.omnichannel.sendMessage(request.tenantContext, body.contactId, body.channel, body.content);
+    return { success: true, tenant_id, data };
+  }
+
+  @Get("channels/status")
+  async getChannelStatus() {
+    return { success: true, data: this.omnichannel.getChannelStatus() };
+  }
+
+  // --- Growth Engine: Funnels ---
+
+  @Get("funnels")
+  async getFunnels(@Req() request: RequestWithTenant) {
+    const { tenant_id } = request.tenantContext;
+    const data = await this.marketingService.getFunnels(request.tenantContext);
+    return { success: true, tenant_id, count: data.length, data };
+  }
+
+  @Get("conversations")
+  async getConversations(@Req() request: RequestWithTenant) {
+    const { tenant_id } = request.tenantContext;
+    const data = await this.omnichannel.getConversations(request.tenantContext);
     return { success: true, tenant_id, count: data.length, data };
   }
 }

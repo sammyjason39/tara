@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../../persistence/prisma.service";
 import { TenantContext } from "../../gateway/tenant-context.interface";
 import { MultiTenancyUtil } from "../../shared/utils/multi-tenancy.util";
+import { v4 as uuidv4 } from "uuid";
 
 @Injectable()
 export class OmnichannelService {
@@ -12,14 +13,14 @@ export class OmnichannelService {
   /**
    * Send a message via the specified channel
    */
-  async sendMessage(ctx: TenantContext, contactId: string, channel: "EMAIL" | "SMS" | "WHATSAPP", content: string) {
+  async sendMessage(ctx: TenantContext, contactId: string, channel: string, content: string) {
     this.logger.log(`Sending ${channel} message to contact ${contactId}`);
 
     // 1. Persist message in database
     const message = await this.prisma.marketing_omnichannel_messages.create({
       data: {
-        id: `msg-${Date.now()}`,
-        ...MultiTenancyUtil.getScope(ctx),
+        id: uuidv4(),
+        tenant_id: ctx.tenant_id,
         contact_id: contactId,
         channel,
         direction: "OUTBOUND",
@@ -69,5 +70,40 @@ export class OmnichannelService {
       SMS: { status: "READY_FOR_PLUG_AND_PLAY", message: "Configure your provider credentials in settings." },
       EMAIL: { status: "ACTIVE", message: "Email delivery system active." }
     };
+  }
+
+  /**
+   * Get all conversations for the tenant
+   */
+  async getConversations(ctx: TenantContext) {
+    const messages = await this.prisma.marketing_omnichannel_messages.findMany({
+      where: MultiTenancyUtil.getScope(ctx),
+      include: {
+        contact: true
+      },
+      orderBy: { sent_at: "desc" }
+    });
+
+    // Group by contact_id to form conversations
+    const groups = new Map<string, any>();
+    for (const msg of messages) {
+      if (!groups.has(msg.contact_id)) {
+        groups.set(msg.contact_id, {
+          id: msg.id,
+          contactId: msg.contact_id,
+          contactName: `${msg.contact?.first_name || ""} ${msg.contact?.last_name || ""}`.trim() || "Unknown Contact",
+          contactEmail: msg.contact?.email,
+          lastMessage: msg.content,
+          lastTimestamp: msg.sent_at,
+          unreadCount: msg.direction === "INBOUND" && msg.status !== "READ" ? 1 : 0,
+          channel: msg.channel,
+          score: msg.contact?.score || 0,
+        });
+      } else if (msg.direction === "INBOUND" && msg.status !== "READ") {
+        groups.get(msg.contact_id).unreadCount++;
+      }
+    }
+
+    return Array.from(groups.values());
   }
 }

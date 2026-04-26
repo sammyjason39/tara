@@ -183,6 +183,22 @@ export type MarketingAuditEvent = {
   createdAt: string;
 };
 
+export type MarketingFunnel = {
+  id: string;
+  tenantId: string;
+  name: string;
+  status: "active" | "draft";
+  steps: Array<{
+    id: string;
+    name: string;
+    type: "landing" | "checkout" | "upsell" | "thankyou";
+    conversionRate: number;
+    order: number;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type MarketingDashboardMetrics = {
   activeCampaigns: number;
   leadsToday: number;

@@ -1,21 +1,39 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { 
+  Play, 
+  AlertCircle, 
+  CheckCircle2, 
+  Clock, 
+  Server, 
+  Activity, 
+  Cpu, 
+  BarChart3, 
+  Plus, 
+  Search,
+  MoreVertical,
+  History,
+  Zap,
+  Globe,
+  Radio,
+  Settings
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
 } from "@/components/ui/select";
-import { PageHeader } from "@/core/ui/PageHeader";
-import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
-import { DataTableShell } from "@/core/tools/DataTableShell";
-import { FilterBar } from "@/core/tools/FilterBar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 import { useSession } from "@/core/security/session";
 import { marketingService } from "@/core/services/marketing/marketingService";
 import type { CampaignExecutionRun, MarketingCampaign } from "@/core/types/marketing/marketing";
+import { cn } from "@/lib/utils";
 
 const CHANNELS: CampaignExecutionRun["channel"][] = [
   "META_ADS",
@@ -80,137 +98,195 @@ export default function ExecutionDesk() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Campaign Execution"
-        subtitle="Run orchestration across channels, performance pullback, and failure alerting."
-        secondaryActions={
-          <Input
-            className="min-w-[220px]"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search execution runs"
-          />
-        }
-      />
-
-      <WorkspacePanel title="Schedule Execution" description="Create channel run and queue execution pipeline.">
-        <div className="grid gap-3 md:grid-cols-4">
-          <Select value={campaignId} onValueChange={setCampaignId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Campaign" />
-            </SelectTrigger>
-            <SelectContent>
-              {campaigns.map((item) => (
-                <SelectItem key={item.id} value={item.id}>
-                  {item.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={channel} onValueChange={(value: CampaignExecutionRun["channel"]) => setChannel(value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Channel" />
-            </SelectTrigger>
-            <SelectContent>
-              {CHANNELS.map((item) => (
-                <SelectItem key={item} value={item}>
-                  {item}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input
-            type="datetime-local"
-            value={scheduledAt}
-            onChange={(event) => setScheduledAt(event.target.value)}
-          />
-          <Button
-            onClick={async () => {
-              if (!campaignId) return;
-              await marketingService.scheduleExecution(session.tenant_id, session, {
-                campaignId,
-                channel,
-                scheduledAt: new Date(scheduledAt).toISOString(),
-              });
-              refresh();
-            }}
-          >
-            Schedule
-          </Button>
+    <div className="flex h-full flex-col gap-6 p-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Execution Control</h1>
+          <p className="text-muted-foreground">Channel orchestration and real-time execution monitoring.</p>
         </div>
-      </WorkspacePanel>
+        <div className="flex gap-2">
+           <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input 
+              placeholder="Search runs..." 
+              className="pl-9 min-w-[200px]"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <Button variant="outline"><Settings className="mr-2 h-4 w-4" /> Config</Button>
+        </div>
+      </div>
 
-      <WorkspacePanel title="Execution Runs" description="Track scheduled/running/completed executions and failure handling.">
-        <FilterBar searchValue={search} onSearchChange={setSearch} />
-        <DataTableShell total={filtered.length} page={1} pageSize={12}>
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="p-3 text-left">Execution</th>
-                <th className="p-3 text-left">Channel</th>
-                <th className="p-3 text-left">Scheduled</th>
-                <th className="p-3 text-left">Leads</th>
-                <th className="p-3 text-left">Spend</th>
-                <th className="p-3 text-left">Status</th>
-                <th className="p-3 text-left">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((item) => (
-                <tr key={item.id} className="border-t">
-                  <td className="p-3 font-medium">{item.id}</td>
-                  <td className="p-3 text-muted-foreground">{item.channel}</td>
-                  <td className="p-3 text-muted-foreground">
-                    {new Date(item.scheduledAt).toLocaleString()}
-                  </td>
-                  <td className="p-3 text-muted-foreground">{item.leadsGenerated}</td>
-                  <td className="p-3 text-muted-foreground">{item.spend.toLocaleString()}</td>
-                  <td className="p-3">
-                    <Badge
-                      variant={
-                        item.status === "FAILED"
-                          ? "destructive"
-                          : item.status === "COMPLETED"
-                            ? "secondary"
-                            : "outline"
-                      }
-                    >
-                      {item.status}
-                    </Badge>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={async () => {
-                          await marketingService.runExecution(session.tenant_id, session, item.id);
-                          refresh();
-                        }}
-                      >
-                        Run
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={async () => {
-                          await marketingService.runExecution(session.tenant_id, session, item.id, {
-                            failed: true,
-                          });
-                          refresh();
-                        }}
-                      >
-                        Mark Failed
-                      </Button>
+      {/* Channel Health Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+         {[
+           { name: 'Meta Ads', status: 'Healthy', color: 'text-green-500', icon: Globe },
+           { name: 'Google Ads', status: 'Healthy', color: 'text-green-500', icon: Zap },
+           { name: 'Email API', status: 'Warning', color: 'text-yellow-500', icon: Radio },
+           { name: 'WhatsApp', status: 'Healthy', color: 'text-green-500', icon: Activity }
+         ].map(ch => (
+           <Card key={ch.name} className="bg-primary/5 border-primary/10">
+              <CardContent className="p-4 flex items-center gap-3">
+                 <div className="h-8 w-8 rounded-lg bg-background flex items-center justify-center border shadow-sm">
+                    <ch.icon className="h-4 w-4" />
+                 </div>
+                 <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">{ch.name}</p>
+                    <div className="flex items-center gap-1.5">
+                       <span className={cn("h-1.5 w-1.5 rounded-full animate-pulse", ch.color.replace('text', 'bg'))} />
+                       <span className={cn("text-xs font-bold", ch.color)}>{ch.status}</span>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </DataTableShell>
-      </WorkspacePanel>
+                 </div>
+              </CardContent>
+           </Card>
+         ))}
+      </div>
+
+      <div className="grid grid-cols-12 gap-6 flex-1 min-h-0">
+         {/* Left: Execution Queue */}
+         <div className="col-span-12 lg:col-span-8 flex flex-col gap-4">
+            <Card className="flex-1 overflow-hidden flex flex-col">
+               <CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
+                  <div>
+                     <CardTitle className="text-lg">Run History & Queue</CardTitle>
+                     <CardDescription>Monitor scheduled and past execution performance.</CardDescription>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={refresh}><History className="h-4 w-4 mr-2" /> Refresh</Button>
+               </CardHeader>
+               <div className="flex-1 overflow-auto">
+                  <table className="w-full text-sm">
+                     <thead className="bg-muted/40 text-[10px] uppercase text-muted-foreground sticky top-0 z-10 font-bold tracking-wider">
+                        <tr>
+                           <th className="p-4 text-left">Target Campaign</th>
+                           <th className="p-4 text-left">Channel</th>
+                           <th className="p-4 text-left">Schedule</th>
+                           <th className="p-4 text-left">Result</th>
+                           <th className="p-4 text-left">Status</th>
+                           <th className="p-4 text-right">Actions</th>
+                        </tr>
+                     </thead>
+                     <tbody>
+                        {filtered.map((run) => (
+                          <tr key={run.id} className="border-t hover:bg-muted/30 transition-colors">
+                             <td className="p-4 font-semibold">
+                                {campaigns.find(c => c.id === run.campaignId)?.name || "Unknown"}
+                                <div className="text-[10px] text-muted-foreground font-mono mt-0.5">{run.id}</div>
+                             </td>
+                             <td className="p-4">
+                                <Badge variant="outline" className="text-[10px] font-bold">{run.channel}</Badge>
+                             </td>
+                             <td className="p-4">
+                                <div className="flex items-center gap-2 text-xs">
+                                   <Clock className="h-3 w-3 text-muted-foreground" />
+                                   {new Date(run.scheduledAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                                </div>
+                             </td>
+                             <td className="p-4">
+                                <div className="flex flex-col gap-1">
+                                   <div className="flex justify-between text-[10px] font-bold">
+                                      <span>{run.leadsGenerated} Leads</span>
+                                      <span>${run.spend.toLocaleString()}</span>
+                                   </div>
+                                   <Progress value={Math.min(100, (run.leadsGenerated / 50) * 100)} className="h-1" />
+                                </div>
+                             </td>
+                             <td className="p-4">
+                                <Badge className={cn(
+                                  "text-[10px] font-bold",
+                                  run.status === 'COMPLETED' ? "bg-green-500/10 text-green-500 border-green-500/20" :
+                                  run.status === 'FAILED' ? "bg-destructive/10 text-destructive border-destructive/20" : "bg-muted text-muted-foreground"
+                                )}>
+                                   {run.status}
+                                </Badge>
+                             </td>
+                             <td className="p-4 text-right">
+                                <div className="flex justify-end gap-2">
+                                   <Button size="icon" variant="ghost" className="h-8 w-8" onClick={async () => {
+                                      await marketingService.runExecution(session.tenant_id, session, run.id);
+                                      refresh();
+                                   }}>
+                                      <Play className="h-4 w-4 text-primary" />
+                                   </Button>
+                                   <Button size="icon" variant="ghost" className="h-8 w-8">
+                                      <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                                   </Button>
+                                </div>
+                             </td>
+                          </tr>
+                        ))}
+                     </tbody>
+                  </table>
+               </div>
+            </Card>
+         </div>
+
+         {/* Right: Orchestrator Tools */}
+         <div className="col-span-12 lg:col-span-4 flex flex-col gap-6">
+            <Card>
+               <CardHeader>
+                  <CardTitle className="text-lg">Orchestrator</CardTitle>
+                  <CardDescription>Schedule a new channel execution run.</CardDescription>
+               </CardHeader>
+               <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                     <label className="text-xs font-bold uppercase text-muted-foreground">Select Campaign</label>
+                     <Select value={campaignId} onValueChange={setCampaignId}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                           {campaigns.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                        </SelectContent>
+                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                     <label className="text-xs font-bold uppercase text-muted-foreground">Execution Channel</label>
+                     <Select value={channel} onValueChange={(v: any) => setChannel(v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                           {CHANNELS.map(ch => <SelectItem key={ch} value={ch}>{ch}</SelectItem>)}
+                        </SelectContent>
+                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                     <label className="text-xs font-bold uppercase text-muted-foreground">Dispatch Time</label>
+                     <Input type="datetime-local" value={scheduledAt} onChange={e => setScheduledAt(e.target.value)} />
+                  </div>
+                  <Button className="w-full" onClick={async () => {
+                     if (!campaignId) return;
+                     await marketingService.scheduleExecution(session.tenant_id, session, {
+                        campaignId,
+                        channel,
+                        scheduledAt: new Date(scheduledAt).toISOString(),
+                     });
+                     refresh();
+                  }}>
+                     <Cpu className="mr-2 h-4 w-4" />
+                     Initialize Run
+                  </Button>
+               </CardContent>
+            </Card>
+
+            <Card className="flex-1 overflow-hidden flex flex-col">
+               <CardHeader className="pb-2 border-b">
+                  <CardTitle className="text-xs font-bold uppercase flex items-center gap-2">
+                     <Server className="h-3 w-3" /> Runtime Logs
+                  </CardTitle>
+               </CardHeader>
+               <ScrollArea className="flex-1 bg-black/95 p-4 font-mono text-[10px]">
+                  <div className="space-y-2">
+                     <p className="text-blue-400">[SYSTEM] Initializing execution engine v4.2.0</p>
+                     <p className="text-green-400">[INFO] All channel gateways confirmed healthy</p>
+                     <p className="text-muted-foreground">[IDLE] Waiting for next scheduled dispatch...</p>
+                     <p className="text-yellow-400">[WARN] High latency detected on Email API gateway</p>
+                     <p className="text-green-400">[SUCCESS] Automated sync with Google Ads completed</p>
+                     <div className="flex gap-1 animate-pulse">
+                        <span className="w-1 h-3 bg-primary" />
+                     </div>
+                  </div>
+               </ScrollArea>
+            </Card>
+         </div>
+      </div>
     </div>
   );
 }

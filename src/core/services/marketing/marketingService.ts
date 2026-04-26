@@ -11,6 +11,7 @@ import type {
   MarketingCampaign,
   MarketingDashboardMetrics,
   MarketingLead,
+  MarketingFunnel,
   NurtureWorkflow,
 } from "@/core/types/marketing/marketing";
 
@@ -26,6 +27,12 @@ export const marketingService = {
   
   listWorkflows: async (tenantId: string, session: SessionContext) => 
     apiRequest<NurtureWorkflow[]>("/v1/marketing/workflows", "GET", session),
+  
+  listFunnels: async (tenantId: string, session: SessionContext) => 
+    apiRequest<MarketingFunnel[]>("/v1/marketing/funnels", "GET", session),
+  
+  listConversations: async (tenantId: string, session: SessionContext) => 
+    apiRequest<any[]>("/v1/marketing/conversations", "GET", session),
   
   listConnectedAccounts: async (tenantId: string, session: SessionContext) => 
     apiRequest<ConnectedAccount[]>("/v1/marketing/accounts", "GET", session),

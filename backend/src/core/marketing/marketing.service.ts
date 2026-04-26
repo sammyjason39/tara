@@ -300,4 +300,8 @@ export class MarketingService {
   async getAuditEvents(ctx: TenantContext) {
     return this.repository.getAuditEvents(ctx);
   }
+
+  async getFunnels(ctx: TenantContext) {
+    return this.repository.getFunnels(ctx);
+  }
 }
