@@ -582,6 +582,7 @@ export class MarketingMockRepository extends IMarketingRepository {
         revenueAttributed,
         spend: campaignSpend,
         roiPercent,
+        model: "LAST_CLICK",
         created_at: this.now(),
       });
     }
@@ -898,5 +899,16 @@ export class MarketingMockRepository extends IMarketingRepository {
     };
     store.assets.unshift(created);
     return created;
+  }
+
+  async calculateAdvancedAttribution(ctx: TenantContext, model: "FIRST_CLICK" | "LINEAR" | "LAST_CLICK"): Promise<any> {
+    const store = this.getStore(ctx.tenant_id);
+    const leads = store.leads;
+    return leads.map(lead => ({
+      leadId: lead.id,
+      campaignId: lead.campaignId,
+      attributedRevenue: 1000,
+      model
+    }));
   }
 }

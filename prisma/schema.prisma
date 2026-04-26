@@ -16,6 +16,8 @@ model tenants {
   updated_at                             DateTime                                 @default(now())
   deleted_at                             DateTime?
   branding_config                        Json? // Custom logos, colors, etc.
+  custom_domain                          String? @unique
+  dns_config                             Json? // CNAME records, SSL status, etc.
   companies                              companies[]
   users                                  users[]
   accounting_periods                     accounting_periods[]

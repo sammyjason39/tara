@@ -710,7 +710,7 @@ export class MarketingDbRepository extends IMarketingRepository {
   async calculateAdvancedAttribution(ctx: TenantContext, model: "FIRST_CLICK" | "LINEAR" | "LAST_CLICK"): Promise<any> {
     const leads = await this.prisma.marketing_leads.findMany({
       where: MultiTenancyUtil.getScope(ctx),
-      include: { marketing_campaigns: true }
+      include: { tenants: true }
     });
 
     // In a real scenario, we would fetch touchpoints.

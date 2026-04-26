@@ -136,4 +136,6 @@ export abstract class IMarketingRepository {
   
   abstract getCreativeAssets(ctx: TenantContext): Promise<MarketingCreativeAsset[]>;
   abstract createCreativeAsset(ctx: TenantContext, data: Partial<MarketingCreativeAsset>): Promise<MarketingCreativeAsset>;
+  
+  abstract calculateAdvancedAttribution(ctx: TenantContext, model: "FIRST_CLICK" | "LINEAR" | "LAST_CLICK"): Promise<any>;
 }

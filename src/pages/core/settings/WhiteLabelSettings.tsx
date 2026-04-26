@@ -17,6 +17,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 export default function WhiteLabelSettings() {
   const [loading, setLoading] = useState(false);
@@ -150,10 +151,13 @@ export default function WhiteLabelSettings() {
             <TabsContent value="domain" className="space-y-6">
               <Card className="border-slate-200/60 dark:border-slate-700/60 shadow-sm bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
                 <CardHeader>
-                  <CardTitle className="text-lg">Custom Domain Configuration</CardTitle>
-                  <CardDescription>Host the dashboard on your own subdomain.</CardDescription>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Globe className="h-5 w-5 text-indigo-500" />
+                    Custom Domain Configuration
+                  </CardTitle>
+                  <CardDescription>Host the dashboard on your own subdomain with full SSL support.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6">
                   <div className="space-y-2">
                     <Label>Subdomain / Custom Domain</Label>
                     <div className="flex gap-2">
@@ -162,13 +166,47 @@ export default function WhiteLabelSettings() {
                         value={config.customDomain}
                         onChange={(e) => setConfig({...config, customDomain: e.target.value})}
                       />
-                      <Button variant="outline">Verify DNS</Button>
+                      <Button variant="outline" className="gap-2">
+                        <RefreshCcw className="h-4 w-4" /> Verify DNS
+                      </Button>
                     </div>
-                    <p className="text-xs text-slate-500 bg-slate-100 dark:bg-slate-800 p-2 rounded border border-slate-200 dark:border-slate-700 mt-2">
-                      CNAME Record: <strong>app.myagency.com</strong> → <strong>lb.zenvix.ai</strong>
-                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div className="bg-slate-50 dark:bg-slate-800 p-3 border-b border-slate-200 dark:border-slate-700">
+                      <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Required DNS Records</p>
+                    </div>
+                    <div className="p-4 space-y-4">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-mono text-indigo-500">CNAME</span>
+                          <span className="text-slate-400">Value: lb.zenvix.ai</span>
+                        </div>
+                        <div className="h-10 bg-white dark:bg-slate-900 border rounded flex items-center px-3 justify-between">
+                          <code className="text-xs">{config.customDomain || "app.your-agency.com"}</code>
+                          <Badge variant="outline" className="text-[10px] text-orange-500 border-orange-500/20 bg-orange-500/5">Pending</Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200/50 dark:border-amber-900/50 rounded-lg">
+                        <div className="flex gap-3">
+                          <Shield className="h-5 w-5 text-amber-500 shrink-0" />
+                          <div className="space-y-1">
+                            <p className="text-xs font-bold text-amber-700 dark:text-amber-400">SSL Certificate Generation</p>
+                            <p className="text-[11px] text-amber-600 dark:text-amber-500 leading-relaxed">
+                              Once DNS is verified, we will automatically provision an SSL certificate for your domain. This process can take up to 24 hours.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
+                <CardFooter className="bg-slate-50/50 dark:bg-slate-800/50 p-4">
+                   <p className="text-[11px] text-slate-500">
+                     Note: Full custom domain routing requires infrastructure-level proxy configuration. Our team will finalize the setup within 48 hours of DNS verification.
+                   </p>
+                </CardFooter>
               </Card>
             </TabsContent>
 
