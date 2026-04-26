@@ -6232,9 +6232,9 @@ enum ChatMessageType {
 enum ChatRoomType {
   DIRECT
   GROUP
-  departments
-  locations
-  companies
+  DEPARTMENT
+  LOCATION
+  COMPANY
   ROLE
 }
 
