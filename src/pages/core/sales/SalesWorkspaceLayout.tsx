@@ -24,6 +24,7 @@ import {
   Rocket,
   ScrollText,
   LayoutDashboard,
+  Wallet,
 } from "lucide-react";
 
 type MenuItem = { label: string; to: string; icon: React.ElementType };
