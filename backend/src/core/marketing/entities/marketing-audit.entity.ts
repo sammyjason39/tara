@@ -14,4 +14,8 @@ export class MarketingAuditEvent {
   entity_id: string;
   detail: string;
   created_at: Date;
+  branch_id?: string;
+  ecommerce_id?: string;
 }
+
+

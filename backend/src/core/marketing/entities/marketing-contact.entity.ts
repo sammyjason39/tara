@@ -13,6 +13,10 @@ export interface MarketingContact {
   last_interaction_at?: Date;
   created_at: Date;
   updated_at: Date;
+  branch_id?: string;
+  ecommerce_id?: string;
   lead_id?: string;
   customer_id?: string;
 }
+
+

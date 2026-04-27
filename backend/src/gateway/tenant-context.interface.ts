@@ -38,4 +38,9 @@ export interface TenantContext {
    * User Role (from x-user-role)
    */
   role?: string;
+  
+  /**
+   * JV Mirror Mode flag
+   */
+  is_jv_read_only?: boolean;
 }

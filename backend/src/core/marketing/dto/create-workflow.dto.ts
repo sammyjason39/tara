@@ -1,4 +1,4 @@
-import { IsArray, IsIn, IsNotEmpty, IsString } from "class-validator";
+import { IsArray, IsIn, IsNotEmpty, IsOptional, IsString } from "class-validator";
 
 export type WorkflowStepInput = {
   id: string;
@@ -19,4 +19,14 @@ export class CreateWorkflowDto {
 
   @IsArray()
   steps: WorkflowStepInput[];
+
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  branch_id?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  ecommerce_id?: string;
 }

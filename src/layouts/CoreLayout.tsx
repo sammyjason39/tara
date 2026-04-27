@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AppSwitcher } from "@/components/shared/AppSwitcher";
+import { JVWorkspaceSwitcher } from "@/core/ui/JVWorkspaceSwitcher";
 import { OfflineIndicator } from "@/components/shared/OfflineIndicator";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -232,6 +233,7 @@ export function CoreLayout() {
               <Menu size={20} />
             </Button>
             <AppSwitcher />
+            <JVWorkspaceSwitcher />
           </div>
 
           <div className="flex items-center gap-4">

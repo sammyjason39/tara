@@ -10,4 +10,8 @@ export class MarketingAttribution {
   roiPercent: number;
   model: string;
   created_at: Date;
+  branch_id?: string;
+  ecommerce_id?: string;
 }
+
+

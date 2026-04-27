@@ -57,4 +57,12 @@ export class CaptureLeadDto {
   @IsString()
   @IsOptional()
   employeeBand?: string;
+
+  @IsString()
+  @IsOptional()
+  branch_id?: string;
+
+  @IsString()
+  @IsOptional()
+  ecommerce_id?: string;
 }

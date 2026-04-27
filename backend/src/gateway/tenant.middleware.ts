@@ -7,6 +7,7 @@ import {
 import { Request, Response, NextFunction } from "express";
 import { TenantContext } from "./tenant-context.interface";
 import { AuthService } from "../core/auth/auth.service";
+import { PrismaService } from "../persistence/prisma.service";
 
 /**
  * Tenant Middleware
@@ -16,7 +17,10 @@ import { AuthService } from "../core/auth/auth.service";
  */
 @Injectable()
 export class TenantMiddleware implements NestMiddleware {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly prisma: PrismaService
+  ) {}
 
   async use(req: any, res: Response, next: NextFunction) {
     // 1. Extract tenant ID from header (REQUIRED for multi-tenancy)
@@ -57,6 +61,7 @@ export class TenantMiddleware implements NestMiddleware {
 
     const user_id = verifiedUser.id;
     const location_id = req.headers["x-location-id"];
+    const branch_id = req.headers["x-branch-id"] || location_id;
     const ecommerce_id = req.headers["x-ecommerce-id"];
     const company_id = req.headers["x-company-id"] || tenant_id;
 
@@ -77,25 +82,66 @@ export class TenantMiddleware implements NestMiddleware {
       const tenantAssoc = userCompanies.find(
         (uc: any) => uc.tenant_id === tenant_id,
       );
+      
+      const isJVTarget = !tenantAssoc && tenant_id !== verifiedUser.tenant_id;
 
-      if (!tenantAssoc) {
+      if (!tenantAssoc && !isJVTarget) {
         throw new UnauthorizedException(
           `Access Denied: User ${user_id} is not associated with tenant ${tenant_id}`,
         );
       }
 
-      activeRole = tenantAssoc.role;
-      console.log(`[RBAC] User ${user_id} authorized for tenant ${tenant_id} with role ${activeRole}`);
+      if (isJVTarget) {
+        // Attempt JV Mirroring
+        const jvParticipation: any = await this.prisma.finance_jv_participants.findFirst({
+          where: {
+            participant_tenant_id: verifiedUser.tenant_id,
+            jv_profiles: {
+              tenant_id: tenant_id as string,
+              is_active: true
+            }
+          },
+          include: {
+            jv_profiles: {
+              include: {
+                scopes: true
+              }
+            }
+          }
+        });
+
+        if (jvParticipation) {
+          activeRole = "JV_PARTNER";
+          console.log(`[JV-MIRROR] User ${user_id} granted PARTNER access to host ${tenant_id}`);
+          
+          // Apply JV Scope to headers if not already set or override
+          const scope = jvParticipation.jv_profiles.scopes[0];
+          if (scope) {
+            req.headers["x-branch-id"] = scope.branch_id || req.headers["x-branch-id"];
+            req.headers["x-ecommerce-id"] = scope.ecommerce_id || req.headers["x-ecommerce-id"];
+          }
+          req.is_jv_read_only = true;
+        } else {
+          throw new UnauthorizedException(
+            `Access Denied: No active Joint Venture participation found for user ${user_id} in tenant ${tenant_id}`,
+          );
+        }
+      } else {
+        activeRole = tenantAssoc.role;
+        console.log(`[RBAC] User ${user_id} authorized for tenant ${tenant_id} with role ${activeRole}`);
+      }
     }
 
     // Attach tenant context to request object
     req.tenantContext = {
       tenant_id: tenant_id as string,
       company_id: company_id as string,
+      branch_id: branch_id as string | undefined,
       location_id: location_id as string | undefined,
       ecommerce_id: ecommerce_id as string | undefined,
       user_id,
       role: activeRole,
+      is_jv_read_only: req.is_jv_read_only,
     };
 
     req.user = verifiedUser;

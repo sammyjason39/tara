@@ -31,4 +31,12 @@ export class ScheduleExecutionDto {
   @IsString()
   @IsOptional()
   notes?: string;
+
+  @IsString()
+  @IsOptional()
+  branch_id?: string;
+
+  @IsString()
+  @IsOptional()
+  ecommerce_id?: string;
 }

@@ -1,5 +1,6 @@
 services:
   db:
+    container_name: bfs-db
     image: postgres:16
     restart: always
     environment:
@@ -10,8 +11,14 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   backend:
+    container_name: bfs-backend
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -22,23 +29,36 @@ services:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://${POSTGRES_USER:-zenvix}:${POSTGRES_PASSWORD:-zenvix_dev_password}@db:5432/${POSTGRES_DB:-zenvix_dev}?schema=public
       - RUNTIME=docker
-      - STRIPE_SECRET_KEY=sk_test_placeholder
-      - STRIPE_WEBHOOK_SECRET=whsec_placeholder
-      - FRONTEND_URL=http://localhost:80
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - FRONTEND_URL=${FRONTEND_URL}
     volumes:
       - ./backups:/app/backups
     depends_on:
       - db
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
+    container_name: bfs-frontend
     build:
       context: .
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "80:80"
+      - "3010:80"
+    environment:
+      - BACKEND_URL=http://bfs-backend:3001
     depends_on:
       - backend
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   postgres_data:

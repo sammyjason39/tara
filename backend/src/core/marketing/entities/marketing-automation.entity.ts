@@ -9,6 +9,8 @@ export interface MarketingAutomationRule {
   status: string;
   created_at: Date;
   updated_at: Date;
+  branch_id?: string;
+  ecommerce_id?: string;
 }
 
 export interface MarketingAutomationLog {
@@ -19,3 +21,5 @@ export interface MarketingAutomationLog {
   result?: string;
   triggered_at: Date;
 }
+
+

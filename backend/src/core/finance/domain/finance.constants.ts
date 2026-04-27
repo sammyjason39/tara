@@ -58,3 +58,14 @@ export enum JournalType {
   /** System-generated journal for automated balance repair/reconciliation. */
   SYSTEM_ADJUSTMENT = 'SYSTEM_ADJUSTMENT',
 }
+
+export enum JVParticipantRole {
+  OPERATOR = 'OPERATOR',
+  NON_OPERATOR = 'NON_OPERATOR',
+}
+
+export enum JVAllocationType {
+  REVENUE = 'REVENUE',
+  COST = 'COST',
+  PROFIT = 'PROFIT',
+}

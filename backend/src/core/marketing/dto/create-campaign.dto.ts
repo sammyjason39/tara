@@ -47,4 +47,12 @@ export class CreateCampaignDto {
   @IsString()
   @IsNotEmpty()
   audience: string;
+
+  @IsString()
+  @IsOptional()
+  branch_id?: string;
+
+  @IsString()
+  @IsOptional()
+  ecommerce_id?: string;
 }

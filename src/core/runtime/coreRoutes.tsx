@@ -45,6 +45,7 @@ import InvoiceCapture from "@/pages/core/finance/InvoiceCapture";
 import FinanceDocs from "@/pages/core/finance/FinanceDocs";
 import Assets from "@/pages/core/finance/Assets";
 import PolicyManager from "@/pages/core/finance/PolicyManager";
+import JVDesk from "@/pages/core/finance/JVDesk";
 import { CFODashboard } from "@/pages/core/finance/CFODashboard";
 import PaymentWorkspaceLayout from "@/pages/core/payment/PaymentWorkspaceLayout";
 import PaymentDashboard from "@/pages/core/payment/PaymentDashboard";
@@ -269,6 +270,14 @@ export function buildCoreRoutes(): JSX.Element[] {
         element={
           <ProtectedRoute permission="finance.policy.manage" scope="COMPANY">
             <PolicyManager />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="jv"
+        element={
+          <ProtectedRoute permission="finance.workspace.access" scope="COMPANY">
+            <JVDesk />
           </ProtectedRoute>
         }
       />

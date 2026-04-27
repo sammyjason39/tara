@@ -57,6 +57,8 @@ export class MarketingDbRepository extends IMarketingRepository {
       aiRecommendation: db.aiRecommendation,
       created_at: db.created_at,
       updated_at: db.updated_at,
+      branch_id: db.branch_id ?? undefined,
+      ecommerce_id: db.ecommerce_id ?? undefined,
     };
   }
 
@@ -73,6 +75,8 @@ export class MarketingDbRepository extends IMarketingRepository {
       notes: db.notes,
       created_at: db.created_at,
       updated_at: db.updated_at,
+      branch_id: db.branch_id ?? undefined,
+      ecommerce_id: db.ecommerce_id ?? undefined,
     };
   }
 
@@ -97,6 +101,8 @@ export class MarketingDbRepository extends IMarketingRepository {
       salesHandoffId: db.salesHandoffId,
       created_at: db.created_at,
       updated_at: db.updated_at,
+      branch_id: db.branch_id ?? undefined,
+      ecommerce_id: db.ecommerce_id ?? undefined,
     };
   }
 
@@ -188,10 +194,9 @@ export class MarketingDbRepository extends IMarketingRepository {
     actor_id: string,
   ): Promise<MarketingCampaign> {
     const item = await this.prisma.marketing_campaigns.create({
-      data: {
+      data: MultiTenancyUtil.wrapCreate(ctx, {
         id: uuidv4(),
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
         name: dto.name,
         objective: dto.objective,
         channel_mix: dto.channel_mix,
@@ -204,7 +209,7 @@ export class MarketingDbRepository extends IMarketingRepository {
         end_date: new Date(dto.end_date),
         audience: dto.audience,
         ai_recommendation: "System generated budget allocation recommended.",
-      },
+      }),
     });
     return this.mapCampaign(item);
   }
@@ -232,10 +237,9 @@ export class MarketingDbRepository extends IMarketingRepository {
     dto: ScheduleExecutionDto,
   ): Promise<MarketingExecution> {
     const item = await this.prisma.marketing_executions.create({
-      data: {
+      data: MultiTenancyUtil.wrapCreate(ctx, {
         id: uuidv4(),
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
         campaign_id: dto.campaignId,
         channel: dto.channel,
         scheduled_at: new Date(dto.scheduledAt),
@@ -243,7 +247,7 @@ export class MarketingDbRepository extends IMarketingRepository {
         leads_generated: 0,
         spend: 0,
         notes: dto.notes,
-      },
+      }),
     });
     return this.mapExecution(item);
   }
@@ -277,10 +281,9 @@ export class MarketingDbRepository extends IMarketingRepository {
     const dedupKey =
       `${dto.company_name}-${dto.email || dto.phone || dto.contact_name}`.toLowerCase();
     const item = await this.prisma.marketing_leads.create({
-      data: {
+      data: MultiTenancyUtil.wrapCreate(ctx, {
         id: uuidv4(),
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
         campaign_id: dto.campaignId,
         source: dto.source,
         company_name: dto.company_name,
@@ -294,7 +297,7 @@ export class MarketingDbRepository extends IMarketingRepository {
         score: 50,
         intent: "MEDIUM",
         status: "SCORED",
-      },
+      }),
     });
     return this.mapLead(item);
   }
@@ -333,6 +336,8 @@ export class MarketingDbRepository extends IMarketingRepository {
       aiSuggestion: i.aiSuggestion || undefined,
       created_at: i.created_at,
       updated_at: i.updated_at,
+      branch_id: i.branch_id ?? undefined,
+      ecommerce_id: i.ecommerce_id ?? undefined,
     }));
   }
 
@@ -340,15 +345,14 @@ export class MarketingDbRepository extends IMarketingRepository {
     dto: CreateWorkflowDto,
   ): Promise<MarketingWorkflow> {
     const item = await this.prisma.marketing_workflows.create({
-      data: {
+      data: MultiTenancyUtil.wrapCreate(ctx, {
         id: uuidv4(),
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
         name: dto.name,
         trigger: dto.trigger,
         status: "DRAFT",
         steps: dto.steps as any,
-      },
+      }),
     });
     return {
       id: item.id,
@@ -360,6 +364,8 @@ export class MarketingDbRepository extends IMarketingRepository {
       aiSuggestion: item.ai_suggestion || undefined,
       created_at: item.created_at,
       updated_at: item.updated_at,
+      branch_id: item.branch_id ?? undefined,
+      ecommerce_id: item.ecommerce_id ?? undefined,
     };
   }
 
@@ -381,6 +387,8 @@ export class MarketingDbRepository extends IMarketingRepository {
       aiSuggestion: item.ai_suggestion || undefined,
       created_at: item.created_at,
       updated_at: item.updated_at,
+      branch_id: item.branch_id ?? undefined,
+      ecommerce_id: item.ecommerce_id ?? undefined,
     };
   }
 
@@ -400,6 +408,8 @@ export class MarketingDbRepository extends IMarketingRepository {
       lastSyncAt: i.lastSyncAt,
       created_at: i.created_at,
       updated_at: i.updated_at,
+      branch_id: i.branch_id ?? undefined,
+      ecommerce_id: i.ecommerce_id ?? undefined,
     }));
   }
 
@@ -407,17 +417,16 @@ export class MarketingDbRepository extends IMarketingRepository {
     dto: ConnectAccountDto,
   ): Promise<MarketingConnectedAccount> {
     const item = await this.prisma.marketing_accounts.create({
-      data: {
+      data: MultiTenancyUtil.wrapCreate(ctx, {
         id: uuidv4(),
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
         provider: dto.provider,
         account_name: dto.account_name,
         status: "CONNECTED",
         token_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         scopes: dto.scopes,
         last_sync_at: new Date(),
-      },
+      }),
     });
     return {
       id: item.id,
@@ -430,6 +439,8 @@ export class MarketingDbRepository extends IMarketingRepository {
       lastSyncAt: item.last_sync_at || undefined,
       created_at: item.created_at,
       updated_at: item.updated_at,
+      branch_id: item.branch_id ?? undefined,
+      ecommerce_id: item.ecommerce_id ?? undefined,
     };
   }
 
@@ -452,6 +463,8 @@ export class MarketingDbRepository extends IMarketingRepository {
       lastSyncAt: item.last_sync_at || undefined,
       created_at: item.created_at,
       updated_at: item.updated_at,
+      branch_id: item.branch_id ?? undefined,
+      ecommerce_id: item.ecommerce_id ?? undefined,
     };
   }
 
@@ -471,6 +484,8 @@ export class MarketingDbRepository extends IMarketingRepository {
       roiPercent: Number(i.roi_percent),
       model: i.model || "LAST_CLICK",
       created_at: i.created_at,
+      branch_id: i.branch_id ?? undefined,
+      ecommerce_id: i.ecommerce_id ?? undefined,
     }));
   }
 
@@ -490,6 +505,8 @@ export class MarketingDbRepository extends IMarketingRepository {
       acknowledged: i.acknowledged,
       created_at: i.created_at,
       updated_at: i.updated_at,
+      branch_id: i.branch_id ?? undefined,
+      ecommerce_id: i.ecommerce_id ?? undefined,
     }));
   }
 
@@ -511,6 +528,8 @@ export class MarketingDbRepository extends IMarketingRepository {
       acknowledged: item.acknowledged,
       created_at: item.created_at,
       updated_at: item.updated_at,
+      branch_id: item.branch_id ?? undefined,
+      ecommerce_id: item.ecommerce_id ?? undefined,
     };
   }
 
@@ -560,9 +579,8 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async createContact(ctx: TenantContext, data: Partial<MarketingContact>): Promise<MarketingContact> {
     const item = await this.prisma.marketing_contacts.create({
-      data: {
+      data: MultiTenancyUtil.wrapCreate(ctx, {
         id: uuidv4(),
-        ...MultiTenancyUtil.getScope(ctx),
         first_name: data.first_name || "",
         last_name: data.last_name || "",
         email: data.email,
@@ -573,7 +591,7 @@ export class MarketingDbRepository extends IMarketingRepository {
         behavioral_data: data.behavioral_data || {},
         created_at: new Date(),
         updated_at: new Date(),
-      }
+      }),
     });
     return item as any;
   }
@@ -589,15 +607,14 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async createFunnel(ctx: TenantContext, data: Partial<MarketingFunnel>): Promise<MarketingFunnel> {
     const item = await this.prisma.marketing_funnels.create({
-      data: {
+      data: MultiTenancyUtil.wrapCreate(ctx, {
         id: uuidv4(),
-        ...MultiTenancyUtil.getScope(ctx),
         name: data.name || "Unnamed Funnel",
         description: data.description,
         status: "DRAFT",
         created_at: new Date(),
         updated_at: new Date(),
-      },
+      }),
       include: { steps: true }
     });
     return item as any;
@@ -613,9 +630,8 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async createAppointment(ctx: TenantContext, data: Partial<MarketingAppointment>): Promise<MarketingAppointment> {
     const item = await this.prisma.marketing_appointments.create({
-      data: {
+      data: MultiTenancyUtil.wrapCreate(ctx, {
         id: uuidv4(),
-        ...MultiTenancyUtil.getScope(ctx),
         contact_id: data.contact_id!,
         staff_id: data.staff_id,
         scheduled_at: new Date(data.scheduled_at!),
@@ -624,7 +640,7 @@ export class MarketingDbRepository extends IMarketingRepository {
         notes: data.notes,
         created_at: new Date(),
         updated_at: new Date(),
-      }
+      }),
     });
     return item as any;
   }
@@ -639,9 +655,8 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async createAutomationRule(ctx: TenantContext, data: Partial<MarketingAutomationRule>): Promise<MarketingAutomationRule> {
     const item = await this.prisma.marketing_automation_rules.create({
-      data: {
+      data: MultiTenancyUtil.wrapCreate(ctx, {
         id: uuidv4(),
-        ...MultiTenancyUtil.getScope(ctx),
         name: data.name || "Unnamed Rule",
         trigger_event: data.trigger_event || "lead.created",
         conditions: data.conditions || {},
@@ -649,7 +664,7 @@ export class MarketingDbRepository extends IMarketingRepository {
         status: "INACTIVE",
         created_at: new Date(),
         updated_at: new Date(),
-      }
+      }),
     });
     return item as any;
   }
@@ -667,9 +682,8 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async sendMessage(ctx: TenantContext, data: Partial<MarketingOmnichannelMessage>): Promise<MarketingOmnichannelMessage> {
     const item = await this.prisma.marketing_omnichannel_messages.create({
-      data: {
+      data: MultiTenancyUtil.wrapCreate(ctx, {
         id: uuidv4(),
-        ...MultiTenancyUtil.getScope(ctx),
         contact_id: data.contact_id!,
         channel: data.channel || "EMAIL",
         direction: "OUTBOUND",
@@ -677,7 +691,7 @@ export class MarketingDbRepository extends IMarketingRepository {
         status: "SENT",
         sent_at: new Date(),
         metadata: data.metadata || {},
-      }
+      }),
     });
     return item as any;
   }
@@ -692,9 +706,8 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async createCreativeAsset(ctx: TenantContext, data: Partial<MarketingCreativeAsset>): Promise<MarketingCreativeAsset> {
     const item = await this.prisma.marketing_creative_assets.create({
-      data: {
+      data: MultiTenancyUtil.wrapCreate(ctx, {
         id: uuidv4(),
-        ...MultiTenancyUtil.getScope(ctx),
         name: data.name || "Unnamed Asset",
         type: data.type || "IMAGE",
         url: data.url || "",
@@ -702,7 +715,7 @@ export class MarketingDbRepository extends IMarketingRepository {
         metadata: data.metadata || {},
         created_at: new Date(),
         updated_at: new Date(),
-      }
+      }),
     });
     return item as any;
   }
@@ -729,3 +742,4 @@ export class MarketingDbRepository extends IMarketingRepository {
     return results;
   }
 }
+

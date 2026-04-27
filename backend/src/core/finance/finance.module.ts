@@ -32,8 +32,9 @@ import { BalanceSheetService } from './services/balance-sheet.service';
 import { CashFlowService } from './services/cash-flow.service';
 import { FinancialReportService } from './services/financial-report.service';
 import { ReportingEngineService } from './services/reporting-engine.service';
-import { PeriodClosingService } from './services/period-closing.service';
 import { ArCreditMemoService } from './ar/services/ar-credit-memo.service';
+import { JVAllocationService } from './services/jv-allocation.service';
+import { JVReportingService } from './services/jv-reporting.service';
 
 // Repositories
 import { CoaDbRepository } from './repositories/coa.db.repository';
@@ -51,6 +52,7 @@ import { ArCustomerDbRepository } from './ar/repositories/ar-customer.db.reposit
 import { ArCustomerCreditDbRepository } from './ar/repositories/ar-customer-credit.db.repository';
 import { ArCreditMemoDbRepository } from './ar/repositories/ar-credit-memo.db.repository';
 import { InventorySubledgerDbRepository } from './subledger/repositories/inventory-subledger.db.repository';
+import { JVDbRepository } from './repositories/jv.db.repository';
 import { DbUnitOfWork } from './repositories/uow.db';
 import { IFinanceRepository } from './repositories/finance.repository.interface';
 import { IChartOfAccountRepository } from './repositories/interfaces/coa.repository.interface';
@@ -92,6 +94,7 @@ import { ArCustomerMockRepository } from './ar/repositories/ar-customer.mock.rep
 import { ArCustomerCreditMockRepository } from './ar/repositories/ar-customer-credit.mock.repository';
 import { ArCreditMemoMockRepository } from './ar/repositories/ar-credit-memo.mock.repository';
 import { InventorySubledgerMockRepository } from './subledger/repositories/inventory-subledger.mock.repository';
+import { JVMockRepository } from './repositories/jv.mock.repository';
 
 
 // Mock Fallbacks (for missing schema models)
@@ -139,6 +142,7 @@ import { RecommendationService } from './services/recommendation.service';
 import { SimulationAdapter } from './adapters/simulation.adapter';
 import { AuditCertificationService } from './services/audit-certification.service';
 import { CertifiedReportingController } from './controllers/certified-reporting.controller';
+import { JVController } from './controllers/jv.controller';
 import { PaymentLifecycleService } from './services/payment-lifecycle.service';
 import { BankIngestionService } from './services/bank-ingestion.service';
 import { ReconciliationService } from './services/reconciliation.service';
@@ -218,6 +222,7 @@ function getRepository(dbClass: any, mockClass: any, fallbackClass?: any) {
     OperationsController,
     ComplianceController,
     ReconciliationController,
+    JVController,
   ],
   providers: [
     FinanceService,
@@ -278,8 +283,9 @@ function getRepository(dbClass: any, mockClass: any, fallbackClass?: any) {
     LedgerEventIngestionWorker,
     LedgerEventLogRetentionService,
     ProjectionRebuildService,
-    PeriodClosingService,
     ArCreditMemoService,
+    JVAllocationService,
+    JVReportingService,
     AssetService,
     DepreciationScheduler,
     CostingEngineService,
@@ -321,6 +327,10 @@ function getRepository(dbClass: any, mockClass: any, fallbackClass?: any) {
     {
       provide: 'ILedgerPostingRepository',
       useClass: getRepository(LedgerPostingDbRepository, LedgerPostingMockRepository),
+    },
+    {
+      provide: 'IJVRepository',
+      useClass: getRepository(JVDbRepository, JVMockRepository),
     },
     {
       provide: 'ILedgerEventLogRepository',
@@ -451,6 +461,7 @@ function getRepository(dbClass: any, mockClass: any, fallbackClass?: any) {
     'IChartOfAccountRepository', 
     'IFiscalPeriodRepository',
     'ILedgerPostingRepository',
+    JVAllocationService,
   ],
 })
 export class FinanceModule implements OnModuleInit {

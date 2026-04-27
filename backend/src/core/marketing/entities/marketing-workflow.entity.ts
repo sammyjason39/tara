@@ -16,4 +16,8 @@ export class MarketingWorkflow {
   aiSuggestion?: string;
   created_at: Date;
   updated_at: Date;
+  branch_id?: string;
+  ecommerce_id?: string;
 }
+
+

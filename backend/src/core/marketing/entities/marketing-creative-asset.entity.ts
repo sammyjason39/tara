@@ -9,4 +9,8 @@ export interface MarketingCreativeAsset {
   metadata?: any;
   created_at: Date;
   updated_at: Date;
+  branch_id?: string;
+  ecommerce_id?: string;
 }
+
+

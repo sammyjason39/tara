@@ -236,7 +236,7 @@ export class IncentivesService {
       where: { tenant_id, company_id },
     });
 
-    const totalIncentive = attributions.reduce((sum, a) => sum.add(a.incentive_amount), new Decimal(0));
+    const totalIncentive = attributions.reduce((sum, a) => sum.add(a.incentive_amount || 0), new Decimal(0));
     
     // Get total revenue for ROI calculation
     const retailRevenue = await this.prisma.retail_orders.aggregate({

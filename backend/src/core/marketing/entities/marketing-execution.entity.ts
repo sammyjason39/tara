@@ -17,4 +17,10 @@ export class MarketingExecution {
   notes?: string;
   created_at: Date;
   updated_at: Date;
+  branch_id?: string;
+  ecommerce_id?: string;
+
 }
+
+
+

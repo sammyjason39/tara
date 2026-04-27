@@ -813,6 +813,32 @@ export const financeService = {
   ): Promise<any[]> {
     return apiRequest<any[]>(`/v1/finance/reconciliation/unmatched-ledger?glAccountId=${glAccountId}`, "GET", session);
   },
+
+  // JV Management
+  async getJVProfiles(session: SessionContext): Promise<any[]> {
+    return apiRequest<any[]>("/v1/finance/jv/profiles", "GET", session);
+  },
+
+  async getJVLedger(session: SessionContext, filters?: any): Promise<any[]> {
+    const query = filters ? new URLSearchParams(filters).toString() : "";
+    return apiRequest<any[]>(`/v1/finance/jv/ledger?${query}`, "GET", session);
+  },
+
+  async getJVNetSettlement(session: SessionContext, periodId: string): Promise<any[]> {
+    return apiRequest<any[]>(`/v1/finance/jv/settlement?periodId=${periodId}`, "GET", session);
+  },
+
+  async getJVParticipations(session: SessionContext): Promise<any[]> {
+    return apiRequest<any[]>("/v1/finance/jv/participations", "GET", session);
+  },
+
+  async inviteJVPartner(session: SessionContext, data: any): Promise<any> {
+    return apiRequest<any>("/v1/finance/jv/invite", "POST", session, data);
+  },
+
+  async acceptJVInvite(session: SessionContext, token: string): Promise<any> {
+    return apiRequest<any>("/v1/finance/jv/accept-invite", "POST", session, { token });
+  },
 };
 
 

@@ -15,6 +15,10 @@ export class MultiTenancyUtil {
       tenant_id: context.tenant_id,
     };
 
+    if (context.branch_id) {
+      scope.branch_id = context.branch_id;
+    }
+
     if (context.ecommerce_id) {
       scope.ecommerce_id = context.ecommerce_id;
     }
@@ -32,6 +36,7 @@ export class MultiTenancyUtil {
     return {
       ...data,
       tenant_id: context.tenant_id,
+      branch_id: context.branch_id || data.branch_id,
       ecommerce_id: context.ecommerce_id || data.ecommerce_id,
     };
   }

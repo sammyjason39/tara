@@ -10,3 +10,5 @@ export interface MarketingOmnichannelMessage {
   sent_at: Date;
   metadata?: any;
 }
+
+

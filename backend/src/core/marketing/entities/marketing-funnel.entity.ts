@@ -8,6 +8,8 @@ export interface MarketingFunnelStep {
   stats?: any;
   created_at: Date;
   updated_at: Date;
+  branch_id?: string;
+  ecommerce_id?: string;
 }
 
 export interface MarketingFunnel {
@@ -20,4 +22,8 @@ export interface MarketingFunnel {
   steps: MarketingFunnelStep[];
   created_at: Date;
   updated_at: Date;
+  branch_id?: string;
+  ecommerce_id?: string;
 }
+
+

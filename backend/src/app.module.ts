@@ -40,6 +40,8 @@ import { ScheduleModule } from "@nestjs/schedule";
 import { ConfigModule } from "@nestjs/config";
 import { validate } from "./config/env.validation";
 
+import { JVReadOnlyGuard } from "./gateway/jv-read-only.guard";
+
 /**
  * App Module
  * Root application module for Zenvix Backend
@@ -94,6 +96,10 @@ import { validate } from "./config/env.validation";
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: JVReadOnlyGuard,
     },
   ],
 })

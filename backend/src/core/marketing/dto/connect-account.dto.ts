@@ -11,4 +11,12 @@ export class ConnectAccountDto {
 
   @IsArray()
   scopes: string[];
+
+  @IsString()
+  @IsNotEmpty()
+  branch_id?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  ecommerce_id?: string;
 }

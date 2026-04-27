@@ -38,9 +38,22 @@ export async function apiRequest<T>(
     headers["x-correlation-id"] = correlationId;
   }
 
-  const finalTenantId = tenantId || session?.tenant_id;
+  // Support JV Mirror Mode via localStorage
+  const jvContextStr = localStorage.getItem('zenvix_jv_context');
+  let jvContext = null;
+  try {
+    if (jvContextStr) jvContext = JSON.parse(jvContextStr);
+  } catch (e) {
+    console.error("Failed to parse JV context", e);
+  }
+
+  const finalTenantId = tenantId || jvContext?.hostTenantId || session?.tenant_id;
   if (finalTenantId) {
     headers["x-tenant-id"] = finalTenantId;
+  }
+
+  if (jvContext?.branchId) {
+    headers["x-branch-id"] = jvContext.branchId;
   }
 
   if (session) {

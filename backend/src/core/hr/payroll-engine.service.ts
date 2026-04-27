@@ -104,7 +104,7 @@ export class PayrollEngineService {
     let totalManualBonus = new Decimal(0);
     let totalManualDeduction = new Decimal(0);
 
-    manualAdjustments.forEach(adj => {
+    manualAdjustments.forEach((adj: any) => {
       if (adj.type === 'BONUS') totalManualBonus = totalManualBonus.plus(new Decimal(adj.amount));
       else if (adj.type === 'DEDUCTION') totalManualDeduction = totalManualDeduction.plus(new Decimal(adj.amount));
     });

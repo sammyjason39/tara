@@ -27,6 +27,7 @@ import {
   FileText,
   FileSignature,
   BookOpen,
+  HandCoins,
 } from "lucide-react";
 
 type MenuItem = { label: string; to: string; icon: React.ElementType };
@@ -57,6 +58,7 @@ const SECTIONS: MenuSection[] = [
       { label: "Pay Flow", to: "/core/finance/payflow", icon: CreditCard },
       { label: "Receivable Desk", to: "/core/finance/receivables", icon: Receipt },
       { label: "Payable Desk", to: "/core/finance/payables", icon: Banknote },
+      { label: "JV Settlement", to: "/core/finance/jv", icon: HandCoins },
     ],
   },
   {

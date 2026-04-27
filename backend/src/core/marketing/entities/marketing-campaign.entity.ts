@@ -23,4 +23,10 @@ export class MarketingCampaign {
   aiRecommendation?: string;
   created_at: Date;
   updated_at: Date;
+  branch_id?: string;
+  ecommerce_id?: string;
+
 }
+
+
+

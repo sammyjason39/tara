@@ -31,6 +31,7 @@ import { JournalDbRepository } from '../repositories/journal.db.repository';
 import { LedgerPostingDbRepository } from '../repositories/ledger-posting.db.repository';
 import { LedgerEventLogDbRepository } from '../repositories/ledger-event-log.db.repository';
 import { AccountBalanceDbRepository } from '../repositories/account-balance.db.repository';
+import { JVAllocationService } from './jv-allocation.service';
 
 @Injectable()
 export class LedgerPostingService {
@@ -63,6 +64,7 @@ export class LedgerPostingService {
     private readonly worker: LedgerWorkerService,
     private readonly monitor: PostingMonitoringService,
     private readonly hashingService: HashingService,
+    private readonly jvAllocationService: JVAllocationService,
   ) {}
 
   async enqueuePosting(tenant_id: string, company_id: string, event_type: string, sourceEventId: string, payload: any, sequenceKey?: string, sequenceNumber?: number, tx?: Prisma.TransactionClient): Promise<string> {
@@ -168,6 +170,10 @@ export class LedgerPostingService {
         });
 
         await journalRepoTx.createLines({ tenant_id, company_id } as any, postedJournal.id, postingLines);
+        
+        // JV Allocation Hook (Shadow Ledger)
+        await this.jvAllocationService.allocate(tenant_id, postedJournal, postingLines, tx);
+
         await this.ledgerRepo.updateStatus(tenant_id, company_id, posting.id, LedgerPostingStatus.COMPLETED);
       });
 
