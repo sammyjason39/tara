@@ -1,7 +1,9 @@
+version: '3.8'
+
 services:
   db:
     container_name: bfs-db
-    image: postgres:16
+    image: postgres:16-alpine
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-zenvix}
@@ -11,6 +13,11 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-zenvix} -d ${POSTGRES_DB:-zenvix_dev}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     logging:
       driver: "json-file"
       options:
@@ -33,9 +40,11 @@ services:
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
       - FRONTEND_URL=${FRONTEND_URL}
     volumes:
-      - ./backups:/app/backups
+      - ./backups:/data/backups
+      - ./logs:/data/logs
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     logging:
       driver: "json-file"
       options:
@@ -52,6 +61,7 @@ services:
       - "3010:80"
     environment:
       - BACKEND_URL=http://bfs-backend:3001
+      - PORT=80
     depends_on:
       - backend
     logging:

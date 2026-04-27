@@ -3,13 +3,37 @@ node_modules/
 dist/
 build/
 *.log
+*.zip
+*.bak
 .db/
-*.txt
-!README.md
-!QUICK_START.md
-!DATABASE_SETUP.md
+.cache/
+dist/
+build/
+node_modules/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Logs and debug
+*.log
+build_errors*.txt
+errors*.txt
+tsc_output.txt
+tsc_errors.txt
+build_output.txt
+
+# Refactoring and temporary scripts
+fix_*.py
+refactor_*.py
+auto_fix_types.py
+warehouse_models.txt
+test_extract/
+
+# Project specifics
 backend/dist/
 frontend/dist/
 /backups/
-.DS_Store
-Thumbs.db
+/logs/
+/storage/reports/

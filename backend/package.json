@@ -50,7 +50,6 @@
     "socket.io": "^4.8.3",
     "stripe": "^22.0.2",
     "uuid": "^14.0.0",
-    "vite_react_shadcn_ts": "file:..",
     "zod": "4.3.6"
   },
   "overrides": {
