@@ -1,36 +1,112 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { 
+  ShoppingBag, 
+  RefreshCw, 
+  Search, 
+  Plus, 
+  ChevronRight, 
+  DollarSign, 
+  ShieldCheck, 
+  CheckCircle2, 
+  Activity, 
+  ArrowUpRight, 
+  User, 
+  Zap, 
+  Info, 
+  Package, 
+  FileCheck,
+  Truck,
+  AlertCircle,
+  Layers,
+  MoreVertical
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/core/ui/PageHeader";
-import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
-import { DataTableShell } from "@/core/tools/DataTableShell";
-import { FilterBar } from "@/core/tools/FilterBar";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogFooter,
+  DialogDescription
+} from "@/components/ui/dialog";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { StrategicExpansionModal } from "@/components/ui/StrategicExpansionModal";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSession } from "@/core/security/session";
 import { salesService } from "@/core/services/sales/salesService";
-import type { SalesOrder } from "@/core/types/sales/sales";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import type { SalesOrder, SalesOpportunity } from "@/core/types/sales/sales";
 
 export default function SalesOrderDesk() {
   const session = useSession();
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [orders, setOrders] = useState<SalesOrder[]>([]);
+  
+  // Create Order from Opp State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [opps, setOpps] = useState<SalesOpportunity[]>([]);
+  const [loadingOpps, setLoadingOpps] = useState(false);
 
-  const refresh = useCallback(async () => {
+  // Strategic Expansion State
+  const [expansionOpen, setExpansionOpen] = useState(false);
+  const [expansionFeature, setExpansionFeature] = useState("");
+
+  const refresh = useCallback(async (isManual = false) => {
     try {
-      setLoading(true);
+      if (isManual) setRefreshing(true);
+      else setLoading(true);
       const data = await salesService.listOrders(session.tenant_id, session);
       setOrders(data);
+      if (isManual) toast.success("Order queue synchronized.");
     } catch (err) {
       console.error("Failed to fetch sales orders:", err);
+      toast.error("Telemetry failure in order queue.");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [session.tenant_id, session]);
+
+  const loadOpportunities = async () => {
+    try {
+      setLoadingOpps(true);
+      const data = await salesService.listOpportunities(session.tenant_id, session);
+      setOpps(data.filter(o => o.stage !== "CLOSED_WON" && o.stage !== "CLOSED_LOST"));
+    } catch (err) {
+      console.error("Failed to fetch opportunities:", err);
+    } finally {
+      setLoadingOpps(false);
+    }
+  };
 
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  const handleCreateFromOpp = async (oppId: string) => {
+    try {
+      await salesService.closeWonOpportunity(session.tenant_id, session, oppId);
+      toast.success("Strategic Conversion Successful!", {
+        description: "Opportunity closed as WON and Sales Order initialized."
+      });
+      setIsModalOpen(false);
+      refresh(true);
+    } catch (err) {
+      toast.error("Conversion failure.");
+    }
+  };
 
   const filtered = useMemo(() => 
     orders.filter((order) =>
@@ -44,66 +120,246 @@ export default function SalesOrderDesk() {
   );
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Sales Orders"
-        subtitle="Closed-won opportunities converted to orders with finance and inventory handoff status."
-        primaryAction={<Button disabled title="Not available yet" variant="outline">Create from Opportunity</Button>}
-        secondaryActions={
-          <Input
-            placeholder="Search orders"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="min-w-[220px]"
-          />
-        }
-      />
+    <div className="p-8 space-y-10 animate-in fade-in duration-1000 max-w-[1600px] mx-auto">
+      {/* Premium Header */}
+      <div className="flex flex-col lg:flex-row justify-between items-end gap-6">
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <Badge className="bg-emerald-600/10 text-emerald-600 border-none font-black px-3 py-1 rounded-full uppercase tracking-widest text-[10px]">Victory Registry</Badge>
+            <div className="flex items-center gap-1.5 text-indigo-500 font-bold text-xs uppercase tracking-widest">
+               <Activity className="h-4 w-4 animate-pulse" />
+               Fulfillment Pipeline Live
+            </div>
+          </div>
+          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent italic">Order Fulfillment</h1>
 
-      <WorkspacePanel title="Order queue" description="Orders awaiting approval and invoicing.">
-        <FilterBar searchValue={search} onSearchChange={setSearch} />
-        <DataTableShell total={filtered.length} page={1} pageSize={10}>
-          {loading ? (
-             <div className="p-8 text-center text-muted-foreground italic">Refreshing order queue...</div>
-          ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="p-3 text-left">Order</th>
-                <th className="p-3 text-left">Customer</th>
-                <th className="p-3 text-left">Value</th>
-                <th className="p-3 text-left">Inventory</th>
-                <th className="p-3 text-left">Invoice</th>
-                <th className="p-3 text-left">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((order) => (
-                <tr key={order.id} className="border-t">
-                  <td className="p-3 font-medium">{order.id}</td>
-                  <td className="p-3 text-muted-foreground">{order.customerName}</td>
-                  <td className="p-3 text-muted-foreground">
-                    {order.amount.toLocaleString()} {order.currency}
-                  </td>
-                  <td className="p-3">
-                    <Badge variant={order.inventoryCheck === "UNAVAILABLE" ? "destructive" : "outline"}>
-                      {order.inventoryCheck}
-                    </Badge>
-                  </td>
-                  <td className="p-3 text-muted-foreground">
-                    {order.financeInvoiceId ?? "PENDING"}
-                  </td>
-                  <td className="p-3">
-                    <Badge variant={order.status === "INVOICED" ? "secondary" : "outline"}>
-                      {order.status}
-                    </Badge>
-                  </td>
+          <p className="text-slate-500 font-medium max-w-2xl text-lg leading-relaxed italic">"A sale is not finished until the customer is delighted."</p>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <div className="flex items-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-slate-800/20 shadow-2xl">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                className="pl-11 h-14 w-[300px] rounded-[1.5rem] bg-transparent border-none focus-visible:ring-0 text-base font-medium"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search orders..."
+              />
+            </div>
+            <Button
+              variant="secondary"
+              className="h-14 w-14 rounded-[1.5rem] bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20"
+              onClick={() => refresh(true)}
+              disabled={refreshing}
+            >
+              <RefreshCw className={cn("h-6 w-6", refreshing && "animate-spin")} />
+            </Button>
+          </div>
+
+          <Dialog open={isModalOpen} onOpenChange={(open) => {
+            setIsModalOpen(open);
+            if (open) loadOpportunities();
+          }}>
+            <DialogTrigger asChild>
+              <Button className="h-[4.5rem] px-10 rounded-[2rem] bg-emerald-600 hover:bg-emerald-700 shadow-2xl shadow-emerald-500/30 font-black text-sm gap-3 group transition-all hover:scale-105 active:scale-95">
+                <Plus className="h-6 w-6 group-hover:rotate-90 transition-transform duration-500" /> 
+                CONVERT OPPORTUNITY
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[650px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white dark:bg-slate-950">
+              <div className="h-2 bg-gradient-to-r from-emerald-500 via-indigo-500 to-emerald-500" />
+              <div className="p-10 space-y-8">
+                <DialogHeader>
+                  <DialogTitle className="text-3xl font-black tracking-tight">Convert Victory to Order</DialogTitle>
+                  <DialogDescription>Select an open strategic opportunity to close as WON and initialize the fulfillment protocol.</DialogDescription>
+                </DialogHeader>
+                
+                <div className="py-2">
+                  {loadingOpps ? (
+                    <div className="flex flex-col items-center justify-center py-12 gap-4">
+                      <RefreshCw className="h-10 w-10 animate-spin text-indigo-500" />
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing strategic nodes...</p>
+                    </div>
+                  ) : opps.length === 0 ? (
+                    <div className="text-center py-12 p-8 rounded-3xl bg-slate-50 dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800">
+                      <p className="text-sm font-medium text-slate-400 italic">No available conversion targets detected in the active pipeline.</p>
+                    </div>
+                  ) : (
+                    <ScrollArea className="h-[400px] pr-4">
+                      <div className="space-y-4">
+                        {opps.map((opp) => (
+                          <div 
+                            key={opp.id} 
+                            className="group flex items-center justify-between p-6 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 hover:border-emerald-500/50 hover:bg-white dark:hover:bg-slate-800 transition-all cursor-pointer shadow-sm hover:shadow-xl"
+                            onClick={() => handleCreateFromOpp(opp.id)}
+                          >
+                            <div className="flex items-center gap-5">
+                               <div className="h-12 w-12 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center border border-slate-100 dark:border-slate-700 font-black text-sm group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                                  {opp.accountName.charAt(0)}
+                               </div>
+                               <div>
+                                  <p className="font-black text-base">{opp.accountName}</p>
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter italic">Value: ${opp.amount.toLocaleString()} {opp.currency}</p>
+                               </div>
+                            </div>
+                            <Button size="sm" variant="secondary" className="rounded-xl font-black text-[10px] uppercase tracking-widest h-9 px-4 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-600 hover:text-white border-none shadow-none">SELECT NODE</Button>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </div>
+                
+                <DialogFooter>
+                  <Button variant="ghost" className="rounded-xl font-black text-xs uppercase tracking-widest h-12" onClick={() => setIsModalOpen(false)}>ABORT PROTOCOL</Button>
+                </DialogFooter>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      {/* Main Order Registry */}
+      <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl overflow-hidden">
+        <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-slate-800/20">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
+                <ShoppingBag className="h-6 w-6 text-emerald-600" />
+                Active Order Fulfillment Pool
+              </CardTitle>
+              <CardDescription className="text-sm font-medium">Orders awaiting inventory validation and final invoicing handoff.</CardDescription>
+            </div>
+            <div className="flex gap-4">
+               <div className="flex bg-slate-100/50 dark:bg-slate-800/50 p-1.5 rounded-[1.5rem] shadow-inner">
+                  <Button variant="ghost" size="sm" className="h-10 rounded-xl px-4 font-black text-[10px] tracking-widest bg-white dark:bg-slate-700 shadow-md text-emerald-600">ACTIVE QUEUE</Button>
+                  <Button variant="ghost" size="sm" onClick={() => { setExpansionFeature("Logistics Tracking Matrix"); setExpansionOpen(true); }} className="h-10 rounded-xl px-4 font-black text-[10px] tracking-widest text-slate-400 hover:text-slate-600 transition-colors">SHIPPED</Button>
+                  <Button variant="ghost" size="sm" onClick={() => { setExpansionFeature("Delinquency Management Protocol"); setExpansionOpen(true); }} className="h-10 rounded-xl px-4 font-black text-[10px] tracking-widest text-slate-400 hover:text-slate-600 transition-colors">DELINQUENT</Button>
+               </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-50/50 dark:bg-slate-800/50">
+                <tr>
+                  <th className="px-10 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Order Designation</th>
+                  <th className="px-10 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Customer Node</th>
+                  <th className="px-10 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Revenue Yield</th>
+                  <th className="px-10 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Logistics Check</th>
+                  <th className="px-10 py-6 text-left text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Invoice Protocol</th>
+                  <th className="px-10 py-6 text-right text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Action Matrix</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          )}
-        </DataTableShell>
-      </WorkspacePanel>
+              </thead>
+              <tbody className="divide-y divide-white/10 dark:divide-slate-800/10">
+                {filtered.map((order) => (
+                  <tr key={order.id} className="group hover:bg-emerald-50/30 dark:hover:bg-emerald-900/10 transition-all cursor-default">
+                    <td className="px-10 py-8">
+                      <div className="flex items-center gap-5">
+                        <div className="h-12 w-12 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center font-black text-sm shadow-xl transition-all group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white border border-slate-100 dark:border-slate-800">
+                          <Package className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <p className="font-black text-base italic">{order.id.slice(-8)}</p>
+                          <Badge variant="outline" className="text-[9px] font-black px-2 py-0 h-4 border-slate-200 uppercase tracking-widest mt-1">LIFECYCLE ACTIVE</Badge>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-10 py-8">
+                       <p className="text-sm font-black text-slate-700 dark:text-slate-300">{order.customerName}</p>
+                       <p className="text-[10px] font-bold text-slate-400 uppercase">Strategic Account</p>
+                    </td>
+                    <td className="px-10 py-8 text-emerald-600 font-black text-base">
+                       ${order.amount.toLocaleString()}
+                    </td>
+                    <td className="px-10 py-8">
+                       <Badge 
+                        variant={order.inventoryCheck === "UNAVAILABLE" ? "destructive" : "outline"}
+                        className={cn(
+                          "rounded-full font-black text-[9px] px-3 py-1 border-none shadow-sm uppercase tracking-widest",
+                          order.inventoryCheck === "AVAILABLE" ? "bg-indigo-500/10 text-indigo-600" : "bg-rose-500/10 text-rose-600"
+                        )}
+                       >
+                        {order.inventoryCheck}
+                       </Badge>
+                    </td>
+                    <td className="px-10 py-8">
+                       <div className="flex items-center gap-3">
+                          <div className={cn("h-2 w-2 rounded-full", order.financeInvoiceId ? "bg-emerald-500" : "bg-orange-500 animate-pulse")} />
+                          <p className={cn("text-xs font-black uppercase tracking-tight", order.financeInvoiceId ? "text-slate-700 dark:text-slate-300" : "text-orange-500")}>
+                             {order.financeInvoiceId ? order.financeInvoiceId.slice(-8) : "PENDING INVOICE"}
+                          </p>
+                       </div>
+                    </td>
+                    <td className="px-10 py-8 text-right">
+                       <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                             <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-white transition-all shadow-sm">
+                                <MoreVertical className="h-5 w-5 text-slate-400" />
+                             </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56 rounded-2xl p-2 shadow-2xl border-none">
+                             <DropdownMenuItem className="gap-3 py-3 rounded-xl font-bold" onClick={() => { setExpansionFeature("Advanced Financial Routing"); setExpansionOpen(true); }}><FileCheck className="h-4 w-4 text-indigo-600" /> Generate Invoice</DropdownMenuItem>
+                             <DropdownMenuItem className="gap-3 py-3 rounded-xl font-bold" onClick={() => { setExpansionFeature("Real-time Logistics Sync"); setExpansionOpen(true); }}><Truck className="h-4 w-4 text-emerald-600" /> Track Shipment</DropdownMenuItem>
+                             <DropdownMenuItem className="gap-3 py-3 rounded-xl font-bold text-rose-500" onClick={() => { setExpansionFeature("Fulfillment Escalation Protocol"); setExpansionOpen(true); }}><AlertCircle className="h-4 w-4" /> Escalate Delay</DropdownMenuItem>
+                          </DropdownMenuContent>
+                       </DropdownMenu>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Fulfillment Metrics Overlay */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+         <Card className="rounded-[2.5rem] border-none shadow-xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl p-8 space-y-4">
+            <div className="h-14 w-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
+               <FileCheck className="h-7 w-7 text-indigo-500" />
+            </div>
+            <div>
+               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">INVOICING RATE</p>
+               <h4 className="text-3xl font-black">94.2%</h4>
+            </div>
+         </Card>
+         <Card className="rounded-[2.5rem] border-none shadow-xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl p-8 space-y-4">
+            <div className="h-14 w-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
+               <Truck className="h-7 w-7 text-emerald-500" />
+            </div>
+            <div>
+               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">LOGISTICS READY</p>
+               <h4 className="text-3xl font-black text-emerald-500">88.1%</h4>
+            </div>
+         </Card>
+         <Card className="rounded-[2.5rem] border-none shadow-xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl p-8 space-y-4">
+            <div className="h-14 w-14 rounded-2xl bg-rose-500/10 flex items-center justify-center">
+               <AlertCircle className="h-7 w-7 text-rose-500" />
+            </div>
+            <div>
+               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">STOCK OUTS</p>
+               <h4 className="text-3xl font-black text-rose-500">2</h4>
+            </div>
+         </Card>
+         <Card className="rounded-[2.5rem] border-none shadow-xl bg-indigo-600 text-white p-8 space-y-4 shadow-indigo-600/20">
+            <div className="h-14 w-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20">
+               <DollarSign className="h-7 w-7" />
+            </div>
+            <div>
+               <p className="text-[10px] font-black uppercase tracking-widest opacity-60">FULFILLMENT VALUE</p>
+               <h4 className="text-3xl font-black">${orders.reduce((acc, o) => acc + o.amount, 0).toLocaleString()}</h4>
+            </div>
+         </Card>
+      </div>
+
+      <StrategicExpansionModal 
+        isOpen={expansionOpen} 
+        onOpenChange={setExpansionOpen} 
+        featureName={expansionFeature} 
+      />
     </div>
   );
 }
