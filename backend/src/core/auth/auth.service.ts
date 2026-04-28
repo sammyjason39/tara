@@ -10,6 +10,7 @@ import * as jwt from "jsonwebtoken";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { TenantContext } from "../../gateway/tenant-context.interface";
+import { PrismaService } from "../../persistence/prisma.service";
 
 @Injectable()
 export class AuthService {
