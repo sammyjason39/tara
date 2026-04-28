@@ -7,7 +7,7 @@ echo "🚀 Starting Professional Deployment..."
 
 # 1. Start the containers
 echo "📦 Building and starting containers..."
-docker-compose up -d --build --remove-orphans
+docker compose up -d --build --remove-orphans
 
 # 2. Cleanup dangling resources (Professional Tidy)
 echo "🧹 Cleaning up old images and dangling volumes..."
@@ -16,7 +16,7 @@ docker network prune -f
 
 # 3. Verify status
 echo "📊 Current Status:"
-docker-compose ps
+docker compose ps
 
 echo "✅ Deployment complete!"
 echo "Frontend: http://43.156.118.56:3010"
