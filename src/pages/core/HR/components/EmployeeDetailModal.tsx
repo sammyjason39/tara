@@ -4,7 +4,7 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle 
-} from '@/components/ui/sheet'; // Reusing Sheet for a wider 'modal' feel or standard Dialog
+} from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   User, 

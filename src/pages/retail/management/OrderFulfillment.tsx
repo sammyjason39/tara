@@ -105,7 +105,8 @@ const OrderFulfillment = () => {
         <PageHeader
           title="Multi-Channel Fulfillment Engine"
           subtitle={`Node: ${session.location_id || "CENTRAL_HUB"} • Velocity: 94.2% • SLA Gaps: MINIMAL`}
-                <div className="flex items-center gap-3">
+        />
+        <div className="flex items-center gap-3">
           <Button 
             onClick={() => {
               toast({ title: "Archive Generated", description: "Fulfillment manifest has been archived to Zenvix Vault." });
@@ -222,7 +223,6 @@ const OrderFulfillment = () => {
                 }}
               />
             </div>
-v>
 
             {/* Right Column (3 cols) - Buffer Health & Logistics Radar */}
             <div className="lg:col-span-3 space-y-8 flex flex-col">
