@@ -115,7 +115,7 @@ export function ImageManager({
           </DialogDescription>
         </DialogHeader>
 
-        {error && <FeedbackAlert type="error" message={error} onClose={() => setError(null)} />}
+        {error && <FeedbackAlert message={null} error={error} onClear={() => setError(null)} />}
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 py-4 max-h-[60vh] overflow-y-auto">
           {loading ? (
