@@ -41,6 +41,7 @@ export class CompanyRegistrationService {
 
     // 2. Perform Tenant Provisioning via Repository
     const result = await this.provisioningRepo.provisionTenant({
+      tenant_id: user.tenant_id,
       user_id,
       name: dto.name,
       country: dto.country,

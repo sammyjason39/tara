@@ -15,13 +15,13 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
 
   async provisionTenant(data: ProvisioningData): Promise<ProvisioningResult> {
     return await this.prisma.$transaction(async (tx) => {
-      // 1. Create Company first (needed for user.tenant_id)
+      // 1. Create Company linked to the EXISTING tenant
       const company = await tx.companies.create({
         data: {
           id: uuidv4(),
           updated_at: new Date(),
           name: data.name,
-          tenant_id: uuidv4(),
+          tenant_id: data.tenant_id,
           code: `CMP-${Date.now().toString().slice(-6)}`,
           status: "active",
           country: data.country,
@@ -30,32 +30,14 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
         },
       });
 
-      // 2. Ensure User exists (match by email to handle different IDs in mock/DB)
-      const userRecord = await tx.users.upsert({
-        where: { email: data.user.email },
-        update: {
-          tenant_id: company.id, // Update to the new company if needed
-          updated_at: new Date(),
-        }, 
-        create: {
-          id: data.user_id, // Use the provided ID if creating
-          tenant_id: company.id,
-          email: data.user.email,
-          password_hash: "mock_password_hash",
-          first_name: data.user.first_name,
-          last_name: data.user.last_name,
-          phone: data.user.phone,
-          updated_at: new Date(),
-        },
-      });
-
-      // 3. Map User to Company as OWNER
+      // 2. Map User to Company as OWNER
       await tx.user_companies.create({
         data: {
           id: uuidv4(),
           updated_at: new Date(),
-          user_id: userRecord.id, // Use the actual ID (either matched or created)
-          tenant_id: company.id,
+          user_id: data.user_id,
+          tenant_id: data.tenant_id,
+          company_id: company.id,
           role: "OWNER",
           is_default: true,
         },
@@ -66,7 +48,8 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
         data: {
           id: uuidv4(),
           updated_at: new Date(),
-          tenant_id: company.id,
+          tenant_id: data.tenant_id,
+          company_id: company.id,
           name: "Headquarters",
           code: "HQ",
           type: "headquarters",
@@ -81,7 +64,8 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
         data: {
           id: uuidv4(),
           updated_at: new Date(),
-          tenant_id: company.id,
+          tenant_id: data.tenant_id,
+          company_id: company.id,
           name: "Executive",
           code: "EXEC",
           status: "active",
@@ -93,7 +77,8 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
         data: {
           id: uuidv4(),
           updated_at: new Date(),
-          tenant_id: company.id,
+          tenant_id: data.tenant_id,
+          company_id: company.id,
           location_id: location.id,
           department_id: department.id,
           first_name: data.user.first_name,
@@ -116,7 +101,8 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
           data: {
             id: uuidv4(),
             updated_at: new Date(),
-            tenant_id: company.id,
+            tenant_id: data.tenant_id,
+            company_id: company.id,
             module_key: moduleKey,
             enabled: true,
             updated_by: "system",
@@ -125,7 +111,7 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
       }
 
       return {
-        tenant_id: company.id,
+        tenant_id: data.tenant_id,
         company_name: company.name,
         location_id: location.id,
         department_id: department.id,
