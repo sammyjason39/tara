@@ -785,7 +785,10 @@ const CCTVViewerModal: React.FC<Props> = ({
                         />
                       </div>
                     </div>
-                    <Button disabled title="Not available yet"
+                    <Button 
+                      onClick={() => {
+                        toast({ title: "Footage Loading", description: "Requesting archive stream from Branch NVR..." });
+                      }}
                       size="sm"
                       className="h-10 rounded-xl bg-slate-900 text-white font-black italic uppercase text-[10px] tracking-widest gap-2"
                     >

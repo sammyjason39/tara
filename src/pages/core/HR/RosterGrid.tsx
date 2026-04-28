@@ -466,7 +466,7 @@ export default function RosterGrid() {
                       <div onClick={(event) => event.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button disabled title="Not available yet" size="sm" variant="outline">Actions</Button>
+                            <Button size="sm" variant="outline">Actions</Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => navigate(`/core/hr/people/${employee.id}`)}>

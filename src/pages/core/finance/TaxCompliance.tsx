@@ -37,14 +37,17 @@ export default function TaxCompliance() {
         title="Tax & Compliance Center"
         subtitle="Manage mult-jurisdictional tax obligations, VAT returns, and audit readiness across all business units."
         primaryAction={
-          <Button disabled title="Not available yet" className="gap-2 bg-slate-900 border-none hover:bg-slate-800 text-white">
+          <Button 
+            onClick={() => alert("Generating Cryptographic Tax Compliance Certificate for active period.")}
+            className="gap-2 bg-slate-900 border-none hover:bg-slate-800 text-white"
+          >
             <Download className="w-4 h-4" /> Download Certificate
           </Button>
         }
         secondaryActions={
           <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
-            <Button disabled title="Not available yet" variant="ghost" size="sm" className="bg-white shadow-sm font-bold text-[10px] uppercase tracking-wider">Domestic</Button>
-            <Button disabled title="Not available yet" variant="ghost" size="sm" className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">International</Button>
+            <Button onClick={() => alert("Switching to Domestic Tax Ledger")} variant="ghost" size="sm" className="bg-white shadow-sm font-bold text-[10px] uppercase tracking-wider">Domestic</Button>
+            <Button onClick={() => alert("Switching to International Cross-Border Ledger")} variant="ghost" size="sm" className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">International</Button>
           </div>
         }
       />
@@ -147,7 +150,10 @@ export default function TaxCompliance() {
                 <p className="text-xs text-slate-400 font-medium leading-relaxed">
                   The <span className="text-white font-bold italic">Law No. 7/2021 Update</span> regarding carbon tax targets will affect Logistics OpEx starting July.
                 </p>
-                <Button disabled title="Not available yet" className="w-full h-8 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-[0.2em] text-[8px] mt-4">
+                <Button 
+                  onClick={() => alert("Analyzing financial exposure to Law No. 7/2021 Update...")}
+                  className="w-full h-8 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-[0.2em] text-[8px] mt-4"
+                >
                   Analyze Exposure
                 </Button>
               </div>

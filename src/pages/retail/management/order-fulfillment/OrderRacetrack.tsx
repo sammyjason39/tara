@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,10 +13,14 @@ import {
   ChevronRight,
   Package,
   CheckCircle,
+  RefreshCw,
 } from "lucide-react";
 import type { RetailOrder, OrderStatus } from "@/core/types/retail/retail";
 import { getActiveCarriers } from "@/core/config/logistics-carriers.config";
 import { cn } from "@/lib/utils";
+import { useSession } from "@/core/security/session";
+import { retailService } from "@/core/services/retail/retailService";
+import { useToast } from "@/hooks/use-toast";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tab configuration ─ must mirror the OrderStatus lifecycle
@@ -72,6 +76,7 @@ interface OrderRacetrackProps {
   onOrderClick: (order: RetailOrder) => void;
   activeQueue: string;
   setActiveQueue: (val: string) => void;
+  onRefresh?: () => void;
 }
 
 export const OrderRacetrack: React.FC<OrderRacetrackProps> = ({
@@ -79,8 +84,12 @@ export const OrderRacetrack: React.FC<OrderRacetrackProps> = ({
   onOrderClick,
   activeQueue,
   setActiveQueue,
+  onRefresh,
 }) => {
+  const session = useSession();
+  const { toast } = useToast();
   const carriers = getActiveCarriers();
+  const [loading, setLoading] = useState(false);
   const [awbInputs, setAwbInputs] = useState<Record<string, string>>({});
   const [tempAwbInputs, setTempAwbInputs] = useState<
     Record<string, { carrier: string; awb: string }>
@@ -116,19 +125,43 @@ export const OrderRacetrack: React.FC<OrderRacetrackProps> = ({
     return counts;
   }, [orders]);
 
-  const handleManualShip = (orderId: string, carrier: string, awb: string) => {
-    // LOGISTICS_API_BRIDGE: Replace with real-time shipping API integration (RajaOngkir, Shipper, etc.)
-    console.log(
-      `[LOGISTICS_API_BRIDGE] AWB=${awb} via ${carrier} for Order: ${orderId}`,
-    );
-    setAwbInputs((prev) => ({ ...prev, [orderId]: `${carrier}-${awb}` }));
-    // Reset temp state after save
-    setTempAwbInputs((prev) => {
-      const next = { ...prev };
-      delete next[orderId];
-      return next;
-    });
-  };
+  const handleManualShip = useCallback(async (orderId: string, carrier: string, awb: string) => {
+    if (!session.tenantId) return;
+    setLoading(true);
+    try {
+      await retailService.updateOrder(session.tenantId, session, orderId, {
+        status: "shipped",
+        metadata: {
+          carrier,
+          awb,
+          shipped_at: new Date().toISOString()
+        }
+      });
+
+      toast({
+        title: "Order Shipped",
+        description: `AWB ${awb} synced for Order ${orderId.split("-")[0]}`
+      });
+
+      onRefresh?.();
+      
+      // Reset temp state after save
+      setTempAwbInputs((prev) => {
+        const next = { ...prev };
+        delete next[orderId];
+        return next;
+      });
+    } catch (error) {
+      console.error("[OrderRacetrack] Sync failed:", error);
+      toast({
+        title: "Sync Failed",
+        description: "Logistics engine could not process shipment.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [session, onRefresh, toast]);
 
   const getChannelInfo = (paymentMethod?: string) => {
     switch (paymentMethod) {

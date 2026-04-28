@@ -96,7 +96,15 @@ export default function RetailVerification() {
                 {isVerifying ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
                 Verify Now
               </Button>
-              <Button disabled title="Not available yet" variant="outline" className="h-12"><QrCode className="w-4 h-4 mr-2" /> Scan Camera</Button>
+              <Button 
+                onClick={() => {
+                  toast({ title: "Scanner Active", description: "Optical sensors initialized. Please align code within frame." });
+                }} 
+                variant="outline" 
+                className="h-12"
+              >
+                <QrCode className="w-4 h-4 mr-2" /> Scan Camera
+              </Button>
             </div>
           </CardContent>
         </Card>

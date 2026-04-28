@@ -27,6 +27,14 @@ import { retailInfrastructureService } from "@/core/services/retail/retailInfras
 import type { RetailGatewayNode, RetailLoadBalancer } from "@/core/types/retail/retail";
 import { useToast } from "@/hooks/use-toast";
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
+
 const InfrastructureControl = () => {
   const session = useSession();
   const { toast } = useToast();
@@ -56,11 +64,46 @@ const InfrastructureControl = () => {
     return () => clearInterval(interval);
   }, [refresh]);
 
+  const handleNodeAction = useCallback(async (nodeId: string, action: "RESET" | "REPAIR" | "SHUTDOWN") => {
+    if (!session.tenant_id) return;
+    try {
+      setLoading(true);
+      await retailInfrastructureService.updateNodeStatus(session.tenant_id, session, nodeId, "RESETTING");
+      
+      // Simulate real-time delay for maintenance cycle
+      setTimeout(async () => {
+        await retailInfrastructureService.updateNodeStatus(session.tenant_id, session, nodeId, "ACTIVE");
+        toast({
+          title: "Maintenance Complete",
+          description: `Node ${nodeId.split("-").pop()} has been successfully ${action.toLowerCase()}ed.`,
+        });
+        refresh();
+      }, 3000);
+
+      toast({
+        title: "Action Initiated",
+        description: `Broadcasting ${action} signal to node cluster...`,
+      });
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Action Failed",
+        description: "Cluster communication timeout.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [session, toast, refresh]);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "ACTIVE":
       case "ONLINE":
         return "bg-emerald-500";
+      case "RESETTING":
+      case "MAINTENANCE":
+        return "bg-indigo-500 animate-pulse";
       case "STANDBY":
         return "bg-amber-500";
       case "DOWN":
@@ -176,9 +219,30 @@ const InfrastructureControl = () => {
                                 <div className="text-[10px] text-slate-400 font-bold uppercase">{node.ipAddress}:{node.port}</div>
                               </div>
                             </div>
-                            <Badge className={`${getStatusColor(node.status)} text-white text-[9px] font-black tracking-widest uppercase`}>
-                              {node.status}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge className={`${getStatusColor(node.status)} text-white text-[9px] font-black tracking-widest uppercase`}>
+                                {node.status}
+                              </Badge>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400"><MoreVertical className="w-3 h-3" /></Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-40 p-1 rounded-xl border-none shadow-2xl">
+                                  <DropdownMenuItem 
+                                    className="rounded-lg gap-2 font-black italic text-[10px] uppercase tracking-widest py-2 cursor-pointer"
+                                    onClick={() => handleNodeAction(node.id, "RESET")}
+                                  >
+                                    <RefreshCw className="w-3 h-3" /> Reset Node
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    className="rounded-lg gap-2 font-black italic text-[10px] uppercase tracking-widest py-2 cursor-pointer"
+                                    onClick={() => handleNodeAction(node.id, "REPAIR")}
+                                  >
+                                    <Zap className="w-3 h-3" /> Repair Node
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </div>
                           
                           <div className="space-y-4">

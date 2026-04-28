@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -12,8 +12,9 @@ import {
   Area,
 } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingUp, Target, Zap } from "lucide-react";
+import { TrendingUp, Target, Zap, Activity } from "lucide-react";
 import type { RetailOrder, RetailStore, RetailChannel } from "@/core/types/retail/retail";
+import { useSession } from "@/core/security/session";
 
 interface FleetRevenueMatrixProps {
   orders: RetailOrder[];
@@ -26,8 +27,10 @@ export const FleetRevenueMatrix: React.FC<FleetRevenueMatrixProps> = ({
   stores,
   channels,
 }) => {
+  const session = useSession();
+
   // Aggregate sales by node (store or channel)
-  const nodeSales = React.useMemo(() => {
+  const nodeSales = useMemo(() => {
     const salesMap: Record<string, { name: string; amount: number; type: 'store' | 'channel' }> = {};
     
     // Initialize with all stores
@@ -44,15 +47,17 @@ export const FleetRevenueMatrix: React.FC<FleetRevenueMatrixProps> = ({
     orders.forEach(o => {
       const node_id = o.storeId || o.channelId;
       if (node_id && salesMap[node_id]) {
-        salesMap[node_id].amount += o.totalAmount;
+        salesMap[node_id].amount += (o.total_amount || o.totalAmount || 0);
       }
     });
 
-    return Object.values(salesMap).sort((a, b) => b.amount - a.amount);
+    return Object.values(salesMap)
+      .filter(n => n.amount > 0)
+      .sort((a, b) => b.amount - a.amount);
   }, [orders, stores, channels]);
 
   // Aggregate sales by time (last 7 days simulation based on order creation)
-  const timeSeries = React.useMemo(() => {
+  const timeSeries = useMemo(() => {
     const days: Record<string, number> = {};
     const now = new Date();
     for (let i = 6; i >= 0; i--) {
@@ -62,9 +67,9 @@ export const FleetRevenueMatrix: React.FC<FleetRevenueMatrixProps> = ({
     }
 
     orders.forEach(o => {
-      const day = new Date(o.createdAt).toISOString().split('T')[0];
+      const day = new Date(o.created_at || o.createdAt || "").toISOString().split('T')[0];
       if (days[day] !== undefined) {
-        days[day] += o.totalAmount;
+        days[day] += (o.total_amount || o.totalAmount || 0);
       }
     });
 
@@ -74,7 +79,7 @@ export const FleetRevenueMatrix: React.FC<FleetRevenueMatrixProps> = ({
     }));
   }, [orders]);
 
-  const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
+  const totalRevenue = orders.reduce((sum, o) => sum + (o.total_amount || o.totalAmount || 0), 0);
   const avgOrderValue = orders.length > 0 ? totalRevenue / orders.length : 0;
 
   return (
@@ -89,15 +94,42 @@ export const FleetRevenueMatrix: React.FC<FleetRevenueMatrixProps> = ({
                 <h3 className="text-[10px] font-black italic uppercase tracking-[0.4em] text-slate-500">
                   Multi-Node Performance
                 </h3>
-                <p className="text-4xl font-black italic text-white tracking-tighter uppercase">
-                  Revenue Matrix
-                </p>
+                <div className="flex items-center gap-4">
+                  <Activity className="w-8 h-8 text-indigo-500" />
+                  <p className="text-4xl font-black italic text-white tracking-tighter uppercase">
+                    Revenue Matrix
+                  </p>
+                </div>
               </div>
-              <div className="px-6 py-3 bg-indigo-600/10 border border-indigo-600/20 rounded-2xl flex items-center gap-3 shadow-xl backdrop-blur-xl">
-                <Target className="w-5 h-5 text-indigo-400" />
-                <span className="text-[10px] font-black italic uppercase text-indigo-400 tracking-[0.2em]">
-                  LIVE TELEMETRY
-                </span>
+              <div className="flex flex-col items-end gap-3">
+                 <div className="px-6 py-3 bg-indigo-600/10 border border-indigo-600/20 rounded-2xl flex items-center gap-3 shadow-xl backdrop-blur-xl">
+                  <Target className="w-5 h-5 text-indigo-400" />
+                  <span className="text-[10px] font-black italic uppercase text-indigo-400 tracking-[0.2em]">
+                    LIVE TELEMETRY
+                  </span>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] italic">Fleet Total</p>
+                  <p className="text-2xl font-black italic text-white tracking-tighter">Rp {(totalRevenue / 1000000).toFixed(1)}M</p>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => {
+                      alert("Serializing multi-tenant revenue data to CSV. (Simulated)");
+                    }}
+                    className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black italic uppercase text-slate-400 hover:text-white hover:bg-white/10 transition-all tracking-widest"
+                  >
+                    Export CSV
+                  </button>
+                  <button 
+                    onClick={() => {
+                      alert("Requesting strategic yield projections from AI core. (Simulated)");
+                    }}
+                    className="px-4 py-2 bg-indigo-600/20 border border-indigo-600/40 rounded-xl text-[9px] font-black italic uppercase text-indigo-400 hover:text-indigo-200 hover:bg-indigo-600/40 transition-all tracking-widest"
+                  >
+                    AI Forecast
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -121,7 +153,7 @@ export const FleetRevenueMatrix: React.FC<FleetRevenueMatrixProps> = ({
                         return (
                           <div className="bg-slate-950/90 backdrop-blur-3xl border border-white/10 p-6 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
                             <p className="text-[10px] font-black italic text-slate-500 uppercase tracking-widest mb-2">{payload[0].payload.name}</p>
-                            <p className="text-2xl font-black italic text-white tracking-tighter italic">Rp {payload[0].value?.toLocaleString()}</p>
+                            <p className="text-2xl font-black italic text-white tracking-tighter">Rp {payload[0].value?.toLocaleString()}</p>
                           </div>
                         );
                       }
@@ -152,8 +184,8 @@ export const FleetRevenueMatrix: React.FC<FleetRevenueMatrixProps> = ({
                 <Zap className="w-8 h-8" />
               </div>
               <div>
-                <p className="text-[10px] font-black italic uppercase tracking-[0.3em] text-slate-500 italic">Avg Transaction Value</p>
-                <h4 className="text-4xl font-black italic tracking-tighter text-white mt-2 italic">
+                <p className="text-[10px] font-black italic uppercase tracking-[0.3em] text-slate-500">Avg Transaction Value</p>
+                <h4 className="text-4xl font-black italic tracking-tighter text-white mt-2">
                   Rp {Math.round(avgOrderValue).toLocaleString()}
                 </h4>
               </div>
@@ -168,7 +200,7 @@ export const FleetRevenueMatrix: React.FC<FleetRevenueMatrixProps> = ({
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[80px] -mr-32 -mt-32 group-hover/velocity:scale-150 transition-transform duration-1000" />
             <div className="relative z-10 flex flex-col h-full justify-between">
               <div>
-                <h4 className="text-[10px] font-black italic uppercase tracking-[0.3em] opacity-60 mb-8 italic">Velocity Stream (7D)</h4>
+                <h4 className="text-[10px] font-black italic uppercase tracking-[0.3em] opacity-60 mb-8">Velocity Stream (7D)</h4>
                 <div className="h-[180px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={timeSeries}>
@@ -183,7 +215,7 @@ export const FleetRevenueMatrix: React.FC<FleetRevenueMatrixProps> = ({
                           if (active && payload && payload.length) {
                             return (
                               <div className="bg-white/95 backdrop-blur-xl p-5 rounded-[1.5rem] shadow-3xl border-none">
-                                 <p className="text-xl font-black italic text-slate-900 tracking-tighter italic">Rp {payload[0].value?.toLocaleString()}</p>
+                                 <p className="text-xl font-black italic text-slate-900 tracking-tighter">Rp {payload[0].value?.toLocaleString()}</p>
                               </div>
                             );
                           }
@@ -204,12 +236,13 @@ export const FleetRevenueMatrix: React.FC<FleetRevenueMatrixProps> = ({
                 </div>
               </div>
               <div className="pt-8 border-t border-white/10 flex items-center justify-between">
-                 <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 italic italic">Strategic Peak Yield</p>
+                 <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60">Strategic Peak Yield</p>
                  <TrendingUp className="w-5 h-5 text-white/40" />
               </div>
             </div>
           </Card>
       </div>
     </div>
+  </div>
   );
 };

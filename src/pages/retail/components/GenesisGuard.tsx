@@ -84,7 +84,7 @@ export const GenesisGuard: React.FC<{ children: React.ReactNode }> = ({
                   }
                 }}
                 trigger={
-                  <Button disabled title="Not available yet" className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-blue-600 font-black italic tracking-widest gap-2">
+                  <Button className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-blue-600 font-black italic tracking-widest gap-2">
                     ESTABLISH BRANCH
                     <PlusCircle className="w-5 h-5" />
                   </Button>

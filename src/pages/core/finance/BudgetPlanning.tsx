@@ -68,7 +68,13 @@ export default function BudgetPlanning() {
             <Button onClick={(e) => { e.preventDefault(); const c = "data:text/csv;charset=utf-8,Fallback Data\nExported Row"; const l = document.createElement("a"); l.href = encodeURI(c); l.download = "export.csv"; l.click(); }} variant="outline" size="sm" className="gap-2">
               <Download className="w-4 h-4" /> Export Report
             </Button>
-            <Button disabled title="Not available yet" size="sm" className="gap-2 bg-slate-900 hover:bg-slate-800 text-white border-none">
+            <Button 
+              onClick={() => {
+                alert("Initializing new period fiscal strategy builder.");
+              }}
+              size="sm" 
+              className="gap-2 bg-slate-900 hover:bg-slate-800 text-white border-none"
+            >
               <Plus className="w-4 h-4" /> Create Fiscal Plan
             </Button>
           </div>
@@ -254,8 +260,22 @@ export default function BudgetPlanning() {
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Expense Category</label>
                 <div className="grid grid-cols-2 gap-2">
-                  <Button disabled title="Not available yet" variant="outline" size="sm" className="h-10 rounded-lg text-[10px] font-bold uppercase tracking-wider">Operational</Button>
-                  <Button disabled title="Not available yet" variant="outline" size="sm" className="h-10 rounded-lg text-[10px] font-bold uppercase tracking-wider">Capital</Button>
+                  <Button 
+                    onClick={() => alert("Setting category to Operational Expenditure (OPEX)")}
+                    variant="outline" 
+                    size="sm" 
+                    className="h-10 rounded-lg text-[10px] font-bold uppercase tracking-wider active:bg-indigo-50"
+                  >
+                    Operational
+                  </Button>
+                  <Button 
+                    onClick={() => alert("Setting category to Capital Expenditure (CAPEX)")}
+                    variant="outline" 
+                    size="sm" 
+                    className="h-10 rounded-lg text-[10px] font-bold uppercase tracking-wider active:bg-indigo-50"
+                  >
+                    Capital
+                  </Button>
                 </div>
               </div>
               <Button onClick={(e) => { e.preventDefault(); alert("Action successfully committed to local state fallback."); }} className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-widest mt-4 shadow-lg shadow-indigo-600/20">

@@ -1,4 +1,3 @@
-import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
   Layers,
   ClipboardCheck,
@@ -7,6 +6,7 @@ import {
   FileText,
   ShieldCheck,
   RefreshCw,
+  Zap,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
@@ -43,6 +43,7 @@ import { MOVEMENT_META } from "./inventory/inventory.types";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { useDebounce } from "@/hooks/useDebounce";
 import { retailService } from "@/core/services/retail/retailService";
+import { crisisManagementService } from "@/core/services/retail/crisisManagementService";
 import type { RetailProduct, RetailStore } from "@/core/types/retail/retail";
 import type {
   InventoryItemView,
@@ -418,6 +419,31 @@ const InventoryVisibility = () => {
   );
 
   // ── Opname handlers ───────────────────────────────────────
+  const handleAutoReplenish = useCallback(async (item: InventoryItemView) => {
+    if (!session || !selectedStoreId) return;
+    try {
+      setIsUpdating(true);
+      const res = await crisisManagementService.triggerAutoReplenishment(
+        session,
+        selectedStoreId,
+        [item.sku]
+      );
+      toast({
+        title: "Replenishment Triggered",
+        description: `Autonomous PO issued for ${item.name}. Ref: ${res.orderId}`,
+      });
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Replenishment Failed",
+        description: "Crisis engine could not issue autonomous PO.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [session, selectedStoreId, toast]);
+
   const startOpname = useCallback(() => {
     // Audit Requirement: List starts empty, populate via barcode scan only
     setOpnameEntries([]);

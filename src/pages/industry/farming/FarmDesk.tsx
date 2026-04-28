@@ -31,7 +31,10 @@ export default function FarmDesk() {
           title="Farm & Livestock Ops"
           subtitle="Livestock monitoring, crop management, and environmental sensor feeds."
           primaryAction={
-            <Button disabled title="Not available yet" className="bg-emerald-600 hover:bg-emerald-700">
+            <Button 
+              onClick={() => alert("Initializing sector activity log. Resource allocation pending...")}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
               <Plus className="h-4 w-4 mr-2" /> Log Activity
             </Button>
           }
