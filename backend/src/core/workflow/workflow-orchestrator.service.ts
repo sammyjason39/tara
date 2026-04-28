@@ -19,7 +19,7 @@ export class WorkflowOrchestratorService implements OnModuleInit {
   }
 
   private async ensureDefinitionsExist() {
-    const tenants = await this.prisma.companies.findMany({ select: { id: true } });
+    const tenants = await this.prisma.tenants.findMany({ select: { id: true } });
     for (const tenant of tenants) {
       await this.prisma.workflow_definitions.upsert({
         where: { 
