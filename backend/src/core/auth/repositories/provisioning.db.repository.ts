@@ -43,6 +43,12 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
         },
       });
 
+      // 3. Update User record to set primary company_id
+      await tx.users.update({
+        where: { id: data.user_id },
+        data: { company_id: company.id },
+      });
+
       // Create HQ Location
       const location = await tx.locations.create({
         data: {
