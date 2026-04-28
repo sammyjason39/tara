@@ -194,7 +194,6 @@ export default function CoreSettings() {
         }
       >
         <div className="space-y-6">
-          <FeedbackAlert message={statusMessage} error={errorMessage} onClear={clearStatus} />
           <TabsContent value="general" className="space-y-6">
             <WorkspacePanel
               title="Organization profile"

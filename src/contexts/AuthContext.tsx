@@ -11,7 +11,7 @@ import * as storage from "@/lib/local-storage";
 import { type SessionContext } from "@/core/security/session";
 import { type Role, Roles } from "@/core/security/roles";
 import { apiRequest } from "@/core/api/apiClient";
-import { retailService } from "@/core/services/retail/retailService";
+import { orgSettingsService } from "@/core/services";
 
 interface UserProfile {
   id: string;
@@ -241,12 +241,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Auto-resolve locationId if missing but tenantId is present
   useEffect(() => {
     if (session && session.tenant_id && !session.location_id) {
-      console.log("[AuthContext] Missing location_id, attempting auto-resolution...");
-      retailService.listStores(session.tenant_id, session)
-        .then(stores => {
-          if (stores && Array.isArray(stores) && stores.length > 0) {
-            console.log("[AuthContext] Auto-resolved location_id:", stores[0].id);
-            updateLocation(stores[0].id);
+      console.log("[AuthContext] Missing location_id, attempting auto-resolution via Core...");
+      orgSettingsService.getLocations(session)
+        .then(locations => {
+          if (locations && Array.isArray(locations) && locations.length > 0) {
+            console.log("[AuthContext] Auto-resolved location_id:", locations[0].id);
+            updateLocation(locations[0].id);
+          } else {
+            console.warn("[AuthContext] No locations found for tenant during auto-resolution.");
           }
         })
         .catch(err => {

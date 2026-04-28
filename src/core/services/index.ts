@@ -20,6 +20,7 @@ export { caseService } from "./hr/caseService";
 
 // ADMIN
 export { adminService } from "../services/adminService";
+export { orgSettingsService } from "./orgSettingsService";
 
 // PROCUREMENT
 export { procurementService } from "./procurement/procurementService";

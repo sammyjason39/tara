@@ -78,4 +78,13 @@ export class SettingsController {
       data: await this.settingsService.createChildCompany(tenant_id, body, user_id || 'system'),
     };
   }
+
+  @Get('locations')
+  async getLocations(@Req() req: RequestWithTenant) {
+    const { tenant_id } = req.tenantContext;
+    return {
+      success: true,
+      data: await this.settingsService.getLocations(tenant_id),
+    };
+  }
 }

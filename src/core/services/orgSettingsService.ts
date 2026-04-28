@@ -88,5 +88,16 @@ export const orgSettingsService = {
     const json = await res.json();
     if (!res.ok) throw new Error(json.message || 'Failed to create child company');
     return json.data;
+  },
+
+  async getLocations(session: Session): Promise<any[]> {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/v1/settings/locations`, {
+      headers: {
+        'Authorization': `Bearer ${session.token}`,
+        'x-tenant-id': session.tenant_id,
+      }
+    });
+    const json = await res.json();
+    return json.data || [];
   }
 };

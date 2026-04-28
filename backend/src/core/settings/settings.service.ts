@@ -66,6 +66,10 @@ export class SettingsService {
     return this.repository.getChildCompanies(tenant_id);
   }
 
+  async getLocations(tenant_id: string) {
+    return this.repository.getLocations(tenant_id);
+  }
+
   async createChildCompany(tenant_id: string, data: any, user_id: string) {
     this.logger.log(`Creating child company for parent tenant: ${tenant_id}`);
     
