@@ -1,21 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import { PageHeader } from "@/core/ui/PageHeader";
-import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
-import { useSession } from "@/core/security/session";
-import { salesService } from "@/core/services/sales/salesService";
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  LineChart, 
-  Line, 
-  AreaChart, 
-  Area 
-} from "recharts";
 import { 
   TrendingUp, 
   Target, 
@@ -24,21 +7,50 @@ import {
   ArrowUpRight, 
   ArrowDownRight,
   Medal,
-  Activity
+  Activity,
+  Zap,
+  DollarSign,
+  BarChart3,
+  PieChart,
+  RefreshCw,
+  Search,
+  ShieldCheck,
+  ChevronRight,
+  Users,
+  Target as TargetIcon
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useSession } from "@/core/security/session";
+import { salesService } from "@/core/services/sales/salesService";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  AreaChart, 
+  Area 
+} from "recharts";
 
 export default function SalesOverview() {
   const session = useSession();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [forecast, setForecast] = useState<any>(null);
   const [analytics, setAnalytics] = useState<any>(null);
   const [projection, setProjection] = useState<any[]>([]);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (isManual = false) => {
     try {
-      setLoading(true);
+      if (isManual) setRefreshing(true);
+      else setLoading(true);
       const [f, a, p] = await Promise.all([
         salesService.getExecutiveForecast(session.tenant_id, session),
         salesService.getAnalytics(session.tenant_id, session),
@@ -47,10 +59,13 @@ export default function SalesOverview() {
       setForecast(f);
       setAnalytics(a);
       setProjection(p);
+      if (isManual) toast.success("Executive telemetry synchronized.");
     } catch (err) {
       console.error("Failed to fetch executive sales data:", err);
+      toast.error("Telemetry failure in executive suite.");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [session.tenant_id, session]);
 
@@ -60,262 +75,316 @@ export default function SalesOverview() {
 
   if (loading || !forecast) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="flex flex-col items-center gap-2">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-sm text-muted-foreground font-medium animate-pulse">Assembling Sales Intelligence...</p>
+      <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="flex flex-col items-center gap-6">
+          <div className="h-20 w-20 bg-indigo-600 rounded-[2.5rem] animate-pulse flex items-center justify-center shadow-2xl shadow-indigo-500/20">
+            <TrendingUp className="h-10 w-10 text-white" />
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Projecting Executive Intelligence...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 pb-8">
-      <PageHeader
-        title="Executive Sales Overview"
-        subtitle="Global revenue velocity, weighted pipeline forecasting, and conversion efficiency metrics."
-      />
+    <div className="p-8 space-y-10 animate-in fade-in duration-1000 max-w-[1600px] mx-auto pb-24">
+      {/* Premium Header */}
+      <div className="flex flex-col lg:flex-row justify-between items-end gap-6">
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <Badge className="bg-indigo-600 text-white border-none font-black px-3 py-1 rounded-full uppercase tracking-widest text-[10px]">Executive Intelligence</Badge>
+            <div className="flex items-center gap-1.5 text-indigo-500 font-bold text-xs uppercase tracking-widest">
+               <Activity className="h-4 w-4 animate-pulse" />
+               Global Sales Pulse Active
+            </div>
+          </div>
+          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent italic">Sales Overview</h1>
+          <p className="text-slate-500 font-medium max-w-2xl text-lg leading-relaxed italic">"Revenue is the result of strategic coordination and relentless execution."</p>
+        </div>
+        
+        <div className="flex items-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-slate-800/20 shadow-2xl">
+          <Button
+            variant="secondary"
+            className="h-14 w-14 rounded-[1.5rem] bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20"
+            onClick={() => refresh(true)}
+            disabled={refreshing}
+          >
+            <RefreshCw className={cn("h-6 w-6", refreshing && "animate-spin")} />
+          </Button>
+        </div>
+      </div>
 
-      {/* --- EXECUTIVE KPI GRID --- */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Strategic KPI Grid */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <KPIItem 
           title="Won Revenue" 
           value={`$${forecast.wonThisPeriod.toLocaleString()}`} 
           trend="+12.5%" 
           trendUp={true}
-          icon={TrendingUp}
-          description="Total won deals this period"
+          icon={DollarSign}
+          description="Gross victory yield this period"
+          color="emerald"
         />
         <KPIItem 
-          title="Weighted Pipeline" 
+          title="Weighted Forecast" 
           value={`$${forecast.weightedForecastValue.toLocaleString()}`} 
           trend="+5.2%" 
           trendUp={true}
-          icon={Target}
-          description="Probability-adjusted open deals"
+          icon={TargetIcon}
+          description="Probability-adjusted pipeline"
+          color="indigo"
         />
         <KPIItem 
           title="Conversion Rate" 
           value={`${forecast.conversionRate}%`} 
           trend="-1.2%" 
           trendUp={false}
-          icon={Percent}
-          description="Won vs. closed opportunities"
+          icon={Zap}
+          description="Won vs. Closed efficiency"
+          color="blue"
         />
         <KPIItem 
           title="Avg. Deal Cycle" 
-          value={`${forecast.avgDealCycleDays} Days`} 
-          trend="Flat" 
+          value={`${forecast.avgDealCycleDays}d`} 
+          trend="OPTIMIZED" 
           trendUp={true}
           icon={Clock}
-          description="Time from creation to close"
+          description="Creation to Victory velocity"
+          color="amber"
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* --- REVENUE PROJECTION CHART --- */}
-        <WorkspacePanel 
-          className="lg:col-span-2"
-          title="6-Month Revenue Projection" 
-          description="Commit vs. Weighted pipeline forecast."
-        >
-          <div className="h-[300px] w-full pt-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={projection}>
-                <defs>
-                  <linearGradient id="colorWeighted" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground)/0.1)" />
-                <XAxis 
-                  dataKey="month" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} 
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                  tickFormatter={(val) => `$${val / 1000}k`}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--background))', 
-                    borderColor: 'hsl(var(--border))',
-                    borderRadius: '8px',
-                    fontSize: '12px'
-                  }} 
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="weighted" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={2}
-                  fillOpacity={1} 
-                  fill="url(#colorWeighted)" 
-                  name="Weighted Forecast"
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="commit" 
-                  stroke="hsl(var(--destructive))" 
-                  strokeWidth={2}
-                  fill="transparent"
-                  strokeDasharray="5 5"
-                  name="Commit (80%+ Prob)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </WorkspacePanel>
+      <div className="grid gap-10 lg:grid-cols-3">
+        {/* Revenue Projection Model */}
+        <Card className="lg:col-span-2 rounded-[3rem] border-none shadow-2xl bg-white dark:bg-slate-900 overflow-hidden group">
+          <CardHeader className="p-10 pb-4">
+            <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
+              <TrendingUp className="h-6 w-6 text-indigo-600" />
+              Strategic Projection Model
+            </CardTitle>
+            <CardDescription className="text-sm font-medium">Weighted vs. Commit forecast delta (6 Month Tactical Horizon)</CardDescription>
+          </CardHeader>
+          <CardContent className="p-10 pt-0">
+            <div className="h-[350px] w-full pt-8 group-hover:scale-[1.01] transition-transform duration-700">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={projection}>
+                  <defs>
+                    <linearGradient id="colorWeighted" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
+                  <XAxis 
+                    dataKey="month" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 10, fontWeight: 900, fill: '#94a3b8' }}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tickFormatter={(value) => `$${(value/1000)}k`} 
+                    tick={{ fontSize: 10, fontWeight: 900, fill: '#94a3b8' }}
+                  />
+                  <Tooltip 
+                    cursor={{ stroke: '#4f46e5', strokeWidth: 2, strokeDasharray: '4 4' }}
+                    contentStyle={{ 
+                      borderRadius: '24px', 
+                      border: 'none', 
+                      boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                      padding: '16px',
+                      fontWeight: 900
+                    }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="weighted" 
+                    stroke="#4f46e5" 
+                    strokeWidth={4} 
+                    fillOpacity={1} 
+                    fill="url(#colorWeighted)" 
+                    name="Weighted Projection"
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="commit" 
+                    stroke="#ef4444" 
+                    strokeWidth={2} 
+                    fill="transparent"
+                    strokeDasharray="8 8"
+                    name="Commit Model"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* --- TOP PERFORMANCE LEADERBOARD --- */}
-        <WorkspacePanel 
-          title="Top Performance" 
-          description="Leading reps by won revenue this year."
-        >
-          <div className="space-y-5 pt-2">
+        {/* Top Performance Board */}
+        <Card className="rounded-[3rem] border-none shadow-2xl bg-white dark:bg-slate-900 overflow-hidden group">
+          <CardHeader className="p-10 pb-4">
+            <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
+              <Medal className="h-6 w-6 text-amber-500" />
+              Victory Leaders
+            </CardTitle>
+            <CardDescription className="text-sm font-medium">Top representatives by won revenue yield this year.</CardDescription>
+          </CardHeader>
+          <CardContent className="p-10 pt-0 space-y-8">
             {analytics.topReps.map((rep: any, idx: number) => (
-              <div key={rep.name} className="flex items-center justify-between group">
-                <div className="flex items-center gap-3">
+              <div key={rep.name} className="flex items-center justify-between group/item">
+                <div className="flex items-center gap-4">
                   <div className={cn(
-                    "flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-transform group-hover:scale-110",
-                    idx === 0 ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400" :
-                    idx === 1 ? "bg-slate-300/30 text-slate-500" :
-                    "bg-muted text-muted-foreground"
+                    "flex h-10 w-10 items-center justify-center rounded-2xl text-xs font-black transition-all shadow-inner",
+                    idx === 0 ? "bg-amber-500 text-white shadow-amber-500/20" :
+                    idx === 1 ? "bg-slate-200 text-slate-500 dark:bg-slate-800" :
+                    "bg-slate-100 text-slate-400 dark:bg-slate-900"
                   )}>
-                    {idx === 0 ? <Medal className="h-4 w-4" /> : idx + 1}
+                    {idx === 0 ? <Medal className="h-5 w-5" /> : idx + 1}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold">{rep.name}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Rep ID: {rep.name.substring(0, 3)}</p>
+                    <p className="text-sm font-black uppercase tracking-tight">{rep.name}</p>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">RANK {idx + 1} CUSTODIAN</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-foreground">${Number(rep.total).toLocaleString()}</p>
-                  <div className="h-1 w-24 bg-muted rounded-full mt-1 overflow-hidden">
+                  <p className="text-base font-black text-indigo-600">${Number(rep.total).toLocaleString()}</p>
+                  <div className="h-1.5 w-32 bg-slate-100 dark:bg-slate-800 rounded-full mt-2 overflow-hidden shadow-inner">
                     <div 
-                      className="h-full bg-primary" 
+                      className={cn("h-full transition-all duration-1000", idx === 0 ? "bg-amber-500" : "bg-indigo-600")}
                       style={{ width: `${(rep.total / analytics.topReps[0].total) * 100}%` }} 
                     />
                   </div>
                 </div>
               </div>
             ))}
-          </div>
-        </WorkspacePanel>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* --- REVENUE TREND LINE --- */}
-        <WorkspacePanel 
-          title="Revenue Trend" 
-          description="Monthly revenue capture (Won deals)."
-        >
-          <div className="h-[200px] w-full pt-4">
+      <div className="grid gap-10 md:grid-cols-2">
+        {/* Revenue Distribution */}
+        <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl overflow-hidden p-10 space-y-6">
+          <div className="space-y-2">
+            <h3 className="text-2xl font-black tracking-tight flex items-center gap-3">
+              <BarChart3 className="h-6 w-6 text-indigo-600" />
+              Capture Trend
+            </h3>
+            <p className="text-sm font-medium text-slate-500">Monthly revenue capture velocity across all channels.</p>
+          </div>
+          <div className="h-[250px] w-full pt-4">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={analytics.revenueByMonth}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted-foreground)/0.1)" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} strokeOpacity={0.1} />
                 <XAxis 
                   dataKey="month" 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} 
+                  tick={{ fontSize: 10, fontWeight: 900, fill: '#94a3b8' }}
                 />
                 <Tooltip 
-                  cursor={{ fill: 'hsl(var(--muted)/0.4)' }}
+                  cursor={{ fill: 'rgba(79, 70, 229, 0.05)', radius: 12 }}
                   contentStyle={{ 
-                    backgroundColor: 'hsl(var(--background))', 
-                    borderColor: 'hsl(var(--border))',
-                    borderRadius: '8px'
+                    borderRadius: '24px', 
+                    border: 'none', 
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+                    padding: '16px'
                   }} 
                 />
                 <Bar 
                   dataKey="revenue" 
-                  fill="hsl(var(--primary))" 
-                  radius={[4, 4, 0, 0]} 
-                  name="Revenue ($)"
+                  fill="#4f46e5" 
+                  radius={[12, 12, 0, 0]} 
+                  name="Revenue Captured"
                 />
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </WorkspacePanel>
+        </Card>
 
-        {/* --- SALES VELOCITY WIDGET --- */}
-        <WorkspacePanel 
-          title="Sales Velocity & Health" 
-          description="Efficiency signals and funnel integrity."
-        >
-          <div className="grid grid-cols-2 gap-4 pt-2">
-             <HealthMetric 
-                label="Funnel Integrity" 
-                value="High" 
-                detail="SLA Compliance: 94%" 
-                color="text-emerald-500"
-             />
-             <HealthMetric 
-                label="Stalled Deals" 
-                value="4" 
-                detail="> 30 days stagnant" 
-                color="text-amber-500"
-             />
-             <HealthMetric 
-                label="Lost Deal Value" 
-                value={`$${forecast.lostThisPeriod.toLocaleString()}`} 
-                detail="This month" 
-                color="text-destructive"
-             />
-             <HealthMetric 
-                label="Pipeline Health" 
-                value="Strong" 
-                detail="Growth: +8.3%" 
-                color="text-primary"
-             />
-          </div>
-        </WorkspacePanel>
+        {/* Funnel Health Matrix */}
+        <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl p-10 space-y-8">
+           <div className="space-y-2">
+              <h3 className="text-2xl font-black tracking-tight flex items-center gap-3">
+                 <ShieldCheck className="h-6 w-6 text-emerald-500" />
+                 Funnel Health Matrix
+              </h3>
+              <p className="text-sm font-medium text-slate-500">Real-time signals of funnel integrity and deal velocity.</p>
+           </div>
+           <div className="grid grid-cols-2 gap-6">
+              <HealthMetric 
+                 label="Funnel Integrity" 
+                 value="HIGH" 
+                 detail="SLA Compliance: 94%" 
+                 color="text-emerald-500"
+                 icon={ShieldCheck}
+              />
+              <HealthMetric 
+                 label="Stalled Nodes" 
+                 value="4" 
+                 detail="> 30 days stagnant" 
+                 color="text-orange-500"
+                 icon={Clock}
+              />
+              <HealthMetric 
+                 label="Lost Deal Value" 
+                 value={`$${forecast.lostThisPeriod.toLocaleString()}`} 
+                 detail="Gross slippage this month" 
+                 color="text-rose-500"
+                 icon={ArrowDownRight}
+              />
+              <HealthMetric 
+                 label="Pipeline Health" 
+                 value="STRONG" 
+                 detail="Growth: +8.3% MoM" 
+                 color="text-indigo-600"
+                 icon={TrendingUp}
+              />
+           </div>
+        </Card>
       </div>
     </div>
   );
 }
 
-function KPIItem({ title, value, trend, trendUp, description, icon: Icon }: any) {
+function KPIItem({ title, value, trend, trendUp, description, icon: Icon, color }: any) {
   return (
-    <div className="group relative overflow-hidden rounded-xl border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/20">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
-          <h3 className="mt-1 text-3xl font-bold tracking-tight">{value}</h3>
+    <Card className="group relative overflow-hidden rounded-[2.5rem] border-none bg-white dark:bg-slate-900 p-8 shadow-xl transition-all hover:shadow-2xl hover:-translate-y-1">
+      <div className="flex items-center justify-between relative z-10">
+        <div className="space-y-2">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">{title}</p>
+          <h3 className="text-3xl font-black tracking-tighter">{value}</h3>
         </div>
-        <div className="rounded-lg bg-primary/10 p-2 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-          <Icon className="h-5 w-5" />
+        <div className={cn("rounded-2xl p-4 shadow-inner group-hover:scale-110 transition-transform", `bg-${color}-500/10 text-${color}-600`)}>
+          <Icon className="h-6 w-6" />
         </div>
       </div>
-      <div className="mt-4 flex items-center gap-2">
-        <div className={cn(
-          "flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-bold",
-          trendUp ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive"
+      <div className="mt-6 flex items-center gap-3 relative z-10">
+        <Badge className={cn(
+          "rounded-full font-black text-[9px] px-2.5 py-0.5 border-none shadow-sm uppercase tracking-widest",
+          trendUp ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"
         )}>
-          {trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+          {trendUp ? <ArrowUpRight className="h-3 w-3 mr-1 inline" /> : <ArrowDownRight className="h-3 w-3 mr-1 inline" />}
           {trend}
-        </div>
-        <span className="text-[11px] text-muted-foreground font-medium">{description}</span>
+        </Badge>
+        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{description}</span>
       </div>
-      <div className="absolute bottom-0 left-0 h-1 w-0 bg-primary transition-all group-hover:w-full" />
-    </div>
+      <div className={cn("absolute bottom-0 left-0 h-1 w-0 transition-all duration-700 group-hover:w-full", `bg-${color}-600`)} />
+    </Card>
   );
 }
 
-function HealthMetric({ label, value, detail, color }: any) {
+function HealthMetric({ label, value, detail, color, icon: Icon }: any) {
   return (
-    <div className="rounded-lg border bg-muted/30 p-4">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
-      <div className="mt-1 flex items-baseline gap-2">
-        <span className={cn("text-xl font-bold", color)}>{value}</span>
+    <div className="rounded-[2rem] bg-white/60 dark:bg-slate-800/60 p-6 space-y-3 shadow-sm border border-white/20">
+      <div className="flex items-center justify-between">
+         <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{label}</p>
+         <Icon className={cn("h-4 w-4", color)} />
       </div>
-      <p className="text-[10px] text-muted-foreground mt-1 font-medium">{detail}</p>
+      <div className="space-y-1">
+        <span className={cn("text-2xl font-black tracking-tighter", color)}>{value}</span>
+        <p className="text-[9px] font-bold text-slate-400 uppercase italic leading-none">{detail}</p>
+      </div>
     </div>
   );
 }
