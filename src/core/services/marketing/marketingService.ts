@@ -46,6 +46,24 @@ export const marketingService = {
   listAuditEvents: async (tenantId: string, session: SessionContext) => 
     apiRequest<MarketingAuditEvent[]>("/v1/marketing/audit-events", "GET", session),
 
+  listContacts: async (tenantId: string, session: SessionContext) =>
+    apiRequest<any[]>("/v1/marketing/contacts", "GET", session),
+
+  getContactProfile: async (tenantId: string, session: SessionContext, contactId: string) =>
+    apiRequest<any>(`/v1/marketing/customers/${contactId}/profile`, "GET", session),
+
+  listAppointments: async (tenantId: string, session: SessionContext) =>
+    apiRequest<any[]>("/v1/marketing/appointments", "GET", session),
+
+  createAppointment: async (tenantId: string, session: SessionContext, payload: any) =>
+    apiRequest<any>("/v1/marketing/appointments", "POST", session, payload),
+
+  sendMessage: async (tenantId: string, session: SessionContext, payload: { contactId: string, channel: string, content: string }) =>
+    apiRequest<any>("/v1/marketing/messages/send", "POST", session, payload),
+
+  listMessages: async (tenantId: string, session: SessionContext, contactId?: string) =>
+    apiRequest<any[]>(`/v1/marketing/messages${contactId ? `?contactId=${contactId}` : ""}`, "GET", session),
+
   async getDashboard(tenantId: string, session: SessionContext): Promise<MarketingDashboardMetrics> {
     return apiRequest<MarketingDashboardMetrics>("/v1/marketing/dashboard", "GET", session);
   },
@@ -77,7 +95,7 @@ export const marketingService = {
     campaignId: string,
     status: MarketingCampaign["status"],
   ) {
-    return apiRequest<MarketingCampaign>(`/marketing/campaigns/${campaignId}/status`, "PUT", session, { status });
+    return apiRequest<MarketingCampaign>(`/v1/marketing/campaigns/${campaignId}/status`, "PUT", session, { status });
   },
 
   async scheduleExecution(
@@ -99,7 +117,7 @@ export const marketingService = {
     executionId: string,
     payload?: { leadsGenerated?: number; spend?: number; failed?: boolean },
   ) {
-    return apiRequest<CampaignExecutionRun>(`/marketing/executions/${executionId}/run`, "PUT", session, payload);
+    return apiRequest<CampaignExecutionRun>(`/v1/marketing/executions/${executionId}/run`, "PUT", session, payload);
   },
 
   async captureLead(
@@ -117,7 +135,7 @@ export const marketingService = {
       employeeBand?: string;
     },
   ): Promise<MarketingLead> {
-    return apiRequest<MarketingLead>("/v1/leads", "POST", session, payload);
+    return apiRequest<MarketingLead>("/v1/marketing/leads", "POST", session, payload);
   },
 
   async markLeadHandoffReady(
@@ -125,7 +143,7 @@ export const marketingService = {
     session: SessionContext,
     leadId: string,
   ): Promise<MarketingLead> {
-    return apiRequest<MarketingLead>(`/marketing/leads/${leadId}/handoff-ready`, "PUT", session);
+    return apiRequest<MarketingLead>(`/v1/marketing/leads/${leadId}/handoff-ready`, "PUT", session);
   },
 
   async handoffLeadToSales(
@@ -133,7 +151,7 @@ export const marketingService = {
     session: SessionContext,
     leadId: string,
   ): Promise<MarketingLead> {
-    return apiRequest<MarketingLead>(`/marketing/leads/${leadId}/handoff-sales`, "PUT", session);
+    return apiRequest<MarketingLead>(`/v1/marketing/leads/${leadId}/handoff-sales`, "PUT", session);
   },
 
   async createWorkflow(
@@ -150,7 +168,7 @@ export const marketingService = {
     workflowId: string,
     status: NurtureWorkflow["status"],
   ) {
-    return apiRequest<NurtureWorkflow>(`/marketing/workflows/${workflowId}/status`, "PUT", session, { status });
+    return apiRequest<NurtureWorkflow>(`/v1/marketing/workflows/${workflowId}/status`, "PUT", session, { status });
   },
 
   async connectAccount(
@@ -167,15 +185,35 @@ export const marketingService = {
     accountId: string,
     status: ConnectionStatus,
   ) {
-    return apiRequest<ConnectedAccount>(`/marketing/accounts/${accountId}/status`, "PUT", session, { status });
+    return apiRequest<ConnectedAccount>(`/v1/marketing/accounts/${accountId}/status`, "PUT", session, { status });
   },
 
   async acknowledgeAlert(tenantId: string, session: SessionContext, alertId: string) {
-    return apiRequest<MarketingAlert>(`/marketing/alerts/${alertId}/ack`, "PUT", session);
+    return apiRequest<MarketingAlert>(`/v1/marketing/alerts/${alertId}/ack`, "PUT", session);
   },
 
   async runHealthSweep(tenantId: string, session: SessionContext) {
     return apiRequest<MarketingAlert[]>("/v1/marketing/health-sweep", "POST", session);
+  },
+
+  async listAssets(tenantId: string, session: SessionContext) {
+    return apiRequest<any[]>("/v1/marketing/assets", "GET", session);
+  },
+
+  async uploadAsset(tenantId: string, session: SessionContext, payload: FormData) {
+    return apiRequest<any>("/v1/marketing/assets/upload", "POST", session, payload);
+  },
+
+  async createFunnel(tenantId: string, session: SessionContext, payload: any) {
+    return apiRequest<any>("/v1/marketing/funnels", "POST", session, payload);
+  },
+
+  async updateFunnel(tenantId: string, session: SessionContext, funnelId: string, payload: any) {
+    return apiRequest<any>(`/v1/marketing/funnels/${funnelId}`, "PUT", session, payload);
+  },
+  
+  async updateCreativeAsset(tenantId: string, session: SessionContext, assetId: string, payload: any) {
+    return apiRequest<any>(`/v1/marketing/assets/${assetId}`, "PUT", session, payload);
   },
 };
 
