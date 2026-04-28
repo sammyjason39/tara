@@ -2,6 +2,9 @@ import { Module, forwardRef } from "@nestjs/common";
 import { AdminModule } from "../../core/admin/admin.module";
 import { InventoryModule } from "../../core/inventory/inventory.module";
 import { EventsModule } from "../../shared/events/events.module";
+import { EventEmitterModule } from "@nestjs/event-emitter";
+import { MarketingModule } from "../../core/marketing/marketing.module";
+import { SalesModule } from "../../core/sales/sales.module";
 import { RetailController } from "./retail.controller";
 import { RetailInfrastructureController } from "./retail-infrastructure.controller";
 import { RetailPublicGatewayController } from "./retail-public.gateway.controller";
@@ -47,6 +50,9 @@ import { CommsModule } from "../../shared/comms/comms.module";
     EventsModule,
     AuditModule,
     CommsModule,
+    EventEmitterModule,
+    MarketingModule,
+    SalesModule,
   ],
   controllers: [
     RetailController,

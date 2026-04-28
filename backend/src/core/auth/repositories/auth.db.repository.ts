@@ -13,7 +13,7 @@ export class AuthDbRepository implements IAuthRepository {
     return this.prisma.users.findUnique({
       where: {
         tenant_id_email: {
-          ...MultiTenancyUtil.getScope(ctx),
+          tenant_id: ctx.tenant_id,
           email,
         },
       },
@@ -44,7 +44,7 @@ export class AuthDbRepository implements IAuthRepository {
     return this.prisma.users.create({
       data: {
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
+        tenant_id: ctx.tenant_id,
         email: data.email,
         password_hash: data.password_hash,
         first_name: data.first_name,

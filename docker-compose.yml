@@ -1,4 +1,4 @@
-version: '3.8'
+
 
 services:
   db:
@@ -61,12 +61,13 @@ services:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://${POSTGRES_USER:-zenvix}:${POSTGRES_PASSWORD:-zenvix_dev_password}@db:5432/${POSTGRES_DB:-zenvix_dev}?schema=public
       - RUNTIME=docker
+      - PERSISTENCE_MODE=db
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
       - FRONTEND_URL=${FRONTEND_URL}
     volumes:
       - ./backups:/data/backups
-      - ./logs:/data/logs
+      - ./logs:/app/logs
     depends_on:
       db:
         condition: service_healthy

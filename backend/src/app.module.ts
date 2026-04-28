@@ -39,6 +39,7 @@ import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ConfigModule } from "@nestjs/config";
 import { validate } from "./config/env.validation";
+import { EventEmitterModule } from "@nestjs/event-emitter";
 
 import { JVReadOnlyGuard } from "./gateway/jv-read-only.guard";
 
@@ -59,6 +60,7 @@ import { JVReadOnlyGuard } from "./gateway/jv-read-only.guard";
         limit: 100,
       },
     ]),
+    EventEmitterModule.forRoot(),
     LoggerModule,
     LicenseModule,
     CommsModule,
