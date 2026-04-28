@@ -39,6 +39,7 @@ import ReceivingTerminal from "@/pages/retail/operational/ReceivingTerminal";
 import SelfServiceKiosk from "@/pages/retail/operational/SelfServiceKiosk";
 import ShiftCloseTerminal from "@/pages/retail/operational/ShiftCloseTerminal";
 import RetailOperationalGateway from "@/pages/retail/operational/OperationalGateway";
+import DepartmentScheduleStudio from "@/pages/core/HR/DepartmentScheduleStudio";
 
 // ============================================================
 // MODULE IDENTITY (LOCKED)
@@ -210,6 +211,16 @@ const PAGES: ReadonlyArray<ModulePageDefinition> = [
     menuGroup: "management",
     requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
     component: ComplianceAuditLedger,
+  },
+  {
+    id: "mgt-schedule",
+    moduleId: MODULE_ID,
+    title: "Staff Schedule",
+    route: "/m/retail/management/schedule",
+    icon: "Calendar",
+    menuGroup: "management",
+    requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
+    component: () => DepartmentScheduleStudio({ workspaceDeptId: "RETAIL", title: "Retail Operations" }),
   },
 
   // --- OPERATIONAL PLANE ---

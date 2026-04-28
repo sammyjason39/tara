@@ -32,6 +32,7 @@ import Integrations from "@/pages/core/Integrations";
 import Settings from "@/pages/core/Settings";
 import Admin from "@/pages/core/Admin";
 import Security from "@/pages/core/Security";
+import ReceiptStudio from "@/pages/core/retail/ReceiptStudio";
 
 /* ============================================================================ */
 /* CORE PAGE CONTRACT TYPE                                                      */
@@ -193,6 +194,16 @@ const CORE_PAGES: readonly CorePageDefinition[] = Object.freeze([
     section: "system",
     visible: true,
     component: Settings,
+  },
+
+  {
+    id: "receipt-studio",
+    title: "Receipt Studio",
+    route: "/core/retail/receipt-studio",
+    icon: "printer",
+    section: "office",
+    visible: true,
+    component: ReceiptStudio,
   },
 ]);
 

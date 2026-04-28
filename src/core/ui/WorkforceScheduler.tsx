@@ -1,4 +1,11 @@
 import { useState, useEffect } from "react";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/ui/DataTableShell";
 import { Button } from "@/components/ui/button";
@@ -21,9 +28,16 @@ import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval } from "date
 interface WorkforceSchedulerProps {
   departmentId: string;
   title?: string;
+  isHR?: boolean;
+  onDepartmentChange?: (deptId: string) => void;
 }
 
-export function WorkforceScheduler({ departmentId, title = "Team Schedule" }: WorkforceSchedulerProps) {
+export function WorkforceScheduler({ 
+  departmentId, 
+  title = "Team Schedule",
+  isHR = false,
+  onDepartmentChange
+}: WorkforceSchedulerProps) {
   const session = useSession();
   const [employees, setEmployees] = useState<any[]>([]);
   const [shifts, setShifts] = useState<any[]>([]);
@@ -70,7 +84,26 @@ export function WorkforceScheduler({ departmentId, title = "Team Schedule" }: Wo
             </div>
             <div>
                 <h3 className="font-bold">{title}</h3>
-                <p className="text-xs text-muted-foreground">Week of {format(weekStart, "MMMM dd, yyyy")}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-xs text-muted-foreground whitespace-nowrap">Week of {format(weekStart, "MMMM dd, yyyy")}</p>
+                  {isHR && (
+                    <Select value={departmentId} onValueChange={onDepartmentChange}>
+                      <SelectTrigger className="h-6 text-[9px] font-black uppercase tracking-widest bg-white border-primary/20 text-primary w-[140px] rounded-lg">
+                        <SelectValue placeholder="Switch Department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="HR">HR & Legal</SelectItem>
+                        <SelectItem value="FINANCE">Finance</SelectItem>
+                        <SelectItem value="IT">IT & Tech</SelectItem>
+                        <SelectItem value="MARKETING">Marketing</SelectItem>
+                        <SelectItem value="SALES">Sales</SelectItem>
+                        <SelectItem value="PROCUREMENT">Procurement</SelectItem>
+                        <SelectItem value="INVENTORY">Inventory</SelectItem>
+                        <SelectItem value="RETAIL">Retail Ops</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
             </div>
         </div>
         <div className="flex items-center gap-2">

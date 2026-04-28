@@ -34,6 +34,7 @@ const SECTIONS: MenuSection[] = [
     items: [
       { label: "Requisition Desk", to: "/core/procurement/prs", icon: ClipboardList },
       { label: "PO Release Desk", to: "/core/procurement/po-release", icon: ShoppingCart },
+      { label: "Staff Schedule", to: "/core/procurement/schedule", icon: Handshake },
     ],
   },
   {

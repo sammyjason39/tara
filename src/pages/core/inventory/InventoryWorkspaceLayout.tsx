@@ -24,6 +24,7 @@ const TABS: MenuItem[] = [
   { label: "Adjustments", to: "/core/inventory/adjustments", icon: ClipboardCheck },
   { label: "Audit Log", to: "/core/inventory/audit", icon: ShieldCheck },
   { label: "Insights", to: "/core/inventory/insights", icon: BarChart3 },
+  { label: "Staff Schedule", to: "/core/inventory/schedule", icon: Users },
 ];
 
 export default function InventoryWorkspaceLayout() {

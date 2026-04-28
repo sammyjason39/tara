@@ -27,6 +27,7 @@ import SkillTrack from "@/pages/core/HR/SkillTrack";
 import GrowthCycle from "@/pages/core/HR/GrowthCycle";
 import PayCycleStudio from "@/pages/core/HR/PayCycleStudio";
 import SchedulingStudio from "@/pages/core/HR/SchedulingStudio";
+import DepartmentScheduleStudio from "@/pages/core/HR/DepartmentScheduleStudio";
 import LexBoard from "@/pages/core/HR/LexBoard";
 import InsightLayer from "@/pages/core/HR/InsightLayer";
 import CaseDesk from "@/pages/core/HR/Cases/CaseDesk";
@@ -46,6 +47,7 @@ import FinanceDocs from "@/pages/core/finance/FinanceDocs";
 import Assets from "@/pages/core/finance/Assets";
 import PolicyManager from "@/pages/core/finance/PolicyManager";
 import JVDesk from "@/pages/core/finance/JVDesk";
+import PayslipStudio from "@/pages/core/finance/PayslipStudio";
 import { CFODashboard } from "@/pages/core/finance/CFODashboard";
 import PaymentWorkspaceLayout from "@/pages/core/payment/PaymentWorkspaceLayout";
 import PaymentDashboard from "@/pages/core/payment/PaymentDashboard";
@@ -125,6 +127,7 @@ import ModuleHub from "@/pages/core/license/ModuleHub";
 import BulletinHub from "@/pages/core/comms/BulletinHub";
 import MailHub from "@/pages/core/comms/MailHub";
 import ChatHub from "@/pages/core/comms/ChatHub";
+import MyPulse from "@/pages/portal/MyPulse";
 
 /**
  * Build Core Routes.
@@ -182,6 +185,14 @@ export function buildCoreRoutes(): JSX.Element[] {
         element={
           <ProtectedRoute permission="finance.treasury.view" scope="COMPANY">
             <TreasuryMap />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="payslip-studio"
+        element={
+          <ProtectedRoute permission="core.finance.access" scope="COMPANY">
+            <PayslipStudio />
           </ProtectedRoute>
         }
       />
@@ -281,6 +292,7 @@ export function buildCoreRoutes(): JSX.Element[] {
           </ProtectedRoute>
         }
       />
+      <Route path="schedule" element={<DepartmentScheduleStudio workspaceDeptId="FINANCE" title="Finance" />} />
     </Route>,
     <Route
       key="core-payment"
@@ -415,6 +427,7 @@ export function buildCoreRoutes(): JSX.Element[] {
           </ProtectedRoute>
         }
       />
+      <Route path="schedule" element={<DepartmentScheduleStudio workspaceDeptId="PROCUREMENT" title="Procurement" />} />
     </Route>,
     <Route
       key="core-inventory"
@@ -490,6 +503,7 @@ export function buildCoreRoutes(): JSX.Element[] {
           </ProtectedRoute>
         }
       />
+      <Route path="schedule" element={<DepartmentScheduleStudio workspaceDeptId="INVENTORY" title="Inventory" />} />
     </Route>,
     <Route
       key="core-it"
@@ -525,6 +539,7 @@ export function buildCoreRoutes(): JSX.Element[] {
           </ProtectedRoute>
         }
       />
+      <Route path="schedule" element={<DepartmentScheduleStudio workspaceDeptId="IT" title="IT & Tech" />} />
     </Route>,
     <Route
       key="core-sales"
@@ -632,6 +647,7 @@ export function buildCoreRoutes(): JSX.Element[] {
           </ProtectedRoute>
         }
       />
+      <Route path="schedule" element={<DepartmentScheduleStudio workspaceDeptId="SALES" title="Sales" />} />
     </Route>,
     <Route
       key="core-marketing"
@@ -771,6 +787,7 @@ export function buildCoreRoutes(): JSX.Element[] {
           </ProtectedRoute>
         }
       />
+      <Route path="schedule" element={<DepartmentScheduleStudio workspaceDeptId="MARKETING" title="Marketing" />} />
     </Route>,
     <Route
       key="core-admin-workspace"
@@ -908,11 +925,12 @@ export function buildCoreRoutes(): JSX.Element[] {
       <Route
         path="paycycle"
         element={
-          <ProtectedRoute permission="core.hr.payroll.view" scope="COMPANY">
+          <ProtectedRoute permission="core.hr.payroll.manage" scope="COMPANY">
             <PayCycleStudio />
           </ProtectedRoute>
         }
       />
+      <Route path="schedule" element={<DepartmentScheduleStudio workspaceDeptId="HR" title="HR & Legal" />} />
       <Route
         path="lexboard"
         element={
@@ -930,6 +948,15 @@ export function buildCoreRoutes(): JSX.Element[] {
         }
       />
     </Route>,
+    <Route
+      key="core-portal"
+      path="portal/*"
+      element={
+        <ProtectedRoute permission="hr.staff.view" scope="SELF">
+          <MyPulse />
+        </ProtectedRoute>
+      }
+    />,
     <Route
       key="core-workflow"
       path="workflow"

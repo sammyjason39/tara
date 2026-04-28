@@ -88,5 +88,17 @@ export const payrollService = {
   async getPayslip(actor: SessionContext, runId: string, employeeId: string): Promise<any> {
     return apiRequest<any>(`/v1/hr/payroll/${runId}/payslip/${employeeId}`, "GET", actor);
   },
+
+  /**
+   * Get real-time performance financial telemetry for an employee
+   */
+  async getPerformanceSnapshot(tenantId: string, actor: SessionContext, employeeId: string) {
+    return apiRequest<{
+      itemsSold: number;
+      accruedBonus: number;
+      estimatedTax: number;
+      grossEarnings: number;
+    }>(`/hr/payroll/performance-snapshot/${employeeId}`, "GET", actor);
+  },
 };
 

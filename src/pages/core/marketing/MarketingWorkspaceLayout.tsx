@@ -63,6 +63,7 @@ const SECTIONS: MenuSection[] = [
       { label: "Campaign Studio", to: "/core/marketing/campaigns", icon: Megaphone },
       { label: "Funnel Matrix", to: "/core/marketing/funnels", icon: Layers },
       { label: "Lead Ingestion", to: "/core/marketing/lead-capture", icon: Database },
+      { label: "Staff Schedule", to: "/core/marketing/schedule", icon: Users },
     ],
   },
   {

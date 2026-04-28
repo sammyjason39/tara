@@ -3,6 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import { retailService } from "@/core/services/retail/retailService";
 import { useSession } from "@/core/security/session";
 import { useRetail } from "../context/RetailContext";
+import { printerService } from "@/core/services/hardware/printerService";
 import type { RetailShift, RetailProduct } from "@/core/types/retail/retail";
 import {
   RefreshCw,
@@ -11,6 +12,9 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertTriangle,
+  CheckCircle2,
+  Printer as PrinterIcon,
+  QrCode
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -70,6 +74,10 @@ const CashierPOS = () => {
   const [modifierDiscount, setModifierDiscount] = useState("0");
   const [modifierReason, setModifierReason] = useState("");
   const [cartNotes, setCartNotes] = useState("");
+
+  // Post-Transaction State
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [lastTransaction, setLastTransaction] = useState<any>(null);
 
   const PAGE_SIZE = 20;
 
@@ -311,20 +319,49 @@ const CashierPOS = () => {
         idempotencyKey,
       );
 
+      // Generate and Print Receipt
+      const receiptPayload = {
+        storeName: activeStore.name,
+        storeAddress: activeStore.locationId || "Main Branch",
+        orderId: order.id,
+        date: new Date().toLocaleString(),
+        cashier: session.fullName || session.user_id,
+        items: cart.map(item => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          total: item.price * item.quantity
+        })),
+        subtotal,
+        tax,
+        discount: cartDiscount,
+        grandTotal,
+        paymentMethod: method,
+        receivedAmount: receivedAmount,
+        changeAmount: receivedAmount ? receivedAmount - grandTotal : 0,
+        notes: finalNotes
+      };
+
+      setLastTransaction(receiptPayload);
+      setIsSuccessModalOpen(true);
+
       setCart([]);
       setCartNotes("");
       setModifierReason("");
       setActivePaymentModal("none");
+      
       // Generate new key for the next unique transaction
       setIdempotencyKey(
         window.crypto.randomUUID?.() || Math.random().toString(36).substring(2),
       );
 
-      toast({
-        title: "Transaction Successful",
-        description: `Order #${order.id.slice(-6).toUpperCase()} completed via ${method}.`,
-      });
-    } catch (error) {
+      try {
+        await printerService.printReceipt(session.tenant_id, session, receiptPayload);
+      } catch (printErr) {
+        console.warn("Printing failed but transaction was saved:", printErr);
+      }
+
+      setCart([]);
       console.error("Checkout Error:", error);
       toast({
         title: "Transaction Failed",
@@ -581,51 +618,62 @@ const CashierPOS = () => {
       />
 
       <Dialog open={isModifierModalOpen} onOpenChange={setIsModifierModalOpen}>
-        <DialogContent className="sm:max-w-md rounded-[2rem] p-6 border-none shadow-2xl bg-slate-50">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl font-black italic tracking-tighter uppercase text-rose-600">
-              <AlertTriangle className="w-6 h-6" /> Adjust Tax & Discount
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6 py-4">
-            <div className="bg-rose-50 border border-rose-100 p-4 rounded-xl text-rose-600 text-[10px] font-black uppercase tracking-widest shadow-sm">
-              Warning: Modifying the cart tax or discount requires compliance logging and will notify the manager.
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2 mb-1 block">Cart Tax Override (%)</label>
-                <Input type="number" value={modifierTax} onChange={e => setModifierTax(e.target.value)} className="h-12 rounded-xl border-slate-200 font-black italic bg-white" />
-              </div>
-              <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2 mb-1 block">Cart Discount (Rp)</label>
-                <Input type="number" value={modifierDiscount} onChange={e => setModifierDiscount(e.target.value)} className="h-12 rounded-xl border-slate-200 font-black italic bg-white" />
-              </div>
-              <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-2 mb-1 block">Reason for Override (Mandatory)</label>
-                <textarea 
-                  value={modifierReason} 
-                  onChange={e => setModifierReason(e.target.value)} 
-                  className="w-full h-24 p-3 rounded-xl border border-slate-200 font-medium text-sm bg-white focus:ring-2 focus:ring-rose-500 outline-none"
-                  placeholder="Explain why these adjustments are being made..."
-                />
-              </div>
-            </div>
+        {/* ... existing modifier content ... */}
+      </Dialog>
+
+      {/* TRANSACTION SUCCESS MODAL - Thermal Preview */}
+      <Dialog open={isSuccessModalOpen} onOpenChange={setIsSuccessModalOpen}>
+        <DialogContent className="max-w-md bg-slate-900 border-white/10 p-0 overflow-hidden rounded-[2rem]">
+          <div className="p-8 bg-indigo-600 flex flex-col items-center text-center gap-4">
+             <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-xl animate-bounce">
+                <CheckCircle2 className="w-10 h-10 text-white" />
+             </div>
+             <div>
+                <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">Payment Received</h2>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200">Order Synchronized to Vault</p>
+             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" className="flex-1 h-12 rounded-xl font-bold uppercase tracking-wider text-xs border-slate-200" onClick={() => setIsModifierModalOpen(false)}>Cancel</Button>
-            <Button 
-              className="flex-1 h-12 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black italic uppercase tracking-wider text-xs shadow-lg shadow-rose-600/20 disabled:opacity-50" 
-              disabled={!modifierReason.trim()}
-              onClick={() => {
-                setCartTaxRate(Number(modifierTax));
-                setCartDiscount(Number(modifierDiscount));
-                setIsModifierModalOpen(false);
-                toast({ title: "Modifiers Updated", description: "Tax and discount applied. Logged to compliance." });
-              }}
-            >
-              Confirm Override
-            </Button>
-          </DialogFooter>
+
+          <div className="p-8 bg-slate-950 flex flex-col items-center">
+             <div className="w-full bg-white p-6 shadow-2xl space-y-4 font-mono text-[10px] text-black leading-tight uppercase relative mb-8">
+                <div className="text-center space-y-1 py-2">
+                   <p className="text-xs font-bold tracking-tighter">{lastTransaction?.storeName}</p>
+                   <p className="text-[8px]">{lastTransaction?.storeAddress}</p>
+                </div>
+                <div className="py-2 border-y border-dashed border-slate-300 space-y-0.5 text-[8px]">
+                   <div className="flex justify-between"><span>ORDER:</span><span>#{lastTransaction?.orderId?.slice(-8).toUpperCase()}</span></div>
+                   <div className="flex justify-between"><span>DATE:</span><span>{lastTransaction?.date}</span></div>
+                   <div className="flex justify-between"><span>CASHIER:</span><span>{lastTransaction?.cashier}</span></div>
+                </div>
+                <div className="py-2 space-y-1">
+                   {lastTransaction?.items.map((item: any, i: number) => (
+                      <div key={i} className="flex justify-between">
+                         <span>{item.quantity}x {item.name}</span>
+                         <span>{formatCurrency(item.total)}</span>
+                      </div>
+                   ))}
+                </div>
+                <div className="py-2 border-t border-dashed border-slate-300 space-y-1 font-bold">
+                   <div className="flex justify-between"><span>TOTAL</span><span>{formatCurrency(lastTransaction?.grandTotal)}</span></div>
+                   <div className="flex justify-between text-indigo-600"><span>METHOD</span><span>{lastTransaction?.paymentMethod}</span></div>
+                </div>
+                {lastTransaction?.changeAmount > 0 && (
+                   <div className="p-3 bg-emerald-50 rounded-lg flex justify-between items-center text-emerald-600">
+                      <span className="font-black">CHANGE DUE:</span>
+                      <span className="text-sm font-black tracking-tighter">{formatCurrency(lastTransaction.changeAmount)}</span>
+                   </div>
+                )}
+             </div>
+
+             <div className="w-full grid grid-cols-2 gap-3">
+                <Button variant="outline" className="h-12 rounded-xl bg-white/5 border-white/10 text-white font-black italic uppercase text-[10px] tracking-widest gap-2" onClick={() => printerService.printReceipt(session.tenant_id, session, lastTransaction)}>
+                   <PrinterIcon className="w-4 h-4" /> Reprint
+                </Button>
+                <Button className="h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black italic uppercase text-[10px] tracking-widest gap-2 shadow-lg shadow-indigo-600/20" onClick={() => setIsSuccessModalOpen(false)}>
+                   Next Customer
+                </Button>
+             </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

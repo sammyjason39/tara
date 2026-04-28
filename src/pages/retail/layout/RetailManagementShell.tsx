@@ -65,6 +65,11 @@ const SECTIONS: MenuSection[] = [
         to: "/m/retail/management/shifts",
         icon: Clock,
       },
+      {
+        label: "Staff Schedule",
+        to: "/m/retail/management/schedule",
+        icon: Users,
+      },
     ],
   },
   {

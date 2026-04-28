@@ -31,7 +31,9 @@ import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
 import { FilterBar } from "@/core/tools/FilterBar";
+import { EmployeeDetailModal } from "./components/EmployeeDetailModal";
 import { useSession } from "@/core/security/session";
+import { peopleService } from "@/core/services/hr/peopleService";
 import { staffService } from "@/core/services/hr/staffService";
 import { trainingService } from "@/core/services/hr/trainingService";
 import { apiRequest } from "@/core/api/apiClient";
@@ -84,6 +86,9 @@ export default function RosterGrid() {
     pageSize: 10
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [focusedRecord, setFocusedRecord] = useState<any>(null);
+  const [focusedEmployee, setFocusedEmployee] = useState<any>(null);
 
   const statusOptions = useMemo(() => staffService.getStatusOptions(), []);
 
@@ -129,6 +134,17 @@ export default function RosterGrid() {
     };
     loadStaff();
   }, [session.tenant_id, search, department, status, roleTitle, page, version]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleOpenDetail = async (employee: Employee) => {
+    setFocusedEmployee(employee);
+    setIsDetailOpen(true);
+    try {
+      const data = await peopleService.getEmployee360(session.tenant_id, employee.id, session);
+      setFocusedRecord(data);
+    } catch (err) {
+      flash("Failed to load employee 360 data.", true);
+    }
+  };
 
   const selectedEmployee = useMemo(
     () => staff.items.find((emp) => emp.id === editEmployeeId) ?? null,
@@ -439,7 +455,7 @@ export default function RosterGrid() {
                   <tr
                     key={employee.id}
                     className="border-t cursor-pointer hover:bg-muted/30"
-                    onClick={() => navigate(`/core/hr/people/${employee.id}`)}
+                    onClick={() => handleOpenDetail(employee)}
                   >
                     <td className="p-3">
                       <div className="font-medium text-foreground">{employee.fullName}</div>
@@ -469,8 +485,11 @@ export default function RosterGrid() {
                             <Button size="sm" variant="outline">Actions</Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => navigate(`/core/hr/people/${employee.id}`)}>
-                              Open PeopleCore
+                            <DropdownMenuItem onClick={() => handleOpenDetail(employee)}>
+                              View 360 Insight
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate(`/core/portal`)}>
+                              Open Personal Portal
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => {
@@ -567,6 +586,17 @@ export default function RosterGrid() {
           </div>
         </WorkspacePanel>
       </div>
+
+      <EmployeeDetailModal 
+        isOpen={isDetailOpen}
+        onClose={() => {
+          setIsDetailOpen(false);
+          setFocusedRecord(null);
+          setFocusedEmployee(null);
+        }}
+        employee={focusedEmployee}
+        record={focusedRecord}
+      />
 
       {/* Create Employee Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

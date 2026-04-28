@@ -22,7 +22,17 @@ export interface PayrollLine extends HRAuditFields {
   tenantId: string;
   payrollRunId: string;
   employeeId: string;
+  basePay: number;
+  bonus: number;
+  commission: number;
+  tax: number;
+  loanDeduction: number;
   grossPay: number;
   netPay: number;
   adjustments?: number;
+  metadata?: {
+    itemsSold?: number;
+    salesVolume?: number;
+    overtimeHours?: number;
+  };
 }

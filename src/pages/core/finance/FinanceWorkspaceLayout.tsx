@@ -15,19 +15,9 @@ import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { useSession } from "@/core/security/session";
 import { cn } from "@/lib/utils";
 import {
-  LayoutGrid,
-  ShieldCheck,
-  Wallet,
-  Banknote,
-  Receipt,
-  CreditCard,
-  FileSpreadsheet,
-  BarChart3,
-  Lock,
-  FileText,
-  FileSignature,
-  BookOpen,
   HandCoins,
+  Users,
+  LayoutTemplate
 } from "lucide-react";
 
 type MenuItem = { label: string; to: string; icon: React.ElementType };
@@ -50,6 +40,8 @@ const SECTIONS: MenuSection[] = [
       { label: "Finance Docs", to: "/core/finance/docs", icon: FileSignature },
       { label: "Assets", to: "/core/finance/assets", icon: BookOpen },
       { label: "Tax Center", to: "/core/finance/tax", icon: FileText },
+      { label: "Payslip Studio", to: "/core/finance/payslip-studio", icon: LayoutTemplate },
+      { label: "Staff Schedule", to: "/core/finance/schedule", icon: Users },
     ],
   },
   {

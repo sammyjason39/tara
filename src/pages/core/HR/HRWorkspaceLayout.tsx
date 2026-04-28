@@ -83,6 +83,12 @@ const BASE_SECTIONS: MenuSection[] = [
         icon: Building2,
         roles: ["HR_ADMIN", "COMPANY_ADMIN", "DEPT_HEAD", "OWNER", "SUPERADMIN"],
       },
+      {
+        label: "Staff Schedule",
+        to: "/core/hr/schedule",
+        icon: Briefcase,
+        roles: ["HR_ADMIN", "COMPANY_ADMIN", "DEPT_HEAD", "OWNER", "SUPERADMIN"],
+      },
     ],
   },
   {
@@ -163,7 +169,7 @@ const BASE_SECTIONS: MenuSection[] = [
     items: [
       {
         label: "My Pulse",
-        to: "/core/hr/portal",
+        to: "/core/portal",
         icon: LayoutGrid,
         roles: ["HR_ADMIN", "COMPANY_ADMIN", "OWNER", "SUPERADMIN", "STAFF"],
       },

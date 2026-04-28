@@ -22,7 +22,10 @@ type MenuSection = { title: string; items: MenuItem[] };
 const SECTIONS: MenuSection[] = [
   {
     title: "Accounts",
-    items: [{ label: "Accounts", to: "/core/it/accounts", icon: ActivitySquare }],
+    items: [
+      { label: "Accounts", to: "/core/it/accounts", icon: ActivitySquare },
+      { label: "Staff Schedule", to: "/core/it/schedule", icon: Laptop },
+    ],
   },
   {
     title: "Assets",

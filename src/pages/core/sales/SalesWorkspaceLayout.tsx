@@ -50,6 +50,7 @@ const SECTIONS: MenuSection[] = [
       { label: "Lead Injection", to: "/core/sales/leads", icon: Rocket },
       { label: "Pipeline Matrix", to: "/core/sales/pipeline", icon: ClipboardList },
       { label: "Opportunity Desk", to: "/core/sales/opps", icon: BadgeDollarSign },
+      { label: "Staff Schedule", to: "/core/sales/schedule", icon: Users },
     ],
   },
   {
