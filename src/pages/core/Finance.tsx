@@ -128,6 +128,16 @@ export default function CoreFinance() {
         <PageHeader
           title="Finance & Treasury"
           subtitle="Consolidated view of tenant financial health and compliance."
+          primaryAction={
+            <Button onClick={() => toast({ title: "New Invoice", description: "Opening invoice creation studio..." })}>
+              New invoice
+            </Button>
+          }
+          secondaryActions={
+            <Button variant="outline" onClick={() => toast({ title: "Export", description: "Preparing consolidated financial export..." })}>
+              Export report
+            </Button>
+          }
         />
       }
     >
