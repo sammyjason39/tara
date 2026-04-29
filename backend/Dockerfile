@@ -17,7 +17,7 @@ RUN npm install --legacy-peer-deps
 COPY . .
 
 # Generate Prisma Client and Build NestJS
-RUN npx prisma generate
+RUN ./node_modules/.bin/prisma generate
 RUN npm run build
 
 # --- Stage 2: Runner ---
