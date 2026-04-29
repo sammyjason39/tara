@@ -175,28 +175,36 @@ export class HRController {
   async getEmployees(
     @Req() request: RequestWithTenant,
     @Query("location_id") location_id?: string,
+    @Query("company_id") company_id?: string,
   ) {
     const {
       tenant_id,
       role,
       location_id: contextLocationId,
+      company_id: contextCompanyId,
     } = request.tenantContext;
 
-    // For non-admin, force the context's location_id
+    // For non-admin, force the context's location_id and company_id
     const effectiveLocationId =
       role === "SUPERADMIN" || role === "OWNER" || role === "ADMIN"
         ? location_id
         : contextLocationId;
 
+    const effectiveCompanyId =
+      role === "SUPERADMIN" || role === "OWNER" || role === "ADMIN"
+        ? company_id
+        : contextCompanyId;
+
     const result =
       role === "SUPERADMIN"
         ? await this.hrService.getGlobalEmployees(effectiveLocationId)
-        : await this.hrService.getEmployees(tenant_id, effectiveLocationId);
+        : await this.hrService.getEmployees(tenant_id, effectiveLocationId, effectiveCompanyId);
 
     return {
       success: true,
       tenant_id,
       location_id: location_id || "all",
+      company_id: effectiveCompanyId || "all",
       count: result.data.length,
       total: result.total,
       data: result.data,

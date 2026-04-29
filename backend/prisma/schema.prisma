@@ -781,6 +781,7 @@ model companies {
   country                               String                                  @default("US")
   currency                              String                                  @default("USD")
   industry                              String                                  @default("retail")
+  primary_location_id                   String?
   agentic_events                        agentic_events[]
   audit_hash_anchors                    audit_hash_anchors[]
   audit_logs                            audit_logs[]
@@ -3653,6 +3654,11 @@ model locations {
   code                                                        String
   address                                                     String?
   type                                                        String
+  latitude                                                    Decimal?
+  longitude                                                   Decimal?
+  geofence_radius                                             Float?                  @default(200)
+  google_place_id                                             String?
+  formatted_address                                           String?
   created_at                                                  DateTime                @default(now())
   updated_at                                                  DateTime                @default(now())
   deleted_at                                                  DateTime?

@@ -49,7 +49,7 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
         data: { company_id: company.id },
       });
 
-      // Create HQ Location
+      // 4. Create HQ Location with Geodata
       const location = await tx.locations.create({
         data: {
           id: uuidv4(),
@@ -62,7 +62,18 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
           address: data.address,
           country: data.country,
           currency: data.currency,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          google_place_id: data.google_place_id,
+          formatted_address: data.formatted_address,
+          geofence_radius: data.geofence_radius || 200,
         },
+      });
+
+      // 5. Link HQ Location back to Company as primary
+      await tx.companies.update({
+        where: { id: company.id },
+        data: { primary_location_id: location.id },
       });
 
       // Create Default Department

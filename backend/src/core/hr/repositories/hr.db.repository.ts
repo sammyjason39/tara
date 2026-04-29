@@ -66,6 +66,7 @@ export class HRDbRepository implements IHRRepository {
   async getEmployees(
     tenant_id: string,
     location_id?: string,
+    company_id?: string,
     page: number = 1,
     limit: number = 20,
   ): Promise<{ data: Employee[]; total: number }> {
@@ -76,6 +77,10 @@ export class HRDbRepository implements IHRRepository {
 
     if (location_id) {
       where.location_id = location_id;
+    }
+
+    if (company_id) {
+      where.company_id = company_id;
     }
 
     const [employees, total] = await Promise.all([
@@ -167,13 +172,19 @@ export class HRDbRepository implements IHRRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<Employee> {
     const db = tx ?? this.prisma;
-    // Ensure location_id is provided or use first available location
+    // Ensure location_id and company_id are provided or inferred
     let location_id = data.location_id;
+    let company_id = data.company_id;
+
     if (!location_id) {
       const firstLocation = await db.locations.findFirst({
         where: { tenant_id: tenant_id },
       });
       location_id = firstLocation?.id || "loc-default";
+      if (!company_id) company_id = firstLocation?.company_id;
+    } else if (!company_id) {
+      const loc = await db.locations.findUnique({ where: { id: location_id } });
+      company_id = loc?.company_id;
     }
 
     // --- PROVISIONING LOGIC ---
@@ -226,6 +237,7 @@ export class HRDbRepository implements IHRRepository {
       data: {
         id: data.id || undefined,
         tenant_id: tenant_id,
+        company_id: company_id,
         location_id: location_id as string,
         department_id: data.department_id,
         employee_code: data.employee_code,
@@ -1047,6 +1059,7 @@ export class HRDbRepository implements IHRRepository {
     return {
       id: e.id,
       tenant_id: e.tenant_id,
+      company_id: e.company_id,
       location_id: e.location_id,
       employee_code: e.employee_code,
       first_name: e.first_name,
@@ -1720,8 +1733,9 @@ export class HRDbRepository implements IHRRepository {
     const employee = await this.prisma.employees.update({
       where: { id: employee_id, tenant_id: tenant_id },
       data: {
-        location_id: data.location_id,
-        department_id: data.department_id,
+        location_id: data.newLocationId || data.location_id,
+        department_id: data.newDepartmentId || data.department_id,
+        company_id: data.newCompanyId || data.company_id,
         status: "transferred",
       },
     });

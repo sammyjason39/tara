@@ -94,6 +94,10 @@ export class CreateEmployeeDto {
   @IsOptional()
   hourly_rate?: number;
 
+  @IsString()
+  @IsOptional()
+  company_id?: string;
+
   @IsDateString()
   @IsNotEmpty()
   hire_date: string;

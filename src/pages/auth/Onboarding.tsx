@@ -10,6 +10,11 @@ export default function Onboarding() {
     industry: "retail",
     country: "US",
     address: "",
+    latitude: 0,
+    longitude: 0,
+    google_place_id: "",
+    formatted_address: "",
+    geofence_radius: 200,
   });
   const selectedCountry = getCountry(formData.country);
   const [error, setError] = useState("");
@@ -120,6 +125,67 @@ export default function Onboarding() {
                     onChange={(e) =>
                       setFormData({ ...formData, address: e.target.value })
                     }
+                  />
+                </div>
+              </div>
+
+              {/* Geospatial Geofence Section */}
+              <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100/50 space-y-4">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-semibold text-indigo-900 flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Geospatial Anchoring
+                  </label>
+                  <span className="text-[10px] font-bold px-2 py-0.5 bg-indigo-600 text-white rounded-full uppercase tracking-wider">
+                    HQ Geofence
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-tight mb-1">
+                      Latitude
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      className="block w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                      placeholder="0.0000"
+                      value={formData.latitude || ""}
+                      onChange={(e) => setFormData({ ...formData, latitude: parseFloat(e.target.value) })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-tight mb-1">
+                      Longitude
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      className="block w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                      placeholder="0.0000"
+                      value={formData.longitude || ""}
+                      onChange={(e) => setFormData({ ...formData, longitude: parseFloat(e.target.value) })}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium text-gray-500 uppercase tracking-tight mb-1 flex justify-between">
+                    <span>Geofence Radius</span>
+                    <span className="text-indigo-600 font-bold">{formData.geofence_radius}m</span>
+                  </label>
+                  <input
+                    type="range"
+                    min="50"
+                    max="1000"
+                    step="50"
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                    value={formData.geofence_radius}
+                    onChange={(e) => setFormData({ ...formData, geofence_radius: parseInt(e.target.value) })}
                   />
                 </div>
               </div>
@@ -247,6 +313,16 @@ export default function Onboarding() {
                   <div className="text-gray-500">HQ Address</div>
                   <div className="col-span-2 font-medium text-gray-900 line-clamp-2">
                     {formData.address}
+                  </div>
+
+                  <div className="text-gray-500">Coordinates</div>
+                  <div className="col-span-2 font-medium text-gray-900">
+                    {formData.latitude}, {formData.longitude}
+                  </div>
+
+                  <div className="text-gray-500">Fence Radius</div>
+                  <div className="col-span-2 font-medium text-indigo-600 font-bold">
+                    {formData.geofence_radius}m
                   </div>
                 </div>
               </div>

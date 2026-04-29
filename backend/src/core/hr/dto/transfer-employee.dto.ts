@@ -11,5 +11,9 @@ export class TransferEmployeeDto {
 
   @IsString()
   @IsOptional()
+  newCompanyId?: string;
+
+  @IsString()
+  @IsOptional()
   notes?: string;
 }

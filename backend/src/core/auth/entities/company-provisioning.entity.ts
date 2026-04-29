@@ -13,6 +13,11 @@ export interface ProvisioningData {
   currency: string;
   industry: string;
   address: string;
+  latitude?: number;
+  longitude?: number;
+  google_place_id?: string;
+  formatted_address?: string;
+  geofence_radius?: number;
   user: {
     first_name: string;
     last_name: string;

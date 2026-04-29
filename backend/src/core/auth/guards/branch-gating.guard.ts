@@ -44,18 +44,27 @@ export class BranchGatingGuard implements CanActivate {
       return true;
     }
 
-    const storeCount = await this.prisma.stores.count({
-      where: { tenant_id: tenantContext.tenant_id },
-    });
+    const [storeCount, hqCount] = await Promise.all([
+      this.prisma.stores.count({
+        where: { tenant_id: tenantContext.tenant_id },
+      }),
+      this.prisma.locations.count({
+        where: { 
+          tenant_id: tenantContext.tenant_id,
+          type: 'headquarters'
+        },
+      })
+    ]);
 
-    if (storeCount < 1) {
+    if (storeCount < 1 && hqCount < 1) {
       throw new ForbiddenException(
-        "SETUP_REQUIRED: At least one Branch/Store must be established before accessing operational data.",
+        "SETUP_REQUIRED: At least one Branch/Store or Headquarters must be established before accessing operational data.",
       );
     }
 
     // Attach count to context so controllers know
     tenantContext.branchCount = storeCount;
+    tenantContext.hqCount = hqCount;
     return true;
   }
 }

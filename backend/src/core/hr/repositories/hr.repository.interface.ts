@@ -66,7 +66,7 @@ export abstract class IHRRepository {
   abstract getTrainingProgramById(tenant_id: string, id: string): Promise<TrainingProgram | null>;
 
   // Employee Management
-  abstract getEmployees(tenant_id: string, location_id?: string, page?: number, limit?: number): Promise<{ data: Employee[]; total: number }>;
+  abstract getEmployees(tenant_id: string, location_id?: string, company_id?: string, page?: number, limit?: number): Promise<{ data: Employee[]; total: number }>;
   abstract getGlobalEmployees(location_id?: string, page?: number, limit?: number): Promise<{ data: Employee[]; total: number }>;
   abstract createEmployee(tenant_id: string, data: CreateEmployeeDto, tx?: Prisma.TransactionClient): Promise<Employee>;
   abstract updateEmployee(tenant_id: string, employee_id: string, data: UpdateEmployeeDto, tx?: Prisma.TransactionClient): Promise<Employee>;
