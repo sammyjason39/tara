@@ -56,4 +56,25 @@ export class AuthController {
       data: user,
     };
   }
+
+  @Post("verify-email")
+  async verifyEmail(@Body("email") email: string) {
+    const exists = await this.authService.verifyEmail(email);
+    return {
+      success: true,
+      exists,
+    };
+  }
+
+  @Post("reset-password-direct")
+  async resetPasswordDirect(
+    @Body("email") email: string,
+    @Body("newPassword") newPassword: string,
+  ) {
+    await this.authService.resetPasswordDirect(email, newPassword);
+    return {
+      success: true,
+      message: "Password reset successful",
+    };
+  }
 }

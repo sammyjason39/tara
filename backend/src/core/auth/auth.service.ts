@@ -111,4 +111,23 @@ export class AuthService {
       throw new UnauthorizedException("Invalid token");
     }
   }
+
+  async verifyEmail(email: string): Promise<boolean> {
+    const user = await this.authRepo.findByEmail(this.systemCtx, email);
+    return !!user;
+  }
+
+  async resetPasswordDirect(email: string, newPassword: string): Promise<void> {
+    const user = await this.authRepo.findByEmail(this.systemCtx, email);
+    if (!user) {
+      throw new UnauthorizedException("User not found");
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(newPassword, salt);
+
+    await this.authRepo.update(this.systemCtx, user.id, {
+      password_hash,
+    } as any);
+  }
 }

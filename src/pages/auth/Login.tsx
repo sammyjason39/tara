@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "react-router-dom";
+import { ForgotPasswordModal } from "./ForgotPasswordModal";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -10,6 +11,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +67,13 @@ export default function Login() {
             <div className="space-y-1">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium text-gray-700">Password</label>
-                <a href="#" className="text-xs font-medium text-blue-600 hover:text-blue-500 transition-colors">Forgot password?</a>
+                <button
+                  type="button"
+                  onClick={() => setIsForgotModalOpen(true)}
+                  className="text-xs font-medium text-blue-600 hover:text-blue-500 transition-colors"
+                >
+                  Forgot password?
+                </button>
               </div>
               <input
                 type="password"
@@ -106,6 +114,11 @@ export default function Login() {
           </div>
         </div>
       </div>
+
+      <ForgotPasswordModal
+        isOpen={isForgotModalOpen}
+        onClose={() => setIsForgotModalOpen(false)}
+      />
     </div>
   );
 }
