@@ -107,7 +107,7 @@ export class WorkforcePlannerService {
   async getGlobalWorkforceDynamics(tenant_id: string) {
     this.logger.log(`Fetching workforce dynamics for tenant ${tenant_id}`);
 
-    const result = await this.repository.getEmployees(tenant_id, undefined, 1, 1000);
+    const result = await this.repository.getEmployees(tenant_id, undefined, undefined, 1, 1000);
     const employees = result.data;
     const active = employees.filter(e => e.status === 'active').length;
     const probation = employees.filter(e => e.status === 'probation').length;

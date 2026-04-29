@@ -244,15 +244,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("[AuthContext] Missing location_id, attempting auto-resolution via Core...");
       orgSettingsService.getLocations(session)
         .then(locations => {
+          // Guard against non-array responses (e.g. HTML from a 404/500)
           if (locations && Array.isArray(locations) && locations.length > 0) {
             console.log("[AuthContext] Auto-resolved location_id:", locations[0].id);
             updateLocation(locations[0].id);
           } else {
-            console.warn("[AuthContext] No locations found for tenant during auto-resolution.");
+            console.warn("[AuthContext] No valid locations found or invalid response format during auto-resolution.");
           }
         })
         .catch(err => {
-          console.error("[AuthContext] Location resolution failed:", err);
+          // Defensively catch parsing errors and log them without crashing
+          if (err instanceof SyntaxError || err.message?.includes("Unexpected token")) {
+            console.warn("[AuthContext] Backend returned invalid JSON during location resolution. Likely a 404/500 HTML page.");
+          } else {
+            console.error("[AuthContext] Location resolution failed:", err);
+          }
         });
     }
   }, [session, updateLocation]);

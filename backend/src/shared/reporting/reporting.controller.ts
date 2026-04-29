@@ -10,7 +10,8 @@ import {
   NotFoundException, 
   BadRequestException,
   UseGuards,
-  ForbiddenException
+  ForbiddenException,
+  UseInterceptors
 } from '@nestjs/common';
 import { ReportJobService } from './report-job.service';
 import { Request } from 'express';
@@ -31,8 +32,9 @@ interface RequestWithTenant extends Request {
  * Reporting Controller
  * Handles async job-based report generation and retrieval.
  */
-@Controller('reports')
-@UseGuards(TenantInterceptor, RolesGuard)
+@Controller('reporting')
+@UseInterceptors(TenantInterceptor)
+@UseGuards(RolesGuard)
 export class ReportingController {
   constructor(private readonly jobService: ReportJobService) {}
 

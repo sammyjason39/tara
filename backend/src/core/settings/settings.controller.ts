@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Post, Body, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, Post, Body, Req, UseGuards, UseInterceptors } from '@nestjs/common';
 import { Request } from 'express';
 import { SettingsService } from './settings.service';
 import { TenantInterceptor } from '../../gateway/tenant.interceptor';
@@ -12,7 +12,8 @@ interface RequestWithTenant extends Request {
 }
 
 @Controller('settings')
-@UseGuards(TenantInterceptor, RolesGuard)
+@UseInterceptors(TenantInterceptor)
+@UseGuards(RolesGuard)
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 

@@ -180,14 +180,12 @@ export class InsightService {
     const normalizedForecastHash = (forecastHash as string) ?? 'ACTUAL';
     const snapshotSequence = cashflow.snapshotSequence;
 
-    const existing = await this.prisma.finance_insight_snapshots.findUnique({
+    const existing = await this.prisma.finance_insight_snapshots.findFirst({
       where: {
-        tenant_id_company_id_snapshot_sequence_forecast_hash: {
-          tenant_id: tenant_id,
-          company_id: company_id,
-          snapshot_sequence: snapshotSequence,
-          forecast_hash: normalizedForecastHash,
-        },
+        tenant_id: tenant_id,
+        company_id: company_id,
+        snapshot_sequence: snapshotSequence,
+        forecast_hash: normalizedForecastHash,
       },
     });
 
@@ -330,14 +328,12 @@ export class InsightService {
       // Concurrency Patch: If record was created by a parallel request, return the existing one gracefully
       if (err.code === 'P2002') {
         this.logger.warn(`[CONCURRENCY] InsightSnapshot unique constraint caught. Falling back to fetch.`, correlation_id);
-        const lateExisting = await this.prisma.finance_insight_snapshots.findUnique({
+        const lateExisting = await this.prisma.finance_insight_snapshots.findFirst({
           where: {
-            tenant_id_company_id_snapshot_sequence_forecast_hash: {
-              tenant_id: tenant_id,
-              company_id: company_id,
-              snapshot_sequence: snapshotSequence,
-              forecast_hash: normalizedForecastHash,
-            },
+            tenant_id: tenant_id,
+            company_id: company_id,
+            snapshot_sequence: snapshotSequence,
+            forecast_hash: normalizedForecastHash,
           },
         });
         if (lateExisting) {

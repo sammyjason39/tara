@@ -30,7 +30,8 @@ interface RequestWithTenant extends Request {
 }
 
 @Controller('admin')
-@UseGuards(TenantInterceptor, RolesGuard)
+@UseInterceptors(TenantInterceptor)
+@UseGuards(RolesGuard)
 @Roles(UserRole.ADMIN, UserRole.OWNER)
 export class AdminController {
   constructor(

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Query, Req, Res, UseGuards, Body } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Req, Res, UseGuards, Body, UseInterceptors } from '@nestjs/common';
 import { AuditService, AuditQueryDto } from './audit.service';
 import { ReportingService } from '../reporting/reporting.service';
 import { Response } from 'express';
@@ -9,7 +9,8 @@ import { UserRole } from '../roles';
 
 
 @Controller('audit')
-@UseGuards(TenantInterceptor, RolesGuard)
+@UseInterceptors(TenantInterceptor)
+@UseGuards(RolesGuard)
 export class AuditController {
   constructor(
     private readonly auditService: AuditService,

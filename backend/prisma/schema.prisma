@@ -1935,7 +1935,7 @@ model finance_insight_snapshots {
   // @@map("finance_insight_snapshots") - standardized
   tenants           tenants  @relation(fields: [tenant_id], references: [id])
 
-  @@unique([tenant_id, snapshot_sequence, forecast_hash])
+  @@unique([tenant_id, company_id, snapshot_sequence, forecast_hash])
   @@index([forecast_hash])
   @@index([tenant_id, snapshot_sequence])
 }

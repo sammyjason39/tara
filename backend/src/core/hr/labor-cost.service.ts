@@ -16,7 +16,7 @@ export class LaborCostService {
     this.logger.log(`Projecting labor costs for department ${department_id} over ${periods} periods`);
     
     // 1. Get current employees in department
-    const result = await this.repository.getEmployees(tenant_id, undefined, 1, 1000);
+    const result = await this.repository.getEmployees(tenant_id, undefined, undefined, 1, 1000);
     const employees = result.data;
     const deptEmployees = employees.filter((e: Employee) => e.department_id === department_id);
     
@@ -67,7 +67,7 @@ export class LaborCostService {
   async simulateInflationImpact(tenant_id: string, inflationRate: number) {
     this.logger.log(`Simulating inflation impact with rate ${inflationRate}`);
     
-    const result = await this.repository.getEmployees(tenant_id, undefined, 1, 1000);
+    const result = await this.repository.getEmployees(tenant_id, undefined, undefined, 1, 1000);
     const employees = result.data;
     const totalAnnualBase = employees.reduce((sum: number, e: Employee) => sum + (e.base_salary || 0), 0);
     

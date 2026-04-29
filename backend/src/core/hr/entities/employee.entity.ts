@@ -6,6 +6,7 @@ export class Employee {
   id: string;
   tenant_id: string;
   location_id?: string;
+  company_id?: string;
   employee_code: string;
   first_name: string;
   last_name: string;

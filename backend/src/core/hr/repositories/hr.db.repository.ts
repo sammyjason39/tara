@@ -181,10 +181,10 @@ export class HRDbRepository implements IHRRepository {
         where: { tenant_id: tenant_id },
       });
       location_id = firstLocation?.id || "loc-default";
-      if (!company_id) company_id = firstLocation?.company_id;
+      if (!company_id) company_id = firstLocation?.company_id || undefined;
     } else if (!company_id) {
       const loc = await db.locations.findUnique({ where: { id: location_id } });
-      company_id = loc?.company_id;
+      company_id = loc?.company_id || undefined;
     }
 
     // --- PROVISIONING LOGIC ---
@@ -1059,8 +1059,8 @@ export class HRDbRepository implements IHRRepository {
     return {
       id: e.id,
       tenant_id: e.tenant_id,
-      company_id: e.company_id,
-      location_id: e.location_id,
+      company_id: e.company_id || undefined,
+      location_id: e.location_id || undefined,
       employee_code: e.employee_code,
       first_name: e.first_name,
       last_name: e.last_name,

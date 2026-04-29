@@ -28,7 +28,7 @@ export class SuccessionService {
 
     const [position, result] = await Promise.all([
       this.repository.getPositions(tenant_id).then(pos => pos.find(p => p.id === position_id)),
-      this.repository.getEmployees(tenant_id, undefined, 1, 1000),
+      this.repository.getEmployees(tenant_id, undefined, undefined, 1, 1000),
     ]);
 
     if (!position) throw new Error("Position not found");
