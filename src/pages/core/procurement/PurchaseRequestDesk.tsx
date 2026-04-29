@@ -258,24 +258,6 @@ export default function PurchaseRequestDesk() {
         onClear={clearStatus}
       />
 
-      {overview?.moduleContributions?.retail && (
-        <WorkspacePanel
-          title="Module Contributions: Retail Fulfilment"
-          description="Critical store transfer and replenishment tasks."
-        >
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-lg border p-3 border-amber-500/20 bg-amber-500/5">
-              <p className="text-xs text-muted-foreground">
-                Pending Store Transfers
-              </p>
-              <p className="text-2xl font-semibold text-amber-600 dark:text-amber-400">
-                {overview.moduleContributions.retail.pendingStoreTransfers}
-              </p>
-            </div>
-          </div>
-        </WorkspacePanel>
-      )}
-
       <WorkspacePanel
         title="Requisition Queue"
         description="End-to-end request pipeline before PO release."

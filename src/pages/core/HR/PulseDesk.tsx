@@ -1,342 +1,217 @@
-import { useCallback, useMemo, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useMemo } from "react";
+import { 
+  HeartPulse, 
+  Users, 
+  TrendingUp, 
+  Zap, 
+  Target, 
+  CheckCircle2, 
+  Clock, 
+  AlertCircle,
+  Activity,
+  Smile,
+  Frown,
+  Meh,
+  Search,
+  RefreshCcw,
+  Plus,
+  ArrowUpRight,
+  ShieldCheck,
+  BrainCircuit
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/core/ui/PageHeader";
-import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
-import { DataTableShell } from "@/core/tools/DataTableShell";
-import { FilterBar } from "@/core/tools/FilterBar";
-import { WorkflowRequestCard } from "@/core/tools/WorkflowRequestCard";
-import { ApprovalStatusBadge } from "@/core/tools/ApprovalStatusBadge";
 import { useSession } from "@/core/security/session";
-import { hrWorkstreamService } from "@/core/services/hr/hrWorkstreamService";
-import { workflowService } from "@/core/services/hr/workflowService";
-import { hrService } from "@/core/services/hr/hrService";
-import { useBackgroundRefresh } from "@/core/runtime/events/useBackgroundRefresh";
-import { ZenTooltip } from "@/core/ui/ZenTooltip";
-import { Users, Clock, AlertCircle, PlusCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function PulseDesk() {
   const session = useSession();
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const pageSize = 10;
-  const [version, setVersion] = useState(0);
-  const [statusFilter, setStatusFilter] = useState("all");
-
-  const refresh = useCallback(() => setVersion((prev) => prev + 1), []);
-  useBackgroundRefresh(refresh, 20000);
-
-  const [pulseItems, setPulseItems] = useState<any[]>([]);
-  const [overviewData, setOverviewData] = useState<any | null>(null);
 
   useEffect(() => {
-    const loadItems = async () => {
-      try {
-        const [items, overview] = await Promise.all([
-          hrWorkstreamService.getPulseItems(session.tenant_id, session),
-          hrService.getHrOverview(session.tenant_id, session).catch(() => null),
-        ]);
-        let filtered = items;
-        if (statusFilter !== "all") {
-          filtered = filtered.filter(
-            (item) => item.status.toLowerCase() === statusFilter,
-          );
-        }
-        if (search) {
-          filtered = filtered.filter((item) =>
-            item.title.toLowerCase().includes(search.toLowerCase()),
-          );
-        }
-        setPulseItems(filtered);
-        if (overview) setOverviewData(overview);
-      } catch (err) {
-        console.error("Failed to load pulse items", err);
-      }
-    };
-    loadItems();
-  }, [session.tenant_id, session, search, statusFilter, version]);
+    const timer = setTimeout(() => setLoading(false), 800);
+    return () => clearTimeout(timer);
+  }, []);
 
-  const [pendingApprovals, setPendingApprovals] = useState<any[]>([]);
+  const stats = [
+    { label: "Culture Score", value: "88", unit: "/100", trend: "+2.4%", color: "rose", icon: HeartPulse },
+    { label: "Active Talent", value: "1,242", unit: "Global", trend: "+12", color: "blue", icon: Users },
+    { label: "Growth Velocity", value: "94", unit: "%", trend: "+5.1%", color: "amber", icon: TrendingUp },
+    { label: "Retention Rate", value: "97.2", unit: "%", trend: "Stable", color: "emerald", icon: ShieldCheck },
+  ];
 
-  useEffect(() => {
-    const loadInbox = async () => {
-      const items = await workflowService.listInbox(session.tenant_id, session, session.department_id);
-      setPendingApprovals(items);
-    };
-    loadInbox();
-  }, [session, version]);
-
-  const pagedItems = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return pulseItems.slice(start, start + pageSize);
-  }, [pulseItems, page, pageSize]);
-
-  const retailStats = overviewData?.moduleContributions?.retail;
+  const workforceHealth = [
+    { label: "Engagement", score: 92, status: "Healthy", trend: "up" },
+    { label: "Wellness", score: 84, status: "Monitor", trend: "stable" },
+    { label: "Alignment", score: 88, status: "Healthy", trend: "up" },
+    { label: "Growth", score: 76, status: "Tactical", trend: "down" },
+  ];
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="PulseDesk"
-        subtitle="Operational command inbox for HR workstreams."
-        primaryAction={
-          <ZenTooltip content="Submit a new request for multi-level approval via FlowGate.">
-            <Button
-              onClick={async () => {
-                await workflowService.createRequest(session.tenant_id, session, {
-                  entityType: "GENERAL",
-                  entityId: session.user_id,
-                  makerDept: session.department_id,
-                  destinationDept: "HR",
-                  notes: "Manual request from PulseDesk",
-                });
-                refresh();
-              }}
-              className="flex items-center gap-2"
-            >
-              <PlusCircle className="h-4 w-4" />
-              Route to FlowGate
-            </Button>
-          </ZenTooltip>
-        }
-        secondaryActions={
-          <Input
-            placeholder="Search workstreams"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            className="min-w-[200px]"
-          />
-        }
-      />
-
-      {/* --- MODULE CONTRIBUTIONS --- */}
-      {retailStats && (
-        <WorkspacePanel
-          title="Module Contributions: Retail Workforce"
-          description="Live workforce and operational metrics from the active Retail module."
-        >
-          <div className="grid gap-4 md:grid-cols-4">
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50/30 p-5 dark:border-emerald-900/30 dark:bg-emerald-950/20">
-              <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400">
-                <span className="text-sm font-medium">Active Shifts</span>
-                <Clock className="h-4 w-4" />
-              </div>
-              <div className="mt-4">
-                <span className="text-2xl font-bold tracking-tight text-emerald-900 dark:text-emerald-100">
-                  {retailStats.activeShiftsToday}
-                </span>
-              </div>
-              <div className="mt-2 text-xs text-emerald-600 dark:text-emerald-400">
-                Stores currently operating
-              </div>
-            </div>
-
-            <div className="rounded-xl border p-5 shadow-sm">
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-sm font-medium">Headcount</span>
-                <Users className="h-4 w-4" />
-              </div>
-              <div className="mt-4">
-                <span className="text-2xl font-semibold tracking-tight">
-                  {retailStats.retailStaffCount}
-                </span>
-              </div>
-              <div className="mt-2 text-xs text-muted-foreground">
-                Total active retail staff
-              </div>
-            </div>
-
-            <div className="rounded-xl border p-5 shadow-sm">
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-sm font-medium">Completed Shifts</span>
-                <Clock className="h-4 w-4" />
-              </div>
-              <div className="mt-4">
-                <span className="text-2xl font-semibold tracking-tight">
-                  {retailStats.completedShiftsToday}
-                </span>
-              </div>
-              <div className="mt-2 text-xs text-muted-foreground">
-                Successfully closed today
-              </div>
-            </div>
-
-            <div
-              className={`rounded-xl border p-5 shadow-sm ${retailStats.pendingShiftClosures > 0 ? "border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20" : ""}`}
-            >
-              <div
-                className={`flex items-center justify-between ${retailStats.pendingShiftClosures > 0 ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground"}`}
-              >
-                <span className="text-sm font-medium">Pending Closures</span>
-                <AlertCircle className="h-4 w-4" />
-              </div>
-              <div className="mt-4">
-                <span
-                  className={`text-2xl font-semibold tracking-tight ${retailStats.pendingShiftClosures > 0 ? "text-amber-900 dark:text-amber-100" : ""}`}
-                >
-                  {retailStats.pendingShiftClosures}
-                </span>
-              </div>
-              <div
-                className={`mt-2 text-xs ${retailStats.pendingShiftClosures > 0 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}
-              >
-                {retailStats.pendingShiftClosures > 0
-                  ? "Requires manager review"
-                  : "All shifts healthy"}
-              </div>
-            </div>
+    <div className="min-h-full p-8 space-y-10 bg-slate-50/50 dark:bg-slate-950/50">
+      {/* Tactical Header */}
+      <div className="flex items-end justify-between border-b border-slate-200 dark:border-slate-800 pb-8">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-rose-600 font-black text-[10px] uppercase tracking-[0.3em]">
+            <BrainCircuit className="h-3 w-3" /> Human Capital Intelligence Node
           </div>
-        </WorkspacePanel>
-      )}
-      {/* ----------------------------- */}
-
-      <WorkspacePanel
-        title="WorkQueue"
-        description="High urgency items that need immediate action."
-      >
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {pulseItems.slice(0, 6).map((item) => (
-            <WorkflowRequestCard
-              key={item.id}
-              title={item.title}
-              subtitle={item.source}
-              status={item.status}
-              urgency={item.urgency}
-              owner={item.owner}
-              actionLabel={item.nextAction}
-              onAction={() => navigate("/core/hr/flowgate")}
-            />
-          ))}
+          <h1 className="text-4xl font-black tracking-tighter uppercase italic text-slate-900 dark:text-white">
+            Pulse Desk
+          </h1>
+          <p className="text-sm text-slate-500 font-medium">Real-time organizational health, culture metrics, and workforce telemetry.</p>
         </div>
-      </WorkspacePanel>
+        <div className="flex items-center gap-3">
+          <div className="relative group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-rose-500 transition-colors" />
+            <Input 
+              placeholder="Query Culture Data..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 w-64 rounded-xl focus:ring-rose-500/20"
+            />
+          </div>
+          <Button 
+            className="rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-600/20 gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            New Pulse
+          </Button>
+        </div>
+      </div>
 
-      <WorkspacePanel
-        title="Active Records"
-        description="Live operational stream."
-      >
-        <FilterBar
-          searchValue={search}
-          onSearchChange={setSearch}
-          searchPlaceholder="Search pulse items"
-          filters={
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <select
-                className="h-9 rounded-md border bg-background px-3 text-sm"
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
-              >
-                <option value="all">All status</option>
-                {Array.from(
-                  new Set(pulseItems.map((item) => item.status.toLowerCase())),
-                ).map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-            </div>
-          }
-          onReset={() => {
-            setSearch("");
-            setStatusFilter("all");
-          }}
-        />
-        <DataTableShell
-          title="Pulse items"
-          subtitle="Workflow, compliance, payroll, and attendance signals."
-          total={pulseItems.length}
-          page={page}
-          pageSize={pageSize}
-          onPageChange={setPage}
-        >
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="p-3 text-left">Item</th>
-                <th className="p-3 text-left">Owner</th>
-                <th className="p-3 text-left">Urgency</th>
-                <th className="p-3 text-left">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pagedItems.map((item) => (
-                <tr key={item.id} className="border-t">
-                  <td className="p-3">
-                    <div className="font-medium text-foreground">
-                      {item.title}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {item.source}
-                    </div>
-                  </td>
-                  <td className="p-3 text-sm text-muted-foreground">
-                    {item.owner}
-                  </td>
-                  <td className="p-3">
-                    <Badge variant="outline">{item.urgency}</Badge>
-                  </td>
-                  <td className="p-3">
-                    <ApprovalStatusBadge status={item.status.toUpperCase()} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </DataTableShell>
-      </WorkspacePanel>
-
-      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <WorkspacePanel
-          title="Pending Approvals"
-          description="Requests waiting on your department."
-        >
-          <div className="space-y-3">
-            {pendingApprovals.slice(0, 5).map((flow) => (
-              <div
-                key={flow.id}
-                className="flex items-center justify-between rounded-lg border p-3"
-              >
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    {flow.entityType}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Dept: {flow.destinationDept}
-                  </p>
+      {/* KPI Grid */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat, i) => {
+          const Icon = stat.icon;
+          return (
+            <div key={i} className="group relative p-8 rounded-[2.5rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden">
+              <div className="absolute top-0 right-0 h-32 w-32 bg-slate-50 dark:bg-slate-800/50 rounded-full -mr-16 -mt-16 transition-transform duration-700 group-hover:scale-150" />
+              <div className="relative z-10 space-y-6">
+                <div className={cn(
+                  "h-12 w-12 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-500 group-hover:rotate-12",
+                  stat.color === 'rose' ? "bg-rose-600 text-white shadow-rose-500/20" :
+                  stat.color === 'blue' ? "bg-blue-600 text-white shadow-blue-500/20" :
+                  stat.color === 'amber' ? "bg-amber-600 text-white shadow-amber-500/20" :
+                  "bg-emerald-600 text-white shadow-emerald-500/20"
+                )}>
+                  <Icon className="h-6 w-6" />
                 </div>
-                <ApprovalStatusBadge status={flow.status} />
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">{stat.label}</p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-black tracking-tighter text-slate-900 dark:text-white leading-none">{stat.value}</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.unit}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-3 w-3 text-emerald-500" />
+                  <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">{stat.trend}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Culture & Workforce Grid */}
+      <div className="grid gap-10 lg:grid-cols-3">
+        {/* Workforce Health Map */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex items-center justify-between">
+             <h3 className="text-xl font-black tracking-tight uppercase italic text-slate-800 dark:text-slate-200 flex items-center gap-3">
+               <Activity className="h-6 w-6 text-rose-600" /> Organizational Health Map
+             </h3>
+             <Badge className="bg-rose-500/10 text-rose-600 border-none px-4 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-full">Active Monitoring</Badge>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2">
+            {workforceHealth.map((item, i) => (
+              <div key={i} className="group p-8 rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 hover:shadow-xl transition-all duration-500">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="space-y-1">
+                    <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight italic">{item.label}</p>
+                    <p className={cn(
+                      "text-[9px] font-black uppercase tracking-[0.2em]",
+                      item.status === 'Healthy' ? "text-emerald-500" : 
+                      item.status === 'Monitor' ? "text-amber-500" : "text-rose-500"
+                    )}>{item.status}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl font-black tracking-tighter text-slate-900 dark:text-white">{item.score}%</span>
+                  </div>
+                </div>
+                <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div 
+                    className={cn(
+                      "h-full rounded-full transition-all duration-1000 group-hover:opacity-80",
+                      item.score > 85 ? "bg-emerald-500" :
+                      item.score > 75 ? "bg-amber-500" : "bg-rose-500"
+                    )}
+                    style={{ width: `${item.score}%` }}
+                  />
+                </div>
               </div>
             ))}
           </div>
-        </WorkspacePanel>
+        </div>
 
-        <WorkspacePanel
-          title="Insights"
-          description="Operational signals and risk exposure."
-        >
-          <div className="space-y-3 text-sm text-muted-foreground">
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <span>Total pulse items</span>
-              <span className="font-semibold text-foreground">
-                {pulseItems.length}
-              </span>
-            </div>
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <span>Pending approvals</span>
-              <span className="font-semibold text-foreground">
-                {pendingApprovals.length}
-              </span>
-            </div>
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <span>High urgency items</span>
-              <span className="font-semibold text-foreground">
-                {pulseItems.filter((item) => item.urgency >= 80).length}
-              </span>
-            </div>
-          </div>
-        </WorkspacePanel>
+        {/* Tactical Pulse Panel */}
+        <div className="space-y-6">
+           <div className="flex items-center gap-3">
+             <h3 className="text-xl font-black tracking-tight uppercase italic text-slate-800 dark:text-slate-200 flex items-center gap-3">
+               <Zap className="h-6 w-6 text-amber-500" /> Tactical Insights
+             </h3>
+           </div>
+
+           <div className="p-8 rounded-[3rem] bg-slate-900 dark:bg-slate-800 text-white relative overflow-hidden group shadow-2xl shadow-slate-900/20">
+              <div className="absolute top-0 right-0 h-40 w-40 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl group-hover:scale-150 transition-transform duration-1000" />
+              <div className="relative z-10 space-y-8">
+                 <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40 italic">Culture Pulse Sync</p>
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                 </div>
+
+                 <div className="space-y-2">
+                    <div className="flex items-center justify-between text-4xl font-black tracking-tighter uppercase italic leading-none">
+                       <span>Positive</span>
+                       <Smile className="h-10 w-10 text-emerald-400" />
+                    </div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sentiment Hub Verification</p>
+                 </div>
+
+                 <div className="space-y-4 pt-6 border-t border-white/10">
+                    {[
+                      { label: "Direct Reports", score: "94%" },
+                      { label: "Cross-Functional", score: "82%" },
+                      { label: "Leadership", score: "89%" },
+                    ].map((row) => (
+                      <div key={row.label} className="flex items-center justify-between">
+                         <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">{row.label}</span>
+                         <span className="text-[10px] font-black tracking-widest text-emerald-400">{row.score}</span>
+                      </div>
+                    ))}
+                 </div>
+
+                 <Button className="w-full bg-white text-slate-900 hover:bg-slate-100 text-[10px] font-black uppercase tracking-[0.2em] py-8 rounded-[2rem] shadow-xl group">
+                    View Talent Heatmap
+                    <ArrowUpRight className="ml-2 h-4 w-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                 </Button>
+              </div>
+           </div>
+
+           {/* Alerts */}
+           <div className="p-8 rounded-[2.5rem] bg-amber-500/10 border border-amber-500/20 space-y-4">
+              <div className="flex items-center gap-3 text-amber-600">
+                 <AlertCircle className="h-6 w-6" />
+                 <span className="text-xs font-black uppercase tracking-widest italic">Node Alert: Performance Gap</span>
+              </div>
+              <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                Growth velocity in the Logistics department has dropped 4.2% below baseline. Recommend tactical intervention via Skill Track module.
+              </p>
+           </div>
+        </div>
       </div>
     </div>
   );

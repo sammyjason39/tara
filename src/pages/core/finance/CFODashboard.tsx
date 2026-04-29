@@ -25,10 +25,6 @@ const CFODashboardContent: React.FC = () => {
   const session = useSession();
   const [drillDown, setDrillDown] = useState<{ isOpen: boolean; accountId: string; accountName: string } | null>(null);
 
-  const isBalanced = summary?.isBalanced ?? true;
-  const health = summary?.healthStatus || { status: 'HEALTHY', score: 0, dominantIssueType: 'STABLE' };
-  const healthStatus = health.status;
-
   const { data: summary, isLoading: loadingSummary } = useQuery({
     queryKey: ["financial-summary", state.companyId, state.periodId, state.filters, state.correlationId],
     queryFn: async () => {
@@ -51,6 +47,10 @@ const CFODashboardContent: React.FC = () => {
     enabled: !!state.companyId && !!state.periodId,
     staleTime: 1000 * 60 * 5, // 5 mins
   });
+
+  const isBalanced = summary?.isBalanced ?? true;
+  const health = summary?.healthStatus || { status: 'HEALTHY', score: 0, dominantIssueType: 'STABLE' };
+  const healthStatus = health.status;
 
   const { data: reports, isLoading: loadingReports } = useQuery({
     queryKey: ["financial-reports", state.companyId, state.periodId, state.snapshotSequence, state.correlationId],

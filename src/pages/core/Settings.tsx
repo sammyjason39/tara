@@ -39,6 +39,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { 
   Plus, 
   Building2, 
@@ -52,7 +53,8 @@ import {
   RefreshCw,
   Search,
   ChevronRight,
-  Loader2
+  Loader2,
+  Wallet
 } from "lucide-react";
 import { RequestModal } from "@/core/ui/RequestModal";
 import { adminService } from "@/core/services/adminService";

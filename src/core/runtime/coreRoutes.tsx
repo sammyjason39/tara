@@ -74,9 +74,7 @@ import InventoryAuditLog from "@/pages/core/inventory/InventoryAuditLog";
 import InventoryInsights from "@/pages/core/inventory/InventoryInsights";
 import WarehouseManagement from "@/pages/core/inventory/WarehouseManagement";
 import IotEventFeed from "@/pages/core/inventory/IotEventFeed";
-import ITWorkspaceLayout from "@/pages/core/it/ITWorkspaceLayout";
-import AccountDesk from "@/pages/core/it/AccountDesk";
-import DeviceDesk from "@/pages/core/it/DeviceDesk";
+import ITDashboard from "@/pages/core/it/ITDashboard";
 import SystemHealth from "@/pages/core/it/SystemHealth";
 import SalesWorkspaceLayout from "@/pages/core/sales/SalesWorkspaceLayout";
 import SalesOverview from "@/pages/core/sales/SalesOverview";
@@ -163,6 +161,51 @@ export function buildCoreRoutes(): JSX.Element[] {
     <Route key="core-purchasing-legacy" path="purchasing" element={<Navigate to="/core/procurement" replace />} />,
     <Route key="core-settings-devices-legacy" path="settings/devices" element={<Navigate to="/core/it/devices" replace />} />,
     <Route key="core-settings-tabs" path="settings/:tab" element={<CoreSettings />} />,
+    <Route
+      key="core-it"
+      path="it/*"
+      element={
+        <ProtectedRoute permission="core.it.access" scope="COMPANY">
+          <ITWorkspaceLayout />
+        </ProtectedRoute>
+      }
+    >
+      <Route index element={<ITDashboard />} />
+      <Route
+        path="dashboard"
+        element={
+          <ProtectedRoute permission="core.it.access" scope="COMPANY">
+            <ITDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="accounts"
+        element={
+          <ProtectedRoute permission="core.it.access" scope="COMPANY">
+            <AccountDesk />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="devices"
+        element={
+          <ProtectedRoute permission="core.it.access" scope="COMPANY">
+            <DeviceDesk />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="health"
+        element={
+          <ProtectedRoute permission="core.it.access" scope="COMPANY">
+            <SystemHealth />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="schedule" element={<DepartmentScheduleStudio workspaceDeptId="IT" title="IT & Tech" />} />
+      <Route path="admin" element={<DeptAdmin departmentId="IT" departmentName="IT & Infrastructure" />} />
+    </Route>,
     <Route
       key="core-finance"
       path="finance/*"
@@ -518,7 +561,15 @@ export function buildCoreRoutes(): JSX.Element[] {
         </ProtectedRoute>
       }
     >
-      <Route index element={<AccountDesk />} />
+      <Route index element={<ITDashboard />} />
+      <Route
+        path="dashboard"
+        element={
+          <ProtectedRoute permission="core.it.access" scope="COMPANY">
+            <ITDashboard />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="accounts"
         element={

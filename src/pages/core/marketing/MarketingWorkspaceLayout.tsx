@@ -47,8 +47,26 @@ import {
   Settings,
   Users,
   GitBranch,
-  Settings2
+  Settings2,
+  ChevronRight,
+  Monitor,
+  Target,
+  Megaphone,
+  ActivitySquare,
+  BadgeDollarSign,
+  Contact2,
+  Layers,
+  Workflow,
+  MessageSquare,
+  PlaySquare,
+  Calendar,
+  Cable,
+  BellRing,
+  FolderOpen,
+  Shield,
+  Activity
 } from "lucide-react";
+import { SidebarIdentityCard } from "@/core/ui/SidebarIdentityCard";
 
 type MenuItem = { label: string; to: string; icon: React.ElementType };
 type MenuSection = { title: string; items: MenuItem[] };
@@ -180,24 +198,7 @@ export default function MarketingWorkspaceLayout() {
             
             <ScrollArea className="flex-1 relative z-10">
               <div className="p-8 space-y-12">
-                {/* Tactical Status Card */}
-                <div className="p-8 rounded-[2.5rem] bg-indigo-900 text-white shadow-2xl shadow-indigo-900/20 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 h-32 w-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-150 transition-transform duration-1000" />
-                  <div className="relative z-10 space-y-4">
-                     <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                           <ShieldCheck className="h-5 w-5 text-white" />
-                        </div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40 italic">Identity Verified</p>
-                     </div>
-                     <div className="space-y-1">
-                        <p className="text-base font-black tracking-tighter truncate uppercase italic">{session.tenant_id}</p>
-                        <Badge className="bg-indigo-600 border-none text-[8px] font-black px-3 py-1 rounded-full text-white uppercase tracking-widest shadow-lg">
-                           {session.role} CORE
-                        </Badge>
-                     </div>
-                  </div>
-                </div>
+                <SidebarIdentityCard />
 
                 {SECTIONS.map((section) => (
                   <div key={section.title} className="space-y-6">

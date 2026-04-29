@@ -3,6 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import { retailService } from "@/core/services/retail/retailService";
 import { useSession } from "@/core/security/session";
 import { useRetail } from "../context/RetailContext";
+import { useNavigate } from "react-router-dom";
 import { printerService } from "@/core/services/hardware/printerService";
 import type { RetailShift, RetailProduct } from "@/core/types/retail/retail";
 import {
@@ -48,6 +49,7 @@ const CashierPOS = () => {
   const session = useSession();
   const { activeStore } = useRetail();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // State
   const [searchTerm, setSearchTerm] = useState("");

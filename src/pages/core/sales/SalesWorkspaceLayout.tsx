@@ -9,77 +9,65 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { PageHeader } from "@/core/ui/PageHeader";
 import { PageShell } from "@/core/ui/PageShell";
-import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
-import { Badge } from "@/components/ui/badge";
 import { useSession } from "@/core/security/session";
 import { cn } from "@/lib/utils";
 import {
-  BadgeDollarSign,
-  Bot,
-  ClipboardList,
-  Gauge,
-  ListTodo,
-  ShoppingBag,
-  Rocket,
-  ScrollText,
-  LayoutDashboard,
-  Wallet,
-  Activity,
-  ShieldCheck,
-  ChevronRight,
+  BarChart3,
   TrendingUp,
-  Target,
-  Search,
-  Settings,
+  LayoutGrid,
   Users,
+  GitMerge,
+  Target,
+  FileText,
+  BadgeDollarSign,
+  Briefcase,
+  ShieldCheck,
   GitBranch,
-  Settings2
+  Settings2,
+  ChevronRight,
+  Monitor,
+  Settings,
+  Rocket,
+  Zap,
+  Layers
 } from "lucide-react";
+import { SidebarIdentityCard } from "@/core/ui/SidebarIdentityCard";
+import { Button } from "@/components/ui/button";
 
 type MenuItem = { label: string; to: string; icon: React.ElementType };
 type MenuSection = { title: string; items: MenuItem[] };
 
 const SECTIONS: MenuSection[] = [
   {
+    title: "Intelligence",
+    items: [
+      { label: "Sales Command", to: "/core/sales/dashboard", icon: LayoutGrid },
+      { label: "Revenue Matrix", to: "/core/sales/overview", icon: TrendingUp },
+    ],
+  },
+  {
+    title: "Pipeline",
+    items: [
+      { label: "Lead Ingestion", to: "/core/sales/leads", icon: Users },
+      { label: "Funnel Matrix", to: "/core/sales/pipeline", icon: Layers },
+      { label: "Opportunity Vault", to: "/core/sales/opps", icon: Target },
+    ],
+  },
+  {
+    title: "Execution",
+    items: [
+      { label: "Quote Studio", to: "/core/sales/quotes", icon: FileText },
+      { label: "Customer 360", to: "/core/sales/customers", icon: GitMerge },
+      { label: "Commission Desk", to: "/core/sales/commissions", icon: BadgeDollarSign },
+    ],
+  },
+  {
     title: "Governance",
     items: [
       { label: "Workflow", to: "/core/workflow?scope=Sales", icon: GitBranch },
+      { label: "Staff Schedule", to: "/core/sales/schedule", icon: Briefcase },
       { label: "Administration", to: "/core/sales/admin", icon: Settings2 },
-    ],
-  },
-  {
-    title: "Intelligence",
-    items: [
-      { label: "Sales Overview", to: "/core/sales/overview", icon: LayoutDashboard },
-      { label: "Executive Forecast", to: "/core/sales/forecast", icon: TrendingUp },
-    ],
-  },
-  {
-    title: "Operations",
-    items: [
-      { label: "Command Center", to: "/core/sales/dashboard", icon: Gauge },
-      { label: "Lead Injection", to: "/core/sales/leads", icon: Rocket },
-      { label: "Pipeline Matrix", to: "/core/sales/pipeline", icon: ClipboardList },
-      { label: "Opportunity Desk", to: "/core/sales/opps", icon: BadgeDollarSign },
-      { label: "Staff Schedule", to: "/core/sales/schedule", icon: Users },
-    ],
-  },
-  {
-    title: "Fulfillment",
-    items: [
-      { label: "Quote Approval", to: "/core/sales/quotes", icon: Bot },
-      { label: "Order Desk", to: "/core/sales/orders", icon: ShoppingBag },
-      { label: "Neural Timeline", to: "/core/sales/timeline", icon: ListTodo },
-    ],
-  },
-  {
-    title: "Leadership",
-    items: [
-      { label: "Manager Control", to: "/core/sales/manager", icon: ShieldCheck },
-      { label: "Yield Engine", to: "/core/sales/incentives", icon: Wallet },
-      { label: "Compliance Log", to: "/core/sales/audit", icon: ScrollText },
     ],
   },
 ];
@@ -101,21 +89,23 @@ export default function SalesWorkspaceLayout() {
   }));
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 font-sans selection:bg-orange-500/30 overflow-hidden flex flex-col">
       <PageShell
         header={
-          <div className="space-y-4 px-2">
+          <div className="space-y-6 px-4 py-4">
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild>
-                    <Link to="/core" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors">Core</Link>
+                    <Link to="/core" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-orange-600 transition-all flex items-center gap-2">
+                       <Monitor className="h-3 w-3" /> CORE
+                    </Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="text-slate-300" />
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild>
-                    <Link to="/core/sales" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors">Sales Intelligence</Link>
+                    <Link to="/core/sales" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-orange-600 transition-all">SALES ENGINE</Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 {breadcrumbs.map((item, index) => (
@@ -123,10 +113,10 @@ export default function SalesWorkspaceLayout() {
                     <BreadcrumbSeparator className="text-slate-300" />
                     <BreadcrumbItem>
                       {index === breadcrumbs.length - 1 ? (
-                        <BreadcrumbPage className="text-[10px] font-black uppercase tracking-widest text-indigo-600">{item.label}</BreadcrumbPage>
+                        <BreadcrumbPage className="text-[10px] font-black uppercase tracking-widest text-orange-600 italic">{item.label}</BreadcrumbPage>
                       ) : (
                         <BreadcrumbLink asChild>
-                          <Link to={item.path} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors">
+                          <Link to={item.path} className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-orange-600 transition-all">
                             {item.label}
                           </Link>
                         </BreadcrumbLink>
@@ -136,59 +126,65 @@ export default function SalesWorkspaceLayout() {
                 ))}
               </BreadcrumbList>
             </Breadcrumb>
-            <div className="flex items-center gap-4">
-               <div className="h-10 w-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
-                  <Activity className="h-6 w-6 text-white" />
+            
+            <div className="flex items-center justify-between">
+               <div className="flex items-center gap-6">
+                  <div className="h-14 w-14 bg-orange-600 rounded-[1.5rem] flex items-center justify-center shadow-2xl shadow-orange-600/20 group hover:rotate-12 transition-transform duration-500">
+                     <TrendingUp className="h-8 w-8 text-white" />
+                  </div>
+                  <div>
+                     <h2 className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white uppercase italic leading-none">Sales Command</h2>
+                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] leading-relaxed italic mt-1.5 flex items-center gap-2">
+                        <Rocket className="h-3.5 w-3.5 text-orange-500" /> Revenue Growth & Market Acquisition Matrix
+                     </p>
+                  </div>
                </div>
-               <div>
-                  <h2 className="text-xl font-black tracking-tight text-slate-900 dark:text-white uppercase">Sales Workspace</h2>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">End-to-End Strategic Revenue Orchestration</p>
+               
+               <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 bg-white dark:bg-slate-900 px-4 py-2 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                     <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                     <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Revenue Node Verified</span>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800">
+                     <Settings className="h-5 w-5 text-slate-400" />
+                  </Button>
                </div>
             </div>
           </div>
         }
         left={
-          <div className="h-full flex flex-col bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border-r border-slate-200/50 dark:border-slate-800/50">
-            <ScrollArea className="flex-1">
-              <div className="p-6 space-y-10">
-                {/* Tactical Status Card */}
-                <div className="p-6 rounded-[2rem] bg-indigo-600 text-white shadow-xl shadow-indigo-600/20 relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 h-20 w-20 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl group-hover:scale-150 transition-transform duration-1000" />
-                  <div className="relative z-10 space-y-3">
-                     <p className="text-[9px] font-black uppercase tracking-[0.2em] opacity-60 italic">Node Status</p>
-                     <div className="space-y-1">
-                        <p className="text-sm font-black tracking-tight">{session.tenant_id}</p>
-                        <Badge variant="outline" className="bg-white/20 border-none text-[8px] font-black px-2 py-0 h-4 text-white uppercase tracking-widest">
-                           {session.role}
-                        </Badge>
-                     </div>
-                  </div>
-                </div>
+          <div className="h-full flex flex-col bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl border-r border-slate-200/50 dark:border-slate-800/50 relative overflow-hidden">
+            {/* Background Accent */}
+            <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-orange-500/5 to-transparent pointer-events-none" />
+            
+            <ScrollArea className="flex-1 relative z-10">
+              <div className="p-8 space-y-12">
+                <SidebarIdentityCard />
 
                 {SECTIONS.map((section) => (
-                  <div key={section.title} className="space-y-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 pl-4">
+                  <div key={section.title} className="space-y-6">
+                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 pl-4 border-l-2 border-orange-600/20">
                       {section.title}
                     </p>
                     <div className="space-y-1">
                       {section.items.map((item) => {
                         const Icon = item.icon;
+                        const isActive = location.pathname === item.to || (item.to === "/core/sales/dashboard" && location.pathname === "/core/sales/");
                         return (
                           <NavLink
                             key={item.to}
                             to={item.to}
-                            end={item.to === "/core/sales"}
-                            className={({ isActive }) =>
-                              cn(
-                                "group flex items-center gap-4 rounded-2xl px-4 py-3 text-[11px] font-black uppercase tracking-widest transition-all duration-300",
+                            className={cn(
+                                "group flex items-center gap-4 rounded-2xl px-5 py-4 text-[11px] font-black uppercase tracking-widest transition-all duration-500 relative overflow-hidden",
                                 isActive
-                                  ? "bg-white dark:bg-slate-800 text-indigo-600 shadow-lg shadow-indigo-500/5 translate-x-1"
-                                  : "text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800/50 hover:text-indigo-500 hover:translate-x-1",
+                                  ? "bg-white dark:bg-slate-800 text-orange-600 shadow-xl shadow-orange-500/10 translate-x-3 border-l-4 border-l-orange-600"
+                                  : "text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800/50 hover:text-orange-500 hover:translate-x-2",
                               )
                             }
                           >
-                            <Icon className={cn("h-4 w-4 transition-transform group-hover:scale-110")} />
-                            {item.label}
+                            <Icon className={cn("h-5 w-5 transition-all duration-500 group-hover:scale-110 group-hover:rotate-6")} />
+                            <span className="flex-1 truncate">{item.label}</span>
+                            <ChevronRight className={cn("h-3 w-3 transition-all duration-500 opacity-0 group-hover:opacity-100", isActive ? "opacity-100" : "")} />
                           </NavLink>
                         );
                       })}
@@ -199,19 +195,25 @@ export default function SalesWorkspaceLayout() {
             </ScrollArea>
             
             {/* Health Pulse Footer */}
-            <div className="p-6 border-t border-slate-200/50 dark:border-slate-800/50 bg-white/20 dark:bg-slate-900/20 backdrop-blur-md">
-               <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                     <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Telemetry Syncing</p>
+            <div className="p-8 border-t border-slate-200/50 dark:border-slate-800/50 bg-white/20 dark:bg-slate-900/20 backdrop-blur-2xl relative z-10">
+               <div className="flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 group hover:shadow-xl transition-all duration-500">
+                  <div className="flex items-center gap-4">
+                     <div className="relative">
+                        <div className="h-3 w-3 rounded-full bg-orange-500 animate-ping absolute inset-0 opacity-40" />
+                        <div className="h-3 w-3 rounded-full bg-orange-500 relative z-10 shadow-[0_0_12px_rgba(249,115,22,0.5)]" />
+                     </div>
+                     <div className="space-y-0.5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white leading-none">Revenue Pulse</p>
+                        <p className="text-[8px] font-black uppercase tracking-widest text-orange-500 animate-pulse italic leading-none">Synced & Secure</p>
+                     </div>
                   </div>
-                  <Target className="h-4 w-4 text-slate-300" />
+                  <Zap className="h-5 w-5 text-slate-300 group-hover:text-orange-600 transition-colors" />
                </div>
             </div>
           </div>
         }
       >
-        <div className="p-0 lg:p-0">
+        <div className="p-0 h-full overflow-y-auto bg-slate-50 dark:bg-slate-950">
            <Outlet />
         </div>
       </PageShell>

@@ -26,6 +26,7 @@ import {
   MonitorDot,
   FileText,
   Layout,
+  Home,
 } from "lucide-react";
 import { useRetail } from "../context/RetailContext";
 import { RetailModeSwitchControl } from "../components/RetailModeSwitchControl";
@@ -38,6 +39,7 @@ const SECTIONS: MenuSection[] = [
   {
     title: "Overview",
     items: [
+      { label: "Back to Core", to: "/core", icon: Home },
       { label: "Retail Home", to: "/m/retail/workspace", icon: Layout },
       {
         label: "Command Center",
@@ -133,11 +135,17 @@ export const RetailManagementShell: React.FC<{ children: React.ReactNode }> = ({
           <div className="space-y-3">
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink asChild>
-                    <Link to="/m/retail/workspace">Retail</Link>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to="/core" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-all">CORE</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator className="text-slate-300" />
+              <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                  <Link to="/m/retail/workspace" className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-blue-600 transition-all">RETAIL HUB</Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
                 {breadcrumbs.map((item, index) => (
                   <React.Fragment key={item.path}>
                     <BreadcrumbSeparator />
