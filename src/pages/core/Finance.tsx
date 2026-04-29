@@ -28,17 +28,53 @@ const statusTone = (status: string) => {
   return "bg-slate-50 text-slate-600 border-slate-200";
 };
 
+interface FinanceMetric {
+  id: string;
+  label: string;
+  value: string | number;
+  delta?: string;
+}
+
+interface BillingItem {
+  id: string;
+  title: string;
+  due: string;
+  amount: string | number;
+  status: string;
+}
+
+interface TaxReport {
+  id: string;
+  title: string;
+  due: string;
+  status: string;
+}
+
+interface AuditItem {
+  id: string;
+  label: string;
+  note: string;
+  status: string;
+}
+
+interface RetailContribution {
+  weeklyRevenue: string | number;
+  ordersToday: number;
+  avgBasketValue: string | number;
+  topCategory: string;
+}
+
 export default function CoreFinance() {
   const session = useSession();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<{
-    financialSummary: any[];
-    billingQueue: any[];
-    taxReports: any[];
-    auditReadiness: any[];
+    financialSummary: FinanceMetric[];
+    billingQueue: BillingItem[];
+    taxReports: TaxReport[];
+    auditReadiness: AuditItem[];
     moduleContributions?: {
-      retail?: Record<string, any>;
+      retail?: RetailContribution;
     };
   } | null>(null);
 
@@ -91,7 +127,7 @@ export default function CoreFinance() {
       header={
         <PageHeader
           title="Finance & Treasury"
-          description="Consolidated view of tenant financial health and compliance."
+          subtitle="Consolidated view of tenant financial health and compliance."
         />
       }
     >
