@@ -35,6 +35,6 @@ docker compose ps
 
 echo "===================================================="
 echo "✅ Deployment complete at $(date)"
-echo "Frontend: http://43.156.118.56:3010"
-echo "Backend:  http://43.156.118.56:3001"
+echo "Frontend: http://150.109.15.108:3010"
+echo "Backend:  http://150.109.15.108:3001"
 echo "===================================================="
