@@ -19,9 +19,9 @@ export function PageShell({
   const gridClass = cn(
     "grid gap-6",
     left && right
-      ? "xl:grid-cols-[260px_minmax(0,1fr)_320px] lg:grid-cols-[240px_1fr]"
+      ? "xl:grid-cols-[300px_minmax(0,1fr)_320px] lg:grid-cols-[280px_1fr]"
       : left
-        ? "lg:grid-cols-[260px_minmax(0,1fr)]"
+        ? "lg:grid-cols-[300px_minmax(0,1fr)]"
         : right
           ? "lg:grid-cols-[minmax(0,1fr)_320px]"
           : "grid-cols-1",
@@ -29,7 +29,7 @@ export function PageShell({
 
   return (
     <div className="min-h-screen w-full bg-muted/30">
-      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-4 md:gap-6 px-4 md:px-6 py-4 md:py-6 font-sans">
+      <div className="mx-auto flex w-full flex-col gap-4 md:gap-6 px-4 md:px-6 py-4 md:py-6 font-sans">
         {header}
         <div className={gridClass}>
           {left ? (

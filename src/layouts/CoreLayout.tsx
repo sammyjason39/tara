@@ -332,7 +332,7 @@ export function CoreLayout() {
 
         {/* Page Content */}
         <main className="flex-1 overflow-auto p-4 md:p-6 transition-all">
-          <div className="mx-auto w-full max-w-[1600px]">
+          <div className="mx-auto w-full">
             <Outlet />
           </div>
         </main>
