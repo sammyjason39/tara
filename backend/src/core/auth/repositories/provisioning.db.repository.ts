@@ -30,9 +30,21 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
         },
       });
 
-      // 2. Map User to Company as OWNER
-      await tx.user_companies.create({
-        data: {
+      // 2. Map User to Company as OWNER (upsert to guard against duplicate provision attempts)
+      await tx.user_companies.upsert({
+        where: {
+          tenant_id_user_id: {
+            tenant_id: data.tenant_id,
+            user_id: data.user_id,
+          },
+        },
+        update: {
+          company_id: company.id,
+          role: "OWNER",
+          is_default: true,
+          updated_at: new Date(),
+        },
+        create: {
           id: uuidv4(),
           updated_at: new Date(),
           user_id: data.user_id,
