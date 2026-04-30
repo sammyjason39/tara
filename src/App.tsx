@@ -59,6 +59,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/core/dashboard" replace />} />
+      <Route path="/retail" element={<Navigate to="/m/retail/workspace" replace />} />
 
       {/* Auth Routes */}
       <Route
