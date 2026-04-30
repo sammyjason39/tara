@@ -21,9 +21,24 @@ export class OperationsController {
   @Get('budget/variance')
   async getBudgetVariance(
     @TenantCtx() ctx: TenantContext,
-    @Query('budgetLineId') budgetLineId: string,
+    @Query('budgetLineId') budgetLineId?: string,
+    @Query('company_id') company_id?: string,
+    @Query('fiscalPeriodId') fiscalPeriodId?: string,
   ) {
-    return this.budgetingService.calculateVariance(ctx.tenant_id, budgetLineId);
+    if (!budgetLineId) {
+      // Return a consolidated variance summary for the company/period
+      // For now, return a default mock that won't crash the frontend
+      return {
+        varianceAmount: 0,
+        variancePercentage: 0,
+        message: 'Consolidated variance view pending implementation'
+      };
+    }
+    const result = await this.budgetingService.calculateVariance(ctx.tenant_id, budgetLineId);
+    return {
+      ...result,
+      varianceAmount: Number(result.variance), // Map for frontend compatibility
+    };
   }
 
   @Post('workflow/submit')

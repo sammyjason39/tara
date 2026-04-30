@@ -3,7 +3,7 @@ const { Client } = require('ssh2');
 const conn = new Client();
 conn.on('ready', () => {
   console.log('Client :: ready');
-  const cmd = 'top -bn1 | head -n 20 && free -h';
+  const cmd = 'netstat -antp | grep node';
   console.log('Running:', cmd);
   
   conn.exec(cmd, (err, stream) => {

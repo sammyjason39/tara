@@ -16,7 +16,7 @@ test.describe('Frontend Stability Audit', () => {
     });
 
     // 1. Login
-    await page.goto('http://43.156.118.56:3010/auth/login');
+    await page.goto('/auth/login');
     await page.fill('input[type="email"]', 'hansel@zenvix.id');
     await page.fill('input[type="password"]', 'hansel8891');
     await page.click('button[type="submit"]');
@@ -41,7 +41,7 @@ test.describe('Frontend Stability Audit', () => {
     for (const route of modules) {
       console.log(`Auditing route: ${route}`);
       try {
-        await page.goto(`http://43.156.118.56:3010${route}`, { waitUntil: 'networkidle', timeout: 10000 });
+        await page.goto(`${route}`, { waitUntil: 'networkidle', timeout: 10000 });
         
         // Check if page is blank (e.g., no root element content or specific layout elements)
         const content = await page.content();

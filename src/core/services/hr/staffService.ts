@@ -147,13 +147,13 @@ export const staffService = {
   async exportStaff(tenantId: string, actor: SessionContext) {
     ensureTenantAccess(tenantId, actor);
     // Export returns a buffer/file download, we trigger UI download via API
-    window.open(`/api/hr/employees/export`, '_blank');
+    window.open(`/api/v1/hr/employees/export`, '_blank');
   },
 
   async requestPerformanceReview(tenantId: string, actor: SessionContext, employeeId: string) {
     ensureTenantAccess(tenantId, actor);
     // Create an HR case for performance review
-    return apiRequest(`/hr/cases`, "POST", actor, {
+    return apiRequest(`/v1/hr/cases`, "POST", actor, {
       title: "Performance Review Request",
       type: "REVIEW",
       priority: "NORMAL",
@@ -164,7 +164,7 @@ export const staffService = {
 
   async openPayrollCase(tenantId: string, actor: SessionContext, employeeId: string) {
     ensureTenantAccess(tenantId, actor);
-    return apiRequest(`/hr/cases`, "POST", actor, {
+    return apiRequest(`/v1/hr/cases`, "POST", actor, {
       title: "Payroll Inquiry/Case",
       type: "PAYROLL",
       priority: "HIGH",

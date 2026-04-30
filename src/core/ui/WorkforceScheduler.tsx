@@ -53,7 +53,7 @@ export function WorkforceScheduler({
     const fetchData = async () => {
       setLoading(true);
       try {
-        const data = await apiRequest<any>(`/hr/employees?departmentId=${departmentId}`, "GET", session);
+        const data = await apiRequest<any>(`/v1/hr/employees?departmentId=${departmentId}`, "GET", session);
         setEmployees(data?.data || data || []);
 
         // Fetch shifts for the selected week

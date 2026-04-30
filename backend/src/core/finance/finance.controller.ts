@@ -135,4 +135,29 @@ export class FinanceController {
   ) {
     return this.financeService.updateMoneySource(ctx, id, dto);
   }
+
+  // --- Alerts, Inbox & Payments ---
+  @Get('alerts')
+  async getAlerts(@TenantCtx() ctx: TenantContext) {
+    return this.financeService.getAlerts(ctx);
+  }
+
+  @Get('inbox')
+  async getInbox(@TenantCtx() ctx: TenantContext) {
+    return this.financeService.getInbox(ctx);
+  }
+
+  @Get('payments')
+  async listPayments(@TenantCtx() ctx: TenantContext) {
+    return this.financeService.listPayments(ctx);
+  }
+
+  @Get('policies')
+  async listPolicies(@TenantCtx() ctx: TenantContext) {
+    // Basic implementation for now
+    return [
+      { id: 'pol-001', name: 'General Expense Policy', status: 'ACTIVE', category: 'GENERAL' },
+      { id: 'pol-002', name: 'Travel Policy', status: 'ACTIVE', category: 'TRAVEL' }
+    ];
+  }
 }

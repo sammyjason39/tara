@@ -8,7 +8,6 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-  BreadcrumbAction,
 } from "@/components/ui/breadcrumb";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { PageShell } from "@/core/ui/PageShell";
@@ -18,28 +17,10 @@ import { Badge } from "@/components/ui/badge";
 import { useSession } from "@/core/security/session";
 import { cn } from "@/lib/utils";
 import {
-  Activity,
-  BadgeDollarSign,
-  BellRing,
-  Cable,
-  Calendar,
-  Contact2,
-  Database,
-  FolderOpen,
-  Layers,
-  Megaphone,
-  MessageSquare,
-  PlaySquare,
   ScrollText,
-  Shield,
-  Workflow,
   Rocket,
   ShieldCheck,
   Zap,
-  Target,
-  ChevronRight,
-  Monitor,
-  ActivitySquare,
   Network,
   Cpu,
   Bot,
@@ -64,7 +45,8 @@ import {
   BellRing,
   FolderOpen,
   Shield,
-  Activity
+  Activity,
+  Database
 } from "lucide-react";
 import { SidebarIdentityCard } from "@/core/ui/SidebarIdentityCard";
 

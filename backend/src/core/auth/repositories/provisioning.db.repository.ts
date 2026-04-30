@@ -61,15 +61,35 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
         data: { company_id: company.id },
       });
 
-      // 4. Create HQ Location with Geodata
-      const location = await tx.locations.create({
-        data: {
+      // 4. Create/Upsert HQ Location with Geodata
+      const hqCode = `HQ-${company.code}`;
+      const location = await tx.locations.upsert({
+        where: {
+          tenant_id_code: {
+            tenant_id: data.tenant_id,
+            code: hqCode,
+          },
+        },
+        update: {
+          company_id: company.id,
+          name: `${data.name} Headquarters`,
+          address: data.address,
+          country: data.country,
+          currency: data.currency,
+          latitude: data.latitude,
+          longitude: data.longitude,
+          google_place_id: data.google_place_id,
+          formatted_address: data.formatted_address,
+          geofence_radius: data.geofence_radius || 200,
+          updated_at: new Date(),
+        },
+        create: {
           id: uuidv4(),
           updated_at: new Date(),
           tenant_id: data.tenant_id,
           company_id: company.id,
-          name: "Headquarters",
-          code: "HQ",
+          name: `${data.name} Headquarters`,
+          code: hqCode,
           type: "headquarters",
           address: data.address,
           country: data.country,
@@ -88,22 +108,48 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
         data: { primary_location_id: location.id },
       });
 
-      // Create Default Department
-      const department = await tx.departments.create({
-        data: {
+      // Create/Upsert Default Department
+      const execCode = `EXEC-${company.code}`;
+      const department = await tx.departments.upsert({
+        where: {
+          tenant_id_code: {
+            tenant_id: data.tenant_id,
+            code: execCode,
+          },
+        },
+        update: {
+          company_id: company.id,
+          name: "Executive",
+          updated_at: new Date(),
+        },
+        create: {
           id: uuidv4(),
           updated_at: new Date(),
           tenant_id: data.tenant_id,
           company_id: company.id,
           name: "Executive",
-          code: "EXEC",
+          code: execCode,
           status: "active",
         },
       });
 
-      // Create Employee Record for the User
-      await tx.employees.create({
-        data: {
+      // Create/Upsert Employee Record for the User
+      await tx.employees.upsert({
+        where: {
+          tenant_id_email: {
+            tenant_id: data.tenant_id,
+            email: data.user.email,
+          },
+        },
+        update: {
+          company_id: company.id,
+          location_id: location.id,
+          department_id: department.id,
+          phone: data.user.phone,
+          positions: "Owner / CEO",
+          updated_at: new Date(),
+        },
+        create: {
           id: uuidv4(),
           updated_at: new Date(),
           tenant_id: data.tenant_id,
@@ -123,11 +169,22 @@ export class ProvisioningDbRepository implements IProvisioningRepository {
         },
       });
 
-      // Enable Core Suite Modules by Default
+      // Enable Core Suite Modules by Default (Upsert to prevent unique constraint violation)
       const coreModules = ["finance", "hr", "it", "procurement"];
       for (const moduleKey of coreModules) {
-        await tx.admin_module_statuses.create({
-          data: {
+        await tx.admin_module_statuses.upsert({
+          where: {
+            tenant_id_module_key: {
+              tenant_id: data.tenant_id,
+              module_key: moduleKey,
+            },
+          },
+          update: {
+            company_id: company.id,
+            enabled: true,
+            updated_at: new Date(),
+          },
+          create: {
             id: uuidv4(),
             updated_at: new Date(),
             tenant_id: data.tenant_id,

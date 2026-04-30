@@ -42,7 +42,6 @@ import {
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
@@ -105,7 +104,7 @@ export default function ChatHub() {
   const fetchRooms = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiRequest<ChatRoom[]>("/comms/chat/rooms", "GET", session);
+      const data = await apiRequest<ChatRoom[]>("/v1/comms/chat/rooms", "GET", session);
       setRooms(data || []);
       if (data && data.length > 0 && !selectedRoom) {
         setSelectedRoom(data[0]);
@@ -124,7 +123,7 @@ export default function ChatHub() {
 
   const fetchEmployees = useCallback(async () => {
     try {
-      const data = await apiRequest<any>("/hr/employees", "GET", session);
+      const data = await apiRequest<any>("/v1/hr/employees", "GET", session);
       setEmployees(data.data || []);
     } catch (e: any) {
       console.error("Failed to fetch employees:", e);

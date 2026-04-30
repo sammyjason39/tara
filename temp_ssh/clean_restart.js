@@ -3,7 +3,8 @@ const { Client } = require('ssh2');
 const conn = new Client();
 conn.on('ready', () => {
   console.log('Client :: ready');
-  const cmd = 'top -bn1 | head -n 20 && free -h';
+  // Clean up and restart with consistent project name 'bfs'
+  const cmd = 'cd projects/business-flow-suite && docker compose -p bfs down --remove-orphans && docker compose -p bfs build backend && docker compose -p bfs up -d backend && docker compose -p bfs build frontend && docker compose -p bfs up -d frontend';
   console.log('Running:', cmd);
   
   conn.exec(cmd, (err, stream) => {

@@ -19,8 +19,8 @@ setup('authenticate', async ({ page }) => {
   console.log(`Registering new user: ${email}`);
 
   // Step 1: Personal Details
-  await page.locator('input[placeholder="Jane"]').fill(firstName);
-  await page.locator('input[placeholder="Doe"]').fill(lastName);
+  await page.locator('input').nth(0).fill(firstName);
+  await page.locator('input').nth(1).fill(lastName);
   await page.locator('input[placeholder="name@company.com"]').fill(email);
   await page.locator('input[placeholder="Min 8 characters"]').fill(password);
   await page.click('button:has-text("Continue to Organization Setup")');
@@ -32,10 +32,10 @@ setup('authenticate', async ({ page }) => {
   await page.locator('textarea[placeholder="Enter full physical address"]').fill('123 Innovation Drive, Tech City');
   
   // Select Industry (First select is usually Industry)
-  await page.locator('select').first().selectOption({ label: 'Retail' });
+  await page.locator('select').first().selectOption({ label: 'Retail & Merchandising' });
   
   // Select Region (Second select is usually Region)
-  await page.locator('select').nth(1).selectOption({ label: 'Global' });
+  await page.locator('select').nth(1).selectOption({ label: 'US United States' });
 
   // Final Initialize
   await page.click('button:has-text("Initialize Organization Environment")');

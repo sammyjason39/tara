@@ -57,6 +57,30 @@ export class FinanceService {
     return this.financeRepository.listMoneySources(ctx);
   }
 
+  async getAlerts(ctx: TenantContext) {
+    return this.financeRepository.getAlerts(ctx);
+  }
+
+  async getInbox(ctx: TenantContext) {
+    // Inbox is a combination of unresolved alerts and pending payment requests
+    const [alerts, payments] = await Promise.all([
+      this.financeRepository.getAlerts(ctx),
+      this.financeRepository.listPayments(ctx)
+    ]);
+
+    const pendingPayments = payments.filter(p => p.status === 'PENDING_APPROVAL');
+
+    return {
+      alerts,
+      pendingPayments,
+      totalCount: alerts.length + pendingPayments.length
+    };
+  }
+
+  async listPayments(ctx: TenantContext) {
+    return this.financeRepository.listPayments(ctx);
+  }
+
   async updateMoneySource(ctx: TenantContext, id: string, updates: any) {
     this.logger.log(`[FinanceService] Updating money source ${id} for tenant ${ctx.tenant_id}`);
     const updated = await this.financeRepository.updateMoneySource(ctx, id, updates);

@@ -3,8 +3,8 @@ const { Client } = require('ssh2');
 const conn = new Client();
 conn.on('ready', () => {
   console.log('Client :: ready');
-  // Force pull and force recreate everything
-  const cmd = 'cd projects/business-flow-suite && git fetch origin main && git reset --hard origin/main && docker compose up -d --build --force-recreate --remove-orphans';
+  // Build and start frontend only
+  const cmd = 'cd projects/business-flow-suite && git pull origin main && docker compose up -d --build frontend';
   console.log('Running:', cmd);
   
   conn.exec(cmd, (err, stream) => {

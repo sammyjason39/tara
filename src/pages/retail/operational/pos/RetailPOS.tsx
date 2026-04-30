@@ -178,7 +178,7 @@ export default function RetailPOS() {
       );
 
       setStatusMessage(
-        `Order #${order.id.slice(-6).toUpperCase()} processed successfully!`,
+        `Order #${(order?.id || "").slice(-6).toUpperCase()} processed successfully!`,
       );
       setCart([]);
       setIdempotencyKey(

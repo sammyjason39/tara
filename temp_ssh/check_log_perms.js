@@ -3,8 +3,10 @@ const { Client } = require('ssh2');
 const conn = new Client();
 conn.on('ready', () => {
   console.log('Client :: ready');
-  const cmd = 'top -bn1 | head -n 20 && free -h';
-  console.log('Running:', cmd);
+  
+  const cmd = 'ls -la ~/projects/business-flow-suite/logs';
+  
+  console.log('Checking logs directory permissions...');
   
   conn.exec(cmd, (err, stream) => {
     if (err) throw err;

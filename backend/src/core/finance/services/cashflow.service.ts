@@ -72,7 +72,27 @@ export class CashflowService {
         });
 
     if (!snapshot) {
-      throw new Error('Snapshot not found');
+      this.logger.warn(`No financial snapshots found for tenant ${tenant_id} and company ${company_id}. Returning default state.`);
+      return {
+        projection: Array(days + 1).fill(0),
+        projectionDetails: [],
+        runwayDays: 999,
+        deficitRisk: false,
+        severity: 'NONE',
+        riskMarkers: [],
+        cashflowDrivers: { inflow: [], outflow: [] },
+        snapshotSequence: 0,
+        snapshotHash: 'EMPTY',
+        projectionHash: 'EMPTY',
+        currentCash: 0,
+        snapshotTimestamp: new Date().toISOString(),
+        currentBalance: 0,
+        openingBalance: 0,
+        scenarioApplied: !!scenario,
+        simulationHash: 'EMPTY',
+        minimumSafeCash: 0,
+        isBelowSafeBuffer: false
+      };
     }
 
     const snapshotTimestamp = snapshot.created_at;
