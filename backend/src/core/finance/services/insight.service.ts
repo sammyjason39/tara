@@ -122,7 +122,7 @@ export class InsightService {
     // Volatility: variance of previous snapshot balances
     let volatility = 0;
     if (historicalSnapshots.length >= 2) {
-        const balances = historicalSnapshots.map(s => s.balance || 0);
+        const balances = historicalSnapshots.map(s => Number(s.closing_balance || 0));
         const mean = balances.reduce((a, b) => a + b, 0) / balances.length;
         const variance = balances.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / balances.length;
         volatility = Math.min(1.0, Math.sqrt(variance) / (mean || 1));
@@ -197,7 +197,10 @@ export class InsightService {
 
 
     const historicalSnapshots = await this.prisma.finance_account_balance_snapshots.findMany({
-      where: { tenant_id: tenant_id },
+      where: { 
+        tenant_id: tenant_id,
+        company_id: company_id
+      },
       orderBy: { created_at: 'desc' },
       take: 6,
     });

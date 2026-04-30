@@ -28,14 +28,17 @@ export class BudgetingService {
     if (!budgetLine) throw new Error('Budget Line not found');
 
     // Fetch actuals from ledger (via AccountBalance)
-    const balance = await this.balanceRepo.getBalance(
-        tenant_id, 
-        (budgetLine as any).hrBudgetScenario.tenant_id, 
-        budgetLine.account_id, 
-        budgetLine.period_id
-    );
+    const balance = await this.balanceRepo.findBalance({
+        tenant_id,
+        company_id: budgetLine.companyId || 'GLOBAL',
+        fiscalPeriodId: budgetLine.period_id,
+        accountId: budgetLine.account_id,
+        currency: 'IDR',
+        branch_id: 'GLOBAL',
+        location_id: 'GLOBAL'
+    });
 
-    const actualAmount = new Decimal(Number(balance?.closingBalance || 0));
+    const actualAmount = new Decimal(Number((balance as any)?.net_balance || 0));
     const budgetAmount = budgetLine.amount;
 
     // Determine account type to calculate variance correctly
@@ -53,8 +56,8 @@ export class BudgetingService {
     // Record the actual snapshot for trend tracking
     await this.prisma.finance_budget_actuals.create({
         data: {
-          updated_at: new Date(),
-        id: uuidv4(),
+            updated_at: new Date(),
+            id: uuidv4(),
             budget_line_id: budgetLineId,
             amount: actualAmount,
             as_of_date: new Date(),
@@ -86,4 +89,3 @@ export class BudgetingService {
       return results;
   }
 }
-

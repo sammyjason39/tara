@@ -67,6 +67,7 @@ export class HRDbRepository implements IHRRepository {
     tenant_id: string,
     location_id?: string,
     company_id?: string,
+    department_id?: string,
     page: number = 1,
     limit: number = 20,
   ): Promise<{ data: Employee[]; total: number }> {
@@ -81,6 +82,10 @@ export class HRDbRepository implements IHRRepository {
 
     if (company_id) {
       where.company_id = company_id;
+    }
+
+    if (department_id) {
+      where.department_id = department_id;
     }
 
     const [employees, total] = await Promise.all([

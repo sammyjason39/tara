@@ -32,7 +32,7 @@ export default function FinanceInsights() {
     () =>
       insights.filter(
         (item) =>
-          (!search || item.title.toLowerCase().includes(search.toLowerCase())) &&
+          (!search || item.title?.toLowerCase().includes(search.toLowerCase())) &&
           (category === "ALL" || item.category === category),
       ),
     [insights, search, category],
@@ -194,7 +194,7 @@ export default function FinanceInsights() {
                 <span>Verification Success</span>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Verified {auditIntegrity.totalProcessed} entries. Integrity Hash: {auditIntegrity.headHash.substring(0, 16)}...
+                Verified {auditIntegrity.totalProcessed} entries. Integrity Hash: {(auditIntegrity?.headHash || "").substring(0, 16)}...
               </p>
             </div>
           ) : (

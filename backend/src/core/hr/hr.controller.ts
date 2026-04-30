@@ -176,6 +176,7 @@ export class HRController {
     @Req() request: RequestWithTenant,
     @Query("location_id") location_id?: string,
     @Query("company_id") company_id?: string,
+    @Query("departmentId") departmentId?: string,
   ) {
     const {
       tenant_id,
@@ -198,7 +199,7 @@ export class HRController {
     const result =
       role === "SUPERADMIN"
         ? await this.hrService.getGlobalEmployees(effectiveLocationId)
-        : await this.hrService.getEmployees(tenant_id, effectiveLocationId, effectiveCompanyId);
+        : await this.hrService.getEmployees(tenant_id, effectiveLocationId, effectiveCompanyId, departmentId);
 
     return {
       success: true,

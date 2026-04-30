@@ -61,10 +61,11 @@ export class HRService {
     tenant_id: string,
     location_id?: string,
     company_id?: string,
+    department_id?: string,
     page: number = 1,
     limit: number = 20,
   ): Promise<{ data: Employee[]; total: number }> {
-    return this.hrRepository.getEmployees(tenant_id, location_id, company_id, page, limit);
+    return this.hrRepository.getEmployees(tenant_id, location_id, company_id, department_id, page, limit);
   }
 
   async getGlobalEmployees(
