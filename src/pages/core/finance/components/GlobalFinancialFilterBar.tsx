@@ -92,7 +92,7 @@ export const GlobalFinancialFilterBar: React.FC = () => {
               {userCompanies.length > 0 ? (
                 userCompanies.map((uc) => (
                   <SelectItem key={uc.tenant_id} value={uc.tenant_id}>
-                    {uc.company.name} {uc.is_default ? "(Default)" : ""}
+                    {uc.company?.name || "Unknown Company"} {uc.is_default ? "(Default)" : ""}
                   </SelectItem>
                 ))
               ) : (
