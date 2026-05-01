@@ -1014,7 +1014,7 @@ export class InventoryService {
 
   async listIotEvents(ctx: TenantContext) {
     // Mapping Inventory IoT Feed to IT device events as a generic operational stream
-    return this.prisma.it_device_events.findMany({
+    const events = await this.prisma.it_device_events.findMany({
       where: {
         ...MultiTenancyUtil.getScope(ctx),
       },
@@ -1024,6 +1024,17 @@ export class InventoryService {
       orderBy: { created_at: "desc" },
       take: 50,
     });
+
+    // Map Prisma snake_case to Frontend camelCase and extract payload info
+    return events.map(e => ({
+      id: e.id,
+      eventType: e.event_type,
+      deviceId: e.device_id,
+      locationId: e.it_devices?.location_id || "GATE-01",
+      sku: (e.payload as any)?.sku || (e.payload as any)?.item_code || "N/A",
+      processed: e.processed,
+      createdAt: e.created_at,
+    }));
   }
 
   // --- Procurement Receipt Integration ---
