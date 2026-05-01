@@ -386,6 +386,28 @@ export class SalesMockRepository extends ISalesRepository {
     };
   }
 
+  async getPipeline(ctx: TenantContext): Promise<any[]> {
+    const opportunities = this.getStore(ctx.tenant_id).opportunities;
+    const stageMap: Record<string, { count: number; totalAmount: number; weightedAmount: number }> = {};
+
+    for (const op of opportunities) {
+      const stage = op.stage;
+      if (!stageMap[stage]) {
+        stageMap[stage] = { count: 0, totalAmount: 0, weightedAmount: 0 };
+      }
+      stageMap[stage].count += 1;
+      stageMap[stage].totalAmount += op.amount;
+      stageMap[stage].weightedAmount += op.amount * (op.probability / 100);
+    }
+
+    return Object.entries(stageMap).map(([stage, data]) => ({
+      stage,
+      count: data.count,
+      totalAmount: Math.round(data.totalAmount),
+      weightedAmount: Math.round(data.weightedAmount),
+    }));
+  }
+
   async getLeads(ctx: TenantContext, status?: string): Promise<SalesLead[]> {
     const leads = this.getStore(ctx.tenant_id).leads;
     return status ? leads.filter((item) => item.status === status) : leads;

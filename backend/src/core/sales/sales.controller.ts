@@ -145,6 +145,13 @@ export class SalesController {
     return { success: true, tenant_id, count: data.length, data };
   }
 
+  @Get("pipeline")
+  async getPipeline(@Req() request: RequestWithTenant) {
+    const { tenant_id } = request.tenantContext;
+    const data = await this.salesService.getPipeline(request.tenantContext);
+    return { success: true, tenant_id, count: data.length, data };
+  }
+
   @Post("leads")
   async createLead(
     @Req() request: RequestWithTenant,

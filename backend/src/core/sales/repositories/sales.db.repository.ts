@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import {
   ISalesRepository,
   SalesDashboard,
@@ -29,54 +29,64 @@ import { CreateTaskDto } from "../dto/create-task.dto";
 
 @Injectable()
 export class SalesDbRepository implements ISalesRepository {
+  private readonly logger = new Logger(SalesDbRepository.name);
   constructor(private readonly prisma: PrismaService) {}
 
   async getDashboard(ctx: TenantContext): Promise<SalesDashboard> {
     const scope = MultiTenancyUtil.getScope(ctx);
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    this.logger.log(`[getDashboard] tenant=${ctx.tenant_id} company=${ctx.company_id}`);
+    try {
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    const [leads, opportunities, quotes, alerts, followUps] = await Promise.all([
-      this.prisma.sales_leads.count({ 
-        where: { ...scope, status: "NEW" } 
-      }),
-      this.prisma.sales_opportunities.findMany({ 
-        where: { ...scope, stage: { notIn: ["CLOSED_WON", "CLOSED_LOST"] } } 
-      }),
-      this.prisma.sales_quotes.count({
-        where: { ...scope, status: "PENDING_APPROVAL" },
-      }),
-      this.prisma.sales_alerts.count({
-        where: { ...scope, acknowledged: false },
-      }),
-      this.prisma.sales_tasks.count({
-        where: { ...scope, status: { not: "COMPLETED" }, dueAt: { lt: now } }
-      })
-    ]);
+      const [leads, opportunities, quotes, alerts, followUps] = await Promise.all([
+        this.prisma.sales_leads.count({ 
+          where: { ...scope, status: "NEW" } 
+        }),
+        this.prisma.sales_opportunities.findMany({ 
+          where: { ...scope, stage: { notIn: ["CLOSED_WON", "CLOSED_LOST"] } } 
+        }),
+        this.prisma.sales_quotes.count({
+          where: { ...scope, status: "PENDING_APPROVAL" },
+        }),
+        this.prisma.sales_alerts.count({
+          where: { ...scope, acknowledged: false },
+        }),
+        this.prisma.sales_tasks.count({
+          where: { ...scope, status: { not: "COMPLETED" }, due_at: { lt: now } }
+        })
+      ]);
 
-    const slaDueToday = await this.prisma.sales_leads.count({
-      where: { ...scope, sla_due_at: { gte: startOfToday, lt: new Date(startOfToday.getTime() + 86400000) } }
-    });
+      const slaDueToday = await this.prisma.sales_leads.count({
+        where: { ...scope, sla_due_at: { gte: startOfToday, lt: new Date(startOfToday.getTime() + 86400000) } }
+      });
 
-    const pipelineValue = opportunities.reduce(
-      (sum: number, op: any) => sum + Number(op.amount),
-      0,
-    );
-    const weightedValue = opportunities.reduce(
-      (sum: number, op: any) => sum + Number(op.amount) * (op.probability / 100),
-      0,
-    );
+      const pipelineValue = opportunities.reduce(
+        (sum: number, op: any) => sum + Number(op.amount),
+        0,
+      );
+      const weightedValue = opportunities.reduce(
+        (sum: number, op: any) => sum + Number(op.amount) * (op.probability / 100),
+        0,
+      );
 
-    return {
-      openLeads: leads,
-      slaDueToday,
-      overdueFollowUps: followUps,
-      openOpportunities: opportunities.length,
-      pipelineValue,
-      weightedPipelineValue: Math.round(weightedValue),
-      pendingQuoteApprovals: quotes,
-      dealRiskCount: alerts,
-    };
+      return {
+        openLeads: leads,
+        slaDueToday,
+        overdueFollowUps: followUps,
+        openOpportunities: opportunities.length,
+        pipelineValue,
+        weightedPipelineValue: Math.round(weightedValue),
+        pendingQuoteApprovals: quotes,
+        dealRiskCount: alerts,
+      };
+    } catch (err) {
+      this.logger.error(
+        `[getDashboard] Failed for tenant=${ctx.tenant_id}: ${(err as Error).message}`,
+        (err as Error).stack,
+      );
+      throw err;
+    }
   }
 
   async getManagerMetrics(ctx: TenantContext): Promise<SalesManagerMetrics> {
@@ -258,6 +268,63 @@ export class SalesDbRepository implements ISalesRepository {
 
   async getSLAPerformance(ctx: TenantContext): Promise<any> {
     return {};
+  }
+
+  async getPipeline(ctx: TenantContext): Promise<any[]> {
+    const scope = MultiTenancyUtil.getScope(ctx);
+    this.logger.log(`[getPipeline] tenant=${ctx.tenant_id} company=${ctx.company_id}`);
+    try {
+      const STAGE_ORDER = [
+        "NEW", "CONTACTED", "QUALIFIED", "PROPOSAL", "NEGOTIATION",
+        "CLOSED_WON", "CLOSED_LOST",
+      ];
+
+      const opportunities = await this.prisma.sales_opportunities.findMany({
+        where: scope,
+        select: { stage: true, amount: true, probability: true },
+      });
+
+      // Aggregate by stage
+      const stageMap: Record<string, { count: number; totalAmount: number; weightedAmount: number }> = {};
+      for (const op of opportunities) {
+        const stage = op.stage;
+        if (!stageMap[stage]) {
+          stageMap[stage] = { count: 0, totalAmount: 0, weightedAmount: 0 };
+        }
+        stageMap[stage].count += 1;
+        stageMap[stage].totalAmount += Number(op.amount);
+        stageMap[stage].weightedAmount += Number(op.amount) * (op.probability / 100);
+      }
+
+      // Return sorted by defined stage order, then any unknown stages alphabetically
+      const result = STAGE_ORDER
+        .filter((s) => stageMap[s])
+        .map((stage) => ({
+          stage,
+          count: stageMap[stage].count,
+          totalAmount: Math.round(stageMap[stage].totalAmount),
+          weightedAmount: Math.round(stageMap[stage].weightedAmount),
+        }));
+
+      // Append any stages not in STAGE_ORDER
+      const unknownStages = Object.keys(stageMap).filter((s) => !STAGE_ORDER.includes(s));
+      unknownStages.sort().forEach((stage) => {
+        result.push({
+          stage,
+          count: stageMap[stage].count,
+          totalAmount: Math.round(stageMap[stage].totalAmount),
+          weightedAmount: Math.round(stageMap[stage].weightedAmount),
+        });
+      });
+
+      return result;
+    } catch (err) {
+      this.logger.error(
+        `[getPipeline] Failed for tenant=${ctx.tenant_id}: ${(err as Error).message}`,
+        (err as Error).stack,
+      );
+      throw err;
+    }
   }
 
   async getLeads(ctx: TenantContext): Promise<SalesLead[]> {

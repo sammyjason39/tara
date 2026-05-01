@@ -60,6 +60,7 @@ export abstract class ISalesRepository {
   abstract getForecast( ctx: TenantContext): Promise<any>;
   abstract getPipelineVelocity( ctx: TenantContext): Promise<any>;
   abstract getSLAPerformance( ctx: TenantContext): Promise<any>;
+  abstract getPipeline( ctx: TenantContext): Promise<any[]>;
 
   abstract getLeads( ctx: TenantContext, status?: string): Promise<SalesLead[]>;
   abstract createLead( ctx: TenantContext, dto: CreateLeadDto, tx?: any): Promise<SalesLead>;

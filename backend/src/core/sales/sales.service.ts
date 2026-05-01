@@ -46,6 +46,10 @@ export class SalesService {
     return this.repository.getSalesAnalytics(ctx);
   }
 
+  async getPipeline(ctx: TenantContext) {
+    return this.repository.getPipeline(ctx);
+  }
+
   async getLeads(ctx: TenantContext) {
     return this.repository.getLeads(ctx);
   }
