@@ -139,49 +139,51 @@ const CFODashboardContent: React.FC = () => {
     <div className="space-y-6 pb-12">
       <GlobalFinancialFilterBar />
 
-      {(!state.companyId || !state.periodId) && !loadingSummary ? (
-        <div className="flex flex-col h-[60vh] items-center justify-center gap-4 text-center animate-in fade-in zoom-in duration-500">
-          {loadingSummary ? (
-            <Activity className="h-16 w-16 text-primary animate-pulse" />
-          ) : (
-            <Filter className="h-16 w-16 text-muted-foreground/20" />
-          )}
-          <div className="space-y-1">
-            <h3 className="text-lg font-semibold">
-              {loadingSummary ? "Synchronizing Financial Intelligence..." : "Financial Perspective Needed"}
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              {loadingSummary 
-                ? "Calibrating ledger snapshots and hierarchical reports." 
-                : "Select a Company and Fiscal Period to view the CFO Dashboard."}
-            </p>
+      <div className="container mx-auto space-y-8 mt-4">
+        <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-primary/10 shadow-sm">
+          <div className="flex gap-4 items-center">
+            <h1 className="text-xl font-black uppercase tracking-widest text-primary">Intelligence Hub</h1>
+            <Badge 
+              variant={healthStatus === 'HEALTHY' ? 'outline' : healthStatus === 'DEGRADED' ? 'secondary' : 'destructive'} 
+              className="font-bold border-2"
+              title={`Health Score: ${health.score} | Dominant Issue: ${health.dominantIssueType}`}
+            >
+              SYSTEM_{healthStatus}
+            </Badge>
+            <span className="text-[10px] font-bold text-muted-foreground flex items-center bg-muted/50 px-3 rounded-full h-6">
+              CORE_CID: {state.correlationId.slice(0, 8)}...
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => handleSendReport()} className="rounded-xl border-primary/20 hover:bg-primary/5">
+              <Share2 size={16} className="mr-2" /> Send Report
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => handleDiscussReport()} className="rounded-xl border-indigo-200 hover:bg-indigo-50">
+              <MessageSquare size={16} className="mr-2" /> Discuss
+            </Button>
           </div>
         </div>
-      ) : (
-        <div className="container mx-auto space-y-8 mt-4">
-          <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-primary/10 shadow-sm">
-            <div className="flex gap-4 items-center">
-              <h1 className="text-xl font-black uppercase tracking-widest text-primary">Intelligence Hub</h1>
-              <Badge 
-                variant={healthStatus === 'HEALTHY' ? 'outline' : healthStatus === 'DEGRADED' ? 'secondary' : 'destructive'} 
-                className="font-bold border-2"
-                title={`Health Score: ${health.score} | Dominant Issue: ${health.dominantIssueType}`}
-              >
-                SYSTEM_{healthStatus}
-              </Badge>
-              <span className="text-[10px] font-bold text-muted-foreground flex items-center bg-muted/50 px-3 rounded-full h-6">
-                CORE_CID: {state.correlationId.slice(0, 8)}...
-              </span>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => handleSendReport()} className="rounded-xl border-primary/20 hover:bg-primary/5">
-                <Share2 size={16} className="mr-2" /> Send Report
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => handleDiscussReport()} className="rounded-xl border-indigo-200 hover:bg-indigo-50">
-                <MessageSquare size={16} className="mr-2" /> Discuss
-              </Button>
+
+        {(!state.companyId || !state.periodId) ? (
+          <div className="flex flex-col h-[40vh] items-center justify-center gap-4 text-center animate-in fade-in zoom-in duration-500 bg-muted/20 rounded-3xl border border-dashed">
+            {loadingSummary ? (
+              <Activity className="h-12 w-12 text-primary animate-pulse" />
+            ) : (
+              <Filter className="h-12 w-12 text-muted-foreground/20" />
+            )}
+            <div className="space-y-1">
+              <h3 className="text-lg font-semibold">
+                {loadingSummary ? "Synchronizing Financial Intelligence..." : "Financial Perspective Needed"}
+              </h3>
+              <p className="text-sm text-muted-foreground max-w-xs">
+                {loadingSummary 
+                  ? "Calibrating ledger snapshots and hierarchical reports." 
+                  : "Select a Company and Fiscal Period in the filter bar above to initialize the dashboard."}
+              </p>
             </div>
           </div>
+        ) : (
+          <>
           {!isBalanced && (
             <Alert variant="destructive" className="border-2">
               <ShieldAlert size={18} />
@@ -230,8 +232,9 @@ const CFODashboardContent: React.FC = () => {
               />
             </TabsContent>
           </Tabs>
-        </div>
-      )}
+          </>
+        )}
+      </div>
 
       {drillDown && (
         <DrillDownModal

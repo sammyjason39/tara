@@ -157,12 +157,13 @@ export class FinanceController {
     return this.financeService.listPayments(ctx);
   }
 
+  @Get('capex/budgets')
+  async listCapexBudgets(@TenantCtx() ctx: TenantContext) {
+    return this.financeService.listCapexBudgets(ctx);
+  }
+
   @Get('policies')
   async listPolicies(@TenantCtx() ctx: TenantContext) {
-    // Basic implementation for now
-    return [
-      { id: 'pol-001', name: 'General Expense Policy', status: 'ACTIVE', category: 'GENERAL' },
-      { id: 'pol-002', name: 'Travel Policy', status: 'ACTIVE', category: 'TRAVEL' }
-    ];
+    return this.financeService.listPolicies(ctx);
   }
 }

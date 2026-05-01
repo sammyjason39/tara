@@ -1284,8 +1284,13 @@ export class FinanceDbRepository extends IFinanceRepository {
 
   // Periods
   async listPeriods(ctx: TenantContext): Promise<AccountingPeriod[]> {
+    const whereClause: any = { tenant_id: ctx.tenant_id };
+    if (ctx.company_id && ctx.company_id !== "system") {
+      whereClause.company_id = ctx.company_id;
+    }
+    
     const periods = await this.prisma.accounting_periods.findMany({ 
-      where: { ...MultiTenancyUtil.getScope(ctx) }, 
+      where: whereClause, 
       orderBy: { start_date: 'desc' } 
     });
     return periods.map((p: any) => ({

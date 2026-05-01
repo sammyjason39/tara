@@ -179,9 +179,9 @@ export default function PolicyManager() {
                 <tr key={budget.department} className="border-t">
                   <td className="p-3 font-medium">{budget.department}</td>
                   <td className="p-3 text-muted-foreground">{budget.accountCode}</td>
-                  <td className="p-3 text-muted-foreground">{budget.allocatedBudget.toLocaleString()}</td>
-                  <td className="p-3 text-muted-foreground">{budget.committedBudget.toLocaleString()}</td>
-                  <td className="p-3 text-muted-foreground">{budget.availableBudget.toLocaleString()}</td>
+                  <td className="p-3 text-muted-foreground">{budget.allocatedBudget?.toLocaleString() ?? "0"}</td>
+                  <td className="p-3 text-muted-foreground">{budget.committedBudget?.toLocaleString() ?? "0"}</td>
+                  <td className="p-3 text-muted-foreground">{budget.availableBudget?.toLocaleString() ?? "0"}</td>
                 </tr>
               ))}
             </tbody>
@@ -212,7 +212,7 @@ export default function PolicyManager() {
                 >
                   <td className="p-3 font-medium">{policy.title}</td>
                   <td className="p-3 text-muted-foreground">{policy.type}</td>
-                  <td className="p-3 text-muted-foreground">{policy.threshold.toLocaleString()}</td>
+                  <td className="p-3 text-muted-foreground">{policy.threshold?.toLocaleString() ?? "0"}</td>
                   <td className="p-3 text-muted-foreground">{policy.description}</td>
                   <td className="p-3">
                     <ApprovalStatusBadge status={policy.active ? "ACTIVE" : "INACTIVE"} />
@@ -340,7 +340,7 @@ export default function PolicyManager() {
               <span className="text-muted-foreground">Type:</span>
               <span>{selectedPolicy?.type}</span>
               <span className="text-muted-foreground">Threshold:</span>
-              <span className="font-bold">{selectedPolicy?.threshold.toLocaleString()}</span>
+              <span className="font-bold">{selectedPolicy?.threshold?.toLocaleString() ?? "0"}</span>
               <span className="text-muted-foreground">Status:</span>
               <span><ApprovalStatusBadge status={selectedPolicy?.active ? "ACTIVE" : "INACTIVE"} /></span>
             </div>
@@ -353,7 +353,7 @@ export default function PolicyManager() {
                   </div>
                   <div>
                     <p className="font-medium text-foreground">Policy Modified</p>
-                    <p className="text-muted-foreground">Threshold increased from 5k to {selectedPolicy?.threshold.toLocaleString()} by Admin.</p>
+                    <p className="text-muted-foreground">Threshold increased from 5k to {selectedPolicy?.threshold?.toLocaleString() ?? "0"} by Admin.</p>
                     <p className="mt-1 text-[10px] text-muted-foreground">2 days ago • IP: 192.168.1.10</p>
                   </div>
                 </div>

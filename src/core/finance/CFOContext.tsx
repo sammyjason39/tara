@@ -97,13 +97,23 @@ export const CFOProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (urlCompanyId !== state.companyId || urlPeriodId !== state.periodId || urlSequence !== state.snapshotSequence) {
       setState(prev => ({
         ...prev,
-        companyId: urlCompanyId,
-        periodId: urlPeriodId,
+        companyId: urlCompanyId || prev.companyId,
+        periodId: urlPeriodId || prev.periodId,
         snapshotSequence: urlSequence,
         isLocked: !!urlSequence
       }));
     }
   }, [searchParams]);
+
+  // Sync session to state if state is empty
+  useEffect(() => {
+    if (!state.companyId && session.tenant_id) {
+      setState(prev => ({
+        ...prev,
+        companyId: session.tenant_id
+      }));
+    }
+  }, [session.tenant_id, state.companyId]);
 
   return (
     <CFOContext.Provider value={{ state, lockSequence, updateFilters, resetContext }}>

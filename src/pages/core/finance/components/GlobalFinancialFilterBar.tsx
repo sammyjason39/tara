@@ -97,6 +97,11 @@ export const GlobalFinancialFilterBar: React.FC = () => {
                 ))
               ) : (
                 <>
+                  {state.companyId && (
+                    <SelectItem value={state.companyId}>
+                      {session.company_id === state.companyId ? "Current Organization" : `ID: ${state.companyId}`}
+                    </SelectItem>
+                  )}
                   <SelectItem value="zenvix-corp">Zenvix Corporation (HQ)</SelectItem>
                   <SelectItem value="zenvix-global">Zenvix Global Logistics</SelectItem>
                   <SelectItem value="zenvix-indonesia">PT Zenvix Indonesia</SelectItem>

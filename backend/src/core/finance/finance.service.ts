@@ -65,6 +65,14 @@ export class FinanceService {
     return this.financeRepository.getAlerts(ctx);
   }
 
+  async listCapexBudgets(ctx: TenantContext) {
+    return this.financeRepository.listCapexBudgets(ctx);
+  }
+
+  async listPolicies(ctx: TenantContext) {
+    return this.financeRepository.listPolicies(ctx);
+  }
+
   async getInbox(ctx: TenantContext) {
     // Inbox is a combination of unresolved alerts and pending payment requests
     const [alerts, payments] = await Promise.all([
