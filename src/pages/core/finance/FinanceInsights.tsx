@@ -40,7 +40,7 @@ export default function FinanceInsights() {
       setInsights(insightsData);
       setAuditIntegrity(integrityData);
       setBudgetVariance(varianceData);
-    ]).catch(console.error)
+    }).catch(console.error)
       .finally(() => setIsLoading(false));
   }, [session.tenant_id, session, state.companyId, state.periodId]);
 

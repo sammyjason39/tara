@@ -34,7 +34,7 @@ export default function ITDashboard() {
     ]).then(([overviewData, healthData]) => {
       setOverview(overviewData);
       setHealth(healthData);
-    ]).catch(console.error)
+    }).catch(console.error)
       .finally(() => setIsLoading(false));
   }, [session.tenant_id, session]);
 
