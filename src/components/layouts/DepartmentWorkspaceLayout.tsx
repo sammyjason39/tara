@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { SidebarIdentityCard } from "@/core/ui/SidebarIdentityCard";
 import { Button } from "@/components/ui/button";
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 
 export type MenuItem = { label: string; to: string; icon: LucideIcon };
 export type MenuSection = { title: string; items: MenuItem[] };
@@ -52,6 +53,16 @@ export default function DepartmentWorkspaceLayout({
 }: DepartmentWorkspaceLayoutProps) {
   const session = useSession();
   const location = useLocation();
+
+  React.useEffect(() => {
+    console.log(`[DepartmentWorkspaceLayout:${engineName}] Mounted`, {
+      path: location.pathname,
+      tenant_id: session.tenant_id,
+      location_id: session.location_id,
+      role: session.role,
+      permissions: session.permissions?.length,
+    });
+  }, [engineName, location.pathname, session]);
 
   const segments = location.pathname.replace(basePath, "").split("/").filter(Boolean);
   const breadcrumbs = segments.map((segment, index) => ({
@@ -198,7 +209,9 @@ export default function DepartmentWorkspaceLayout({
         }
       >
         <div className="p-0 h-full overflow-y-auto bg-slate-50 dark:bg-slate-950">
-           <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </div>
       </PageShell>
     </div>

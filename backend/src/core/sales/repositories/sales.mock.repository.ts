@@ -876,4 +876,8 @@ export class SalesMockRepository extends ISalesRepository {
     // Mock implementation
     console.log("Mock consolidated sale recorded", data);
   }
+
+  async getOverview(ctx: TenantContext): Promise<any> {
+    return this.getDashboard(ctx);
+  }
 }

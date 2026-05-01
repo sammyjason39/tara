@@ -32,6 +32,12 @@ const isFinancePermission = (p: PermissionKey) => p.startsWith("finance.");
 const isToolsPermission = (p: PermissionKey) =>
   p === "core.tools.access" || p.startsWith("core.tools.");
 
+const isSalesPermission = (p: PermissionKey) =>
+  p === "core.sales.access" || p.startsWith("core.sales.") || p.startsWith("sales.");
+
+const isItPermission = (p: PermissionKey) =>
+  p === "core.it.access" || p.startsWith("core.it.") || p.startsWith("it.");
+
 /**
  * ============================================================
  * Scope Helpers
@@ -81,10 +87,12 @@ const isDeptHeadRole = (r: Role) => r.includes("DEPT_HEAD");
  */
 function resolveDomain(
   permission: PermissionKey,
-): "HR" | "FINANCE" | "TOOLS" | "OTHER" {
+): "HR" | "FINANCE" | "SALES" | "IT" | "TOOLS" | "OTHER" {
   if (isToolsPermission(permission)) return "TOOLS";
   if (isHrPermission(permission)) return "HR";
   if (isFinancePermission(permission)) return "FINANCE";
+  if (isSalesPermission(permission)) return "SALES";
+  if (isItPermission(permission)) return "IT";
   return "OTHER";
 }
 
@@ -158,6 +166,30 @@ export function canAccess({
     );
   }
 
+  if (
+    permission === "core.sales.access" ||
+    permission === "sales.workspace.access"
+  ) {
+    return (
+      role === Roles.SALES_ADMIN ||
+      role === Roles.SALES_STAFF ||
+      role === Roles.OWNER ||
+      role === Roles.SUPERADMIN
+    );
+  }
+
+  if (
+    permission === "core.it.access" ||
+    permission === "it.workspace.access"
+  ) {
+    return (
+      role === Roles.IT_ADMIN ||
+      role === Roles.IT_STAFF ||
+      role === Roles.OWNER ||
+      role === Roles.SUPERADMIN
+    );
+  }
+
   // Generic core access for other modules
   if (permission.startsWith("core.")) {
     const module = permission.split(".")[1];
@@ -179,6 +211,14 @@ export function canAccess({
 
     if (role === Roles.FINANCE_ADMIN) {
       return isFinancePermission(permission) && isTenantScope(scope);
+    }
+
+    if (role === Roles.SALES_ADMIN) {
+      return isSalesPermission(permission) && isTenantScope(scope);
+    }
+
+    if (role === Roles.IT_ADMIN) {
+      return isItPermission(permission) && isTenantScope(scope);
     }
 
     return false;
@@ -217,6 +257,14 @@ export function canAccess({
 
     if (role === Roles.FINANCE_STAFF) {
       return domain === "FINANCE" && isSelfScope(scope);
+    }
+
+    if (role === Roles.SALES_STAFF) {
+      return domain === "SALES" && isSelfScope(scope);
+    }
+
+    if (role === Roles.IT_STAFF) {
+      return domain === "IT" && isSelfScope(scope);
     }
 
     return false;

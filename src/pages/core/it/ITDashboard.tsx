@@ -27,14 +27,21 @@ export default function ITDashboard() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    console.log("[ITDashboard] Initializing data fetch", {
+      tenant_id: session.tenant_id,
+      role: session.role
+    });
     setIsLoading(true);
     Promise.all([
       itService.getOverview(session.tenant_id, session),
       itService.getSystemHealth(session.tenant_id, session)
     ]).then(([overviewData, healthData]) => {
+      console.log("[ITDashboard] Data received successfully");
       setOverview(overviewData);
       setHealth(healthData);
-    }).catch(console.error)
+    }).catch(err => {
+      console.error("[ITDashboard] Fetch failure:", err);
+    })
       .finally(() => setIsLoading(false));
   }, [session.tenant_id, session]);
 

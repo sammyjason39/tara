@@ -49,4 +49,5 @@ export abstract class IITRepository {
   abstract getSystemHealth(tenant_id: string): Promise<SystemHealth[]>;
   abstract getProvisioningStats(tenant_id: string): Promise<any>;
   abstract getAuditLogs(tenant_id: string, request_id?: string): Promise<any[]>;
+  abstract getOverview(tenant_id: string): Promise<any>;
 }

@@ -45,6 +45,11 @@ export default function SalesDashboard() {
 
   const refresh = useCallback(async (isManual = false) => {
     try {
+      console.log(`[SalesDashboard] Refresh Triggered (manual=${isManual})`, {
+        tenant_id: session.tenant_id,
+        role: session.role,
+      });
+
       if (isManual) setRefreshing(true);
       else setLoading(true);
       
@@ -62,7 +67,7 @@ export default function SalesDashboard() {
       );
       if (isManual) toast.success("Command center synchronized.");
     } catch (err) {
-      console.error("Failed to fetch sales dashboard data:", err);
+      console.error("[SalesDashboard] Telemetry failure:", err);
       toast.error("Telemetry failure. Check neural link.");
     } finally {
       setLoading(false);

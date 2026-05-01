@@ -216,4 +216,18 @@ export class ITMockRepository extends IITRepository {
     return created;
   }
 
+  async getOverview(tenant_id: string): Promise<any> {
+    const health = await this.getSystemHealth(tenant_id);
+    const nodes = (await this.getDevices(tenant_id)).length;
+    const updates = (await this.getProvisioningRequests(tenant_id)).filter(r => r.status === 'requested').length;
+
+    const healthyCount = health.filter(h => h.status === 'healthy').length;
+    const healthScore = health.length > 0 ? Math.round((healthyCount / health.length) * 100) : 100;
+
+    return {
+      healthScore: `${healthScore}%`,
+      activeNodes: nodes,
+      pendingUpdates: updates,
+    };
+  }
 }

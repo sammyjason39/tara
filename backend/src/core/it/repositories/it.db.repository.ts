@@ -331,4 +331,21 @@ export class ITDbRepository extends IITRepository {
   async getAuditLogs(tenant_id: string, request_id?: string): Promise<any[]> {
     return []; // Placeholder for now
   }
+
+  async getOverview(tenant_id: string): Promise<any> {
+    const [health, nodes, updates] = await Promise.all([
+      this.prisma.it_system_health.findMany({ where: { tenant_id } }),
+      this.prisma.it_devices.count({ where: { tenant_id } }),
+      this.prisma.it_provisioning_requests.count({ where: { tenant_id, status: 'REQUESTED' } }),
+    ]);
+
+    const healthyCount = health.filter(h => h.status === 'HEALTHY').length;
+    const healthScore = health.length > 0 ? Math.round((healthyCount / health.length) * 100) : 100;
+
+    return {
+      healthScore: `${healthScore}%`,
+      activeNodes: nodes,
+      pendingUpdates: updates,
+    };
+  }
 }

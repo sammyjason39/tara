@@ -118,4 +118,5 @@ export abstract class ISalesRepository {
 
   abstract getAuditEvents( ctx: TenantContext): Promise<SalesAuditEvent[]>;
   abstract recordConsolidatedSale(ctx: TenantContext, data: any): Promise<void>;
+  abstract getOverview(ctx: TenantContext): Promise<any>;
 }

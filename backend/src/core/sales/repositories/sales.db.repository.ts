@@ -567,4 +567,8 @@ export class SalesDbRepository implements ISalesRepository {
       },
     });
   }
+
+  async getOverview(ctx: TenantContext): Promise<any> {
+    return this.getDashboard(ctx);
+  }
 }

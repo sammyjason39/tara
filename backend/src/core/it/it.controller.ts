@@ -141,11 +141,13 @@ export class ITController {
       };
     }
 
+    const overview = await this.itService.getOverview(tenant_id);
+
     return {
       success: true,
       tenant_id,
       data: {
-        coreIT,
+        ...overview,
         moduleContributions: {
           retail: retailContribution,
         },

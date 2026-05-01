@@ -183,4 +183,8 @@ export class ITService {
   async getAuditLogs(tenant_id: string, request_id?: string) {
     return this.repository.getAuditLogs(tenant_id, request_id);
   }
+
+  async getOverview(tenant_id: string) {
+    return this.repository.getOverview(tenant_id);
+  }
 }
