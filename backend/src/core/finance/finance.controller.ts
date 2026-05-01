@@ -74,6 +74,11 @@ export class FinanceController {
     return this.fiscalService.listYears(ctx.tenant_id, ctx.company_id);
   }
 
+  @Get('periods')
+  async listPeriods(@TenantCtx() ctx: TenantContext) {
+    return this.financeService.listPeriods(ctx);
+  }
+
   @Post('fiscal-periods/:id/lock')
   @Roles(UserRole.ADMIN, UserRole.OWNER, UserRole.SUPERADMIN)
   async transitionPeriod(@TenantCtx() ctx: TenantContext, @Param('id') id: string, @Body() dto: UpdateFiscalPeriodDto) {

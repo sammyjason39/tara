@@ -57,6 +57,10 @@ export class FinanceService {
     return this.financeRepository.listMoneySources(ctx);
   }
 
+  async listPeriods(ctx: TenantContext) {
+    return this.financeRepository.listPeriods(ctx);
+  }
+
   async getAlerts(ctx: TenantContext) {
     return this.financeRepository.getAlerts(ctx);
   }

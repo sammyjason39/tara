@@ -86,11 +86,16 @@ export class AuthService {
     const token = (jwt.sign as any)(payload, this.jwtSecret, { expiresIn: "1d" });
 
     const { password_hash: _, ...userWithoutPassword } = user;
+    const userCompanies = ((user as any).user_companies || []).map((uc: any) => ({
+      ...uc,
+      company: uc.companies || uc.company,
+    }));
+
     return {
       token,
       user: {
         ...userWithoutPassword,
-        user_companies: (user as any).user_companies || [],
+        user_companies: userCompanies,
       },
     };
   }
@@ -103,9 +108,14 @@ export class AuthService {
       if (!user) throw new UnauthorizedException("User not found");
 
       const { password_hash: _, ...userWithoutPassword } = user;
+      const userCompanies = ((user as any).user_companies || []).map((uc: any) => ({
+        ...uc,
+        company: uc.companies || uc.company,
+      }));
+
       return {
         ...userWithoutPassword,
-        user_companies: (user as any).user_companies || [],
+        user_companies: userCompanies,
       };
     } catch (e) {
       throw new UnauthorizedException("Invalid token");
