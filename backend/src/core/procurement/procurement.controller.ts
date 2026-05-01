@@ -131,7 +131,7 @@ export class ProcurementController {
     return this.procurementService.upsertSupplierProduct(request.tenantContext, data, user_id);
   }
 
-  @Get("supplier-recommendations")
+  @Get("recommendations")
   getSupplierRecommendations(
     @Req() request: RequestWithTenant,
     @Query() params: any,

@@ -209,6 +209,10 @@ export class InventoryMockRepository implements IInventoryRepository {
     return { id: 'lvl-' + Math.random(), on_hand: 100 + delta };
   }
 
+  async getAgenticEvents(ctx: TenantContext): Promise<AgenticEvent[]> {
+    return this.agenticEvents.filter((e) => e.tenant_id === ctx.tenant_id);
+  }
+
   async createAgenticEvent(ctx: TenantContext, data: CreateAgenticEventDto): Promise<AgenticEvent> {
     const event = { id: "evt-" + Math.random(), tenant_id: ctx.tenant_id, ...data, created_at: new Date() };
     this.agenticEvents.push(event);

@@ -213,6 +213,7 @@ export abstract class IInventoryRepository {
   abstract updateStockTransfer(ctx: TenantContext, id: string, data: any, tx?: any): Promise<any>;
 
   // --- Agentic Layer ---
+  abstract getAgenticEvents(ctx: TenantContext): Promise<AgenticEvent[]>;
   abstract createAgenticEvent(
     ctx: TenantContext,
     data: CreateAgenticEventDto,

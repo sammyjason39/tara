@@ -999,6 +999,10 @@ export class InventoryService {
 
 
   // --- Agentic Layer ---
+  async getAgenticEvents(ctx: TenantContext) {
+    return this.repository.getAgenticEvents(ctx);
+  }
+
   async createAgenticEvent(ctx: TenantContext, data: CreateAgenticEventDto) {
     return this.repository.createAgenticEvent(ctx, data);
   }

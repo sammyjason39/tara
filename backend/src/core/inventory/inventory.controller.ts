@@ -959,5 +959,23 @@ export class InventoryController {
       data,
     };
   }
+  // --- Agentic Layer ---
+
+  @Get("agentic/events")
+  async getAgenticEvents(@Req() request: RequestWithTenant) {
+    const { tenant_id } = request.tenantContext;
+    const data = await this.inventoryService.getAgenticEvents(request.tenantContext);
+    return { success: true, tenant_id, count: data.length, data };
+  }
+
+  @Post("agentic/events")
+  async createAgenticEvent(
+    @Req() request: RequestWithTenant,
+    @Body() dto: CreateAgenticEventDto,
+  ) {
+    const { tenant_id } = request.tenantContext;
+    const data = await this.inventoryService.createAgenticEvent(request.tenantContext, dto);
+    return { success: true, tenant_id, data };
+  }
 }
 
