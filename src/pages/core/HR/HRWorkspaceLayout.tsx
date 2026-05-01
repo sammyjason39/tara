@@ -18,7 +18,7 @@ const SECTIONS: MenuSection[] = [
   {
     title: "Intelligence",
     items: [
-      { label: "Pulse Command", to: "/core/hr/dashboard", icon: HeartPulse },
+      { label: "Pulse Command", to: "/core/hr", icon: HeartPulse },
       { label: "Growth Matrix", to: "/core/hr/growth", icon: BarChart3 },
     ],
   },
@@ -27,14 +27,14 @@ const SECTIONS: MenuSection[] = [
     items: [
       { label: "People Core", to: "/core/hr/people", icon: Users2 },
       { label: "Org Map", to: "/core/hr/org-map", icon: Network },
-      { label: "Talent Flow", to: "/core/hr/talent-flow", icon: UserPlus2 },
-      { label: "Skill Track", to: "/core/hr/skills", icon: GraduationCap },
+      { label: "Talent Flow", to: "/core/hr/talent", icon: UserPlus2 },
+      { label: "Skill Track", to: "/core/hr/skilltrack", icon: GraduationCap },
     ],
   },
   {
     title: "Operations",
     items: [
-      { label: "Pay Cycle Studio", to: "/core/hr/payroll", icon: FileSpreadsheet },
+      { label: "Pay Cycle Studio", to: "/core/hr/paycycle", icon: FileSpreadsheet },
       { label: "Case Vault", to: "/core/hr/cases", icon: Briefcase },
     ],
   },
@@ -42,7 +42,7 @@ const SECTIONS: MenuSection[] = [
     title: "Governance",
     items: [
       { label: "Workflow", to: "/core/workflow?scope=HR", icon: GitBranch },
-      { label: "Lex Board", to: "/core/hr/legal", icon: Scale },
+      { label: "Lex Board", to: "/core/hr/lexboard", icon: Scale },
       { label: "Administration", to: "/core/hr/admin", icon: Settings2 },
     ],
   },

@@ -889,6 +889,14 @@ export function buildCoreRoutes(): JSX.Element[] {
     >
       <Route index element={<PulseDesk />} />
       <Route
+        path="dashboard"
+        element={
+          <ProtectedRoute permission="core.hr.access" scope="COMPANY">
+            <PulseDesk />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="people"
         element={
           <ProtectedRoute permission="hr.directory.view" scope="DEPARTMENT">
