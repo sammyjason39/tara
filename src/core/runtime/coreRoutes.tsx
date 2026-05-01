@@ -481,6 +481,14 @@ export function buildCoreRoutes(): JSX.Element[] {
         }
       />
       <Route
+        path="transfers"
+        element={
+          <ProtectedRoute permission="core.tools.access" scope="COMPANY">
+            <TransferDesk />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="audit"
         element={
           <ProtectedRoute permission="core.tools.access" scope="COMPANY">
@@ -505,7 +513,7 @@ export function buildCoreRoutes(): JSX.Element[] {
         }
       />
       <Route
-        path="iot-feed"
+        path="iot"
         element={
           <ProtectedRoute permission="core.tools.access" scope="COMPANY">
             <IotEventFeed />
