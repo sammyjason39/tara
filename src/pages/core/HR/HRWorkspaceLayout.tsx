@@ -60,7 +60,7 @@ const ROUTE_LABELS: Record<string, string> = {
 
 import { BarChart3 } from "lucide-react";
 
-export default function HRWorkspaceLayout() {
+export default function HRWorkspaceLayout({ children }: { children?: React.ReactNode }) {
   return (
     <DepartmentWorkspaceLayout
       title="H.R. Command"
@@ -73,6 +73,8 @@ export default function HRWorkspaceLayout() {
       sections={SECTIONS}
       routeLabels={ROUTE_LABELS}
       basePath="/core/hr"
-    />
+    >
+      {children}
+    </DepartmentWorkspaceLayout>
   );
 }

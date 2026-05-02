@@ -43,7 +43,7 @@ const ROUTE_LABELS: Record<string, string> = Object.fromEntries(
   ),
 );
 
-export default function ITWorkspaceLayout() {
+export default function ITWorkspaceLayout({ children }: { children?: React.ReactNode }) {
   return (
     <DepartmentWorkspaceLayout
       title="I.T. Command"
@@ -56,6 +56,8 @@ export default function ITWorkspaceLayout() {
       sections={SECTIONS}
       routeLabels={ROUTE_LABELS}
       basePath="/core/it"
-    />
+    >
+      {children}
+    </DepartmentWorkspaceLayout>
   );
 }

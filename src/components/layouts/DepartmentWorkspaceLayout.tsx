@@ -50,7 +50,8 @@ export default function DepartmentWorkspaceLayout({
   sections,
   routeLabels,
   basePath,
-}: DepartmentWorkspaceLayoutProps) {
+  children,
+}: DepartmentWorkspaceLayoutProps & { children?: React.ReactNode }) {
   const session = useSession();
   const location = useLocation();
 
@@ -210,7 +211,7 @@ export default function DepartmentWorkspaceLayout({
       >
         <div className="p-0 min-h-full bg-slate-50 dark:bg-slate-950 flex flex-col">
           <ErrorBoundary>
-            <Outlet />
+            {children || <Outlet />}
             {/* Diagnostic Fallback: If Outlet is null, show warning in dev/test */}
             <RouteMatchCheck />
           </ErrorBoundary>
