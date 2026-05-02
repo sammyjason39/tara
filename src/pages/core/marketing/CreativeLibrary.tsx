@@ -58,6 +58,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export default function CreativeLibrary() {
+  console.log("[CreativeLibrary] Rendering");
   const session = useSession();
   const [view, setView] = useState<"grid" | "list">("grid");
   const [search, setSearch] = useState("");

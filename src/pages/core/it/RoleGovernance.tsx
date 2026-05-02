@@ -79,6 +79,7 @@ const INITIAL_ROLES: GovernanceRole[] = [
 ];
 
 export default function RoleGovernance() {
+  console.log("[RoleGovernance] Rendering");
   const session = useSession();
   const [roles, setRoles] = useState<GovernanceRole[]>(INITIAL_ROLES);
   const [selectedRoleId, setSelectedRoleId] = useState<string>("superadmin");

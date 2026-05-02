@@ -76,6 +76,7 @@ const SOURCES: MarketingLead["source"][] = [
 ];
 
 export default function LeadCaptureDesk() {
+  console.log("[LeadCaptureDesk] Rendering");
   const session = useSession();
   const [search, setSearch] = useState("");
   const [source, setSource] = useState<MarketingLead["source"]>("LANDING_PAGE");

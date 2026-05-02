@@ -44,6 +44,7 @@ import { toast } from "sonner";
 import type { IncentivePlan, SalesAttribution, IncentiveAuditLog } from "@/core/types/sales/incentives";
 
 export default function IncentiveDesk() {
+  console.log("[IncentiveDesk] Rendering");
   const session = useSession();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

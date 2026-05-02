@@ -52,6 +52,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function Customer360Desk() {
+  console.log("[Customer360Desk] Rendering");
   const session = useSession();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedContact, setSelectedContact] = useState<any>(null);
