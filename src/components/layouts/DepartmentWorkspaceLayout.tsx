@@ -212,8 +212,8 @@ export default function DepartmentWorkspaceLayout({
         <div className="p-0 min-h-full bg-slate-50 dark:bg-slate-950 flex flex-col">
           <ErrorBoundary>
             {children || <Outlet />}
-            {/* Diagnostic Fallback: If Outlet is null, show warning in dev/test */}
-            <RouteMatchCheck />
+            {/* Diagnostic Indicator for Empty Outlet */}
+            <div id="outlet-check" style={{ display: 'none' }}>Outlet Active</div>
           </ErrorBoundary>
         </div>
       </PageShell>

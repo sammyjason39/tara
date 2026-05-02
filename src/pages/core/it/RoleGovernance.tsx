@@ -101,7 +101,7 @@ export default function RoleGovernance() {
   };
 
   return (
-    <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-700">
+    <div id="role-governance-root" className="space-y-8 animate-in slide-in-from-bottom-4 duration-700">
       <div className="flex items-end justify-between border-b border-slate-200 dark:border-slate-800 pb-8">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-indigo-600 font-black text-[10px] uppercase tracking-[0.3em]">

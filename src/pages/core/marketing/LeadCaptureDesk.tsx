@@ -195,7 +195,7 @@ export default function LeadCaptureDesk() {
   }
 
   return (
-    <div className="p-8 space-y-10 animate-in fade-in duration-1000 max-w-[1600px] mx-auto pb-24">
+    <div id="lead-capture-root" className="p-8 space-y-10 animate-in fade-in duration-1000 max-w-[1600px] mx-auto pb-24">
       {/* Premium Header */}
       <div className="flex flex-col lg:flex-row justify-between items-end gap-6">
         <div className="space-y-3">
