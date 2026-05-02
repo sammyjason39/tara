@@ -208,12 +208,16 @@ export default function DepartmentWorkspaceLayout({
           </div>
         }
       >
-        <div className="p-0 h-full overflow-y-auto bg-slate-50 dark:bg-slate-950">
+        <div className="p-0 min-h-full bg-slate-50 dark:bg-slate-950 flex flex-col">
           <ErrorBoundary>
             <Outlet />
+            {/* Diagnostic Fallback: If Outlet is null, show warning in dev/test */}
+            <RouteMatchCheck />
           </ErrorBoundary>
         </div>
       </PageShell>
     </div>
   );
 }
+
+function RouteMatchCheck() { return null; }

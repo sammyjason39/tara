@@ -170,7 +170,7 @@ export function buildCoreRoutes(): JSX.Element[] {
     <Route key="core-settings-tabs" path="settings/:tab" element={<CoreSettings />} />,
     <Route
       key="core-finance"
-      path="finance"
+      path="finance/*"
       element={
         <ProtectedRoute permission="finance.workspace.access" scope="COMPANY">
           <CFOProvider>
@@ -372,7 +372,7 @@ export function buildCoreRoutes(): JSX.Element[] {
     </Route>,
     <Route
       key="core-procurement"
-      path="procurement"
+      path="procurement/*"
       element={
         <ProtectedRoute permission="core.procurement.access" scope="COMPANY">
           <ProcurementWorkspaceLayout />
@@ -441,7 +441,7 @@ export function buildCoreRoutes(): JSX.Element[] {
     </Route>,
     <Route
       key="core-inventory"
-      path="inventory"
+      path="inventory/*"
       element={
         <ProtectedRoute permission="core.tools.access" scope="COMPANY">
           <InventoryWorkspaceLayout />
@@ -526,7 +526,7 @@ export function buildCoreRoutes(): JSX.Element[] {
     </Route>,
     <Route
       key="core-it"
-      path="it"
+      path="it/*"
       element={
         <ProtectedRoute permission="core.it.access" scope="COMPANY">
           <ITWorkspaceLayout />
@@ -595,7 +595,7 @@ export function buildCoreRoutes(): JSX.Element[] {
     </Route>,
     <Route
       key="core-sales"
-      path="sales"
+      path="sales/*"
       element={
         <ProtectedRoute permission="core.sales.access" scope="COMPANY">
           <SalesWorkspaceLayout />
@@ -712,7 +712,7 @@ export function buildCoreRoutes(): JSX.Element[] {
     </Route>,
     <Route
       key="core-marketing"
-      path="marketing"
+      path="marketing/*"
       element={
         <ProtectedRoute permission="core.marketing.access" scope="COMPANY">
           <MarketingWorkspaceLayout />
@@ -881,7 +881,7 @@ export function buildCoreRoutes(): JSX.Element[] {
     </Route>,
     <Route
       key="core-hr"
-      path="hr"
+      path="hr/*"
       element={
         <ProtectedRoute permission="core.hr.access" scope="COMPANY">
           <HRWorkspaceLayout />
