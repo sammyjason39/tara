@@ -19,7 +19,7 @@ export class ITSettingsDbRepository extends IITSettingsRepository {
   async getDevices(ctx: TenantContext, location_id?: string): Promise<Device[]> {
     const devices = await this.prisma.it_devices.findMany({
       where: {
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         ...(location_id ? { location_id } : {}),
       },
     });
@@ -48,7 +48,7 @@ export class ITSettingsDbRepository extends IITSettingsRepository {
           updated_at: new Date(),
         id: uuidv4(),
 
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         location_id: data.location_id,
         type: data.deviceType,
         name: data.deviceName,
@@ -105,7 +105,7 @@ export class ITSettingsDbRepository extends IITSettingsRepository {
   async getSettings(ctx: TenantContext, category?: string): Promise<Setting[]> {
     const settings = await this.prisma.it_settings.findMany({
       where: {
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         ...(category ? { category } : {}),
       },
     });
@@ -125,7 +125,7 @@ export class ITSettingsDbRepository extends IITSettingsRepository {
 
   async getSetting(ctx: TenantContext, key: string): Promise<Setting | null> {
     const setting = await this.prisma.it_settings.findUnique({
-      where: { tenant_id_key: { ...MultiTenancyUtil.getScope(ctx), key } },
+      where: { tenant_id_key: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }), key } },
     });
 
     if (!setting) return null;
@@ -148,7 +148,7 @@ export class ITSettingsDbRepository extends IITSettingsRepository {
     data: UpdateSettingDto,
   ): Promise<Setting> {
     const updated = await this.prisma.it_settings.upsert({
-      where: { tenant_id_key: { ...MultiTenancyUtil.getScope(ctx), key } },
+      where: { tenant_id_key: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }), key } },
       update: {
         value: data.value,
         category: data.category,
@@ -156,7 +156,7 @@ export class ITSettingsDbRepository extends IITSettingsRepository {
         description: data.description,
       },
       create: {
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         key,
         value: data.value,
         category: data.category || "general",

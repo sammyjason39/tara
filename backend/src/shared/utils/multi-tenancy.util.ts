@@ -9,17 +9,22 @@ export class MultiTenancyUtil {
    * Returns a Prisma 'where' object scoped to the current context
    * @param context The current tenant context
    * @param extra Extra filters to merge
+   * @param options Scoping options (e.g. exclude branch)
    */
-  static getScope(context: TenantContext, extra: any = {}) {
+  static getScope(
+    context: TenantContext,
+    extra: any = {},
+    options: { excludeBranch?: boolean; excludeEcommerce?: boolean } = {},
+  ) {
     const scope: any = {
       tenant_id: context.tenant_id,
     };
 
-    if (context.branch_id) {
+    if (context.branch_id && !options.excludeBranch) {
       scope.branch_id = context.branch_id;
     }
 
-    if (context.ecommerce_id) {
+    if (context.ecommerce_id && !options.excludeEcommerce) {
       scope.ecommerce_id = context.ecommerce_id;
     }
 

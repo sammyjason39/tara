@@ -49,7 +49,7 @@ export class FinanceDbRepository extends IFinanceRepository {
   ): Promise<LedgerEntry[]> {
     const journalEntries = await this.prisma.finance_journal_entries.findMany({
       where: {
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
       },
       include: {
         finance_journal_lines: true,
@@ -175,7 +175,7 @@ export class FinanceDbRepository extends IFinanceRepository {
     return tx.finance_journal_entries.create({
       data: {
         id: randomUUID(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         ref: data.ref || `JR-${Date.now()}`,
         description: data.description,
         fiscal_period_id: "FISCAL_AUTO",
@@ -186,7 +186,7 @@ export class FinanceDbRepository extends IFinanceRepository {
         finance_journal_lines: {
           create: data.lines.map((line: any) => ({
             id: randomUUID(),
-            ...MultiTenancyUtil.getScope(ctx),
+            ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
             account_id: line.accountId || line.account_id || `ACC-${line.accountCode}`,
             account_code: line.accountCode || line.account_code,
             side: new Prisma.Decimal(line.debit || 0).gt(0) ? "DEBIT" : "CREDIT",
@@ -220,7 +220,7 @@ export class FinanceDbRepository extends IFinanceRepository {
 
   async getBalance(ctx: TenantContext): Promise<Balance> {
     const moneySources = await this.prisma.money_sources.findMany({
-      where: { ...MultiTenancyUtil.getScope(ctx) },
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
     });
 
     let totalCash = new Prisma.Decimal(0);
@@ -231,7 +231,7 @@ export class FinanceDbRepository extends IFinanceRepository {
     // Get journal line aggregates
     const lines = await this.prisma.finance_journal_lines.findMany({
       where: {
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
       },
     });
 
@@ -262,7 +262,7 @@ export class FinanceDbRepository extends IFinanceRepository {
   // Assets
   async listAssets(ctx: TenantContext): Promise<Asset[]> {
     const assets = await this.prisma.fixed_assets.findMany({
-      where: { ...MultiTenancyUtil.getScope(ctx) },
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
     });
     return assets.map(this.mapAsset);
   }
@@ -283,7 +283,7 @@ export class FinanceDbRepository extends IFinanceRepository {
     const created = await db.fixed_assets.create({
       data: {
         id: randomUUID(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         description: asset.description!,
         asset_class: asset.assetClass!,
         location: (asset as any).location!,
@@ -322,7 +322,7 @@ export class FinanceDbRepository extends IFinanceRepository {
   // Capex
   async listCapexRequests(ctx: TenantContext): Promise<CapexRequest[]> {
     const requests = await this.prisma.capex_requests.findMany({
-      where: { ...MultiTenancyUtil.getScope(ctx) },
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
     });
     return requests.map(this.mapCapexRequest);
   }
@@ -346,7 +346,7 @@ export class FinanceDbRepository extends IFinanceRepository {
     const created = await db.capex_requests.create({
       data: {
         id: randomUUID(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         asset_description: request.assetDescription!,
         requested_amount: request.requestedAmount!,
         department: request.department!,
@@ -464,7 +464,7 @@ export class FinanceDbRepository extends IFinanceRepository {
   // Treasury Transfers
   async listTransfers(ctx: TenantContext): Promise<TreasuryTransfer[]> {
     const transfers = await this.prisma.treasury_transfers.findMany({
-      where: { ...MultiTenancyUtil.getScope(ctx) },
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
       orderBy: { created_at: "desc" },
     });
 
@@ -491,7 +491,7 @@ export class FinanceDbRepository extends IFinanceRepository {
     const created = await db.treasury_transfers.create({
       data: {
         id: randomUUID(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         from_source_id: data.fromSourceId!,
         to_source_id: data.toSourceId!,
         amount: data.amount!,
@@ -525,7 +525,7 @@ export class FinanceDbRepository extends IFinanceRepository {
     const db = tx ?? this.prisma;
     // Update the MoneySource balance and pending settlement
     const source = await db.money_sources.findFirst({
-      where: { id: sourceId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: sourceId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
     });
 
     if (!source) return;
@@ -543,7 +543,7 @@ export class FinanceDbRepository extends IFinanceRepository {
     await db.settlement_records.create({
       data: {
         id: randomUUID(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         source_id: sourceId,
         amount,
         currency: source.currency,
@@ -558,7 +558,7 @@ export class FinanceDbRepository extends IFinanceRepository {
   async listPayments(ctx: TenantContext): Promise<FinancePaymentRow[]> {
     // Fetch internal payment requests
     const internalPayments = await this.prisma.payment_transactions.findMany({
-      where: { ...MultiTenancyUtil.getScope(ctx) },
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
       orderBy: { created_at: "desc" },
       take: 50,
     });
@@ -567,7 +567,7 @@ export class FinanceDbRepository extends IFinanceRepository {
     let retailPayments: any[] = [];
     try {
       retailPayments = await this.prisma.payment_transactions.findMany({
-        where: { ...MultiTenancyUtil.getScope(ctx), type: { in: ["RETAIL_ORDER", "ONLINE_ORDER"] } },
+        where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }), type: { in: ["RETAIL_ORDER", "ONLINE_ORDER"] } },
         orderBy: { created_at: "desc" },
         take: 20,
       });
@@ -616,7 +616,7 @@ export class FinanceDbRepository extends IFinanceRepository {
     const created = await db.payment_transactions.create({
       data: {
         id: randomUUID(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         idempotency_key: `pay-req-${Date.now()}-${Math.random().toString(36).substring(7)}`,
         type: "PAYMENT_REQUEST",
         amount: request.amount!,
@@ -666,7 +666,7 @@ export class FinanceDbRepository extends IFinanceRepository {
   // Receivables
   async listReceivables(ctx: TenantContext): Promise<FinanceReceivableRow[]> {
     const items = await this.prisma.receivables.findMany({
-      where: { ...MultiTenancyUtil.getScope(ctx) },
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
       orderBy: { created_at: "desc" },
     });
 
@@ -694,7 +694,7 @@ export class FinanceDbRepository extends IFinanceRepository {
       const rec = await contextTx.receivables.create({
         data: {
           id: randomUUID(),
-          ...MultiTenancyUtil.getScope(ctx),
+          ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
           customer_name: invoice.customer!,
           amount: invoice.amount!,
           currency: "IDR",
@@ -723,7 +723,7 @@ export class FinanceDbRepository extends IFinanceRepository {
   // Payables
   async listPayables(ctx: TenantContext): Promise<FinancePayableRow[]> {
     const items = await this.prisma.payables.findMany({
-      where: { ...MultiTenancyUtil.getScope(ctx) },
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
       orderBy: { created_at: "desc" },
     });
 
@@ -748,7 +748,7 @@ export class FinanceDbRepository extends IFinanceRepository {
       const pay = await contextTx.payables.create({
         data: {
           id: randomUUID(),
-          ...MultiTenancyUtil.getScope(ctx),
+          ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
           vendor_name: bill.vendor!,
           amount: bill.amount!,
           currency: "IDR",
