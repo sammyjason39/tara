@@ -419,10 +419,8 @@ export class InsightService {
       // B. Sort group to determine isPrimary
       group.sort((a, b) => b.actionPriority - a.actionPriority);
       group.forEach((insight, idx) => {
-        finalInsights.push({ 
-          ...insight, 
-          isPrimary: idx === 0 
-        });
+        (insight as any).isPrimary = idx === 0;
+        finalInsights.push(insight);
       });
     }
 

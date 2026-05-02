@@ -62,7 +62,7 @@ const ROUTE_LABELS: Record<string, string> = Object.fromEntries(
   ),
 );
 
-export default function FinanceWorkspaceLayout({ children }: { children?: React.ReactNode }) {
+export default function FinanceWorkspaceLayout() {
   return (
     <DepartmentWorkspaceLayout
       title="Finance Command"
@@ -75,8 +75,6 @@ export default function FinanceWorkspaceLayout({ children }: { children?: React.
       sections={SECTIONS}
       routeLabels={ROUTE_LABELS}
       basePath="/core/finance"
-    >
-      {children}
-    </DepartmentWorkspaceLayout>
+    />
   );
 }

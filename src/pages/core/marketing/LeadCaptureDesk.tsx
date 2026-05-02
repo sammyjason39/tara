@@ -76,7 +76,6 @@ const SOURCES: MarketingLead["source"][] = [
 ];
 
 export default function LeadCaptureDesk() {
-  console.log("[LeadCaptureDesk] Rendering");
   const session = useSession();
   const [search, setSearch] = useState("");
   const [source, setSource] = useState<MarketingLead["source"]>("LANDING_PAGE");
@@ -181,8 +180,22 @@ export default function LeadCaptureDesk() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="flex flex-col items-center gap-6">
+          <div className="h-20 w-20 bg-indigo-600 rounded-[2.5rem] animate-pulse flex items-center justify-center shadow-2xl shadow-indigo-500/20">
+             <Fingerprint className="h-10 w-10 text-white" />
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Booting Intelligence Ingestion...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div id="lead-capture-root" className="p-8 space-y-10 max-w-[1600px] mx-auto pb-24 animate-in fade-in duration-700">
+    <div className="p-8 space-y-10 animate-in fade-in duration-1000 max-w-[1600px] mx-auto pb-24">
+      {/* Premium Header */}
       <div className="flex flex-col lg:flex-row justify-between items-end gap-6">
         <div className="space-y-3">
           <div className="flex items-center gap-3">

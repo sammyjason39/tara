@@ -66,7 +66,7 @@ const ROUTE_LABELS: Record<string, string> = Object.fromEntries(
   ),
 );
 
-export default function MarketingWorkspaceLayout({ children }: { children?: React.ReactNode }) {
+export default function MarketingWorkspaceLayout() {
   return (
     <DepartmentWorkspaceLayout
       title="Marketing Command"
@@ -79,8 +79,6 @@ export default function MarketingWorkspaceLayout({ children }: { children?: Reac
       sections={SECTIONS}
       routeLabels={ROUTE_LABELS}
       basePath="/core/marketing"
-    >
-      {children}
-    </DepartmentWorkspaceLayout>
+    />
   );
 }

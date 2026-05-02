@@ -20,8 +20,7 @@ import {
   MoreVertical,
   CheckCircle2,
   Zap,
-  Info,
-  Loader2
+  Info
 } from "lucide-react";
 import { StrategicExpansionModal } from "@/components/ui/StrategicExpansionModal";
 import { Button } from "@/components/ui/button";
@@ -158,17 +157,8 @@ export default function LeadDesk() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        <Loader2 className="h-12 w-12 text-indigo-600 animate-spin opacity-20" />
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 animate-pulse">Syncing Lead Pool...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-8 space-y-10 animate-in fade-in duration-1000 min-h-0">
+    <div className="p-8 space-y-10 animate-in fade-in duration-1000 max-w-[1600px] mx-auto">
       {/* Premium Header */}
       <div className="flex flex-col lg:flex-row justify-between items-end gap-6">
         <div className="space-y-3">

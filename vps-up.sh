@@ -16,8 +16,8 @@ mkdir -p logs
 chmod 777 logs
 
 # 2. Start the containers
-echo "📦 Building and starting containers (no-cache to ensure fresh build)..."
-if docker compose build --no-cache && docker compose up -d --remove-orphans; then
+echo "📦 Building and starting containers..."
+if docker compose up -d --build --remove-orphans; then
     echo "✅ Containers started successfully."
 else
     echo "❌ Failed to start containers."

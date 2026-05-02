@@ -20,11 +20,6 @@ export function ProtectedRoute({ permission, scope, children }: ProtectedRoutePr
     tenantMatch: true,
   });
 
-  console.log(`[ProtectedRoute] Permission: ${permission}, Allowed: ${allowed}`, {
-    role: session.role,
-    scope
-  });
-
   if (!allowed) {
     return <UnauthorizedPage />;
   }

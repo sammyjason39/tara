@@ -37,16 +37,4 @@ export default defineConfig(({ mode }) => ({
   optimizeDeps: {
     exclude: ["@/core/persistence/storage/node"],
   },
-  build: {
-    chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-ui': ['lucide-react', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
-          'vendor-utils': ['date-fns', 'clsx', 'tailwind-merge'],
-        }
-      }
-    }
-  }
 }));

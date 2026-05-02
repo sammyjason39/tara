@@ -44,7 +44,6 @@ import { toast } from "sonner";
 import type { IncentivePlan, SalesAttribution, IncentiveAuditLog } from "@/core/types/sales/incentives";
 
 export default function IncentiveDesk() {
-  console.log("[IncentiveDesk] Rendering");
   const session = useSession();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -148,9 +147,11 @@ export default function IncentiveDesk() {
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-[400px]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="flex flex-col items-center gap-6">
+          <div className="h-20 w-20 bg-indigo-600 rounded-[2.5rem] animate-pulse flex items-center justify-center shadow-2xl shadow-indigo-500/20">
+            <DollarSign className="h-10 w-10 text-white" />
+          </div>
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Initializing Yield Engine...</p>
         </div>
       </div>

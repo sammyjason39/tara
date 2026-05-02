@@ -79,7 +79,6 @@ const INITIAL_ROLES: GovernanceRole[] = [
 ];
 
 export default function RoleGovernance() {
-  console.log("[RoleGovernance] Rendering");
   const session = useSession();
   const [roles, setRoles] = useState<GovernanceRole[]>(INITIAL_ROLES);
   const [selectedRoleId, setSelectedRoleId] = useState<string>("superadmin");
@@ -100,61 +99,159 @@ export default function RoleGovernance() {
     }));
   };
 
-  console.log("[RoleGovernance] Rendering - Active State:", activeTab);
-
   return (
-    <div id="role-governance-root" className="p-8 space-y-10 animate-in fade-in duration-1000 min-h-0">
-      <PageHeader
-        title="Role Orchestration"
-        subtitle="Granular capability mapping and hierarchical access logic."
-        primaryAction={
-          <Button className="bg-indigo-600 text-white rounded-xl font-black italic tracking-widest uppercase gap-3 shadow-lg shadow-indigo-500/20 active:scale-95 transition-all">
-            <Plus className="w-4 h-4" /> Create Role
-          </Button>
-        }
-      />
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-1 space-y-4">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Roles Matrix</p>
-          <div className="space-y-2">
-            {roles.map((role) => (
-              <button
-                key={role.id}
-                onClick={() => setSelectedRoleId(role.id)}
-                className={cn(
-                  "w-full p-4 rounded-2xl text-left border transition-all",
-                  selectedRoleId === role.id 
-                    ? "bg-white dark:bg-slate-900 border-indigo-500 shadow-lg" 
-                    : "bg-transparent border-transparent hover:bg-slate-100 dark:hover:bg-slate-900/50"
-                )}
-              >
-                <h3 className="font-bold text-sm uppercase tracking-tight">{role.name}</h3>
-                <p className="text-[10px] text-slate-400 mt-1">{role.description}</p>
-              </button>
-            ))}
+    <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-700">
+      <div className="flex items-end justify-between border-b border-slate-200 dark:border-slate-800 pb-8">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-indigo-600 font-black text-[10px] uppercase tracking-[0.3em]">
+            <Lock className="h-3 w-3" /> Security Governance
           </div>
+          <h1 className="text-4xl font-black tracking-tighter uppercase italic text-slate-900 dark:text-white">
+            Role Orchestration
+          </h1>
+          <p className="text-sm text-slate-500 font-medium">Granular capability mapping and hierarchical access logic.</p>
         </div>
 
-        <WorkspacePanel 
-          title="Capability Orchestrator" 
-          description={`Mapping permissions for ${selectedRole.name}`}
-          className="lg:col-span-2"
-        >
-          <div className="space-y-6">
-            {selectedRole.capabilities.map((cap) => (
-              <div key={cap.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50/50 flex items-center justify-between group">
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-tight">{cap.label}</h4>
-                  <p className="text-[10px] text-slate-400">{cap.description}</p>
-                </div>
-                <Switch 
-                  checked={cap.enabled}
-                  onCheckedChange={() => toggleCapability(selectedRole.id, cap.id)}
-                />
+        <div className="flex items-center gap-3">
+           <Button variant="outline" className="rounded-2xl border-slate-200 dark:border-slate-800 font-black text-[10px] uppercase tracking-widest px-6 h-12 gap-2">
+             <History className="h-4 w-4" /> Policy History
+           </Button>
+           <Button className="rounded-2xl bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest px-6 h-12 shadow-xl shadow-indigo-500/20 gap-2">
+             <Plus className="h-4 w-4" /> Create Custom Role
+           </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-8">
+        {/* Role Selection Sidebar */}
+        <div className="space-y-4">
+           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-4">Inheritance Matrix</p>
+           <div className="space-y-2">
+              {roles.map((role) => (
+                <button
+                  key={role.id}
+                  onClick={() => setSelectedRoleId(role.id)}
+                  className={cn(
+                    "w-full p-6 rounded-[2rem] text-left transition-all duration-500 border group",
+                    selectedRoleId === role.id 
+                      ? "bg-white dark:bg-slate-900 border-indigo-500 shadow-xl shadow-indigo-500/10 -translate-y-1" 
+                      : "bg-transparent border-transparent hover:bg-slate-50 dark:hover:bg-slate-900/50"
+                  )}
+                >
+                  <div className="flex justify-between items-start mb-4">
+                     <div className={cn(
+                       "p-3 rounded-2xl",
+                       selectedRoleId === role.id ? "bg-indigo-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                     )}>
+                        <Shield className="h-5 w-5" />
+                     </div>
+                     <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest">
+                        {role.level}
+                     </Badge>
+                  </div>
+                  <h3 className={cn(
+                    "font-black text-lg tracking-tighter uppercase italic mb-1 transition-colors",
+                    selectedRoleId === role.id ? "text-slate-900 dark:text-white" : "text-slate-500"
+                  )}>
+                    {role.name}
+                  </h3>
+                  <p className="text-xs text-slate-400 font-medium line-clamp-2 leading-relaxed">
+                    {role.description}
+                  </p>
+                  
+                  <div className="mt-6 flex items-center justify-between">
+                     <div className="flex -space-x-2">
+                        {[1,2,3].map(i => (
+                          <div key={i} className="h-6 w-6 rounded-full bg-slate-200 border-2 border-white dark:border-slate-900" />
+                        ))}
+                        <div className="h-6 w-6 rounded-full bg-indigo-50 border-2 border-white dark:border-slate-900 flex items-center justify-center text-[8px] font-bold text-indigo-600">
+                           +{role.activeUsers}
+                        </div>
+                     </div>
+                     <ChevronRight className={cn(
+                       "h-4 w-4 transition-all",
+                       selectedRoleId === role.id ? "text-indigo-500 translate-x-0 opacity-100" : "text-slate-300 -translate-x-2 opacity-0"
+                     )} />
+                  </div>
+                </button>
+              ))}
+           </div>
+
+           <div className="p-6 rounded-[2rem] bg-amber-500/5 border border-amber-500/10 space-y-3">
+              <div className="flex items-center gap-2 text-amber-600">
+                 <ShieldAlert className="h-4 w-4" />
+                 <span className="text-[10px] font-black uppercase tracking-widest">Security Advisory</span>
               </div>
-            ))}
-          </div>
+              <p className="text-[10px] text-slate-500 font-bold leading-relaxed">
+                Changes to the <span className="text-amber-600">System Super-Admin</span> role are audited globally and require MFA re-verification.
+              </p>
+           </div>
+        </div>
+
+        {/* Capability Orchestrator */}
+        <WorkspacePanel 
+          title="Capability Matrix" 
+          description={`Fine-tuning permissions for ${selectedRole.name}.`}
+          className="rounded-[2.5rem] border-slate-200 dark:border-slate-800 shadow-xl"
+        >
+           <div className="space-y-8 pt-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                 <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 space-y-2">
+                    <Fingerprint className="h-6 w-6 text-indigo-500" />
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Identity Hook</p>
+                    <p className="text-lg font-black tracking-tight text-slate-900 dark:text-white uppercase italic">Active</p>
+                 </div>
+                 <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 space-y-2">
+                    <FileKey className="h-6 w-6 text-emerald-500" />
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Key Rotation</p>
+                    <p className="text-lg font-black tracking-tight text-slate-900 dark:text-white uppercase italic">30 Days</p>
+                 </div>
+                 <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 space-y-2">
+                    <Activity className="h-6 w-6 text-rose-500" />
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Audit Status</p>
+                    <p className="text-lg font-black tracking-tight text-slate-900 dark:text-white uppercase italic">Immutable</p>
+                 </div>
+              </div>
+
+              <div className="space-y-4">
+                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Granular Capabilities</p>
+                 <div className="space-y-2">
+                    {selectedRole.capabilities.map((cap) => (
+                      <div key={cap.id} className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-between group hover:border-indigo-500/30 transition-all duration-300">
+                         <div className="space-y-1">
+                            <h4 className="font-black text-sm uppercase tracking-tight text-slate-900 dark:text-white">{cap.label}</h4>
+                            <p className="text-xs text-slate-400 font-medium max-w-md">{cap.description}</p>
+                         </div>
+                         <div className="flex items-center gap-6">
+                            <div className="text-right hidden md:block">
+                               <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-300">Last Audit</p>
+                               <p className="text-[10px] font-mono text-slate-400">2026.04.28 14:32</p>
+                            </div>
+                            <Switch 
+                              checked={cap.enabled}
+                              onCheckedChange={() => toggleCapability(selectedRole.id, cap.id)}
+                              className="data-[state=checked]:bg-indigo-600"
+                            />
+                         </div>
+                      </div>
+                    ))}
+                 </div>
+              </div>
+
+              <div className="pt-8 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                 <div className="flex items-center gap-4">
+                    <Button variant="ghost" className="rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-500">
+                       <Trash2 className="h-4 w-4 mr-2" /> Decommission Role
+                    </Button>
+                    <Button variant="ghost" className="rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400">
+                       <Eye className="h-4 w-4 mr-2" /> View Audit Trail
+                    </Button>
+                 </div>
+                 <Button className="rounded-2xl bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest px-8 h-14 shadow-xl shadow-indigo-500/20 gap-2">
+                   <ShieldCheck className="h-4 w-4" /> Commit Security State
+                 </Button>
+              </div>
+           </div>
         </WorkspacePanel>
       </div>
     </div>

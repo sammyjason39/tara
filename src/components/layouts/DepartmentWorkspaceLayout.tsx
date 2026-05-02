@@ -50,8 +50,7 @@ export default function DepartmentWorkspaceLayout({
   sections,
   routeLabels,
   basePath,
-  children,
-}: DepartmentWorkspaceLayoutProps & { children?: React.ReactNode }) {
+}: DepartmentWorkspaceLayoutProps) {
   const session = useSession();
   const location = useLocation();
 
@@ -209,16 +208,12 @@ export default function DepartmentWorkspaceLayout({
           </div>
         }
       >
-        <div className="p-0 min-h-full bg-slate-50 dark:bg-slate-950 flex flex-col">
+        <div className="p-0 h-full overflow-y-auto bg-slate-50 dark:bg-slate-950">
           <ErrorBoundary>
-            {children || <Outlet />}
-            {/* Diagnostic Indicator for Empty Outlet */}
-            <div id="outlet-check" style={{ display: 'none' }}>Outlet Active</div>
+            <Outlet />
           </ErrorBoundary>
         </div>
       </PageShell>
     </div>
   );
 }
-
-function RouteMatchCheck() { return null; }

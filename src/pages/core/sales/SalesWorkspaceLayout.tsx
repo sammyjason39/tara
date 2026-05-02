@@ -56,7 +56,7 @@ const ROUTE_LABELS: Record<string, string> = Object.fromEntries(
   ),
 );
 
-export default function SalesWorkspaceLayout({ children }: { children?: React.ReactNode }) {
+export default function SalesWorkspaceLayout() {
   return (
     <DepartmentWorkspaceLayout
       title="Sales Command"
@@ -69,8 +69,6 @@ export default function SalesWorkspaceLayout({ children }: { children?: React.Re
       sections={SECTIONS}
       routeLabels={ROUTE_LABELS}
       basePath="/core/sales"
-    >
-      {children}
-    </DepartmentWorkspaceLayout>
+    />
   );
 }

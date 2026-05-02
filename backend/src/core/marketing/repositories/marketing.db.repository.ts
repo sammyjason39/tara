@@ -111,17 +111,17 @@ export class MarketingDbRepository extends IMarketingRepository {
     const [campaigns, leads, executions, accounts, attribution] =
       await Promise.all([
         this.prisma.marketing_campaigns.findMany({
-          where: MultiTenancyUtil.getScope(ctx, {}, { branch: false }),
+          where: MultiTenancyUtil.getScope(ctx),
         }),
-        this.prisma.marketing_leads.findMany({ where: MultiTenancyUtil.getScope(ctx, {}, { branch: false }) }),
+        this.prisma.marketing_leads.findMany({ where: MultiTenancyUtil.getScope(ctx) }),
         this.prisma.marketing_executions.findMany({
-          where: MultiTenancyUtil.getScope(ctx, {}, { branch: false }),
+          where: MultiTenancyUtil.getScope(ctx),
         }),
         this.prisma.marketing_accounts.findMany({
-          where: MultiTenancyUtil.getScope(ctx, {}, { branch: false }),
+          where: MultiTenancyUtil.getScope(ctx),
         }),
         this.prisma.marketing_attribution.findMany({
-          where: MultiTenancyUtil.getScope(ctx, {}, { branch: false }),
+          where: MultiTenancyUtil.getScope(ctx),
         }),
       ]);
 
@@ -159,7 +159,7 @@ export class MarketingDbRepository extends IMarketingRepository {
   async getChannelPerformance(ctx: TenantContext,
   ): Promise<MarketingChannelPerformance[]> {
     const executions = await this.prisma.marketing_executions.findMany({
-      where: MultiTenancyUtil.getScope(ctx, {}, { branch: false }),
+      where: MultiTenancyUtil.getScope(ctx),
     });
 
     const groups = executions.reduce(
@@ -183,7 +183,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getCampaigns(ctx: TenantContext): Promise<MarketingCampaign[]> {
     const items = await this.prisma.marketing_campaigns.findMany({
-      where: MultiTenancyUtil.getScope(ctx, {}, { branch: false }),
+      where: MultiTenancyUtil.getScope(ctx),
       orderBy: { created_at: "desc" },
     });
     return items.map((i: any) => this.mapCampaign(i));
@@ -219,7 +219,7 @@ export class MarketingDbRepository extends IMarketingRepository {
     dto: UpdateCampaignStatusDto,
   ): Promise<MarketingCampaign> {
     const item = await this.prisma.marketing_campaigns.update({
-      where: { id, ...MultiTenancyUtil.getScope(ctx, {}, { branch: false }) },
+      where: { id, ...MultiTenancyUtil.getScope(ctx) },
       data: { status: dto.status.toUpperCase() },
     });
     return this.mapCampaign(item);
@@ -227,7 +227,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getExecutions(ctx: TenantContext): Promise<MarketingExecution[]> {
     const items = await this.prisma.marketing_executions.findMany({
-      where: MultiTenancyUtil.getScope(ctx, {}, { branch: false }),
+      where: MultiTenancyUtil.getScope(ctx),
       orderBy: { scheduled_at: "desc" },
     });
     return items.map((i: any) => this.mapExecution(i));
@@ -257,7 +257,7 @@ export class MarketingDbRepository extends IMarketingRepository {
     dto: RunExecutionDto,
   ): Promise<MarketingExecution> {
     const item = await this.prisma.marketing_executions.update({
-      where: { id, ...MultiTenancyUtil.getScope(ctx, {}, { branch: false }) },
+      where: { id, ...MultiTenancyUtil.getScope(ctx) },
       data: {
         status: dto.failed ? "FAILED" : "COMPLETED",
         leads_generated: dto.leadsGenerated,
@@ -269,7 +269,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getLeads(ctx: TenantContext): Promise<MarketingLead[]> {
     const items = await this.prisma.marketing_leads.findMany({
-      where: MultiTenancyUtil.getScope(ctx, {}, { branch: false }),
+      where: MultiTenancyUtil.getScope(ctx),
       orderBy: { created_at: "desc" },
     });
     return items.map((i: any) => this.mapLead(i));
@@ -306,7 +306,7 @@ export class MarketingDbRepository extends IMarketingRepository {
     id: string,
   ): Promise<MarketingLead> {
     const item = await this.prisma.marketing_leads.update({
-      where: { id, ...MultiTenancyUtil.getScope(ctx, {}, { branch: false }) },
+      where: { id, ...MultiTenancyUtil.getScope(ctx) },
       data: { status: "HANDOFF_READY" },
     });
     return this.mapLead(item);
@@ -316,7 +316,7 @@ export class MarketingDbRepository extends IMarketingRepository {
     id: string,
   ): Promise<MarketingLead> {
     const item = await this.prisma.marketing_leads.update({
-      where: { id, ...MultiTenancyUtil.getScope(ctx, {}, { branch: false }) },
+      where: { id, ...MultiTenancyUtil.getScope(ctx) },
       data: { status: "HANDOFF_SENT" },
     });
     return this.mapLead(item);
@@ -324,7 +324,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getWorkflows(ctx: TenantContext): Promise<MarketingWorkflow[]> {
     const items = await this.prisma.marketing_workflows.findMany({
-      where: MultiTenancyUtil.getScope(ctx, {}, { branch: false }),
+      where: MultiTenancyUtil.getScope(ctx),
     });
     return items.map((i: any) => ({
       id: i.id,
@@ -374,7 +374,7 @@ export class MarketingDbRepository extends IMarketingRepository {
     dto: UpdateWorkflowStatusDto,
   ): Promise<MarketingWorkflow> {
     const item = await this.prisma.marketing_workflows.update({
-      where: { id, ...MultiTenancyUtil.getScope(ctx, {}, { branch: false }) },
+      where: { id, ...MultiTenancyUtil.getScope(ctx) },
       data: { status: dto.status.toUpperCase() },
     });
     return {
@@ -395,7 +395,7 @@ export class MarketingDbRepository extends IMarketingRepository {
   async getConnectedAccounts(ctx: TenantContext,
   ): Promise<MarketingConnectedAccount[]> {
     const items = await this.prisma.marketing_accounts.findMany({
-      where: MultiTenancyUtil.getScope(ctx, {}, { branch: false }),
+      where: MultiTenancyUtil.getScope(ctx),
     });
     return items.map((i: any) => ({
       id: i.id,
@@ -449,7 +449,7 @@ export class MarketingDbRepository extends IMarketingRepository {
     dto: UpdateAccountStatusDto,
   ): Promise<MarketingConnectedAccount> {
     const item = await this.prisma.marketing_accounts.update({
-      where: { id, ...MultiTenancyUtil.getScope(ctx, {}, { branch: false }) },
+      where: { id, ...MultiTenancyUtil.getScope(ctx) },
       data: { status: dto.status.toUpperCase() },
     });
     return {
@@ -470,7 +470,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getAttribution(ctx: TenantContext): Promise<MarketingAttribution[]> {
     const items = await this.prisma.marketing_attribution.findMany({
-      where: MultiTenancyUtil.getScope(ctx, {}, { branch: false }),
+      where: MultiTenancyUtil.getScope(ctx),
       orderBy: { created_at: "desc" },
     });
     return items.map((i: any) => ({
@@ -491,7 +491,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getAlerts(ctx: TenantContext): Promise<MarketingAlert[]> {
     const items = await this.prisma.marketing_alerts.findMany({
-      where: MultiTenancyUtil.getScope(ctx, {}, { branch: false }),
+      where: MultiTenancyUtil.getScope(ctx),
       orderBy: { created_at: "desc" },
     });
     return items.map((i: any) => ({
@@ -514,7 +514,7 @@ export class MarketingDbRepository extends IMarketingRepository {
     id: string,
   ): Promise<MarketingAlert> {
     const item = await this.prisma.marketing_alerts.update({
-      where: { id, ...MultiTenancyUtil.getScope(ctx, {}, { branch: false }) },
+      where: { id, ...MultiTenancyUtil.getScope(ctx) },
       data: { acknowledged: true },
     });
     return {
@@ -539,7 +539,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getAuditEvents(ctx: TenantContext): Promise<MarketingAuditEvent[]> {
     const items = await this.prisma.marketing_audit_events.findMany({
-      where: MultiTenancyUtil.getScope(ctx, {}, { branch: false }),
+      where: MultiTenancyUtil.getScope(ctx),
       orderBy: { created_at: "desc" },
     });
     return items.map((i: any) => ({
@@ -558,7 +558,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getContacts(ctx: TenantContext): Promise<MarketingContact[]> {
     const items = await this.prisma.marketing_contacts.findMany({
-      where: MultiTenancyUtil.getScope(ctx, {}, { branch: false }),
+      where: MultiTenancyUtil.getScope(ctx),
       orderBy: { created_at: "desc" },
     });
     return items.map(i => i as any);
@@ -566,7 +566,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getContactById(ctx: TenantContext, id: string): Promise<MarketingContact> {
     const item = await this.prisma.marketing_contacts.findUnique({
-      where: { id, ...MultiTenancyUtil.getScope(ctx, {}, { branch: false }) },
+      where: { id, ...MultiTenancyUtil.getScope(ctx) },
       include: {
         marketing_leads: true,
         retail_customers: true,
@@ -598,7 +598,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getFunnels(ctx: TenantContext): Promise<MarketingFunnel[]> {
     const items = await this.prisma.marketing_funnels.findMany({
-      where: MultiTenancyUtil.getScope(ctx, {}, { branch: false }),
+      where: MultiTenancyUtil.getScope(ctx),
       include: { steps: true },
       orderBy: { created_at: "desc" },
     });
@@ -622,7 +622,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async updateFunnel(ctx: TenantContext, id: string, data: Partial<MarketingFunnel>): Promise<MarketingFunnel> {
     const item = await this.prisma.marketing_funnels.update({
-      where: { id, ...MultiTenancyUtil.getScope(ctx, {}, { branch: false }) },
+      where: { id, ...MultiTenancyUtil.getScope(ctx) },
       data: {
         name: data.name,
         description: data.description,
@@ -636,7 +636,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getAppointments(ctx: TenantContext): Promise<MarketingAppointment[]> {
     const items = await this.prisma.marketing_appointments.findMany({
-      where: MultiTenancyUtil.getScope(ctx, {}, { branch: false }),
+      where: MultiTenancyUtil.getScope(ctx),
       orderBy: { scheduled_at: "desc" },
     });
     return items.map(i => i as any);
@@ -661,7 +661,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getAutomationRules(ctx: TenantContext): Promise<MarketingAutomationRule[]> {
     const items = await this.prisma.marketing_automation_rules.findMany({
-      where: MultiTenancyUtil.getScope(ctx, {}, { branch: false }),
+      where: MultiTenancyUtil.getScope(ctx),
       orderBy: { created_at: "desc" },
     });
     return items.map(i => i as any);
@@ -686,7 +686,7 @@ export class MarketingDbRepository extends IMarketingRepository {
   async getMessages(ctx: TenantContext, contactId?: string): Promise<MarketingOmnichannelMessage[]> {
     const items = await this.prisma.marketing_omnichannel_messages.findMany({
       where: {
-        ...MultiTenancyUtil.getScope(ctx, {}, { branch: false }),
+        ...MultiTenancyUtil.getScope(ctx),
         ...(contactId ? { contact_id: contactId } : {})
       },
       orderBy: { sent_at: "desc" },
@@ -712,7 +712,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async getCreativeAssets(ctx: TenantContext): Promise<MarketingCreativeAsset[]> {
     const items = await this.prisma.marketing_creative_assets.findMany({
-      where: MultiTenancyUtil.getScope(ctx, {}, { branch: false }),
+      where: MultiTenancyUtil.getScope(ctx),
       orderBy: { created_at: "desc" },
     });
     return items.map(i => i as any);
@@ -736,7 +736,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async updateCreativeAsset(ctx: TenantContext, id: string, data: Partial<MarketingCreativeAsset>): Promise<MarketingCreativeAsset> {
     const item = await this.prisma.marketing_creative_assets.update({
-      where: { id, ...MultiTenancyUtil.getScope(ctx, {}, { branch: false }) },
+      where: { id, ...MultiTenancyUtil.getScope(ctx) },
       data: {
         name: data.name,
         type: data.type,
@@ -751,7 +751,7 @@ export class MarketingDbRepository extends IMarketingRepository {
 
   async calculateAdvancedAttribution(ctx: TenantContext, model: "FIRST_CLICK" | "LINEAR" | "LAST_CLICK"): Promise<any> {
     const leads = await this.prisma.marketing_leads.findMany({
-      where: MultiTenancyUtil.getScope(ctx, {}, { branch: false }),
+      where: MultiTenancyUtil.getScope(ctx),
       include: { tenants: true }
     });
 
