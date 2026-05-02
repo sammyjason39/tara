@@ -11,7 +11,7 @@ import { HRModule } from '../hr/hr.module';
     FinanceModule,
     HRModule,
   ],
-  providers: [IncentivesService, IncentivesListener],
+  providers: [IncentivesService, IncentivesListener, PrismaService],
   controllers: [IncentivesController],
   exports: [IncentivesService],
 })

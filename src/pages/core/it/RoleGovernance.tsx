@@ -100,8 +100,10 @@ export default function RoleGovernance() {
     }));
   };
 
+  console.log("[RoleGovernance] Rendering - Active State:", activeTab);
+
   return (
-    <div id="role-governance-root" className="space-y-8">
+    <div id="role-governance-root" className="p-8 space-y-10 animate-in fade-in duration-1000 min-h-0">
       <PageHeader
         title="Role Orchestration"
         subtitle="Granular capability mapping and hierarchical access logic."
