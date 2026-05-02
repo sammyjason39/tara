@@ -83,7 +83,7 @@ export function OrderPad({ table, products, onComplete, onCancel }: OrderPadProp
     setOrderItems(prev => {
       const updated = [...prev];
       updated[index] = { ...updated[index], quantity: Math.max(0, updated[index].quantity + delta) };
-      return updated.filter(item => item.quantity > 0);
+      return (Array.isArray(updated) ? updated : []).filter(item => item.quantity > 0);
     });
   };
 

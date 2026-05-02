@@ -139,7 +139,7 @@ export default function RetailPOS() {
     setCart((prev) => {
       const existing = prev.find((i) => i.itemId === item.id);
       if (existing) {
-        return prev.map((i) =>
+        return (Array.isArray(prev) ? prev : []).map((i) =>
           i.itemId === item.id ? { ...i, quantity: i.quantity + 1 } : i,
         );
       }

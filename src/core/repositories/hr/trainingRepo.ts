@@ -39,7 +39,7 @@ export const trainingRepo = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return list.map(mapToProgram);
+    return (Array.isArray(list) ? list : []).map(mapToProgram);
   },
 
   async createProgram(
@@ -66,7 +66,7 @@ export const trainingRepo = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return list.map(mapToAssignment);
+    return (Array.isArray(list) ? list : []).map(mapToAssignment);
   },
 
   async assignTraining(

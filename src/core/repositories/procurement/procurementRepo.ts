@@ -204,7 +204,7 @@ export const procurementRepo: ProcurementRepository = {
       where: { tenantId: tenantId, deletedAt: null },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapSupplierMaster);
+    return (Array.isArray(items) ? items : []).map(mapSupplierMaster);
   },
   async createSupplierMaster(tenantId, payload) {
     const item = await prisma.supplierMaster.create({
@@ -241,7 +241,7 @@ export const procurementRepo: ProcurementRepository = {
       where: { tenantId: tenantId, deletedAt: null },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapSupplierBranch);
+    return (Array.isArray(items) ? items : []).map(mapSupplierBranch);
   },
   async createSupplierBranch(tenantId, payload) {
     const item = await prisma.supplierBranch.create({
@@ -281,7 +281,7 @@ export const procurementRepo: ProcurementRepository = {
       where: { tenantId: tenantId },
       orderBy: { updatedAt: 'desc' },
     });
-    return items.map(mapSupplierProduct);
+    return (Array.isArray(items) ? items : []).map(mapSupplierProduct);
   },
   async upsertSupplierProduct(tenantId, payload) {
     const item = await prisma.supplierProduct.upsert({
@@ -317,7 +317,7 @@ export const procurementRepo: ProcurementRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapRequisition);
+    return (Array.isArray(items) ? items : []).map(mapRequisition);
   },
   async createRequisition(tenantId, payload) {
     const item = await prisma.procurementRequisition.create({
@@ -361,7 +361,7 @@ export const procurementRepo: ProcurementRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapDraftPO);
+    return (Array.isArray(items) ? items : []).map(mapDraftPO);
   },
   async createDraftPurchaseOrder(tenantId, payload) {
     const item = await prisma.procurementDraftPO.create({
@@ -404,7 +404,7 @@ export const procurementRepo: ProcurementRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapFinalPO);
+    return (Array.isArray(items) ? items : []).map(mapFinalPO);
   },
   async createFinalPurchaseOrder(tenantId, payload) {
     const item = await prisma.procurementFinalPO.create({
@@ -442,7 +442,7 @@ export const procurementRepo: ProcurementRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapContract);
+    return (Array.isArray(items) ? items : []).map(mapContract);
   },
   async createContract(tenantId, payload) {
     const item = await prisma.procurementContract.create({
@@ -485,7 +485,7 @@ export const procurementRepo: ProcurementRepository = {
       where: { tenantId: tenantId },
       orderBy: { receivedAt: 'desc' },
     });
-    return items.map(mapReceipt);
+    return (Array.isArray(items) ? items : []).map(mapReceipt);
   },
   async createReceipt(tenantId, payload) {
     const item = await prisma.procurementReceipt.create({
@@ -511,7 +511,7 @@ export const procurementRepo: ProcurementRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapRatingLog);
+    return (Array.isArray(items) ? items : []).map(mapRatingLog);
   },
   async createRatingLog(tenantId, payload) {
     const item = await prisma.procurementRatingLog.create({
@@ -534,7 +534,7 @@ export const procurementRepo: ProcurementRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapRiskSignal);
+    return (Array.isArray(items) ? items : []).map(mapRiskSignal);
   },
   async createRiskSignal(tenantId, payload) {
     const item = await prisma.procurementRiskSignal.create({
@@ -566,7 +566,7 @@ export const procurementRepo: ProcurementRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapPortalMessage);
+    return (Array.isArray(items) ? items : []).map(mapPortalMessage);
   },
   async createPortalMessage(tenantId, payload) {
     const item = await prisma.supplierPortalMessage.create({
@@ -591,7 +591,7 @@ export const procurementRepo: ProcurementRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapAuditEvent);
+    return (Array.isArray(items) ? items : []).map(mapAuditEvent);
   },
   async createAuditEvent(tenantId, payload) {
     const item = await prisma.procurementAuditEvent.create({

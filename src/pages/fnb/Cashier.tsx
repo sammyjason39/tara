@@ -92,7 +92,7 @@ export default function CafeCashier() {
       );
       
       if (existing) {
-        return prev.map((item) =>
+        return (Array.isArray(prev) ? prev : []).map((item) =>
           item.product.id === product.id && 
           (item.modifiers || []).sort().join(',') === modifierKey
             ? { ...item, quantity: item.quantity + 1 }

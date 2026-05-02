@@ -71,7 +71,7 @@ export default function TopologyMap() {
 
   // Layout logic: Simple radial or grid for now
   const nodes = useMemo<Node[]>(() => {
-    return devices.map((d, i) => {
+    return (Array.isArray(devices) ? devices : []).map((d, i) => {
       const angle = (i / devices.length) * 2 * Math.PI;
       const radius = 250;
       return {

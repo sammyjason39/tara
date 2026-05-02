@@ -34,7 +34,7 @@ export const leaveRepo = {
       },
     });
 
-    return list.map(mapToLeave);
+    return (Array.isArray(list) ? list : []).map(mapToLeave);
   },
 
   /**

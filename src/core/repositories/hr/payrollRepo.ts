@@ -34,7 +34,7 @@ export const payrollRepo = {
       },
     });
 
-    return runs.map(mapToRun);
+    return (Array.isArray(runs) ? runs : []).map(mapToRun);
   },
 
   /**

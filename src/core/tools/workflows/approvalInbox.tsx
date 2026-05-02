@@ -74,7 +74,7 @@ export function ApprovalInbox({ tenantId, session }: ApprovalInboxProps) {
   }, [workflows]);
 
   const filtered = useMemo(() => {
-    return workflows.filter((flow) => {
+    return (Array.isArray(workflows) ? workflows : []).filter((flow) => {
       if (tab !== "ALL" && flow.status !== tab) return false;
       if (!search) return true;
       const query = search.toLowerCase();

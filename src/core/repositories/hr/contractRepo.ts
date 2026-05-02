@@ -31,7 +31,7 @@ export const contractRepo = {
       },
     });
 
-    return list.map(mapToContract);
+    return (Array.isArray(list) ? list : []).map(mapToContract);
   },
 
   /**

@@ -147,7 +147,7 @@ export const salesRepo: SalesRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapLead);
+    return (Array.isArray(items) ? items : []).map(mapLead);
   },
   async createLead(tenantId, payload) {
     const item = await prisma.salesLead.create({
@@ -198,7 +198,7 @@ export const salesRepo: SalesRepository = {
       where: { tenantId: tenantId },
       orderBy: { lastActivityAt: 'desc' },
     });
-    return items.map(mapOpportunity);
+    return (Array.isArray(items) ? items : []).map(mapOpportunity);
   },
   async createOpportunity(tenantId, payload) {
     const item = await prisma.salesOpportunity.create({
@@ -242,7 +242,7 @@ export const salesRepo: SalesRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapQuote);
+    return (Array.isArray(items) ? items : []).map(mapQuote);
   },
   async createQuote(tenantId, payload) {
     const item = await prisma.salesQuote.create({
@@ -286,7 +286,7 @@ export const salesRepo: SalesRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapTimelineEvent);
+    return (Array.isArray(items) ? items : []).map(mapTimelineEvent);
   },
   async createTimelineEvent(tenantId, payload) {
     const item = await prisma.salesTimelineEvent.create({
@@ -310,7 +310,7 @@ export const salesRepo: SalesRepository = {
       where: { tenantId: tenantId },
       orderBy: { dueAt: 'asc' },
     });
-    return items.map(mapTask);
+    return (Array.isArray(items) ? items : []).map(mapTask);
   },
   async createTask(tenantId, payload) {
     const item = await prisma.salesTask.create({
@@ -347,7 +347,7 @@ export const salesRepo: SalesRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapAlert);
+    return (Array.isArray(items) ? items : []).map(mapAlert);
   },
   async createAlert(tenantId, payload) {
     const item = await prisma.salesAlert.create({
@@ -379,7 +379,7 @@ export const salesRepo: SalesRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapOrder);
+    return (Array.isArray(items) ? items : []).map(mapOrder);
   },
   async createOrder(tenantId, payload) {
     const item = await prisma.salesOrder.create({
@@ -416,7 +416,7 @@ export const salesRepo: SalesRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapAuditEvent);
+    return (Array.isArray(items) ? items : []).map(mapAuditEvent);
   },
   async createAuditEvent(tenantId, payload) {
     const item = await prisma.salesAuditEvent.create({

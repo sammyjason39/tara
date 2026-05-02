@@ -88,7 +88,7 @@ function filterVisiblePages(
   pages: ReadonlyArray<ModulePageDefinition>,
   ctx: ModulePageContext,
 ): ModulePageDefinition[] {
-  return pages.filter((page) => {
+  return (Array.isArray(pages) ? pages : []).filter((page) => {
     // ------------------------------------------------------------------------
     // Device Compatibility
     // ------------------------------------------------------------------------

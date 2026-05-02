@@ -46,7 +46,7 @@ export const attendanceRepo = {
       where: { tenantId: tenantId, deletedAt: null }
     });
 
-    return locations.map(l => ({
+    return (Array.isArray(locations) ? locations : []).map(l => ({
       id: l.id,
       tenantId: l.tenantId,
       name: l.name,
@@ -97,7 +97,7 @@ export const attendanceRepo = {
       orderBy: { date: 'desc' },
     });
 
-    return records.map(mapToRecord);
+    return (Array.isArray(records) ? records : []).map(mapToRecord);
   },
 
   /**

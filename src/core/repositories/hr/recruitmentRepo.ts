@@ -29,7 +29,7 @@ export const recruitmentRepo = {
       },
     });
 
-    return list.map(mapToReq);
+    return (Array.isArray(list) ? list : []).map(mapToReq);
   },
 
   /**

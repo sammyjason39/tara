@@ -42,7 +42,7 @@ export const performanceRepo = {
       where: { tenantId: tenantId },
       orderBy: { startDate: 'desc' },
     });
-    return cycles.map(mapToCycle);
+    return (Array.isArray(cycles) ? cycles : []).map(mapToCycle);
   },
 
   async createCycle(
@@ -89,7 +89,7 @@ export const performanceRepo = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return reviews.map(mapToReview);
+    return (Array.isArray(reviews) ? reviews : []).map(mapToReview);
   },
 
   async createReview(

@@ -101,7 +101,7 @@ export default function RetailSales() {
     setCart((prev) => {
       const existing = prev.find((item) => item.product.id === product.id);
       if (existing) {
-        return prev.map((item) =>
+        return (Array.isArray(prev) ? prev : []).map((item) =>
           item.product.id === product.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
@@ -113,8 +113,7 @@ export default function RetailSales() {
 
   const updateQuantity = (productId: string, delta: number) => {
     setCart((prev) => {
-      return prev
-        .map((item) => {
+      return (Array.isArray(prev) ? prev : []).map((item) => {
           if (item.product.id === productId) {
             const newQty = item.quantity + delta;
             return newQty > 0 ? { ...item, quantity: newQty } : null;

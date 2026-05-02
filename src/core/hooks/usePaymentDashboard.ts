@@ -93,8 +93,7 @@ export const onlineDeviceCount = (devices: PosDevice[]) =>
 /** Total settled volume today from transaction list */
 export const settledVolumeToday = (transactions: PaymentTransaction[]) => {
   const today = new Date().toDateString();
-  return transactions
-    .filter(
+  return (Array.isArray(transactions) ? transactions : []).filter(
       (tx) =>
         tx.status === "SETTLED" &&
         new Date(tx.updatedAt).toDateString() === today,

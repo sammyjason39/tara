@@ -222,8 +222,7 @@ export function resolveNavigation(
       .map((p) => normalizeModulePage(p, instance, ctx));
   }
 
-  return pages
-    .filter((page) => {
+  return (Array.isArray(pages) ? pages : []).filter((page) => {
       if (!page.supportedDevices.includes(deviceType)) return false;
       if (page.hidden && !isSuperAdmin(roles)) return false;
       return hasPermission(roles, page.requiredPermissions ?? []);

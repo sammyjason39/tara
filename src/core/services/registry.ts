@@ -199,7 +199,7 @@ function byOrganization<T extends { organizationId: string }>(
   items: readonly T[],
   organizationId: string,
 ): T[] {
-  return items.filter((i) => i.organizationId === organizationId);
+  return (Array.isArray(items) ? items : []).filter((i) => i.organizationId === organizationId);
 }
 
 function bySite<T extends { siteId?: string }>(
@@ -207,7 +207,7 @@ function bySite<T extends { siteId?: string }>(
   siteId?: string,
 ): T[] {
   if (!siteId) return [...items];
-  return items.filter((i) => i.siteId === siteId);
+  return (Array.isArray(items) ? items : []).filter((i) => i.siteId === siteId);
 }
 
 /* ============================================================================ */
@@ -313,7 +313,7 @@ export const registry = {
     organizationId: string;
     siteId: string;
   }): InventoryEntry[] {
-    return inventory.filter(
+    return (Array.isArray(inventory) ? inventory : []).filter(
       (i) =>
         i.organizationId === params.organizationId &&
         i.siteId === params.siteId,
@@ -333,7 +333,7 @@ export const registry = {
     organizationId: string;
     siteId: string;
   }): InventoryEntry[] {
-    return inventory.filter(
+    return (Array.isArray(inventory) ? inventory : []).filter(
       (i) =>
         i.organizationId === params.organizationId &&
         i.siteId === params.siteId &&

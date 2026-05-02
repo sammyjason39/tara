@@ -19,7 +19,7 @@ export const orgService = {
     const departments = await apiRequest<Department[]>("/v1/hr/departments", "GET", actor);
     
     // Enriching with some UI-specific metrics if not provided by backend
-    return departments.map(d => ({
+    return (Array.isArray(departments) ? departments : []).map(d => ({
         ...d,
         headcount: d.headcount ?? 0,
         openRequisitions: d.openRequisitions ?? 0,

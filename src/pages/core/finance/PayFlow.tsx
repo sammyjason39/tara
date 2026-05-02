@@ -78,7 +78,7 @@ export default function PayFlow() {
 
   const fetchPayments = useCallback(async () => {
     const raw = await financeApiClient.listPayments(session.tenant_id, session);
-    return raw.map((payment) => ({
+    return (Array.isArray(raw) ? raw : []).map((payment) => ({
       ...payment,
       destination: payment.beneficiary,
       purpose: "Operational expenses",

@@ -59,7 +59,7 @@ const mockStaff: StaffRecord[] = [
 export function getStaffList(tenantId: string): StaffRecord[] {
   if (moduleProvider) return moduleProvider.getStaffList(tenantId);
   // Support both tenant-specific and generic demo data if tenantId is 'tenant-demo'
-  return mockStaff.filter((staff) => staff.tenantId === tenantId);
+  return (Array.isArray(mockStaff) ? mockStaff : []).filter((staff) => staff.tenantId === tenantId);
 }
 
 export function getStaffById(tenantId: string, staffId: string): StaffRecord | undefined {

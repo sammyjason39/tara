@@ -116,7 +116,7 @@ export const inventoryRepo: InventoryRepository = {
       include: { category: true },
       orderBy: { name: 'asc' },
     });
-    return items.map(mapItem);
+    return (Array.isArray(items) ? items : []).map(mapItem);
   },
   async createItem(tenantId, payload) {
     let category = await prisma.productCategory.findFirst({
@@ -174,7 +174,7 @@ export const inventoryRepo: InventoryRepository = {
       where: { tenantId: tenantId },
       include: { location: true },
     });
-    return balances.map(mapBalance);
+    return (Array.isArray(balances) ? balances : []).map(mapBalance);
   },
   async createBalance(tenantId, payload) {
     const location = await prisma.location.findFirst({
@@ -216,7 +216,7 @@ export const inventoryRepo: InventoryRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapMovement);
+    return (Array.isArray(items) ? items : []).map(mapMovement);
   },
   async createMovement(tenantId, payload) {
     const item = await prisma.stockMovement.create({
@@ -240,7 +240,7 @@ export const inventoryRepo: InventoryRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapAdjustment);
+    return (Array.isArray(items) ? items : []).map(mapAdjustment);
   },
   async createAdjustment(tenantId, payload) {
     const item = await prisma.inventoryAdjustment.create({
@@ -275,7 +275,7 @@ export const inventoryRepo: InventoryRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapAuditCycle);
+    return (Array.isArray(items) ? items : []).map(mapAuditCycle);
   },
   async createAuditCycle(tenantId, payload) {
     const item = await prisma.inventoryAuditCycle.create({
@@ -310,7 +310,7 @@ export const inventoryRepo: InventoryRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapAlert);
+    return (Array.isArray(items) ? items : []).map(mapAlert);
   },
   async createAlert(tenantId, payload) {
     const item = await prisma.inventoryAlert.create({
@@ -342,7 +342,7 @@ export const inventoryRepo: InventoryRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapIntegrationEvent);
+    return (Array.isArray(items) ? items : []).map(mapIntegrationEvent);
   },
   async createIntegrationEvent(tenantId, payload) {
     const item = await prisma.inventoryIntegrationEvent.create({

@@ -304,7 +304,7 @@ export function filterByScope<
   moduleId?: ModuleId,
   siteId?: string,
 ): T[] {
-  return items.filter((item) => {
+  return (Array.isArray(items) ? items : []).filter((item) => {
     if (item.tenantId !== tenantId) return false;
     if (moduleId && item.moduleId !== moduleId) return false;
     if (siteId && item.siteId !== siteId) return false;

@@ -194,7 +194,7 @@ export const retailRepo = {
       orderBy: { name: "asc" },
     });
 
-    return products.map((product) => ({
+    return (Array.isArray(products) ? products : []).map((product) => ({
       id: product.id,
       sku: product.sku,
       name: product.name,
@@ -217,7 +217,7 @@ export const retailRepo = {
       orderBy: { createdAt: "desc" },
     });
 
-    return orders.map(mapOrder);
+    return (Array.isArray(orders) ? orders : []).map(mapOrder);
   },
 
   async createOrder(

@@ -44,14 +44,14 @@ export const logService = {
    * Can later be extended to filter by user, date range, or action
    */
   listLogs: (tenantId: string): AuditLog[] => {
-    return logs.filter((log) => log.tenantId === tenantId);
+    return (Array.isArray(logs) ? logs : []).filter((log) => log.tenantId === tenantId);
   },
 
   /**
    * Find logs by userId
    */
   listLogsByUser: (tenantId: string, userId: string): AuditLog[] => {
-    return logs.filter(
+    return (Array.isArray(logs) ? logs : []).filter(
       (log) => log.tenantId === tenantId && log.userId === userId,
     );
   },

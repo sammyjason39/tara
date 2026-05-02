@@ -173,7 +173,7 @@ export const paymentRepo: PaymentRepository = {
       include: { retryAttempts: true },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapTransaction);
+    return (Array.isArray(items) ? items : []).map(mapTransaction);
   },
   async createTransaction(tenantId, payload) {
     const item = await prisma.paymentTransaction.create({
@@ -217,7 +217,7 @@ export const paymentRepo: PaymentRepository = {
       where: { tenantId: tenantId },
       orderBy: { priority: 'asc' },
     });
-    return items.map(mapProvider);
+    return (Array.isArray(items) ? items : []).map(mapProvider);
   },
   async updateProvider(tenantId, id, patch) {
     const item = await prisma.paymentProvider.update({
@@ -235,7 +235,7 @@ export const paymentRepo: PaymentRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapRoutingPolicy);
+    return (Array.isArray(items) ? items : []).map(mapRoutingPolicy);
   },
   async updateRoutingPolicy(tenantId, id, patch) {
     const item = await prisma.paymentRoutingPolicy.update({
@@ -254,7 +254,7 @@ export const paymentRepo: PaymentRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapPosDevice);
+    return (Array.isArray(items) ? items : []).map(mapPosDevice);
   },
   async updateDevice(tenantId, id, patch) {
     const item = await prisma.paymentPosDevice.update({
@@ -271,7 +271,7 @@ export const paymentRepo: PaymentRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapDevicePool);
+    return (Array.isArray(items) ? items : []).map(mapDevicePool);
   },
 
   async listDisputes(tenantId) {
@@ -279,7 +279,7 @@ export const paymentRepo: PaymentRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapDispute);
+    return (Array.isArray(items) ? items : []).map(mapDispute);
   },
   async createDispute(tenantId, payload) {
     const item = await prisma.paymentDispute.create({
@@ -314,7 +314,7 @@ export const paymentRepo: PaymentRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapChargeback);
+    return (Array.isArray(items) ? items : []).map(mapChargeback);
   },
   async createChargeback(tenantId, payload) {
     const item = await prisma.paymentChargeback.create({
@@ -344,7 +344,7 @@ export const paymentRepo: PaymentRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapRefund);
+    return (Array.isArray(items) ? items : []).map(mapRefund);
   },
   async createRefund(tenantId, payload) {
     const item = await prisma.paymentRefund.create({
@@ -379,7 +379,7 @@ export const paymentRepo: PaymentRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapSettlementRecord);
+    return (Array.isArray(items) ? items : []).map(mapSettlementRecord);
   },
   async createSettlement(tenantId, payload) {
     const item = await prisma.paymentSettlementRecord.create({
@@ -411,7 +411,7 @@ export const paymentRepo: PaymentRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapEvidencePack);
+    return (Array.isArray(items) ? items : []).map(mapEvidencePack);
   },
   async createEvidencePack(tenantId, payload) {
     const item = await prisma.paymentEvidencePack.create({
@@ -433,7 +433,7 @@ export const paymentRepo: PaymentRepository = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return items.map(mapAuditEvent);
+    return (Array.isArray(items) ? items : []).map(mapAuditEvent);
   },
   async createAuditEvent(tenantId, payload) {
     const item = await prisma.paymentAuditEvent.create({

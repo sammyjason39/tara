@@ -45,7 +45,7 @@ export const schedulingRepo = {
       where: { tenantId: tenantId },
       orderBy: { name: 'asc' },
     });
-    return list.map(mapToShift);
+    return (Array.isArray(list) ? list : []).map(mapToShift);
   },
 
   async getShift(tenantId: string, shiftId: string): Promise<Shift | undefined> {
@@ -62,7 +62,7 @@ export const schedulingRepo = {
     const list = await prisma.scheduleAssignment.findMany({
       where: { tenantId: tenantId },
     });
-    return list.map(mapToAssignment);
+    return (Array.isArray(list) ? list : []).map(mapToAssignment);
   },
 
   async getAssignment(tenantId: string, employeeId: string): Promise<ScheduleAssignment | undefined> {
@@ -96,7 +96,7 @@ export const schedulingRepo = {
     const list = await prisma.shiftSwapRequest.findMany({
       where: { tenantId: tenantId },
     });
-    return list.map((db) => ({
+    return (Array.isArray(list) ? list : []).map((db) => ({
       id: db.id,
       tenantId: db.tenantId,
       requesterId: db.requesterId,
@@ -133,7 +133,7 @@ export const schedulingRepo = {
     const list = await prisma.emergencyOverride.findMany({
       where: { tenantId: tenantId },
     });
-    return list.map((db) => ({
+    return (Array.isArray(list) ? list : []).map((db) => ({
       id: db.id,
       tenantId: db.tenantId,
       absentEmployeeId: db.employeeId, // Assuming employeeId in DB is the one being covered?

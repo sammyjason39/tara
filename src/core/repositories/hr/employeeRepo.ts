@@ -48,7 +48,7 @@ export const employeeRepo = {
       },
     });
 
-    return employees.map(mapToEmployee);
+    return (Array.isArray(employees) ? employees : []).map(mapToEmployee);
   },
 
   /**

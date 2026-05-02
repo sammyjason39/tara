@@ -228,7 +228,7 @@ export const InventoryMovementDialog: React.FC<Props> = ({
     setSelectedLines((prev) => {
       const existing = prev.find((l) => l.id === item.id);
       if (existing) {
-        return prev.map((l) =>
+        return (Array.isArray(prev) ? prev : []).map((l) =>
           l.id === item.id ? { ...l, qty: l.qty + 1 } : l,
         );
       }

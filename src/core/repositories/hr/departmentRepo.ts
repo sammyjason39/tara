@@ -17,7 +17,7 @@ export const departmentRepo = {
     });
 
     // Map DB tenantId back to tenantId for frontend compatibility
-    return departments.map(d => ({
+    return (Array.isArray(departments) ? departments : []).map(d => ({
       ...d,
       tenantId: d.tenantId,
       status: d.status as "active" | "inactive",

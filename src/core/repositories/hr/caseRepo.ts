@@ -28,7 +28,7 @@ export const caseRepo = {
       where: { tenantId: tenantId },
       orderBy: { createdAt: 'desc' },
     });
-    return list.map(mapToCase);
+    return (Array.isArray(list) ? list : []).map(mapToCase);
   },
 
   /**

@@ -209,7 +209,7 @@ export class RetailPublicGateway {
         session,
       );
 
-      return internalProducts.map((p) => ({
+      return (Array.isArray(internalProducts) ? internalProducts : []).map((p) => ({
         id: p.id,
         name: p.name,
         sku: p.sku,

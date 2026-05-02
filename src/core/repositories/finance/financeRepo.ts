@@ -26,7 +26,7 @@ export const financeRepo: FinanceRepository = {
   // --- Accounts ---
   async listSources(tenantId) {
     const items = await prisma.moneySource.findMany({ where: { tenantId: tenantId } });
-    return items.map(mapMoneySource);
+    return (Array.isArray(items) ? items : []).map(mapMoneySource);
   },
   async updateSource(tenantId, sourceId, patch) {
     const updated = await prisma.moneySource.update({
@@ -39,7 +39,7 @@ export const financeRepo: FinanceRepository = {
   // --- Treasury ---
   async listTransfers(tenantId) {
     const items = await prisma.treasuryTransfer.findMany({ where: { tenantId: tenantId } });
-    return items.map(d => ({
+    return (Array.isArray(items) ? items : []).map(d => ({
       id: d.id,
       tenantId: d.tenantId,
       fromSourceId: d.fromSourceId,
@@ -70,7 +70,7 @@ export const financeRepo: FinanceRepository = {
   // --- Settlements ---
   async listSettlements(tenantId) {
     const items = await prisma.settlementRecord.findMany({ where: { tenantId: tenantId } });
-    return items.map(d => ({
+    return (Array.isArray(items) ? items : []).map(d => ({
       id: d.id,
       tenantId: d.tenantId,
       sourceId: d.sourceId,
@@ -99,7 +99,7 @@ export const financeRepo: FinanceRepository = {
   // --- Payables ---
   async listPayables(tenantId) {
     const items = await prisma.payable.findMany({ where: { tenantId: tenantId } });
-    return items.map(d => ({
+    return (Array.isArray(items) ? items : []).map(d => ({
       id: d.id,
       tenantId: d.tenantId,
       vendorName: d.vendorName,
@@ -145,7 +145,7 @@ export const financeRepo: FinanceRepository = {
   // --- Receivables ---
   async listReceivables(tenantId) {
     const items = await prisma.receivable.findMany({ where: { tenantId: tenantId } });
-    return items.map(d => ({
+    return (Array.isArray(items) ? items : []).map(d => ({
       id: d.id,
       tenantId: d.tenantId,
       customerName: d.customerName,
@@ -197,7 +197,7 @@ export const financeRepo: FinanceRepository = {
       where: { tenantId: tenantId },
       include: { lines: true }
     });
-    return items.map(d => ({
+    return (Array.isArray(items) ? items : []).map(d => ({
       id: d.id,
       tenantId: d.tenantId,
       ref: d.ref || undefined,
@@ -272,7 +272,7 @@ export const financeRepo: FinanceRepository = {
   // --- Assets ---
   async listAssets(tenantId) {
     const items = await prisma.fixedAsset.findMany({ where: { tenantId: tenantId } });
-    return items.map(d => ({
+    return (Array.isArray(items) ? items : []).map(d => ({
         id: d.id,
         tenantId: d.tenantId,
         description: d.description,
@@ -354,7 +354,7 @@ export const financeRepo: FinanceRepository = {
   // --- Capex ---
   async listCapexRequests(tenantId) {
       const items = await prisma.capexRequest.findMany({ where: { tenantId: tenantId } });
-      return items.map(d => ({
+      return (Array.isArray(items) ? items : []).map(d => ({
           id: d.id,
           tenantId: d.tenantId,
           assetDescription: d.assetDescription,

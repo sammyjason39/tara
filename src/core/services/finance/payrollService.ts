@@ -6,7 +6,7 @@ let entries: PayrollEntry[] = [];
 
 export const payrollService = {
   async getPayrollEntries(tenantId: string, _period?: string): Promise<PayrollEntry[]> {
-    return entries.filter((e) => e.tenantId === tenantId);
+    return (Array.isArray(entries) ? entries : []).filter((e) => e.tenantId === tenantId);
   },
 
   async createPayrollEntry(entry: PayrollEntry): Promise<PayrollEntry> {
