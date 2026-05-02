@@ -101,8 +101,7 @@ export default function RoleGovernance() {
   };
 
   return (
-    <div id="role-governance-root" className="space-y-8 animate-in fade-in duration-700 border-4 border-red-500">
-      <div className="bg-red-500 text-white p-4 font-black">DIAGNOSTIC: ROLE GOVERNANCE MOUNTED</div>
+    <div id="role-governance-root" className="space-y-8">
       <PageHeader
         title="Role Orchestration"
         subtitle="Granular capability mapping and hierarchical access logic."

@@ -133,7 +133,7 @@ export default function DepartmentWorkspaceLayout({
                   <div>
                      <h2 className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white uppercase italic leading-none">{title}</h2>
                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] leading-relaxed italic mt-1.5 flex items-center gap-2">
-                        <Target className={cn("h-3.5 w-3.5", textC)} /> {subtitle} <span className="text-indigo-500 font-bold ml-2">[VER: 0329]</span>
+                        <Target className={cn("h-3.5 w-3.5", textC)} /> {subtitle}
                      </p>
                   </div>
                </div>

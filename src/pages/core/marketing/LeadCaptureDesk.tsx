@@ -179,8 +179,7 @@ export default function LeadCaptureDesk() {
       toast.error("Authorization protocol failure.");
       setRefreshing(false);
     }
-  const [leads] = useState<Lead[]>(INITIAL_LEADS);
-  const [loading] = useState(false);
+  };
 
   return (
     <div id="lead-capture-root" className="p-8 space-y-10 max-w-[1600px] mx-auto pb-24 animate-in fade-in duration-700">
