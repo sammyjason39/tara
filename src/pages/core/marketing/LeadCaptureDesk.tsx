@@ -194,6 +194,15 @@ export default function LeadCaptureDesk() {
     );
   }
 
+  if (!data) {
+    return (
+      <div id="lead-capture-root" className="p-20 text-center bg-slate-50 dark:bg-slate-950 min-h-full">
+        <h2 className="text-2xl font-black uppercase italic text-slate-400">Telemetry Ingestion Failure</h2>
+        <p className="text-sm text-slate-500 mt-4">The lead capture matrix is currently offline. Verification pending.</p>
+      </div>
+    );
+  }
+
   return (
     <div id="lead-capture-root" className="p-8 space-y-10 max-w-[1600px] mx-auto pb-24">
       {/* Premium Header */}
