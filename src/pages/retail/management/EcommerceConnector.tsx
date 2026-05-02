@@ -111,8 +111,8 @@ const EcommerceConnector = () => {
 
   const stats = useMemo(() => {
     const total = channels.length;
-    const active = channels.filter((c) => c.status === "active").length;
-    const suspended = channels.filter((c) => c.status === "inactive").length;
+    const active = (Array.isArray(channels) ? channels : []).filter((c) => c.status === "active").length;
+    const suspended = (Array.isArray(channels) ? channels : []).filter((c) => c.status === "inactive").length;
     return { total, active, suspended };
   }, [channels]);
 
@@ -143,7 +143,7 @@ const EcommerceConnector = () => {
       <div className="px-8 py-5 border-b bg-white shrink-0 flex items-center justify-between gap-6">
         <PageHeader
           title="Commerce Channels"
-          subtitle={`${stats.active} active · ${stats.total} total channels connected`}
+          subtitle={`${stats.active} active ï¿½ ${stats.total} total channels connected`}
         />
         <div className="flex items-center gap-3">
           <Button

@@ -58,7 +58,7 @@ export const StockOpnameTab: React.FC<Props> = ({
 
   // Local filtering for the view
   const filteredEntries = useMemo(() => {
-    return opnameEntries.filter((entry) => {
+    return (Array.isArray(opnameEntries) ? opnameEntries : []).filter((entry) => {
       const matchesSearch =
         !filters.search ||
         entry.name.toLowerCase().includes(filters.search.toLowerCase()) ||

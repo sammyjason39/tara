@@ -174,7 +174,7 @@ export default function CreativeLibrary() {
   };
 
   const filteredAssets = useMemo(() => {
-    return assets.filter(a => {
+    return (Array.isArray(assets) ? assets : []).filter(a => {
       const matchesSearch = a.name.toLowerCase().includes(search.toLowerCase()) || 
                            a.tags?.some((t: string) => t.toLowerCase().includes(search.toLowerCase()));
       
@@ -186,7 +186,7 @@ export default function CreativeLibrary() {
 
   const toggleTypeFilter = (type: string) => {
     setTypeFilter(prev => 
-      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+      prev.includes(type) ? (Array.isArray(prev) ? prev : []).filter(t => t !== type) : [...prev, type]
     );
   };
 
@@ -297,11 +297,11 @@ export default function CreativeLibrary() {
                GLOBAL ASSETS
             </div>
             <div className="flex items-center gap-3">
-               <Badge className="bg-emerald-600/10 text-emerald-600 border-none">{assets.filter(a => a.type === 'IMAGE').length}</Badge>
+               <Badge className="bg-emerald-600/10 text-emerald-600 border-none">{(Array.isArray(assets) ? assets : []).filter(a => a.type === 'IMAGE').length}</Badge>
                IMAGE NODES
             </div>
             <div className="flex items-center gap-3">
-               <Badge className="bg-rose-600/10 text-rose-600 border-none">{assets.filter(a => a.type === 'VIDEO').length}</Badge>
+               <Badge className="bg-rose-600/10 text-rose-600 border-none">{(Array.isArray(assets) ? assets : []).filter(a => a.type === 'VIDEO').length}</Badge>
                VIDEO STREAM
             </div>
          </div>

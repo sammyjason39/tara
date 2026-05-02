@@ -78,7 +78,7 @@ export default function ForecastDesk() {
   }, [refresh]);
 
   const openOpportunities = useMemo(() => 
-    opportunities.filter(
+    (Array.isArray(opportunities) ? opportunities : []).filter(
       (item) => item.stage !== "CLOSED_WON" && item.stage !== "CLOSED_LOST",
     ),
     [opportunities]
@@ -86,7 +86,7 @@ export default function ForecastDesk() {
 
   const filtered = useMemo(
     () =>
-      openOpportunities.filter((item) =>
+      (Array.isArray(openOpportunities) ? openOpportunities : []).filter((item) =>
         search
           ? `${item.accountName} ${item.ownerName} ${item.stage}`
               .toLowerCase()

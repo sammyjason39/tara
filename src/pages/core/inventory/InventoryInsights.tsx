@@ -120,7 +120,7 @@ export default function InventoryInsights() {
         label: "Synced integration events",
         category: "INTEGRATION",
         value: String(
-          integrationEvents.filter((item) => item.status === "SYNCED").length,
+          (Array.isArray(integrationEvents) ? integrationEvents : []).filter((item) => item.status === "SYNCED").length,
         ),
       },
     ];
@@ -128,7 +128,7 @@ export default function InventoryInsights() {
 
   const filteredRows = useMemo(
     () =>
-      insightRows.filter((item) =>
+      (Array.isArray(insightRows) ? insightRows : []).filter((item) =>
         search
           ? `${item.label} ${item.category}`
               .toLowerCase()

@@ -236,7 +236,7 @@ const CashierPOS = () => {
   const filteredProducts = useMemo(() => {
     if (!searchTerm.trim()) return products;
     const q = searchTerm.toLowerCase();
-    return products.filter(
+    return (Array.isArray(products) ? products : []).filter(
       (p) =>
         p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q),
     );
@@ -267,7 +267,7 @@ const CashierPOS = () => {
   };
 
   const removeFromCart = (id: string) =>
-    setCart((prev) => prev.filter((item) => item.id !== id));
+    setCart((prev) => (Array.isArray(prev) ? prev : []).filter((item) => item.id !== id));
 
   const handleCheckout = (method: "cash" | "card") => {
     setActivePaymentModal(method === "card" ? "electronic" : "cash");

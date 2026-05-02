@@ -186,12 +186,12 @@ export default function OmnichannelInbox() {
     } catch (err) {
       console.error("Failed to send message:", err);
       toast.error("Transmission failure.");
-      setMessages(prev => prev.filter(m => m.id !== optimisticMsg.id));
+      setMessages(prev => (Array.isArray(prev) ? prev : []).filter(m => m.id !== optimisticMsg.id));
     }
   };
 
   const filteredConversations = useMemo(() => {
-    return conversations.filter(conv => {
+    return (Array.isArray(conversations) ? conversations : []).filter(conv => {
       const matchesSearch = conv.contactName.toLowerCase().includes(searchQuery.toLowerCase()) || 
                            conv.lastMessage.toLowerCase().includes(searchQuery.toLowerCase());
       

@@ -54,15 +54,15 @@ export default function PolicyManager() {
 
   const statusCounts = useMemo(
     () => ({
-      active: policies.filter((policy) => policy.active).length,
-      inactive: policies.filter((policy) => !policy.active).length,
+      active: (Array.isArray(policies) ? policies : []).filter((policy) => policy.active).length,
+      inactive: (Array.isArray(policies) ? policies : []).filter((policy) => !policy.active).length,
     }),
     [policies],
   );
 
   const filteredPolicies = useMemo(
     () =>
-      policies.filter((policy) =>
+      (Array.isArray(policies) ? policies : []).filter((policy) =>
         search ? policy.title.toLowerCase().includes(search.toLowerCase()) : true,
       ),
     [policies, search],

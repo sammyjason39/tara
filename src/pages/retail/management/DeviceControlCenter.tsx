@@ -140,11 +140,11 @@ const DeviceControlCenter = () => {
   const cameras = useMemo(() => camMap[branch] ?? [], [camMap, branch]);
   const sensors = useMemo(() => senMap[branch] ?? [], [senMap, branch]);
   const branchName = stores.find((b) => b.id === branch)?.name ?? "";
-  const onlineDevs = devices.filter((d) => d.status === "online").length;
-  const activeCams = cameras.filter(
+  const onlineDevs = (Array.isArray(devices) ? devices : []).filter((d) => d.status === "online").length;
+  const activeCams = (Array.isArray(cameras) ? cameras : []).filter(
     (c) => c.status === "live" || c.status === "recording",
   ).length;
-  const alertSens = sensors.filter(
+  const alertSens = (Array.isArray(sensors) ? sensors : []).filter(
     (s) => s.status === "warning" || s.status === "critical",
   ).length;
 
@@ -239,7 +239,7 @@ const DeviceControlCenter = () => {
         description: "New hardware successfully registered.",
       });
       setDiscoveredDevices((p) =>
-        p.filter((d) => d.discoveryId !== discoveryId),
+        (Array.isArray(p) ? p : []).filter((d) => d.discoveryId !== discoveryId),
       );
       fetchData();
     } catch (e) {

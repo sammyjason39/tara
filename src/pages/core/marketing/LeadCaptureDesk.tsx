@@ -120,7 +120,7 @@ export default function LeadCaptureDesk() {
 
   const filtered = useMemo(
     () =>
-      leads.filter((item) =>
+      (Array.isArray(leads) ? leads : []).filter((item) =>
         search
           ? `${item.companyName} ${item.contactName} ${item.source} ${item.status}`
               .toLowerCase()

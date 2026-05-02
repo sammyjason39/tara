@@ -48,7 +48,7 @@ export default function InventoryAdjustments() {
 
   const filtered = useMemo(
     () =>
-      adjustments.filter((item) =>
+      (Array.isArray(adjustments) ? adjustments : []).filter((item) =>
         search
           ? `${item.id} ${item.reason} ${item.status}`
               .toLowerCase()

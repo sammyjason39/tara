@@ -65,7 +65,7 @@ export default function MarketingAlerts() {
 
   const filtered = useMemo(
     () =>
-      alerts.filter((item) =>
+      (Array.isArray(alerts) ? alerts : []).filter((item) =>
         search
           ? `${item.type} ${item.severity} ${item.message}`
               .toLowerCase()
@@ -168,7 +168,7 @@ export default function MarketingAlerts() {
             </div>
             <div className="relative z-10 space-y-1">
                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 italic">Unacknowledged</p>
-               <h4 className="text-5xl font-black text-rose-600 italic tracking-tighter">{alerts.filter(a => !a.acknowledged).length}</h4>
+               <h4 className="text-5xl font-black text-rose-600 italic tracking-tighter">{(Array.isArray(alerts) ? alerts : []).filter(a => !a.acknowledged).length}</h4>
                <p className="text-[9px] font-black uppercase tracking-widest text-rose-500/60 italic leading-none">Action Required</p>
             </div>
          </Card>

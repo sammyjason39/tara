@@ -61,7 +61,7 @@ export default function SalesDashboard() {
       setMetrics(m);
       setNextActions(n);
       setLeads(
-        l.filter((item) =>
+        (Array.isArray(l) ? l : []).filter((item) =>
           ["NEW", "ASSIGNED", "CONTACTED", "QUALIFIED"].includes(item.status),
         ),
       );
@@ -81,7 +81,7 @@ export default function SalesDashboard() {
 
   const filteredLeads = useMemo(
     () =>
-      leads.filter((item) =>
+      (Array.isArray(leads) ? leads : []).filter((item) =>
         search
           ? `${item.companyName} ${item.contactName} ${item.ownerName}`
               .toLowerCase()

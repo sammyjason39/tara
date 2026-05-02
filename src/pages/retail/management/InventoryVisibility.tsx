@@ -334,7 +334,7 @@ const InventoryVisibility = () => {
   }, [dynamicCategories]);
 
   const filtered = useMemo(() => {
-    return inventory.filter((item) => {
+    return (Array.isArray(inventory) ? inventory : []).filter((item) => {
       const matchesSearch =
         !filters.search ||
         item.name.toLowerCase().includes(filters.search.toLowerCase()) ||
@@ -543,7 +543,7 @@ const InventoryVisibility = () => {
         adjustments,
       );
 
-      const variances = opnameEntries.filter(
+      const variances = (Array.isArray(opnameEntries) ? opnameEntries : []).filter(
         (e) => Number(e.counted) !== e.expected,
       );
 

@@ -54,7 +54,7 @@ export default function InventoryDashboard() {
   }, [refresh]);
 
   const openAlerts = useMemo(
-    () => alerts.filter((item) => item.status === "OPEN").slice(0, 8),
+    () => (Array.isArray(alerts) ? alerts : []).filter((item) => item.status === "OPEN").slice(0, 8),
     [alerts],
   );
 

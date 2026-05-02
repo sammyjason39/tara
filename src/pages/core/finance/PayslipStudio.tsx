@@ -55,7 +55,7 @@ export default function PayslipStudio() {
   };
 
   const removeComponent = (id: string) => {
-    setComponents(components.filter(c => c.id !== id));
+    setComponents((Array.isArray(components) ? components : []).filter(c => c.id !== id));
     if (activeComponentId === id) setActiveComponentId(null);
   };
 
@@ -147,7 +147,7 @@ export default function PayslipStudio() {
                 <div className="h-1 bg-indigo-600 shrink-0" />
                 <ScrollArea className="flex-1 p-12 bg-white">
                    <div className="space-y-8 max-w-[650px] mx-auto">
-                      {components.filter(c => c.visible).sort((a, b) => a.order - b.order).map((comp) => (
+                      {(Array.isArray(components) ? components : []).filter(c => c.visible).sort((a, b) => a.order - b.order).map((comp) => (
                          <div key={comp.id} className={cn("relative group border-2 border-transparent transition-all", activeComponentId === comp.id && "border-indigo-100 rounded-xl p-4 -m-4 bg-indigo-50/20")}>
                             {comp.type === 'header' && (
                                <div className="flex justify-between items-start">

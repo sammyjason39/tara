@@ -110,9 +110,9 @@ export default function TimelineDesk() {
   const filtered = useMemo(() => {
     let result = timeline;
     if (channelFilter) {
-      result = result.filter(item => item.channel === channelFilter);
+      result = (Array.isArray(result) ? result : []).filter(item => item.channel === channelFilter);
     }
-    return result.filter((item) =>
+    return (Array.isArray(result) ? result : []).filter((item) =>
       search
         ? `${item.summary} ${item.channel} ${item.direction} ${item.createdBy}`
             .toLowerCase()
@@ -350,9 +350,9 @@ export default function TimelineDesk() {
                
                <div className="space-y-6 relative z-10">
                   {[
-                    { label: "Internal Notes", count: timeline.filter(t => t.channel === "NOTE").length, color: "bg-white/20" },
-                    { label: "Digital Outreach", count: timeline.filter(t => ["EMAIL", "SMS", "WHATSAPP"].includes(t.channel)).length, color: "bg-emerald-400" },
-                    { label: "Direct Comms", count: timeline.filter(t => ["CALL", "MEETING"].includes(t.channel)).length, color: "bg-amber-400" },
+                    { label: "Internal Notes", count: (Array.isArray(timeline) ? timeline : []).filter(t => t.channel === "NOTE").length, color: "bg-white/20" },
+                    { label: "Digital Outreach", count: (Array.isArray(timeline) ? timeline : []).filter(t => ["EMAIL", "SMS", "WHATSAPP"].includes(t.channel)).length, color: "bg-emerald-400" },
+                    { label: "Direct Comms", count: (Array.isArray(timeline) ? timeline : []).filter(t => ["CALL", "MEETING"].includes(t.channel)).length, color: "bg-amber-400" },
                   ].map((stat, i) => (
                     <div key={i} className="space-y-2">
                        <div className="flex justify-between items-end">
@@ -411,7 +411,7 @@ export default function TimelineDesk() {
                           <div className={cn("h-2 w-2 rounded-full", channelFilter === c ? "bg-white" : "bg-slate-300")} />
                            <span className="text-[10px] font-black uppercase tracking-widest">{c}</span>
                        </div>
-                       <Badge variant="secondary" className={cn("rounded-full text-[8px] font-black", channelFilter === c ? "bg-white text-indigo-600" : "")}>{timeline.filter(t => t.channel === c).length}</Badge>
+                       <Badge variant="secondary" className={cn("rounded-full text-[8px] font-black", channelFilter === c ? "bg-white text-indigo-600" : "")}>{(Array.isArray(timeline) ? timeline : []).filter(t => t.channel === c).length}</Badge>
                     </button>
                   ))}
                </div>

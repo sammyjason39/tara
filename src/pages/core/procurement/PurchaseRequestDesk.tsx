@@ -102,7 +102,7 @@ export default function PurchaseRequestDesk() {
 
   const filtered = useMemo(
     () =>
-      requisitions.filter((item) =>
+      (Array.isArray(requisitions) ? requisitions : []).filter((item) =>
         search
           ? `${item.id} ${item.title} ${item.requesterDept}`
               .toLowerCase()
@@ -661,7 +661,7 @@ export default function PurchaseRequestDesk() {
                         <SelectValue placeholder="Select Location" />
                       </SelectTrigger>
                       <SelectContent>
-                        {branches.filter(b => !supplierId || b.supplierId === supplierId).map(b => (
+                        {(Array.isArray(branches) ? branches : []).filter(b => !supplierId || b.supplierId === supplierId).map(b => (
                           <SelectItem key={b.id} value={b.id}>{b.branchCode} - {b.branchName}</SelectItem>
                         ))}
                       </SelectContent>

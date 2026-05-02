@@ -19,7 +19,7 @@ export default function InsightLayer() {
   useEffect(() => {
     analyticsService.listMetrics(session.tenant_id, session).then(setMetrics);
     const flows = workflowService.listRequests(session.tenant_id);
-    setApprovals(flows.filter((flow: any) => flow.status === "PENDING"));
+    setApprovals((Array.isArray(flows) ? flows : []).filter((flow: any) => flow.status === "PENDING"));
   }, [session]);
 
   return (

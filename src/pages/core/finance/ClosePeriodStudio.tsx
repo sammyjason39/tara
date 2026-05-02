@@ -42,7 +42,7 @@ export default function ClosePeriodStudio() {
 
   const filteredPeriods = useMemo(
     () =>
-      periods.filter((period) => {
+      (Array.isArray(periods) ? periods : []).filter((period) => {
         const matchesSearch = search
           ? `${period.startDate} ${period.endDate}`.includes(search)
           : true;

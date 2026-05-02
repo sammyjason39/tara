@@ -61,7 +61,7 @@ export default function OrgMap() {
     loadData();
   }, [session.tenant_id, session, version]);
 
-  const filteredData = data.filter((dept) =>
+  const filteredData = (Array.isArray(data) ? data : []).filter((dept) =>
     search ? dept.name.toLowerCase().includes(search.toLowerCase()) : true,
   );
 

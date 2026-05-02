@@ -46,7 +46,7 @@ export default function InventoryAuditLog() {
 
   const filteredMovements = useMemo(
     () =>
-      movements.filter((item) =>
+      (Array.isArray(movements) ? movements : []).filter((item) =>
         search
           ? `${item.type} ${item.reason} ${item.referenceId ?? ""}`
               .toLowerCase()

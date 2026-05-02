@@ -126,7 +126,7 @@ const ShiftControl = () => {
   }, [session.tenant_id, session.location_id]);
 
   const stats = useMemo(() => {
-    const active = shifts.filter((s) => s.status === "open").length;
+    const active = (Array.isArray(shifts) ? shifts : []).filter((s) => s.status === "open").length;
     const efficiency = 84.5; // Mocked
     const attendance = 100; // Mocked
     return { active, efficiency, attendance };
@@ -139,7 +139,7 @@ const ShiftControl = () => {
   };
 
   const handleShiftDelete = (shiftId: string) => {
-    setScheduledShifts((prev) => prev.filter((s) => s.id !== shiftId));
+    setScheduledShifts((prev) => (Array.isArray(prev) ? prev : []).filter((s) => s.id !== shiftId));
     toast({
       title: "Shift Removed",
       description: "The scheduled block was deleted.",
@@ -166,7 +166,7 @@ const ShiftControl = () => {
 
   const handlePublishSchedule = async (reason: string) => {
     try {
-      const affectedCount = scheduledShifts.filter(
+      const affectedCount = (Array.isArray(scheduledShifts) ? scheduledShifts : []).filter(
         (s) => s.status === "draft",
       ).length;
       await addSignature(
@@ -233,7 +233,7 @@ const ShiftControl = () => {
     );
   }
 
-  const draftCount = scheduledShifts.filter((s) => s.status === "draft").length;
+  const draftCount = (Array.isArray(scheduledShifts) ? scheduledShifts : []).filter((s) => s.status === "draft").length;
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-900 selection:bg-indigo-500 selection:text-white relative overflow-hidden">

@@ -94,7 +94,7 @@ export default function ModuleHub() {
       if (!currentEnabled) {
         newIds = [...currentIds, moduleCode];
       } else {
-        newIds = currentIds.filter(id => id !== moduleCode);
+        newIds = (Array.isArray(currentIds) ? currentIds : []).filter(id => id !== moduleCode);
       }
       
       updateSettings({
@@ -146,7 +146,7 @@ export default function ModuleHub() {
     return [...core, ...industry];
   }, [licenses, industryContracts, appState.settings.activatedModuleIds]);
 
-  const filteredModules = allModules.filter(m => {
+  const filteredModules = (Array.isArray(allModules) ? allModules : []).filter(m => {
     const matchesSearch = m.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                          m.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTab = activeTab === "all" || m.category === activeTab;
@@ -326,7 +326,7 @@ export default function ModuleHub() {
               <div className="grid grid-cols-2 gap-6 w-full md:w-auto">
                 {[
                   { label: "Total Clusters", value: allModules.length },
-                  { label: "Active Nodes", value: allModules.filter(m => m.isEnabled).length },
+                  { label: "Active Nodes", value: (Array.isArray(allModules) ? allModules : []).filter(m => m.isEnabled).length },
                   { label: "Uptime Sync", value: "99.9%" },
                   { label: "License Type", value: "Enterprise" },
                 ].map((stat, i) => (

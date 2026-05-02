@@ -88,7 +88,7 @@ export default function LedgerCore() {
   };
 
   const removeLine = (index: number) => {
-    const newLines = entry.lines.filter((_, i) => i !== index);
+    const newLines = entry.(Array.isArray(lines) ? lines : []).filter((_, i) => i !== index);
     setEntry({ ...entry, lines: newLines });
   };
 
@@ -144,7 +144,7 @@ export default function LedgerCore() {
 
   const filteredJournals = useMemo(
     () =>
-      journals.filter((journal) =>
+      (Array.isArray(journals) ? journals : []).filter((journal) =>
         search
           ? `${journal.account} ${journal.description}`
               .toLowerCase()
@@ -156,7 +156,7 @@ export default function LedgerCore() {
 
   const filteredInvoices = useMemo(
     () =>
-      invoices.filter((invoice) =>
+      (Array.isArray(invoices) ? invoices : []).filter((invoice) =>
         search
           ? `${invoice.vendor} ${invoice.id} ${invoice.kind}`
               .toLowerCase()
@@ -168,7 +168,7 @@ export default function LedgerCore() {
 
   const filteredPayroll = useMemo(
     () =>
-      payrollEntries.filter((payroll) =>
+      (Array.isArray(payrollEntries) ? payrollEntries : []).filter((payroll) =>
         search
           ? `${payroll.employeeId} ${payroll.period}`
               .toLowerCase()

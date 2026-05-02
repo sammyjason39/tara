@@ -40,7 +40,7 @@ export default function FinanceDocs() {
 
   const filteredDocs = useMemo(
     () =>
-      docs.filter((doc) => {
+      (Array.isArray(docs) ? docs : []).filter((doc) => {
         const searchMatch = search ? doc.title.toLowerCase().includes(search.toLowerCase()) : true;
         const tabMatch = tab === "ALL" ? true : doc.status === tab;
         return searchMatch && tabMatch;

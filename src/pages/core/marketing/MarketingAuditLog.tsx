@@ -68,7 +68,7 @@ export default function MarketingAuditLog() {
 
   const filtered = useMemo(
     () =>
-      events.filter((item) =>
+      (Array.isArray(events) ? events : []).filter((item) =>
         search
           ? `${item.action} ${item.entityType} ${item.entityId} ${item.detail}`
               .toLowerCase()

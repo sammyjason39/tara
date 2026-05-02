@@ -54,7 +54,7 @@ export default function AuditVault() {
 
   const filteredRows = useMemo(
     () =>
-      rows.filter((row) => {
+      (Array.isArray(rows) ? rows : []).filter((row) => {
         const matchesSource = source === "ALL" ? true : row.source === source;
         const haystack = `${row.action} ${row.actor} ${row.detail}`.toLowerCase();
         const matchesSearch = search ? haystack.includes(search.toLowerCase()) : true;
@@ -69,8 +69,8 @@ export default function AuditVault() {
     () => ({
       total: filteredRows.length,
       uniqueActors: new Set(filteredRows.map((row) => row.actor)).size,
-      financeLogs: filteredRows.filter((row) => row.source === "FINANCE_LOG").length,
-      auditEntries: filteredRows.filter((row) => row.source === "AUDIT_LEDGER").length,
+      financeLogs: (Array.isArray(filteredRows) ? filteredRows : []).filter((row) => row.source === "FINANCE_LOG").length,
+      auditEntries: (Array.isArray(filteredRows) ? filteredRows : []).filter((row) => row.source === "AUDIT_LEDGER").length,
     }),
     [filteredRows],
   );

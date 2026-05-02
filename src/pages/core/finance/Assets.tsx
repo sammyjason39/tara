@@ -163,7 +163,7 @@ export default function Assets() {
     setDepreciationEntries(depEntries);
     setAssetEvents(events);
     setSelectedDocumentIds((previous) => {
-      const retained = previous.filter((id) => documentRows.some((doc) => doc.id === id));
+      const retained = (Array.isArray(previous) ? previous : []).filter((id) => documentRows.some((doc) => doc.id === id));
       if (retained.length) return retained;
       return [];
     });
@@ -175,7 +175,7 @@ export default function Assets() {
 
   const filteredAssets = useMemo(
     () =>
-      assets.filter((asset) =>
+      (Array.isArray(assets) ? assets : []).filter((asset) =>
         search
           ? `${asset.description} ${asset.location} ${asset.department}`
               .toLowerCase()
@@ -187,7 +187,7 @@ export default function Assets() {
 
   const filteredCapex = useMemo(
     () =>
-      capexRequests.filter((request) =>
+      (Array.isArray(capexRequests) ? capexRequests : []).filter((request) =>
         search
           ? `${request.assetDescription} ${request.department}`
               .toLowerCase()
@@ -377,7 +377,7 @@ export default function Assets() {
       if (selected) {
         return Array.from(new Set([...previous, documentId]));
       }
-      return previous.filter((id) => id !== documentId);
+      return (Array.isArray(previous) ? previous : []).filter((id) => id !== documentId);
     });
   };
 

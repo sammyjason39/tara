@@ -156,7 +156,7 @@ export const InventoryMovementDialog: React.FC<Props> = ({
   );
   const meta = MOVEMENT_META[type];
   const otherStores = useMemo(
-    () => stores.filter((s) => s.id !== selectedStoreId),
+    () => (Array.isArray(stores) ? stores : []).filter((s) => s.id !== selectedStoreId),
     [stores, selectedStoreId],
   );
 
@@ -243,12 +243,12 @@ export const InventoryMovementDialog: React.FC<Props> = ({
   };
 
   const removeLine = (id: string) => {
-    setSelectedLines((prev) => prev.filter((l) => l.id !== id));
+    setSelectedLines((prev) => (Array.isArray(prev) ? prev : []).filter((l) => l.id !== id));
   };
 
   const filteredItems = useMemo(() => {
     const q = search.toLowerCase();
-    return allItems.filter(
+    return (Array.isArray(allItems) ? allItems : []).filter(
       (i) =>
         (!q ||
           i.name.toLowerCase().includes(q) ||
@@ -289,7 +289,7 @@ export const InventoryMovementDialog: React.FC<Props> = ({
   };
 
   const removeNewProductLine = (id: string) => {
-    setNewProductLines((prev) => prev.filter((l) => l.tempId !== id));
+    setNewProductLines((prev) => (Array.isArray(prev) ? prev : []).filter((l) => l.tempId !== id));
   };
 
   const handlePrintNewProduct = (line: NewProductLine) => {

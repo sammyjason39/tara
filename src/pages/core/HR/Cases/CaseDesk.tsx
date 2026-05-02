@@ -39,7 +39,7 @@ export default function CaseDesk() {
     };
     loadData();
   }, [session.tenant_id, session, version]);
-  const filtered = cases.filter((item) =>
+  const filtered = (Array.isArray(cases) ? cases : []).filter((item) =>
     search ? item.title.toLowerCase().includes(search.toLowerCase()) : true,
   );
 

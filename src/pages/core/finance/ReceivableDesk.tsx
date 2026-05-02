@@ -48,7 +48,7 @@ export default function ReceivableDesk() {
 
   const filtered = useMemo(
     () =>
-      receivables.filter((item) =>
+      (Array.isArray(receivables) ? receivables : []).filter((item) =>
         search ? item.customerName.toLowerCase().includes(search.toLowerCase()) : true,
       ),
     [receivables, search],

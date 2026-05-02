@@ -46,7 +46,7 @@ export default function FinanceInsights() {
 
   const filteredInsights = useMemo(
     () =>
-      insights.filter(
+      (Array.isArray(insights) ? insights : []).filter(
         (item) =>
           (!search || item.title?.toLowerCase().includes(search.toLowerCase())) &&
           (category === "ALL" || item.category === category),

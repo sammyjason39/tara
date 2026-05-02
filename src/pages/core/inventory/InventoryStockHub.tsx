@@ -226,7 +226,7 @@ export default function InventoryStockHub() {
 
   const filteredBalances = useMemo(
     () =>
-      aggregatedBalances.filter((balance) => {
+      (Array.isArray(aggregatedBalances) ? aggregatedBalances : []).filter((balance) => {
         const item = itemById[balance.itemId];
         if (!item) return false;
 
@@ -271,7 +271,7 @@ export default function InventoryStockHub() {
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
+      prev.includes(id) ? (Array.isArray(prev) ? prev : []).filter((i) => i !== id) : [...prev, id],
     );
   };
 

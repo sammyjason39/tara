@@ -85,7 +85,7 @@ export default function MarketingDashboard() {
 
   const filteredAlerts = useMemo(
     () =>
-      alerts.filter((item) =>
+      (Array.isArray(alerts) ? alerts : []).filter((item) =>
         search
           ? `${item.type} ${item.message} ${item.severity}`
               .toLowerCase()

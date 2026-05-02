@@ -43,7 +43,7 @@ export default function RefundDesk() {
     fetchData();
   }, [refreshKey, session]);
 
-  const settledPayments = useMemo(() => transactions.filter((item) => item.status === "SETTLED"), [transactions]);
+  const settledPayments = useMemo(() => (Array.isArray(transactions) ? transactions : []).filter((item) => item.status === "SETTLED"), [transactions]);
 
   return (
     <div className="space-y-6">

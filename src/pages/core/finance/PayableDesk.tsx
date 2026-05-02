@@ -48,7 +48,7 @@ export default function PayableDesk() {
 
   const filtered = useMemo(
     () =>
-      payables.filter((item) =>
+      (Array.isArray(payables) ? payables : []).filter((item) =>
         search ? item.vendorName.toLowerCase().includes(search.toLowerCase()) : true,
       ),
     [payables, search],

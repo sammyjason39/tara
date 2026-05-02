@@ -133,7 +133,7 @@ export default function Explorer() {
   );
 
   const subfolders = useMemo(
-    () => folders.filter((folder) => (folder.parentId ?? "root") === activeFolder),
+    () => (Array.isArray(folders) ? folders : []).filter((folder) => (folder.parentId ?? "root") === activeFolder),
     [folders, activeFolder],
   );
 
@@ -152,7 +152,7 @@ export default function Explorer() {
 
   const orderedFiles = useMemo(() => {
     const filtered = search 
-      ? files.filter(f => f.name.toLowerCase().includes(search.toLowerCase()))
+      ? (Array.isArray(files) ? files : []).filter(f => f.name.toLowerCase().includes(search.toLowerCase()))
       : files;
 
     const sorted = [...filtered].sort((a, b) => {
@@ -291,7 +291,7 @@ export default function Explorer() {
 
   const toggleSelect = (fileId: string) => {
     setSelectedIds((prev) =>
-      prev.includes(fileId) ? prev.filter((id) => id !== fileId) : [...prev, fileId],
+      prev.includes(fileId) ? (Array.isArray(prev) ? prev : []).filter((id) => id !== fileId) : [...prev, fileId],
     );
   };
 

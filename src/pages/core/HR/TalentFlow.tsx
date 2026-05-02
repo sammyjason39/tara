@@ -70,7 +70,7 @@ export default function TalentFlow() {
     return candidates.find(c => c.id === selectedCandidateId) || null;
   }, [candidates, selectedCandidateId]);
 
-  const filteredCandidates = candidates.filter((candidate) =>
+  const filteredCandidates = (Array.isArray(candidates) ? candidates : []).filter((candidate) =>
     search ? candidate.name.toLowerCase().includes(search.toLowerCase()) : true,
   );
 
@@ -234,7 +234,7 @@ export default function TalentFlow() {
             <div className="flex items-center justify-between rounded-lg border p-3">
               <span>Offers in flight</span>
               <span className="font-semibold text-foreground">
-                {candidates.filter((candidate) => candidate.stage === "offer").length}
+                {(Array.isArray(candidates) ? candidates : []).filter((candidate) => candidate.stage === "offer").length}
               </span>
             </div>
           </div>

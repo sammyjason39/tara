@@ -73,7 +73,7 @@ export default function SpreadsheetTool() {
   useEffect(() => {
     const fetchSheets = async () => {
       const { files } = await listFileSystem(session);
-      setFiles(files.filter(f => f.type === "sheet" || f.type === "zsheet" || f.type === "csv"));
+      setFiles((Array.isArray(files) ? files : []).filter(f => f.type === "sheet" || f.type === "zsheet" || f.type === "csv"));
     };
     fetchSheets();
   }, [session, version]);

@@ -104,7 +104,7 @@ export default function MoneyDesk() {
             currentStepId: "",
           }));
           setTasks(mappedTasks);
-          setApprovals(mappedTasks.filter((item) => item.status === "PENDING"));
+          setApprovals((Array.isArray(mappedTasks) ? mappedTasks : []).filter((item) => item.status === "PENDING"));
         }
       })
       .catch(() => {});
@@ -124,7 +124,7 @@ export default function MoneyDesk() {
 
   const filteredApprovals = useMemo(
     () =>
-      approvals.filter((item) =>
+      (Array.isArray(approvals) ? approvals : []).filter((item) =>
         search
           ? item.entityId.toLowerCase().includes(search.toLowerCase())
           : true,
@@ -134,7 +134,7 @@ export default function MoneyDesk() {
 
   const filteredAlerts = useMemo(
     () =>
-      alerts.filter((item) =>
+      (Array.isArray(alerts) ? alerts : []).filter((item) =>
         search ? item.title.toLowerCase().includes(search.toLowerCase()) : true,
       ),
     [alerts, search],
@@ -142,7 +142,7 @@ export default function MoneyDesk() {
 
   const filteredTasks = useMemo(
     () =>
-      tasks.filter((item) =>
+      (Array.isArray(tasks) ? tasks : []).filter((item) =>
         search
           ? item.entityId.toLowerCase().includes(search.toLowerCase())
           : true,
@@ -152,7 +152,7 @@ export default function MoneyDesk() {
 
   const filteredPayments = useMemo(
     () =>
-      payments.filter((item) =>
+      (Array.isArray(payments) ? payments : []).filter((item) =>
         search
           ? item.beneficiary.toLowerCase().includes(search.toLowerCase())
           : true,

@@ -82,9 +82,9 @@ const PricingPromoDesk = () => {
   }, [session.tenant_id, session]);
 
   const stats = useMemo(() => {
-    const active = promotions.filter((p) => p.status === "active").length;
+    const active = (Array.isArray(promotions) ? promotions : []).filter((p) => p.status === "active").length;
     const marginImpact = -2.4; // Mocked aggregate impact
-    const pending = promotions.filter((p) => p.status === "draft").length;
+    const pending = (Array.isArray(promotions) ? promotions : []).filter((p) => p.status === "draft").length;
 
     return { active, marginImpact, pending };
   }, [promotions]);

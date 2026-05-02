@@ -83,7 +83,7 @@ export default function SalesOrderDesk() {
     try {
       setLoadingOpps(true);
       const data = await salesService.listOpportunities(session.tenant_id, session);
-      setOpps(data.filter(o => o.stage !== "CLOSED_WON" && o.stage !== "CLOSED_LOST"));
+      setOpps((Array.isArray(data) ? data : []).filter(o => o.stage !== "CLOSED_WON" && o.stage !== "CLOSED_LOST"));
     } catch (err) {
       console.error("Failed to fetch opportunities:", err);
     } finally {
@@ -109,7 +109,7 @@ export default function SalesOrderDesk() {
   };
 
   const filtered = useMemo(() => 
-    orders.filter((order) =>
+    (Array.isArray(orders) ? orders : []).filter((order) =>
       search
         ? `${order.id} ${order.customerName} ${order.status} ${order.inventoryCheck}`
             .toLowerCase()

@@ -66,7 +66,7 @@ export default function ManagerDesk() {
 
   const filteredOpportunities = useMemo(
     () =>
-      opportunities.filter((item) =>
+      (Array.isArray(opportunities) ? opportunities : []).filter((item) =>
         search
           ? `${item.accountName} ${item.ownerName} ${item.stage}`
               .toLowerCase()

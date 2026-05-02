@@ -60,7 +60,7 @@ export default function ContractDesk() {
 
   const filteredContracts = useMemo(
     () =>
-      contracts.filter((item) =>
+      (Array.isArray(contracts) ? contracts : []).filter((item) =>
         search
           ? `${item.id} ${item.requisitionId} ${item.supplierId}`
               .toLowerCase()
@@ -198,16 +198,16 @@ export default function ContractDesk() {
           <div className="rounded-lg border p-3">
             <p className="text-xs text-muted-foreground">Legal Approved</p>
             <p className="text-lg font-semibold">
-              {contracts.filter((item) => item.status === "LEGAL_APPROVED" || item.status === "SIGNED" || item.status === "PARTIAL_SIGNED").length}
+              {(Array.isArray(contracts) ? contracts : []).filter((item) => item.status === "LEGAL_APPROVED" || item.status === "SIGNED" || item.status === "PARTIAL_SIGNED").length}
             </p>
           </div>
           <div className="rounded-lg border p-3">
             <p className="text-xs text-muted-foreground">Signed</p>
-            <p className="text-lg font-semibold">{contracts.filter((item) => item.status === "SIGNED").length}</p>
+            <p className="text-lg font-semibold">{(Array.isArray(contracts) ? contracts : []).filter((item) => item.status === "SIGNED").length}</p>
           </div>
           <div className="rounded-lg border p-3">
             <p className="text-xs text-muted-foreground">Pending Legal Review</p>
-            <p className="text-lg font-semibold">{contracts.filter((item) => item.status === "LEGAL_REVIEW").length}</p>
+            <p className="text-lg font-semibold">{(Array.isArray(contracts) ? contracts : []).filter((item) => item.status === "LEGAL_REVIEW").length}</p>
           </div>
         </div>
       </WorkspacePanel>

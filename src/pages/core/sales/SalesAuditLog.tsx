@@ -58,7 +58,7 @@ export default function SalesAuditLog() {
   }, [refresh]);
 
   const filtered = useMemo(() => 
-    events.filter((item) =>
+    (Array.isArray(events) ? events : []).filter((item) =>
       search
         ? `${item.action} ${item.entityType} ${item.entityId} ${item.actorId} ${item.detail}`
             .toLowerCase()

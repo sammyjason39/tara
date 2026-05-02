@@ -39,7 +39,7 @@ export default function InvoiceCapture() {
 
   const filteredInvoices = useMemo(
     () =>
-      invoices.filter((invoice) => {
+      (Array.isArray(invoices) ? invoices : []).filter((invoice) => {
         const searchMatch = search
           ? invoice.vendor.toLowerCase().includes(search.toLowerCase())
           : true;

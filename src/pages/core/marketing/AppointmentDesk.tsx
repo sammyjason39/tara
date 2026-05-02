@@ -141,7 +141,7 @@ export default function AppointmentDesk() {
 
   const todayApts = useMemo(() => {
     const today = new Date().toDateString();
-    return appointments.filter(a => new Date(a.scheduled_at).toDateString() === today);
+    return (Array.isArray(appointments) ? appointments : []).filter(a => new Date(a.scheduled_at).toDateString() === today);
   }, [appointments]);
 
   if (loading) {
@@ -441,11 +441,11 @@ export default function AppointmentDesk() {
                  <div className="space-y-8">
                     <div className="flex justify-between items-end border-b border-white/5 pb-6">
                        <p className="text-sm font-black uppercase tracking-widest opacity-40 italic">Active Bookings</p>
-                       <p className="text-5xl font-black tracking-tighter italic">{appointments.filter(a => a.status === 'SCHEDULED').length}</p>
+                       <p className="text-5xl font-black tracking-tighter italic">{(Array.isArray(appointments) ? appointments : []).filter(a => a.status === 'SCHEDULED').length}</p>
                     </div>
                     <div className="flex justify-between items-end">
                        <p className="text-sm font-black uppercase tracking-widest opacity-40 italic">Completed Protocols</p>
-                       <p className="text-5xl font-black tracking-tighter text-emerald-400 italic">{appointments.filter(a => a.status === 'COMPLETED').length}</p>
+                       <p className="text-5xl font-black tracking-tighter text-emerald-400 italic">{(Array.isArray(appointments) ? appointments : []).filter(a => a.status === 'COMPLETED').length}</p>
                     </div>
                  </div>
                  <div className="h-3 w-full bg-white/5 rounded-full overflow-hidden shadow-inner p-0.5">

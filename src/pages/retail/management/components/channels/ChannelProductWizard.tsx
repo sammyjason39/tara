@@ -81,7 +81,7 @@ export const ChannelProductWizard: React.FC<Props> = ({
 
   // --- Filtering ---
   const filteredProducts = useMemo(() => {
-    return products.filter(p => {
+    return (Array.isArray(products) ? products : []).filter(p => {
       const matchCat = selectedCats.includes(p.category_id);
       const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           p.sku.toLowerCase().includes(searchQuery.toLowerCase());
@@ -92,7 +92,7 @@ export const ChannelProductWizard: React.FC<Props> = ({
   // --- Handlers ---
   const toggleStep1 = (catId: string) => {
     setSelectedCats(prev => 
-      prev.includes(catId) ? prev.filter(id => id !== catId) : [...prev, catId]
+      prev.includes(catId) ? (Array.isArray(prev) ? prev : []).filter(id => id !== catId) : [...prev, catId]
     );
   };
 
@@ -211,7 +211,7 @@ export const ChannelProductWizard: React.FC<Props> = ({
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-black italic uppercase text-slate-900">{cat.name}</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{products.filter(p => p.category_id === cat.id).length} Items Available</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{(Array.isArray(products) ? products : []).filter(p => p.category_id === cat.id).length} Items Available</p>
                 </div>
                 <Checkbox checked={selectedCats.includes(cat.id)} className="rounded-full h-5 w-5" />
               </Card>
@@ -285,7 +285,7 @@ export const ChannelProductWizard: React.FC<Props> = ({
             </div>
 
             <div className="divide-y border-y">
-              {filteredProducts.filter(p => selectedProds[p.id]?.visible).map((p) => (
+              {(Array.isArray(filteredProducts) ? filteredProducts : []).filter(p => selectedProds[p.id]?.visible).map((p) => (
                 <div key={p.id} className="py-6 flex items-center gap-8 group">
                   <div className="flex-1 space-y-1">
                     <p className="text-sm font-black italic uppercase">{p.name}</p>
@@ -305,7 +305,7 @@ export const ChannelProductWizard: React.FC<Props> = ({
                   </div>
                 </div>
               ))}
-              {filteredProducts.filter(p => selectedProds[p.id]?.visible).length === 0 && (
+              {(Array.isArray(filteredProducts) ? filteredProducts : []).filter(p => selectedProds[p.id]?.visible).length === 0 && (
                 <div className="text-center py-12">
                    <p className="text-xs font-black italic text-slate-400 uppercase tracking-widest">No items selected for visibility</p>
                 </div>

@@ -57,7 +57,7 @@ export default function PoReleaseDesk() {
 
   const filteredRequisitions = useMemo(
     () =>
-      requisitions.filter((item) =>
+      (Array.isArray(requisitions) ? requisitions : []).filter((item) =>
         search
           ? `${item.id} ${item.title} ${item.status}`.toLowerCase().includes(search.toLowerCase())
           : true,
@@ -67,7 +67,7 @@ export default function PoReleaseDesk() {
 
   const filteredDrafts = useMemo(
     () =>
-      drafts.filter((item) =>
+      (Array.isArray(drafts) ? drafts : []).filter((item) =>
         search
           ? `${item.id} ${item.requisitionId} ${item.status}`.toLowerCase().includes(search.toLowerCase())
           : true,
@@ -77,7 +77,7 @@ export default function PoReleaseDesk() {
 
   const filteredFinalPos = useMemo(
     () =>
-      finalPos.filter((item) =>
+      (Array.isArray(finalPos) ? finalPos : []).filter((item) =>
         search
           ? `${item.id} ${item.requisitionId} ${item.status}`.toLowerCase().includes(search.toLowerCase())
           : true,

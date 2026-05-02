@@ -106,7 +106,7 @@ export default function CoreDashboard() {
 
   const filteredActivities = useMemo(
     () =>
-      activities.filter((item) =>
+      (Array.isArray(activities) ? activities : []).filter((item) =>
         search
           ? `${item.title} ${item.detail} ${item.status}`
                .toLowerCase()

@@ -84,7 +84,7 @@ export default function MarketingAnalytics() {
 
   const filteredCampaigns = useMemo(
     () =>
-      campaigns.filter((item) =>
+      (Array.isArray(campaigns) ? campaigns : []).filter((item) =>
         search
           ? `${item.name} ${item.objective} ${item.status}`
               .toLowerCase()

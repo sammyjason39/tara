@@ -62,7 +62,7 @@ export default function SupplierPortalDesk() {
 
   const filtered = useMemo(
     () =>
-      messages.filter((item) =>
+      (Array.isArray(messages) ? messages : []).filter((item) =>
         search
           ? `${item.type} ${item.content} ${item.supplierId}`.toLowerCase().includes(search.toLowerCase())
           : true,
@@ -213,7 +213,7 @@ export default function SupplierPortalDesk() {
                         <SelectValue placeholder="Select Location" />
                       </SelectTrigger>
                       <SelectContent>
-                        {branches.filter(b => !supplierId || b.supplierId === supplierId).map(b => (
+                        {(Array.isArray(branches) ? branches : []).filter(b => !supplierId || b.supplierId === supplierId).map(b => (
                           <SelectItem key={b.id} value={b.id}>{b.branchCode} - {b.branchName}</SelectItem>
                         ))}
                       </SelectContent>

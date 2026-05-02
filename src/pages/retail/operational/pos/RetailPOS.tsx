@@ -70,7 +70,7 @@ export default function RetailPOS() {
   ];
 
   const filteredInventory = useMemo(() => {
-    return INVENTORY.filter((item) => {
+    return (Array.isArray(INVENTORY) ? INVENTORY : []).filter((item) => {
       const matchesSearch = item.name
         .toLowerCase()
         .includes(searchQuery.toLowerCase());

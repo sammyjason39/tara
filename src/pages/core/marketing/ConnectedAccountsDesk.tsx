@@ -180,7 +180,7 @@ export default function ConnectedAccountsDesk() {
       {/* Grid Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
-          { label: 'Active Links', val: accounts.filter(a => a.status === 'CONNECTED').length, icon: Link2, color: 'text-indigo-600' },
+          { label: 'Active Links', val: (Array.isArray(accounts) ? accounts : []).filter(a => a.status === 'CONNECTED').length, icon: Link2, color: 'text-indigo-600' },
           { label: 'Data Sync Rate', val: '99.9%', icon: RefreshCw, color: 'text-emerald-500' },
           { label: 'Sync Latency', val: '142ms', icon: Activity, color: 'text-amber-500' },
           { label: 'Verified Scopes', val: '24', icon: ShieldCheck, color: 'text-blue-500' },

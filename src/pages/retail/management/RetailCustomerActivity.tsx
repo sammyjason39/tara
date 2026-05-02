@@ -60,7 +60,7 @@ export function RetailCustomerActivity({
   }, [session.tenantId]);
 
   const filteredCustomers = useMemo(() => {
-    return customers.filter(
+    return (Array.isArray(customers) ? customers : []).filter(
       (c) =>
         c.name.toLowerCase().includes(search.toLowerCase()) ||
         c.email?.toLowerCase().includes(search.toLowerCase()) ||

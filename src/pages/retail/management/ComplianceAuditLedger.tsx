@@ -90,7 +90,7 @@ const ComplianceAuditLedger = () => {
   const filteredLogs = useMemo(() => {
     if (!searchTerm.trim()) return logs;
     const q = searchTerm.toLowerCase();
-    return logs.filter(
+    return (Array.isArray(logs) ? logs : []).filter(
       (l) =>
         (l.action || "").toLowerCase().includes(q) ||
         (l.user_id || "").toLowerCase().includes(q) ||

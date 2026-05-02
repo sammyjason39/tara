@@ -102,11 +102,11 @@ export const OrderRacetrack: React.FC<OrderRacetrackProps> = ({
     const statusFiltered =
       !tab || tab.statuses.length === 0
         ? orders
-        : orders.filter((o) => tab.statuses.includes(o.status as OrderStatus));
+        : (Array.isArray(orders) ? orders : []).filter((o) => tab.statuses.includes(o.status as OrderStatus));
 
     if (!search.trim()) return statusFiltered;
     const q = search.toLowerCase();
-    return statusFiltered.filter(
+    return (Array.isArray(statusFiltered) ? statusFiltered : []).filter(
       (o) =>
         o.id.toLowerCase().includes(q) ||
         (o.customerName || "").toLowerCase().includes(q) ||
@@ -118,7 +118,7 @@ export const OrderRacetrack: React.FC<OrderRacetrackProps> = ({
   const tabCount = useMemo(() => {
     const counts: Record<string, number> = { ALL: orders.length };
     for (const tab of TABS.slice(1)) {
-      counts[tab.key] = orders.filter((o) =>
+      counts[tab.key] = (Array.isArray(orders) ? orders : []).filter((o) =>
         tab.statuses.includes(o.status as OrderStatus),
       ).length;
     }

@@ -48,7 +48,7 @@ export default function SkillTrack() {
     loadData();
   }, [session.tenant_id, session, version]);
 
-  const filteredAssignments = assignments.filter((assignment) =>
+  const filteredAssignments = (Array.isArray(assignments) ? assignments : []).filter((assignment) =>
     search ? assignment.employeeId.toLowerCase().includes(search.toLowerCase()) : true,
   );
 

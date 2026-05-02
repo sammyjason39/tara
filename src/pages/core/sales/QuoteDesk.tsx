@@ -103,9 +103,9 @@ export default function QuoteDesk() {
   const filtered = useMemo(() => {
     let result = quotes;
     if (statusFilter !== "ALL") {
-      result = result.filter(q => q.status === statusFilter);
+      result = (Array.isArray(result) ? result : []).filter(q => q.status === statusFilter);
     }
-    return result.filter((item) =>
+    return (Array.isArray(result) ? result : []).filter((item) =>
       search
         ? `${item.id} ${item.accountName} ${item.status}`
             .toLowerCase()

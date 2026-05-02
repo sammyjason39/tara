@@ -243,13 +243,13 @@ export default function FlowGate() {
           <div className="rounded-lg border p-3">
             <p className="text-xs">Pending</p>
             <p className="text-lg font-semibold text-foreground">
-              {workflows.filter((flow) => flow.status === "PENDING").length}
+              {(Array.isArray(workflows) ? workflows : []).filter((flow) => flow.status === "PENDING").length}
             </p>
           </div>
           <div className="rounded-lg border p-3">
             <p className="text-xs">Returned</p>
             <p className="text-lg font-semibold text-foreground">
-              {workflows.filter((flow) => flow.status === "RETURNED").length}
+              {(Array.isArray(workflows) ? workflows : []).filter((flow) => flow.status === "RETURNED").length}
             </p>
           </div>
         </div>

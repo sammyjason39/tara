@@ -118,12 +118,12 @@ export default function OpportunityDesk() {
   const filtered = useMemo(() => {
     let result = opportunities;
     if (statusFilter === "WON") {
-      result = result.filter(op => op.stage === "CLOSED_WON");
+      result = (Array.isArray(result) ? result : []).filter(op => op.stage === "CLOSED_WON");
     } else if (statusFilter === "AT_RISK") {
-      result = result.filter(op => op.health === "HIGH_RISK" || op.health === "AT_RISK");
+      result = (Array.isArray(result) ? result : []).filter(op => op.health === "HIGH_RISK" || op.health === "AT_RISK");
     }
     
-    return result.filter((op) =>
+    return (Array.isArray(result) ? result : []).filter((op) =>
       search
         ? `${op.accountName} ${op.ownerName} ${op.stage} ${op.health}`
             .toLowerCase()
@@ -422,7 +422,7 @@ export default function OpportunityDesk() {
                   <div className="space-y-1">
                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Associated Quotes</p>
                      <div className="flex items-center gap-3 pt-1">
-                        <p className="text-xl font-black">{quotes.filter(q => q.opportunityId === selectedOpp?.id).length}</p>
+                        <p className="text-xl font-black">{(Array.isArray(quotes) ? quotes : []).filter(q => q.opportunityId === selectedOpp?.id).length}</p>
                         <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-600 border-none font-black text-[8px] uppercase tracking-widest">VALID RECORDS</Badge>
                      </div>
                   </div>

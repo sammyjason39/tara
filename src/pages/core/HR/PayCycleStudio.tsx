@@ -44,7 +44,7 @@ export default function PayCycleStudio() {
     loadData();
   }, [session.tenant_id, session, version]);
 
-  const filteredRuns = runs.filter((run) =>
+  const filteredRuns = (Array.isArray(runs) ? runs : []).filter((run) =>
     search ? run.id.toLowerCase().includes(search.toLowerCase()) : true,
   );
 
@@ -203,7 +203,7 @@ export default function PayCycleStudio() {
             <div className="flex items-center justify-between rounded-lg border p-3">
               <span>Pending approval</span>
               <span className="font-semibold text-foreground">
-                {workflows.filter((flow) => flow.status === "PENDING").length}
+                {(Array.isArray(workflows) ? workflows : []).filter((flow) => flow.status === "PENDING").length}
               </span>
             </div>
           </div>

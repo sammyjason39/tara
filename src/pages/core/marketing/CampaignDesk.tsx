@@ -113,7 +113,7 @@ export default function CampaignDesk() {
 
   const filtered = useMemo(
     () =>
-      campaigns.filter((item) =>
+      (Array.isArray(campaigns) ? campaigns : []).filter((item) =>
         search
           ? `${item.name} ${item.objective} ${item.status}`
               .toLowerCase()
@@ -230,7 +230,7 @@ export default function CampaignDesk() {
             </div>
             <div>
                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">ACTIVE PROTOCOLS</p>
-               <h4 className="text-3xl font-black">{campaigns.filter(c => c.status === 'ACTIVE').length}</h4>
+               <h4 className="text-3xl font-black">{(Array.isArray(campaigns) ? campaigns : []).filter(c => c.status === 'ACTIVE').length}</h4>
                <p className="text-[10px] font-bold text-slate-400 uppercase mt-1 italic">Cluster Execution Live</p>
             </div>
          </Card>

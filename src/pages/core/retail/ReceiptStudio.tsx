@@ -111,7 +111,7 @@ export default function ReceiptStudio() {
                 </div>
 
                 <div className="flex-1 space-y-4 font-mono text-black leading-tight text-[11px] uppercase">
-                   {components.filter(c => c.visible).sort((a, b) => a.order - b.order).map((comp) => (
+                   {(Array.isArray(components) ? components : []).filter(c => c.visible).sort((a, b) => a.order - b.order).map((comp) => (
                       <div key={comp.id} className={cn("relative", activeComponentId === comp.id && "bg-indigo-50/50 ring-2 ring-indigo-100 rounded p-2 -m-2")}>
                          {comp.type === 'header' && (
                             <div className={cn("space-y-1 py-2 flex flex-col", comp.config?.alignment === 'center' ? "items-center text-center" : "items-start text-left")}>

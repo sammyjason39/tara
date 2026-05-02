@@ -17,7 +17,7 @@ export default function RequestTrack() {
 
   const filtered = useMemo(
     () =>
-      items.filter((item) =>
+      (Array.isArray(items) ? items : []).filter((item) =>
         search ? item.title.toLowerCase().includes(search.toLowerCase()) : true,
       ),
     [search],

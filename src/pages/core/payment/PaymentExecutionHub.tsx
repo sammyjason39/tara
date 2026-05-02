@@ -77,7 +77,7 @@ export default function PaymentExecutionHub() {
 
   const filtered = useMemo(
     () =>
-      transactions.filter((item) =>
+      (Array.isArray(transactions) ? transactions : []).filter((item) =>
         search
           ? `${item.id} ${item.destination} ${item.type} ${item.status}`.toLowerCase().includes(search.toLowerCase())
           : true,

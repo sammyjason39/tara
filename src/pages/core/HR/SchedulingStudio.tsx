@@ -334,7 +334,7 @@ export default function SchedulingStudio() {
                   <SelectValue placeholder="Select relief professional" />
                 </SelectTrigger>
                 <SelectContent>
-                  {employees.filter(e => e.id !== selectedCell?.employeeId).map(e => (
+                  {(Array.isArray(employees) ? employees : []).filter(e => e.id !== selectedCell?.employeeId).map(e => (
                     <SelectItem key={e.id} value={e.id}>{e.fullName}</SelectItem>
                   ))}
                 </SelectContent>

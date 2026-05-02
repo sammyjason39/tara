@@ -71,7 +71,7 @@ export default function TreasuryMap() {
 
   const filteredSources = useMemo(
     () =>
-      sources.filter((src) =>
+      (Array.isArray(sources) ? sources : []).filter((src) =>
         search ? src.name.toLowerCase().includes(search.toLowerCase()) : true,
       ),
     [sources, search],

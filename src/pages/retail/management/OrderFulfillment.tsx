@@ -50,8 +50,8 @@ const OrderFulfillment = () => {
   }, [session.tenant_id, session]);
 
   const stats = useMemo(() => {
-    const pending = orders.filter((o) => o.status === "paid").length;
-    const priority = orders.filter((o) => o.totalAmount > 1000000).length;
+    const pending = (Array.isArray(orders) ? orders : []).filter((o) => o.status === "paid").length;
+    const priority = (Array.isArray(orders) ? orders : []).filter((o) => o.totalAmount > 1000000).length;
     return { pending, priority };
   }, [orders]);
 

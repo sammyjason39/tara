@@ -98,14 +98,14 @@ export default function LeadDesk() {
   const filtered = useMemo(() => {
     let result = leads;
     if (statusFilter === "QUALIFIED") {
-      result = result.filter(l => l.status === "QUALIFIED");
+      result = (Array.isArray(result) ? result : []).filter(l => l.status === "QUALIFIED");
     } else if (statusFilter === "SLA_DELINQUENT") {
       // Logic for SLA delinquent leads (e.g. status NEW and older than 24h)
       // For now, mapping to a feature expansion trigger since it's a complex logic
-      return result.filter(l => l.status === "NEW"); 
+      return (Array.isArray(result) ? result : []).filter(l => l.status === "NEW"); 
     }
     
-    return result.filter((lead) =>
+    return (Array.isArray(result) ? result : []).filter((lead) =>
       search
         ? `${lead.companyName} ${lead.contactName} ${lead.ownerName} ${lead.status}`
             .toLowerCase()

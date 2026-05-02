@@ -62,7 +62,7 @@ export default function DocumentTool() {
   useEffect(() => {
     const fetchDocs = async () => {
       const { files } = await listFileSystem(session);
-      setFiles(files.filter(f => f.type === "doc" || f.type === "zdoc" || f.type === "txt"));
+      setFiles((Array.isArray(files) ? files : []).filter(f => f.type === "doc" || f.type === "zdoc" || f.type === "txt"));
     };
     fetchDocs();
   }, [session, version]);
@@ -92,7 +92,7 @@ export default function DocumentTool() {
   const filteredFiles = useMemo(
     () => {
       if (!search) return files;
-      return files.filter((file) =>
+      return (Array.isArray(files) ? files : []).filter((file) =>
         file.name.toLowerCase().includes(search.toLowerCase())
       );
     },

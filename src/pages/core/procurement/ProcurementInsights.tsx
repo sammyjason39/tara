@@ -74,13 +74,13 @@ export default function ProcurementInsights() {
   }, [refresh]);
 
   const integrationMetrics = useMemo(() => {
-    const legalPending = legalHandoffs.filter((item) => item.status !== "CONTRACT_ACCEPTED").length;
-    const inventoryPending = goodsReceiptSyncs.filter((item) => item.status === "PENDING_RECEIPT").length;
-    const itPending = supplierAccess.filter((item) => item.status === "REQUESTED").length;
+    const legalPending = (Array.isArray(legalHandoffs) ? legalHandoffs : []).filter((item) => item.status !== "CONTRACT_ACCEPTED").length;
+    const inventoryPending = (Array.isArray(goodsReceiptSyncs) ? goodsReceiptSyncs : []).filter((item) => item.status === "PENDING_RECEIPT").length;
+    const itPending = (Array.isArray(supplierAccess) ? supplierAccess : []).filter((item) => item.status === "REQUESTED").length;
     const slaBreached =
-      legalHandoffs.filter(isLegalSlaBreached).length +
-      goodsReceiptSyncs.filter(isInventorySlaBreached).length +
-      supplierAccess.filter(isProvisioningSlaBreached).length;
+      (Array.isArray(legalHandoffs) ? legalHandoffs : []).filter(isLegalSlaBreached).length +
+      (Array.isArray(goodsReceiptSyncs) ? goodsReceiptSyncs : []).filter(isInventorySlaBreached).length +
+      (Array.isArray(supplierAccess) ? supplierAccess : []).filter(isProvisioningSlaBreached).length;
     
     return {
       legal: { count: legalPending, icon: ShieldAlert, color: "rose", label: "Legal Handoffs" },

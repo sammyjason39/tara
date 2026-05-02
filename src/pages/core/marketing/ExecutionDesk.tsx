@@ -118,7 +118,7 @@ export default function ExecutionDesk() {
 
   const filtered = useMemo(
     () =>
-      executions.filter((item) =>
+      (Array.isArray(executions) ? executions : []).filter((item) =>
         search
           ? `${item.id} ${item.channel} ${item.status}`.toLowerCase().includes(search.toLowerCase())
           : true,

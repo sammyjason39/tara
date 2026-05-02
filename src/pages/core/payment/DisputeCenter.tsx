@@ -37,7 +37,7 @@ export default function DisputeCenter() {
     fetchData();
   }, [refreshKey, session]);
 
-  const eligible = useMemo(() => transactions.filter((item) => item.status === "SETTLED"), [transactions]);
+  const eligible = useMemo(() => (Array.isArray(transactions) ? transactions : []).filter((item) => item.status === "SETTLED"), [transactions]);
 
   const nextStatus = (status: PaymentDispute["status"]): PaymentDispute["status"] => {
     if (status === "OPENED") return "EVIDENCE_ATTACHED";

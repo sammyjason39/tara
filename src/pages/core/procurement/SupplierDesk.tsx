@@ -102,7 +102,7 @@ export default function SupplierDesk() {
 
   const filteredMasters = useMemo(
     () =>
-      masters.filter((item) =>
+      (Array.isArray(masters) ? masters : []).filter((item) =>
         search
           ? `${item.name} ${item.taxId}`.toLowerCase().includes(search.toLowerCase())
           : true,

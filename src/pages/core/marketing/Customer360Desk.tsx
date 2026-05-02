@@ -96,7 +96,7 @@ export default function Customer360Desk() {
   };
 
   const filteredContacts = useMemo(() => {
-    return contacts.filter(c => 
+    return (Array.isArray(contacts) ? contacts : []).filter(c => 
       `${c.first_name} ${c.last_name} ${c.email}`.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [contacts, searchQuery]);

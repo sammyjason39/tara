@@ -31,7 +31,7 @@ export default function VaultSpace() {
       try {
         const items = await documentService.listVaultItems(session.tenant_id, session);
         const filtered = search
-          ? items.filter((item) => item.title.toLowerCase().includes(search.toLowerCase()))
+          ? (Array.isArray(items) ? items : []).filter((item) => item.title.toLowerCase().includes(search.toLowerCase()))
           : items;
         setDocuments(filtered);
 

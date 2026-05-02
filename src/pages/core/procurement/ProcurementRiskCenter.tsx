@@ -81,7 +81,7 @@ export default function ProcurementRiskCenter() {
 
   const filtered = useMemo(
     () =>
-      signals.filter((item) =>
+      (Array.isArray(signals) ? signals : []).filter((item) =>
         search
           ? `${item.code} ${item.detail} ${item.entityId}`
               .toLowerCase()
@@ -140,10 +140,10 @@ export default function ProcurementRiskCenter() {
   }, [goodsReceiptSyncs, legalHandoffs, supplierAccess]);
 
   const handoffSummary = useMemo(() => {
-    const legalPending = legalHandoffs.filter((item) => item.status !== "CONTRACT_ACCEPTED").length;
-    const inventoryPending = goodsReceiptSyncs.filter((item) => item.status === "PENDING_RECEIPT").length;
-    const itPending = supplierAccess.filter((item) => item.status === "REQUESTED").length;
-    const breached = handoffRows.filter((item) => item.slaBreached).length;
+    const legalPending = (Array.isArray(legalHandoffs) ? legalHandoffs : []).filter((item) => item.status !== "CONTRACT_ACCEPTED").length;
+    const inventoryPending = (Array.isArray(goodsReceiptSyncs) ? goodsReceiptSyncs : []).filter((item) => item.status === "PENDING_RECEIPT").length;
+    const itPending = (Array.isArray(supplierAccess) ? supplierAccess : []).filter((item) => item.status === "REQUESTED").length;
+    const breached = (Array.isArray(handoffRows) ? handoffRows : []).filter((item) => item.slaBreached).length;
     return { legalPending, inventoryPending, itPending, breached };
   }, [goodsReceiptSyncs, handoffRows, legalHandoffs, supplierAccess]);
 

@@ -68,7 +68,7 @@ export default function InventoryReceiving() {
 
   const filteredQueue = useMemo(
     () =>
-      queue.filter((po) =>
+      (Array.isArray(queue) ? queue : []).filter((po) =>
         search
           ? `${po.title} ${po.supplierName} ${po.status} ${po.id}`
               .toLowerCase()
@@ -91,7 +91,7 @@ export default function InventoryReceiving() {
       setErrorMessage("Please specify a location ID for stock intake.");
       return;
     }
-    const validItems = receiveItems.filter((i) => i.sku.trim() && i.quantity > 0);
+    const validItems = (Array.isArray(receiveItems) ? receiveItems : []).filter((i) => i.sku.trim() && i.quantity > 0);
     if (validItems.length === 0) {
       setErrorMessage("Please add at least one item with a SKU and quantity.");
       return;
