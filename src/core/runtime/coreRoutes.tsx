@@ -143,12 +143,6 @@ import { DeptAdmin } from "@/components/shared/DeptAdmin";
  * - Always accessible (permissions handled elsewhere)
  * - Derived from resolver only
  */
-const TestComponent = () => (
-  <div id="test-root" className="p-20 bg-rose-500 text-white font-black text-4xl">
-    ROUTING VERIFIED: IT ROLES TARGET REACHED
-  </div>
-);
-
 export function buildCoreRoutes(): JSX.Element[] {
   const pages = resolveCorePages();
   const defaultPage = pages.find((page) => page.id === "dashboard") ?? pages[0];
