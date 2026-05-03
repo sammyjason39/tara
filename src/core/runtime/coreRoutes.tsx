@@ -692,7 +692,15 @@ export function buildCoreRoutes(): JSX.Element[] {
         }
       />
       <Route
-        path="incentives"
+        path="customers"
+        element={
+          <ProtectedRoute permission="core.sales.access" scope="COMPANY">
+            <Customer360Desk />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="commissions"
         element={
           <ProtectedRoute permission="core.sales.access" scope="COMPANY">
             <IncentiveDesk />
