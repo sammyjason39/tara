@@ -575,7 +575,7 @@ export function buildCoreRoutes(): JSX.Element[] {
         }
       />
       <Route
-        path="role-governance"
+        path="roles"
         element={
           <ProtectedRoute permission="core.it.access" scope="COMPANY">
             <RoleGovernance />
