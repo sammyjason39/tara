@@ -180,7 +180,7 @@ export class InventoryController {
     @Res() res: Response,
   ) {
     const path = await this.itemImageService.getImagePath(fileName);
-    return res.sendFile(path);
+    res.sendFile(path);
   }
 
   @Post("items")

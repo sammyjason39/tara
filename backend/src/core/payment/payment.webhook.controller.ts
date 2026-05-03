@@ -16,7 +16,8 @@ export class PaymentWebhookController {
     @Res() res: Response
   ) {
     if (!signature) {
-      return res.status(400).send("No signature provided");
+      res.status(400).send("No signature provided");
+      return;
     }
 
     // Usually webhooks don't have a single tenant context in the header, 

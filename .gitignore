@@ -44,3 +44,4 @@ frontend/dist/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+graphify-out/

@@ -32,8 +32,8 @@ async function bootstrap() {
 
   const loggerService = app.get(LoggerService);
   
-  // 1. Global Prefix
-  app.setGlobalPrefix("v1");
+  // 1. Global Prefix (Disabled for frontend compatibility)
+  // app.setGlobalPrefix("v1");
 
   // 2. Enable Graceful Shutdown
   app.enableShutdownHooks();

@@ -20,7 +20,7 @@ export class DecimalSerializationInterceptor implements NestInterceptor {
     return next.handle().pipe(map((data) => this.transform(data)));
   }
 
-  private transform(data: any): any {
+  private transform(data: any, visited = new WeakSet()): any {
     if (data === null || data === undefined) {
       return data;
     }
@@ -29,15 +29,20 @@ export class DecimalSerializationInterceptor implements NestInterceptor {
       return data.toNumber();
     }
 
-    if (Array.isArray(data)) {
-      return data.map((item) => this.transform(item));
-    }
-
     if (typeof data === "object") {
+      if (visited.has(data)) {
+        return "[Circular]";
+      }
+      visited.add(data);
+
+      if (Array.isArray(data)) {
+        return data.map((item) => this.transform(item, visited));
+      }
+
       const transformed: any = {};
       for (const key in data) {
         if (Object.prototype.hasOwnProperty.call(data, key)) {
-          transformed[key] = this.transform(data[key]);
+          transformed[key] = this.transform(data[key], visited);
         }
       }
       return transformed;

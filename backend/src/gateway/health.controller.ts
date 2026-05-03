@@ -15,7 +15,7 @@ export class HealthController {
    */
   @Get("health")
   async getHealth(@Res() res: Response) {
-    return res.status(HttpStatus.OK).json({
+    res.status(HttpStatus.OK).json({
       status: "up",
       timestamp: new Date().toISOString(),
     });
@@ -30,13 +30,13 @@ export class HealthController {
       // Simple query to check DB connection
       await this.prisma.$queryRaw`SELECT 1`;
 
-      return res.status(HttpStatus.OK).json({
+      res.status(HttpStatus.OK).json({
         status: "ready",
         database: "connected",
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      return res.status(HttpStatus.SERVICE_UNAVAILABLE).json({
+      res.status(HttpStatus.SERVICE_UNAVAILABLE).json({
         status: "not_ready",
         database: "disconnected",
         error: error.message,
