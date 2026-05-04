@@ -151,9 +151,9 @@ const InventoryVisibility = () => {
     session?.role || "",
   );
 
-  const tenantId = session?.tenantId;
-  const userId = session?.userId;
-  const locationId = selectedStore?.locationId;
+  const tenantId = session?.tenant_id;
+  const userId = session?.user_id;
+  const locationId = session?.location_id || selectedStore?.locationId;
 
   const isFetchingRef = React.useRef(false);
   const fetchInventory = useCallback(async () => {
