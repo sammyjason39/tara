@@ -181,8 +181,8 @@ const StaffAssignments = () => {
 
   const filteredStaff = (Array.isArray(staff) ? staff : []).filter(
     (s) =>
-      s.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.roleTitle.toLowerCase().includes(searchQuery.toLowerCase()),
+      (s.fullName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (s.roleTitle || "").toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
