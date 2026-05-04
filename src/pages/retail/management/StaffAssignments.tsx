@@ -68,34 +68,30 @@ const StaffAssignments = () => {
     session,
   );
 
+  const fetchData = useCallback(async () => {
+    if (!session.tenant_id) return;
+    try {
+      setIsLoading(true);
+      const [staffData, shiftsData] = await Promise.all([
+        hrService.listEmployees(
+          session.tenant_id,
+          session,
+          session.location_id,
+        ),
+        retailService.listShifts(session.tenant_id, session)
+      ]);
+      setStaff(staffData);
+      setActiveShifts((Array.isArray(shiftsData) ? shiftsData : []).filter(s => s.status === "active"));
+    } catch (error) {
+      console.error("Failed to fetch staff", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [session.tenant_id, session.location_id, session]);
+
   useEffect(() => {
-    const fetchData = async () => {
-      if (!session.tenant_id) return;
-      try {
-        setIsLoading(true);
-        const [staffData, shiftsData] = await Promise.all([
-          hrService.listEmployees(
-            session.tenant_id,
-            session,
-            session.location_id,
-          ),
-          retailService.listShifts(session.tenant_id, session)
-        ]);
-        setStaff(staffData);
-        setActiveShifts((Array.isArray(shiftsData) ? shiftsData : []).filter(s => s.status === "active"));
-      } catch (error) {
-        console.error("Failed to fetch staff", error);
-        toast({
-          title: "Error",
-          description: "Failed to load staff data. Please try again.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchData();
-  }, [session.tenant_id, session.location_id, session, toast]);
+  }, [fetchData]);
 
   const handleDelete = async (id: string) => {
     if (
@@ -363,13 +359,14 @@ const StaffAssignments = () => {
                           >
                             <td className="px-8 py-5">
                               <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center font-black italic text-indigo-600 text-sm shadow-inner group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                                  {s.fullName
-                                    .split(" ")
-                                    .map((n) => n[0])
-                                    .join("")
-                                    .slice(0, 2)}
-                                </div>
+                                  <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center font-black italic text-indigo-600 text-sm shadow-inner group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                                    {(s.fullName || "")
+                                      .split(" ")
+                                      .filter(Boolean)
+                                      .map((n) => n[0])
+                                      .join("")
+                                      .slice(0, 2)}
+                                  </div>
                                 <div>
                                   <div className="font-black italic text-sm text-slate-900 group-hover:text-blue-600 transition-colors">
                                     {s.fullName}

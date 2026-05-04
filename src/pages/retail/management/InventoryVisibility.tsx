@@ -155,8 +155,11 @@ const InventoryVisibility = () => {
   const userId = session?.userId;
   const locationId = selectedStore?.locationId;
 
+  const isFetchingRef = React.useRef(false);
   const fetchInventory = useCallback(async () => {
-    if (!tenantId || !session) return;
+    if (!tenantId || !session || isFetchingRef.current) return;
+    
+    isFetchingRef.current = true;
     setIsLoading(true);
     try {
       const data = await retailService.listInventory(tenantId, session, {
@@ -168,10 +171,15 @@ const InventoryVisibility = () => {
         locationId: locationId,
       });
 
-      const items = data;
+      if (!data) {
+        setInventory([]);
+        return;
+      }
+
+      const items = Array.isArray(data) ? data : (data as any).items || [];
       const totalCount = data.meta?.total ?? items.length;
 
-      const mapped: InventoryItemView[] = (Array.isArray(items) ? items : []).map((p) => ({
+      const mapped: InventoryItemView[] = items.map((p: any) => ({
         id: p.id,
         sku: p.sku,
         name: p.name,
@@ -192,25 +200,23 @@ const InventoryVisibility = () => {
       setTotalItems(totalCount);
 
       const sData = await retailService.getInventoryStats(tenantId, session);
-      setStats({
-        totalSKUs: sData.totalItems ?? 0,
-        totalSOH: sData.totalSOH ?? 0,
-        totalATS: sData.totalATS ?? 0,
-        critical: sData.critical ?? 0,
-        low: sData.lowStock ?? 0,
-        totalValue: sData.totalValue,
-      });
+      if (sData) {
+        setStats({
+          totalSKUs: sData.totalItems ?? 0,
+          totalSOH: sData.totalSOH ?? 0,
+          totalATS: sData.totalATS ?? 0,
+          critical: sData.critical ?? 0,
+          low: sData.lowStock ?? 0,
+          totalValue: sData.totalValue,
+        });
+      }
 
       setLastSync(new Date().toLocaleTimeString());
     } catch (err) {
       console.error(err);
-      toast({
-        title: "Fetch Failed",
-        description: "Could not sync inventory data.",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
+      isFetchingRef.current = false;
     }
   }, [
     tenantId,
@@ -220,7 +226,6 @@ const InventoryVisibility = () => {
     filters.type,
     locationId,
     page,
-    toast,
   ]);
 
   const fetchPendingItems = useCallback(async () => {
