@@ -9,13 +9,44 @@ import { TenantContext } from '../../../gateway/tenant-context.interface';
 import { IJVRepository } from '../repositories/interfaces/jv.repository.interface';
 import { PrismaService } from '../../../persistence/prisma.service';
 
+import { JVReportingService } from '../services/jv-reporting.service';
+
 @Controller('finance/jv')
 @UseGuards(TenantGuard, RolesGuard)
 export class JVController {
   constructor(
     @Inject('IJVRepository') private readonly jvRepo: IJVRepository,
-    private readonly prisma: PrismaService
+    private readonly prisma: PrismaService,
+    private readonly reportingService: JVReportingService
   ) {}
+
+  @Get('ledger')
+  async getLedger(@TenantCtx() ctx: TenantContext) {
+    return this.jvRepo.getLedgerEntries(ctx.tenant_id, {});
+  }
+
+  @Get('settlement')
+  async getSettlement(@TenantCtx() ctx: TenantContext) {
+    // Basic aggregation for current month
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+
+    // Get all participants for the tenant
+    const participations = await this.jvRepo.findParticipation(ctx.tenant_id, "");
+    
+    const settlements = await Promise.all(participations.map(async (p) => {
+      const summary = await this.reportingService.getParticipantMTD(ctx.tenant_id, p.id, month, year);
+      return {
+        participant_name: p.jv_profiles?.name || 'Unknown Partner',
+        gross_revenue: summary.debits,
+        cost_burden: summary.credits,
+        net_payable: summary.total_allocated
+      };
+    }));
+
+    return settlements;
+  }
 
   @Get('profiles')
   async getProfiles(@TenantCtx() ctx: TenantContext) {

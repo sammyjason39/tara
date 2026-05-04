@@ -93,6 +93,50 @@ export class FinanceService {
     return this.financeRepository.listPayments(ctx);
   }
 
+  async listReceivables(ctx: TenantContext) {
+    return this.financeRepository.listReceivables(ctx);
+  }
+
+  async listPayables(ctx: TenantContext) {
+    return this.financeRepository.listPayables(ctx);
+  }
+
+  async listJournals(ctx: TenantContext) {
+    // Standardizing on 'ledger' as the repository method for journals
+    return this.financeRepository.getLedger(ctx);
+  }
+
+  async listInvoices(ctx: TenantContext) {
+    // Aggregated view of both AR and AP invoices
+    const [ar, ap] = await Promise.all([
+      this.financeRepository.listReceivables(ctx),
+      this.financeRepository.listPayables(ctx)
+    ]);
+
+    // Map to a common Invoice interface
+    const arInvoices = ar.map(i => ({
+      id: i.id,
+      vendor: i.customerName, // Map customer as vendor for unified view
+      amount: i.amount,
+      invoiceDate: i.dueDate, // Use due date as placeholder if date is missing
+      dueDate: i.dueDate,
+      status: i.status,
+      kind: 'RECEIVABLE'
+    }));
+
+    const apInvoices = ap.map(i => ({
+      id: i.id,
+      vendor: i.vendorName,
+      amount: i.amount,
+      invoiceDate: i.dueDate,
+      dueDate: i.dueDate,
+      status: i.status,
+      kind: 'PAYABLE'
+    }));
+
+    return [...arInvoices, ...apInvoices];
+  }
+
   async updateMoneySource(ctx: TenantContext, id: string, updates: any) {
     this.logger.log(`[FinanceService] Updating money source ${id} for tenant ${ctx.tenant_id}`);
     const updated = await this.financeRepository.updateMoneySource(ctx, id, updates);

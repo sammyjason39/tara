@@ -166,4 +166,24 @@ export class FinanceController {
   async listPolicies(@TenantCtx() ctx: TenantContext) {
     return this.financeService.listPolicies(ctx);
   }
+
+  @Get('payables')
+  async listPayables(@TenantCtx() ctx: TenantContext) {
+    return this.financeService.listPayables(ctx);
+  }
+
+  @Get('receivables')
+  async listReceivables(@TenantCtx() ctx: TenantContext) {
+    return this.financeService.listReceivables(ctx);
+  }
+
+  @Get('ledger')
+  async listJournals(@TenantCtx() ctx: TenantContext) {
+    return this.financeService.listJournals(ctx);
+  }
+
+  @Get('invoices')
+  async listInvoices(@TenantCtx() ctx: TenantContext) {
+    return this.financeService.listInvoices(ctx);
+  }
 }

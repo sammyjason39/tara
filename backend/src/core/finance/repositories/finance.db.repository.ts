@@ -380,7 +380,7 @@ export class FinanceDbRepository extends IFinanceRepository {
   // Money Sources
   async listMoneySources(ctx: TenantContext): Promise<FinanceMoneySourceRow[]> {
     const sources = await this.prisma.money_sources.findMany({
-      where: { ...MultiTenancyUtil.getScope(ctx) },
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true, excludeEcommerce: true }) },
     });
 
     const rows = sources.map((s: any) => ({
@@ -1233,7 +1233,7 @@ export class FinanceDbRepository extends IFinanceRepository {
 
   // Documents
   async listDocuments(ctx: TenantContext): Promise<FinanceDocumentRow[]> {
-    const docs = await this.prisma.finance_documents.findMany({ where: { ...MultiTenancyUtil.getScope(ctx) }, orderBy: { created_at: 'desc' } });
+    const docs = await this.prisma.finance_documents.findMany({ where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true, excludeEcommerce: true }) }, orderBy: { created_at: 'desc' } });
     return docs.map((d: any) => ({
       id: d.id,
       title: d.title,
@@ -1272,7 +1272,7 @@ export class FinanceDbRepository extends IFinanceRepository {
 
   // Policies
   async listPolicies(ctx: TenantContext): Promise<FinancePolicyRow[]> {
-    const policies = await this.prisma.finance_policies.findMany({ where: { ...MultiTenancyUtil.getScope(ctx) }, orderBy: { created_at: 'desc' } });
+    const policies = await this.prisma.finance_policies.findMany({ where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true, excludeEcommerce: true }) }, orderBy: { created_at: 'desc' } });
     return policies.map((p: any) => ({
       id: p.id,
       name: p.title,
@@ -1305,7 +1305,7 @@ export class FinanceDbRepository extends IFinanceRepository {
   // Insights & Alerts
   async getInsights(ctx: TenantContext): Promise<FinanceInsight[]> {
     const insights = await this.prisma.finance_insights.findMany({ 
-      where: { ...MultiTenancyUtil.getScope(ctx) }, 
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true, excludeEcommerce: true }) }, 
       orderBy: { created_at: 'desc' } 
     });
     return insights.map((i: any) => ({
@@ -1319,7 +1319,7 @@ export class FinanceDbRepository extends IFinanceRepository {
 
   async getAlerts(ctx: TenantContext): Promise<FinanceAlert[]> {
     const alerts = await this.prisma.finance_alerts.findMany({ 
-      where: { ...MultiTenancyUtil.getScope(ctx), status: "UNRESOLVED" }, 
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true, excludeEcommerce: true }), status: "UNRESOLVED" }, 
       orderBy: { created_at: 'desc' } 
     });
     return alerts.map((a: any) => ({
