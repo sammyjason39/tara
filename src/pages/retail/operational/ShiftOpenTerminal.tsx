@@ -44,7 +44,8 @@ const ShiftOpenTerminal = () => {
         session.tenant_id!,
         session,
         activeStore.id,
-        parseInt(openingCash) || 0
+        parseInt(openingCash) || 0,
+        "terminal-pos"
       );
       
       toast({ title: "Session Initialized", description: "Fiscal shift is now active." });
@@ -99,7 +100,7 @@ const ShiftOpenTerminal = () => {
               <div className="flex gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
                 <Fingerprint className="w-6 h-6 text-indigo-400 shrink-0" />
                 <div className="space-y-1">
-                  <p className="text-sm font-bold text-white uppercase tracking-tight">Staff Auth: {session.user_id.slice(0, 8)}</p>
+                  <p className="text-sm font-bold text-white uppercase tracking-tight">Staff Auth: {session.user_id?.slice(0, 8) || "UNVERIFIED"}</p>
                   <p className="text-xs text-slate-500 leading-relaxed">Session will be hard-linked to your employee signature.</p>
                 </div>
               </div>

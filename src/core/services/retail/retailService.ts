@@ -705,10 +705,12 @@ export const retailService = {
     session: SessionContext,
     storeId: string,
     openingCash: number,
+    terminalId: string = "terminal-pos"
   ) {
     return apiRequest<RetailShift>("/v1/retail/shifts/open", "POST", session, {
       store_id: storeId,
       opening_cash: openingCash,
+      terminal_id: terminalId,
     });
   },
 
