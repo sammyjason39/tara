@@ -69,12 +69,13 @@ export const retailService = {
     store: Partial<RetailStore>,
   ) {
     // Map frontend camelCase to backend snake_case for CreateStoreDto
+    // Support both if already mapped in caller
     const payload = {
       ...store,
-      location_id: store.locationId,
-      manager_id: store.managerId,
-      inventory_pool_id: store.inventoryPoolId,
-      tax_zone: store.taxZone,
+      location_id: (store as any).location_id || store.locationId,
+      manager_id: (store as any).manager_id || store.managerId,
+      inventory_pool_id: (store as any).inventory_pool_id || store.inventoryPoolId,
+      tax_zone: (store as any).tax_zone || store.taxZone,
     };
     return apiRequest<RetailStore>("/v1/retail/stores", "POST", session, payload);
   },
