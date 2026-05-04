@@ -21,35 +21,35 @@ import { useNavigate } from "react-router-dom";
 const ShiftOpenTerminal = () => {
   const session = useSession();
   const navigate = useNavigate();
-  const { activeStore, refreshShifts } = useRetail();
-  const { toast } = useToast();
+    const { activeStore, refreshState } = useRetail();
+    const { toast } = useToast();
+    
+    const [openingCash, setOpeningCash] = useState<string>("0");
+    const [isOpening, setIsOpening] = useState(false);
+    const [isAcknowledged, setIsAcknowledged] = useState(false);
   
-  const [openingCash, setOpeningCash] = useState<string>("0");
-  const [isOpening, setIsOpening] = useState(false);
-  const [isAcknowledged, setIsAcknowledged] = useState(false);
-
-  const handleOpenShift = async () => {
-    if (!activeStore?.id) {
-      toast({ title: "Store Missing", description: "Node identity not verified.", variant: "destructive" });
-      return;
-    }
-    if (!isAcknowledged) {
-      toast({ title: "Protocol Required", description: "Please acknowledge the fiscal responsibility protocol.", variant: "destructive" });
-      return;
-    }
-
-    setIsOpening(true);
-    try {
-      await retailService.openShift(
-        session.tenant_id!,
-        session,
-        activeStore.id,
-        parseInt(openingCash) || 0,
-        "terminal-pos"
-      );
-      
-      toast({ title: "Session Initialized", description: "Fiscal shift is now active." });
-      await refreshShifts();
+    const handleOpenShift = async () => {
+      if (!activeStore?.id) {
+        toast({ title: "Store Missing", description: "Node identity not verified.", variant: "destructive" });
+        return;
+      }
+      if (!isAcknowledged) {
+        toast({ title: "Protocol Required", description: "Please acknowledge the fiscal responsibility protocol.", variant: "destructive" });
+        return;
+      }
+  
+      setIsOpening(true);
+      try {
+        await retailService.openShift(
+          session.tenant_id!,
+          session,
+          activeStore.id,
+          parseInt(openingCash) || 0,
+          "terminal-pos"
+        );
+        
+        toast({ title: "Session Initialized", description: "Fiscal shift is now active." });
+        await refreshState();
       navigate("/m/retail/operational/gateway");
     } catch (error: any) {
       console.error("Failed to open shift", error);
