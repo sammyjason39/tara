@@ -66,7 +66,7 @@ export class RetailDbRepository implements IRetailRepository {
   async listStores(ctx: TenantContext,
     location_id?: string,
   ): Promise<RetailStore[]> {
-    const where: any = { ...MultiTenancyUtil.getScope(ctx), deleted_at: null };
+    const where: any = { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), deleted_at: null };
     if (location_id) where.location_id = location_id;
 
     const store = await this.prisma.stores.findMany({
@@ -87,7 +87,7 @@ export class RetailDbRepository implements IRetailRepository {
     store_id: string,
   ): Promise<RetailStore | null> {
     const store = await this.prisma.stores.findFirst({
-      where: { id: store_id, ...MultiTenancyUtil.getScope(ctx), deleted_at: null },
+      where: { id: store_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), deleted_at: null },
     });
     return store ? this.mapStore(store) : null;
   }
@@ -125,7 +125,7 @@ export class RetailDbRepository implements IRetailRepository {
           data: {
             id: uuidv4(),
             updated_at: new Date(),
-            ...MultiTenancyUtil.getScope(ctx),
+            ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
             location_id: finalLocationId,
             name: data.name,
             code: data.code,
@@ -157,14 +157,14 @@ export class RetailDbRepository implements IRetailRepository {
     data: UpdateStoreDto,
   ): Promise<RetailStore> {
     const existing = await this.prisma.stores.findUnique({
-      where: { id: store_id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: store_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
     });
     if (!existing) throw new Error("Store not found");
 
     const currentSettings = (existing.settings as any) || {};
 
     const store = await this.prisma.stores.update({
-      where: { id: store_id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: store_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
       data: {
         name: data.name,
         location_id: data.location_id,
@@ -197,7 +197,7 @@ export class RetailDbRepository implements IRetailRepository {
 
   async deleteStore(ctx: TenantContext, store_id: string): Promise<void> {
     await this.prisma.stores.update({
-      where: { id: store_id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: store_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
       data: { deleted_at: new Date(), status: "decommissioned" },
     });
   }
@@ -208,7 +208,7 @@ export class RetailDbRepository implements IRetailRepository {
 
   async listInventoryPools(ctx: TenantContext): Promise<any[]> {
     return this.prisma.inventory_pools.findMany({
-      where: { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true, excludeEcommerce: true }), deleted_at: null },
+      where: { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), deleted_at: null },
       orderBy: { created_at: "desc" },
     });
   }
@@ -220,7 +220,7 @@ export class RetailDbRepository implements IRetailRepository {
       data: {
         id: uuidv4(),
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
         name: data.name,
         description: data.description,
         type: data.type ?? "shared",
@@ -286,7 +286,7 @@ export class RetailDbRepository implements IRetailRepository {
     const channel = await this.prisma.retail_channels.create({
       data: {
         id: uuidv4(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
         name: data.name,
         type: data.platform || "CUSTOM",
         status: "active",
@@ -391,7 +391,7 @@ export class RetailDbRepository implements IRetailRepository {
           : "name";
     const orderDir = options?.sortDir === "desc" ? "desc" : "asc";
 
-    const where: any = { ...MultiTenancyUtil.getScope(ctx), status: "active" };
+    const where: any = { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), status: "active" };
     if (options?.category_id) where.category_id = options.category_id;
     if (options?.type) where.type = options.type;
 
@@ -428,7 +428,7 @@ export class RetailDbRepository implements IRetailRepository {
         },
       }),
       this.prisma.label_configs.findMany({
-        where: { ...MultiTenancyUtil.getScope(ctx), module_type: "RETAIL" },
+        where: { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), module_type: "RETAIL" },
       }),
     ]);
 
@@ -453,7 +453,7 @@ export class RetailDbRepository implements IRetailRepository {
     product_id: string,
   ): Promise<RetailProduct | null> {
     const product = await this.prisma.item_masters.findFirst({
-      where: { id: product_id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: product_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
     });
     return product ? this.mapProduct(product) : null;
   }
@@ -465,7 +465,7 @@ export class RetailDbRepository implements IRetailRepository {
   ): Promise<RetailProduct> {
     const txOperations: any[] = [
       this.prisma.item_masters.update({
-        where: { id: product_id, ...MultiTenancyUtil.getScope(ctx) },
+        where: { id: product_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
         data: {
           name: data.name,
           description: data.description,
@@ -482,7 +482,7 @@ export class RetailDbRepository implements IRetailRepository {
       this.prisma.product_projections.updateMany({
         where: {
           item_master_id: product_id,
-          ...MultiTenancyUtil.getScope(ctx),
+          ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
           location_id: null,
           module_type: "RETAIL",
         },
@@ -499,7 +499,7 @@ export class RetailDbRepository implements IRetailRepository {
       location_id
     ) {
       const existingStock = await this.prisma.stock_levels.findFirst({
-        where: { ...MultiTenancyUtil.getScope(ctx), location_id: location_id, product_id: product_id },
+        where: { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), location_id: location_id, product_id: product_id },
       });
 
       const onHand =
@@ -527,7 +527,7 @@ export class RetailDbRepository implements IRetailRepository {
             data: {
               id: uuidv4(),
               updated_at: new Date(),
-              ...MultiTenancyUtil.getScope(ctx),
+              ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
               location_id: location_id,
               product_id: product_id,
               on_hand: onHand,
@@ -597,7 +597,7 @@ export class RetailDbRepository implements IRetailRepository {
     for (let attempt = 0; attempt < 5; attempt++) {
       const candidateSku = `${prefix}-${dateStr}-${String(seq + attempt).padStart(4, "0")}`;
       const existing = await this.prisma.item_masters.findUnique({
-        where: { tenant_id_sku: { ...MultiTenancyUtil.getScope(ctx), sku: candidateSku } },
+        where: { tenant_id_sku: { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), sku: candidateSku } },
         select: { id: true },
       });
       if (!existing) {
@@ -616,7 +616,7 @@ export class RetailDbRepository implements IRetailRepository {
   }
 
   async listOrders(ctx: TenantContext, options?: { store_id?: string; customer_id?: string; ecommerce_id?: string; status?: string }): Promise<RetailOrder[]> {
-    const where: any = { tenant_id: ctx.tenant_id };
+    const where: any = { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) };
     if (options?.store_id) where.store_id = options.store_id;
     if (options?.customer_id) where.customer_id = options.customer_id;
     if (options?.ecommerce_id) where.ecommerce_id = options.ecommerce_id;
@@ -636,7 +636,7 @@ export class RetailDbRepository implements IRetailRepository {
   }
 
   async listCustomers(ctx: TenantContext, options?: { ecommerce_id?: string; q?: string }): Promise<any[]> {
-    const where: any = { tenant_id: ctx.tenant_id };
+    const where: any = { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) };
     if (options?.ecommerce_id) where.ecommerce_id = options.ecommerce_id;
     if (options?.q) {
       where.OR = [
@@ -660,7 +660,7 @@ export class RetailDbRepository implements IRetailRepository {
     order_id: string,
   ): Promise<RetailOrder | null> {
     const order = await this.prisma.retail_orders.findFirst({
-      where: { id: order_id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: order_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
       include: {
         retail_order_items: { include: { item_masters: true } },
         retail_customers: true,
@@ -692,7 +692,7 @@ export class RetailDbRepository implements IRetailRepository {
         subtotal = subtotal.add(itemSubtotal);
 
         return {
-          ...MultiTenancyUtil.getScope(ctx),
+          ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
           product_id: item.product_id,
           quantity:   decimalQty,
           unit_price:  decimalPrice,
@@ -709,7 +709,7 @@ export class RetailDbRepository implements IRetailRepository {
     const order = await client.retail_orders.create({
       data: {
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
         store_id: data.store_id,
         device_id: data.terminal_id || undefined,
         cashier_id: user_id || undefined,
@@ -737,7 +737,7 @@ export class RetailDbRepository implements IRetailRepository {
     metadata?: any,
   ): Promise<RetailOrder> {
     const order = await this.prisma.retail_orders.update({
-      where: { id: order_id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: order_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
       data: {
         status,
         ...(metadata?.tax_total !== undefined && { tax: metadata.tax_total }),
@@ -789,7 +789,7 @@ export class RetailDbRepository implements IRetailRepository {
         tx.stock_reservations.create({
           data: {
             id: reservationId,
-            ...MultiTenancyUtil.getScope(ctx),
+            ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
             location_id,
             product_id,
             quantity: Number(quantity),
@@ -812,7 +812,7 @@ export class RetailDbRepository implements IRetailRepository {
   ): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       // 1. Release Stock Level
-      const where: any = { product_id, ...MultiTenancyUtil.getScope(ctx) };
+      const where: any = { product_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) };
       if (location_id) where.location_id = location_id;
 
       await tx.stock_levels.updateMany({
@@ -826,7 +826,7 @@ export class RetailDbRepository implements IRetailRepository {
 
       // 2. Mark reservations as CANCELLED/RELEASED
       await tx.stock_reservations.updateMany({
-        where: { ...MultiTenancyUtil.getScope(ctx), product_id, ...(location_id && { location_id }), status: "PENDING" },
+        where: { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), product_id, ...(location_id && { location_id }), status: "PENDING" },
         data: { status: "RELEASED", updated_at: new Date() },
       });
     });
@@ -837,7 +837,7 @@ export class RetailDbRepository implements IRetailRepository {
     location_id?: string,
   ): Promise<{ available: Prisma.Decimal; on_hand: Prisma.Decimal; reserved: Prisma.Decimal; status: string }> {
     const stock = await this.prisma.stock_levels.findFirst({
-      where: { ...MultiTenancyUtil.getScope(ctx), product_id, ...(location_id && { location_id }) },
+      where: { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), product_id, ...(location_id && { location_id }) },
     });
     const avail = (stock?.available as unknown as Prisma.Decimal) || new Prisma.Decimal(0);
     const onHand = (stock?.on_hand as unknown as Prisma.Decimal) || new Prisma.Decimal(0);
@@ -866,7 +866,7 @@ export class RetailDbRepository implements IRetailRepository {
     outOfStockCount: number;
     totalValue: Prisma.Decimal;
   }> {
-    const where: any = { ...MultiTenancyUtil.getScope(ctx), status: "active" };
+    const where: any = { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), status: "active" };
     if (options?.category_id) where.category_id = options.category_id;
     if (options?.q) {
       const q = options.q;
@@ -964,7 +964,7 @@ export class RetailDbRepository implements IRetailRepository {
     employee_id: string,
   ): Promise<RetailShift | null> {
     const shift = await this.prisma.retail_shifts.findFirst({
-      where: { ...MultiTenancyUtil.getScope(ctx), store_id: store_id, employee_id: employee_id, status: "open" },
+      where: { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), store_id: store_id, employee_id: employee_id, status: "open" },
     });
     return shift ? this.mapShift(shift) : null;
   }
@@ -978,7 +978,7 @@ export class RetailDbRepository implements IRetailRepository {
       data: {
         id: "s84p52tc",
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
         store_id: data.store_id,
         employee_id: employee_id,
         start_time: new Date(),
@@ -994,7 +994,7 @@ export class RetailDbRepository implements IRetailRepository {
     data: CloseShiftDto,
   ): Promise<RetailShift> {
     const shift = await this.prisma.retail_shifts.update({
-      where: { id: shift_id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: shift_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
       data: {
         end_time: new Date(),
         closing_cash: data.closing_cash,
@@ -1023,7 +1023,7 @@ export class RetailDbRepository implements IRetailRepository {
     shift_id: string,
   ): Promise<RetailShift | null> {
     const shift = await this.prisma.retail_shifts.findFirst({
-      where: { id: shift_id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: shift_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
     });
     return shift ? this.mapShift(shift) : null;
   }
@@ -1033,7 +1033,7 @@ export class RetailDbRepository implements IRetailRepository {
     status: string,
   ): Promise<RetailShift> {
     const shift = await this.prisma.retail_shifts.update({
-      where: { id: shift_id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: shift_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
       data: { status: status as any },
     });
     return this.mapShift(shift);
@@ -1050,7 +1050,7 @@ export class RetailDbRepository implements IRetailRepository {
   ): Promise<RetailShift> {
     const db = tx || this.prisma;
     const shift = await db.retail_shifts.update({
-      where: { id: shift_id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: shift_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
       data: {
         status: "reconciled",
         actual_cash: data.actual_cash,
@@ -1068,7 +1068,7 @@ export class RetailDbRepository implements IRetailRepository {
 
   async listPromotions(ctx: TenantContext): Promise<any[]> {
     const promotions = await this.prisma.retail_promotions.findMany({
-      where: MultiTenancyUtil.getScope(ctx),
+      where: MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
       orderBy: { created_at: "desc" },
     });
     return promotions.map((p: retail_promotions) => ({
@@ -1091,7 +1091,7 @@ export class RetailDbRepository implements IRetailRepository {
     data: any,
   ): Promise<any> {
     const promotion = await this.prisma.retail_promotions.update({
-      where: { id: promotionId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: promotionId, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
       data: {
         status: data.status,
         ...(data.value && { value: data.value }),
@@ -1119,7 +1119,7 @@ export class RetailDbRepository implements IRetailRepository {
 
   async listChannels(ctx: TenantContext): Promise<any[]> {
     const channels = await this.prisma.retail_channels.findMany({
-      where: MultiTenancyUtil.getScope(ctx),
+      where: MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
       orderBy: { created_at: "desc" },
     });
     return channels.map((c: retail_channels) => {
@@ -1158,7 +1158,7 @@ export class RetailDbRepository implements IRetailRepository {
           clientSecretHash: this.hashSecret(data.credentials.clientSecret),
           branch_id: data.branch_id ?? "branch_main",
           domain: data.domain ?? null,
-          ...MultiTenancyUtil.getScope(ctx),
+          ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
           gatewayUrl: data.gatewayUrl ?? null,
           connector: data.connector ?? data.name ?? null,
           revoked: false,
@@ -1170,7 +1170,7 @@ export class RetailDbRepository implements IRetailRepository {
       data: {
         id: "4m6cguof",
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
         name: data.name,
         type: data.type,
         status: "active",
@@ -1217,10 +1217,10 @@ export class RetailDbRepository implements IRetailRepository {
     const channel =
       Object.keys(updates).length === 0
         ? await this.prisma.retail_channels.findFirst({
-            where: { id: channelId, ...MultiTenancyUtil.getScope(ctx) },
+            where: { id: channelId, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
           })
         : await this.prisma.retail_channels.update({
-            where: { id: channelId, ...MultiTenancyUtil.getScope(ctx) },
+            where: { id: channelId, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
             data: updates,
           });
 
@@ -1256,7 +1256,7 @@ export class RetailDbRepository implements IRetailRepository {
     channelId: string,
   ): Promise<{ success: boolean }> {
     await this.prisma.retail_channels.update({
-      where: { id: channelId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: channelId, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
       data: { status: "inactive" },
     });
     return { success: true };
@@ -1266,7 +1266,7 @@ export class RetailDbRepository implements IRetailRepository {
     channelId: string,
   ): Promise<{ success: boolean }> {
     await this.prisma.retail_channels.update({
-      where: { id: channelId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: channelId, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
       data: { last_sync_at: new Date() },
     });
     return { success: true };
@@ -1276,7 +1276,7 @@ export class RetailDbRepository implements IRetailRepository {
     channelId: string,
   ): Promise<any | null> {
     return this.prisma.retail_channels.findFirst({
-      where: { id: channelId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: channelId, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
     });
   }
 
@@ -1285,7 +1285,7 @@ export class RetailDbRepository implements IRetailRepository {
     credentials: any,
   ): Promise<any> {
     return this.prisma.retail_channels.update({
-      where: { id: channelId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: channelId, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
       data: { credentials },
     });
   }
@@ -1294,7 +1294,7 @@ export class RetailDbRepository implements IRetailRepository {
     clientId: string,
   ): Promise<any | null> {
     const channels = await this.prisma.retail_channels.findMany({
-      where: MultiTenancyUtil.getScope(ctx),
+      where: MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
     });
     return (
       channels.find((c: retail_channels) => {
@@ -1335,7 +1335,7 @@ export class RetailDbRepository implements IRetailRepository {
     try {
       const device = await this.prisma.pos_devices.create({
         data: {
-          ...MultiTenancyUtil.getScope(ctx),
+          ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
           store_id: data.store_id,
           name: data.name,
           type: data.type,
@@ -1406,7 +1406,7 @@ export class RetailDbRepository implements IRetailRepository {
     device_id: string,
   ): Promise<{ success: boolean }> {
     await this.prisma.pos_devices.update({
-      where: { id: device_id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: device_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
       data: { updated_at: new Date() },
     });
     return { success: true };
@@ -1421,7 +1421,7 @@ export class RetailDbRepository implements IRetailRepository {
     data: { amount: Prisma.Decimal; method: string; shift_id?: string },
   ): Promise<any> {
     const order = await this.prisma.retail_orders.findUnique({
-      where: { id: order_id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: order_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
     });
     if (!order) throw new Error("Order not found");
 
@@ -1435,7 +1435,7 @@ export class RetailDbRepository implements IRetailRepository {
       await tx.audit_logs.create({
         data: {
           id: "3rqvpdqj",
-          ...MultiTenancyUtil.getScope(ctx),
+          ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
           module: "retail",
           action: "PAYMENT",
           entity_type: "ORDER",
@@ -1470,7 +1470,7 @@ export class RetailDbRepository implements IRetailRepository {
       where: {
         id: { in: data.itemIds },
         order_id: order_id,
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
       },
     });
 
@@ -1507,7 +1507,7 @@ export class RetailDbRepository implements IRetailRepository {
     user_id: string,
   ): Promise<RetailOrder> {
     const order = await this.prisma.retail_orders.findUnique({
-      where: { id: order_id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: order_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
       include: { retail_order_items: true },
     });
 
@@ -1529,7 +1529,7 @@ export class RetailDbRepository implements IRetailRepository {
       for (const item of (order as any).retail_order_items) {
         await tx.stock_levels.updateMany({
           where: {
-            ...MultiTenancyUtil.getScope(ctx),
+            ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
             product_id: item.product_id,
             location_id: (order as any).store_id,
           },
@@ -1546,7 +1546,7 @@ export class RetailDbRepository implements IRetailRepository {
       await tx.audit_logs.create({
         data: {
           id: Math.random().toString(36).substring(2, 10),
-          ...MultiTenancyUtil.getScope(ctx),
+          ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
           module: "retail",
           action: "VOID",
           entity_type: "ORDER",
@@ -1566,7 +1566,7 @@ export class RetailDbRepository implements IRetailRepository {
   ): Promise<RetailOrder> {
     // Cancellation before payment usually just releases reservations
     const order = await this.prisma.retail_orders.findUnique({
-      where: { id: order_id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: order_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
       include: { retail_order_items: true },
     });
 
@@ -1583,7 +1583,7 @@ export class RetailDbRepository implements IRetailRepository {
         for (const item of (order as any).retail_order_items) {
           await tx.stock_levels.updateMany({
             where: {
-              ...MultiTenancyUtil.getScope(ctx),
+              ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
               product_id: item.product_id,
               location_id: (order as any).store_id,
             },
@@ -1611,7 +1611,7 @@ export class RetailDbRepository implements IRetailRepository {
       // 1. Idempotency Gatekeeper
       if (idempotency_key) {
         const existing = await tx.sys_idempotency_keys.findUnique({
-          where: { tenant_id_key: { ...MultiTenancyUtil.getScope(ctx), key: idempotency_key } },
+          where: { tenant_id_key: { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), key: idempotency_key } },
         });
 
         if (existing) {
@@ -1629,7 +1629,7 @@ export class RetailDbRepository implements IRetailRepository {
         await tx.sys_idempotency_keys.create({
           data: {
             id: uuidv4(),
-            ...MultiTenancyUtil.getScope(ctx),
+            ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
             key: idempotency_key,
             endpoint: "/retail/checkout",
             status: "PENDING",
@@ -1641,7 +1641,7 @@ export class RetailDbRepository implements IRetailRepository {
 
       // 2. Context Verification
       const store = await tx.stores.findUnique({
-        where: { id: data.store_id, ...MultiTenancyUtil.getScope(ctx) },
+        where: { id: data.store_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
       });
       if (!store) throw new Error("Store not found");
       if (!store.location_id) {
@@ -1653,17 +1653,17 @@ export class RetailDbRepository implements IRetailRepository {
 
       // 3. Fetch Finance Context
       const [dept, mappings] = await Promise.all([
-        tx.departments.findFirst({ where: { ...MultiTenancyUtil.getScope(ctx), code: "RET" } }),
+        tx.departments.findFirst({ where: { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), code: "RET" } }),
         tx.finance_system_mappings.findMany({
           where: {
-            ...MultiTenancyUtil.getScope(ctx),
+            ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
             system_code: { in: ["RETAIL_SALES", "RETAIL_CASH"] },
             status: "ACTIVE",
           },
         }),
       ]);
       let activePeriod = await tx.finance_fiscal_periods.findFirst({
-        where: { ...MultiTenancyUtil.getScope(ctx), status: "OPEN" },
+        where: { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), status: "OPEN" },
       });
       
       if (!activePeriod) {
@@ -1673,7 +1673,7 @@ export class RetailDbRepository implements IRetailRepository {
         activePeriod = await tx.finance_fiscal_periods.create({
           data: {
             id: require('crypto').randomUUID(),
-            ...MultiTenancyUtil.getScope(ctx),
+            ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
             name: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
             start_date: periodStart,
             end_date: periodEnd,
@@ -1696,7 +1696,7 @@ export class RetailDbRepository implements IRetailRepository {
           data: {
             id: uuidv4(),
             updated_at: new Date(),
-            ...MultiTenancyUtil.getScope(ctx),
+            ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
             name: "Retail Operations",
             code: "RET",
             status: "active",
@@ -1723,7 +1723,7 @@ export class RetailDbRepository implements IRetailRepository {
 
         // Calculate Unit Cost (Valuation Lock)
         const costLayers = await tx.cost_layers.findMany({
-          where: { ...MultiTenancyUtil.getScope(ctx), sku_id: product.sku, location_id, remaining_qty: { gt: 0 } }
+          where: { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), sku_id: product.sku, location_id, remaining_qty: { gt: 0 } }
         });
         
         let totalQty = 0;
@@ -1735,7 +1735,7 @@ export class RetailDbRepository implements IRetailRepository {
         const unitCost = totalQty > 0 ? totalVal / totalQty : 0;
 
         itemsData.push({
-          ...MultiTenancyUtil.getScope(ctx),
+          ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
           product_id: item.product_id,
           quantity: new Prisma.Decimal(q),
           unit_price: new Prisma.Decimal(up),
@@ -1771,7 +1771,7 @@ export class RetailDbRepository implements IRetailRepository {
           data: {
             id: uuidv4(),
             updated_at: new Date(),
-            ...MultiTenancyUtil.getScope(ctx),
+            ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
             product_id: item.product_id,
             from_location_id: location_id,
             location_id: location_id,
@@ -1785,14 +1785,14 @@ export class RetailDbRepository implements IRetailRepository {
 
       // 6. Create Order (Status: PAID)
       const employee = await tx.employees.findFirst({
-        where: { user_id: user_id, ...MultiTenancyUtil.getScope(ctx) }
+        where: { user_id: user_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) }
       });
 
       const order = await tx.retail_orders.create({
         data: {
           id: orderId,
           updated_at: new Date(),
-          ...MultiTenancyUtil.getScope(ctx),
+          ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
           store_id: data.store_id,
           device_id: null,
           cashier_id: employee ? employee.id : null,
@@ -1814,7 +1814,7 @@ export class RetailDbRepository implements IRetailRepository {
       // 7. Finance Tracking
       if (data.shift_id) {
         await tx.retail_shifts.update({
-          where: { id: data.shift_id, ...MultiTenancyUtil.getScope(ctx) },
+          where: { id: data.shift_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
           data: {
             expected_cash: {
               increment:
@@ -1831,7 +1831,7 @@ export class RetailDbRepository implements IRetailRepository {
         data: {
           id: uuidv4(),
           updated_at: new Date(),
-          ...MultiTenancyUtil.getScope(ctx),
+          ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
           ref: `POS-SALE-${orderId.slice(-6).toUpperCase()}`,
           description: `POS Sale (${data.payment_method})`,
           fiscal_period_id: activePeriod.id,
@@ -1840,7 +1840,7 @@ export class RetailDbRepository implements IRetailRepository {
           finance_journal_lines: {
             create: [
               {
-                ...MultiTenancyUtil.getScope(ctx),
+                ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
                 account_id: salesAccountId,
                 account_code: salesAccountId, // Fallback for now
                 description: `Sale ${orderId}`,
@@ -1850,7 +1850,7 @@ export class RetailDbRepository implements IRetailRepository {
                 credit: new Prisma.Decimal(Number(data.grand_total)),
               },
               {
-                ...MultiTenancyUtil.getScope(ctx),
+                ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
                 account_id: cashAccountId,
                 account_code: cashAccountId, // Fallback for now
                 description: `POS Payment`,
@@ -1871,7 +1871,7 @@ export class RetailDbRepository implements IRetailRepository {
       // 8. Finalize Idempotency
       if (idempotency_key) {
         await tx.sys_idempotency_keys.update({
-          where: { tenant_id_key: { ...MultiTenancyUtil.getScope(ctx), key: idempotency_key } },
+          where: { tenant_id_key: { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), key: idempotency_key } },
           data: {
             status: "COMPLETED",
             response_snapshot: result as any,
@@ -1923,7 +1923,7 @@ export class RetailDbRepository implements IRetailRepository {
             data: {
               id: "8ylu9vbw",
               updated_at: new Date(),
-              ...MultiTenancyUtil.getScope(ctx),
+              ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
               location_id: store.location_id,
               product_id: adj.product_id,
               department_id: "DEFAULT",
@@ -1939,7 +1939,7 @@ export class RetailDbRepository implements IRetailRepository {
           data: {
             id: uuidv4(),
             updated_at: new Date(),
-            ...MultiTenancyUtil.getScope(ctx),
+            ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
             product_id: adj.product_id,
             to_location_id: store.location_id,
             quantity: adj.actualCount - (stock?.on_hand || 0),
@@ -1994,7 +1994,7 @@ export class RetailDbRepository implements IRetailRepository {
             data: {
               id: uuidv4(),
               updated_at: new Date(),
-              ...MultiTenancyUtil.getScope(ctx),
+              ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
               location_id: store.location_id,
               product_id: item.product_id,
               department_id: "DEFAULT",
@@ -2009,7 +2009,7 @@ export class RetailDbRepository implements IRetailRepository {
           data: {
             id: uuidv4(),
             updated_at: new Date(),
-            ...MultiTenancyUtil.getScope(ctx),
+            ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
             product_id: item.product_id,
             to_location_id: store.location_id,
             quantity: item.quantity,
@@ -2032,7 +2032,7 @@ export class RetailDbRepository implements IRetailRepository {
     email: string,
   ): Promise<any | null> {
     return this.prisma.retail_customers.findFirst({
-      where: { ...MultiTenancyUtil.getScope(ctx), email },
+      where: { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), email },
       include: { retail_customer_auth: true },
     });
   }
@@ -2041,7 +2041,7 @@ export class RetailDbRepository implements IRetailRepository {
     customer_id: string,
   ): Promise<any | null> {
     return this.prisma.retail_customers.findFirst({
-      where: { ...MultiTenancyUtil.getScope(ctx), id: customer_id },
+      where: { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), id: customer_id },
       include: { retail_customer_auth: true },
     });
   }
@@ -2051,7 +2051,7 @@ export class RetailDbRepository implements IRetailRepository {
       data: {
         id: uuidv4(),
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
         name: data.name,
         email: data.email,
         phone: data.phone,
@@ -2073,7 +2073,7 @@ export class RetailDbRepository implements IRetailRepository {
     data: any,
   ): Promise<any> {
     return this.prisma.retail_customers.update({
-      where: { id: customer_id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: customer_id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
       data: {
         name: data.name,
         email: data.email,
@@ -2100,7 +2100,7 @@ export class RetailDbRepository implements IRetailRepository {
     // 2. Find Ecommerce Connector with same name/clientId to get linked stores
     // (Assuming name parity or we can use settings)
     const connector = await this.prisma.ecommerce_connectors.findFirst({
-      where: { ...MultiTenancyUtil.getScope(ctx), name: channel.name },
+      where: { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), name: channel.name },
       include: { stores: { select: { location_id: true } } }
     });
 
@@ -2109,7 +2109,7 @@ export class RetailDbRepository implements IRetailRepository {
     // 3. Sum stock across locations
     const stockLevels = await this.prisma.stock_levels.findMany({
       where: { 
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
         product_id, 
         ...(locationIds.length > 0 && { location_id: { in: locationIds } }) 
       }
@@ -2144,7 +2144,7 @@ export class RetailDbRepository implements IRetailRepository {
       data: {
         id: uuidv4(),
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
         customer_id: data.customer_id,
         token_hash: data.token_hash,
         expires_at: data.expires_at,
@@ -2159,7 +2159,7 @@ export class RetailDbRepository implements IRetailRepository {
   ): Promise<any | null> {
     return this.prisma.retail_customer_sessions.findFirst({
       where: {
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
         token_hash: tokenHash,
         revoked_at: null,
         expires_at: { gt: new Date() },
@@ -2171,7 +2171,7 @@ export class RetailDbRepository implements IRetailRepository {
     tokenHash: string,
   ): Promise<void> {
     await this.prisma.retail_customer_sessions.updateMany({
-      where: { ...MultiTenancyUtil.getScope(ctx), token_hash: tokenHash, revoked_at: null },
+      where: { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), token_hash: tokenHash, revoked_at: null },
       data: { revoked_at: new Date() },
     });
   }
@@ -2180,7 +2180,7 @@ export class RetailDbRepository implements IRetailRepository {
 
   async getCart(ctx: TenantContext, customer_id: string): Promise<any | null> {
     return this.prisma.retail_carts.findFirst({
-      where: { ...MultiTenancyUtil.getScope(ctx), customer_id: customer_id },
+      where: { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), customer_id: customer_id },
       include: { retail_cart_items: { include: { item_masters: true } } },
     });
   }
@@ -2190,7 +2190,7 @@ export class RetailDbRepository implements IRetailRepository {
       data: {
         id: uuidv4(),
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
         customer_id: customer_id,
         status: "active",
       },
@@ -2244,7 +2244,7 @@ export class RetailDbRepository implements IRetailRepository {
 
   async getWishlist(ctx: TenantContext, customer_id: string): Promise<any | null> {
     return this.prisma.retail_wishlists.findFirst({
-      where: { ...MultiTenancyUtil.getScope(ctx), customer_id: customer_id },
+      where: { ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), customer_id: customer_id },
       include: { retail_wishlist_items: { include: { item_masters: true } } },
     });
   }
@@ -2254,7 +2254,7 @@ export class RetailDbRepository implements IRetailRepository {
     return this.prisma.retail_wishlists.upsert({
       where: { customer_id: customer_id },
       update: {},
-      create: { id: uuidv4(), ...MultiTenancyUtil.getScope(ctx), customer_id: customer_id },
+      create: { id: uuidv4(), ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }), customer_id: customer_id },
     });
   }
 
@@ -2291,7 +2291,7 @@ export class RetailDbRepository implements IRetailRepository {
     return this.prisma.audit_logs.create({
       data: {
         id: uuidv4(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }),
         module: "retail",
         action: data.type,
         entity_type: "event",
@@ -2434,13 +2434,13 @@ export class RetailDbRepository implements IRetailRepository {
 
   async getCustomerById(ctx: TenantContext, id: string) {
     return this.prisma.retail_customers.findUnique({
-      where: { id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
     });
   }
 
   async getCustomerByPhone(ctx: TenantContext, phone: string) {
     return this.prisma.retail_customers.findFirst({
-      where: { phone, ...MultiTenancyUtil.getScope(ctx) },
+      where: { phone, ...MultiTenancyUtil.getScope(ctx, { excludeBranch: true }) },
     });
   }
 

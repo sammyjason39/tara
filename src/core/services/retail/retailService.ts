@@ -68,7 +68,15 @@ export const retailService = {
     session: SessionContext,
     store: Partial<RetailStore>,
   ) {
-    return apiRequest<RetailStore>("/v1/retail/stores", "POST", session, store);
+    // Map frontend camelCase to backend snake_case for CreateStoreDto
+    const payload = {
+      ...store,
+      location_id: store.locationId,
+      manager_id: store.managerId,
+      inventory_pool_id: store.inventoryPoolId,
+      tax_zone: store.taxZone,
+    };
+    return apiRequest<RetailStore>("/v1/retail/stores", "POST", session, payload);
   },
 
   async updateStore(
@@ -88,88 +96,68 @@ export const retailService = {
       return Object.keys(res).length > 0 ? res : undefined;
     };
 
-    const payload = pickAndClean(
-      {
-        name: store.name,
-        locationId: store.locationId,
-        type: store.type,
-        status: store.status,
-        phone: store.phone,
-        email: store.email,
-        timezone: store.timezone,
-        managerId: store.managerId,
-        inventoryPoolId: store.inventoryPoolId,
-        currency: store.currency,
-        tax_zone: store.taxZone,
+    const payload = {
+      name: store.name,
+      location_id: store.locationId,
+      type: store.type,
+      status: store.status,
+      phone: store.phone,
+      email: store.email,
+      timezone: store.timezone,
+      manager_id: store.managerId,
+      inventory_pool_id: store.inventoryPoolId,
+      currency: store.currency,
+      tax_zone: store.taxZone,
 
-        operational_config: pickAndClean(store.operationalConfig, [
-          "business_hours_template",
-          "default_shift_model",
-          "enabled_modules",
-          "pos_device_limit",
-          "self_checkout_enabled",
-          "payment_methods_allowed",
-          "refund_policy_mode",
-          "auto_close_shift_setting",
-          "tax_rate",
-          "tax_inclusive",
-        ]),
+      operational_config: pickAndClean(store.operationalConfig, [
+        "business_hours_template",
+        "default_shift_model",
+        "enabled_modules",
+        "pos_device_limit",
+        "self_checkout_enabled",
+        "payment_methods_allowed",
+        "refund_policy_mode",
+        "auto_close_shift_setting",
+        "tax_rate",
+        "tax_inclusive",
+      ]),
 
-        supply_config: pickAndClean(store.supplyConfig, [
-          "default_inbound_warehouse_id",
-          "transfer_priority_policy",
-          "replenishment_rule_set",
-          "safety_stock_policy",
-          "auto_reorder_threshold_template",
-          "fulfillment_fallback_routing",
-        ]),
+      supply_config: pickAndClean(store.supplyConfig, [
+        "default_inbound_warehouse_id",
+        "transfer_priority_policy",
+        "replenishment_rule_set",
+        "safety_stock_policy",
+        "auto_reorder_threshold_template",
+        "fulfillment_fallback_routing",
+      ]),
 
-        infrastructure_registry: pickAndClean(store.infrastructureRegistry, [
-          "registered_device_ids",
-          "pos_clusters",
-          "scanner_pools",
-          "local_server_binding",
-          "sync_interval",
-          "offline_tolerance_threshold",
-        ]),
+      infrastructure_registry: pickAndClean(store.infrastructureRegistry, [
+        "registered_device_ids",
+        "pos_clusters",
+        "scanner_pools",
+        "local_server_binding",
+        "sync_interval",
+        "offline_tolerance_threshold",
+      ]),
 
-        channel_binding: pickAndClean(store.channelBinding, [
-          "linked_ecommerce_store_id",
-          "marketplace_integrations",
-          "channel_priority",
-          "order_routing_logic",
-          "online_to_offline_sync_policy",
-        ]),
+      channel_binding: pickAndClean(store.channelBinding, [
+        "linked_ecommerce_store_id",
+        "marketplace_integrations",
+        "channel_priority",
+        "order_routing_logic",
+        "online_to_offline_sync_policy",
+      ]),
 
-        governance: pickAndClean(store.governance, [
-          "license_status",
-          "activation_date",
-          "activation_source",
-          "compliance_level",
-          "audit_frequency_tier",
-          "data_retention_policy",
-          "decommission_trigger",
-        ]),
-      },
-      [
-        "name",
-        "locationId",
-        "type",
-        "status",
-        "phone",
-        "email",
-        "timezone",
-        "managerId",
-        "inventoryPoolId",
-        "currency",
-        "tax_zone",
-        "operational_config",
-        "supply_config",
-        "infrastructure_registry",
-        "channel_binding",
-        "governance",
-      ],
-    );
+      governance: pickAndClean(store.governance, [
+        "license_status",
+        "activation_date",
+        "activation_source",
+        "compliance_level",
+        "audit_frequency_tier",
+        "data_retention_policy",
+        "decommission_trigger",
+      ]),
+    };
 
     console.log("[retailService] updateStore payload:", payload);
 
@@ -297,7 +285,13 @@ export const retailService = {
     session: SessionContext,
     device: Partial<BranchDevice>,
   ) {
-    return apiRequest<BranchDevice>("/v1/retail/devices", "POST", session, device);
+    const payload = {
+      ...device,
+      store_id: device.locationId,
+      ip_address: device.ipAddress,
+      serialNumber: device.serialNumber, // Check if backend expects serial_number
+    };
+    return apiRequest<BranchDevice>("/v1/retail/devices", "POST", session, payload);
   },
 
   async listCCTVs(tenantId: string, session: SessionContext, storeId?: string) {
@@ -344,7 +338,11 @@ export const retailService = {
     session: SessionContext,
     sensor: Partial<BranchSensor>,
   ) {
-    return apiRequest<BranchSensor>("/v1/retail/sensors", "POST", session, sensor);
+    const payload = {
+      ...sensor,
+      store_id: sensor.locationId,
+    };
+    return apiRequest<BranchSensor>("/v1/retail/sensors", "POST", session, payload);
   },
 
   async listInventory(
@@ -459,12 +457,19 @@ export const retailService = {
     notes?: string,
   ) {
     return apiRequest<RetailOrder>("/v1/retail/orders", "POST", session, {
-      storeId,
-      terminalId: deviceId, // Using terminalId to match backend DTO
-      items,
-      paymentMethod,
-      grandTotal,
-      shiftId,
+      store_id: storeId,
+      terminal_id: deviceId, 
+      items: items.map(item => ({
+        product_id: item.productId,
+        quantity: item.quantity,
+        unit_price: item.unitPrice,
+        name: item.name,
+        discount: item.discount,
+        tax_rate: item.taxRate
+      })),
+      payment_method: paymentMethod,
+      grand_total: grandTotal,
+      shift_id: shiftId,
       notes,
     });
   },
@@ -582,11 +587,16 @@ export const retailService = {
       };
     },
   ) {
+    const payload = {
+      ...channel,
+      branch_id: channel.branchId,
+      sync_frequency: channel.syncFrequency || channel.sync_frequency,
+    };
     return apiRequest<RetailChannel>(
       "/v1/retail/channels",
       "POST",
       session,
-      channel,
+      payload,
     );
   },
 
@@ -696,8 +706,8 @@ export const retailService = {
     openingCash: number,
   ) {
     return apiRequest<RetailShift>("/v1/retail/shifts/open", "POST", session, {
-      storeId,
-      openingCash,
+      store_id: storeId,
+      opening_cash: openingCash,
     });
   },
 
@@ -715,10 +725,10 @@ export const retailService = {
       "PUT",
       session,
       {
-        closingCash,
+        closing_cash: closingCash,
         notes,
-        closingNote,
-        complianceNote,
+        closing_note: closingNote,
+        compliance_note: complianceNote,
       },
     );
   },
