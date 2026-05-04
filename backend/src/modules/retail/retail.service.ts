@@ -715,7 +715,7 @@ export class RetailService {
       resolvedEmployeeId,
     );
     if (active) {
-      throw new Error("Shift already active for this employee and store.");
+      throw new BadRequestException("Shift already active for this employee and store.");
     }
     const shift = await this.retailRepository.openShift(
       ctx,

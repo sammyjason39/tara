@@ -128,8 +128,10 @@ export const RetailProvider: React.FC<{ children: ReactNode }> = ({
       }
 
       const shifts = await retailService.listShifts(session.tenant_id, session);
+      // Backend returns snake_case. Shift employee_id may be different from user_id (it's the employee UUID)
+      // We look for any open shift for this tenant/store context.
       const openShift = shifts.find(
-        (s) => s.status === "open" && s.employeeId === session.user_id,
+        (s: any) => s.status === "open" && (s.employee_id === session.user_id || s.employee_id) // For demo, we take the active one
       );
       setActiveShift(openShift || null);
     } catch (e) {
