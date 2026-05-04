@@ -8,6 +8,7 @@ import { PostekPrintModal, PrintItem } from "./PostekPrintModal";
 import { NewItemFormRow, type NewItemLine } from "./NewItemFormRow";
 
 import { retailService } from "@/core/services/retail/retailService";
+import { inventoryService } from "@/core/services/inventory/inventoryService";
 import type { SessionContext } from "@/core/security/session";
 
 type Props = {
@@ -39,6 +40,8 @@ export const ItemCreationTab: React.FC<Props> = ({
       type: "ITEM",
       status: "active",
       description: "",
+      images: [],
+      primaryImageIndex: 0,
     },
   ]);
 
@@ -59,6 +62,8 @@ export const ItemCreationTab: React.FC<Props> = ({
         type: "ITEM",
         status: "active",
         description: "",
+        images: [],
+        primaryImageIndex: 0,
       },
     ]);
   };
@@ -78,6 +83,8 @@ export const ItemCreationTab: React.FC<Props> = ({
           type: "ITEM",
           status: "active",
           description: "",
+          images: [],
+          primaryImageIndex: 0,
         },
       ]);
       return;
@@ -126,9 +133,36 @@ export const ItemCreationTab: React.FC<Props> = ({
       );
 
       if (res.success) {
+        // --- Image Upload Phase ---
+        const createdItems = res.data as any[];
+        
+        for (const row of rows) {
+          if (row.images && row.images.length > 0) {
+            const matchedItem = createdItems.find(item => item.sku === row.sku);
+            if (matchedItem) {
+              const itemId = matchedItem.id;
+              
+              // Sort images to upload primary first (backend sets first upload as primary by default)
+              const primaryIdx = row.primaryImageIndex || 0;
+              const uploadOrder = [
+                row.images[primaryIdx],
+                ...row.images.filter((_, idx) => idx !== primaryIdx)
+              ];
+
+              for (const file of uploadOrder) {
+                try {
+                  await inventoryService.uploadItemImage(tenantId, session, itemId, file);
+                } catch (uploadError) {
+                  console.error(`Failed to upload image for ${row.sku}:`, uploadError);
+                }
+              }
+            }
+          }
+        }
+
         toast({
           title: "Success",
-          description: "Batch items created successfully.",
+          description: "Batch items and images processed successfully.",
         });
         setRows([
           {
@@ -143,6 +177,8 @@ export const ItemCreationTab: React.FC<Props> = ({
             type: "ITEM",
             status: "active",
             description: "",
+            images: [],
+            primaryImageIndex: 0,
           },
         ]);
         if (onSuccess) onSuccess();

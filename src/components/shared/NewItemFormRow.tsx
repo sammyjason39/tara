@@ -1,5 +1,5 @@
 import React from "react";
-import { Trash2, Printer, Barcode, RefreshCw } from "lucide-react";
+import { Trash2, Printer, Barcode, RefreshCw, Image as ImageIcon, Upload, Star, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +27,8 @@ export interface NewItemLine {
   description?: string;
   type?: "ITEM" | "SERVICE" | "RAW_MATERIAL";
   status?: "active" | "draft";
+  images?: File[];
+  primaryImageIndex?: number;
 }
 
 // --- Helpers moved to NewItemFormHelpers.ts ---
@@ -331,7 +333,93 @@ export const NewItemFormRow: React.FC<NewItemFormRowProps> = ({
             </div>
           </div>
         )}
+
+        {/* 5. Image Upload Section */}
+        <div className="md:col-span-12 space-y-3 pt-2 border-t border-slate-50">
+          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+            <ImageIcon className="w-3.5 h-3.5" /> Product Images
+          </Label>
+          
+          <div className="flex flex-wrap gap-4">
+            {/* Existing Preview Thumbnails */}
+            {(line.images || []).map((file, idx) => (
+              <div 
+                key={idx} 
+                className={cn(
+                  "relative w-24 h-24 rounded-2xl overflow-hidden border-2 transition-all group",
+                  line.primaryImageIndex === idx ? "border-indigo-500 shadow-lg shadow-indigo-100" : "border-slate-100"
+                )}
+              >
+                <img 
+                  src={URL.createObjectURL(file)} 
+                  alt={`Preview ${idx}`}
+                  className="w-full h-full object-cover"
+                />
+                
+                {/* Remove button */}
+                <button
+                  onClick={() => {
+                    const newImages = [...(line.images || [])];
+                    newImages.splice(idx, 1);
+                    let newPrimary = line.primaryImageIndex || 0;
+                    if (newPrimary >= newImages.length) newPrimary = Math.max(0, newImages.length - 1);
+                    onChange(line.tempId, { images: newImages, primaryImageIndex: newPrimary });
+                  }}
+                  className="absolute top-1 right-1 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+
+                {/* Primary/Star button */}
+                <button
+                  onClick={() => onChange(line.tempId, { primaryImageIndex: idx })}
+                  className={cn(
+                    "absolute bottom-1 right-1 w-6 h-6 rounded-full flex items-center justify-center transition-all shadow-sm",
+                    line.primaryImageIndex === idx 
+                      ? "bg-amber-400 text-white opacity-100" 
+                      : "bg-white/80 text-slate-400 opacity-0 group-hover:opacity-100 hover:text-amber-500"
+                  )}
+                  title={line.primaryImageIndex === idx ? "Main Image" : "Set as Main"}
+                >
+                  <Star className={cn("w-3.5 h-3.5", line.primaryImageIndex === idx && "fill-current")} />
+                </button>
+
+                {line.primaryImageIndex === idx && (
+                  <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-indigo-500 text-[8px] font-black text-white rounded-md uppercase tracking-tighter">
+                    Main
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* Upload Placeholder */}
+            <label className="w-24 h-24 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center cursor-pointer hover:bg-white hover:border-indigo-300 transition-all text-slate-400 hover:text-indigo-500 group">
+              <Upload className="w-6 h-6 mb-1 group-hover:scale-110 transition-transform" />
+              <span className="text-[9px] font-black uppercase tracking-tighter">Add Photo</span>
+              <input 
+                type="file" 
+                multiple 
+                accept="image/*" 
+                className="hidden" 
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (files.length > 0) {
+                    const currentImages = line.images || [];
+                    onChange(line.tempId, { 
+                      images: [...currentImages, ...files],
+                      primaryImageIndex: currentImages.length === 0 ? 0 : line.primaryImageIndex 
+                    });
+                  }
+                }}
+              />
+            </label>
+          </div>
+          <p className="text-[9px] text-slate-400 font-medium">
+            First image is "Main" by default. Set main image to be used as product thumbnail.
+          </p>
+        </div>
       </div>
     </div>
+
   );
 };
