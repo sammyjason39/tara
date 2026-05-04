@@ -982,6 +982,7 @@ export class RetailDbRepository implements IRetailRepository {
         employee_id: employee_id,
         start_time: new Date(),
         opening_cash: data.opening_cash,
+        expected_cash: data.opening_cash,
         status: "open",
       },
     });
