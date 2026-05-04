@@ -2487,15 +2487,20 @@ export class RetailDbRepository implements IRetailRepository {
       id: s.id,
       tenant_id: s.tenant_id,
       location_id: "",
-      store_id: s.stores_id,
+      store_id: s.store_id || s.stores_id,
       employee_id: s.employee_id,
+      employeeId: s.employee_id, // Frontend alias
       terminal_id: "",
       start_time: s.start_time,
       end_time: s.end_time,
       opening_cash: (s.opening_cash as unknown as Prisma.Decimal) || new Prisma.Decimal(0) as any,
+      openingCash: (s.opening_cash as unknown as Prisma.Decimal) || 0 as any, // Frontend alias
       closing_cash: (s.closing_cash as unknown as Prisma.Decimal) || undefined,
+      closingCash: (s.closing_cash as unknown as Prisma.Decimal) || undefined as any, // Frontend alias
       expected_cash: (s.expected_cash as unknown as Prisma.Decimal) || undefined,
+      expectedCash: (s.expected_cash as unknown as Prisma.Decimal) || undefined as any, // Frontend alias
       actual_cash: (s.actual_cash as unknown as Prisma.Decimal) || undefined,
+      actualCash: (s.actual_cash as unknown as Prisma.Decimal) || undefined as any, // Frontend alias
       variance: (s.variance as unknown as Prisma.Decimal) || undefined,
       reconciliation_reason: s.reconciliation_reason,
       status: s.status as any,
