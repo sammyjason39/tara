@@ -218,6 +218,7 @@ export abstract class IRetailRepository {
   ): Promise<RetailShift>;
   abstract listShifts( ctx: TenantContext,
     store_id?: string,
+    employee_id?: string,
   ): Promise<RetailShift[]>;
 
   abstract getShift( ctx: TenantContext,
