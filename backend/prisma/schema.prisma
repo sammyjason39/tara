@@ -5465,7 +5465,7 @@ model retail_cash_movements {
   reason          String?
   notes           String?
   created_at      DateTime @default(now())
-  updated_at      DateTime @updated_at
+  updated_at      DateTime @updatedAt
 
   shifts          retail_shifts @relation(fields: [shift_id], references: [id])
   tenants         tenants       @relation(fields: [tenant_id], references: [id])
