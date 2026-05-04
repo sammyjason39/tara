@@ -116,7 +116,7 @@ export class FinanceService {
     // Map to a common Invoice interface
     const arInvoices = ar.map(i => ({
       id: i.id,
-      vendor: i.customerName, // Map customer as vendor for unified view
+      vendor: (i as any).customerName || (i as any).customer, // Handle mapping variations
       amount: i.amount,
       invoiceDate: i.dueDate, // Use due date as placeholder if date is missing
       dueDate: i.dueDate,
@@ -126,7 +126,7 @@ export class FinanceService {
 
     const apInvoices = ap.map(i => ({
       id: i.id,
-      vendor: i.vendorName,
+      vendor: (i as any).vendorName || (i as any).vendor,
       amount: i.amount,
       invoiceDate: i.dueDate,
       dueDate: i.dueDate,
@@ -135,6 +135,53 @@ export class FinanceService {
     }));
 
     return [...arInvoices, ...apInvoices];
+  }
+
+  // Assets
+  async listAssets(ctx: TenantContext) {
+    return this.financeRepository.listAssets(ctx);
+  }
+
+  async getAssetById(ctx: TenantContext, id: string) {
+    return this.financeRepository.getAssetById(ctx, id);
+  }
+
+  async listAssetEvents(ctx: TenantContext, assetId?: string) {
+    return this.financeRepository.listAssetEvents(ctx, assetId);
+  }
+
+  async listAssetDepreciationEntries(ctx: TenantContext, assetId?: string) {
+    return this.financeRepository.listAssetDepreciationEntries(ctx, assetId);
+  }
+
+  async getAssetAuditPack(ctx: TenantContext, assetId: string) {
+    return this.financeRepository.getAssetAuditPack(ctx, assetId);
+  }
+
+  // Treasury
+  async listTransfers(ctx: TenantContext) {
+    return this.financeRepository.listTransfers(ctx);
+  }
+
+  async createTransfer(ctx: TenantContext, data: any) {
+    return this.financeRepository.createTransfer(ctx, data);
+  }
+
+  async reconcileSettlement(ctx: TenantContext, sourceId: string, amount: number) {
+    return this.financeRepository.reconcileSettlement(ctx, sourceId, amount);
+  }
+
+  // Payroll
+  async getPayrollEntries(ctx: TenantContext, period?: string) {
+    return this.financeRepository.listPayrollEntries(ctx, period);
+  }
+
+  async estimatePayroll(ctx: TenantContext, period: string) {
+    return this.financeRepository.estimatePayroll(ctx, period);
+  }
+
+  async executePayroll(ctx: TenantContext, period: string, userId: string) {
+    return this.financeRepository.executePayroll(ctx, period, userId);
   }
 
   async updateMoneySource(ctx: TenantContext, id: string, updates: any) {

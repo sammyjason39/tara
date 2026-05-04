@@ -269,7 +269,7 @@ export class FinanceDbRepository extends IFinanceRepository {
 
   async getAssetById(ctx: TenantContext, assetId: string): Promise<Asset | null> {
     const asset = await this.prisma.fixed_assets.findFirst({
-      where: { id: assetId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: assetId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
     });
     return asset ? this.mapAsset(asset) : null;
   }
@@ -804,7 +804,7 @@ export class FinanceDbRepository extends IFinanceRepository {
   ): Promise<PayrollEntry[]> {
     const lines = await this.prisma.payroll_lines.findMany({
       where: {
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         hr_payroll_runs: period ? { period_end: { gte: new Date(period) } } : undefined,
       },
       include: {
@@ -835,7 +835,7 @@ export class FinanceDbRepository extends IFinanceRepository {
     period: string,
   ): Promise<PayrollEstimate[]> {
     const employees = await this.prisma.employees.findMany({
-      where: { ...MultiTenancyUtil.getScope(ctx), status: "active" },
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }), status: "active" },
       include: { 
         departments: true,
         compensations: true
@@ -1058,13 +1058,15 @@ export class FinanceDbRepository extends IFinanceRepository {
 
   // Capex Budgets
   async listCapexBudgets(ctx: TenantContext): Promise<FinanceCapexBudgetRow[]> {
-    const budgets = await this.prisma.capex_budgets.findMany({ where: { ...MultiTenancyUtil.getScope(ctx) } });
+    const budgets = await this.prisma.capex_budgets.findMany({ 
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) } 
+    });
     return budgets.map((b: any) => ({
       department: b.department_id,
       fiscalYear: b.period,
-      allocatedBudget: b.allocatedBudget,
-      committedBudget: b.committedBudget,
-      availableBudget: b.availableBudget
+      allocatedBudget: b.allocated_budget,
+      committedBudget: b.committed_budget,
+      availableBudget: b.available_budget
     }));
   }
 
@@ -1099,7 +1101,7 @@ export class FinanceDbRepository extends IFinanceRepository {
   // Depreciation
   async listAssetDepreciationEntries(ctx: TenantContext, assetId?: string): Promise<AssetDepreciationEntry[]> {
     const entries = await this.prisma.asset_depreciation_entries.findMany({
-      where: { ...MultiTenancyUtil.getScope(ctx), ...(assetId ? { asset_id: assetId } : {}) },
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }), ...(assetId ? { asset_id: assetId } : {}) },
       orderBy: { date: 'desc' }
     });
     return entries.map((e: any) => ({
@@ -1145,7 +1147,7 @@ export class FinanceDbRepository extends IFinanceRepository {
 
   async listAssetEvents(ctx: TenantContext, assetId?: string): Promise<AssetEvent[]> {
     const events = await this.prisma.asset_events.findMany({
-      where: { ...MultiTenancyUtil.getScope(ctx), ...(assetId ? { asset_id: assetId } : {}) },
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }), ...(assetId ? { asset_id: assetId } : {}) },
       orderBy: { date: 'desc' }
     });
     return events.map((e: any) => ({

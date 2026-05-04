@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards, Inject } from '@nestjs/common';
 import { getFinanceExecutionMode } from './utils/finance-safety.utils';
 import { FinanceService } from './finance.service';
 import { ChartOfAccountService } from './services/chart-of-account.service';
@@ -185,5 +185,76 @@ export class FinanceController {
   @Get('invoices')
   async listInvoices(@TenantCtx() ctx: TenantContext) {
     return this.financeService.listInvoices(ctx);
+  }
+
+  // --- Treasury ---
+  @Get('treasury/sources')
+  async listSources(@TenantCtx() ctx: TenantContext) {
+    return this.financeService.getMoneySources(ctx);
+  }
+
+  @Get('periods')
+  async listPeriodsAlias(@TenantCtx() ctx: TenantContext) {
+    return this.financeService.listPeriods(ctx);
+  }
+
+  @Get('treasury/transfers')
+  async listTransfers(@TenantCtx() ctx: TenantContext) {
+    return this.financeService.listTransfers(ctx);
+  }
+
+  @Post('treasury/transfers')
+  @Roles(UserRole.ADMIN, UserRole.OWNER, UserRole.MANAGER)
+  async createTransfer(@TenantCtx() ctx: TenantContext, @Body() dto: any) {
+    return this.financeService.createTransfer(ctx, dto);
+  }
+
+  @Post('treasury/reconcile')
+  @Roles(UserRole.ADMIN, UserRole.OWNER, UserRole.MANAGER)
+  async reconcileSettlement(@TenantCtx() ctx: TenantContext, @Body() body: { sourceId: string, amount: number }) {
+    return this.financeService.reconcileSettlement(ctx, body.sourceId, body.amount);
+  }
+
+  // --- Payroll ---
+  @Get('payroll/entries')
+  async getPayrollEntries(@TenantCtx() ctx: TenantContext, @Query('period') period?: string) {
+    return this.financeService.getPayrollEntries(ctx, period);
+  }
+
+  @Get('payroll/estimate')
+  async estimatePayroll(@TenantCtx() ctx: TenantContext, @Query('period') period: string) {
+    return this.financeService.estimatePayroll(ctx, period);
+  }
+
+  @Post('payroll/execute')
+  @Roles(UserRole.ADMIN, UserRole.OWNER)
+  async executePayroll(@TenantCtx() ctx: TenantContext, @Body('period') period: string) {
+    return this.financeService.executePayroll(ctx, period, ctx.user_id || 'SYSTEM');
+  }
+
+  // --- Assets ---
+  @Get('assets')
+  async listAssets(@TenantCtx() ctx: TenantContext) {
+    return this.financeService.listAssets(ctx);
+  }
+
+  @Get('assets/events')
+  async listAssetEvents(@TenantCtx() ctx: TenantContext, @Query('assetId') assetId?: string) {
+    return this.financeService.listAssetEvents(ctx, assetId);
+  }
+
+  @Get('assets/depreciation')
+  async listAssetDepreciationEntries(@TenantCtx() ctx: TenantContext, @Query('assetId') assetId?: string) {
+    return this.financeService.listAssetDepreciationEntries(ctx, assetId);
+  }
+
+  @Get('assets/:id')
+  async getAssetById(@TenantCtx() ctx: TenantContext, @Param('id') id: string) {
+    return this.financeService.getAssetById(ctx, id);
+  }
+
+  @Get('assets/:id/audit-pack')
+  async getAssetAuditPack(@TenantCtx() ctx: TenantContext, @Param('id') id: string) {
+    return this.financeService.getAssetAuditPack(ctx, id);
   }
 }
