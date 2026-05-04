@@ -57,7 +57,7 @@ export const RetailGlobalAdminBar = () => {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button disabled title="Not available yet"
+              <Button
                 variant="ghost"
                 size="sm"
                 className="h-6 px-2 hover:bg-white/10 text-[9px] font-black italic"

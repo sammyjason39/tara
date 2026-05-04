@@ -160,7 +160,7 @@ export const CreateStoreDialog: React.FC<CreateStoreDialogProps> = ({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button disabled title="Not available yet" className="h-11 px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black italic uppercase tracking-widest text-[10px] gap-2 shadow-xl transition-all active:scale-95">
+          <Button className="h-11 px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black italic uppercase tracking-widest text-[10px] gap-2 shadow-xl transition-all active:scale-95">
             <PlusCircle className="w-4 h-4" /> Provision New Node
           </Button>
         )}

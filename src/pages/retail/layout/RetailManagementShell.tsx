@@ -115,8 +115,7 @@ export const RetailManagementShell: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const session = useSession();
-  const { activeStore, activeChannel } = useRetail();
-  const isConfigured = !!activeStore || !!activeChannel;
+  const { activeStore, activeChannel, isConfigured } = useRetail();
   const location = useLocation();
 
   const segments = location.pathname
