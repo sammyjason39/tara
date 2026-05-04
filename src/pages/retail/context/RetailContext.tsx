@@ -127,12 +127,13 @@ export const RetailProvider: React.FC<{ children: ReactNode }> = ({
         }
       }
 
-      const shifts = await retailService.listShifts(session.tenant_id, session);
-      // Backend returns snake_case. Shift employee_id may be different from user_id (it's the employee UUID)
-      // We look for any open shift for this tenant/store context.
-      const openShift = shifts.find(
-        (s: any) => s.status === "open" && (s.employee_id === session.user_id || s.employee_id) // For demo, we take the active one
-      );
+      const shifts = await retailService.listShifts(session.tenant_id, session, { 
+        store_id: activeStoreRef.current?.id 
+      });
+      // Lenient detection: if ANY shift is open for this store, we consider it active for the operational gateway
+      const openShift = Array.isArray(shifts) ? shifts.find(
+        (s: any) => s.status === "open"
+      ) : null;
       setActiveShift(openShift || null);
     } catch (e) {
       console.error("[RetailContext] Refresh failed", e);
