@@ -555,6 +555,22 @@ export class RetailController {
     return this.respond(request.tenantContext, shift);
   }
 
+  @Post("shifts/:id/cash-movement")
+  async recordCashMovement(
+    @Req() request: RequestWithTenant,
+    @Param("id") shift_id: string,
+    @Body() data: { amount: number; type: "CASH_OUT" | "CASH_IN"; reason?: string; notes?: string },
+  ) {
+    const { user_id } = request.tenantContext;
+    const movement = await this.retailService.recordCashMovement(
+      request.tenantContext,
+      shift_id,
+      data,
+      user_id!,
+    );
+    return this.respond(request.tenantContext, movement);
+  }
+
 
   @Get("shifts")
   async listShifts(

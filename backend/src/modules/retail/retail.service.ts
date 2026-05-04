@@ -794,6 +794,45 @@ export class RetailService {
     return shift;
   }
 
+  async recordCashMovement(
+    ctx: TenantContext,
+    shift_id: string,
+    data: {
+      amount: number;
+      type: "CASH_OUT" | "CASH_IN";
+      reason?: string;
+      notes?: string;
+    },
+    user_id: string,
+  ) {
+    const shift = await this.retailRepository.getShift(ctx, shift_id);
+    if (!shift || shift.status !== "open") {
+      throw new Error("Cannot record movement for a closed or missing shift");
+    }
+
+    const movement = await this.retailRepository.createCashMovement(ctx, {
+      shift_id,
+      store_id: shift.store_id,
+      employee_id: shift.employee_id,
+      amount: data.amount,
+      type: data.type,
+      reason: data.reason,
+      notes: data.notes,
+    });
+
+    await this.auditService.log({
+      tenant_id: ctx.tenant_id,
+      user_id,
+      module: "retail",
+      action: "CASH_MOVEMENT",
+      entity_type: "SHIFT",
+      entity_id: shift_id,
+      metadata: { amount: data.amount, type: data.type, reason: data.reason },
+    });
+
+    return movement;
+  }
+
   async listShifts(ctx: TenantContext, store_id?: string, employee_id?: string): Promise<RetailShift[]> {
     return this.retailRepository.listShifts(ctx, store_id, employee_id);
   }

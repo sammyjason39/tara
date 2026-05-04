@@ -1007,6 +1007,40 @@ export class RetailDbRepository implements IRetailRepository {
     return this.mapShift(shift);
   }
 
+  async createCashMovement(ctx: TenantContext, data: {
+    shift_id: string;
+    store_id: string;
+    employee_id: string;
+    amount: number;
+    type: string;
+    reason?: string;
+    notes?: string;
+  }) {
+    const [movement, shift] = await this.prisma.$transaction([
+      this.prisma.retail_cash_movements.create({
+        data: {
+          tenant_id: ctx.tenant_id,
+          store_id: data.store_id,
+          shift_id: data.shift_id,
+          employee_id: data.employee_id,
+          amount: data.amount,
+          type: data.type,
+          reason: data.reason,
+          notes: data.notes,
+        }
+      }),
+      this.prisma.retail_shifts.update({
+        where: { id: data.shift_id },
+        data: {
+          expected_cash: {
+            increment: data.type === "CASH_IN" ? data.amount : -data.amount
+          }
+        }
+      })
+    ]);
+    return movement;
+  }
+
   async listShifts(ctx: TenantContext, store_id?: string, employee_id?: string): Promise<RetailShift[]> {
     const where: any = { tenant_id: ctx.tenant_id };
     if (store_id) where.store_id = store_id;

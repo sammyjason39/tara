@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   ShoppingCart, RotateCcw, ScanLine, Truck, Monitor, Lock, Layout,
-  Minimize2, Maximize2, Power, Home, Store, UserCircle
+  Minimize2, Maximize2, Power, Home, Store, UserCircle, Banknote
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useRetail } from '../context/RetailContext';
@@ -26,6 +26,7 @@ const APPS: AppItem[] = [
   { id: "ops-opname", title: "Stock Opname", desc: "Inventory Audit", icon: ScanLine, route: "/m/retail/operational/opname", color: "text-indigo-600", bg: "bg-indigo-600/10", requireShift: true },
   { id: "ops-receiving", title: "Stock Intake", desc: "Good Receiving", icon: Truck, route: "/m/retail/operational/receiving", color: "text-orange-600", bg: "bg-orange-600/10", requireShift: true },
   { id: "ops-kiosk", title: "Self-Service", desc: "Guest Checkout", icon: Monitor, route: "/m/retail/operational/kiosk", color: "text-purple-600", bg: "bg-purple-600/10", requireShift: true },
+  { id: "ops-cash-out", title: "Cash Movement", desc: "Petty Cash & Out", icon: Banknote, route: "/m/retail/operational/cash-movement", color: "text-amber-600", bg: "bg-amber-600/10", requireShift: true },
   { id: "ops-shift-open", title: "Shift Open", desc: "Start Session", icon: Power, route: "/m/retail/operational/shift-open", color: "text-emerald-600", bg: "bg-emerald-600/10" },
   { id: "ops-shift-close", title: "Shift Close", desc: "End Reconciliation", icon: Lock, route: "/m/retail/operational/shift-close", color: "text-slate-900", bg: "bg-slate-200" },
 ];

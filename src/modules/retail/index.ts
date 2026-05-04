@@ -39,6 +39,7 @@ import ReceivingTerminal from "@/pages/retail/operational/ReceivingTerminal";
 import SelfServiceKiosk from "@/pages/retail/operational/SelfServiceKiosk";
 import ShiftCloseTerminal from "@/pages/retail/operational/ShiftCloseTerminal";
 import ShiftOpenTerminal from "@/pages/retail/operational/ShiftOpenTerminal";
+import CashMovementTerminal from "@/pages/retail/operational/CashMovementTerminal";
 import RetailOperationalGateway from "@/pages/retail/operational/OperationalGateway";
 import DepartmentScheduleStudio from "@/pages/core/HR/DepartmentScheduleStudio";
 
@@ -234,6 +235,16 @@ const PAGES: ReadonlyArray<ModulePageDefinition> = [
     menuGroup: "operational",
     requiredPermissions: [PERMISSIONS.OPERATIONAL_POS],
     component: RetailOperationalGateway,
+  },
+  {
+    id: "ops-cash-movement",
+    moduleId: MODULE_ID,
+    title: "Cash Movement",
+    route: "/m/retail/operational/cash-movement",
+    icon: "Banknote",
+    menuGroup: "operational",
+    requiredPermissions: [PERMISSIONS.OPERATIONAL_POS],
+    component: CashMovementTerminal,
   },
   {
     id: "ops-pos",
