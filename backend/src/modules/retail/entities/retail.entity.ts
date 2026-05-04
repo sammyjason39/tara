@@ -216,6 +216,13 @@ export class RetailShift {
   notes?: string;
   closing_note?: string;
   compliance_note?: string;
+
+  // Frontend Aliases
+  employeeId?: string;
+  openingCash?: Prisma.Decimal;
+  closingCash?: Prisma.Decimal;
+  expectedCash?: Prisma.Decimal;
+  actualCash?: Prisma.Decimal;
 }
 
 
