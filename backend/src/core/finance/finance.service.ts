@@ -181,7 +181,7 @@ export class FinanceService {
   }
 
   async executePayroll(ctx: TenantContext, period: string, userId: string) {
-    return this.financeRepository.executePayroll(ctx, period, userId);
+    return this.financeRepository.executePayrollRun(ctx, period, userId);
   }
 
   async updateMoneySource(ctx: TenantContext, id: string, updates: any) {

@@ -1058,15 +1058,16 @@ export class FinanceDbRepository extends IFinanceRepository {
 
   // Capex Budgets
   async listCapexBudgets(ctx: TenantContext): Promise<FinanceCapexBudgetRow[]> {
-    const budgets = await this.prisma.capex_budgets.findMany({ 
-      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) } 
+    const budgets = await this.prisma.capex_budgets.findMany({
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
+      include: { departments: true },
     });
     return budgets.map((b: any) => ({
-      department: b.department_id,
-      fiscalYear: b.period,
+      department: b.departments?.name || "Unassigned",
       allocatedBudget: b.allocated_budget,
-      committedBudget: b.committed_budget,
-      availableBudget: b.available_budget
+      committedBudget: b.committed_budget || new Prisma.Decimal(0),
+      availableBudget: b.available_budget || new Prisma.Decimal(0),
+      fiscalYear: b.period, // Mapping period to fiscalYear
     }));
   }
 
