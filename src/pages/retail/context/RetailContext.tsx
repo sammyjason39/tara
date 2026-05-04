@@ -133,7 +133,7 @@ export const RetailProvider: React.FC<{ children: ReactNode }> = ({
       });
       // Isolate to the current user's open shift
       const openShift = Array.isArray(shifts) ? shifts.find(
-        (s: any) => s.status === "open" && s.employeeId === session.user_id
+        (s: any) => s.status === "open"
       ) : null;
       setActiveShift(openShift || null);
     } catch (e) {

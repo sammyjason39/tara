@@ -1009,7 +1009,12 @@ export class RetailDbRepository implements IRetailRepository {
   async listShifts(ctx: TenantContext, store_id?: string, employee_id?: string): Promise<RetailShift[]> {
     const where: any = { tenant_id: ctx.tenant_id };
     if (store_id) where.store_id = store_id;
-    if (employee_id) where.employee_id = employee_id;
+    if (employee_id) {
+      where.OR = [
+        { employee_id: employee_id },
+        { employees: { user_id: employee_id } }
+      ];
+    }
 
     const shifts = await this.prisma.retail_shifts.findMany({
       where,

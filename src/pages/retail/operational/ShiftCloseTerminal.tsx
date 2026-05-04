@@ -51,7 +51,7 @@ const ShiftCloseTerminal = () => {
           }
         );
         const current = shifts.find(
-          (s) => s.status === "open" && s.employeeId === session.user_id,
+          (s) => s.status === "open",
         );
         
         if (current) {
