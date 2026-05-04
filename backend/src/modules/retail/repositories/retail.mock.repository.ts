@@ -249,6 +249,10 @@ export class RetailMockRepository implements IRetailRepository {
     return this.shifts[index];
   }
 
+  async createCashMovement(ctx: TenantContext, data: any): Promise<any> {
+    return { id: uuidv4(), ...data, created_at: new Date() };
+  }
+
   async listPromotions(ctx: TenantContext): Promise<any[]> { return []; }
   async updatePromotion(ctx: TenantContext, promotionId: string, data: any): Promise<any> { return {}; }
   async listChannels(ctx: TenantContext): Promise<any[]> { return []; }

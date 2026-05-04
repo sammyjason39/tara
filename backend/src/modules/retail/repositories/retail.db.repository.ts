@@ -1083,8 +1083,7 @@ export class RetailDbRepository implements IRetailRepository {
   async reconcileShift(ctx: TenantContext,
     shift_id: string,
     data: {
-      actualCash?: Prisma.Decimal;
-      cash_movements?: any[];
+      actual_cash: Prisma.Decimal;
       variance: Prisma.Decimal;
       reason: string;
     },

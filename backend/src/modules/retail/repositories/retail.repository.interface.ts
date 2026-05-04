@@ -240,6 +240,16 @@ export abstract class IRetailRepository {
     tx?: Prisma.TransactionClient,
   ): Promise<RetailShift>;
 
+  abstract createCashMovement(ctx: TenantContext, data: {
+    shift_id: string;
+    store_id: string;
+    employee_id: string;
+    amount: number;
+    type: string;
+    reason?: string;
+    notes?: string;
+  }): Promise<any>;
+
 
   // ============================================================
   // PROMOTIONS
