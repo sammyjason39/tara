@@ -35,7 +35,7 @@ const APPS: AppItem[] = [
 const RetailOperationalGateway = () => {
   const navigate = useNavigate();
   const { activeStore, activeShift, setMode } = useRetail();
-  const { user, session } = useAuth();
+  const { user, session, logout } = useAuth();
   const [isFullscreen, setIsFullscreen] = React.useState(false);
 
   const companyName = user?.user_companies?.find(c => c.tenant_id === session?.tenant_id)?.company.name || "Zenvix Corp";
@@ -141,11 +141,20 @@ const RetailOperationalGateway = () => {
                 
                 <Button 
                   variant="outline"
-                  className="bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white h-16 px-10 rounded-2xl font-black italic gap-4 tracking-[0.2em] uppercase text-[11px] transition-all shadow-xl hover:scale-105 active:scale-95"
+                  className="bg-indigo-500/10 border-indigo-500/20 text-indigo-500 hover:bg-indigo-600 hover:text-white h-16 px-10 rounded-2xl font-black italic gap-4 tracking-[0.2em] uppercase text-[11px] transition-all shadow-xl hover:scale-105 active:scale-95"
                   onClick={handleExit}
                 >
-                  <Power className="w-5 h-5" />
+                  <Layout className="w-5 h-5" />
                   Management
+                </Button>
+
+                <Button 
+                  variant="outline"
+                  className="bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white h-16 px-10 rounded-2xl font-black italic gap-4 tracking-[0.2em] uppercase text-[11px] transition-all shadow-xl hover:scale-105 active:scale-95"
+                  onClick={logout}
+                >
+                  <Power className="w-5 h-5" />
+                  Deactivate
                 </Button>
              </div>
           </div>
