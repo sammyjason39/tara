@@ -19,6 +19,7 @@ import {
   ShieldAlert,
   ChevronRight,
   Power,
+  Settings,
 } from "lucide-react";
 import {
   Card,
