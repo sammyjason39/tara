@@ -78,6 +78,11 @@ const RetailOperationalGateway = () => {
         <div className="flex flex-col xl:flex-row justify-between items-stretch xl:items-center gap-8 mb-12 bg-white/[0.03] p-10 rounded-[3.5rem] border border-white/10 backdrop-blur-3xl shadow-2xl relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
           
+          {/* Tactical Mode Toggle - Absolute to avoid pushing other elements */}
+          <div className="absolute top-6 right-10 z-20 hidden md:block">
+            <RetailModeSwitchControl variant="tactical" />
+          </div>
+          
           <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
             <div className="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center shadow-[0_0_50px_rgba(79,70,229,0.4)] transform hover:rotate-12 transition-transform duration-500">
               <Store className="w-10 h-10 text-white" />
@@ -101,10 +106,6 @@ const RetailOperationalGateway = () => {
              <div className="flex flex-col items-end gap-1 px-8 border-r border-white/10 hidden xl:flex">
                 <span className="text-[9px] font-black uppercase text-slate-500 tracking-[0.3em]">Operator Identity</span>
                 <span className="text-sm font-black uppercase text-white italic tracking-widest">{user?.first_name} {user?.last_name}</span>
-             </div>
-
-             <div className="px-6 flex items-center gap-6 border-r border-white/10">
-               <RetailModeSwitchControl variant="tactical" />
              </div>
 
              {activeShift ? (
