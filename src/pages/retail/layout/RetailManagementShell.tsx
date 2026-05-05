@@ -34,7 +34,8 @@ import {
   ShieldCheck,
   GitBranch,
   Cpu,
-  Briefcase
+  Briefcase,
+  Settings
 } from "lucide-react";
 import { useRetail } from "../context/RetailContext";
 import { RetailModeSwitchControl } from "../components/RetailModeSwitchControl";

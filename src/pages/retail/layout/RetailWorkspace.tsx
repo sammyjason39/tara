@@ -20,6 +20,7 @@ import {
   ChevronRight,
   Power,
   Settings,
+  ShoppingCart,
 } from "lucide-react";
 import {
   Card,
