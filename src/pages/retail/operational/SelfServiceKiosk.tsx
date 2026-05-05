@@ -305,7 +305,7 @@ const SelfServiceKiosk = () => {
               <CardHeader className="p-10 border-b border-white/5 bg-black/20">
                 <CardTitle className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] italic flex items-center gap-4">
                    <ShoppingBag className="w-5 h-5" /> Active Tray Consolidations
-                </Badge>
+                </CardTitle>
               </CardHeader>
               <CardContent className="p-0 flex-1 overflow-hidden">
                 <ScrollArea className="h-full">

@@ -30,7 +30,7 @@ import { Separator } from "@/components/ui/separator";
 import { useSession } from "@/core/security/session";
 import { apiRequest } from "@/core/api/apiClient";
 import { toast } from "sonner";
-import { cn } from "@/core/utils/cn";
+import { cn } from "@/lib/utils";
 import { StrategicExpansionModal } from "@/components/ui/StrategicExpansionModal";
 
 const eventColors: Record<string, string> = {
