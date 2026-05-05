@@ -51,6 +51,17 @@ import MyPulse from "@/pages/portal/MyPulse";
 import LogHub from "@/pages/core/logs/LogHub";
 import WorkflowInbox from "@/pages/core/WorkflowInbox";
 
+// Governance Wrappers
+const RetailSchedulePage = () => <DepartmentScheduleStudio workspaceDeptId="RETAIL" title="Retail Operations" noShell={true} />;
+const RetailAttendancePage = () => <DepartmentAttendanceStudio workspaceDeptId="RETAIL" title="Retail Operations" noShell={true} />;
+const RetailAdminPage = () => <DeptAdmin departmentId="RETAIL" departmentName="Retail Operations" noShell={true} />;
+const RetailPurchaseRequestPage = () => <PurchaseRequestDesk noShell={true} />;
+const RetailMyPulsePage = () => <MyPulse noShell={true} />;
+const RetailLogHubPage = () => <LogHub noShell={true} />;
+const RetailWorkflowInboxPage = () => <WorkflowInbox noShell={true} />;
+const RetailStockOpnamePage = () => <StockOpnameScanner noShell={true} />;
+const RetailAuditLedgerPage = () => <ComplianceAuditLedger noShell={true} />;
+
 // ============================================================
 // MODULE IDENTITY (LOCKED)
 // ============================================================
@@ -220,7 +231,7 @@ const PAGES: ReadonlyArray<ModulePageDefinition> = [
     icon: "FileText",
     menuGroup: "management",
     requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
-    component: ComplianceAuditLedger,
+    component: RetailAuditLedgerPage,
   },
   {
     id: "mgt-schedule",
@@ -230,7 +241,7 @@ const PAGES: ReadonlyArray<ModulePageDefinition> = [
     icon: "Calendar",
     menuGroup: "management",
     requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
-    component: () => DepartmentScheduleStudio({ workspaceDeptId: "RETAIL", title: "Retail Operations" }),
+    component: RetailSchedulePage,
   },
   {
     id: "mgt-attendance",
@@ -240,7 +251,7 @@ const PAGES: ReadonlyArray<ModulePageDefinition> = [
     icon: "Clock",
     menuGroup: "management",
     requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
-    component: () => DepartmentAttendanceStudio({ workspaceDeptId: "RETAIL", title: "Retail Operations" }),
+    component: RetailAttendancePage,
   },
   {
     id: "mgt-admin",
@@ -250,7 +261,7 @@ const PAGES: ReadonlyArray<ModulePageDefinition> = [
     icon: "Settings",
     menuGroup: "management",
     requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
-    component: () => DeptAdmin({ departmentId: "RETAIL", departmentName: "Retail Operations" }),
+    component: RetailAdminPage,
   },
   {
     id: "mgt-prs",
@@ -260,7 +271,7 @@ const PAGES: ReadonlyArray<ModulePageDefinition> = [
     icon: "ShoppingCart",
     menuGroup: "management",
     requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
-    component: PurchaseRequestDesk,
+    component: RetailPurchaseRequestPage,
   },
   {
     id: "mgt-portal",
@@ -270,7 +281,7 @@ const PAGES: ReadonlyArray<ModulePageDefinition> = [
     icon: "UserCircle",
     menuGroup: "management",
     requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
-    component: MyPulse,
+    component: RetailMyPulsePage,
   },
   {
     id: "mgt-logs",
@@ -280,7 +291,7 @@ const PAGES: ReadonlyArray<ModulePageDefinition> = [
     icon: "History",
     menuGroup: "management",
     requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
-    component: LogHub,
+    component: RetailLogHubPage,
   },
   {
     id: "mgt-workflow",
@@ -290,7 +301,7 @@ const PAGES: ReadonlyArray<ModulePageDefinition> = [
     icon: "GitBranch",
     menuGroup: "management",
     requiredPermissions: [PERMISSIONS.RETAIL_ACCESS],
-    component: WorkflowInbox,
+    component: RetailWorkflowInboxPage,
   },
 
   // --- OPERATIONAL PLANE ---
@@ -343,7 +354,7 @@ const PAGES: ReadonlyArray<ModulePageDefinition> = [
     icon: "ScanLine",
     menuGroup: "operational",
     requiredPermissions: [PERMISSIONS.OPERATIONAL_POS],
-    component: StockOpnameScanner,
+    component: RetailStockOpnamePage,
     supportedDeviceTypes: ["desktop", "mobile", "tablet"],
   },
   {

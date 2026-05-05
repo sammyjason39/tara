@@ -2,7 +2,7 @@ import type { HRAuditFields } from "../hr/base";
 
 export interface ReceiptComponent {
   id: string;
-  type: "header" | "transaction_info" | "item_list" | "totals_ledger" | "payment_info" | "qr_code" | "footer_text";
+  type: "header" | "transaction_info" | "item_list" | "totals_ledger" | "payment_info" | "qr_code" | "barcode" | "footer_text";
   title: string;
   visible: boolean;
   order: number;

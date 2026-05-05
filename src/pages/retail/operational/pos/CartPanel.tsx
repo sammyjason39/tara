@@ -22,6 +22,7 @@ interface CartItem {
   price: number;
   quantity: number;
   sku: string;
+  discount?: number;
 }
 
 interface CartPanelProps {
@@ -36,6 +37,7 @@ interface CartPanelProps {
   cartTaxRate: number;
   cartDiscount: number;
   onOpenModifiers: () => void;
+  onApplyLineDiscount?: (id: string, amount: number) => void;
   totals: {
     subtotal: number;
     totalItemDiscount: number;
@@ -57,6 +59,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({
   cartTaxRate,
   cartDiscount,
   onOpenModifiers,
+  onApplyLineDiscount,
   totals,
 }) => {
   const selectedItem = cart.find((item) => item.id === selectedItemId);
@@ -136,17 +139,38 @@ export const CartPanel: React.FC<CartPanelProps> = ({
                       </div>
                     </div>
                     {isActive && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRemove(item.id);
-                        }}
-                        className="p-1.5 rounded-lg bg-rose-500/20 text-rose-200 hover:text-white hover:bg-rose-500 transition-all"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const val = prompt("Enter Discount Amount (Rp):", "0");
+                            if (val) onApplyLineDiscount?.(item.id, parseFloat(val));
+                          }}
+                          className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-200 hover:text-white hover:bg-emerald-500 transition-all flex items-center gap-1"
+                        >
+                          <Zap className="w-3.5 h-3.5" />
+                          <span className="text-[10px] font-black italic">DISC</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemove(item.id);
+                          }}
+                          className="p-1.5 rounded-lg bg-rose-500/20 text-rose-200 hover:text-white hover:bg-rose-500 transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     )}
                   </div>
+                  
+                  {item.discount && item.discount > 0 && (
+                    <div className="flex items-center gap-2 -mt-2 mb-1">
+                      <Badge variant="outline" className={`text-[9px] font-black italic tracking-tight py-0 px-2 rounded-lg border-emerald-500/30 ${isActive ? 'bg-white text-emerald-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                        PROMO APPLIED: - Rp {item.discount.toLocaleString()}
+                      </Badge>
+                    </div>
+                  )}
 
                   {/* Bottom Row: Controls & Line Total */}
                   <div className="flex items-center justify-between gap-4 mt-auto">
@@ -209,7 +233,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({
                         <span className="text-[10px] not-italic opacity-40 mr-0.5">
                           RP
                         </span>
-                        {(item.price * item.quantity).toLocaleString()}
+                        {(item.price * item.quantity - (item.discount || 0)).toLocaleString()}
                       </div>
                     </div>
                   </div>

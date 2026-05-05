@@ -1815,6 +1815,7 @@ export class RetailDbRepository implements IRetailRepository {
 
       // 4. Process Items & Order
       let subtotal = new Prisma.Decimal(0);
+      let totalDiscount = new Prisma.Decimal(0);
       const orderId = uuidv4();
       const itemsData = [];
 
@@ -1826,8 +1827,11 @@ export class RetailDbRepository implements IRetailRepository {
 
         const q = new Prisma.Decimal(item.quantity);
         const up = new Prisma.Decimal(item.unit_price);
+        const itemDiscount = new Prisma.Decimal(item.discount || 0);
         const itemSubtotal = q.mul(up);
+        
         subtotal = subtotal.add(itemSubtotal);
+        totalDiscount = totalDiscount.add(itemDiscount);
 
         // Calculate Unit Cost (Valuation Lock)
         const costLayers = await tx.cost_layers.findMany({
@@ -1847,9 +1851,9 @@ export class RetailDbRepository implements IRetailRepository {
           product_id: item.product_id,
           quantity: q,
           unit_price: up,
-          total_price: itemSubtotal,
+          total_price: itemSubtotal.minus(itemDiscount),
           unit_cost: new Prisma.Decimal(unitCost),
-          discount: new Prisma.Decimal(0),
+          discount: itemDiscount,
           tax_rate: item.tax_rate ? new Prisma.Decimal(item.tax_rate) : undefined,
         });
 
@@ -1896,6 +1900,8 @@ export class RetailDbRepository implements IRetailRepository {
         where: { user_id: user_id, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) }
       });
 
+      const netSubtotal = subtotal.minus(totalDiscount).minus(new Prisma.Decimal(data.cart_discount || 0));
+
       const order = await tx.retail_orders.create({
         data: {
           id: orderId,
@@ -1907,8 +1913,8 @@ export class RetailDbRepository implements IRetailRepository {
           customer_id: data.customer_id,
           shift_id: data.shift_id,
           status: data.payment_method === "GATEWAY" || data.payment_method === "qr" ? "pending" : "paid",
-          subtotal: subtotal,
-          tax: new Prisma.Decimal(data.grand_total).minus(subtotal),
+          subtotal: netSubtotal,
+          tax: new Prisma.Decimal(data.grand_total).minus(netSubtotal),
           total_amount: new Prisma.Decimal(data.grand_total),
           currency: "IDR",
           payment_method: data.payment_method,

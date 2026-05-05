@@ -30,7 +30,7 @@ import {
 import { Search, Info, Loader2, AlertCircle, CheckCircle2, Activity } from "lucide-react";
 import { adminService } from "@/core/services/adminService";
 
-export default function LogHub() {
+export default function LogHub({ noShell = false }: { noShell?: boolean }) {
   const session = useSession();
   const [logs, setLogs] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
@@ -121,10 +121,12 @@ export default function LogHub() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="System Logs"
-        subtitle="Centralized diagnostics for API requests, background jobs, and application errors."
-      />
+      {!noShell && (
+        <PageHeader
+          title="System Logs"
+          subtitle="Centralized diagnostics for API requests, background jobs, and application errors."
+        />
+      )}
 
       {/* --- OBSERVABILITY PANELS --- */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

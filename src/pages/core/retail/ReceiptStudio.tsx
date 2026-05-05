@@ -8,13 +8,15 @@ import {
   Trash2, 
   GripVertical,
   Type,
+  Trash,
+  Barcode as BarcodeIcon,
   QrCode,
   AlignLeft,
   AlignCenter,
   AlignRight,
-  Maximize2,
-  Trash
+  Maximize2
 } from 'lucide-react';
+import Barcode from 'react-barcode';
 import { useSession } from '@/core/security/session';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -38,7 +40,8 @@ export default function ReceiptStudio() {
     { id: '4', type: 'totals_ledger', title: 'Financial Ledger', visible: true, order: 3 },
     { id: '5', type: 'payment_info', title: 'Payment Context', visible: true, order: 4 },
     { id: '6', type: 'qr_code', title: 'Marketing QR', visible: true, order: 5, config: { alignment: 'center' } },
-    { id: '7', type: 'footer_text', title: 'Marketing Footer', visible: true, order: 6, config: { alignment: 'center', content: 'THANK YOU FOR SHOPPING!' } },
+    { id: '8', type: 'barcode', title: 'Transaction Barcode', visible: true, order: 6, config: { alignment: 'center' } },
+    { id: '7', type: 'footer_text', title: 'Marketing Footer', visible: true, order: 7, config: { alignment: 'center', content: 'THANK YOU FOR SHOPPING!' } },
   ]);
 
   const [activeComponentId, setActiveComponentId] = useState<string | null>('1');
@@ -172,6 +175,19 @@ export default function ReceiptStudio() {
                             <div className="py-4 flex flex-col items-center gap-2">
                                <QrCode className="w-16 h-16 text-slate-300" />
                                <p className="text-[7px]">SCAN FOR DIGITAL ARCHIVE</p>
+                            </div>
+                         )}
+
+                         {comp.type === 'barcode' && (
+                            <div className="py-4 flex flex-col items-center">
+                               <Barcode 
+                                  value="ZEN-88291" 
+                                  width={1.2} 
+                                  height={40} 
+                                  displayValue={false} 
+                                  background="transparent"
+                               />
+                               <p className="text-[7px] mt-1 tracking-widest font-black italic">ZEN-88291</p>
                             </div>
                          )}
 

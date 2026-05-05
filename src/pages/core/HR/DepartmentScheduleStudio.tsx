@@ -16,11 +16,25 @@ interface DepartmentScheduleStudioProps {
  */
 export default function DepartmentScheduleStudio({ 
   workspaceDeptId, 
-  title 
-}: DepartmentScheduleStudioProps) {
+  title,
+  noShell = false
+}: DepartmentScheduleStudioProps & { noShell?: boolean }) {
   const session = useSession();
   const { canManagePersonnel } = useDepartmentalGovernance();
   const [selectedDeptId, setSelectedDeptId] = useState(workspaceDeptId);
+
+  const content = (
+    <div className="max-w-[1600px] mx-auto">
+      <WorkforceScheduler 
+        departmentId={selectedDeptId} 
+        title={`${selectedDeptId} Staffing Matrix`}
+        isHR={canManagePersonnel}
+        onDepartmentChange={setSelectedDeptId}
+      />
+    </div>
+  );
+
+  if (noShell) return content;
 
   return (
     <PageShell
@@ -31,14 +45,7 @@ export default function DepartmentScheduleStudio({
         />
       }
     >
-      <div className="max-w-[1600px] mx-auto">
-        <WorkforceScheduler 
-          departmentId={selectedDeptId} 
-          title={`${selectedDeptId} Staffing Matrix`}
-          isHR={canManagePersonnel}
-          onDepartmentChange={setSelectedDeptId}
-        />
-      </div>
+      {content}
     </PageShell>
   );
 }

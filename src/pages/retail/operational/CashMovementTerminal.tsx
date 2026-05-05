@@ -9,14 +9,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSession } from '@/core/security/session';
 import { toast } from '@/hooks/use-toast';
 import { retailService } from '@/core/services/retail/retailService';
 
 const CashMovementTerminal = () => {
   const navigate = useNavigate();
   const { activeShift, refreshState } = useRetail();
-  const { session } = useAuth();
+  const session = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [type, setType] = useState<'CASH_OUT' | 'CASH_IN'>('CASH_OUT');
   const [amount, setAmount] = useState<string>("");
@@ -49,7 +49,7 @@ const CashMovementTerminal = () => {
     setIsSubmitting(true);
     try {
       await retailService.recordCashMovement(
-        session.tenant_id!,
+        session.tenant_id,
         activeShift.id,
         {
           amount: numAmount,
@@ -68,6 +68,7 @@ const CashMovementTerminal = () => {
       await refreshState();
       navigate('/m/retail/operational/gateway');
     } catch (error: any) {
+      console.error("[CashMovement] Failed to record movement:", error);
       toast({ 
         title: "Movement Failed", 
         description: error.message || "Failed to record cash movement", 

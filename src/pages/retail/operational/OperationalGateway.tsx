@@ -28,7 +28,7 @@ const APPS: AppItem[] = [
   { id: "ops-kiosk", title: "Self-Service", desc: "Guest Checkout", icon: Monitor, route: "/m/retail/operational/kiosk", color: "text-purple-600", bg: "bg-purple-600/10", requireShift: true },
   { id: "ops-cash-out", title: "Cash Movement", desc: "Petty Cash & Out", icon: Banknote, route: "/m/retail/operational/cash-movement", color: "text-amber-600", bg: "bg-amber-600/10", requireShift: true },
   { id: "ops-shift-open", title: "Shift Open", desc: "Start Session", icon: Power, route: "/m/retail/operational/shift-open", color: "text-emerald-600", bg: "bg-emerald-600/10" },
-  { id: "ops-shift-close", title: "Shift Close", desc: "End Reconciliation", icon: Lock, route: "/m/retail/operational/shift-close", color: "text-slate-900", bg: "bg-slate-200" },
+  { id: "ops-shift-close", title: "Shift Close", desc: "End Reconciliation", icon: Lock, route: "/m/retail/operational/shift-close", color: "text-slate-400", bg: "bg-slate-400/10" },
 ];
 
 const RetailOperationalGateway = () => {

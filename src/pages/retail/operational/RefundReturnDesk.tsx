@@ -23,6 +23,7 @@ import { retailService } from "@/core/services/retail/retailService";
 import { useSession } from "@/core/security/session";
 import { useRetail } from "../context/RetailContext";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import type { RetailOrder, RetailShift } from "@/core/types/retail/retail";
 
 const RefundReturnDesk = () => {
@@ -46,8 +47,16 @@ const RefundReturnDesk = () => {
     }
   }, [activeShift, isContextLoading]);
 
-  const handleLookup = async () => {
-    if (!ticketId) return;
+  // Integrated Barcode Scanner Support
+  useBarcodeScanner((barcode) => {
+    if (barcode && barcode.length >= 4) {
+      setTicketId(barcode);
+      lookupOrderById(barcode);
+    }
+  });
+
+  const lookupOrderById = async (id: string) => {
+    if (!id) return;
     setIsSearching(true);
     try {
       const orders = await retailService.listOrders(
@@ -56,7 +65,7 @@ const RefundReturnDesk = () => {
         { store_id: session.location_id },
       );
       const order = orders.find(
-        (o) => o.id === ticketId || o.id.includes(ticketId),
+        (o) => o.id === id || o.id.includes(id),
       );
 
       if (order) {
@@ -64,7 +73,7 @@ const RefundReturnDesk = () => {
         setSelectedItems([]);
         toast({
           title: "Order Found",
-          description: "Order retrieved successfully from Zenvix.",
+          description: `Order ${id} retrieved via scanner.`,
         });
       } else {
         toast({
@@ -85,6 +94,8 @@ const RefundReturnDesk = () => {
       setIsSearching(false);
     }
   };
+
+  const handleLookup = () => lookupOrderById(ticketId);
 
   const toggleItem = (itemId: string) => {
     setSelectedItems((prev) =>
@@ -131,239 +142,215 @@ const RefundReturnDesk = () => {
       .reduce((sum, item) => sum + item.totalPrice, 0) || 0;
 
   return (
-    <div className="h-screen flex flex-col p-2 overflow-hidden bg-slate-50">
-      <WorkspacePanel className="flex-1 overflow-auto rounded-[2rem]">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="shadow-2xl border-slate-200 rounded-[2.5rem] overflow-hidden">
-              <CardHeader className="bg-slate-50 border-b p-8">
-                <CardTitle className="flex items-center gap-2 text-blue-600 italic font-black uppercase tracking-tighter">
-                  <Search className="w-6 h-6" />
-                  {activeStore?.name ||
-                    activeChannel?.name ||
-                    "Transaction Recovery"}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-8 space-y-8">
-                <div className="flex gap-4">
-                  <div className="relative flex-1">
-                    <History className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+    <div className="h-[calc(100vh-64px)] overflow-hidden bg-slate-950 relative flex selection:bg-indigo-500 selection:text-white">
+      {/* Background Atmosphere */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-5%] w-[45%] h-[45%] bg-red-500/10 blur-[130px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-5%] w-[35%] h-[35%] bg-indigo-500/10 blur-[120px] rounded-full animate-pulse" />
+      </div>
+
+      <div className="flex-1 overflow-hidden relative z-10 flex flex-col p-8 gap-8">
+        {/* TACTICAL HEADER */}
+        <div className="flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-red-600 flex items-center justify-center text-white shadow-lg shadow-red-600/20">
+              <RotateCcw className="w-7 h-7" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-black italic uppercase tracking-tighter text-white">
+                Refund & Return Desk
+              </h1>
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] ml-1">
+                Registry Node: {session.location_id || "LOCAL_HUB"} • v2.4.0
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+             <div className="px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-red-500" />
+                <span className="text-[10px] font-black italic uppercase text-red-500 tracking-widest">
+                   Authority: Level 3
+                </span>
+             </div>
+             <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => window.location.reload()}
+                className="h-10 rounded-xl bg-white/5 border-white/10 text-white hover:bg-white/10 font-black italic uppercase text-[10px] tracking-widest gap-2"
+             >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSearching ? 'animate-spin' : ''}`} /> Sync Ledger
+             </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 flex-1 overflow-hidden">
+          <div className="lg:col-span-3 flex flex-col gap-6 overflow-hidden">
+            <Card className="bg-white/5 backdrop-blur-3xl border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col flex-1">
+              <CardHeader className="p-8 border-b border-white/5 space-y-6">
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="relative flex-1 group">
+                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-500 group-focus-within:text-red-500 transition-colors" />
                     <Input
-                      placeholder="Enter Invoice Number (e.g. ord-123)"
-                      className="pl-12 h-14 bg-white border-2 border-slate-100 italic font-bold rounded-2xl focus:ring-blue-500"
+                      placeholder="SCAN RECEIPT OR ENTER INVOICE ID..."
+                      className="h-20 pl-16 bg-white/5 border-2 border-white/10 text-2xl font-black text-white rounded-[1.5rem] focus:border-red-500/50 transition-all placeholder:text-slate-800 italic uppercase tracking-tighter"
                       value={ticketId}
                       onChange={(e) => setTicketId(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleLookup()}
                     />
                   </div>
                   <Button
-                    className="h-14 px-10 bg-slate-900 hover:bg-slate-800 font-black italic rounded-2xl shadow-xl transition-all"
+                    className="h-20 px-12 bg-red-600 hover:bg-red-500 text-white font-black italic rounded-[1.5rem] shadow-2xl shadow-red-600/20 transition-all uppercase tracking-widest text-sm"
                     onClick={handleLookup}
                     disabled={isSearching}
                   >
-                    {isSearching ? (
-                      <RefreshCw className="w-5 h-5 animate-spin" />
-                    ) : (
-                      "SCAN SYSTEM"
-                    )}
+                    {isSearching ? <RefreshCw className="w-6 h-6 animate-spin" /> : "Recover Order"}
                   </Button>
                 </div>
-
+              </CardHeader>
+              
+              <CardContent className="p-0 flex-1 overflow-hidden flex flex-col">
                 {!foundOrder ? (
-                  <div className="p-20 border-4 border-dashed border-slate-100 rounded-[2.5rem] flex flex-col items-center justify-center text-slate-300 space-y-4 bg-slate-50/30">
-                    <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-inner">
-                      <RotateCcw className="w-10 h-10 opacity-10" />
+                  <div className="flex-1 flex flex-col items-center justify-center text-slate-700 gap-6 opacity-30">
+                    <div className="w-32 h-32 rounded-[2.5rem] bg-white/5 flex items-center justify-center border-4 border-dashed border-white/10">
+                      <RotateCcw className="w-16 h-16" />
                     </div>
                     <div className="text-center">
-                      <p className="font-black text-slate-400 uppercase tracking-[0.2em] text-xs italic">
-                        Terminal Standby
-                      </p>
-                      <p className="text-[10px] mt-2 font-bold opacity-50">
-                        SYNCHRONIZED WITH GLOBAL SALES HUB
-                      </p>
+                      <p className="font-black italic uppercase tracking-[0.4em] text-xs">Awaiting Authentication</p>
+                      <p className="text-[10px] font-bold mt-2 uppercase tracking-widest">Connect Scanner or Input ID to Begin</p>
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
-                    <div className="flex justify-between items-start pb-6 border-b-2 border-slate-50">
-                      <div>
-                        <div className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1 italic">
-                          Order Authenticated
-                        </div>
-                        <h3 className="text-2xl font-black italic tracking-tighter text-slate-900">
-                          {foundOrder.id}
-                        </h3>
-                        <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter mt-1">
-                          Date:{" "}
-                          {new Date(foundOrder.createdAt).toLocaleString()} •
-                          Location: {foundOrder.storeId}
-                        </div>
-                      </div>
-                      <Badge className="bg-emerald-50 text-emerald-700 border-none font-black italic px-4 py-1 uppercase text-[9px]">
-                        ACTIVE_SETTLEMENT
-                      </Badge>
-                    </div>
-
+                  <ScrollArea className="flex-1 p-8">
                     <div className="space-y-4">
-                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">
-                        Inventory Reversal Map
+                      <div className="flex justify-between items-center mb-6">
+                         <div className="flex items-center gap-4">
+                            <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-[10px] font-black uppercase text-emerald-500 tracking-[0.3em] italic">Session Authorized: {foundOrder.id}</span>
+                         </div>
+                         <Badge className="bg-white/5 text-slate-500 border-white/10 font-black italic px-4 py-1 uppercase text-[9px]">
+                            {new Date(foundOrder.createdAt).toLocaleString()}
+                         </Badge>
                       </div>
-                      <div className="grid gap-3">
-                        {(Array.isArray(foundOrder.items) ? foundOrder.items : []).map((item) => (
+
+                      {(Array.isArray(foundOrder.items) ? foundOrder.items : []).map((item) => {
+                        const isSelected = selectedItems.includes(item.itemId);
+                        return (
                           <div
                             key={item.itemId}
-                            className={`flex items-center gap-5 p-5 rounded-2xl border-2 transition-all cursor-pointer ${
-                              selectedItems.includes(item.itemId)
-                                ? "bg-red-50 border-red-200 shadow-lg"
-                                : "bg-white border-slate-50 hover:border-slate-200"
+                            className={`p-6 rounded-[2rem] border transition-all flex items-center justify-between group cursor-pointer ${
+                              isSelected
+                                ? "bg-red-500/10 border-red-500/30 shadow-[0_0_40px_rgba(239,68,68,0.1)]"
+                                : "bg-white/5 border-white/10 hover:border-white/20"
                             }`}
                             onClick={() => toggleItem(item.itemId)}
                           >
-                            <Checkbox
-                              checked={selectedItems.includes(item.itemId)}
-                              className="w-5 h-5 rounded-lg border-2"
-                            />
-                            <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center shadow-inner">
-                              <Package className="w-6 h-6 text-slate-300" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="text-sm font-black italic text-slate-900">
-                                {item.name}
+                            <div className="flex gap-6">
+                              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-inner ${isSelected ? "bg-red-500/20" : "bg-white/5"}`}>
+                                <Package className={`w-8 h-8 ${isSelected ? "text-red-500" : "text-slate-500"}`} />
                               </div>
-                              <div className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">
-                                Qty: {item.quantity} • Unit: Rp{" "}
-                                {item.unitPrice.toLocaleString()}
+                              <div className="flex flex-col justify-center">
+                                <div className="text-lg font-black text-white italic tracking-tight">
+                                  {item.name}
+                                </div>
+                                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+                                  ID: {item.itemId} • Qty: {item.quantity}
+                                </div>
                               </div>
                             </div>
-                            <div className="text-sm font-black text-right text-slate-900">
-                              Rp {item.totalPrice.toLocaleString()}
+                            <div className="flex items-center gap-12">
+                               <div className="text-right">
+                                  <div className="text-2xl font-black italic text-white tracking-tighter">
+                                     Rp {item.totalPrice.toLocaleString()}
+                                  </div>
+                                  <div className="text-[9px] font-black uppercase text-slate-500 tracking-widest">
+                                     Settled Value
+                                  </div>
+                               </div>
+                               <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${isSelected ? 'bg-red-600 text-white shadow-lg' : 'bg-white/5 text-slate-700'}`}>
+                                  {isSelected ? <CheckCircle className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
+                               </div>
                             </div>
                           </div>
-                        ))}
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                )}
+                
+                {foundOrder && (
+                  <div className="p-10 bg-slate-950 text-white flex justify-between items-center border-t border-white/10 relative overflow-hidden shrink-0">
+                    <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-red-600/5 rounded-full blur-3xl" />
+                    <div>
+                      <div className="text-[10px] font-black text-red-500 uppercase tracking-[0.3em] mb-2 italic">
+                        Reversal Total
+                      </div>
+                      <div className="text-5xl font-black italic tracking-tighter">
+                        Rp {refundAmount.toLocaleString()}
                       </div>
                     </div>
-
-                    <div className="p-8 bg-slate-900 rounded-[2rem] text-white flex justify-between items-center shadow-3xl">
-                      <div>
-                        <div className="text-[10px] font-black text-red-500 uppercase tracking-[0.2em] mb-1 italic">
-                          Refund Valuation
-                        </div>
-                        <div className="text-3xl font-black italic tracking-tighter">
-                          Rp {refundAmount.toLocaleString()}
-                        </div>
-                      </div>
-                      <Button
-                        className="bg-red-600 hover:bg-red-500 text-white font-black italic rounded-2xl px-12 h-16 shadow-2xl shadow-red-900/50 disabled:opacity-50 transition-all uppercase tracking-widest text-xs"
-                        disabled={selectedItems.length === 0 || isRefunding}
-                        onClick={processRefund}
-                      >
-                        {isRefunding ? (
-                          <RefreshCw className="w-5 h-5 animate-spin" />
-                        ) : (
-                          "Authorize Return"
-                        )}
-                      </Button>
-                    </div>
+                    <Button
+                      size="lg"
+                      className="bg-red-600 hover:bg-red-500 font-black italic h-20 px-16 rounded-[1.5rem] shadow-2xl shadow-red-600/20 text-xl transition-transform active:scale-95 uppercase tracking-widest"
+                      onClick={processRefund}
+                      disabled={isRefunding || selectedItems.length === 0}
+                    >
+                      {isRefunding ? <RefreshCw className="w-8 h-8 animate-spin" /> : "Authorize Return"}
+                    </Button>
                   </div>
                 )}
               </CardContent>
             </Card>
+          </div>
 
-            <Card className="border-red-100 bg-red-50/5 shadow-xl rounded-[2rem] border-2">
-              <CardHeader className="p-6">
-                <CardTitle className="text-red-900 flex items-center gap-2 text-[10px] font-black italic uppercase tracking-widest">
-                  <ShieldAlert className="w-4 h-4 text-red-600" />
-                  Security Protocol L3
+          <div className="flex flex-col gap-8">
+            <Card className="border-none bg-red-600/10 backdrop-blur-3xl shadow-2xl rounded-[2.5rem] overflow-hidden group">
+              <CardHeader className="py-6 px-8 border-b border-red-500/20">
+                <CardTitle className="flex items-center gap-3 text-red-500 text-[11px] uppercase font-black tracking-[0.3em] leading-none italic">
+                  <ShieldAlert className="w-5 h-5" /> Policy Enforcement
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pb-8 px-8">
-                <div className="p-6 bg-white rounded-2xl border border-red-100 shadow-inner flex gap-5 items-start">
-                  <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
-                    <AlertCircle className="w-6 h-6 text-red-600" />
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-black text-red-900 uppercase tracking-tighter leading-none italic">
-                      Strict Compliance Enforcement
-                    </h4>
-                    <p className="text-[10px] text-slate-600 leading-relaxed font-bold italic">
-                      All refunds over{" "}
-                      <span className="text-red-600 underline">
-                        Rp 1,000,000
-                      </span>{" "}
-                      require Manager biometric override. Hardware telemetry and
-                      video feeds are synchronized with Audit Vault.
-                    </p>
-                  </div>
+              <CardContent className="p-8 space-y-6">
+                <p className="text-[11px] text-slate-400 font-bold leading-relaxed italic uppercase tracking-widest">
+                  Returns exceeding <span className="text-red-500">Rp 1,000,000</span> will trigger a supervisor biometric request and zone lockdown.
+                </p>
+                <div className="p-4 bg-black/20 rounded-2xl border border-red-500/10 flex items-center gap-4">
+                   <AlertCircle className="w-5 h-5 text-red-600" />
+                   <span className="text-[9px] font-black uppercase text-slate-500 tracking-widest italic">Vault Lock Active</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="flex-1 bg-white/5 backdrop-blur-3xl border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col">
+              <CardHeader className="border-b border-white/5 p-8">
+                <CardTitle className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] italic">
+                  Recent Reversals
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0 flex-1 overflow-y-auto custom-scrollbar">
+                <div className="p-6 space-y-4">
+                  {[
+                    { id: "ORD-992", amount: "450,000", time: "12m ago" },
+                    { id: "ORD-821", amount: "120,500", time: "1h ago" },
+                    { id: "ORD-770", amount: "35,000", time: "3h ago" },
+                  ].map((log, i) => (
+                    <div key={i} className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex justify-between items-center hover:bg-white/5 transition-all">
+                       <div className="flex items-center gap-4">
+                          <History className="w-4 h-4 text-slate-600" />
+                          <div className="text-[10px] font-black text-white italic uppercase tracking-tighter">{log.id}</div>
+                       </div>
+                       <div className="text-right">
+                          <div className="text-[10px] font-black text-red-500 italic">Rp {log.amount}</div>
+                          <div className="text-[8px] text-slate-600 font-bold uppercase tracking-tighter">{log.time}</div>
+                       </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
           </div>
-
-          <div className="space-y-6">
-            <Card className="shadow-2xl border-slate-200 rounded-[2.5rem] overflow-hidden">
-              <CardHeader className="bg-slate-50 p-6 border-b">
-                <CardTitle className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic">
-                  Zenvix Return Stream
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                {[
-                  {
-                    id: "ORD-JKT-992",
-                    amount: "450,000",
-                    method: "CASH",
-                    time: "12m ago",
-                  },
-                  {
-                    id: "ORD-JKT-821",
-                    amount: "120,500",
-                    method: "CARD",
-                    time: "1h ago",
-                  },
-                  {
-                    id: "ORD-JKT-770",
-                    amount: "35,000",
-                    method: "QR",
-                    time: "3h ago",
-                  },
-                ].map((log, i) => (
-                  <div
-                    key={i}
-                    className="flex gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 pb-6 group"
-                  >
-                    <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0 shadow-inner group-hover:scale-110 transition-transform">
-                      <CheckCircle className="w-6 h-6 text-emerald-500" />
-                    </div>
-                    <div className="space-y-1 min-w-0">
-                      <div className="font-black italic text-slate-900 truncate uppercase tracking-tighter">
-                        {log.id} REVERSED
-                      </div>
-                      <div className="text-[10px] font-black text-blue-600 italic">
-                        IDR {log.amount} • {log.method}
-                      </div>
-                      <div className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
-                        Verified by Retail-Auth • {log.time}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <Button
-                  variant="ghost"
-                  className="w-full text-[10px] font-black uppercase text-slate-400 hover:text-blue-600 transition-all tracking-widest italic h-12 rounded-xl"
-                  onClick={() =>
-                    toast({
-                      title: "Zenvix Registry Access",
-                      description: `Audit ledger retrieved. Displaying historical settlement reversals for ${activeStore?.name || activeChannel?.name || "current branch"}.`,
-                    })
-                  }
-                >
-                  Inspect Full Audit Ledger
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
         </div>
-      </WorkspacePanel>
+      </div>
     </div>
   );
 };

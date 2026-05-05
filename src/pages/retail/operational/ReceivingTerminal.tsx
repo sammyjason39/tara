@@ -186,7 +186,7 @@ const ReceivingTerminal = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-64px)] overflow-hidden bg-slate-900 relative flex selection:bg-indigo-500 selection:text-white">
+    <div className="h-[calc(100vh-64px)] overflow-hidden bg-slate-950 relative flex selection:bg-indigo-500 selection:text-white">
       {/* Background Atmosphere */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-10%] left-[-5%] w-[45%] h-[45%] bg-blue-500/10 blur-[130px] rounded-full animate-pulse" />

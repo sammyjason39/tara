@@ -35,7 +35,7 @@ import type {
 } from "@/core/types/procurement/procurement";
 import { ClipboardList, FileText, Info, Building2, MapPin, Tag, Wallet, ShieldCheck, ArrowUpRight, Plus, ShoppingCart, User } from "lucide-react";
 
-export default function PurchaseRequestDesk() {
+export default function PurchaseRequestDesk({ noShell = false }: { noShell?: boolean }) {
   const session = useSession();
   const [search, setSearch] = useState("");
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
@@ -234,23 +234,25 @@ export default function PurchaseRequestDesk() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Requisition Desk"
-        subtitle="Department requests with mandatory requester HOD gate and staged procurement approvals."
-        primaryAction={
-          <Button onClick={() => setRequestDialogOpen(true)}>
-            Create Requisition
-          </Button>
-        }
-        secondaryActions={
-          <Input
-            placeholder="Search requisitions"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            className="min-w-[220px]"
-          />
-        }
-      />
+      {!noShell && (
+        <PageHeader
+          title="Requisition Desk"
+          subtitle="Department requests with mandatory requester HOD gate and staged procurement approvals."
+          primaryAction={
+            <Button onClick={() => setRequestDialogOpen(true)}>
+              Create Requisition
+            </Button>
+          }
+          secondaryActions={
+            <Input
+              placeholder="Search requisitions"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className="min-w-[220px]"
+            />
+          }
+        />
+      )}
 
       <FeedbackAlert
         message={statusMessage}

@@ -40,9 +40,21 @@ const ShiftCloseTerminal = () => {
   const [isClosed, setIsClosed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  const parseDecimal = (val: any): number => {
+    if (val === null || val === undefined) return 0;
+    if (typeof val === 'number') return val;
+    // Handle Prisma/Decimal.js objects that might be serialized
+    if (typeof val === 'object' && val.toString) {
+      const parsed = parseFloat(val.toString());
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    const parsed = parseFloat(String(val));
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
   useEffect(() => {
     if (!isContextLoading && activeShift) {
-      setExpectedCash(activeShift.expectedCash ? Number(activeShift.expectedCash) : 0);
+      setExpectedCash(parseDecimal(activeShift.expectedCash));
       setExpectedCard(0);
       setIsLoading(false);
     } else if (!isContextLoading && !activeShift && !isClosed) {
@@ -50,15 +62,15 @@ const ShiftCloseTerminal = () => {
     }
   }, [activeShift, isContextLoading, isClosed]);
 
-  const parseAmount = (val: string | number) => {
+  const parseAmountInput = (val: string | number) => {
     if (!val) return 0;
     if (typeof val === 'number') return val;
-    // For IDR, strip everything that isn't a digit to avoid locale parsing bugs
+    // For IDR input, strip everything that isn't a digit to avoid locale parsing bugs
     const clean = val.toString().replace(/[^0-9]/g, '');
     return parseInt(clean, 10) || 0;
   };
 
-  const variance = actualCash ? parseAmount(actualCash) - expectedCash : 0;
+  const variance = actualCash ? parseAmountInput(actualCash) - expectedCash : 0;
   const needsExplanation = Math.abs(variance) > 10000;
 
   interface CashMovement {
@@ -100,7 +112,7 @@ const ShiftCloseTerminal = () => {
         session.tenant_id!,
         session,
         activeShift.id,
-        parseAmount(actualCash),
+        parseAmountInput(actualCash),
         explanation,
         closingNote,
         complianceNote,
@@ -130,7 +142,7 @@ const ShiftCloseTerminal = () => {
 
   if (!activeShift && !isClosed) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center bg-slate-900 text-slate-500">
+      <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-slate-500">
         <div className="w-24 h-24 bg-white/5 rounded-3xl flex items-center justify-center mb-8 border border-white/10 shadow-2xl">
           <Lock className="w-10 h-10 text-slate-700" />
         </div>
@@ -167,7 +179,7 @@ const ShiftCloseTerminal = () => {
                   Physical Tender
                 </div>
                 <div className="text-3xl font-black italic tracking-tighter text-white">
-                  Rp {parseAmount(actualCash).toLocaleString()}
+                  Rp {parseAmountInput(actualCash).toLocaleString()}
                 </div>
               </div>
               <div className="p-8 bg-white/5 rounded-[2rem] border border-emerald-500/20 shadow-inner">
@@ -195,7 +207,7 @@ const ShiftCloseTerminal = () => {
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] overflow-hidden bg-slate-900 relative flex selection:bg-indigo-500 selection:text-white">
+    <div className="h-[calc(100vh-64px)] overflow-hidden bg-slate-950 relative flex selection:bg-indigo-500 selection:text-white">
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-10%] left-[-5%] w-[45%] h-[45%] bg-indigo-500/10 blur-[130px] rounded-full animate-pulse" />
         <div className="absolute bottom-[-10%] right-[-5%] w-[35%] h-[35%] bg-blue-500/10 blur-[120px] rounded-full animate-pulse" />

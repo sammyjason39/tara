@@ -26,6 +26,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import Barcode from "react-barcode";
 
 // POS Components
 import { ScannerSearchHeader } from "./pos/ScannerSearchHeader";
@@ -43,6 +44,7 @@ interface CartItem {
   sku: string;
   taxRate?: number;
   discount?: number;
+  isManualDiscount?: boolean;
 }
 
 const CashierPOS = () => {
@@ -64,6 +66,7 @@ const CashierPOS = () => {
     name: string;
   } | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [promotions, setPromotions] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -82,9 +85,67 @@ const CashierPOS = () => {
   const [modifierReason, setModifierReason] = useState("");
   const [cartNotes, setCartNotes] = useState("");
 
+  const fetchPromotions = React.useCallback(async () => {
+    try {
+      const promoList = await retailService.listPromotions(session.tenant_id, session);
+      setPromotions(promoList);
+    } catch (err) {
+      console.error("Failed to sync promotions", err);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    fetchPromotions();
+  }, [fetchPromotions]);
+
+  const applyAutomatedDiscounts = React.useCallback((currentCart: CartItem[]) => {
+    return currentCart.map(item => {
+      // If manually discounted, we honor that choice and skip automation
+      if (item.isManualDiscount) return item;
+
+      const activePromos = (Array.isArray(promotions) ? promotions : []).filter(p => p.status === 'active');
+      
+      let bestDiscount = 0; 
+
+      for (const promo of activePromos) {
+        let applies = false;
+        if (promo.target === 'all') applies = true;
+        else if (promo.target?.startsWith('sku:') && promo.target.split(':')[1] === item.sku) applies = true;
+        else if (promo.target?.startsWith('id:') && promo.target.split(':')[1] === item.id) applies = true;
+
+        if (applies) {
+          if (promo.type === 'WHOLESALE') {
+             const minQtyMatch = promo.notes?.match(/min_qty:(\d+)/);
+             const minQty = minQtyMatch ? parseInt(minQtyMatch[1]) : 0;
+             if (item.quantity >= minQty) {
+                const discountVal = (Number(promo.value) / 100) * (item.price * item.quantity);
+                bestDiscount = Math.max(bestDiscount, discountVal);
+             }
+          } else if (promo.type === 'PERCENTAGE') {
+             const discountVal = (Number(promo.value) / 100) * (item.price * item.quantity);
+             bestDiscount = Math.max(bestDiscount, discountVal);
+          } else if (promo.type === 'FIXED') {
+             // Fixed promo value is typically for the whole line if multiple items
+             bestDiscount = Math.max(bestDiscount, Number(promo.value));
+          }
+        }
+      }
+      return { ...item, discount: bestDiscount };
+    });
+  }, [promotions]);
+
   // Post-Transaction State
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [lastTransaction, setLastTransaction] = useState<any>(null);
+  const cartRef = React.useRef<CartItem[]>([]);
+
+  useEffect(() => {
+    const discounted = applyAutomatedDiscounts(cart);
+    // Deep compare to avoid infinite loops
+    if (JSON.stringify(discounted) !== JSON.stringify(cart)) {
+      setCart(discounted);
+    }
+  }, [cart, applyAutomatedDiscounts]);
 
   const PAGE_SIZE = 20;
 
@@ -209,6 +270,13 @@ const CashierPOS = () => {
           title: "Item Scanned",
           description: `${product.name} added.`,
         });
+      } else {
+        toastRef.current({
+          title: "Scan Alert",
+          description: `Barcode [${barcodeValue}] not recognized in catalog.`,
+          variant: "destructive"
+        });
+        setBarcodeValue("");
       }
     }
   }, [barcodeValue, products, addToCart]);
@@ -256,15 +324,18 @@ const CashierPOS = () => {
 
   // Calculate Totals dynamically
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const totalItemDiscount = cart.reduce((sum, item) => sum + (item.discount || 0) * item.quantity, 0);
+  const totalItemDiscount = cart.reduce((sum, item) => sum + (item.discount || 0), 0);
   const effectiveSubtotal = Math.max(0, subtotal - totalItemDiscount - cartDiscount);
   const tax = cartTaxRate > 0 
-    ? effectiveSubtotal * (cartTaxRate / 100) 
+    ? effectiveSubtotal * cartTaxRate 
     : cart.reduce((sum, item) => {
-        const itemSub = (item.price - (item.discount || 0)) * item.quantity;
+        const itemSub = (item.price * item.quantity) - (item.discount || 0);
         return sum + (itemSub * (item.taxRate || 0));
       }, 0);
-  const grandTotal = Math.round((effectiveSubtotal + tax) * 100) / 100;
+  const isIDR = activeStore?.currency === "IDR" || !activeStore?.currency;
+  const grandTotal = isIDR 
+    ? Math.round(effectiveSubtotal + tax)
+    : Math.round((effectiveSubtotal + tax) * 100) / 100;
 
   const finalizeTransaction = async (
     method: string,
@@ -323,6 +394,7 @@ const CashierPOS = () => {
           currency: activeStore.currency || "IDR",
           payment_channel: channel,
           notes: finalNotes,
+          cart_discount: cartDiscount,
         },
         idempotencyKey,
       );
@@ -393,7 +465,7 @@ const CashierPOS = () => {
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] overflow-hidden bg-slate-900 relative flex selection:bg-indigo-500 selection:text-white">
+    <div className="h-[calc(100vh-64px)] overflow-hidden bg-slate-950 relative flex selection:bg-indigo-500 selection:text-white">
       {/* Background Atmosphere */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-10%] left-[-5%] w-[45%] h-[45%] bg-indigo-500/10 blur-[130px] rounded-full animate-pulse" />
@@ -621,6 +693,9 @@ const CashierPOS = () => {
               setModifierReason("");
               setIsModifierModalOpen(true);
             }}
+            onApplyLineDiscount={(id, amount) => {
+              setCart(prev => prev.map(item => item.id === id ? { ...item, discount: amount, isManualDiscount: true } : item));
+            }}
             totals={{ subtotal, totalItemDiscount, cartDiscount, tax, grandTotal }}
           />
         </div>
@@ -644,7 +719,7 @@ const CashierPOS = () => {
       />
 
       <Dialog open={isModifierModalOpen} onOpenChange={setIsModifierModalOpen}>
-        {/* ... existing modifier content ... */}
+         {/* Modifier content omitted for brevity as per original file structure */}
       </Dialog>
 
       {/* TRANSACTION SUCCESS MODAL - Thermal Preview */}
@@ -689,6 +764,16 @@ const CashierPOS = () => {
                       <span className="text-sm font-black tracking-tighter">{formatCurrency(lastTransaction.changeAmount)}</span>
                    </div>
                 )}
+                <div className="py-4 flex flex-col items-center">
+                   <Barcode 
+                      value={lastTransaction?.orderId || "ZEN-TEST"} 
+                      width={1.0} 
+                      height={40} 
+                      displayValue={false} 
+                      background="transparent"
+                   />
+                   <p className="text-[7px] mt-1 tracking-widest font-black italic">{lastTransaction?.orderId}</p>
+                </div>
              </div>
 
              <div className="w-full grid grid-cols-2 gap-3">

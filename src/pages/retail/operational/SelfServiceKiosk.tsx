@@ -179,111 +179,119 @@ const SelfServiceKiosk = () => {
 
   if (step === "success") {
     return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-8 animate-in zoom-in-95 duration-500">
-        <div className="w-32 h-32 bg-emerald-100 rounded-full flex items-center justify-center shadow-2xl shadow-emerald-500/20">
-          <CheckCircle className="w-16 h-16 text-emerald-600 animate-bounce" />
+      <div className="h-screen flex flex-col items-center justify-center bg-slate-950 p-8 space-y-12 animate-in zoom-in-95 duration-500 overflow-hidden selection:bg-emerald-500/30">
+        <div className="relative">
+          <div className="absolute inset-0 bg-emerald-500/20 blur-3xl animate-pulse rounded-full" />
+          <div className="relative w-48 h-48 bg-emerald-600 rounded-[3rem] flex items-center justify-center shadow-2xl shadow-emerald-500/40 transform rotate-12 transition-transform hover:rotate-0 duration-500">
+            <CheckCircle className="w-24 h-24 text-white" />
+          </div>
         </div>
-        <div className="text-center space-y-4">
-          <h1 className="text-5xl font-black italic tracking-tighter text-slate-900 uppercase">
-            Payment Received!
+        <div className="text-center space-y-6">
+          <h1 className="text-6xl font-black italic tracking-tighter text-white uppercase">
+            Transaction Sealed
           </h1>
-          <p className="text-slate-500 font-bold uppercase tracking-widest text-sm">
-            Please take your receipt and items below.
+          <p className="text-emerald-500 font-black uppercase tracking-[0.4em] text-xs italic">
+            Vault Hash: ZVX-KIOSK-{(activeStore?.id || "").slice(-8).toUpperCase()} • PCI Verified
           </p>
         </div>
-        <Button
-          className="h-20 px-12 bg-slate-900 hover:bg-slate-800 text-white font-black italic rounded-[2rem] text-xl uppercase tracking-widest transition-all"
-          onClick={() => setStep("scanning")}
-        >
-          New Customer
-        </Button>
+        <div className="flex flex-col gap-6 w-full max-w-md">
+           <Button
+             className="h-28 bg-white text-slate-950 hover:bg-slate-100 font-black italic rounded-[2.5rem] text-2xl shadow-2xl transition-all uppercase tracking-widest active:scale-95"
+             onClick={() => setStep("scanning")}
+           >
+             New Customer
+           </Button>
+           <p className="text-center text-slate-500 font-bold uppercase tracking-[0.2em] text-[9px] italic">
+              Please collect your items and printed receipt below.
+           </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex flex-col p-2 overflow-hidden bg-slate-50">
-      <WorkspacePanel className="flex-1 overflow-auto rounded-[2rem]">
-        {/* Kiosk Header Area - Compact */}
-        <div className="flex justify-between items-center bg-white p-6 rounded-[1.5rem] shadow-sm border border-slate-100 mb-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-              <Monitor className="w-6 h-6 text-white" />
+    <div className="h-[calc(100vh-64px)] overflow-hidden bg-slate-950 relative flex selection:bg-blue-500 selection:text-white">
+      {/* Dynamic Background Atmosphere */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-5%] w-[45%] h-[45%] bg-blue-500/10 blur-[130px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-5%] w-[35%] h-[35%] bg-indigo-500/10 blur-[120px] rounded-full animate-pulse" />
+      </div>
+
+      <div className="flex-1 overflow-hidden relative z-10 flex flex-col p-8 gap-8">
+        {/* TACTICAL KIOSK HEADER */}
+        <div className="flex justify-between items-center bg-white/5 p-8 rounded-[2.5rem] border border-white/10 backdrop-blur-3xl shrink-0">
+          <div className="flex items-center gap-6">
+            <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-500/40">
+              <Monitor className="w-9 h-9 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-black italic tracking-tighter text-slate-900 uppercase">
-                {activeStore?.name || activeChannel?.name || "Zenvix Kiosk V2"}
+              <h1 className="text-3xl font-black italic tracking-tighter text-white uppercase">
+                {activeStore?.name || "Zenvix Self-Checkout"}
               </h1>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-0.5 italic">
-                Station ID: KIOSK-SELF-{session.location_id} • Secured by Zenvix
+              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mt-1 italic">
+                Node Context: [KIOSK_ALPHA_9] • {activeStore?.location || "Main Terminal"}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-6">
-            <div className="text-right">
-              <div className="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-0.5 italic">
-                System Integrity
+            <div className="hidden md:block text-right">
+              <div className="text-[9px] font-black text-blue-500 uppercase tracking-[0.3em] mb-1 italic text-right">
+                Infrastructure Link
               </div>
-              <div className="flex items-center gap-1.5 justify-end">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-[10px] font-black italic uppercase">
-                  PCI_DSS: ACTIVE
+              <div className="flex items-center gap-2 justify-end">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-black italic uppercase text-emerald-500 tracking-widest">
+                  EDGE_VAULT: CONNECTED
                 </span>
               </div>
             </div>
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-xl bg-slate-50 hover:bg-blue-50 hover:text-blue-600 transition-all"
+              className="h-14 w-14 rounded-2xl bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-all"
               onClick={() =>
                 toast({
-                  title: "Kiosk Support",
-                  description: `Terminal ID: KIOSK-SELF-${session.location_id}. Please see the floor supervisor for manual assistance.`,
+                  title: "Station Telemetry",
+                  description: `Node: KIOSK-SELF-${session.location_id}. Power: Nominal. Network: 2ms Latency.`,
                 })
               }
             >
-              <Info className="w-5 h-5" />
+              <Info className="w-6 h-6" />
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left Side: Scanning & Selection */}
-          <div className="lg:col-span-8 space-y-8">
-            <Card className="border-none shadow-3xl bg-white rounded-[3rem] overflow-hidden">
-              <CardHeader className="p-10 pb-0">
-                <CardTitle className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] italic flex items-center gap-3">
-                  <Sparkles className="w-4 h-4 text-amber-500" />
-                  Guest Input Module
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-10 pt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 overflow-hidden">
+          {/* LEFT: SCANNING & PRODUCT GRID */}
+          <div className="lg:col-span-8 flex flex-col gap-8 overflow-hidden">
+            <Card className="bg-white/5 border-white/10 backdrop-blur-3xl rounded-[3rem] overflow-hidden shadow-2xl shrink-0">
+              <CardContent className="p-10">
                 <form onSubmit={handleScan} className="relative group">
-                  <Scan className="absolute left-8 top-1/2 -translate-y-1/2 w-8 h-8 text-blue-600 group-hover:scale-110 transition-transform" />
+                  <Scan className="absolute left-10 top-1/2 -translate-y-1/2 w-10 h-10 text-blue-500 group-focus-within:scale-110 transition-transform" />
                   <Input
                     ref={inputRef}
                     value={scanInput}
                     onChange={(e) => setScanInput(e.target.value)}
-                    placeholder="SCAN BARCODE HERE..."
-                    className="h-28 pl-24 pr-12 text-3xl font-black bg-slate-50/50 border-4 border-slate-100 focus:border-blue-600 focus:ring-0 rounded-[2rem] shadow-inner uppercase tracking-widest italic transition-all"
+                    placeholder="PLACE BARCODE UNDER SCANNER..."
+                    className="h-28 pl-24 text-3xl font-black bg-white/5 border-2 border-white/10 focus:border-blue-500/50 rounded-[2rem] shadow-inner text-white italic uppercase tracking-[0.2em] placeholder:text-slate-800 transition-all"
                     autoFocus
                   />
                 </form>
 
-                <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-6">
                   {products.slice(0, 4).map((p) => (
                     <button
                       key={p.id}
                       onClick={() => addToCart(p)}
-                      className="p-6 bg-white border-2 border-slate-50 rounded-3xl hover:border-blue-500 hover:shadow-2xl transition-all group"
+                      className="p-6 bg-white/5 border border-white/10 rounded-[2.5rem] hover:bg-white/10 hover:border-blue-500/50 transition-all group flex flex-col items-center"
                     >
-                      <div className="w-full aspect-square bg-slate-100 rounded-2xl mb-4 flex items-center justify-center shadow-inner group-hover:bg-blue-50 transition-colors">
-                        <ShoppingBag className="w-10 h-10 text-slate-300 group-hover:text-blue-600 group-hover:scale-110 transition-all font-black" />
+                      <div className="w-full aspect-square bg-white/5 rounded-3xl mb-6 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+                        <ShoppingBag className="w-12 h-12 text-slate-700 group-hover:text-blue-500 transition-colors" />
                       </div>
-                      <div className="text-xs font-black italic text-slate-900 truncate uppercase">
+                      <div className="text-[11px] font-black italic text-white truncate uppercase tracking-tighter w-full text-center">
                         {p.name}
                       </div>
-                      <div className="text-[10px] font-bold text-blue-600 mt-1 italic">
+                      <div className="text-[10px] font-black text-blue-500 mt-2 italic tracking-widest">
                         Rp {p.price.toLocaleString()}
                       </div>
                     </button>
@@ -292,70 +300,63 @@ const SelfServiceKiosk = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-none shadow-2xl bg-white rounded-[3rem] overflow-hidden">
-              <CardHeader className="p-10 border-b border-slate-50 bg-slate-50/20">
-                <CardTitle className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] italic">
-                  Your Selection Vault
-                </CardTitle>
+            {/* SELECTION VAULT / CART */}
+            <Card className="bg-white/5 border-white/10 backdrop-blur-3xl rounded-[3rem] overflow-hidden shadow-2xl flex flex-col flex-1">
+              <CardHeader className="p-10 border-b border-white/5 bg-black/20">
+                <CardTitle className="text-[11px] font-black text-slate-500 uppercase tracking-[0.4em] italic flex items-center gap-4">
+                   <ShoppingBag className="w-5 h-5" /> Active Tray Consolidations
+                </Badge>
               </CardHeader>
-              <CardContent className="p-0">
-                <ScrollArea className="h-[400px]">
+              <CardContent className="p-0 flex-1 overflow-hidden">
+                <ScrollArea className="h-full">
                   {cart.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center py-20 text-slate-200">
-                      <ShoppingBag className="w-24 h-24 mb-6 opacity-5" />
-                      <p className="text-sm font-black italic uppercase tracking-[0.2em]">
-                        Tray is Empty
-                      </p>
+                    <div className="h-full flex flex-col items-center justify-center py-32 text-slate-800 opacity-20">
+                      <ShoppingBag className="w-32 h-32 mb-8" />
+                      <p className="text-sm font-black italic uppercase tracking-[0.4em]">Tray Is Empty</p>
                     </div>
                   ) : (
-                    <div className="divide-y divide-slate-50">
+                    <div className="divide-y divide-white/5">
                       {(Array.isArray(cart) ? cart : []).map((item) => (
                         <div
                           key={item.id}
-                          className="p-8 flex items-center justify-between group hover:bg-slate-50 transition-colors"
+                          className="p-10 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
                         >
-                          <div className="flex gap-6">
-                            <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center shadow-inner">
-                              <ShoppingBag className="w-10 h-10 text-slate-400" />
+                          <div className="flex gap-8">
+                            <div className="w-24 h-24 bg-white/5 rounded-3xl flex items-center justify-center shadow-inner border border-white/5">
+                              <ShoppingBag className="w-12 h-12 text-slate-700" />
                             </div>
                             <div className="flex flex-col justify-center">
-                              <div className="text-xl font-black italic text-slate-900 uppercase tracking-tighter">
+                              <div className="text-2xl font-black italic text-white uppercase tracking-tighter">
                                 {item.name}
                               </div>
-                              <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mt-1 italic">
+                              <div className="text-xs font-bold text-slate-500 uppercase tracking-[0.2em] mt-2 italic">
                                 SKU: {item.sku}
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-12">
-                            <div className="flex items-center gap-4 bg-white border-2 border-slate-100 p-2 rounded-2xl shadow-sm">
+                          <div className="flex items-center gap-16">
+                            <div className="flex items-center gap-6 bg-black/40 border-2 border-white/10 p-3 rounded-[1.5rem] shadow-xl">
                               <Button
                                 variant="ghost"
-                                className="h-10 w-10 p-0 rounded-xl hover:bg-slate-100 font-black"
+                                className="h-12 w-12 p-0 rounded-xl bg-white/5 hover:bg-white/10 text-white font-black"
                                 onClick={() =>
                                   setCart((prev) =>
                                     (Array.isArray(prev) ? prev : []).map((i) =>
                                       i.id === item.id
-                                        ? {
-                                            ...i,
-                                            quantity: Math.max(
-                                              1,
-                                              i.quantity - 1,
-                                            ),
-                                          }
+                                        ? { ...i, quantity: Math.max(1, i.quantity - 1) }
                                         : i,
                                     ),
                                   )
                                 }
                               >
-                                <Minus className="w-5 h-5" />
+                                <Minus className="w-6 h-6" />
                               </Button>
-                              <div className="w-10 text-center text-xl font-black italic text-slate-900">
+                              <div className="w-12 text-center text-3xl font-black italic text-white tracking-tighter">
                                 {item.quantity}
                               </div>
                               <Button
                                 variant="ghost"
-                                className="h-10 w-10 p-0 rounded-xl hover:bg-slate-100 font-black"
+                                className="h-12 w-12 p-0 rounded-xl bg-white/5 hover:bg-white/10 text-white font-black"
                                 onClick={() =>
                                   setCart((prev) =>
                                     (Array.isArray(prev) ? prev : []).map((i) =>
@@ -366,30 +367,18 @@ const SelfServiceKiosk = () => {
                                   )
                                 }
                               >
-                                <Plus className="w-5 h-5" />
+                                <Plus className="w-6 h-6" />
                               </Button>
                             </div>
-                            <div className="text-right min-w-[120px]">
-                              <div className="text-2xl font-black italic text-slate-900 tracking-tighter">
-                                Rp{" "}
-                                {(item.price * item.quantity).toLocaleString()}
+                            <div className="text-right min-w-[160px]">
+                              <div className="text-4xl font-black italic text-white tracking-tighter">
+                                Rp {(item.price * item.quantity).toLocaleString()}
                               </div>
                               <button
-                                onClick={() => {
-                                  if (
-                                    confirm("Clear all items from your tray?")
-                                  ) {
-                                    setCart([]);
-                                    toast({
-                                      title: "Tray Cleared",
-                                      description:
-                                        "All items have been removed.",
-                                    });
-                                  }
-                                }}
-                                className="text-[10px] font-black text-red-400 uppercase tracking-widest hover:text-red-600 transition-colors mt-1"
+                                onClick={() => removeFromCart(item.id)}
+                                className="text-[10px] font-black text-red-500 uppercase tracking-widest hover:text-red-400 transition-colors mt-3 italic"
                               >
-                                Remove Item
+                                Remove From Tray
                               </button>
                             </div>
                           </div>
@@ -402,114 +391,96 @@ const SelfServiceKiosk = () => {
             </Card>
           </div>
 
-          {/* Right Side: Total & Final Checkout */}
-          <div className="lg:col-span-4 space-y-8">
-            <Card className="border-none shadow-3xl bg-slate-900 text-white rounded-[3rem] overflow-hidden sticky top-8">
-              <CardContent className="p-10 space-y-10">
-                <div className="space-y-4">
+          {/* RIGHT: SETTLEMENT PANEL */}
+          <div className="lg:col-span-4 flex flex-col gap-8 overflow-hidden">
+            <Card className="bg-slate-900 border-none shadow-3xl text-white rounded-[3.5rem] overflow-hidden flex flex-col shrink-0">
+              <CardContent className="p-12 space-y-12">
+                <div className="space-y-6">
                   <div className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em] italic">
-                    Consolidated Total
+                    Final Assessment Total
                   </div>
-                  <div className="text-6xl font-black italic tracking-tighter text-white">
+                  <div className="text-7xl font-black italic tracking-tighter text-white">
                     Rp {total.toLocaleString()}
                   </div>
-                  <div className="flex items-center gap-3 py-4 border-y border-white/10">
-                    <ShieldCheck className="w-5 h-5 text-emerald-500" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                      Encrypted Transaction Context
+                  <div className="flex items-center gap-4 p-5 bg-white/5 rounded-3xl border border-white/10 shadow-inner">
+                    <ShieldCheck className="w-6 h-6 text-emerald-500" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 italic">
+                      Hardware Encryption Hash: [SECURE]
                     </span>
                   </div>
                 </div>
 
-                {step === "scanning" ? (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
-                      <button
-                        onClick={() => setPaymentMethod("card")}
-                        className={`p-6 rounded-3xl border-2 transition-all flex flex-col items-center gap-3 ${
-                          paymentMethod === "card"
-                            ? "bg-blue-600 border-blue-400 shadow-2xl shadow-blue-500/50"
-                            : "bg-white/5 border-white/10 hover:bg-white/10"
-                        }`}
-                      >
-                        <CreditCard className="w-8 h-8" />
-                        <span className="text-[10px] font-black uppercase tracking-widest italic">
-                          Credit Card
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => setPaymentMethod("qr")}
-                        className={`p-6 rounded-3xl border-2 transition-all flex flex-col items-center gap-3 ${
-                          paymentMethod === "qr"
-                            ? "bg-amber-600 border-amber-400 shadow-2xl shadow-amber-500/50"
-                            : "bg-white/5 border-white/10 hover:bg-white/10"
-                        }`}
-                      >
-                        <QrCode className="w-8 h-8" />
-                        <span className="text-[10px] font-black uppercase tracking-widest italic">
-                          QR / E-Wallet
-                        </span>
-                      </button>
-                    </div>
-
-                    <Button
-                      className="w-full h-24 bg-blue-600 hover:bg-blue-500 text-white font-black italic rounded-[2rem] text-xl shadow-2xl shadow-blue-500/40 uppercase tracking-[0.2em] transition-all disabled:opacity-20"
-                      disabled={
-                        cart.length === 0 || !paymentMethod || isProcessing
-                      }
-                      onClick={handleCheckout}
+                <div className="space-y-8">
+                  <div className="grid grid-cols-2 gap-6">
+                    <button
+                      onClick={() => setPaymentMethod("card")}
+                      className={`p-10 rounded-[2.5rem] border-2 transition-all flex flex-col items-center gap-6 ${
+                        paymentMethod === "card"
+                          ? "bg-blue-600 border-blue-400 shadow-2xl shadow-blue-500/40"
+                          : "bg-white/5 border-white/10 hover:bg-white/10"
+                      }`}
                     >
-                      {isProcessing ? (
-                        <RefreshCw className="w-8 h-8 animate-spin" />
-                      ) : (
-                        <>
-                          Pay Now{" "}
-                          <ArrowRight className="w-8 h-8 ml-4 shrink-0" />
-                        </>
-                      )}
-                    </Button>
+                      <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center">
+                         <CreditCard className="w-9 h-9" />
+                      </div>
+                      <span className="text-[11px] font-black uppercase tracking-widest italic">Electronic Card</span>
+                    </button>
+                    <button
+                      onClick={() => setPaymentMethod("qr")}
+                      className={`p-10 rounded-[2.5rem] border-2 transition-all flex flex-col items-center gap-6 ${
+                        paymentMethod === "qr"
+                          ? "bg-amber-600 border-amber-400 shadow-2xl shadow-amber-500/40"
+                          : "bg-white/5 border-white/10 hover:bg-white/10"
+                      }`}
+                    >
+                      <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center">
+                         <QrCode className="w-9 h-9" />
+                      </div>
+                      <span className="text-[11px] font-black uppercase tracking-widest italic">QR / E-Wallet</span>
+                    </button>
                   </div>
-                ) : (
-                  <div className="space-y-6 animate-pulse">
-                    <p className="text-center font-black italic text-sm text-blue-400 uppercase tracking-widest">
-                      Awaiting Zenvix Verification...
-                    </p>
-                    <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                      <div className="bg-blue-600 h-full w-[60%] transition-all duration-[2s]" />
-                    </div>
-                  </div>
-                )}
 
-                <div className="text-center">
-                  <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
-                    By paying, you agree to our{" "}
-                    <span className="underline text-slate-400">
-                      Digital Terms of Service
-                    </span>
-                    . Receipt will be generated automatically.
-                  </p>
+                  <Button
+                    className="w-full h-32 bg-white text-slate-950 hover:bg-slate-100 font-black italic rounded-[2.5rem] text-3xl shadow-2xl uppercase tracking-[0.2em] transition-all disabled:opacity-20 active:scale-[0.98]"
+                    disabled={cart.length === 0 || !paymentMethod || isProcessing}
+                    onClick={handleCheckout}
+                  >
+                    {isProcessing ? (
+                      <RefreshCw className="w-10 h-10 animate-spin" />
+                    ) : (
+                      <div className="flex items-center gap-6">
+                        Authorize Settlement
+                        <ArrowRight className="w-10 h-10" />
+                      </div>
+                    )}
+                  </Button>
                 </div>
+
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest text-center leading-relaxed italic">
+                   Transaction is processed through the **Zenvix Fiscal Gateway**. <br />
+                   Receipt issued on successful vault clearance.
+                </p>
               </CardContent>
             </Card>
 
-            <Card className="border-2 border-slate-100 shadow-xl bg-white rounded-[2.5rem] overflow-hidden">
-              <CardContent className="p-8 flex gap-5 items-center">
-                <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center border-2 border-slate-100">
-                  <Monitor className="w-6 h-6 text-slate-400" />
+            <Card className="bg-white/5 border border-white/10 backdrop-blur-3xl rounded-[2.5rem] shadow-2xl overflow-hidden shrink-0">
+              <CardContent className="p-8 flex gap-6 items-center">
+                <div className="w-16 h-16 bg-white/5 rounded-3xl flex items-center justify-center border-2 border-white/10">
+                  <Monitor className="w-8 h-8 text-blue-400" />
                 </div>
                 <div>
-                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic leading-none mb-1">
-                    Station Telemetry
+                  <div className="text-[10px] font-black text-slate-600 uppercase tracking-widest italic mb-1">
+                    Node Telemetry
                   </div>
-                  <div className="text-sm font-black italic text-slate-900 uppercase tracking-tighter">
-                    Thermal Printer: [OK]
+                  <div className="text-base font-black italic text-white uppercase tracking-tighter">
+                    Printer Status: [SYNCED]
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
-      </WorkspacePanel>
+      </div>
     </div>
   );
 };

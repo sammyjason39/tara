@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { cn } from "@/lib/utils";
 import { PageShell } from "@/core/ui/PageShell";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
@@ -47,8 +48,9 @@ interface AttendanceStudioProps {
  */
 export default function DepartmentAttendanceStudio({ 
   workspaceDeptId, 
-  title 
-}: AttendanceStudioProps) {
+  title,
+  noShell = false
+}: { workspaceDeptId: string; title: string; noShell?: boolean }) {
   const session = useSession();
   const { toast } = useToast();
   const { canManagePersonnel, userDepartmentId } = useDepartmentalGovernance();
@@ -77,24 +79,113 @@ export default function DepartmentAttendanceStudio({
     });
   };
 
+  const content = (
+    <div className="space-y-6">
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatCard icon={UserCheck} label="Present" value="12" color="emerald" />
+        <StatCard icon={Clock} label="Late" value="2" color="amber" />
+        <StatCard icon={UserX} label="Absent" value="1" color="rose" />
+        <StatCard icon={AlertCircle} label="Anomalies" value="0" color="slate" />
+      </div>
+
+      <WorkspacePanel title="Personnel Attendance Matrix">
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Search staff by name or role..." 
+                className="pl-9 bg-slate-50/50"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <Filter className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <Calendar className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="rounded-2xl border border-slate-100 overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50/50">
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest">Personnel</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest">Check-In</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest">Check-Out</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest">Status</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredRecords.map((record) => (
+                  <TableRow key={record.id} className="hover:bg-slate-50/30 transition-colors">
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-bold text-sm tracking-tight">{record.name}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{record.role}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{record.checkIn}</TableCell>
+                    <TableCell className="font-mono text-xs">{record.checkOut}</TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          "text-[8px] font-black uppercase tracking-tighter px-1.5 py-0.5",
+                          record.status === "Present" && "bg-emerald-50 text-emerald-700 border-emerald-100",
+                          record.status === "On Duty" && "bg-sky-50 text-sky-700 border-sky-100",
+                          record.status === "Absent" && "bg-rose-50 text-rose-700 border-rose-100",
+                          record.status === "Late" && "bg-amber-50 text-amber-700 border-amber-100"
+                        )}
+                      >
+                        {record.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white rounded-lg px-3"
+                        onClick={() => handleAdjust(record.id)}
+                      >
+                        Adjust
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </WorkspacePanel>
+    </div>
+  );
+
+  if (noShell) return content;
+
   return (
     <PageShell
       header={
         <PageHeader
           title={`${title} Attendance`}
-          subtitle={`Monitor staff presence, late arrivals, and manual overrides for ${selectedDeptId}.`}
+          subtitle={`Governance, verification, and audit of personnel presence for the ${workspaceDeptId} department.`}
           primaryAction={
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               {canManagePersonnel && (
                 <Select value={selectedDeptId} onValueChange={setSelectedDeptId}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Switch Department" />
+                  <SelectTrigger className="w-[180px] bg-white border-slate-100 shadow-sm">
+                    <SelectValue placeholder="Department" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="HR">HR & Legal</SelectItem>
                     <SelectItem value="FINANCE">Finance</SelectItem>
-                    <SelectItem value="IT">IT & Tech</SelectItem>
+                    <SelectItem value="HR">Human Resources</SelectItem>
+                    <SelectItem value="IT">IT Support</SelectItem>
                     <SelectItem value="PROCUREMENT">Procurement</SelectItem>
+                    <SelectItem value="LOGISTICS">Logistics</SelectItem>
                     <SelectItem value="INVENTORY">Inventory</SelectItem>
                     <SelectItem value="SALES">Sales</SelectItem>
                     <SelectItem value="MARKETING">Marketing</SelectItem>
@@ -110,89 +201,7 @@ export default function DepartmentAttendanceStudio({
         />
       }
     >
-      <div className="space-y-6">
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <StatCard icon={UserCheck} label="Present" value="12" color="emerald" />
-          <StatCard icon={Clock} label="Late" value="2" color="amber" />
-          <StatCard icon={UserX} label="Absent" value="1" color="rose" />
-          <StatCard icon={AlertCircle} label="Anomalies" value="0" color="slate" />
-        </div>
-
-        <WorkspacePanel title="Personnel Attendance Matrix">
-          <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Search staff by name or role..." 
-                  className="pl-9 bg-slate-50/50"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <Filter className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <Calendar className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="rounded-2xl border border-slate-100 overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50/50">
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Personnel</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Check-In</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Check-Out</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Status</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRecords.map((record) => (
-                    <TableRow key={record.id} className="hover:bg-slate-50/30 transition-colors">
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-bold text-sm tracking-tight">{record.name}</span>
-                          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{record.role}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">{record.checkIn}</TableCell>
-                      <TableCell className="font-mono text-xs">{record.checkOut}</TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant="outline" 
-                          className={cn(
-                            "text-[8px] font-black uppercase tracking-tighter px-1.5 py-0.5",
-                            record.status === "Present" && "bg-emerald-50 text-emerald-700 border-emerald-100",
-                            record.status === "On Duty" && "bg-sky-50 text-sky-700 border-sky-100",
-                            record.status === "Absent" && "bg-rose-50 text-rose-700 border-rose-100",
-                            record.status === "Late" && "bg-amber-50 text-amber-700 border-amber-100"
-                          )}
-                        >
-                          {record.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-7 text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white rounded-lg px-3"
-                          onClick={() => handleAdjust(record.id)}
-                        >
-                          Adjust
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </WorkspacePanel>
-      </div>
+      {content}
     </PageShell>
   );
 }
@@ -218,4 +227,4 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any, label: strin
   );
 }
 
-import { cn } from "@/lib/utils";
+

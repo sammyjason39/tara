@@ -477,6 +477,11 @@ export class OrderItemDto {
   @Transform(toDecimalString)
   @Matches(DECIMAL_19_4_RE)
   commission_amount?: string;
+
+  @IsOptional()
+  @Transform(toDecimalString)
+  @Matches(DECIMAL_19_4_RE)
+  discount?: string;
 }
 
 export class CreateOrderDto {
@@ -538,6 +543,11 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @Transform(toDecimalString)
+  @Matches(DECIMAL_19_4_RE)
+  cart_discount?: string;
 }
 
 // ============================================================
