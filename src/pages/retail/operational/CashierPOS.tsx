@@ -264,7 +264,7 @@ const CashierPOS = () => {
         const itemSub = (item.price - (item.discount || 0)) * item.quantity;
         return sum + (itemSub * (item.taxRate || 0));
       }, 0);
-  const grandTotal = effectiveSubtotal + tax;
+  const grandTotal = Math.round((effectiveSubtotal + tax) * 100) / 100;
 
   const finalizeTransaction = async (
     method: string,

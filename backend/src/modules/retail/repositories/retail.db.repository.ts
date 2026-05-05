@@ -1025,6 +1025,7 @@ export class RetailDbRepository implements IRetailRepository {
     reason?: string;
     notes?: string;
   }) {
+    const amount = new Prisma.Decimal(String(data.amount));
     const [movement, shift] = await this.prisma.$transaction([
       this.prisma.retail_cash_movements.create({
         data: {
@@ -1032,7 +1033,7 @@ export class RetailDbRepository implements IRetailRepository {
           store_id: data.store_id,
           shift_id: data.shift_id,
           employee_id: data.employee_id,
-          amount: data.amount,
+          amount: amount,
           type: data.type,
           reason: data.reason,
           notes: data.notes,
@@ -1042,7 +1043,7 @@ export class RetailDbRepository implements IRetailRepository {
         where: { id: data.shift_id, tenant_id: ctx.tenant_id },
         data: {
           expected_cash: {
-            increment: data.type === "CASH_IN" ? data.amount : -data.amount
+            increment: data.type === "CASH_IN" ? amount : amount.negated()
           }
         }
       })
@@ -1610,6 +1611,32 @@ export class RetailDbRepository implements IRetailRepository {
         },
       });
 
+      // 4. Adjust Shift Finance if it was a cash sale
+      if (updated.payment_method?.toLowerCase() === "cash" && updated.shift_id) {
+        await tx.retail_shifts.update({
+          where: { id: updated.shift_id },
+          data: {
+            expected_cash: {
+              decrement: new Prisma.Decimal(updated.total_amount || 0)
+            }
+          }
+        });
+
+        // 5. Audit Cash Movement (Reversal)
+        await tx.retail_cash_movements.create({
+          data: {
+            tenant_id: ctx.tenant_id,
+            store_id: updated.store_id || (order as any).store_id,
+            shift_id: updated.shift_id,
+            employee_id: user_id,
+            amount: new Prisma.Decimal(updated.total_amount || 0),
+            type: "CASH_OUT",
+            reason: `ORDER_VOID: ${order_id}`,
+            notes: "Automatic reversal for voided cash order"
+          }
+        });
+      }
+
       return this.mapOrder(updated);
     });
   }
@@ -1650,6 +1677,32 @@ export class RetailDbRepository implements IRetailRepository {
       }
 
 
+
+      // 2. Adjust Shift Finance if it was a cash sale
+      if (updated.payment_method?.toLowerCase() === "cash" && updated.shift_id) {
+        await tx.retail_shifts.update({
+          where: { id: updated.shift_id },
+          data: {
+            expected_cash: {
+              decrement: updated.total_amount || 0
+            }
+          }
+        });
+
+        // 3. Audit Cash Movement (Reversal)
+        await tx.retail_cash_movements.create({
+          data: {
+            tenant_id: ctx.tenant_id,
+            store_id: updated.store_id || (order as any).store_id,
+            shift_id: updated.shift_id,
+            employee_id: user_id,
+            amount: updated.total_amount || 0,
+            type: "CASH_OUT",
+            reason: `ORDER_CANCEL: ${order_id}`,
+            notes: "Automatic reversal for cancelled cash order"
+          }
+        });
+      }
 
       return this.mapOrder(updated);
     });
@@ -1760,7 +1813,7 @@ export class RetailDbRepository implements IRetailRepository {
       }
 
       // 4. Process Items & Order
-      let subtotal = 0;
+      let subtotal = new Prisma.Decimal(0);
       const orderId = uuidv4();
       const itemsData = [];
 
@@ -1770,10 +1823,10 @@ export class RetailDbRepository implements IRetailRepository {
         });
         if (!product) throw new Error(`Product ${item.product_id} not found`);
 
-        const q = Number(item.quantity);
-        const up = Number(item.unit_price);
-        const itemSubtotal = q * up;
-        subtotal += itemSubtotal;
+        const q = new Prisma.Decimal(item.quantity);
+        const up = new Prisma.Decimal(item.unit_price);
+        const itemSubtotal = q.mul(up);
+        subtotal = subtotal.add(itemSubtotal);
 
         // Calculate Unit Cost (Valuation Lock)
         const costLayers = await tx.cost_layers.findMany({
@@ -1791,9 +1844,9 @@ export class RetailDbRepository implements IRetailRepository {
         itemsData.push({
           ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
           product_id: item.product_id,
-          quantity: new Prisma.Decimal(q),
-          unit_price: new Prisma.Decimal(up),
-          total_price: new Prisma.Decimal(itemSubtotal),
+          quantity: q,
+          unit_price: up,
+          total_price: itemSubtotal,
           unit_cost: new Prisma.Decimal(unitCost),
           discount: new Prisma.Decimal(0),
           tax_rate: item.tax_rate ? new Prisma.Decimal(item.tax_rate) : undefined,
@@ -1831,7 +1884,7 @@ export class RetailDbRepository implements IRetailRepository {
             location_id: location_id,
             type: "RETAIL_SALE",
             reference_id: orderId,
-            quantity: new Prisma.Decimal(q),
+            quantity: q,
             performed_by: user_id,
           },
         });
@@ -1853,9 +1906,9 @@ export class RetailDbRepository implements IRetailRepository {
           customer_id: data.customer_id,
           shift_id: data.shift_id,
           status: data.payment_method === "GATEWAY" || data.payment_method === "qr" ? "pending" : "paid",
-          subtotal: new Prisma.Decimal(subtotal),
-          tax: new Prisma.Decimal(Number(data.grand_total) - subtotal),
-          total_amount: new Prisma.Decimal(Number(data.grand_total)),
+          subtotal: subtotal,
+          tax: new Prisma.Decimal(data.grand_total).minus(subtotal),
+          total_amount: new Prisma.Decimal(data.grand_total),
           currency: "IDR",
           payment_method: data.payment_method,
           notes: data.notes,
@@ -1869,17 +1922,34 @@ export class RetailDbRepository implements IRetailRepository {
 
       // 7. Finance Tracking
       if (data.shift_id) {
+        const cashIncrement = data.payment_method.toLowerCase() === "cash"
+          ? new Prisma.Decimal(data.grand_total)
+          : new Prisma.Decimal(0);
+
         await tx.retail_shifts.update({
           where: { id: data.shift_id, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
           data: {
             expected_cash: {
-              increment:
-                data.payment_method.toLowerCase() === "cash"
-                  ? Number(data.grand_total)
-                  : 0,
+              increment: cashIncrement,
             },
           },
         });
+
+        if (cashIncrement.gt(0)) {
+          // Audit Cash Movement
+          await tx.retail_cash_movements.create({
+            data: {
+              tenant_id: ctx.tenant_id,
+              store_id: data.store_id,
+              shift_id: data.shift_id,
+              employee_id: user_id,
+              amount: cashIncrement,
+              type: "CASH_IN",
+              reason: `RETAIL_SALE: ${order.id}`,
+              notes: `POS Transaction: ${data.payment_method}`
+            }
+          });
+        }
       }
 
       // Journal Entry
@@ -2553,12 +2623,12 @@ export class RetailDbRepository implements IRetailRepository {
       terminal_id: "",
       start_time: s.start_time,
       end_time: s.end_time,
-      opening_cash: (s.opening_cash as unknown as Prisma.Decimal) || new Prisma.Decimal(0) as any,
-      openingCash: (s.opening_cash as unknown as Prisma.Decimal) || 0 as any, // Frontend alias
+      opening_cash: (s.opening_cash as unknown as Prisma.Decimal) || new Prisma.Decimal(0),
+      openingCash: (s.opening_cash as unknown as Prisma.Decimal) || new Prisma.Decimal(0) as any, // Frontend alias
       closing_cash: (s.closing_cash as unknown as Prisma.Decimal) || undefined,
       closingCash: (s.closing_cash as unknown as Prisma.Decimal) || undefined as any, // Frontend alias
-      expected_cash: (s.expected_cash as unknown as Prisma.Decimal) || undefined,
-      expectedCash: (s.expected_cash as unknown as Prisma.Decimal) || undefined as any, // Frontend alias
+      expected_cash: (s.expected_cash as unknown as Prisma.Decimal) || new Prisma.Decimal(0),
+      expectedCash: (s.expected_cash as unknown as Prisma.Decimal) || new Prisma.Decimal(0) as any, // Frontend alias
       actual_cash: (s.actual_cash as unknown as Prisma.Decimal) || undefined,
       actualCash: (s.actual_cash as unknown as Prisma.Decimal) || undefined as any, // Frontend alias
       variance: (s.variance as unknown as Prisma.Decimal) || undefined,

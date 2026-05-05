@@ -767,9 +767,11 @@ export class RetailService {
     );
 
     // Phase 1: Variance Alerting logic
-    const variance = (data.counted_cash ?? data.closing_cash) - Number(shift.expected_cash || 0);
+    const expected = new Prisma.Decimal(String(shift.expected_cash || 0));
+    const actual = new Prisma.Decimal(String(data.counted_cash ?? data.closing_cash));
+    const variance = actual.minus(expected);
     
-    if (Math.abs(variance) > 0.01) {
+    if (variance.abs().gt(0.01)) {
         // Raise Audit Alert
         await this.auditService.log({
             tenant_id: ctx.tenant_id,
@@ -779,9 +781,9 @@ export class RetailService {
             entity_type: "SHIFT",
             entity_id: shift_id,
             metadata: { 
-                expected: shift.expected_cash, 
-                counted: data.counted_cash ?? data.closing_cash, 
-                variance,
+                expected: expected, 
+                counted: actual, 
+                variance: variance,
                 notes: data.notes 
             },
         });
@@ -793,7 +795,7 @@ export class RetailService {
             entity_id: shift_id,
             entity_type: 'SHIFT',
             source_module: 'retail',
-            payload: { shift_id, variance, expected: shift.expected_cash },
+            payload: { shift_id, variance, expected: expected },
             user_id
         });
     }
@@ -870,14 +872,14 @@ export class RetailService {
         throw new Error("Shift must be closed before reconciliation");
       }
 
-      const expected = Number(shift.expected_cash || 0);
-      const actual = data.actual_amount;
-      const variance = actual - expected;
+      const expected = new Prisma.Decimal(String(shift.expected_cash || 0));
+      const actual = new Prisma.Decimal(String(data.actual_amount));
+      const variance = actual.minus(expected);
       const shiftData = shift as any;
       const location_id = shiftData.location_id || shiftData.stores?.location_id || "loc-central";
 
       // 2. Finance Posting (Location-Aware)
-      if (Math.abs(variance) > 0.0001) {
+      if (variance.abs().gt(0.0001)) {
         await this.financeRepository.createJournal(
           ctx,
           {
@@ -886,15 +888,15 @@ export class RetailService {
             lines: [
               {
                 accountCode: "1001", // Cash
-                debit: variance > 0 ? Math.abs(variance) : 0,
-                credit: variance < 0 ? Math.abs(variance) : 0,
+                debit: variance.gt(0) ? variance.abs().toNumber() : 0,
+                credit: variance.lt(0) ? variance.abs().toNumber() : 0,
                 description: `Cash Variance: ${data.reason}`,
                 location_id, // Location Awareness
               },
               {
                 accountCode: "6999", // Over/Short
-                debit: variance < 0 ? Math.abs(variance) : 0,
-                credit: variance > 0 ? Math.abs(variance) : 0,
+                debit: variance.lt(0) ? variance.abs().toNumber() : 0,
+                credit: variance.gt(0) ? variance.abs().toNumber() : 0,
                 description: `Shift Variance Correction`,
                 location_id, // Location Awareness
               },
@@ -1404,6 +1406,19 @@ export class RetailService {
         data: { status: "paid" },
       });
 
+      // 4.5 Update Shift Expected Cash if cash payment
+      if (data.method?.toLowerCase() === "cash") {
+        const shiftId = data.shift_id || order.shift_id;
+        if (shiftId) {
+          await tx.retail_shifts.update({
+            where: { id: shiftId },
+            data: {
+              expected_cash: { increment: data.amount }
+            }
+          });
+        }
+      }
+
       return { success: true, movements, order: updatedOrder };
     });
 
@@ -1464,9 +1479,9 @@ export class RetailService {
         // Note: Repository.processReturn handles the flag and basic checks
         await this.retailRepository.processReturn(ctx, order_id, data, tx);
 
-        let totalRefundAmount = 0;
-        let totalTaxReversal = 0;
-        let totalCogsReversal = 0;
+        let totalRefundAmount = new Prisma.Decimal(0);
+        let totalTaxReversal = new Prisma.Decimal(0);
+        let totalCogsReversal = new Prisma.Decimal(0);
 
         // 3. Process Stock and Calculate Financials
         for (const itemId of data.itemIds) {
@@ -1474,27 +1489,26 @@ export class RetailService {
             if (!item) continue;
 
             const conditionData = data.conditions?.find(c => c.productId === item.product_id) || { condition: 'good' as const, notes: 'No notes provided' };
-            const q = Number(item.quantity);
-            const unitPrice = Number(item.unit_price);
-            const unitCost = Number(item.unit_cost || 0); // Historical cost captured at checkout
+            const q = new Prisma.Decimal(String(item.quantity));
+            const up = new Prisma.Decimal(String(item.unit_price));
+            const unitCost = new Prisma.Decimal(String(item.unit_cost || 0));
 
-            // Calculate per-item tax reversal based on order's tax ratio
-            const orderTotal = Number(order.total_amount);
-            const orderTax = Number(order.tax);
-            const taxRatio = orderTotal > 0 ? orderTax / orderTotal : 0;
-            const itemTax = (unitPrice * q) * taxRatio;
+            const orderTotal = new Prisma.Decimal(String(order.total_amount));
+            const orderTax = new Prisma.Decimal(String(order.tax));
+            const taxRatio = orderTotal.gt(0) ? orderTax.div(orderTotal) : new Prisma.Decimal(0);
+            const itemTax = up.mul(q).mul(taxRatio);
 
-            totalRefundAmount += (unitPrice * q);
-            totalTaxReversal += itemTax;
-            totalCogsReversal += (unitCost * q);
+            totalRefundAmount = totalRefundAmount.add(up.mul(q));
+            totalTaxReversal = totalTaxReversal.add(itemTax);
+            totalCogsReversal = totalCogsReversal.add(unitCost.mul(q));
 
             // 4. Restore Inventory via InventoryService (Standardized way)
             // This ensures movement logs and condition routing are applied correctly
             await this.inventoryService.intakeStock(ctx, {
                 item_id: item.product_id,
                 location_id: location_id,
-                quantity: q,
-                unitCost: unitCost,
+                quantity: q.toNumber(),
+                unitCost: unitCost.toNumber(),
                 reason: `RETURN: ${conditionData.condition}`,
                 referenceType: 'RETAIL_ORDER',
                 referenceId: order_id,
@@ -1535,12 +1549,40 @@ export class RetailService {
             lines: [
                 { accountId: '4100-SALES-RETURNS', debit: totalRefundAmount, credit: 0 },
                 { accountId: '2100-TAX-PAYABLE', debit: totalTaxReversal, credit: 0 },
-                { accountId: '1010-CASH-ON-HAND', debit: 0, credit: totalRefundAmount + totalTaxReversal },
+                { accountId: '1010-CASH-ON-HAND', debit: 0, credit: totalRefundAmount.add(totalTaxReversal) },
                 // COGS/Inventory Reversal (Debit Inventory, Credit COGS)
                 { accountId: '1300-INVENTORY', debit: totalCogsReversal, credit: 0 },
                 { accountId: '5100-COGS', debit: 0, credit: totalCogsReversal }
             ]
         }, tx);
+
+        // 6.5 Update Shift Expected Cash if it was a cash sale
+        if (order.payment_method?.toLowerCase() === "cash") {
+            const shiftId = data.shift_id || order.shift_id;
+            if (shiftId) {
+                const refundTotal = totalRefundAmount.add(totalTaxReversal);
+                await tx.retail_shifts.update({
+                    where: { id: shiftId },
+                    data: {
+                        expected_cash: { decrement: refundTotal }
+                    }
+                });
+
+                // Audit Cash Movement
+                await tx.retail_cash_movements.create({
+                    data: {
+                        tenant_id: ctx.tenant_id,
+                        store_id: order.store_id,
+                        shift_id: shiftId,
+                        employee_id: user_id,
+                        amount: refundTotal,
+                        type: "CASH_OUT",
+                        reason: `RETURN_REFUND: ${order_id}`,
+                        notes: `Refund for order ${order.id}`
+                    }
+                });
+            }
+        }
 
         // 7. Audit Log
         await this.auditService.log({

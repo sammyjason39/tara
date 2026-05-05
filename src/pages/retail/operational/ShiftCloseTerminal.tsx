@@ -50,11 +50,26 @@ const ShiftCloseTerminal = () => {
     }
   }, [activeShift, isContextLoading, isClosed]);
 
-  const parseAmount = (val: string) => {
+  const parseAmount = (val: string | number) => {
     if (!val) return 0;
-    // Handle thousands separators (dots or commas)
-    const cleaned = val.replace(/[,.]/g, '');
-    return parseInt(cleaned) || 0;
+    if (typeof val === 'number') return val;
+    // Standardize: remove non-digit/non-dot characters except last dot/comma as decimal
+    const clean = val.toString().replace(/[^0-9,.]/g, '');
+    if (!clean) return 0;
+    
+    // Check if it's European style (1.000,50) or US style (1,000.50)
+    const lastComma = clean.lastIndexOf(',');
+    const lastDot = clean.lastIndexOf('.');
+    
+    if (lastComma > lastDot) {
+      // European: use comma as decimal, remove dots
+      return parseFloat(clean.replace(/\./g, '').replace(',', '.'));
+    } else if (lastDot > lastComma) {
+      // US: use dot as decimal, remove commas
+      return parseFloat(clean.replace(/,/g, ''));
+    }
+    
+    return parseFloat(clean);
   };
 
   const variance = actualCash ? parseAmount(actualCash) - expectedCash : 0;
