@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { RetailModeSwitchControl } from '../components/RetailModeSwitchControl';
 
 interface AppItem {
   id: string;
@@ -119,44 +120,38 @@ const RetailOperationalGateway = () => {
                  </div>
                </div>
              )}
+              <div className="flex items-center gap-3">
+                 <div className="mr-4 scale-125 origin-right">
+                   <RetailModeSwitchControl />
+                 </div>
 
-             <div className="flex items-center gap-3">
-                <Button 
-                  variant="outline" 
-                  className="bg-white/5 border-white/10 text-white hover:bg-indigo-600 hover:text-white h-16 w-16 rounded-2xl transition-all hover:scale-110 active:scale-95 shadow-xl group"
-                  onClick={() => window.location.href = "/"}
-                  title="Go to Core"
-                >
-                  <Home className="w-6 h-6 group-hover:rotate-12 transition-transform" />
-                </Button>
+                 <Button 
+                   variant="outline" 
+                   className="bg-white/5 border-white/10 text-white hover:bg-indigo-600 hover:text-white h-16 w-16 rounded-2xl transition-all hover:scale-110 active:scale-95 shadow-xl group"
+                   onClick={() => window.location.href = "/"}
+                   title="Go to Core"
+                 >
+                   <Home className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+                 </Button>
 
-                <Button 
-                  variant="outline" 
-                  className="bg-white/5 border-white/10 text-white hover:bg-white/10 h-16 w-16 rounded-2xl transition-all hover:scale-110 active:scale-95 shadow-xl"
-                  onClick={toggleFullscreen}
-                  title="Toggle Fullscreen"
-                >
-                  {isFullscreen ? <Minimize2 className="w-6 h-6 text-indigo-400" /> : <Maximize2 className="w-6 h-6 text-indigo-400" />}
-                </Button>
-                
-                <Button 
-                  variant="outline"
-                  className="bg-indigo-500/10 border-indigo-500/20 text-indigo-500 hover:bg-indigo-600 hover:text-white h-16 px-10 rounded-2xl font-black italic gap-4 tracking-[0.2em] uppercase text-[11px] transition-all shadow-xl hover:scale-105 active:scale-95"
-                  onClick={handleExit}
-                >
-                  <Layout className="w-5 h-5" />
-                  Management
-                </Button>
-
-                <Button 
-                  variant="outline"
-                  className="bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white h-16 px-10 rounded-2xl font-black italic gap-4 tracking-[0.2em] uppercase text-[11px] transition-all shadow-xl hover:scale-105 active:scale-95"
-                  onClick={logout}
-                >
-                  <Power className="w-5 h-5" />
-                  Deactivate
-                </Button>
-             </div>
+                 <Button 
+                   variant="outline" 
+                   className="bg-white/5 border-white/10 text-white hover:bg-white/10 h-16 w-16 rounded-2xl transition-all hover:scale-110 active:scale-95 shadow-xl"
+                   onClick={toggleFullscreen}
+                   title="Toggle Fullscreen"
+                 >
+                   {isFullscreen ? <Minimize2 className="w-6 h-6 text-indigo-400" /> : <Maximize2 className="w-6 h-6 text-indigo-400" />}
+                 </Button>
+                 
+                 <Button 
+                   variant="outline"
+                   className="bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white h-16 px-10 rounded-2xl font-black italic gap-4 tracking-[0.2em] uppercase text-[11px] transition-all shadow-xl hover:scale-105 active:scale-95"
+                   onClick={logout}
+                 >
+                   <Power className="w-5 h-5" />
+                   Deactivate
+                 </Button>
+              </div>
           </div>
         </div>
 
