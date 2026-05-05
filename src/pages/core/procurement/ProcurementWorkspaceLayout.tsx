@@ -14,7 +14,10 @@ import {
   ShieldCheck,
   Cpu,
   Archive,
-  ArrowDownLeft
+  ArrowDownLeft,
+  LayoutGrid,
+  AlertTriangle,
+  Truck
 } from "lucide-react";
 import DepartmentWorkspaceLayout, { MenuSection } from "@/components/layouts/DepartmentWorkspaceLayout";
 

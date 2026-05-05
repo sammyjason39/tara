@@ -11,7 +11,10 @@ import {
   Archive,
   History,
   GitBranch,
-  Briefcase
+  Briefcase,
+  Network,
+  Fingerprint,
+  Cpu
 } from "lucide-react";
 import DepartmentWorkspaceLayout, { MenuSection } from "@/components/layouts/DepartmentWorkspaceLayout";
 

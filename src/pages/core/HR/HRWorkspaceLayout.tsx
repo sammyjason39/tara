@@ -18,7 +18,8 @@ import {
   Archive,
   History,
   ShieldCheck,
-  Cpu
+  Cpu,
+  BarChart3
 } from "lucide-react";
 import DepartmentWorkspaceLayout, { MenuSection } from "@/components/layouts/DepartmentWorkspaceLayout";
 
@@ -72,8 +73,6 @@ const ROUTE_LABELS: Record<string, string> = {
   roster: "People Core",
   people: "People Core",
 };
-
-import { BarChart3 } from "lucide-react";
 
 export default function HRWorkspaceLayout() {
   return (

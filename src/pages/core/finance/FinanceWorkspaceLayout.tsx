@@ -18,7 +18,9 @@ import {
   ArrowDownLeft,
   Archive,
   History,
-  GitBranch
+  GitBranch,
+  BarChart3,
+  Scale
 } from "lucide-react";
 import DepartmentWorkspaceLayout, { MenuSection } from "@/components/layouts/DepartmentWorkspaceLayout";
 

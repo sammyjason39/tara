@@ -11,11 +11,12 @@ import {
   Clock,
   UserCircle,
   ShoppingCart,
-  ArrowDownLeft,
   History,
   ShieldCheck,
   GitBranch,
-  Users
+  Users,
+  Radio,
+  Settings2
 } from "lucide-react";
 import DepartmentWorkspaceLayout, { MenuSection } from "@/components/layouts/DepartmentWorkspaceLayout";
 

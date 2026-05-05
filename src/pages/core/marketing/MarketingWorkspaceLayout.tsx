@@ -18,7 +18,11 @@ import {
   Archive,
   History,
   Cpu,
-  Briefcase
+  Briefcase,
+  BarChart3,
+  Share2,
+  FileText,
+  Calendar
 } from "lucide-react";
 import DepartmentWorkspaceLayout, { MenuSection } from "@/components/layouts/DepartmentWorkspaceLayout";
 

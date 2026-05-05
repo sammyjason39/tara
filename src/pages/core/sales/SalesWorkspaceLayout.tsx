@@ -16,7 +16,9 @@ import {
   Archive,
   History,
   ShieldCheck,
-  Cpu
+  Cpu,
+  GitBranch,
+  Zap
 } from "lucide-react";
 import DepartmentWorkspaceLayout, { MenuSection } from "@/components/layouts/DepartmentWorkspaceLayout";
 
