@@ -53,23 +53,9 @@ const ShiftCloseTerminal = () => {
   const parseAmount = (val: string | number) => {
     if (!val) return 0;
     if (typeof val === 'number') return val;
-    // Standardize: remove non-digit/non-dot characters except last dot/comma as decimal
-    const clean = val.toString().replace(/[^0-9,.]/g, '');
-    if (!clean) return 0;
-    
-    // Check if it's European style (1.000,50) or US style (1,000.50)
-    const lastComma = clean.lastIndexOf(',');
-    const lastDot = clean.lastIndexOf('.');
-    
-    if (lastComma > lastDot) {
-      // European: use comma as decimal, remove dots
-      return parseFloat(clean.replace(/\./g, '').replace(',', '.'));
-    } else if (lastDot > lastComma) {
-      // US: use dot as decimal, remove commas
-      return parseFloat(clean.replace(/,/g, ''));
-    }
-    
-    return parseFloat(clean);
+    // For IDR, strip everything that isn't a digit to avoid locale parsing bugs
+    const clean = val.toString().replace(/[^0-9]/g, '');
+    return parseInt(clean, 10) || 0;
   };
 
   const variance = actualCash ? parseAmount(actualCash) - expectedCash : 0;
@@ -311,9 +297,16 @@ const ShiftCloseTerminal = () => {
                   <Input
                     className="h-32 pl-32 text-8xl font-black text-center border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-white/5 text-white tracking-tighter italic"
                     placeholder="0"
-                    type="number"
+                    type="tel"
                     value={actualCash}
-                    onChange={(e) => setActualCash(e.target.value)}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/[^0-9]/g, '');
+                      if (raw) {
+                        setActualCash(parseInt(raw, 10).toLocaleString('id-ID'));
+                      } else {
+                        setActualCash("");
+                      }
+                    }}
                   />
                   <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-600 rounded-full shadow-[0_0_20px_rgba(79,70,229,0.4)]" />
                 </div>

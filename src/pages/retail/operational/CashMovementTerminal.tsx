@@ -142,17 +142,29 @@ const CashMovementTerminal = () => {
                 </div>
 
                 {/* Amount Input */}
-                <div className="relative group">
-                  <span className="absolute left-8 top-1/2 -translate-y-1/2 text-6xl font-black text-white/10 italic tracking-tighter group-focus-within:text-indigo-500/30 transition-colors">
-                    Rp
-                  </span>
-                  <Input
-                    className="h-40 pl-32 text-8xl font-black text-center border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-white/5 text-white tracking-tighter italic"
-                    placeholder="0"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                  />
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-white/10 rounded-full group-focus-within:bg-indigo-500 transition-colors" />
+                <div className="relative group bg-white/5 border border-white/10 rounded-3xl p-8 hover:bg-white/10 transition-colors focus-within:border-indigo-500/50">
+                  <div className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 mb-4 italic text-center">
+                    Enter Amount
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 text-5xl font-black text-slate-500 italic tracking-tighter">
+                      Rp
+                    </span>
+                    <Input
+                      className="h-32 pl-24 text-7xl font-black text-center border-none bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-slate-700 text-white tracking-tighter italic"
+                      placeholder="0"
+                      type="tel"
+                      value={amount}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/[^0-9]/g, '');
+                        if (raw) {
+                          setAmount(parseInt(raw, 10).toLocaleString('id-ID'));
+                        } else {
+                          setAmount("");
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
 
                 {/* Details */}

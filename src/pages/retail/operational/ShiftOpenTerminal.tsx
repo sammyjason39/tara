@@ -44,10 +44,9 @@ const ShiftOpenTerminal = () => {
           session.tenant_id!,
           session,
           activeStore.id,
-          parseInt(openingCash) || 0,
+          parseInt(openingCash.replace(/[^0-9]/g, '')) || 0,
           "terminal-pos"
         );
-        
         toast({ title: "Session Initialized", description: "Fiscal shift is now active." });
         await refreshState();
       navigate("/m/retail/operational/gateway");
@@ -120,9 +119,16 @@ const ShiftOpenTerminal = () => {
                   <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Opening Cash Float (Rp)</label>
                   <div className="relative group">
                     <Input
-                      type="number"
+                      type="tel"
                       value={openingCash}
-                      onChange={(e) => setOpeningCash(e.target.value)}
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/[^0-9]/g, '');
+                        if (raw) {
+                          setOpeningCash(parseInt(raw, 10).toLocaleString('id-ID'));
+                        } else {
+                          setOpeningCash("");
+                        }
+                      }}
                       className="h-20 bg-white/5 border-2 border-white/10 text-3xl font-black text-white rounded-2xl px-6 focus:border-indigo-500/50 focus:ring-0 transition-all placeholder:text-slate-800"
                       placeholder="0"
                     />
