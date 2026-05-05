@@ -74,14 +74,49 @@ const RetailOperationalGateway = () => {
       </div>
 
       <div className="max-w-[1600px] mx-auto w-full flex-1 flex flex-col relative z-10">
+        {/* Top System Bar - Utilities & Mode Switch */}
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-6 mb-8 px-8">
+           <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 bg-white/[0.03] border border-white/10 px-4 py-2 rounded-xl backdrop-blur-md">
+                 <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                 <span className="text-[10px] font-black uppercase text-indigo-400 tracking-[0.2em] italic">System Status: Active</span>
+              </div>
+              <Badge variant="outline" className="border-white/10 text-slate-500 font-black italic uppercase tracking-widest text-[9px] px-3 py-1 bg-white/5">
+                OPERATIONAL_CORE_v2.5
+              </Badge>
+           </div>
+
+           <div className="flex items-center gap-6">
+              <RetailModeSwitchControl variant="tactical" />
+              
+              <div className="h-8 w-[1px] bg-white/10" />
+
+              <div className="flex items-center gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="bg-white/5 border-white/10 text-white hover:bg-indigo-600 hover:text-white h-10 w-10 rounded-xl transition-all hover:scale-110 active:scale-95 shadow-xl group"
+                    onClick={() => window.location.href = "/"}
+                    title="Go to Core"
+                  >
+                    <Home className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                  </Button>
+
+                  <Button 
+                    variant="outline" 
+                    className="bg-white/5 border-white/10 text-white hover:bg-white/10 h-10 w-10 rounded-xl transition-all hover:scale-110 active:scale-95 shadow-xl"
+                    onClick={toggleFullscreen}
+                    title="Toggle Fullscreen"
+                  >
+                    {isFullscreen ? <Minimize2 className="w-4 h-4 text-indigo-400" /> : <Maximize2 className="w-4 h-4 text-indigo-400" />}
+                  </Button>
+              </div>
+           </div>
+        </div>
+
         {/* Header Area - Ultra Tactical */}
         <div className="flex flex-col xl:flex-row justify-between items-stretch xl:items-center gap-8 mb-12 bg-white/[0.03] p-10 rounded-[3.5rem] border border-white/10 backdrop-blur-3xl shadow-2xl relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
           
-          {/* Tactical Mode Toggle - Absolute to avoid pushing other elements */}
-          <div className="absolute top-6 right-10 z-20 hidden md:block">
-            <RetailModeSwitchControl variant="tactical" />
-          </div>
           
           <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
             <div className="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center shadow-[0_0_50px_rgba(79,70,229,0.4)] transform hover:rotate-12 transition-transform duration-500">
@@ -108,52 +143,34 @@ const RetailOperationalGateway = () => {
                 <span className="text-sm font-black uppercase text-white italic tracking-widest">{user?.first_name} {user?.last_name}</span>
              </div>
 
-             {activeShift ? (
-               <div className="flex items-center gap-4 px-6 py-3 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
-                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                 <div className="flex flex-col">
-                    <span className="text-[8px] font-black uppercase text-emerald-500/60 tracking-widest leading-none mb-1">Shift Active</span>
-                    <span className="text-[10px] font-black uppercase text-emerald-400 tracking-tighter italic">{activeShift.id.slice(-12).toUpperCase()}</span>
+             <div className="flex items-center gap-10">
+               {activeShift ? (
+                 <div className="flex items-center gap-6 px-8 py-4 bg-emerald-500/10 rounded-3xl border border-emerald-500/20 shadow-[0_0_40px_rgba(16,185,129,0.15)]">
+                   <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.8)]" />
+                   <div className="flex flex-col">
+                      <span className="text-[10px] font-black uppercase text-emerald-500/70 tracking-widest leading-none mb-1.5">Shift Active</span>
+                      <span className="text-xs font-black uppercase text-emerald-400 tracking-tighter italic">{activeShift.id.slice(-16).toUpperCase()}</span>
+                   </div>
                  </div>
-               </div>
-             ) : (
-               <div className="flex items-center gap-4 px-6 py-3 bg-rose-500/10 rounded-2xl border border-rose-500/20">
-                 <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                 <div className="flex flex-col">
-                    <span className="text-[8px] font-black uppercase text-rose-500/60 tracking-widest leading-none mb-1">Terminal Status</span>
-                    <span className="text-[10px] font-black uppercase text-rose-400 tracking-tighter italic">LOCKED_MODE</span>
+               ) : (
+                 <div className="flex items-center gap-6 px-8 py-4 bg-rose-500/10 rounded-3xl border border-rose-500/20">
+                   <div className="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.8)]" />
+                   <div className="flex flex-col">
+                      <span className="text-[10px] font-black uppercase text-rose-500/70 tracking-widest leading-none mb-1.5">Lockdown</span>
+                      <span className="text-xs font-black uppercase text-rose-400 tracking-tighter italic">RE-AUTH_REQUIRED</span>
+                   </div>
                  </div>
-               </div>
-             )}
-              <div className="flex items-center gap-3">
+               )}
 
-                 <Button 
-                   variant="outline" 
-                   className="bg-white/5 border-white/10 text-white hover:bg-indigo-600 hover:text-white h-16 w-16 rounded-2xl transition-all hover:scale-110 active:scale-95 shadow-xl group"
-                   onClick={() => window.location.href = "/"}
-                   title="Go to Core"
-                 >
-                   <Home className="w-6 h-6 group-hover:rotate-12 transition-transform" />
-                 </Button>
-
-                 <Button 
-                   variant="outline" 
-                   className="bg-white/5 border-white/10 text-white hover:bg-white/10 h-16 w-16 rounded-2xl transition-all hover:scale-110 active:scale-95 shadow-xl"
-                   onClick={toggleFullscreen}
-                   title="Toggle Fullscreen"
-                 >
-                   {isFullscreen ? <Minimize2 className="w-6 h-6 text-indigo-400" /> : <Maximize2 className="w-6 h-6 text-indigo-400" />}
-                 </Button>
-                 
-                 <Button 
-                   variant="outline"
-                   className="bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white h-16 px-10 rounded-2xl font-black italic gap-4 tracking-[0.2em] uppercase text-[11px] transition-all shadow-xl hover:scale-105 active:scale-95"
-                   onClick={logout}
-                 >
-                   <Power className="w-5 h-5" />
-                   Deactivate
-                 </Button>
-              </div>
+               <Button 
+                 variant="outline"
+                 className="bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white h-20 px-12 rounded-[2rem] font-black italic gap-5 tracking-[0.3em] uppercase text-xs transition-all shadow-2xl hover:scale-105 active:scale-95"
+                 onClick={logout}
+               >
+                 <Power className="w-6 h-6" />
+                 Deactivate
+               </Button>
+             </div>
           </div>
         </div>
 
