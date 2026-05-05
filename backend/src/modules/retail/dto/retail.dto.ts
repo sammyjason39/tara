@@ -899,4 +899,9 @@ export class CheckoutDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @Transform(toDecimalString)
+  @Matches(DECIMAL_19_4_RE)
+  cart_discount?: string;
 }
