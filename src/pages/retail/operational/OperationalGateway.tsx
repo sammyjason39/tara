@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useRetail } from '../context/RetailContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface AppItem {
