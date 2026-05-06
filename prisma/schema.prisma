@@ -5171,8 +5171,8 @@ model retail_channels {
   integration_category String     @default("PRESET")
   webhook_url          String?
   companies            companies? @relation(fields: [company_id], references: [id])
-  // @@map("retail_channels") - standardized
   tenants              tenants    @relation(fields: [tenant_id], references: [id])
+  stores               stores[]   @relation("ChannelBranchLinks")
 
   retail_channel_products retail_channel_products[]
 
@@ -5900,6 +5900,7 @@ model stores {
   employees                      employees?                       @relation(fields: [manager_id], references: [id])
   companies                      companies?                       @relation(fields: [company_id], references: [id])
   ecommerce_connectors           ecommerce_connectors[]           @relation("EcommerceBranchLinks")
+  retail_channels                retail_channels[]                @relation("ChannelBranchLinks")
   // @@map("stores") - standardized
   tenants                        tenants                          @relation(fields: [tenant_id], references: [id])
   marketing_accounts             marketing_accounts[]

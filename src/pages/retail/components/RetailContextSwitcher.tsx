@@ -25,27 +25,53 @@ import { Badge } from "@/components/ui/badge";
 
 export const RetailContextSwitcher = () => {
   const session = useSession();
-  const { activeStore, activeChannel, stores, channels, setStore, setChannel } =
-    useRetail();
+  const {
+    activeStore,
+    activeChannel,
+    stores,
+    channels,
+    setStore,
+    setChannel,
+    mode,
+    activeShift,
+  } = useRetail();
 
-  // Only OWNER and SUPERADMIN can switch context
+  // Expanded RBAC: Allow ADMIN and those with MANAGE_RETAIL permission
   const canSwitch =
-    session.role === Roles.OWNER || session.role === Roles.SUPERADMIN;
+    session.role === Roles.OWNER ||
+    session.role === Roles.SUPERADMIN ||
+    session.role === Roles.COMPANY_ADMIN ||
+    (session.permissions || []).includes("MANAGE_RETAIL");
 
-  if (!canSwitch) {
-    return (
-      <div className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-xl">
-        <Store className="w-4 h-4 text-slate-500" />
-        <span className="text-xs font-black italic uppercase tracking-tight text-slate-900">
-          {activeStore?.name || activeChannel?.name || "No Active Store"}
-        </span>
-      </div>
-    );
-  }
+  // Operational focus: Prevent switching if a shift is currently active
+  const isLocked = mode === "operational" && !!activeShift;
 
   const currentSelection =
     activeStore?.name || activeChannel?.name || "Select Context";
   const isChannel = !!activeChannel;
+
+  if (!canSwitch || isLocked) {
+    return (
+      <div className={`flex items-center gap-2 px-4 py-2 ${isLocked ? "bg-indigo-50 border border-indigo-100" : "bg-slate-100"} rounded-xl`}>
+        {isChannel ? (
+          <Globe className={`w-4 h-4 ${isLocked ? "text-indigo-500" : "text-slate-500"}`} />
+        ) : (
+          <Store className={`w-4 h-4 ${isLocked ? "text-indigo-500" : "text-slate-500"}`} />
+        )}
+        <div className="flex flex-col">
+          <span className={`text-[10px] font-black uppercase tracking-tighter ${isLocked ? "text-indigo-600" : "text-slate-900"}`}>
+            {activeStore?.name || activeChannel?.name || "No Active Context"}
+          </span>
+          {isLocked && (
+            <span className="text-[8px] font-bold text-indigo-400 uppercase tracking-widest leading-none">
+              Shift Active · Context Locked
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <DropdownMenu>

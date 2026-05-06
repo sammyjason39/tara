@@ -250,8 +250,18 @@ const EcommerceConnector = () => {
                         <div className="font-black italic text-slate-900 text-sm truncate">
                           {ch.name}
                         </div>
-                        <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 truncate mt-0.5">
-                          {ch.adapterType ?? ch.integrationCategory}
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 truncate">
+                            {ch.adapterType ?? ch.integrationCategory}
+                          </div>
+                          {(ch as any).branchIds && (ch as any).branchIds.length > 0 && (
+                            <>
+                              <span className="w-1 h-1 rounded-full bg-slate-200" />
+                              <div className="flex items-center gap-1 text-[9px] font-black uppercase text-indigo-500 italic">
+                                {(ch as any).branchIds.length} Nodes
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                       <Badge

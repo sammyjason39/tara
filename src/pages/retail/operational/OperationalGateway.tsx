@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   ShoppingCart, RotateCcw, ScanLine, Truck, Monitor, Lock, Layout,
-  Minimize2, Maximize2, Power, Home, Store, UserCircle, Banknote
+  Minimize2, Maximize2, Power, Home, Store, UserCircle, Banknote, Building2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useRetail } from '../context/RetailContext';
@@ -35,7 +35,7 @@ const APPS: AppItem[] = [
 
 const RetailOperationalGateway = () => {
   const navigate = useNavigate();
-  const { activeStore, activeShift, setMode } = useRetail();
+  const { activeStore, stores, setStore, activeShift, setMode } = useRetail();
   const { user, session, logout } = useAuth();
   const [isFullscreen, setIsFullscreen] = React.useState(false);
 
@@ -65,6 +65,71 @@ const RetailOperationalGateway = () => {
     if (app.requireShift) return !!activeShift;
     return true;
   });
+
+  if (!activeStore && (Array.isArray(stores) ? stores : []).length > 0) {
+     return (
+        <div className="flex-1 flex flex-col items-center justify-center bg-slate-950 p-6 md:p-12 relative overflow-hidden selection:bg-indigo-500/30">
+           {/* Atmospheric effect */}
+           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(79,70,229,0.15)_0%,transparent_70%)]" />
+           <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] pointer-events-none" />
+           
+           <div className="relative z-10 max-w-4xl w-full animate-in fade-in zoom-in duration-700">
+              <div className="text-center mb-16">
+                 <div className="w-28 h-28 bg-indigo-600 rounded-[3rem] mx-auto flex items-center justify-center shadow-[0_0_80px_rgba(79,70,229,0.5)] mb-10 transform -rotate-6 hover:rotate-0 transition-transform duration-500">
+                    <Store className="w-14 h-14 text-white" />
+                 </div>
+                 <h1 className="text-6xl font-black text-white italic tracking-tighter uppercase mb-4 leading-none">
+                    Establishing Uplink
+                 </h1>
+                 <p className="text-indigo-400 font-black uppercase tracking-[0.5em] text-[12px] italic opacity-70">
+                    Select Operational Node for Physical Execution
+                 </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                 {stores.map(store => (
+                    <Card 
+                       key={store.id}
+                       className="bg-white/[0.03] border-white/10 hover:border-indigo-500/50 hover:bg-white/[0.06] transition-all duration-500 cursor-pointer rounded-[3rem] group overflow-hidden shadow-2xl hover:-translate-y-2 active:scale-95"
+                       onClick={() => setStore(store.id)}
+                    >
+                       <CardContent className="p-12 flex items-center gap-10">
+                          <div className="w-20 h-20 bg-indigo-500/10 rounded-3xl flex items-center justify-center group-hover:bg-indigo-500/20 transition-all border border-white/5">
+                             <Building2 className="w-10 h-10 text-indigo-400 group-hover:scale-110 transition-transform" />
+                          </div>
+                          <div className="flex-1">
+                             <div className="text-3xl font-black text-white uppercase italic tracking-tighter mb-1.5 group-hover:text-indigo-400 transition-colors">
+                                {store.name}
+                             </div>
+                             <div className="flex items-center gap-3">
+                                <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest text-slate-500 border-white/5 bg-white/5">
+                                   {store.type}
+                                </Badge>
+                                <span className="w-1 h-1 rounded-full bg-slate-700" />
+                                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">
+                                   {store.timezone}
+                                </span>
+                             </div>
+                          </div>
+                       </CardContent>
+                    </Card>
+                 ))}
+              </div>
+
+              <div className="mt-20 text-center">
+                 <Button 
+                    variant="ghost" 
+                    className="text-slate-600 hover:text-white uppercase font-black italic text-[11px] tracking-[0.4em] gap-4 transition-all"
+                    onClick={() => { setMode('management'); navigate('/m/retail/workspace'); }}
+                 >
+                    <Home className="w-4 h-4" />
+                    Return to Global Management
+                 </Button>
+              </div>
+           </div>
+        </div>
+     );
+  }
 
   return (
     <div className="flex-1 flex flex-col p-6 md:p-12 relative selection:bg-indigo-500/30 overflow-y-auto">

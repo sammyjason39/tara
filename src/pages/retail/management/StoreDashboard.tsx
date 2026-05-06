@@ -23,6 +23,7 @@ import { GlobalKpiRow } from "./command-center/GlobalKpiRow";
 import { TimeRangeFilter } from "./command-center/TimeRangeFilter";
 import { LocationSwitcher } from "./command-center/LocationSwitcher";
 import { useRealTimeAwareness } from "@/hooks/retail/useRealTimeAwareness";
+import { useRetail } from "../context/RetailContext";
 
 // Lazy Loaded Analytics Widgets
 const RevenueAnalytics = React.lazy(() =>
@@ -62,13 +63,14 @@ const StoreDashboard = () => {
 
   // Dashboard State
   const [timeRange, setTimeRange] = useState<AnalyticsTimeRange>("TODAY");
-  const [scopedLocationId, setScopedLocationId] = useState<string | undefined>(
-    session.location_id,
-  );
+  const { activeStore, setStore } = useRetail();
   const [data, setData] = useState<CommandCenterAnalytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExpansionModalOpen, setIsExpansionModalOpen] = useState(false);
   const [expansionFeature, setExpansionFeature] = useState("");
+
+  // Sync scopedLocationId with RetailContext
+  const scopedLocationId = useMemo(() => activeStore?.id, [activeStore]);
 
   // RBAC Helpers
   const permissions = session?.permissions || [];
@@ -183,7 +185,7 @@ const StoreDashboard = () => {
           <div className="p-2 bg-white/5 rounded-[1.5rem] flex items-center gap-4 border border-white/10 backdrop-blur-3xl">
             <LocationSwitcher
               currentLocationId={scopedLocationId}
-              onLocationChange={setScopedLocationId}
+              onLocationChange={(id) => setStore(id || null)}
             />
             <div className="h-8 w-[1px] bg-white/10" />
             <TimeRangeFilter value={timeRange} onChange={setTimeRange} />

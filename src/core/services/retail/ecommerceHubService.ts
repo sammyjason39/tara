@@ -58,6 +58,7 @@ export interface CreateChannelPayload {
   webhookUrl?: string;
   integrationCategory?: "HEADLESS" | "PREMADE" | "PRESET";
   settings?: Record<string, unknown>;
+  branchIds?: string[];
 }
 
 export interface TestResult {

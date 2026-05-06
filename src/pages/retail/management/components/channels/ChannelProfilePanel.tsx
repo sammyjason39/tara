@@ -50,6 +50,8 @@ import { HeadlessSettingsPanel } from "./HeadlessSettingsPanel";
 import { WebhookSettingsPanel } from "./WebhookSettingsPanel";
 import { WebhookBridgeSettingsPanel } from "./WebhookBridgeSettingsPanel";
 import { ChannelProductWizard } from "./ChannelProductWizard";
+import { retailService } from "@/core/services/retail/retailService";
+import { type RetailStore } from "@/core/types/retail/retail";
 
 const PLATFORM_ICONS: Record<string, React.ElementType> = {
   HEADLESS: Globe,
@@ -92,14 +94,34 @@ export const ChannelProfilePanel: React.FC<Props> = ({
     clientId: string;
     clientSecret: string;
   } | null>(null);
+  const [branches, setBranches] = useState<RetailStore[]>([]);
+  const [linkedBranchIds, setLinkedBranchIds] = useState<string[]>([]);
+  const [isLinking, setIsLinking] = useState(false);
 
   useEffect(() => {
     if (channel) {
       setSyncFreq(channel.syncFrequency ?? "1h");
       setActiveTab("overview");
       setRotatedCreds(null);
+      
+      // Sync linked branches from channel
+      // Since ChannelRecord might only have branchId, we'll handle both
+      const ids = (channel as any).branchIds || (channel.branchId ? [channel.branchId] : []);
+      setLinkedBranchIds(ids);
     }
   }, [channel?.id]);
+
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        const data = await retailService.listStores(session);
+        setBranches(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Failed to fetch branches", err);
+      }
+    };
+    fetchBranches();
+  }, [session.tenant_id]);
 
   if (!channel) {
     return (
@@ -249,6 +271,7 @@ export const ChannelProfilePanel: React.FC<Props> = ({
   const tabs = [
     { id: "overview", label: "Overview", icon: LayoutGrid },
     { id: "products", label: "Products", icon: ShoppingBag },
+    { id: "branches", label: "Branch Links", icon: Store },
     { id: "settings", label: "Settings", icon: Settings2 },
     { id: "webhooks", label: "Webhooks", icon: Zap },
     { id: "danger", label: "Danger Zone", icon: AlertTriangle },
@@ -416,6 +439,80 @@ export const ChannelProfilePanel: React.FC<Props> = ({
               session={session} 
               onFinished={() => setActiveTab("overview")}
             />
+          </TabsContent>
+
+          {/* ── Branch Links Tab ── */}
+          <TabsContent value="branches" className="p-6 space-y-6 mt-0">
+            <div className="space-y-4">
+               <div>
+                  <h3 className="text-sm font-black italic uppercase text-slate-800">Branch Fulfilment Matrix</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Map physical nodes to this digital channel</p>
+               </div>
+
+               <div className="space-y-3">
+                  {branches.length === 0 && (
+                     <div className="p-12 text-center border-2 border-dashed border-slate-100 rounded-3xl">
+                        <p className="text-[10px] font-black uppercase text-slate-400">No physical branches found</p>
+                     </div>
+                  )}
+                  {branches.map(branch => (
+                     <div 
+                        key={branch.id}
+                        className={cn(
+                           "p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between group",
+                           linkedBranchIds.includes(branch.id) 
+                              ? "bg-indigo-50 border-indigo-200" 
+                              : "bg-white border-slate-100 hover:border-slate-200"
+                        )}
+                        onClick={() => {
+                           setLinkedBranchIds(prev => 
+                              prev.includes(branch.id) 
+                                 ? prev.filter(id => id !== branch.id)
+                                 : [...prev, branch.id]
+                           );
+                        }}
+                     >
+                        <div className="flex items-center gap-4">
+                           <div className={cn(
+                              "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
+                              linkedBranchIds.includes(branch.id) ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-400 group-hover:bg-slate-200"
+                           )}>
+                              <Building2 className="w-5 h-5" />
+                           </div>
+                           <div>
+                              <div className="text-xs font-black uppercase italic text-slate-700">{branch.name}</div>
+                              <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{branch.type} • {branch.code}</div>
+                           </div>
+                        </div>
+                        {linkedBranchIds.includes(branch.id) && (
+                           <CheckCircle2 className="w-5 h-5 text-indigo-600" />
+                        )}
+                     </div>
+                  ))}
+               </div>
+
+               <Button
+                  onClick={async () => {
+                     setIsLinking(true);
+                     try {
+                        await ecommerceHubService.updateChannel(session, channel.id, {
+                           branchIds: linkedBranchIds
+                        } as any);
+                        toast({ title: "Branch links synchronized" });
+                        onUpdated();
+                     } catch {
+                        toast({ title: "Failed to sync branches", variant: "destructive" });
+                     } finally {
+                        setIsLinking(false);
+                     }
+                  }}
+                  disabled={isLinking}
+                  className="w-full h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 font-black italic uppercase text-xs tracking-widest gap-3 shadow-lg shadow-indigo-200"
+               >
+                  {isLinking ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  {isLinking ? "Synchronizing..." : "Establish Branch Uplinks"}
+               </Button>
+            </div>
           </TabsContent>
 
           {/* ── Settings Tab ── */}

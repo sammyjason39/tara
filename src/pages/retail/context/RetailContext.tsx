@@ -72,6 +72,13 @@ export const RetailProvider: React.FC<{ children: ReactNode }> = ({
   // Track if we've done the initial auto-selection to avoid repeated updateLocation calls
   const initializedRef = useRef(false);
 
+  useEffect(() => {
+    if (!session.tenant_id) {
+      localStorage.removeItem("retail_active_store_id");
+      localStorage.removeItem("retail_active_channel_id");
+    }
+  }, [session.tenant_id]);
+
   const refreshState = useCallback(async () => {
     if (!session.tenant_id) return;
 
@@ -88,19 +95,34 @@ export const RetailProvider: React.FC<{ children: ReactNode }> = ({
       const currentActiveStore = activeStoreRef.current;
       const currentActiveChannel = activeChannelRef.current;
 
-      // Auto-select first store only on initial load (not on every refresh)
-      if (
-        fetchedStores.length > 0 &&
-        !currentActiveStore &&
-        !currentActiveChannel &&
-        !initializedRef.current
-      ) {
+      // Try to restore from local storage first
+      const savedStoreId = localStorage.getItem("retail_active_store_id");
+      const savedChannelId = localStorage.getItem("retail_active_channel_id");
+
+      // Auto-select logic
+      if (!initializedRef.current) {
         initializedRef.current = true;
-        const defaultStore = fetchedStores[0];
-        setActiveStore(defaultStore);
-        // Only sync location if it actually changed
-        if (session.location_id !== defaultStore.id) {
-          updateLocationRef.current(defaultStore.id);
+        
+        let targetStore = fetchedStores.find(s => s.id === savedStoreId);
+        let targetChannel = fetchedChannels.find(c => c.id === savedChannelId);
+
+        if (targetStore) {
+          setActiveStore(targetStore);
+          if (session.location_id !== targetStore.id) {
+            updateLocationRef.current(targetStore.id);
+          }
+        } else if (targetChannel) {
+          setActiveChannel(targetChannel);
+          if (session.location_id !== targetChannel.id) {
+            updateLocationRef.current(targetChannel.id);
+          }
+        } else if (fetchedStores.length > 0) {
+          // Default to first store if nothing saved
+          const defaultStore = fetchedStores[0];
+          setActiveStore(defaultStore);
+          if (session.location_id !== defaultStore.id) {
+            updateLocationRef.current(defaultStore.id);
+          }
         }
       } else if (currentActiveStore) {
         // Refresh active store data only if something actually changed (compare IDs)
@@ -166,9 +188,11 @@ export const RetailProvider: React.FC<{ children: ReactNode }> = ({
       );
       if (store) {
         setActiveStore(store);
-        setActiveChannel(null); // Clear channel when store is selected
+        setActiveChannel(null);
+        localStorage.setItem("retail_active_store_id", store.id);
+        localStorage.removeItem("retail_active_channel_id");
         if (session.location_id !== store.id) {
-          updateLocation(store.id); // Sync with session
+          updateLocation(store.id);
         }
       }
     },
@@ -184,9 +208,11 @@ export const RetailProvider: React.FC<{ children: ReactNode }> = ({
       const channel = channels.find((c) => c.id === channelId);
       if (channel) {
         setActiveChannel(channel);
-        setActiveStore(null); // Clear store when channel is selected
+        setActiveStore(null);
+        localStorage.setItem("retail_active_channel_id", channel.id);
+        localStorage.removeItem("retail_active_store_id");
         if (session.location_id !== channel.id) {
-          updateLocation(channel.id); // Sync with session
+          updateLocation(channel.id);
         }
       }
     },

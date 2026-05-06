@@ -144,6 +144,9 @@ export class CreateRetailChannelDto {
   @IsObject()
   @IsOptional()
   settings?: Record<string, unknown>; // stored inside credentials JSON
+
+  @IsOptional()
+  branchIds?: string[];
 }
 
 export class UpdateRetailChannelDto {
@@ -181,4 +184,7 @@ export class UpdateRetailChannelDto {
   @IsObject()
   @IsOptional()
   settings?: Record<string, unknown>;
+
+  @IsOptional()
+  branchIds?: string[];
 }

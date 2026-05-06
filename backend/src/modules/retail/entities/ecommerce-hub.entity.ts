@@ -40,6 +40,7 @@ export class EcommerceChannel {
   integrationCategory: "HEADLESS" | "PREMADE" | "PRESET";
   lastSyncAt?: Date | null;
   webhookUrl?: string | null;
+  branchIds?: string[];
   /** clientId, clientSecretHash, branch_id, domain, settings — stored as JSON. */
   credentials?: Record<string, unknown> | null;
   created_at: Date;
