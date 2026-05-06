@@ -56,7 +56,7 @@ function mapChannel(row: any): EcommerceChannel {
     syncFrequency: row.sync_frequency,
     lastSyncAt: row.last_sync_at ?? null,
     webhookUrl: row.webhook_url ?? null,
-    branchIds: row.branches?.map((s: any) => s.id) ?? [],
+    branchIds: row.fulfilment_branches?.map((s: any) => s.id) ?? [],
     credentials: row.credentials as Record<string, unknown> | null,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -182,7 +182,7 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
   async listChannels(tenant_id: string): Promise<EcommerceChannel[]> {
     const rows = await this.prisma.retail_channels.findMany({
       where: { tenant_id: tenant_id },
-      include: { branches: { select: { id: true } } },
+      include: { fulfilment_branches: { select: { id: true } } },
       orderBy: { created_at: "desc" },
     });
     return rows.map(mapChannel);
@@ -194,7 +194,7 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
   ): Promise<EcommerceChannel | null> {
     const row = await this.prisma.retail_channels.findFirst({
       where: { id, tenant_id: tenant_id },
-      include: { branches: { select: { id: true } } },
+      include: { fulfilment_branches: { select: { id: true } } },
     });
     return row ? mapChannel(row) : null;
   }
@@ -226,11 +226,11 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
           revoked: false,
           settings: (data.settings ?? {}) as any,
         } as any,
-        branches: data.branchIds?.length
+        fulfilment_branches: data.branchIds?.length
           ? { connect: data.branchIds.map((id) => ({ id })) }
           : undefined,
       },
-      include: { branches: { select: { id: true } } },
+      include: { fulfilment_branches: { select: { id: true } } },
     });
     return {
       channel: mapChannel(row),
@@ -270,12 +270,12 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
           credentials: { ...currentCreds, settings: data.settings } as any,
         }),
         ...(data.branchIds !== undefined && {
-          branches: {
+          fulfilment_branches: {
             set: data.branchIds.map((id) => ({ id })),
           },
         }),
       },
-      include: { branches: { select: { id: true } } },
+      include: { fulfilment_branches: { select: { id: true } } },
     });
     return mapChannel(row);
   }

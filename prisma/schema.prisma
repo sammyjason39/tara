@@ -4117,13 +4117,13 @@ model module_licenses {
 }
 
 model money_sources {
-  id                 String     @id @default(uuid())
+  id                 String                @id @default(uuid())
   tenant_id          String
   company_id         String?
   name               String
   type               String
-  currency           String     @default("IDR")
-  balance            Decimal    @db.Decimal(15, 2)
+  currency           String                @default("IDR")
+  balance            Decimal               @db.Decimal(15, 2)
   pending_settlement Decimal               @default(0) @db.Decimal(15, 2)
   provider           String?
   min_limit          Decimal?              @db.Decimal(15, 2)
@@ -4138,7 +4138,7 @@ model money_sources {
   departments        departments?          @relation(fields: [department_id], references: [id])
   updated_at         DateTime              @default(now())
   // @@map("money_sources") - standardized
-  tenants            tenants    @relation(fields: [tenant_id], references: [id])
+  tenants            tenants               @relation(fields: [tenant_id], references: [id])
 
   @@unique([tenant_id, name])
   @@index([tenant_id])
@@ -5172,7 +5172,7 @@ model retail_channels {
   webhook_url          String?
   companies            companies? @relation(fields: [company_id], references: [id])
   tenants              tenants    @relation(fields: [tenant_id], references: [id])
-  branches             stores[]   @relation("ChannelBranchLinks")
+  fulfilment_branches  stores[]   @relation("RetailChannelFulfilment")
 
   retail_channel_products retail_channel_products[]
 
@@ -5900,7 +5900,7 @@ model stores {
   employees                      employees?                       @relation(fields: [manager_id], references: [id])
   companies                      companies?                       @relation(fields: [company_id], references: [id])
   ecommerce_connectors           ecommerce_connectors[]           @relation("EcommerceBranchLinks")
-  retail_channels                retail_channels[]                @relation("ChannelBranchLinks")
+  retail_channels                retail_channels[]                @relation("RetailChannelFulfilment")
   // @@map("stores") - standardized
   tenants                        tenants                          @relation(fields: [tenant_id], references: [id])
   marketing_accounts             marketing_accounts[]
