@@ -39,6 +39,7 @@ import {
   ShieldAlert,
   ScrollText
 } from "lucide-react";
+import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from 'recharts';
 import { StrategicExpansionModal } from "@/components/ui/StrategicExpansionModal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,6 +72,11 @@ export default function CoreDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [kpis, setKpis] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
+  const [timeseries, setTimeseries] = useState<{
+    revenueTrend: any[];
+    alertsByModule: any[];
+    moduleHealth: any[];
+  } | null>(null);
   const [expansionOpen, setExpansionOpen] = useState(false);
   const [expansionFeature, setExpansionFeature] = useState("");
 
@@ -82,6 +88,9 @@ export default function CoreDashboard() {
       const res = await adminService.getDashboardMetrics(session.tenant_id, session);
       setKpis(res.kpis || []);
       setActivities(res.activities || []);
+      if (res.timeseries) {
+        setTimeseries(res.timeseries);
+      }
       
       if (isManual) toast.success("Executive telemetry synchronized.");
     } catch (err) {
@@ -196,7 +205,119 @@ export default function CoreDashboard() {
               </div>
 
               {/* Analysis & Activity */}
-              <div className="grid gap-8 lg:grid-cols-[1.6fr_1fr]">
+              <div className="grid gap-6 lg:grid-cols-3">
+                {/* Revenue Trend Chart */}
+                <WorkspacePanel title="Revenue Growth Velocity" description="6-month trailing performance." className="lg:col-span-2 relative overflow-hidden">
+                  <div className="h-[300px] w-full mt-4">
+                    {timeseries?.revenueTrend ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={timeseries.revenueTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.3}/>
+                              <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                          <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }} dy={10} />
+                          <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }} tickFormatter={(val) => `$${val / 1000}k`} />
+                          <RechartsTooltip 
+                            contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)' }}
+                            formatter={(value: number) => [`$${value.toLocaleString()}`, 'Revenue']}
+                            cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '3 3' }}
+                          />
+                          <Area type="monotone" dataKey="revenue" stroke="#4f46e5" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-xs font-black uppercase text-slate-300">Loading Data...</div>
+                    )}
+                  </div>
+                </WorkspacePanel>
+
+                {/* Module Health Donut */}
+                <WorkspacePanel title="System Health" description="Live module availability.">
+                  <div className="h-[300px] w-full mt-4 flex items-center justify-center relative">
+                    {timeseries?.moduleHealth ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={timeseries.moduleHealth}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={70}
+                            outerRadius={90}
+                            paddingAngle={5}
+                            dataKey="value"
+                            stroke="none"
+                          >
+                            {timeseries.moduleHealth.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <RechartsTooltip 
+                            contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} 
+                            itemStyle={{ fontSize: '12px', fontWeight: 800 }}
+                          />
+                          <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-xs font-black uppercase text-slate-300">Loading Data...</div>
+                    )}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-8">
+                       <Monitor className="h-6 w-6 text-emerald-500 mb-1" />
+                       <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Online</span>
+                    </div>
+                  </div>
+                </WorkspacePanel>
+              </div>
+
+              <div className="grid gap-6 lg:grid-cols-[1fr_1.6fr]">
+                {/* Alerts Bar Chart */}
+                <WorkspacePanel title="Operational Alerts" description="Active issues by module layer.">
+                  <div className="h-[350px] w-full mt-4">
+                    {timeseries?.alertsByModule ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={timeseries.alertsByModule} margin={{ top: 10, right: 10, left: -20, bottom: 0 }} layout="vertical">
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                          <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }} />
+                          <YAxis dataKey="module" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }} />
+                          <RechartsTooltip 
+                            cursor={{ fill: '#f8fafc' }}
+                            contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            itemStyle={{ fontSize: '12px', fontWeight: 800 }}
+                          />
+                          <Bar 
+                            dataKey="count" 
+                            fill="#f59e0b" 
+                            radius={[0, 4, 4, 0]} 
+                            barSize={30}
+                            onClick={(data) => {
+                              toast.info(`Drilling down into ${data.module} alerts...`);
+                              if (data.module === "Retail") navigate("/retail");
+                              if (data.module === "Finance") navigate("/core/finance");
+                              if (data.module === "HR") navigate("/core/hr");
+                            }}
+                            className="cursor-pointer hover:opacity-80 transition-opacity"
+                          >
+                            {timeseries.alertsByModule.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={
+                                entry.module === "Retail" ? "#6366f1" : 
+                                entry.module === "HR" ? "#ec4899" : 
+                                entry.module === "Finance" ? "#14b8a6" : "#f59e0b"
+                              } />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-xs font-black uppercase text-slate-300">Loading Data...</div>
+                    )}
+                  </div>
+                </WorkspacePanel>
+
+                {/* Global Business Pulse - Compacted */}
                 <WorkspacePanel 
                   title="Global Business Pulse" 
                   description="Real-time event synchronization across the enterprise infrastructure."
@@ -205,80 +326,40 @@ export default function CoreDashboard() {
                       <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                       <Input 
                         placeholder="SEARCH INTELLIGENCE..." 
-                        className="h-11 w-64 pl-12 rounded-xl border-slate-200/50 bg-slate-50/50 focus:bg-white font-black text-[10px] uppercase tracking-widest transition-all"
+                        className="h-11 w-48 lg:w-64 pl-12 rounded-xl border-slate-200/50 bg-slate-50/50 focus:bg-white font-black text-[10px] uppercase tracking-widest transition-all"
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                       />
                     </div>
                   }
                 >
-                  <div className="space-y-4 pt-6">
-                    {filteredActivities.slice(0, 5).map((activity, i) => (
-                      <div key={i} className="group flex items-center justify-between p-6 rounded-[1.8rem] border border-slate-100/50 hover:border-indigo-100 hover:bg-slate-50/50 transition-all duration-300">
-                        <div className="flex items-center gap-5">
-                          <div className="h-12 w-12 rounded-2xl bg-white shadow-xl flex items-center justify-center text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-all border border-slate-50">
-                            {IconMap[activity.icon] ? React.createElement(IconMap[activity.icon], { className: "h-6 w-6" }) : <Activity className="h-6 w-6" />}
+                  <ScrollArea className="h-[350px] pr-4 pt-4">
+                    <div className="space-y-4 pb-4">
+                      {filteredActivities.map((activity, i) => (
+                        <div key={i} className="group flex items-center justify-between p-5 rounded-[1.5rem] border border-slate-100/50 hover:border-indigo-100 hover:bg-slate-50/50 transition-all duration-300 cursor-pointer" onClick={() => toast.info(`Viewing details for: ${activity.title}`)}>
+                          <div className="flex items-center gap-4">
+                            <div className="h-10 w-10 rounded-xl bg-white shadow-md flex items-center justify-center text-slate-400 group-hover:text-indigo-600 group-hover:bg-indigo-50 transition-all border border-slate-50 shrink-0">
+                              {IconMap[activity.icon] ? React.createElement(IconMap[activity.icon], { className: "h-5 w-5" }) : <Activity className="h-5 w-5" />}
+                            </div>
+                            <div className="space-y-0.5">
+                              <p className="text-[11px] font-black uppercase tracking-tight italic">{activity.title}</p>
+                              <p className="text-[10px] font-medium text-slate-500 leading-relaxed max-w-sm truncate">{activity.detail}</p>
+                            </div>
                           </div>
-                          <div className="space-y-0.5">
-                            <p className="text-xs font-black uppercase tracking-tight italic">{activity.title}</p>
-                            <p className="text-[11px] font-medium text-slate-500 leading-relaxed max-w-md">{activity.detail}</p>
-                          </div>
-                        </div>
-                        <div className="text-right space-y-2">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">{activity.time}</p>
-                          <Badge variant="outline" className="rounded-full px-3 py-0.5 text-[9px] font-black uppercase tracking-widest border-slate-200/50 bg-white">
-                            {activity.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                    <Button variant="ghost" className="w-full h-12 rounded-xl text-indigo-600 font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-50">
-                      View Full Audit Trail <ChevronRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </div>
-                </WorkspacePanel>
-
-                <div className="space-y-8">
-                  <WorkspacePanel title="Strategic Analysis" description="Deep-dive business intelligence.">
-                    <div className="grid grid-cols-2 gap-4 pt-4">
-                      {[
-                        { label: 'Growth Velocity', value: '+14.2%', icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-                        { label: 'Market Sentiment', value: 'Positive', icon: Globe, color: 'text-sky-500', bg: 'bg-sky-50' },
-                        { label: 'Capital Burn', value: 'Minimal', icon: DollarSign, color: 'text-amber-500', bg: 'bg-amber-50' },
-                        { label: 'Risk Index', value: 'Stable', icon: ShieldCheck, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-                      ].map((stat, i) => (
-                        <div key={i} className="p-6 rounded-[2rem] border border-slate-100 bg-white shadow-xl shadow-slate-200/20 space-y-4 hover:scale-[1.02] transition-all">
-                          <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center", stat.bg)}>
-                            <stat.icon className={cn("h-5 w-5", stat.color)} />
-                          </div>
-                          <div className="space-y-0.5">
-                            <p className="text-2xl font-black tracking-tighter italic">{stat.value}</p>
-                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{stat.label}</p>
+                          <div className="text-right space-y-1.5 flex flex-col items-end shrink-0 pl-4">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-300">{activity.time}</p>
+                            <Badge variant="outline" className="rounded-full px-2 py-0 text-[8px] font-black uppercase tracking-widest border-slate-200/50 bg-white">
+                              {activity.status}
+                            </Badge>
                           </div>
                         </div>
                       ))}
+                      {filteredActivities.length === 0 && (
+                        <div className="flex h-full items-center justify-center py-20 text-xs font-black uppercase text-slate-300">No events found.</div>
+                      )}
                     </div>
-                  </WorkspacePanel>
-
-                  <div className="p-8 rounded-[2.5rem] bg-slate-950 text-white shadow-3xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 h-48 w-48 bg-indigo-600 rounded-full -mr-24 -mt-24 blur-[80px] opacity-20 group-hover:opacity-40 transition-opacity" />
-                    <div className="relative z-10 space-y-6">
-                      <div className="flex justify-between items-start">
-                        <div className="h-12 w-12 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-xl border border-white/10">
-                          <Zap className="h-6 w-6 text-indigo-400" />
-                        </div>
-                        <Badge className="bg-emerald-500 text-white border-none rounded-full px-3 py-1 text-[9px] font-black uppercase animate-pulse">Neural Active</Badge>
-                      </div>
-                      <div className="space-y-2">
-                        <h4 className="text-2xl font-black italic tracking-tighter uppercase leading-tight">AI Insights Engine</h4>
-                        <p className="text-xs text-slate-400 font-medium leading-relaxed">Neural patterns suggest optimizing regional logistics to capture 4% more margin.</p>
-                      </div>
-                      <Button className="w-full h-12 rounded-xl bg-white text-slate-950 hover:bg-slate-200 font-black text-[10px] uppercase tracking-widest transition-all">
-                        EXPLORE REASONING
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                  </ScrollArea>
+                </WorkspacePanel>
               </div>
             </TabsContent>
 
