@@ -5172,7 +5172,7 @@ model retail_channels {
   webhook_url          String?
   companies            companies? @relation(fields: [company_id], references: [id])
   tenants              tenants    @relation(fields: [tenant_id], references: [id])
-  stores               stores[]   @relation("ChannelBranchLinks")
+  branches             stores[]   @relation("ChannelBranchLinks")
 
   retail_channel_products retail_channel_products[]
 
