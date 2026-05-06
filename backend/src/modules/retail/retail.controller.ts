@@ -143,6 +143,15 @@ export class RetailController {
     return this.respond(request.tenantContext, stores);
   }
 
+  @Get("stores/:id")
+  async getStore(
+    @Req() request: RequestWithTenant,
+    @Param("id") store_id: string,
+  ) {
+    const store = await this.retailService.getStore(request.tenantContext, store_id);
+    return this.respond(request.tenantContext, store);
+  }
+
   @Get("categories")
   async listCategories(@Req() request: RequestWithTenant) {
     const { tenant_id } = request.tenantContext;
@@ -406,6 +415,15 @@ export class RetailController {
     return this.respond(request.tenantContext, updated);
   }
 
+  @Get("products/:id")
+  async getProduct(
+    @Req() request: RequestWithTenant,
+    @Param("id") product_id: string,
+  ) {
+    const product = await this.retailService.getProduct(request.tenantContext, product_id);
+    return this.respond(request.tenantContext, product);
+  }
+
   @Get("orders")
   async listOrders(
     @Req() request: RequestWithTenant,
@@ -428,6 +446,15 @@ export class RetailController {
       status,
     });
     return this.respond(request.tenantContext, orders);
+  }
+
+  @Get("orders/:id")
+  async getOrder(
+    @Req() request: RequestWithTenant,
+    @Param("id") order_id: string,
+  ) {
+    const order = await this.retailService.getOrder(request.tenantContext, order_id);
+    return this.respond(request.tenantContext, order);
   }
 
   @Get("customers")
@@ -584,6 +611,15 @@ export class RetailController {
       employee_id,
     );
     return this.respond(request.tenantContext, shifts);
+  }
+
+  @Get("shifts/:id")
+  async getShift(
+    @Req() request: RequestWithTenant,
+    @Param("id") shift_id: string,
+  ) {
+    const shift = await this.retailService.getShift(request.tenantContext, shift_id);
+    return this.respond(request.tenantContext, shift);
   }
 
   @Get("promotions")

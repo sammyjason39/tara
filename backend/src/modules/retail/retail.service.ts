@@ -60,6 +60,30 @@ export class RetailService {
     return this.retailRepository.listStores(ctx, location_id);
   }
 
+  async getStore(ctx: TenantContext, store_id: string): Promise<RetailStore> {
+    const store = await this.retailRepository.getStore(ctx, store_id);
+    if (!store) throw new NotFoundException(`Store ${store_id} not found`);
+    return store;
+  }
+
+  async getProduct(ctx: TenantContext, product_id: string): Promise<RetailProduct> {
+    const product = await this.retailRepository.getProduct(ctx, product_id);
+    if (!product) throw new NotFoundException(`Product ${product_id} not found`);
+    return product;
+  }
+
+  async getOrder(ctx: TenantContext, order_id: string): Promise<RetailOrder> {
+    const order = await this.retailRepository.getOrder(ctx, order_id);
+    if (!order) throw new NotFoundException(`Order ${order_id} not found`);
+    return order;
+  }
+
+  async getShift(ctx: TenantContext, shift_id: string): Promise<RetailShift> {
+    const shift = await this.retailRepository.getShift(ctx, shift_id);
+    if (!shift) throw new NotFoundException(`Shift ${shift_id} not found`);
+    return shift;
+  }
+
   async listCategories(ctx: TenantContext): Promise<any[]> {
     return this.retailRepository.listCategories(ctx);
   }
