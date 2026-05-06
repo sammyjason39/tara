@@ -56,7 +56,7 @@ function mapChannel(row: any): EcommerceChannel {
     syncFrequency: row.sync_frequency,
     lastSyncAt: row.last_sync_at ?? null,
     webhookUrl: row.webhook_url ?? null,
-    branchIds: row.fulfilment_branches?.map((s: any) => s.id) ?? [],
+    branchIds: row.fulfilment_branches?.map((s: any) => s.store_id) ?? [],
     credentials: row.credentials as Record<string, unknown> | null,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -182,7 +182,7 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
   async listChannels(tenant_id: string): Promise<EcommerceChannel[]> {
     const rows = await this.prisma.retail_channels.findMany({
       where: { tenant_id: tenant_id },
-      include: { fulfilment_branches: { select: { id: true } } },
+      include: { fulfilment_branches: true },
       orderBy: { created_at: "desc" },
     });
     return rows.map(mapChannel);
@@ -194,7 +194,7 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
   ): Promise<EcommerceChannel | null> {
     const row = await this.prisma.retail_channels.findFirst({
       where: { id, tenant_id: tenant_id },
-      include: { fulfilment_branches: { select: { id: true } } },
+      include: { fulfilment_branches: true },
     });
     return row ? mapChannel(row) : null;
   }
@@ -227,10 +227,10 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
           settings: (data.settings ?? {}) as any,
         } as any,
         fulfilment_branches: data.branchIds?.length
-          ? { connect: data.branchIds.map((id) => ({ id })) }
+          ? { create: data.branchIds.map((id) => ({ store_id: id })) }
           : undefined,
       },
-      include: { fulfilment_branches: { select: { id: true } } },
+      include: { fulfilment_branches: true },
     });
     return {
       channel: mapChannel(row),
@@ -271,11 +271,12 @@ export class EcommerceHubDbRepository implements IEcommerceHubRepository {
         }),
         ...(data.branchIds !== undefined && {
           fulfilment_branches: {
-            set: data.branchIds.map((id) => ({ id })),
+            deleteMany: {},
+            create: data.branchIds.map((id) => ({ store_id: id })),
           },
         }),
       },
-      include: { fulfilment_branches: { select: { id: true } } },
+      include: { fulfilment_branches: true },
     });
     return mapChannel(row);
   }

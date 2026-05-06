@@ -5172,12 +5172,23 @@ model retail_channels {
   webhook_url          String?
   companies            companies? @relation(fields: [company_id], references: [id])
   tenants              tenants    @relation(fields: [tenant_id], references: [id])
-  fulfilment_branches  stores[]   @relation("RetailChannelFulfilment")
+  fulfilment_branches  retail_channel_branch_links[]
 
   retail_channel_products retail_channel_products[]
 
   @@index([tenant_id])
   @@index([company_id])
+}
+
+model retail_channel_branch_links {
+  channel_id String
+  store_id   String
+  channel    retail_channels @relation(fields: [channel_id], references: [id])
+  store      stores          @relation(fields: [store_id], references: [id])
+
+  @@id([channel_id, store_id])
+  @@index([channel_id])
+  @@index([store_id])
 }
 
 model retail_channel_products {
@@ -5900,7 +5911,7 @@ model stores {
   employees                      employees?                       @relation(fields: [manager_id], references: [id])
   companies                      companies?                       @relation(fields: [company_id], references: [id])
   ecommerce_connectors           ecommerce_connectors[]           @relation("EcommerceBranchLinks")
-  retail_channels                retail_channels[]                @relation("RetailChannelFulfilment")
+  retail_channels                retail_channel_branch_links[]
   // @@map("stores") - standardized
   tenants                        tenants                          @relation(fields: [tenant_id], references: [id])
   marketing_accounts             marketing_accounts[]
