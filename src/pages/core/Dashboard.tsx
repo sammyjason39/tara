@@ -199,7 +199,7 @@ export default function CoreDashboard() {
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 italic mb-1">{kpi.title}</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 italic mb-1">{kpi.label}</p>
                         <h4 className="text-3xl font-black italic tracking-tighter uppercase leading-none">{kpi.value}</h4>
                       </div>
                     </CardContent>
