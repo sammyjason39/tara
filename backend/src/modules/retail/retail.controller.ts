@@ -58,7 +58,16 @@ export class RetailController {
     private readonly retailService: RetailService,
     private readonly retailExport: RetailExportService,
     private readonly retailSeeder: RetailSeeder,
-  ) {}
+  ) {
+    console.log("[RetailController] Instantiated and routes registered.");
+  }
+
+  /** Diagnostic route to verify controller reachability */
+  @Get("debug/ping")
+  @SkipBranchCheck()
+  async debugPing() {
+    return { success: true, message: "RetailController is reachable", timestamp: new Date().toISOString() };
+  }
 
   /** DEV ONLY: Trigger full retail seed (products + showcase orders) */
   @Post("dev/seed")
@@ -148,6 +157,8 @@ export class RetailController {
     @Req() request: RequestWithTenant,
     @Param("id") store_id: string,
   ) {
+    const { tenant_id } = request.tenantContext;
+    console.log(`[RetailController] Fetching store detail for ID: ${store_id} | Tenant: ${tenant_id}`);
     const store = await this.retailService.getStore(request.tenantContext, store_id);
     return this.respond(request.tenantContext, store);
   }
