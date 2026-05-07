@@ -48,6 +48,7 @@ import {
   RefreshCw,
   Zap,
   Box,
+  ShieldCheck,
 } from "lucide-react";
 import type {
   InventoryStockBalance,
