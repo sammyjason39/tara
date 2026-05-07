@@ -149,7 +149,10 @@ export class HRDbRepository implements IHRRepository {
   ): Promise<Employee | null> {
     const employee = await this.prisma.employees.findFirst({
       where: {
-        id: employee_id,
+        OR: [
+          { id: employee_id },
+          { user_id: employee_id }
+        ],
         tenant_id: tenant_id,
         deleted_at: null,
       },
@@ -166,7 +169,10 @@ export class HRDbRepository implements IHRRepository {
   async getGlobalEmployeeById(employee_id: string): Promise<Employee | null> {
     const employee = await this.prisma.employees.findFirst({
       where: {
-        id: employee_id,
+        OR: [
+          { id: employee_id },
+          { user_id: employee_id }
+        ],
         deleted_at: null,
       },
       include: { locations: true,
