@@ -138,6 +138,13 @@ export default function InventoryStockHub() {
   const [opnameEntries, setOpnameEntries] = useState<OpnameEntry[]>([]);
   const [isSubmittingOpname, setIsSubmittingOpname] = useState(false);
 
+  // Quick Create Opname
+  const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
+  const [quickCreateBarcode, setQuickCreateBarcode] = useState("");
+  const [quickCreateName, setQuickCreateName] = useState("");
+  const [quickCreateCategory, setQuickCreateCategory] = useState("ITEM");
+  const [isCreatingQuickItem, setIsCreatingQuickItem] = useState(false);
+
   useBarcodeScanner((barcode) => {
     if (viewMode === "opname" && opnameActive) {
       handleOpnameScan(barcode);
@@ -220,7 +227,9 @@ export default function InventoryStockHub() {
   const handleOpnameScan = useCallback((barcode: string) => {
     const item = items.find(i => i.barcode === barcode || i.sku === barcode || i.id === barcode);
     if (!item) {
-      setErrorMessage(`Unrecognized item: ${barcode}`);
+      setQuickCreateBarcode(barcode);
+      setQuickCreateName("");
+      setIsQuickCreateOpen(true);
       return;
     }
 
@@ -275,6 +284,41 @@ export default function InventoryStockHub() {
       setErrorMessage("Failed to submit opname results.");
     } finally {
       setIsSubmittingOpname(false);
+    }
+  };
+
+  const handleQuickCreate = async () => {
+    if (!quickCreateName.trim()) return;
+    setIsCreatingQuickItem(true);
+    try {
+      const newItem = await inventoryService.createItem(session.tenant_id, session, {
+        sku: quickCreateBarcode,
+        barcode: quickCreateBarcode,
+        name: quickCreateName.trim(),
+        category: quickCreateCategory as any,
+        uom: "PCS",
+        basePrice: 0,
+        moduleTags: ["GENERAL"],
+        status: "active"
+      });
+      
+      // Add to entries
+      setOpnameEntries(prev => [{
+        itemId: newItem.id,
+        sku: newItem.sku,
+        name: newItem.name,
+        systemCount: 0,
+        actualCount: 1,
+        timestamp: new Date().toLocaleTimeString()
+      }, ...prev]);
+      
+      setIsQuickCreateOpen(false);
+      setStatusMessage(`Discovered and registered: ${newItem.name}`);
+      refresh(); // Refresh items list
+    } catch (err) {
+      setErrorMessage("Failed to quick-register item.");
+    } finally {
+      setIsCreatingQuickItem(false);
     }
   };
 
@@ -582,12 +626,30 @@ export default function InventoryStockHub() {
                     <div className="text-[10px] text-slate-500 font-bold uppercase tracking-tight leading-relaxed">{f.desc}</div>
                   </div>
                 ))}
+              <div className="max-w-md mx-auto space-y-4 py-8">
+                <div className="space-y-2 text-left">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Audit Target Location</label>
+                  <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
+                    <SelectTrigger className="h-14 rounded-2xl bg-slate-950/50 border-white/10 shadow-2xl font-black italic text-sm text-white">
+                      <SelectValue placeholder="CHOOSE AUDIT ZONE..." />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl bg-slate-900 border-white/10 text-white">
+                      {locations.map(loc => (
+                        <SelectItem key={loc.id} value={loc.id} className="font-bold italic">{loc.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest text-center mt-2 italic">
+                    {selectedLocationId ? "ZONE_LOCKED: ACTIVE_SYNC" : "PLEASE SELECT A ZONE TO INITIALIZE LEDGER"}
+                  </p>
+                </div>
               </div>
 
               <Button
                 size="lg"
                 onClick={startOpname}
-                className="h-20 px-12 rounded-[1.5rem] bg-white text-slate-950 font-black italic uppercase tracking-widest text-sm gap-3 shadow-2xl hover:scale-105 transition-transform"
+                disabled={!selectedLocationId}
+                className="h-20 px-12 rounded-[1.5rem] bg-white text-slate-950 font-black italic uppercase tracking-widest text-sm gap-3 shadow-2xl hover:scale-105 transition-transform disabled:opacity-30 disabled:hover:scale-100"
               >
                 <Zap className="w-6 h-6 fill-current" /> Start Audit Session
               </Button>
@@ -1143,6 +1205,51 @@ export default function InventoryStockHub() {
               }}
             >
               Update Category
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isQuickCreateOpen} onOpenChange={setIsQuickCreateOpen}>
+        <DialogContent className="rounded-[2rem] border-white/10 bg-slate-900 text-white shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black italic tracking-tighter uppercase text-indigo-400">Unknown Item Discovered</DialogTitle>
+            <DialogDescription className="text-slate-400 font-bold italic">
+              Barcode <span className="text-white">[{quickCreateBarcode}]</span> is not in the system. Register it now to include it in the audit.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 py-6">
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Item Name</Label>
+              <Input 
+                value={quickCreateName} 
+                onChange={e => setQuickCreateName(e.target.value)}
+                placeholder="E.G. NEW PRODUCT SKU X..."
+                className="h-14 rounded-xl bg-white/5 border-white/10 text-white font-bold italic uppercase tracking-wider focus:border-indigo-500/50"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Category</Label>
+              <Select value={quickCreateCategory} onValueChange={setQuickCreateCategory}>
+                <SelectTrigger className="h-14 rounded-xl bg-white/5 border-white/10 text-white font-bold italic text-xs">
+                  <SelectValue placeholder="SELECT CATEGORY..." />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-white/10 text-white rounded-xl">
+                  {ITEM_CATEGORIES.map(c => (
+                    <SelectItem key={c} value={c} className="font-bold italic">{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsQuickCreateOpen(false)} className="rounded-xl font-black italic uppercase text-[10px] tracking-widest text-slate-500">Cancel</Button>
+            <Button 
+              onClick={handleQuickCreate} 
+              disabled={!quickCreateName.trim() || isCreatingQuickItem}
+              className="h-14 px-8 rounded-xl bg-white text-slate-950 font-black italic uppercase tracking-widest text-xs gap-2"
+            >
+              {isCreatingQuickItem ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} 
+              Register & Add to Audit
             </Button>
           </DialogFooter>
         </DialogContent>
