@@ -227,13 +227,13 @@ export class AdminService {
     // 7. Top Branches (Real)
     const topBranchesRaw: any[] = await this.prisma.$queryRaw`
       SELECT 
-        l.name,
+        s.name,
         SUM(o.total_amount) as revenue
       FROM retail_orders o
-      JOIN locations l ON o.location_id = l.id
+      JOIN stores s ON o.store_id = s.id
       WHERE o.tenant_id = ${tenant_id}
         AND o.status IN ('COMPLETED', 'PAID', 'complete', 'paid')
-      GROUP BY l.name
+      GROUP BY s.name
       ORDER BY 2 DESC
       LIMIT 5
     `;
