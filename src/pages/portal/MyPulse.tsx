@@ -19,7 +19,9 @@ import {
   Coins,
   CreditCard,
   Target,
-  DollarSign
+  DollarSign,
+  Receipt,
+  HandCoins
 } from 'lucide-react';
 import { useSession } from '@/core/security/session';
 import { useApp } from '@/contexts/AppContext';
