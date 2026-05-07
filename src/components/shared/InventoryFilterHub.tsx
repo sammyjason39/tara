@@ -69,9 +69,9 @@ export const InventoryFilterHub: React.FC<InventoryFilterHubProps> = ({
       <div className="flex flex-col md:flex-row items-stretch gap-4">
         {/* Main Search Bar */}
         <div className="relative flex-1 group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
           <Input
-            className="pl-12 h-14 bg-white/70 backdrop-blur-md border-white shadow-sm rounded-2xl font-bold italic placeholder:text-slate-300 focus:ring-2 focus:ring-indigo-500/20 transition-all"
+            className="pl-12 h-14 bg-slate-900/40 backdrop-blur-md border-white/10 shadow-xl rounded-2xl font-bold italic placeholder:text-slate-600 focus:ring-2 focus:ring-indigo-500/20 transition-all text-white"
             placeholder="Quick search SKU, item name..."
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -80,10 +80,10 @@ export const InventoryFilterHub: React.FC<InventoryFilterHubProps> = ({
 
         {/* Quick Category Select */}
         <Select value={category || "all"} onValueChange={onCategoryChange}>
-          <SelectTrigger className="w-full md:w-56 h-14 rounded-2xl bg-white/70 backdrop-blur-md border-white shadow-sm font-black italic text-xs">
+          <SelectTrigger className="w-full md:w-56 h-14 rounded-2xl bg-slate-900/40 backdrop-blur-md border-white/10 shadow-xl font-black italic text-xs text-white">
             <SelectValue placeholder="Category: All" />
           </SelectTrigger>
-          <SelectContent className="rounded-2xl border-white/50 backdrop-blur-xl">
+          <SelectContent className="rounded-2xl border-white/10 bg-slate-900/90 backdrop-blur-xl text-white">
             <SelectItem value="all" className="font-bold italic">All Categories</SelectItem>
             {categories.map((c) => (
               <SelectItem key={c.id} value={c.id} className="font-bold italic">{c.name}</SelectItem>
@@ -96,7 +96,7 @@ export const InventoryFilterHub: React.FC<InventoryFilterHubProps> = ({
           variant={isExpanded ? "default" : "outline"}
           onClick={() => setIsExpanded(!isExpanded)}
           className={`h-14 px-6 rounded-2xl gap-3 font-black italic text-xs uppercase tracking-widest transition-all ${
-            isExpanded ? "bg-slate-900 text-white" : "bg-white/70 backdrop-blur-md border-white text-slate-600 hover:bg-white"
+            isExpanded ? "bg-white text-slate-950" : "bg-slate-900/40 backdrop-blur-md border-white/10 text-slate-400 hover:bg-slate-800"
           }`}
         >
           <SlidersHorizontal className="w-4 h-4" />
@@ -121,16 +121,16 @@ export const InventoryFilterHub: React.FC<InventoryFilterHubProps> = ({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-6 rounded-[2rem] bg-white/50 backdrop-blur-2xl border border-white/30 shadow-inner mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-8 rounded-[2.5rem] bg-slate-900/30 backdrop-blur-2xl border border-white/5 shadow-2xl mt-2">
               {/* Type Filter */}
               {onTypeChange && (
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Type</label>
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Type</label>
                   <Select value={type || "all"} onValueChange={onTypeChange}>
-                    <SelectTrigger className="h-11 rounded-xl bg-white/80 border-white shadow-sm font-bold italic text-xs">
+                    <SelectTrigger className="h-12 rounded-xl bg-slate-950/50 border-white/5 shadow-sm font-bold italic text-xs text-white">
                       <SelectValue placeholder="All Types" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl">
+                    <SelectContent className="rounded-xl bg-slate-900 border-white/10 text-white">
                       <SelectItem value="all">All Types</SelectItem>
                       <SelectItem value="ITEM">ITEM</SelectItem>
                       <SelectItem value="RAW_MATERIAL">RAW MATERIAL</SelectItem>
@@ -143,12 +143,12 @@ export const InventoryFilterHub: React.FC<InventoryFilterHubProps> = ({
               {/* Status Filter */}
               {onStatusChange && (
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Status</label>
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Status</label>
                   <Select value={status || "all"} onValueChange={onStatusChange}>
-                    <SelectTrigger className="h-11 rounded-xl bg-white/80 border-white shadow-sm font-bold italic text-xs">
+                    <SelectTrigger className="h-12 rounded-xl bg-slate-950/50 border-white/5 shadow-sm font-bold italic text-xs text-white">
                       <SelectValue placeholder="All Status" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl">
+                    <SelectContent className="rounded-xl bg-slate-900 border-white/10 text-white">
                       <SelectItem value="all">All Status</SelectItem>
                       <SelectItem value="ok">OK</SelectItem>
                       <SelectItem value="low">LOW STOCK</SelectItem>
@@ -161,15 +161,15 @@ export const InventoryFilterHub: React.FC<InventoryFilterHubProps> = ({
               {/* Location Filter */}
               {onLocationChange && locations && (
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Location</label>
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Location</label>
                   <Select value={location || "all"} onValueChange={onLocationChange}>
-                    <SelectTrigger className="h-11 rounded-xl bg-white/80 border-white shadow-sm font-bold italic text-xs">
+                    <SelectTrigger className="h-12 rounded-xl bg-slate-950/50 border-white/5 shadow-sm font-bold italic text-xs text-white">
                       <SelectValue placeholder="All Locations" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl">
+                    <SelectContent className="rounded-xl bg-slate-900 border-white/10 text-white">
                       <SelectItem value="all">All Locations</SelectItem>
                       {locations.map(loc => (
-                        <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
+                        <SelectItem key={loc.id} value={loc.id} className="font-bold italic">{loc.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -179,10 +179,10 @@ export const InventoryFilterHub: React.FC<InventoryFilterHubProps> = ({
               {/* Module Tag Filter */}
               {onModuleTagChange && (
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Context Tag</label>
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Context Tag</label>
                   <Input 
                     placeholder="e.g. RETAIL"
-                    className="h-11 rounded-xl bg-white/80 border-white shadow-sm font-bold italic text-xs"
+                    className="h-12 rounded-xl bg-slate-950/50 border-white/5 shadow-sm font-bold italic text-xs text-white placeholder:text-slate-700"
                     value={moduleTag || ""}
                     onChange={(e) => onModuleTagChange(e.target.value)}
                   />
@@ -191,21 +191,21 @@ export const InventoryFilterHub: React.FC<InventoryFilterHubProps> = ({
 
               {/* Price Range Filter */}
               {onPriceRangeChange && (
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Price Range</label>
-                  <div className="flex items-center gap-2 h-11 rounded-xl bg-white/80 border-white shadow-sm px-3">
+                <div className="space-y-2 sm:col-span-2 lg:col-span-1">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Price Range</label>
+                  <div className="flex items-center gap-2 h-12 rounded-xl bg-slate-950/50 border-white/5 shadow-sm px-4">
                     <Input 
                       type="number"
                       placeholder="Min"
-                      className="h-7 border-none bg-transparent font-bold italic text-xs p-0 focus-visible:ring-0"
+                      className="h-7 border-none bg-transparent font-bold italic text-xs p-0 focus-visible:ring-0 text-white placeholder:text-slate-700"
                       value={minPrice ?? ""}
                       onChange={(e) => onPriceRangeChange(e.target.value ? parseFloat(e.target.value) : undefined, maxPrice)}
                     />
-                    <span className="text-slate-300">-</span>
+                    <span className="text-slate-700">/</span>
                     <Input 
                       type="number"
                       placeholder="Max"
-                      className="h-7 border-none bg-transparent font-bold italic text-xs p-0 focus-visible:ring-0 text-right"
+                      className="h-7 border-none bg-transparent font-bold italic text-xs p-0 focus-visible:ring-0 text-right text-white placeholder:text-slate-700"
                       value={maxPrice ?? ""}
                       onChange={(e) => onPriceRangeChange(minPrice, e.target.value ? parseFloat(e.target.value) : undefined)}
                     />

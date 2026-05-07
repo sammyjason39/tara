@@ -293,12 +293,34 @@ const InventoryVisibility = () => {
   const fetchStores = useCallback(async () => {
     if (!tenantId || !session) return;
     try {
-      const data = await retailService.listStores(tenantId, session);
-      setStores(data);
-      if (data.length > 0 && !selectedStoreId) {
-        const firstStore = data[0];
+      const [storesData, channelsData] = await Promise.all([
+        retailService.listStores(tenantId, session),
+        retailService.listChannels(tenantId, session)
+      ]);
+      
+      const ecommerceStores = (Array.isArray(channelsData) ? channelsData : [])
+        .filter(c => c.type === "ecommerce" || c.type === "DIRECT" || c.type === "OWNED")
+        .map(c => ({
+          id: c.id,
+          name: `${c.name} (Ecommerce)`,
+          locationId: c.branchId || c.id,
+          type: "warehouse" as any, // Use warehouse type as fallback for inventory view
+          status: "active" as any,
+          code: c.id,
+          tenantId: tenantId,
+          infrastructureRegistry: {},
+          supplyConfig: {},
+          operationalConfig: {},
+          channelBinding: {},
+          governance: { license_status: "active", activation_source: "Cloud", compliance_level: 1, audit_frequency_tier: "standard" }
+        }));
+
+      const combined = [...storesData, ...ecommerceStores];
+      setStores(combined);
+      
+      if (combined.length > 0 && !selectedStoreId) {
+        const firstStore = combined[0];
         setSelectedStoreId(firstStore.id);
-        // Sync branch scope to session so all API calls carry x-branch-id
         updateBranch(firstStore.locationId || firstStore.id);
       }
     } catch (error) {
@@ -633,7 +655,7 @@ const InventoryVisibility = () => {
   });
 
   return (
-    <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen flex flex-col">
+    <div className="p-8 space-y-8 bg-slate-950 min-h-screen flex flex-col text-white">
       {/* ── Header ── */}
       <InventoryGlassHeader
         title="Retail Inventory"
@@ -669,7 +691,7 @@ const InventoryVisibility = () => {
               size="lg"
               onClick={handleSync}
               disabled={isLoading}
-              className="h-14 px-6 rounded-2xl border-white bg-white/50 backdrop-blur-md font-black italic text-xs uppercase tracking-widest gap-2"
+              className="h-14 px-6 rounded-2xl border-white/10 bg-slate-900/40 backdrop-blur-md font-black italic text-xs uppercase tracking-widest gap-2 text-white hover:bg-slate-800"
             >
               <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
               Sync
@@ -730,7 +752,7 @@ const InventoryVisibility = () => {
                        <Button
                         variant="outline"
                         size="lg"
-                        className="rounded-2xl border-white bg-white/50 backdrop-blur-md font-black italic text-xs uppercase tracking-widest gap-2 h-14 px-6"
+                        className="rounded-2xl border-white/10 bg-slate-900/40 backdrop-blur-md font-black italic text-xs uppercase tracking-widest gap-2 h-14 px-6 text-white hover:bg-slate-800"
                         onClick={() => setIsCategoryManagerOpen(true)}
                       >
                         Categories
@@ -746,7 +768,7 @@ const InventoryVisibility = () => {
                   )
                 }
               />
-              <Card className="rounded-[2.5rem] border-white/50 bg-white/50 backdrop-blur-xl shadow-2xl overflow-hidden">
+              <Card className="rounded-[2.5rem] border-white/10 bg-slate-900/30 backdrop-blur-3xl shadow-2xl overflow-hidden border">
                 <InventoryTable
                   items={inventory}
                   isLoading={isLoading}

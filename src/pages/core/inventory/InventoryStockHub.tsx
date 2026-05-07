@@ -26,6 +26,7 @@ import { useSession } from "@/core/security/session";
 import { inventoryService } from "@/core/services/inventory/inventoryService";
 import { orgService, type Department } from "@/core/services/hr/orgService";
 import { hrService } from "@/core/services/hr/hrService";
+import { retailService } from "@/core/services/retail/retailService";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -194,17 +195,30 @@ export default function InventoryStockHub() {
   const refresh = useCallback(async () => {
     try {
       const locFilter = selectedLocationId || undefined;
-      const [i, b, d, locs, cats] = await Promise.all([
+      const [i, b, d, locs, cats, channels] = await Promise.all([
         inventoryService.listItems(session.tenant_id, session, locFilter),
         inventoryService.listBalances(session.tenant_id, session, locFilter),
         orgService.getOrgMap(session.tenant_id, session),
         hrService.listLocations(session.tenant_id, session),
         inventoryService.listCategories(session.tenant_id, session),
+        retailService.listChannels(session.tenant_id, session),
       ]);
       setItems(i);
       setBalances(b);
       setDepartments(d);
-      setLocations(locs);
+      
+      // Merge locations with ecommerce channels
+      const ecommerceLocations = channels
+        .filter(c => c.type === "ecommerce" || c.type === "DIRECT" || c.type === "OWNED")
+        .map(c => ({
+          id: c.id,
+          name: `${c.name} (Ecommerce)`,
+          code: c.id, // Fallback to ID for code
+          address: "Online",
+          type: "ecommerce"
+        }));
+
+      setLocations([...locs, ...ecommerceLocations]);
       setDynamicCategories(cats);
     } catch (err) {
       console.error("Failed to fetch inventory stock hub data:", err);
@@ -327,7 +341,7 @@ export default function InventoryStockHub() {
   }
 
   return (
-    <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
+    <div className="p-8 space-y-8 bg-slate-950 min-h-screen text-white">
       <InventoryGlassHeader
         title="Stock Hub"
         subtitle="Global -> location -> department stock visibility with module-aware context tags."
@@ -342,7 +356,7 @@ export default function InventoryStockHub() {
              <Button
               variant="outline"
               size="lg"
-              className="rounded-2xl border-white bg-white/50 backdrop-blur-md font-black italic text-xs uppercase tracking-widest gap-2"
+              className="rounded-2xl border-white/10 bg-slate-900/40 backdrop-blur-md font-black italic text-xs uppercase tracking-widest gap-2 h-14 px-6 text-white hover:bg-slate-800"
               onClick={() => setIsCategoryManagerOpen(true)}
             >
               <FolderTree className="h-4 w-4" /> Categories
@@ -371,7 +385,7 @@ export default function InventoryStockHub() {
             onValueChange={(v) => setViewMode(v as ViewMode)}
             className="w-auto"
           >
-            <TabsList className="h-14 p-1.5 bg-white/70 backdrop-blur-md border border-white rounded-[1.2rem] shadow-sm">
+            <TabsList className="h-14 p-1.5 bg-slate-900/40 backdrop-blur-md border border-white/10 rounded-[1.2rem] shadow-xl">
               {[
                 { id: "total", label: "Global", icon: Globe },
                 { id: "branch", label: "Branches", icon: LayoutPanelLeft },
@@ -381,7 +395,7 @@ export default function InventoryStockHub() {
                 <TabsTrigger
                   key={t.id}
                   value={t.id}
-                  className="rounded-xl px-6 font-black italic text-[10px] uppercase tracking-widest data-[state=active]:bg-slate-900 data-[state=active]:text-white transition-all gap-2"
+                  className="rounded-xl px-6 font-black italic text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-slate-950 text-slate-400 transition-all gap-2"
                 >
                   <t.icon className="w-3.5 h-3.5" />
                   {t.label}
@@ -398,7 +412,7 @@ export default function InventoryStockHub() {
             <Button
               variant="outline"
               size="lg"
-              className="rounded-2xl border-white bg-white/50 backdrop-blur-md font-black italic text-xs uppercase tracking-widest gap-2 h-14 px-6"
+              className="rounded-2xl border-white/10 bg-slate-900/40 backdrop-blur-md font-black italic text-xs uppercase tracking-widest gap-2 h-14 px-6 text-white hover:bg-slate-800"
               onClick={() => setIsImportOpen(true)}
             >
               <Upload className="h-4 w-4" /> Import
@@ -406,7 +420,7 @@ export default function InventoryStockHub() {
             <Button
               variant="outline"
               size="lg"
-              className="rounded-2xl border-white bg-white/50 backdrop-blur-md font-black italic text-xs uppercase tracking-widest gap-2 h-14 px-6"
+              className="rounded-2xl border-white/10 bg-slate-900/40 backdrop-blur-md font-black italic text-xs uppercase tracking-widest gap-2 h-14 px-6 text-white hover:bg-slate-800"
               onClick={async () => {
                 try {
                   await inventoryService.runLowStockScan(session.tenant_id, session);
@@ -434,7 +448,13 @@ export default function InventoryStockHub() {
             categories={dynamicCategories.map(c => ({ id: c.id, name: c.name }))}
             location={selectedLocationId}
             onLocationChange={setSelectedLocationId}
-            locations={locations.map(l => ({ id: l.id, name: l.name }))}
+            locations={locations
+              .filter(l => {
+                if (viewMode === "branch") return l.type !== "ecommerce";
+                if (viewMode === "ecommerce") return l.type === "ecommerce";
+                return true;
+              })
+              .map(l => ({ id: l.id, name: l.name }))}
             moduleTag={moduleFilter}
             onModuleTagChange={setModuleFilter}
             onStatusChange={(v) => {}}
@@ -447,11 +467,11 @@ export default function InventoryStockHub() {
           <TransferDesk />
         </div>
       ) : (
-        <Card className="max-w-[1600px] mx-auto rounded-[2.5rem] border-white/50 bg-white/50 backdrop-blur-xl shadow-2xl overflow-hidden">
+        <Card className="max-w-[1600px] mx-auto rounded-[2.5rem] border-white/5 bg-slate-900/30 backdrop-blur-3xl shadow-2xl overflow-hidden border border-white/10">
           <div className="p-8 border-b border-white/40 flex items-center justify-between bg-slate-900/5">
             <div>
-              <h2 className="text-2xl font-black tracking-tighter text-slate-900 uppercase italic leading-none">
-                Stock Ledger
+              <h2 className="text-2xl font-black tracking-tighter text-white uppercase italic leading-none">
+                Stock Hub
               </h2>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mt-2">
                 Real-time visibility across {viewMode} hierarchy
@@ -464,7 +484,7 @@ export default function InventoryStockHub() {
                 </UIBadge>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="rounded-xl border-white bg-white/50 font-black italic text-[10px] uppercase tracking-widest gap-2">
+                    <Button variant="outline" size="sm" className="rounded-xl border-white/5 bg-slate-950/50 font-black italic text-[10px] uppercase tracking-widest gap-2 text-white hover:bg-slate-900">
                       Actions <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -495,8 +515,8 @@ export default function InventoryStockHub() {
           <div className="p-4">
           <DataTableShell total={filteredBalances.length} page={1} pageSize={10}>
             <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
-                <tr>
+              <thead>
+                <tr className="bg-white/5 text-[10px] uppercase text-slate-500 border-b border-white/5">
                   <th className="p-3 text-left w-10">
                     <Checkbox
                       checked={
