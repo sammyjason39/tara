@@ -18,7 +18,8 @@ import {
   Briefcase,
   Coins,
   CreditCard,
-  Target
+  Target,
+  DollarSign
 } from 'lucide-react';
 import { useSession } from '@/core/security/session';
 import { useApp } from '@/contexts/AppContext';
