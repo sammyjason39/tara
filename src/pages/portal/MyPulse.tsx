@@ -21,7 +21,8 @@ import {
   Target,
   DollarSign,
   Receipt,
-  HandCoins
+  HandCoins,
+  FileCheck
 } from 'lucide-react';
 import { useSession } from '@/core/security/session';
 import { useApp } from '@/contexts/AppContext';
@@ -69,6 +70,10 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
   const [loanInstallments, setLoanInstallments] = useState('12');
   const [loanReason, setLoanReason] = useState('');
   const [myLoans, setMyLoans] = useState<any[]>([]);
+  const [isSubmittingLoan, setIsSubmittingLoan] = useState(false);
+
+  // Compliance State
+  const [isComplianceOpen, setIsComplianceOpen] = useState(false);
 
   // Performance State
   const [perfSnapshot, setPerfSnapshot] = useState<any>(null);
@@ -368,9 +373,13 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                           <p className="text-[10px] text-indigo-200 font-bold uppercase tracking-widest">Last audit: 2h ago</p>
                        </div>
                     </div>
-                    <Button variant="outline" className="w-full bg-white/10 border-white/20 hover:bg-white/20 text-white font-black italic uppercase tracking-widest text-[10px] rounded-xl h-10 mt-2">
-                       View Audit Passport
-                    </Button>
+                    <Button 
+                        variant="outline" 
+                        className="w-full bg-white/10 border-white/20 hover:bg-white/20 text-white font-black italic uppercase tracking-widest text-[10px] rounded-xl h-10 mt-2"
+                        onClick={() => setIsComplianceOpen(true)}
+                     >
+                        View Audit Passport
+                     </Button>
                  </CardContent>
               </Card>
            </div>
@@ -799,6 +808,71 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Compliance Modal */}
+      <Dialog open={isComplianceOpen} onOpenChange={setIsComplianceOpen}>
+        <DialogContent className="max-w-2xl bg-slate-900 border-slate-800 text-white p-0 overflow-hidden rounded-3xl">
+          <DialogHeader className="p-8 pb-4">
+            <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-indigo-500/20 rounded-2xl flex items-center justify-center">
+                  <ShieldCheck className="w-7 h-7 text-indigo-400" />
+                </div>
+                <div>
+                  <DialogTitle className="text-2xl font-black italic uppercase tracking-wider text-white">Audit Passport</DialogTitle>
+                  <DialogDescription className="text-xs font-bold uppercase tracking-widest text-slate-400">Operational Integrity & Compliance Telemetry</DialogDescription>
+                </div>
+            </div>
+          </DialogHeader>
+          
+          <div className="p-8 pt-4 space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-2">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Verification Status</p>
+                  <div className="flex items-center gap-2 text-emerald-400">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span className="text-sm font-black italic uppercase tracking-wider">Validated</span>
+                  </div>
+                </div>
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-2">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Last Sync</p>
+                  <p className="text-sm font-black italic uppercase tracking-wider text-indigo-400">2h 14m ago</p>
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-2">Compliance Artifacts</p>
+                {[
+                  { title: 'Tax Residency Certificate', status: 'VERIFIED', date: 'Exp: 2027-01' },
+                  { title: 'ID Verification (KYC)', status: 'VERIFIED', date: 'Last: 2025-12' },
+                  { title: 'Data Privacy Consent', status: 'ACTIVE', date: 'Signed: 2026-02' },
+                  { title: 'Health & Safety Induction', status: 'COMPLETED', date: '2026-04-12' },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-indigo-500/50 transition-colors cursor-pointer group">
+                      <div className="flex items-center gap-3">
+                        <FileCheck className="w-5 h-5 text-slate-500 group-hover:text-indigo-400" />
+                        <div>
+                            <p className="text-xs font-black uppercase tracking-tight text-white">{item.title}</p>
+                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">{item.date}</p>
+                        </div>
+                      </div>
+                      <Badge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] font-black uppercase tracking-widest">
+                        {item.status}
+                      </Badge>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          <DialogFooter className="p-8 pt-0">
+            <Button 
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black italic uppercase tracking-[0.2em] rounded-2xl h-14"
+                onClick={() => setIsComplianceOpen(false)}
+            >
+                Close Passport
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
