@@ -29,6 +29,7 @@ export class InventoryMockRepository extends IInventoryRepository {
   private agenticEvents: any[] = [];
 
   constructor() {
+    super();
     const hanselTenant = "hansel-demo-tenant";
     const loc1 = "hansel-loc-1";
     const loc2 = "hansel-loc-2";
