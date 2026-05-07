@@ -235,4 +235,11 @@ export class InventoryMockRepository extends IInventoryRepository {
   async getTransferById(ctx: TenantContext, id: string): Promise<any | null> { return null; }
   async createStockTransfer(ctx: TenantContext, data: any, tx?: any): Promise<any> { return { id: "mock-id", ...data }; }
   async updateStockTransfer(ctx: TenantContext, id: string, data: any, tx?: any): Promise<any> { return { id, ...data }; }
+
+  // --- Category Management ---
+  async getProductCategories(ctx: TenantContext): Promise<any[]> { return []; }
+  async createProductCategory(ctx: TenantContext, data: any): Promise<any> { return { id: "cat-" + Math.random(), ...data }; }
+  async updateProductCategory(ctx: TenantContext, id: string, data: any): Promise<any> { return { id, ...data }; }
+  async deleteProductCategory(ctx: TenantContext, id: string): Promise<void> { return; }
+  async updateItemCategory(ctx: TenantContext, itemId: string, categoryId: string): Promise<any> { return { itemId, categoryId }; }
 }
