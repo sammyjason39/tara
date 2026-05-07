@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import { WorkspacePanel } from '@/core/ui/WorkspacePanel';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface FinancialTrajectoryChartProps {
   data: { month: string; revenue: number; expenses: number; profit?: number }[];
