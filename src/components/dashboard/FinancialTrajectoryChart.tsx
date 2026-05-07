@@ -16,9 +16,15 @@ import { Button } from '@/components/ui/button';
 
 interface FinancialTrajectoryChartProps {
   data: { month: string; revenue: number; expenses: number; profit?: number }[];
+  period: string;
+  onPeriodChange: (period: string) => void;
 }
 
-export const FinancialTrajectoryChart: React.FC<FinancialTrajectoryChartProps> = ({ data }) => {
+export const FinancialTrajectoryChart: React.FC<FinancialTrajectoryChartProps> = ({ 
+  data, 
+  period,
+  onPeriodChange 
+}) => {
   const formattedData = data.map(d => ({
     ...d,
     profit: d.revenue - d.expenses
@@ -30,10 +36,23 @@ export const FinancialTrajectoryChart: React.FC<FinancialTrajectoryChartProps> =
       description="Revenue vs Operating Expenses vs Gross Profit"
       variant="glass"
       action={
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold">3M</Button>
-          <Button variant="secondary" size="sm" className="h-7 text-[10px] font-bold bg-indigo-50 text-indigo-600 border-indigo-100">6M</Button>
-          <Button variant="ghost" size="sm" className="h-7 text-[10px] font-bold">12M</Button>
+        <div className="flex gap-2 bg-slate-100/50 p-1 rounded-xl">
+          {['3M', '6M', '12M'].map((p) => (
+            <Button 
+              key={p}
+              variant={period === p ? "secondary" : "ghost"} 
+              size="sm" 
+              className={cn(
+                "h-7 px-4 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all",
+                period === p 
+                  ? "bg-white shadow-sm text-indigo-600" 
+                  : "text-slate-500 hover:text-slate-900"
+              )}
+              onClick={() => onPeriodChange(p)}
+            >
+              {p}
+            </Button>
+          ))}
         </div>
       }
     >

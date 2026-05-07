@@ -47,13 +47,15 @@ export default function CoreDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [dashboardData, setDashboardData] = useState<DashboardPayload['data'] | null>(null);
   const [expansionOpen, setExpansionOpen] = useState(false);
+  const [period, setPeriod] = useState("6M");
 
-  const refresh = useCallback(async (isManual = false) => {
+  const refresh = useCallback(async (isManual = false, targetPeriod?: string) => {
     try {
       if (isManual) setRefreshing(true);
       else setLoading(true);
       
-      const res = await adminService.getDashboardMetrics(session.tenant_id, session);
+      const activePeriod = targetPeriod || period;
+      const res = await adminService.getDashboardMetrics(session.tenant_id, session, activePeriod);
       if (res) {
         setDashboardData(res);
       }
@@ -109,88 +111,112 @@ export default function CoreDashboard() {
         />
       }
     >
-      <div className="grid gap-8 xl:grid-cols-[1fr_380px] animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="space-y-8">
-          <Tabs defaultValue="overview" className="space-y-8">
-            <TabsList className="bg-slate-100/50 dark:bg-slate-900/50 p-1.5 rounded-2xl h-14 w-full sm:w-auto border border-slate-200/30 dark:border-slate-800/30 backdrop-blur-md">
-              <TabsTrigger value="overview" className="rounded-xl px-8 h-11 data-[state=active]:bg-white data-[state=active]:shadow-xl data-[state=active]:text-indigo-600 font-black text-[11px] uppercase tracking-widest transition-all">
+      <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
+        <Tabs defaultValue="overview" className="space-y-10">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 bg-white/50 dark:bg-slate-900/50 p-4 rounded-[2.5rem] border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl">
+            <TabsList className="bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-2xl h-12">
+              <TabsTrigger value="overview" className="rounded-xl px-8 h-10 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-indigo-600 font-black text-[10px] uppercase tracking-[0.2em] transition-all">
                 Strategic Overview
               </TabsTrigger>
-              <TabsTrigger value="operations" className="rounded-xl px-8 h-11 data-[state=active]:bg-white data-[state=active]:shadow-xl data-[state=active]:text-indigo-600 font-black text-[11px] uppercase tracking-widest transition-all">
+              <TabsTrigger value="operations" className="rounded-xl px-8 h-10 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-indigo-600 font-black text-[10px] uppercase tracking-[0.2em] transition-all">
                 Tactical Flow
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview" className="space-y-10 m-0">
-              {/* Executive KPI Matrix */}
-              <ExecutiveKpiRow kpis={dashboardData.kpis} />
+            <div className="hidden lg:flex items-center gap-3">
+               <div className="flex flex-col items-end">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Governance Tier</span>
+                  <span className="text-[10px] font-bold text-indigo-600">L4 COMMANDER</span>
+               </div>
+               <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                  <LayoutDashboard className="h-5 w-5 text-white" />
+               </div>
+            </div>
+          </div>
 
-              {/* Tier 1: Financial & Treasury Intelligence */}
-              <div className="grid gap-6 lg:grid-cols-3">
-                <div className="lg:col-span-2">
-                  <FinancialTrajectoryChart data={dashboardData.timeseries.financialOverview} />
-                </div>
-                <div className="space-y-6">
-                  <CashPositionWidget />
-                  <ArApWaterfallChart />
-                </div>
+          <TabsContent value="overview" className="space-y-12 m-0">
+            {/* Tier 0: The Strategic Core */}
+            <div className="grid gap-8 lg:grid-cols-4">
+               <div className="lg:col-span-3">
+                  <ExecutiveKpiRow kpis={dashboardData.kpis} />
+               </div>
+               <StrategicScorecard />
+            </div>
+
+            {/* Tier 1: Financial Trajectory & Regional Performance */}
+            <div className="grid gap-8 lg:grid-cols-3">
+              <div className="lg:col-span-2">
+                <FinancialTrajectoryChart 
+                  data={dashboardData.timeseries.financialOverview} 
+                  period={period}
+                  onPeriodChange={(p) => {
+                    setPeriod(p);
+                    refresh(true, p);
+                  }}
+                />
               </div>
+              <BranchLeaderboard data={dashboardData.timeseries.topBranches} />
+            </div>
 
-              {/* Tier 2: Human Capital & Regional Leaders */}
-              <div className="grid gap-6 lg:grid-cols-3">
-                <HrCapitalWidget distribution={dashboardData.timeseries.hrDistribution} />
-                <div className="space-y-6">
+            {/* Tier 2: Resource Allocation & Efficiency */}
+            <div className="grid gap-8 lg:grid-cols-4">
+               <div className="lg:col-span-2 space-y-8">
+                  <HrCapitalWidget distribution={dashboardData.timeseries.hrDistribution} />
+                  <div className="grid gap-8 sm:grid-cols-2">
+                     <CashPositionWidget />
+                     <ArApWaterfallChart />
+                  </div>
+               </div>
+               <div className="space-y-8">
                   <PayrollBurnTrendChart />
                   <AttendanceGauge />
-                </div>
-                <BranchLeaderboard data={dashboardData.timeseries.topBranches} />
-              </div>
+               </div>
+               <SalesPipelineFunnel />
+            </div>
 
-              {/* Tier 3: Inventory, Procurement & Sales */}
-              <div className="grid gap-6 lg:grid-cols-3">
-                <InventoryHealthWidget />
-                <ProcurementPipelineWidget />
-                <SalesPipelineFunnel />
-              </div>
+            {/* Tier 3: Supply Chain & Risk Matrix */}
+            <div className="grid gap-8 lg:grid-cols-3">
+               <div className="lg:col-span-2 grid gap-8 sm:grid-cols-2">
+                  <InventoryHealthWidget />
+                  <ProcurementPipelineWidget />
+               </div>
+               <AlertsRiskMatrix data={dashboardData.timeseries.alertsByModule as any} />
+            </div>
 
-              {/* Tier 4: Risk, Marketing & System Health */}
-              <div className="grid gap-6 lg:grid-cols-4">
-                <AlertsRiskMatrix data={dashboardData.timeseries.alertsByModule as any} />
-                <MarketingRoiChart data={dashboardData.timeseries.campaignCorrelation} />
-                <ComplianceHeatmap />
-                <SystemHealthDonut data={dashboardData.timeseries.moduleHealth} />
-              </div>
+            {/* Tier 4: Growth & Compliance */}
+            <div className="grid gap-8 lg:grid-cols-3">
+               <MarketingRoiChart data={dashboardData.timeseries.campaignCorrelation} />
+               <SystemHealthDonut data={dashboardData.timeseries.moduleHealth} />
+               <ComplianceHeatmap />
+            </div>
 
-              {/* Tier 5: Global Event Stream */}
-              <GlobalEventFeed activities={dashboardData.activities} />
-            </TabsContent>
+            {/* Tier 5: Global Intelligence Feed */}
+            <div className="grid gap-8 lg:grid-cols-3">
+               <div className="lg:col-span-2">
+                  <GlobalEventFeed activities={dashboardData.activities} />
+               </div>
+               <div className="rounded-[2.5rem] bg-slate-900 p-10 text-white shadow-2xl relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                  <div className="relative z-10 space-y-8">
+                     <div className="h-14 w-14 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-xl border border-white/10">
+                        <Briefcase className="h-7 w-7 text-indigo-400" />
+                     </div>
+                     <div className="space-y-3">
+                        <h4 className="text-2xl font-black italic uppercase tracking-tighter">Strategic Support</h4>
+                        <p className="text-sm text-slate-400 font-medium leading-relaxed">Your dedicated executive assistant is ready for tactical support and complex modeling.</p>
+                     </div>
+                     <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl h-14 shadow-xl shadow-indigo-500/20 transition-all active:scale-95">
+                        CONNECT TO COMMAND
+                     </Button>
+                  </div>
+               </div>
+            </div>
+          </TabsContent>
 
-            <TabsContent value="operations" className="m-0">
-              <OperationsView />
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Executive Sidebar: Scorecard & Support */}
-        <div className="space-y-8">
-          <StrategicScorecard />
-
-          <div className="rounded-[2.5rem] bg-indigo-600 p-8 text-white shadow-2xl shadow-indigo-500/30 relative overflow-hidden">
-             <div className="absolute bottom-0 right-0 h-32 w-32 bg-white/10 rounded-full -mb-16 -mr-16 blur-2xl" />
-             <div className="relative z-10 space-y-6">
-                <div className="h-10 w-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-md">
-                   <Briefcase className="h-5 w-5" />
-                </div>
-                <div className="space-y-1">
-                   <h4 className="text-lg font-black italic uppercase tracking-tighter">Strategic Support</h4>
-                   <p className="text-xs text-indigo-100 font-medium">Your dedicated executive assistant is ready for tactical support.</p>
-                </div>
-                <Button className="w-full bg-white text-indigo-600 hover:bg-indigo-50 font-black text-[10px] uppercase tracking-widest rounded-xl h-11">
-                   CONNECT NOW
-                </Button>
-             </div>
-          </div>
-        </div>
+          <TabsContent value="operations" className="m-0">
+            <OperationsView />
+          </TabsContent>
+        </Tabs>
       </div>
 
       <StrategicExpansionModal 

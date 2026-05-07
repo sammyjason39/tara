@@ -5,6 +5,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Req,
   UseGuards,
   UseInterceptors,
@@ -44,9 +45,9 @@ export class AdminController {
   ) {}
 
   @Get("dashboard")
-  async getDashboardMetrics(@Req() request: RequestWithTenant) {
+  async getDashboardMetrics(@Req() request: RequestWithTenant, @Query('period') period?: string) {
     const { tenant_id } = request.tenantContext;
-    const data = await this.adminService.getDashboardMetrics(tenant_id);
+    const data = await this.adminService.getDashboardMetrics(tenant_id, period);
     
     // Maintain kpis structure for backward compatibility/simpler frontend mapping if needed
     const kpis = [

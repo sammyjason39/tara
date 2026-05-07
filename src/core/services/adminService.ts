@@ -2,8 +2,9 @@ import { apiRequest } from "@/core/api/apiClient";
 import type { SessionContext } from "@/core/security/session";
 
 export const adminService = {
-  async getDashboardMetrics(tenantId: string, session: SessionContext) {
-    return apiRequest<any>("/v1/admin/dashboard", "GET", session);
+  async getDashboardMetrics(tenantId: string, session: SessionContext, period?: string) {
+    const url = period ? `/v1/admin/dashboard?period=${period}` : "/v1/admin/dashboard";
+    return apiRequest<any>(url, "GET", session);
   },
   async getDashboardTactical(session: SessionContext) {
     return apiRequest<any>("/v1/admin/dashboard/tactical", "GET", session);

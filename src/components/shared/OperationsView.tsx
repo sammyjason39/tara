@@ -111,7 +111,7 @@ export function OperationsView() {
           <DeviceNetworkTable data={tacticalData.iotDevices} />
         </div>
         <div className="space-y-8">
-          <OperationalAlertsQueue data={tacticalData.alerts} />
+          <OperationalAlertsQueue data={tacticalData.alertsQueue} />
           <OperationalChecklist />
         </div>
       </div>
