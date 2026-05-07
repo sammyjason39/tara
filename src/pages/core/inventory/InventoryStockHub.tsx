@@ -615,7 +615,8 @@ export default function InventoryStockHub() {
               </tbody>
             </table>
           </DataTableShell>
-        </WorkspacePanel>
+          </div>
+        </Card>
       )}
       <Dialog
         open={!!selectedBalance}

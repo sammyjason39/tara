@@ -224,6 +224,7 @@ export function TransferDesk() {
               ))}
             </tbody>
           </table>
+          </DataTableShell>
         </div>
       </Card>
 

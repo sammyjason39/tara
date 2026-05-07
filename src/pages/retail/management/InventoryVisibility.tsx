@@ -632,8 +632,6 @@ const InventoryVisibility = () => {
     }
   });
 
-  const selectedStore = stores.find((s) => s.id === selectedStoreId);
-
   return (
     <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen flex flex-col">
       {/* ── Header ── */}
@@ -712,7 +710,6 @@ const InventoryVisibility = () => {
           </div>
 
           <TabsContent value="ledger" className="flex-1 m-0 p-8">
-            <div className="max-w-7xl mx-auto space-y-6">
             <div className="max-w-[1600px] mx-auto space-y-8">
               <InventoryFilterHub
                 search={filters.search}
