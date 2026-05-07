@@ -33,7 +33,11 @@ import { SalesPipelineFunnel } from "@/components/dashboard/SalesPipelineFunnel"
 import { AlertsRiskMatrix } from "@/components/dashboard/AlertsRiskMatrix";
 import { MarketingRoiChart } from "@/components/dashboard/MarketingRoiChart";
 import { GlobalEventFeed } from "@/components/dashboard/GlobalEventFeed";
-import { StrategicScorecard } from "@/components/dashboard/StrategicScorecard";
+import { 
+  StrategicScorecard, 
+  EnterpriseHealthWidget, 
+  ActionItemsWidget 
+} from "@/components/dashboard/StrategicScorecard";
 import { SystemHealthDonut } from "@/components/dashboard/SystemHealthDonut";
 import { ComplianceHeatmap } from "@/components/dashboard/ComplianceHeatmap";
 import { DashboardPayload } from "@/types/dashboard.types";
@@ -138,7 +142,7 @@ export default function CoreDashboard() {
             {/* Tier 0: Executive KPI Matrix */}
             <ExecutiveKpiRow kpis={dashboardData.kpis} />
 
-            {/* Tier 1: Strategic Core & Financial Trajectory */}
+            {/* Tier 1: Financial Trajectory & Critical Actions */}
             <div className="grid gap-8 lg:grid-cols-3">
               <div className="lg:col-span-2">
                 <FinancialTrajectoryChart 
@@ -150,59 +154,61 @@ export default function CoreDashboard() {
                   }}
                 />
               </div>
-              <StrategicScorecard />
+              <ActionItemsWidget />
             </div>
 
-            {/* Tier 2: Human Capital & Regional Leaders */}
+            {/* Tier 2: Performance & Health Core */}
             <div className="grid gap-8 lg:grid-cols-3">
+               <EnterpriseHealthWidget />
                <HrCapitalWidget distribution={dashboardData.timeseries.hrDistribution} />
                <BranchLeaderboard data={dashboardData.timeseries.topBranches} />
-               <SalesPipelineFunnel />
             </div>
 
-            {/* Tier 3: Treasury & Efficiency */}
+            {/* Tier 3: Treasury & Growth Intelligence */}
             <div className="grid gap-8 lg:grid-cols-3">
                <CashPositionWidget />
                <ArApWaterfallChart />
+               <SalesPipelineFunnel />
+            </div>
+
+            {/* Tier 4: Supply Chain & Operational Stability */}
+            <div className="grid gap-8 lg:grid-cols-3">
+               <InventoryHealthWidget />
+               <ProcurementPipelineWidget />
                <div className="grid gap-8">
                   <PayrollBurnTrendChart />
                   <AttendanceGauge />
                </div>
             </div>
 
-            {/* Tier 4: Supply Chain & Risk Matrix */}
+            {/* Tier 5: Risk & Governance Matrix */}
             <div className="grid gap-8 lg:grid-cols-3">
-               <InventoryHealthWidget />
-               <ProcurementPipelineWidget />
                <AlertsRiskMatrix data={dashboardData.timeseries.alertsByModule as any} />
-            </div>
-
-            {/* Tier 5: Growth & Compliance */}
-            <div className="grid gap-8 lg:grid-cols-3">
-               <MarketingRoiChart data={dashboardData.timeseries.campaignCorrelation} />
                <SystemHealthDonut data={dashboardData.timeseries.moduleHealth} />
                <ComplianceHeatmap />
             </div>
 
-
-            {/* Tier 5: Global Intelligence Feed */}
+            {/* Tier 6: Market Intelligence & Event Feed */}
             <div className="grid gap-8 lg:grid-cols-3">
                <div className="lg:col-span-2">
                   <GlobalEventFeed activities={dashboardData.activities} />
                </div>
-               <div className="rounded-[2.5rem] bg-slate-900 p-10 text-white shadow-2xl relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                  <div className="relative z-10 space-y-8">
-                     <div className="h-14 w-14 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-xl border border-white/10">
-                        <Briefcase className="h-7 w-7 text-indigo-400" />
-                     </div>
-                     <div className="space-y-3">
-                        <h4 className="text-2xl font-black italic uppercase tracking-tighter">Strategic Support</h4>
-                        <p className="text-sm text-slate-400 font-medium leading-relaxed">Your dedicated executive assistant is ready for tactical support and complex modeling.</p>
-                     </div>
-                     <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl h-14 shadow-xl shadow-indigo-500/20 transition-all active:scale-95">
-                        CONNECT TO COMMAND
-                     </Button>
+               <div className="space-y-8">
+                  <MarketingRoiChart data={dashboardData.timeseries.campaignCorrelation} />
+                  <div className="rounded-[2.5rem] bg-slate-900 p-8 text-white shadow-2xl relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                    <div className="relative z-10 space-y-6">
+                       <div className="h-10 w-10 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-xl border border-white/10">
+                          <Briefcase className="h-5 w-5 text-indigo-400" />
+                       </div>
+                       <div className="space-y-1">
+                          <h4 className="text-lg font-black italic uppercase tracking-tighter">Strategic Support</h4>
+                          <p className="text-[10px] text-slate-400 font-medium">Tactical assistance and complex modeling ready.</p>
+                       </div>
+                       <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[9px] uppercase tracking-[0.2em] rounded-xl h-10 transition-all active:scale-95">
+                          CONNECT NOW
+                       </Button>
+                    </div>
                   </div>
                </div>
             </div>
