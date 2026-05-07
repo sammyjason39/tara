@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Tabs, 
   TabsContent, 
@@ -17,12 +18,21 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { 
   Building2, 
   MapPin, 
   UserPlus, 
   Rocket,
   CheckCircle2,
-  Loader2
+  Loader2,
+  Globe,
+  Navigation
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -46,8 +56,28 @@ export function StrategicExpansionModal({
   const [successMode, setSuccessMode] = useState<string | null>(null);
 
   // Form States
-  const [companyForm, setCompanyForm] = useState({ name: "", industry: "retail", country: "US", currency: "USD" });
-  const [branchForm, setBranchForm] = useState({ name: "", address: "", email: "", phone: "" });
+  const [companyForm, setCompanyForm] = useState({ 
+    name: "", 
+    industry: "retail", 
+    country: "US", 
+    currency: "USD",
+    address: "",
+    latitude: "",
+    longitude: "",
+    geofence_radius: "200"
+  });
+
+  const [branchForm, setBranchForm] = useState({ 
+    name: "", 
+    type: "OFFICE",
+    address: "", 
+    latitude: "",
+    longitude: "",
+    geofence_radius: "200",
+    email: "", 
+    phone: "" 
+  });
+
   const [inviteForm, setInviteForm] = useState({ email: "", role: "ADMIN", department: "executive" });
 
   const handleCreateCompany = async (e: React.FormEvent) => {
@@ -97,8 +127,8 @@ export function StrategicExpansionModal({
 
   const resetAndClose = () => {
     setSuccessMode(null);
-    setCompanyForm({ name: "", industry: "retail", country: "US", currency: "USD" });
-    setBranchForm({ name: "", address: "", email: "", phone: "" });
+    setCompanyForm({ name: "", industry: "retail", country: "US", currency: "USD", address: "", latitude: "", longitude: "", geofence_radius: "200" });
+    setBranchForm({ name: "", type: "OFFICE", address: "", latitude: "", longitude: "", geofence_radius: "200", email: "", phone: "" });
     setInviteForm({ email: "", role: "ADMIN", department: "executive" });
     onOpenChange(false);
   };
@@ -108,7 +138,7 @@ export function StrategicExpansionModal({
       if (!open) resetAndClose();
       else onOpenChange(true);
     }}>
-      <DialogContent className="sm:max-w-[700px] rounded-[3.5rem] border border-slate-100 bg-white p-0 overflow-hidden shadow-2xl">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto rounded-[3.5rem] border border-slate-100 bg-white p-0 shadow-2xl">
         {/* Header Area */}
         <div className="bg-slate-950 p-10 relative overflow-hidden">
           <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#6366f1 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
@@ -120,11 +150,11 @@ export function StrategicExpansionModal({
                 <Rocket className="h-5 w-5 text-indigo-400" />
               </div>
               <DialogTitle className="text-3xl font-black tracking-tighter uppercase italic text-white">
-                Enterprise Provisioning
+                Enterprise Expansion
               </DialogTitle>
             </div>
             <DialogDescription className="text-slate-400 font-medium">
-              Execute strategic growth initiatives across the global organizational matrix.
+              Scale your organization with full data parity. All entities include GPS and operational compliance.
             </DialogDescription>
           </DialogHeader>
         </div>
@@ -142,9 +172,9 @@ export function StrategicExpansionModal({
                 {successMode === "invite" && "Protocol Initiated"}
               </h3>
               <p className="text-slate-500 font-medium max-w-sm">
-                The strategic expansion command has been successfully executed and recorded in the global ledger.
+                Operational parameters successfully synced. The new entity is now active in the global organizational matrix.
               </p>
-              <Button onClick={resetAndClose} className="mt-8 h-12 px-8 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-widest text-xs">
+              <Button onClick={resetAndClose} className="mt-8 h-12 px-8 rounded-2xl bg-indigo-600 hover:bg-indigo-700 font-black uppercase tracking-widest text-xs">
                 Acknowledge & Close
               </Button>
             </div>
@@ -155,65 +185,143 @@ export function StrategicExpansionModal({
                   <Building2 className="h-4 w-4 mr-2" /> Subsidiary
                 </TabsTrigger>
                 <TabsTrigger value="branch" className="rounded-xl font-black uppercase tracking-wider text-[10px] data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm">
-                  <MapPin className="h-4 w-4 mr-2" /> Corp Branch
+                  <MapPin className="h-4 w-4 mr-2" /> Local Branch
                 </TabsTrigger>
                 <TabsTrigger value="invite" className="rounded-xl font-black uppercase tracking-wider text-[10px] data-[state=active]:bg-white data-[state=active]:text-indigo-600 data-[state=active]:shadow-sm">
                   <UserPlus className="h-4 w-4 mr-2" /> Recruitment
                 </TabsTrigger>
               </TabsList>
 
+              {/* SUBSIDIARY FORM */}
               <TabsContent value="company" className="space-y-6 mt-0">
-                <form onSubmit={handleCreateCompany} className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Legal Entity Name</Label>
-                      <Input required value={companyForm.name} onChange={e => setCompanyForm({...companyForm, name: e.target.value})} placeholder="e.g. Zenvix Logistics LLC" className="h-12 rounded-xl bg-white border-slate-200" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
+                <form onSubmit={handleCreateCompany} className="space-y-8">
+                  <div className="grid grid-cols-2 gap-8">
+                    <div className="space-y-6">
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Base Currency</Label>
-                        <Input required value={companyForm.currency} onChange={e => setCompanyForm({...companyForm, currency: e.target.value})} placeholder="USD" className="h-12 rounded-xl bg-white border-slate-200" />
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Legal Entity Name</Label>
+                        <Input required value={companyForm.name} onChange={e => setCompanyForm({...companyForm, name: e.target.value})} placeholder="e.g. Zenvix Global Logistics" className="h-12 rounded-xl bg-white border-slate-200" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Industry</Label>
+                          <Select value={companyForm.industry} onValueChange={v => setCompanyForm({...companyForm, industry: v})}>
+                            <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="retail">Retail</SelectItem>
+                              <SelectItem value="logistics">Logistics</SelectItem>
+                              <SelectItem value="fnb">Food & Bev</SelectItem>
+                              <SelectItem value="it">Technology</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Currency</Label>
+                          <Input required value={companyForm.currency} onChange={e => setCompanyForm({...companyForm, currency: e.target.value})} placeholder="USD" className="h-12 rounded-xl bg-white border-slate-200" />
+                        </div>
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Industry Module</Label>
-                        <Input required value={companyForm.industry} onChange={e => setCompanyForm({...companyForm, industry: e.target.value})} placeholder="retail" className="h-12 rounded-xl bg-white border-slate-200" />
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2"><MapPin className="h-3 w-3" /> HQ Address</Label>
+                        <Textarea required value={companyForm.address} onChange={e => setCompanyForm({...companyForm, address: e.target.value})} placeholder="Full legal address" className="min-h-[100px] rounded-xl bg-white border-slate-200" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-6 p-6 rounded-3xl bg-slate-100/50 border border-slate-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Navigation className="h-4 w-4 text-indigo-600" />
+                        <span className="text-xs font-black uppercase tracking-widest text-slate-700">Attendance & GPS Config</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Latitude</Label>
+                          <Input type="number" step="any" value={companyForm.latitude} onChange={e => setCompanyForm({...companyForm, latitude: e.target.value})} placeholder="-6.2000" className="h-12 rounded-xl bg-white border-slate-200" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Longitude</Label>
+                          <Input type="number" step="any" value={companyForm.longitude} onChange={e => setCompanyForm({...companyForm, longitude: e.target.value})} placeholder="106.8000" className="h-12 rounded-xl bg-white border-slate-200" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Geofence Radius (Meters)</Label>
+                        <Input type="number" value={companyForm.geofence_radius} onChange={e => setCompanyForm({...companyForm, geofence_radius: e.target.value})} placeholder="200" className="h-12 rounded-xl bg-white border-slate-200" />
+                        <p className="text-[9px] text-slate-400">Radius in meters for valid clock-in verification.</p>
                       </div>
                     </div>
                   </div>
                   <Button type="submit" disabled={loading} className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-widest shadow-lg shadow-indigo-200">
-                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Provision Subsidiary Environment"}
+                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Deploy Global Subsidiary"}
                   </Button>
                 </form>
               </TabsContent>
 
+              {/* BRANCH/STORE FORM */}
               <TabsContent value="branch" className="space-y-6 mt-0">
-                <form onSubmit={handleCreateBranch} className="space-y-6">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Office Name</Label>
-                      <Input required value={branchForm.name} onChange={e => setBranchForm({...branchForm, name: e.target.value})} placeholder="e.g. EMEA Regional HQ" className="h-12 rounded-xl bg-white border-slate-200" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Physical Address</Label>
-                      <Input required value={branchForm.address} onChange={e => setBranchForm({...branchForm, address: e.target.value})} placeholder="Full address" className="h-12 rounded-xl bg-white border-slate-200" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
+                <form onSubmit={handleCreateBranch} className="space-y-8">
+                  <div className="grid grid-cols-2 gap-8">
+                    <div className="space-y-6">
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Contact Email</Label>
-                        <Input type="email" value={branchForm.email} onChange={e => setBranchForm({...branchForm, email: e.target.value})} placeholder="office@company.com" className="h-12 rounded-xl bg-white border-slate-200" />
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Location Name</Label>
+                        <Input required value={branchForm.name} onChange={e => setBranchForm({...branchForm, name: e.target.value})} placeholder="e.g. Jakarta Retail Store #01" className="h-12 rounded-xl bg-white border-slate-200" />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Phone</Label>
-                        <Input value={branchForm.phone} onChange={e => setBranchForm({...branchForm, phone: e.target.value})} placeholder="+1..." className="h-12 rounded-xl bg-white border-slate-200" />
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Operational Type</Label>
+                        <Select value={branchForm.type} onValueChange={v => setBranchForm({...branchForm, type: v})}>
+                          <SelectTrigger className="h-12 rounded-xl bg-white border-slate-200">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="OFFICE">Corporate Office</SelectItem>
+                            <SelectItem value="RETAIL">Retail Store</SelectItem>
+                            <SelectItem value="WAREHOUSE">Distribution Center</SelectItem>
+                            <SelectItem value="FACTORY">Production Facility</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-2"><MapPin className="h-3 w-3" /> Physical Address</Label>
+                        <Textarea required value={branchForm.address} onChange={e => setBranchForm({...branchForm, address: e.target.value})} placeholder="Street address, building, floor" className="min-h-[100px] rounded-xl bg-white border-slate-200" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-6 p-6 rounded-3xl bg-slate-100/50 border border-slate-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Navigation className="h-4 w-4 text-indigo-600" />
+                        <span className="text-xs font-black uppercase tracking-widest text-slate-700">GPS Validation</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Latitude</Label>
+                          <Input type="number" step="any" value={branchForm.latitude} onChange={e => setBranchForm({...branchForm, latitude: e.target.value})} placeholder="-6.2000" className="h-12 rounded-xl bg-white border-slate-200" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Longitude</Label>
+                          <Input type="number" step="any" value={branchForm.longitude} onChange={e => setBranchForm({...branchForm, longitude: e.target.value})} placeholder="106.8000" className="h-12 rounded-xl bg-white border-slate-200" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Geofence (Meters)</Label>
+                        <Input type="number" value={branchForm.geofence_radius} onChange={e => setBranchForm({...branchForm, geofence_radius: e.target.value})} placeholder="200" className="h-12 rounded-xl bg-white border-slate-200" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 mt-2">
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Email</Label>
+                          <Input type="email" value={branchForm.email} onChange={e => setBranchForm({...branchForm, email: e.target.value})} placeholder="store@zenvix.com" className="h-12 rounded-xl bg-white border-slate-200" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Phone</Label>
+                          <Input value={branchForm.phone} onChange={e => setBranchForm({...branchForm, phone: e.target.value})} placeholder="+62..." className="h-12 rounded-xl bg-white border-slate-200" />
+                        </div>
                       </div>
                     </div>
                   </div>
                   <Button type="submit" disabled={loading} className="w-full h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase tracking-widest shadow-lg shadow-indigo-200">
-                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Register Corporate Branch"}
+                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Activate Strategic Location"}
                   </Button>
                 </form>
               </TabsContent>
 
+              {/* RECRUITMENT FORM */}
               <TabsContent value="invite" className="space-y-6 mt-0">
                 <form onSubmit={handleCreateInvite} className="space-y-6">
                   <div className="space-y-4">

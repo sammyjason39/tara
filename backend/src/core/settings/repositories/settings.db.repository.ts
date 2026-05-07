@@ -114,10 +114,16 @@ export class SettingsDbRepository implements ISettingsRepository {
     return this.prisma.locations.create({
       data: {
         tenant_id,
+        company_id: data.company_id || null,
         name: data.name,
         code,
         type: data.type || 'OFFICE',
         address: data.address,
+        latitude: data.latitude ? parseFloat(data.latitude.toString()) : null,
+        longitude: data.longitude ? parseFloat(data.longitude.toString()) : null,
+        geofence_radius: data.geofence_radius ? parseFloat(data.geofence_radius.toString()) : 200,
+        country: data.country || 'US',
+        currency: data.currency || 'USD',
       }
     });
   }
@@ -138,7 +144,30 @@ export class SettingsDbRepository implements ISettingsRepository {
         }
       });
 
-      // 2. Link the creator as OWNER of the new child company
+      // 2. Create the Primary Location (HQ) for this company
+      const primaryLoc = await tx.locations.create({
+        data: {
+          tenant_id,
+          company_id: company.id,
+          name: `${data.name} HQ`,
+          code: `${code}-HQ`,
+          type: 'HQ',
+          address: data.address,
+          latitude: data.latitude ? parseFloat(data.latitude.toString()) : null,
+          longitude: data.longitude ? parseFloat(data.longitude.toString()) : null,
+          geofence_radius: data.geofence_radius ? parseFloat(data.geofence_radius.toString()) : 200,
+          country: data.country || 'US',
+          currency: data.currency || 'USD',
+        }
+      });
+
+      // 3. Update company with primary_location_id
+      await tx.companies.update({
+        where: { id: company.id },
+        data: { primary_location_id: primaryLoc.id }
+      });
+
+      // 4. Link the creator as OWNER of the new child company
       await tx.user_companies.create({
         data: {
           user_id,
@@ -148,7 +177,7 @@ export class SettingsDbRepository implements ISettingsRepository {
         }
       });
 
-      return company;
+      return { ...company, primary_location: primaryLoc };
     });
   }
 }
