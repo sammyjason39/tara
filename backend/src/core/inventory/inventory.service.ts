@@ -1270,13 +1270,25 @@ export class InventoryService {
       const onRow = async (data: any) => {
         totalCount++;
         
-        // Sanitize data types
+        // Sanitize data types and map alternative column names
         const sanitized: any = { ...data };
-        if (sanitized.base_price) sanitized.base_price = Number(sanitized.base_price) || 0;
-        if (sanitized.selling_price) sanitized.selling_price = Number(sanitized.selling_price) || 0;
-        if (sanitized.tax_rate) sanitized.tax_rate = Number(sanitized.tax_rate) || 0.11;
-        if (sanitized.discount_rate) sanitized.discount_rate = Number(sanitized.discount_rate) || 0;
-        if (sanitized.quantity) sanitized.quantity = Number(sanitized.quantity) || 0;
+
+        // Flexible naming mapping
+        if (!sanitized.name) sanitized.name = data.item_name || data.product_name || data.title || data.nama_barang;
+        if (!sanitized.sku) sanitized.sku = data.item_code || data.part_number || data.kode_barang;
+        if (!sanitized.barcode) sanitized.barcode = data.gtin || data.ean || data.upc || sanitized.sku;
+        if (!sanitized.category) sanitized.category = data.group || data.type || data.kategori || "General";
+        if (!sanitized.unit) sanitized.unit = data.uom || data.satuan || "pcs";
+        
+        if (sanitized.base_price === undefined) sanitized.base_price = data.cost || data.harga_beli || 0;
+        if (sanitized.selling_price === undefined) sanitized.selling_price = data.price || data.harga_jual || 0;
+
+        // Type conversion
+        sanitized.base_price = Number(sanitized.base_price) || 0;
+        sanitized.selling_price = Number(sanitized.selling_price) || 0;
+        sanitized.tax_rate = Number(sanitized.tax_rate || data.taxRate) || 0.11;
+        sanitized.discount_rate = Number(sanitized.discount_rate) || 0;
+        sanitized.quantity = Number(sanitized.quantity || data.initial_stock || data.stok) || 0;
         
         if (sanitized.pricing_tiers && typeof sanitized.pricing_tiers === 'string') {
           try { sanitized.pricing_tiers = JSON.parse(sanitized.pricing_tiers); } catch (e) { sanitized.pricing_tiers = null; }
@@ -1290,7 +1302,7 @@ export class InventoryService {
 
         records.push(sanitized);
         
-        if (records.length >= 200) { 
+        if (records.length >= 200) {
           const batch = [...records];
           records.length = 0;
           await this.processImportBatch(batch, ctx, jobId);
@@ -1345,13 +1357,11 @@ export class InventoryService {
       });
     } catch (err) {
       this.logger.error(`Batch processing failed for job ${jobId}: ${err.message}`);
-      // Log the error into the job record
+      // Log the error count into the job record
       await this.prisma.inventory_import_jobs.update({
         where: { id: jobId },
         data: {
-          errors: {
-            push: { message: `Batch error: ${err.message}`, timestamp: new Date() }
-          }
+          error_count: { increment: batch.length },
         }
       }).catch(() => {});
     }
