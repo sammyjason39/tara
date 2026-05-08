@@ -1275,6 +1275,26 @@ export class InventoryService {
 
       const fileExtension = path.extname(job.file_path).toLowerCase();
       
+      // Pre-calculate total items for accurate progress bar
+      let estimatedTotal = 0;
+      if (fileExtension === '.csv') {
+        const content = await fsPromises.readFile(job.file_path, 'utf8');
+        estimatedTotal = content.split('\n').filter(line => line.trim()).length - 1; // Subtract header
+      } else {
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.readFile(job.file_path);
+        const worksheet = workbook.getWorksheet(1);
+        estimatedTotal = (worksheet?.rowCount || 1) - 1;
+      }
+
+      await this.prisma.inventory_import_jobs.update({
+        where: { id: jobId },
+        data: { 
+          status: 'PROCESSING',
+          total_items: estimatedTotal > 0 ? estimatedTotal : 0 
+        },
+      });
+
       const onRow = async (data: any) => {
         totalCount++;
         
