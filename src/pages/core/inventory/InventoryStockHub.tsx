@@ -355,8 +355,8 @@ export default function InventoryStockHub() {
           name: discoveryName.trim(),
           category: discoveryCategory as any,
           uom: "PCS",
-          basePrice: 0,
-          moduleTags: ["GENERAL"],
+          base_price: 0,
+          module_tags: ["GENERAL"],
           status: "active",
           description: discoveryNotes
         });

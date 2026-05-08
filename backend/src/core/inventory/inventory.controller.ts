@@ -383,7 +383,7 @@ export class InventoryController {
       { header: "Discount Type", key: "discount_type", width: 15 },
       { header: "Initial Quantity", key: "quantity", width: 15 },
       { header: "Location Name", key: "location", width: 25 },
-      { header: "Tax Rate", key: "taxRate", width: 10 },
+      { header: "Tax Rate", key: "tax_rate", width: 10 },
       { header: "Active", key: "active", width: 10 },
       { header: "Pricing Tiers (JSON)", key: "pricing_tiers", width: 30 },
 
