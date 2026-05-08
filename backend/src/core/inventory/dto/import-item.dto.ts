@@ -49,4 +49,28 @@ export class ImportItemDto {
   @IsBoolean()
   @Type(() => Boolean)
   active?: boolean;
+
+  @IsOptional()
+  selling_price?: number;
+
+  @IsOptional()
+  discount_rate?: number;
+
+  @IsString()
+  @IsOptional()
+  discount_type?: string;
+
+  @IsOptional()
+  pricing_tiers?: any;
+
+  @IsOptional()
+  metadata?: any;
+
+  @IsOptional()
+  quantity?: number;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
+
 }

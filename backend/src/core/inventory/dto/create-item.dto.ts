@@ -73,4 +73,21 @@ export class CreateItemDto {
   @IsString()
   @IsOptional()
   departmentId?: string;
+
+  @IsOptional()
+  selling_price?: number;
+
+  @IsOptional()
+  discount_rate?: number;
+
+  @IsString()
+  @IsOptional()
+  discount_type?: string;
+
+  @IsOptional()
+  pricing_tiers?: any;
+
+  @IsOptional()
+  metadata?: any;
+
 }

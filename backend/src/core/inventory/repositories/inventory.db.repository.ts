@@ -742,14 +742,16 @@ export class InventoryDbRepository implements IInventoryRepository {
   }
 
   async batchCreateItems(ctx: TenantContext,
-    data: CreateItemDto[],
+    data: any[],
   ): Promise<InventoryItem[]> {
     return this.prisma.$transaction(async (tx) => {
       const results: InventoryItem[] = [];
+      const scope = MultiTenancyUtil.getScope(ctx);
+
       for (const itemData of data) {
         // Find or create category
         let category = await tx.product_categories.findFirst({
-          where: { ...MultiTenancyUtil.getScope(ctx), name: itemData.category },
+          where: { ...scope, name: itemData.category },
         });
 
         if (!category) {
@@ -757,7 +759,7 @@ export class InventoryDbRepository implements IInventoryRepository {
             data: {
               id: uuidv4(),
               updated_at: new Date(),
-              ...MultiTenancyUtil.getScope(ctx),
+              ...scope,
               name: itemData.category 
             },
           });
@@ -767,21 +769,55 @@ export class InventoryDbRepository implements IInventoryRepository {
           data: {
             id: uuidv4(),
             updated_at: new Date(),
-            ...MultiTenancyUtil.getScope(ctx),
+            ...scope,
             category_id: category.id,
             name: itemData.name,
             sku: itemData.sku,
-            barcode: itemData.sku,
+            barcode: itemData.barcode || itemData.sku,
             description: itemData.description ?? null,
-            unit: itemData.uom ?? "unit",
+            unit: itemData.uom || itemData.unit || "pcs",
             base_price: itemData.base_price ?? 0,
-            tax_rate: itemData.taxRate ?? 0,
+            tax_rate: itemData.taxRate ?? 0.11,
             module_tags: itemData.moduleTags ?? [],
             status: itemData.status || "active",
             department_id: itemData.departmentId || null,
+            selling_price: itemData.selling_price ?? 0,
+            discount_rate: itemData.discount_rate ?? 0,
+            discount_type: itemData.discount_type || "percentage",
+            pricing_tiers: itemData.pricing_tiers ? (typeof itemData.pricing_tiers === 'string' ? JSON.parse(itemData.pricing_tiers) : itemData.pricing_tiers) : null,
+            metadata: itemData.metadata ? (typeof itemData.metadata === 'string' ? JSON.parse(itemData.metadata) : itemData.metadata) : null,
           },
           include: { product_categories: true },
         });
+
+        // Handle initial quantity if provided
+        if (itemData.quantity && Number(itemData.quantity) > 0) {
+          let locationId = itemData.locationId;
+          
+          if (!locationId && itemData.location) {
+            const loc = await tx.locations.findFirst({
+              where: { ...scope, name: { contains: itemData.location, mode: 'insensitive' } }
+            });
+            if (loc) {
+              locationId = loc.id;
+            }
+          }
+
+          if (locationId) {
+            await tx.stock_levels.create({
+              data: {
+                id: uuidv4(),
+                ...scope,
+                location_id: locationId,
+                product_id: product.id,
+                department_id: itemData.departmentId || null,
+                on_hand: Number(itemData.quantity),
+                available: Number(itemData.quantity),
+              },
+            });
+          }
+
+        }
 
         results.push({
           id: product.id,
@@ -802,6 +838,7 @@ export class InventoryDbRepository implements IInventoryRepository {
       return results;
     });
   }
+
 
   async getNextSequence(ctx: TenantContext, category: string): Promise<number> {
         const count = await this.prisma.item_masters.count({

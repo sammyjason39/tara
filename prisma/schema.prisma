@@ -3528,6 +3528,12 @@ model item_masters {
   created_at                  DateTime                      @default(now())
   updated_at                  DateTime                      @default(now())
   department_id               String?
+  selling_price               Decimal                       @default(0) @db.Decimal(15, 2)
+  discount_rate               Decimal                       @default(0) @db.Decimal(15, 2)
+  discount_type               String                        @default("percentage")
+  pricing_tiers               Json?
+  metadata                    Json?
+
   inventory_adjustments       inventory_adjustments[]
   inventory_transfers         inventory_transfers[]
   inventory_movement_requests inventory_movement_requests[]

@@ -338,9 +338,16 @@ export class InventoryController {
       { header: "Unit", key: "unit", width: 10 },
       { header: "Barcode", key: "barcode", width: 20 },
       { header: "Description", key: "description", width: 40 },
-      { header: "Base Price", key: "base_price", width: 15 },
+      { header: "Base Price (Cost)", key: "base_price", width: 15 },
+      { header: "Selling Price", key: "selling_price", width: 15 },
+      { header: "Discount Rate", key: "discount_rate", width: 15 },
+      { header: "Discount Type", key: "discount_type", width: 15 },
+      { header: "Initial Quantity", key: "quantity", width: 15 },
+      { header: "Location Name", key: "location", width: 25 },
       { header: "Tax Rate", key: "taxRate", width: 10 },
       { header: "Active", key: "active", width: 10 },
+      { header: "Pricing Tiers (JSON)", key: "pricing_tiers", width: 30 },
+
     ];
 
     const buffer = await this.fileProcessingService.generateExcel(
