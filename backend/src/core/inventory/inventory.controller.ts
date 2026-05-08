@@ -121,10 +121,20 @@ export class InventoryController {
   async getItems(
     @Req() request: RequestWithTenant,
     @Query("location_id") location_id?: string,
+    @Query("page") page: string = "1",
+    @Query("limit") limit: string = "30",
+    @Query("search") search?: string,
   ) {
     const { tenant_id } = request.tenantContext;
-    const data = await this.inventoryService.getItems(request.tenantContext, location_id);
-    return { success: true, tenant_id, count: data.length, data };
+    const data = await this.inventoryService.getItems(
+      request.tenantContext, 
+      location_id,
+      parseInt(page),
+      parseInt(limit),
+      search
+    );
+    const total = await this.inventoryService.countItems(request.tenantContext, location_id, search);
+    return { success: true, tenant_id, count: data.length, meta: { total }, data };
   }
 
   @Get("items/lookup")
@@ -496,14 +506,21 @@ export class InventoryController {
     @Req() request: RequestWithTenant,
     @Query("location_id") location_id?: string,
     @Query("departmentId") departmentId?: string,
+    @Query("page") page: string = "1",
+    @Query("limit") limit: string = "30",
+    @Query("search") search?: string,
   ) {
     const { tenant_id: tenant_id } = request.tenantContext;
     const data = await this.inventoryService.getBalances(
       request.tenantContext,
       location_id,
       departmentId,
+      parseInt(page),
+      parseInt(limit),
+      search
     );
-    return { success: true, tenant_id, count: data.length, data };
+    const total = await this.inventoryService.countBalances(request.tenantContext, location_id, departmentId, search);
+    return { success: true, tenant_id, count: data.length, meta: { total }, data };
   }
 
   @Get("movements")

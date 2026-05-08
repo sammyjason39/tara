@@ -21,10 +21,18 @@ export const inventoryService = {
     tenantId: string,
     session: SessionContext,
     location_id?: string,
+    page: number = 1,
+    limit: number = 30,
+    search?: string,
   ): Promise<InventoryItemMaster[]> {
-    const params = location_id ? `?location_id=${location_id}` : "";
+    const params = new URLSearchParams();
+    if (location_id) params.append("location_id", location_id);
+    if (search) params.append("search", search);
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+    
     return apiRequest<InventoryItemMaster[]>(
-      `/v1/inventory/items${params}`,
+      `/v1/inventory/items?${params.toString()}`,
       "GET",
       session,
     );
@@ -48,13 +56,19 @@ export const inventoryService = {
     session: SessionContext,
     location_id?: string,
     department_id?: string,
+    page: number = 1,
+    limit: number = 30,
+    search?: string,
   ): Promise<InventoryStockBalance[]> {
     const params = new URLSearchParams();
     if (location_id) params.append("location_id", location_id);
     if (department_id) params.append("department_id", department_id);
-    const query = params.toString() ? `?${params.toString()}` : "";
+    if (search) params.append("search", search);
+    params.append("page", page.toString());
+    params.append("limit", limit.toString());
+    
     return apiRequest<InventoryStockBalance[]>(
-      `/v1/inventory/balances${query}`,
+      `/v1/inventory/balances?${params.toString()}`,
       "GET",
       session,
     );

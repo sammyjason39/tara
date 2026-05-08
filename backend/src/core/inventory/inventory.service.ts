@@ -40,8 +40,12 @@ export class InventoryService {
     return this.repository.getDashboard(ctx);
   }
 
-  async getItems(ctx: TenantContext, location_id?: string) {
-    return this.repository.getItems(ctx, location_id);
+  async getItems(ctx: TenantContext, location_id?: string, page: number = 1, limit: number = 30, search?: string) {
+    return this.repository.getItems(ctx, location_id, page, limit, search);
+  }
+
+  async countItems(ctx: TenantContext, location_id?: string, search?: string) {
+    return this.repository.countItems(ctx, location_id, search);
   }
 
   async createItem(ctx: TenantContext, data: CreateItemDto, user_id?: string) {
@@ -79,8 +83,15 @@ export class InventoryService {
   async getBalances(ctx: TenantContext,
     location_id?: string,
     departmentId?: string,
+    page: number = 1,
+    limit: number = 30,
+    search?: string
   ) {
-    return this.repository.getBalances(ctx, location_id, departmentId);
+    return this.repository.getBalances(ctx, location_id, departmentId, page, limit, search);
+  }
+
+  async countBalances(ctx: TenantContext, location_id?: string, departmentId?: string, search?: string) {
+    return this.repository.countBalances(ctx, location_id, departmentId, search);
   }
 
   async getMovements(ctx: TenantContext, item_id?: string) {

@@ -148,6 +148,9 @@ export default function InventoryStockHub() {
   const [isImageImportOpen, setIsImageImportOpen] = useState(false);
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
   const [dynamicCategories, setDynamicCategories] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const pageSize = 30;
+  const [totalCount, setTotalCount] = useState(0);
   const [isReclassifyOpen, setIsReclassifyOpen] = useState(false);
   const [selectedItemForReclassify, setSelectedItemForReclassify] = useState<any>(null);
   const [newCategoryId, setNewCategoryId] = useState("");
@@ -401,12 +404,13 @@ export default function InventoryStockHub() {
     }
   };
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (targetPage = page) => {
+    setLoading(true);
     try {
       const locFilter = selectedLocationId || undefined;
       const [i, b, d, locs, cats, channels] = await Promise.all([
-        inventoryService.listItems(session.tenant_id, session, locFilter),
-        inventoryService.listBalances(session.tenant_id, session, locFilter),
+        inventoryService.listItems(session.tenant_id, session, locFilter, targetPage, pageSize, search),
+        inventoryService.listBalances(session.tenant_id, session, locFilter, undefined, targetPage, pageSize, search),
         orgService.getOrgMap(session.tenant_id, session),
         hrService.listLocations(session.tenant_id, session),
         inventoryService.listCategories(session.tenant_id, session),
@@ -429,17 +433,26 @@ export default function InventoryStockHub() {
 
       setLocations([...locs, ...ecommerceLocations]);
       setDynamicCategories(cats);
+      
+      const total = (b as any).meta?.total || b.length;
+      setTotalCount(total);
     } catch (err) {
       console.error("Failed to fetch inventory stock hub data:", err);
       setErrorMessage("Failed to load inventory data.");
     } finally {
       setLoading(false);
     }
-  }, [session, selectedLocationId]);
+  }, [session, selectedLocationId, search, page]);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    refresh(page);
+  }, [page]);
+
+  useEffect(() => {
+    setPage(1);
+    refresh(1);
+  }, [search, selectedLocationId, viewMode]);
+
 
   const itemById = useMemo(
     () => Object.fromEntries((Array.isArray(items) ? items : []).map((item) => [item.id, item])),
@@ -477,9 +490,9 @@ export default function InventoryStockHub() {
 
         const locInfo = locationById[balance.location_id || ""];
         const isEcomLoc =
+          locInfo?.type === "ecommerce" ||
           locInfo?.type === "ECOMMERCE" ||
-          balance.location_id?.toLowerCase()?.includes("ecom") ||
-          balance.location_id?.toLowerCase()?.includes("ec");
+          balance.location_id?.toLowerCase()?.includes("e-com");
 
         const hasEcomTag = (item.module_tags || []).some(
           (tag) => tag.toUpperCase() === "ECOMMERCE" || tag.toUpperCase() === "RETAIL",
@@ -514,6 +527,10 @@ export default function InventoryStockHub() {
     [aggregatedBalances, itemById, moduleFilter, search, viewMode, departmentFilter, locationById],
   );
 
+  const paginatedBalances = useMemo(() => {
+    return filteredBalances.slice((page - 1) * pageSize, page * pageSize);
+  }, [filteredBalances, page, pageSize]);
+
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) =>
       prev.includes(id) ? (Array.isArray(prev) ? prev : []).filter((i) => i !== id) : [...prev, id],
@@ -521,8 +538,8 @@ export default function InventoryStockHub() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.length === filteredBalances.length) setSelectedIds([]);
-    else setSelectedIds((Array.isArray(filteredBalances) ? filteredBalances : []).map((b) => b.id));
+    if (selectedIds.length === paginatedBalances.length) setSelectedIds([]);
+    else setSelectedIds((Array.isArray(paginatedBalances) ? paginatedBalances : []).map((b) => b.id));
   };
 
   const handleBatchDelete = async () => {
@@ -591,7 +608,10 @@ export default function InventoryStockHub() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <Tabs
             value={viewMode}
-            onValueChange={(v) => setViewMode(v as ViewMode)}
+            onValueChange={(v) => {
+              setViewMode(v as ViewMode);
+              setPage(1);
+            }}
             className="w-auto"
           >
             <TabsList className="h-14 p-1.5 bg-slate-900/40 backdrop-blur-md border border-white/10 rounded-[1.2rem] shadow-xl">
@@ -666,7 +686,10 @@ export default function InventoryStockHub() {
             categories={dynamicCategories.map(c => ({ id: c.id, name: c.name }))}
             location={selectedLocationId}
             locationLabel={viewMode === "ecommerce" ? "Ecommerce" : "Location"}
-            onLocationChange={setSelectedLocationId}
+            onLocationChange={(v) => {
+              setSelectedLocationId(v);
+              setPage(1);
+            }}
             locations={locations
               .filter(l => {
                 if (viewMode === "branch") return l.type !== "ecommerce";
@@ -675,7 +698,10 @@ export default function InventoryStockHub() {
               })
               .map(l => ({ id: l.id, name: l.name }))}
             moduleTag={moduleFilter}
-            onModuleTagChange={setModuleFilter}
+            onModuleTagChange={(v) => {
+              setModuleFilter(v);
+              setPage(1);
+            }}
             onStatusChange={(v) => {}}
           />
         )}
@@ -979,15 +1005,20 @@ export default function InventoryStockHub() {
             )}
           </div>
           <div className="p-4">
-          <DataTableShell total={filteredBalances.length} page={1} pageSize={10}>
+          <DataTableShell 
+            total={totalCount} 
+            page={page} 
+            pageSize={pageSize}
+            onPageChange={setPage}
+          >
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-white/5 text-[10px] uppercase text-slate-500 border-b border-white/5">
                   <th className="p-3 text-left w-10">
                     <Checkbox
                       checked={
-                        selectedIds.length === filteredBalances.length &&
-                        filteredBalances.length > 0
+                        selectedIds.length === paginatedBalances.length &&
+                        paginatedBalances.length > 0
                       }
                       onCheckedChange={toggleSelectAll}
                     />
@@ -1004,7 +1035,7 @@ export default function InventoryStockHub() {
                 </tr>
               </thead>
               <tbody>
-                {(Array.isArray(filteredBalances) ? filteredBalances : []).map((balance) => {
+                {(Array.isArray(paginatedBalances) ? paginatedBalances : []).map((balance) => {
                   const item = itemById[balance.item_id];
                   if (!item) return null;
                   const isSelected = selectedIds.includes(balance.id);

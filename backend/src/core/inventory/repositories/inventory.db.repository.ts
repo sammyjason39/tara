@@ -106,9 +106,18 @@ export class InventoryDbRepository implements IInventoryRepository {
     };
   }
 
-  async getItems(ctx: TenantContext, location_id?: string): Promise<InventoryItem[]> {
+  async getItems(ctx: TenantContext, location_id?: string, page: number = 1, limit: number = 100, search?: string): Promise<InventoryItem[]> {
+    const skip = (page - 1) * limit;
     const scope = MultiTenancyUtil.getScope(ctx);
     const where: any = { ...scope, status: { not: "deleted" } };
+
+    if (search) {
+      where.OR = [
+        { sku: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { barcode: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
     // When a specific branch/store location is requested, return only items
     // that have a stock record at that location
@@ -120,6 +129,8 @@ export class InventoryDbRepository implements IInventoryRepository {
       where,
       include: { product_categories: true, item_images: true },
       orderBy: { created_at: "desc" },
+      skip,
+      take: limit,
     });
 
     return (products as any[]).map((p) => ({
@@ -139,6 +150,25 @@ export class InventoryDbRepository implements IInventoryRepository {
       created_at: p.created_at,
       updated_at: p.updated_at,
     }));
+  }
+
+  async countItems(ctx: TenantContext, location_id?: string, search?: string): Promise<number> {
+    const scope = MultiTenancyUtil.getScope(ctx);
+    const where: any = { ...scope, status: { not: "deleted" } };
+
+    if (search) {
+      where.OR = [
+        { sku: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { barcode: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (location_id) {
+      where.stock_levels = { some: { location_id } };
+    }
+
+    return this.prisma.item_masters.count({ where });
   }
 
   async createItem(
@@ -202,14 +232,29 @@ export class InventoryDbRepository implements IInventoryRepository {
   async getBalances(ctx: TenantContext,
     location_id?: string,
     department_id?: string,
+    page: number = 1,
+    limit: number = 100,
+    search?: string
   ): Promise<StockBalance[]> {
+    const skip = (page - 1) * limit;
     const where: any = { ...MultiTenancyUtil.getScope(ctx) };
     if (location_id) where.location_id = location_id;
     if (department_id) where.department_id = department_id;
 
+    if (search) {
+      where.item_masters = {
+        OR: [
+          { sku: { contains: search, mode: 'insensitive' } },
+          { name: { contains: search, mode: 'insensitive' } },
+        ]
+      };
+    }
+
     const levels = await this.prisma.stock_levels.findMany({
       where,
       include: { item_masters: true, locations: true, departments: true },
+      skip,
+      take: limit,
     });
 
     return levels.map(
@@ -230,6 +275,28 @@ export class InventoryDbRepository implements IInventoryRepository {
         updated_at: l.updated_at,
       }),
     );
+  }
+
+  async countBalances(
+    ctx: TenantContext,
+    location_id?: string,
+    department_id?: string,
+    search?: string
+  ): Promise<number> {
+    const where: any = { ...MultiTenancyUtil.getScope(ctx) };
+    if (location_id) where.location_id = location_id;
+    if (department_id) where.department_id = department_id;
+
+    if (search) {
+      where.item_masters = {
+        OR: [
+          { sku: { contains: search, mode: 'insensitive' } },
+          { name: { contains: search, mode: 'insensitive' } },
+        ]
+      };
+    }
+
+    return this.prisma.stock_levels.count({ where });
   }
 
   async getMovements(
