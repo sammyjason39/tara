@@ -1283,12 +1283,16 @@ export class InventoryService {
         if (sanitized.base_price === undefined) sanitized.base_price = data.cost || data.harga_beli || 0;
         if (sanitized.selling_price === undefined) sanitized.selling_price = data.price || data.harga_jual || 0;
 
+        // Location & Quantity mapping
+        if (!sanitized.location) sanitized.location = data.location_name || data.branch || data.warehouse || data.lokasi || "Bambu Silver Headquarters";
+        if (!sanitized.quantity) sanitized.quantity = data.initial_quantity || data.initial_stock || data.stok || data.qty || 0;
+
         // Type conversion
         sanitized.base_price = Number(sanitized.base_price) || 0;
         sanitized.selling_price = Number(sanitized.selling_price) || 0;
         sanitized.tax_rate = Number(sanitized.tax_rate || data.taxRate) || 0.11;
         sanitized.discount_rate = Number(sanitized.discount_rate) || 0;
-        sanitized.quantity = Number(sanitized.quantity || data.initial_stock || data.stok) || 0;
+        sanitized.quantity = Number(sanitized.quantity) || 0;
         
         if (sanitized.pricing_tiers && typeof sanitized.pricing_tiers === 'string') {
           try { sanitized.pricing_tiers = JSON.parse(sanitized.pricing_tiers); } catch (e) { sanitized.pricing_tiers = null; }
