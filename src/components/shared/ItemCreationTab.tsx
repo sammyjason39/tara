@@ -27,6 +27,9 @@ export const ItemCreationTab: React.FC<Props> = ({
   onSuccess,
 }) => {
   const { toast } = useToast();
+  const csvInputRef = React.useRef<HTMLInputElement>(null);
+  const imageInputRef = React.useRef<HTMLInputElement>(null);
+
   const [rows, setRows] = useState<NewItemLine[]>([
     {
       tempId: "initial-row",
@@ -188,6 +191,71 @@ export const ItemCreationTab: React.FC<Props> = ({
     }
   };
 
+  const handleDownloadTemplate = async () => {
+    if (!session) return;
+    try {
+      const blob = await retailService.downloadInventoryTemplate(session);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "inventory_template.xlsx";
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      toast({ 
+        title: "Download Failed", 
+        description: err.message || "Could not get template.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCsvUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !session) return;
+    
+    toast({ title: "Uploading...", description: "Processing your CSV file." });
+    
+    try {
+      const res = await retailService.importInventoryCsv(session, file);
+      toast({ 
+        title: "Import Success", 
+        description: res.message || "Items imported successfully." 
+      });
+      if (onSuccess) onSuccess();
+      if (csvInputRef.current) csvInputRef.current.value = "";
+    } catch (err: any) {
+      toast({ 
+        title: "Import Failed", 
+        description: err.message || "Check your CSV format.",
+        variant: "destructive" 
+      });
+    }
+  };
+
+  const handleBulkImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0 || !session) return;
+
+    toast({ title: "Uploading Images...", description: `Processing ${files.length} images.` });
+
+    try {
+      const res = await retailService.bulkUploadInventoryImages(session, files);
+      toast({ 
+        title: "Bulk Processing Complete", 
+        description: `Matched: ${res.matched?.length || 0}, Failed: ${res.failed?.length || 0}` 
+      });
+      if (onSuccess) onSuccess();
+      if (imageInputRef.current) imageInputRef.current.value = "";
+    } catch (err: any) {
+      toast({ 
+        title: "Upload Failed", 
+        description: err.message || "Could not process images.",
+        variant: "destructive" 
+      });
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto space-y-12 pb-20">
       {/* ── Page Intro ── */}
@@ -249,33 +317,79 @@ export const ItemCreationTab: React.FC<Props> = ({
       </div>
 
       {/* ── CSV Import (Secondary) ── */}
-      <Card className="rounded-[3rem] border-none shadow-sm bg-slate-50/50 border border-slate-200/50 mt-12">
-        <CardContent className="p-12 flex flex-col md:flex-row items-center gap-10">
-          <div className="w-24 h-24 rounded-[2.5rem] bg-indigo-100 flex items-center justify-center shrink-0">
-            <Upload className="w-10 h-10 text-indigo-600" />
-          </div>
-          <div className="flex-1 text-center md:text-left">
-            <h3 className="text-xl font-black italic tracking-tight uppercase">
-              Bulk Import CSV/Excel
-            </h3>
-            <p className="text-slate-500 text-sm font-medium mt-1">
-              Have a large list? Download the template or upload your prepared
-              inventory file.
-            </p>
-            <div className="flex flex-wrap gap-4 mt-6 justify-center md:justify-start">
-              <Button
-                variant="outline"
-                className="rounded-2xl h-11 px-6 font-bold tracking-tight gap-2 border-slate-200 bg-white"
-              >
-                <Download className="w-4 h-4" /> Download Template
-              </Button>
-              <Button className="rounded-2xl h-11 px-8 font-black italic uppercase tracking-widest text-xs gap-3 bg-slate-900 hover:bg-black text-white">
-                <Upload className="w-4 h-4" /> Select File
-              </Button>
+      <div className="grid md:grid-cols-2 gap-8 mt-12">
+        <Card className="rounded-[3rem] border-none shadow-sm bg-slate-50/50 border border-slate-200/50">
+          <CardContent className="p-10 flex flex-col items-center text-center gap-6">
+            <div className="w-20 h-20 rounded-[2rem] bg-indigo-100 flex items-center justify-center shrink-0">
+              <Upload className="w-8 h-8 text-indigo-600" />
             </div>
-          </div>
-        </CardContent>
-      </Card>
+            <div>
+              <h3 className="text-lg font-black italic tracking-tight uppercase">
+                Bulk Import CSV
+              </h3>
+              <p className="text-slate-500 text-[10px] font-medium mt-1 px-4 leading-relaxed">
+                Upload your inventory list in bulk. Standard headers required.
+              </p>
+              <div className="flex flex-col gap-3 mt-6">
+                <Button
+                  variant="outline"
+                  onClick={handleDownloadTemplate}
+                  className="rounded-2xl h-11 px-6 font-bold text-xs tracking-tight gap-2 border-slate-200 bg-white"
+                >
+                  <Download className="w-4 h-4" /> Template
+                </Button>
+                <input
+                  type="file"
+                  ref={csvInputRef}
+                  onChange={handleCsvUpload}
+                  className="hidden"
+                  accept=".csv,.xlsx"
+                />
+                <Button 
+                  onClick={() => csvInputRef.current?.click()}
+                  className="rounded-2xl h-11 px-8 font-black italic uppercase tracking-widest text-[10px] gap-3 bg-slate-900 hover:bg-black text-white"
+                >
+                  <Upload className="w-4 h-4" /> Select CSV
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ── Bulk Image Matching (NEW) ── */}
+        <Card className="rounded-[3rem] border-none shadow-sm bg-slate-50/50 border border-slate-200/50">
+          <CardContent className="p-10 flex flex-col items-center text-center gap-6">
+            <div className="w-20 h-20 rounded-[2rem] bg-amber-100 flex items-center justify-center shrink-0">
+              <Plus className="w-8 h-8 text-amber-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-black italic tracking-tight uppercase">
+                Bulk Image Match
+              </h3>
+              <p className="text-slate-500 text-[10px] font-medium mt-1 px-4 leading-relaxed">
+                Name images as SKUs (e.g. PROD001.jpg) for auto-linking.
+              </p>
+              <div className="flex flex-col gap-3 mt-6">
+                <input
+                  type="file"
+                  multiple
+                  ref={imageInputRef}
+                  onChange={handleBulkImageUpload}
+                  className="hidden"
+                  accept="image/*"
+                />
+                <Button 
+                  onClick={() => imageInputRef.current?.click()}
+                  className="rounded-2xl h-11 px-8 font-black italic uppercase tracking-widest text-[10px] gap-3 bg-amber-600 hover:bg-amber-700 text-white"
+                >
+                  <Upload className="w-4 h-4" /> Drop SKU Images
+                </Button>
+                <p className="text-[10px] text-slate-400 italic mt-1">Supports multiple file selection</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       <PostekPrintModal
         open={printItems.length > 0}

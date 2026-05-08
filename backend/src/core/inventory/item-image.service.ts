@@ -7,22 +7,97 @@ import { AuditService } from "../../shared/audit/audit.service";
 
 @Injectable()
 export class ItemImageService {
-  private readonly storagePath = path.join(process.cwd(), "storage", "inventory", "images");
+  private readonly storagePath = path.join(process.cwd(), "uploads", "inventory", "images");
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
   ) {
-    // Ensure storage directory exists
-    this.ensureDirectory();
+    this.ensureBaseDirectory();
   }
 
-  private async ensureDirectory() {
+  private async ensureBaseDirectory() {
     try {
       await fs.mkdir(this.storagePath, { recursive: true });
     } catch (err) {
-      console.error("Failed to create storage directory:", err);
+      console.error("Failed to create base storage directory:", err);
     }
+  }
+
+  private getStructuredPath(tenantId: string, companyId?: string | null, branchId?: string | null) {
+    return path.join(
+      tenantId,
+      companyId || "default_co",
+      branchId || "default_br"
+    );
+  }
+
+  /**
+   * Ensures the Explorer folder hierarchy exists for the given item scope.
+   * Returns the ID of the leaf folder (Branch/Ecommerce folder).
+   */
+  private async ensureExplorerHierarchy(
+    tx: any,
+    tenantId: string,
+    companyId: string | null,
+    departmentId: string | null,
+  ): Promise<string> {
+    // 1. Root "Inventory Management" Folder
+    let rootFolder = await tx.explorer_folders.findFirst({
+      where: { tenant_id: tenantId, name: "Inventory Management", parent_id: null },
+    });
+    if (!rootFolder) {
+      rootFolder = await tx.explorer_folders.create({
+        data: { tenant_id: tenantId, name: "Inventory Management", access_level: "shared" },
+      });
+    }
+
+    // 2. Company Folder
+    let companyName = "General Items";
+    if (companyId) {
+      const co = await tx.companies.findUnique({ where: { id: companyId }, select: { name: true } });
+      if (co) companyName = co.name;
+    }
+
+    let companyFolder = await tx.explorer_folders.findFirst({
+      where: { tenant_id: tenantId, name: companyName, parent_id: rootFolder.id },
+    });
+    if (!companyFolder) {
+      companyFolder = await tx.explorer_folders.create({
+        data: { 
+          tenant_id: tenantId, 
+          company_id: companyId, 
+          name: companyName, 
+          parent_id: rootFolder.id,
+          access_level: "shared"
+        },
+      });
+    }
+
+    // 3. Branch/Department Folder
+    let branchName = "Main Stock";
+    if (departmentId) {
+      const dept = await tx.departments.findUnique({ where: { id: departmentId }, select: { name: true } });
+      if (dept) branchName = dept.name;
+    }
+
+    let branchFolder = await tx.explorer_folders.findFirst({
+      where: { tenant_id: tenantId, name: branchName, parent_id: companyFolder.id },
+    });
+    if (!branchFolder) {
+      branchFolder = await tx.explorer_folders.create({
+        data: { 
+          tenant_id: tenantId, 
+          company_id: companyId, 
+          department_id: departmentId,
+          name: branchName, 
+          parent_id: companyFolder.id,
+          access_level: "department"
+        },
+      });
+    }
+
+    return branchFolder.id;
   }
 
   async uploadImage(
@@ -30,25 +105,51 @@ export class ItemImageService {
     itemId: string,
     file: Express.Multer.File,
     userId: string,
+    customFileName?: string,
   ) {
-    // 1. Validate item existence
+    // 1. Validate item existence and get scope
     const item = await this.prisma.item_masters.findFirst({
       where: { id: itemId, tenant_id: tenantId },
     });
     if (!item) throw new NotFoundException(`Item ${itemId} not found`);
 
-    // 2. Generate filename and save file
+    // 2. Prepare structured directory
+    const relativeDir = this.getStructuredPath(tenantId, item.company_id, item.department_id);
+    const absoluteDir = path.join(this.storagePath, relativeDir);
+    await fs.mkdir(absoluteDir, { recursive: true });
+
+    // 3. Save file
     const fileExt = path.extname(file.originalname);
-    const fileName = `${uuidv4()}${fileExt}`;
-    const filePath = path.join(this.storagePath, fileName);
+    const fileName = customFileName || `${uuidv4()}${fileExt}`;
+    const filePath = path.join(absoluteDir, fileName);
 
     await fs.writeFile(filePath, file.buffer);
 
-    // 3. Save to database
-    const imageUrl = `/v1/inventory/images/${fileName}`;
+    // 4. Save to database (Relative URL for the API to serve)
+    const relativeUrl = path.join("inventory", "images", relativeDir, fileName).replace(/\\/g, "/");
+    const imageUrl = `/v1/inventory/images/${relativeUrl}`;
 
     return await this.prisma.$transaction(async (tx) => {
-      // Check if this is the first image, if so make it primary
+      // --- Explorer Sync ---
+      const explorerFolderId = await this.ensureExplorerHierarchy(tx, tenantId, item.company_id, item.department_id);
+      
+      await tx.explorer_files.create({
+        data: {
+          tenant_id: tenantId,
+          company_id: item.company_id,
+          department_id: item.department_id,
+          owner_id: userId,
+          folder_id: explorerFolderId,
+          name: customFileName || file.originalname,
+          type: fileExt.replace(".", "") || "jpg",
+          size: file.size,
+          mime_type: file.mimetype,
+          storage_path: relativeUrl,
+          access_level: "department",
+        }
+      });
+
+      // --- Item Image Entry ---
       const existingImages = await tx.item_images.count({
         where: { item_id: itemId, tenant_id: tenantId },
       });
@@ -66,7 +167,6 @@ export class ItemImageService {
         },
       });
 
-      // Update item_masters image_url if this is primary
       if (isPrimary) {
         await tx.item_masters.update({
           where: { id: itemId },
@@ -81,7 +181,7 @@ export class ItemImageService {
         action: "UPLOAD_IMAGE",
         entity_type: "ITEM_IMAGE",
         entity_id: image.id,
-        metadata: { item_id: itemId, url: imageUrl },
+        metadata: { item_id: itemId, url: imageUrl, originalName: file.originalname },
       }, tx);
 
       return image;
@@ -98,7 +198,6 @@ export class ItemImageService {
     await this.prisma.$transaction(async (tx) => {
       await tx.item_images.delete({ where: { id: imageId } });
 
-      // If deleted image was primary, set another one as primary if exists
       if (image.is_primary) {
         const nextImage = await tx.item_images.findFirst({
           where: { item_id: itemId, tenant_id: tenantId },
@@ -122,7 +221,6 @@ export class ItemImageService {
         }
       }
 
-      // Re-order remaining images
       const remainingImages = await tx.item_images.findMany({
         where: { item_id: itemId, tenant_id: tenantId },
         orderBy: { order: "asc" },
@@ -134,15 +232,27 @@ export class ItemImageService {
           data: { order: i },
         });
       }
+
+      // --- Explorer Sync ---
+      const urlParts = image.url.split("/v1/inventory/images/");
+      const relativePath = urlParts[1];
+      if (relativePath) {
+        await tx.explorer_files.deleteMany({
+          where: { tenant_id: tenantId, storage_path: relativePath },
+        });
+      }
     });
 
     // Delete physical file
-    const fileName = path.basename(image.url);
-    const filePath = path.join(this.storagePath, fileName);
-    try {
-      await fs.unlink(filePath);
-    } catch (err) {
-      console.warn(`Failed to delete file ${filePath}:`, err);
+    const urlParts = image.url.split("/v1/inventory/images/");
+    const relativePath = urlParts[1];
+    if (relativePath) {
+      const filePath = path.join(this.storagePath, relativePath);
+      try {
+        await fs.unlink(filePath);
+      } catch (err) {
+        console.warn(`Failed to delete file ${filePath}:`, err);
+      }
     }
 
     await this.auditService.log({
@@ -164,19 +274,16 @@ export class ItemImageService {
     if (!image) throw new NotFoundException(`Image ${imageId} not found for item ${itemId}`);
 
     return await this.prisma.$transaction(async (tx) => {
-      // Unset current primary
       await tx.item_images.updateMany({
         where: { item_id: itemId, tenant_id: tenantId, is_primary: true },
         data: { is_primary: false },
       });
 
-      // Set new primary
       const updated = await tx.item_images.update({
         where: { id: imageId },
         data: { is_primary: true },
       });
 
-      // Update item_masters
       await tx.item_masters.update({
         where: { id: itemId },
         data: { image_url: image.url },
@@ -203,8 +310,9 @@ export class ItemImageService {
     });
   }
 
-  async getImagePath(fileName: string): Promise<string> {
-    const filePath = path.join(this.storagePath, fileName);
+  async getImagePath(fullPath: string): Promise<string> {
+    // The controller passes the remaining path after /v1/inventory/images/
+    const filePath = path.join(this.storagePath, fullPath);
     try {
       await fs.access(filePath);
       return filePath;

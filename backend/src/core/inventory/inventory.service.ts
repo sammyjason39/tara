@@ -14,6 +14,8 @@ import { EventBusService } from "../../shared/events/event-bus.service";
 import { v4 as uuidv4 } from "uuid";
 import { ProcurementService } from "../procurement/procurement.service";
 import { MultiTenancyUtil } from "../../shared/utils/multi-tenancy.util";
+import * as path from "path";
+import { ItemImageService } from "./item-image.service";
 
 @Injectable()
 export class InventoryService {
@@ -24,6 +26,7 @@ export class InventoryService {
     private readonly prisma: PrismaService,
     private readonly eventBus: EventBusService,
     private readonly procurementService: ProcurementService,
+    private readonly itemImageService: ItemImageService,
   ) {}
 
   private readonly logger = new Logger(InventoryService.name);
@@ -922,7 +925,13 @@ export class InventoryService {
 
     const items = await this.repository.batchCreateItems(
       ctx,
-      data.map((d) => ({ ...d, status: "pending" })),
+      data.map((d: any) => ({
+        ...d,
+        uom: d.unit || d.uom || "pcs",
+        base_price: d.base_price || 0,
+        taxRate: d.taxRate || 0.11,
+        status: "pending",
+      })),
     );
     if (user_id) {
       await this.auditService.log({
@@ -1145,5 +1154,60 @@ export class InventoryService {
 
   async updateItemCategory(ctx: TenantContext, itemId: string, categoryId: string) {
     return this.repository.updateItemCategory(ctx, itemId, categoryId);
+  }
+
+  async processBulkImages(
+    ctx: TenantContext,
+    files: Express.Multer.File[],
+    userId: string,
+  ) {
+    const results = {
+      matched: [] as string[],
+      failed: [] as string[],
+    };
+
+    for (const file of files) {
+      // 1. Extract SKU from filename (remove extension)
+      const skuMatch = file.originalname.match(/^(.+?)\.[^.]+$/);
+      if (!skuMatch) {
+        results.failed.push(`${file.originalname} (Invalid filename)`);
+        continue;
+      }
+      const sku = skuMatch[1];
+
+      // 2. Find item by SKU
+      const item = await this.prisma.item_masters.findFirst({
+        where: {
+          tenant_id: ctx.tenant_id,
+          sku: sku,
+        },
+      });
+
+      if (!item) {
+        results.failed.push(`${file.originalname} (SKU not found)`);
+        continue;
+      }
+
+      // 3. Rename: SKU_TIMESTAMP.ext
+      const ext = path.extname(file.originalname);
+      const customName = `${sku}_${Date.now()}${ext}`;
+
+      // 4. Delegate to ItemImageService
+      try {
+        await this.itemImageService.uploadImage(
+          ctx.tenant_id,
+          item.id,
+          file,
+          userId,
+          customName,
+        );
+        results.matched.push(sku);
+      } catch (err) {
+        this.logger.error(`Failed to upload bulk image for ${sku}: ${err.message}`);
+        results.failed.push(`${file.originalname} (Upload error)`);
+      }
+    }
+
+    return results;
   }
 }

@@ -11,11 +11,12 @@ import {
   Req,
   Res,
   UploadedFile,
+  UploadedFiles,
   UseInterceptors,
   UseGuards,
 } from "@nestjs/common";
 import { Request, Response } from "express";
-import { FileInterceptor } from "@nestjs/platform-express";
+import { FileInterceptor, FilesInterceptor } from "@nestjs/platform-express";
 import { TenantContext } from "../../gateway/tenant-context.interface";
 import { TenantInterceptor } from "../../gateway/tenant.interceptor";
 import { TenantGuard } from "../../shared/guards/tenant.guard";
@@ -186,12 +187,13 @@ export class InventoryController {
     );
   }
 
-  @Get("images/:fileName")
+  @Get("images/*")
   async serveImage(
-    @Param("fileName") fileName: string,
+    @Param() params: any,
     @Res() res: Response,
   ) {
-    const path = await this.itemImageService.getImagePath(fileName);
+    const fullPath = params[0];
+    const path = await this.itemImageService.getImagePath(fullPath);
     res.sendFile(path);
   }
 
@@ -303,6 +305,58 @@ export class InventoryController {
       message: `${imported.length} items imported successfully`,
       data: imported,
     };
+  }
+
+  @Post("items/bulk-images")
+  @RequireInventoryRole(InventoryRole.MANAGER)
+  @UseInterceptors(FilesInterceptor("files"))
+  async bulkUploadImages(
+    @Req() request: RequestWithTenant,
+    @UploadedFiles() files: Express.Multer.File[],
+  ) {
+    const { user_id } = request.tenantContext;
+    const result = await this.inventoryService.processBulkImages(
+      request.tenantContext,
+      files,
+      user_id || "system",
+    );
+    return {
+      success: true,
+      ...result,
+    };
+  }
+
+  @Get("items/template")
+  async getTemplate(
+    @Req() request: RequestWithTenant,
+    @Res() res: Response,
+  ) {
+    const headers = [
+      { header: "SKU", key: "sku", width: 20 },
+      { header: "Name", key: "name", width: 40 },
+      { header: "Category", key: "category", width: 20 },
+      { header: "Unit", key: "unit", width: 10 },
+      { header: "Barcode", key: "barcode", width: 20 },
+      { header: "Description", key: "description", width: 40 },
+      { header: "Base Price", key: "base_price", width: 15 },
+      { header: "Tax Rate", key: "taxRate", width: 10 },
+      { header: "Active", key: "active", width: 10 },
+    ];
+
+    const buffer = await this.fileProcessingService.generateExcel(
+      [], // Empty data for template
+      headers,
+    );
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=inventory_import_template.xlsx",
+    );
+    res.send(buffer);
   }
 
   @Post("items/batch-json")

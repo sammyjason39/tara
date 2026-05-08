@@ -15,15 +15,30 @@ export class ImportItemDto {
   @IsString()
   name: string;
 
-  @IsEnum(InventoryCategory)
-  category: InventoryCategory;
-
   @IsString()
-  uom: string;
+  category: string;
+
+  @IsOptional()
+  @IsString()
+  unit?: string;
 
   @IsOptional()
   @IsString()
   barcode?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  base_price?: number;
+
+  @IsOptional()
+  taxRate?: number;
+
+  @IsOptional()
+  @IsString()
+  departmentId?: string;
 
   @IsOptional()
   @IsArray()

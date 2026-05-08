@@ -1058,5 +1058,24 @@ export const retailService = {
       }
     );
   },
+
+  // --- Inventory Bulk Operations ---
+  async downloadInventoryTemplate(session: SessionContext) {
+    return apiRequest<Blob>("/inventory/items/template", "GET", session, null, {
+      responseType: "blob",
+    });
+  },
+
+  async importInventoryCsv(session: SessionContext, file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiRequest<any>("/inventory/items/import", "POST", session, formData);
+  },
+
+  async bulkUploadInventoryImages(session: SessionContext, files: File[]) {
+    const formData = new FormData();
+    files.forEach((file) => formData.append("files", file));
+    return apiRequest<any>("/inventory/items/bulk-images", "POST", session, formData);
+  },
 };
 
