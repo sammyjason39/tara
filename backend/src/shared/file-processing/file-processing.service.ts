@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import csv from "csv-parser";
 import * as ExcelJS from "exceljs";
 import { Readable } from "stream";
@@ -11,6 +11,8 @@ import AdmZip from "adm-zip";
 
 @Injectable()
 export class FileProcessingService {
+  private readonly logger = new Logger(FileProcessingService.name);
+
   /**
    * Sanitizes a value to prevent CSV/Excel injection.
    * Strips prefix characters: =, +, -, @
@@ -48,7 +50,6 @@ export class FileProcessingService {
       stream
         .pipe(csv())
         .on("data", (data: any) => {
-          // Sanitize and normalize incoming data
           const sanitized: any = {};
           for (const key in data) {
             const normalizedKey = this.normalizeKey(key);
@@ -64,59 +65,33 @@ export class FileProcessingService {
   }
 
   /**
-   * Streams a CSV file from disk and processes it in chunks.
+   * Streams a CSV file from disk and processes it row by row, awaiting the callback.
    */
-  async parseCsvStream<T>(
+  async parseCsvStream(
     filePath: string,
-    dtoClass: new () => T,
-    onBatch: (batch: T[]) => Promise<void>,
-    batchSize = 500,
-  ): Promise<{ total: number; errorCount: number; errors: any[] }> {
-    let count = 0;
-    let batch: any[] = [];
-    let errorCount = 0;
-    const allErrors: any[] = [];
+    onRow: (data: any) => Promise<void>,
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const stream = fs.createReadStream(filePath).pipe(csv());
 
-    await new Promise((resolve, reject) => {
-      fs.createReadStream(filePath)
-        .pipe(csv())
-        .on("data", async (data: any) => {
+      stream.on("data", async (data: any) => {
+        stream.pause();
+        try {
           const sanitized: any = {};
           for (const key in data) {
             sanitized[this.normalizeKey(key)] = this.sanitizeValue(data[key]);
           }
-          batch.push(sanitized);
+          await onRow(sanitized);
+        } catch (err) {
+          this.logger.error(`CSV Row Error: ${err.message}`);
+        } finally {
+          stream.resume();
+        }
+      });
 
-          if (batch.length >= batchSize) {
-            const currentBatch = [...batch];
-            batch = [];
-            const { data: validData, errors } = await this.validateData(
-              currentBatch,
-              dtoClass,
-            );
-            errorCount += errors.length;
-            allErrors.push(...errors);
-            await onBatch(validData);
-            count += validData.length;
-          }
-        })
-        .on("end", async () => {
-          if (batch.length > 0) {
-            const { data: validData, errors } = await this.validateData(
-              batch,
-              dtoClass,
-            );
-            errorCount += errors.length;
-            allErrors.push(...errors);
-            await onBatch(validData);
-            count += validData.length;
-          }
-          resolve(count);
-        })
-        .on("error", reject);
+      stream.on("end", () => resolve());
+      stream.on("error", (error) => reject(error));
     });
-
-    return { total: count, errorCount, errors: allErrors };
   }
 
   /**
@@ -157,14 +132,12 @@ export class FileProcessingService {
   }
 
   /**
-   * Streams an Excel file from disk and processes it in chunks.
+   * Streams an Excel file from disk and processes it row by row, awaiting the callback.
    */
-  async parseExcelStream<T>(
+  async parseExcelStream(
     filePath: string,
-    dtoClass: new () => T,
-    onBatch: (batch: T[]) => Promise<void>,
-    batchSize = 500,
-  ): Promise<{ total: number; errorCount: number; errors: any[] }> {
+    onRow: (data: any) => Promise<void>,
+  ): Promise<void> {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(filePath);
     const worksheet = workbook.getWorksheet(1);
@@ -175,11 +148,6 @@ export class FileProcessingService {
       headers[colNumber] = this.normalizeKey(cell.value?.toString() || "");
     });
 
-    let count = 0;
-    let batch: any[] = [];
-    let errorCount = 0;
-    const allErrors: any[] = [];
-
     for (let i = 2; i <= worksheet.rowCount; i++) {
       const row = worksheet.getRow(i);
       const rowData: any = {};
@@ -187,33 +155,9 @@ export class FileProcessingService {
         const header = headers[colNumber];
         if (header) rowData[header] = this.sanitizeValue(cell.value);
       });
-      batch.push(rowData);
-
-      if (batch.length >= batchSize) {
-        const { data: validData, errors } = await this.validateData(
-          batch,
-          dtoClass,
-        );
-        errorCount += errors.length;
-        allErrors.push(...errors);
-        await onBatch(validData);
-        count += validData.length;
-        batch = [];
-      }
+      
+      await onRow(rowData);
     }
-
-    if (batch.length > 0) {
-      const { data: validData, errors } = await this.validateData(
-        batch,
-        dtoClass,
-      );
-      errorCount += errors.length;
-      allErrors.push(...errors);
-      await onBatch(validData);
-      count += validData.length;
-    }
-
-    return { total: count, errorCount, errors: allErrors };
   }
 
   /**
@@ -282,7 +226,6 @@ export class FileProcessingService {
     if (options?.traceId) {
       workbook.creator = "Zenvix System";
       workbook.lastModifiedBy = "Zenvix System";
-      // Fallback: Embed trace info in a hidden sheet since custom properties types are tricky
       const hiddenSheet = workbook.addWorksheet("_system_meta", {
         state: "veryHidden",
       });
@@ -291,14 +234,13 @@ export class FileProcessingService {
       hiddenSheet.getCell("A2").value = "Export-Timestamp";
       hiddenSheet.getCell("B2").value = new Date().toISOString();
 
-      // Hidden System Mark at Z999
       const forensicCell = worksheet.getCell("Z999");
       forensicCell.value = `TRACE:${options.traceId}`;
-      forensicCell.font = { color: { argb: "FFFFFFFF" }, size: 2 }; // Invisible font
+      forensicCell.font = { color: { argb: "FFFFFFFF" }, size: 2 };
       forensicCell.protection = { locked: true };
     }
 
-    // 2. Visible Watermark (Adjustable)
+    // 2. Visible Watermark
     if (options?.watermark?.text) {
       const wmText = options.watermark.text;
       const posX = options.watermark.position?.x || 1;
@@ -319,11 +261,6 @@ export class FileProcessingService {
       wmCell.alignment = { vertical: "middle", horizontal: "center" };
     }
 
-    // 3. Micro-Footer Forensic Hash (Printed Edge)
-    if (options?.traceId) {
-      worksheet.headerFooter.oddFooter = `&L&2Forensic ID: ${options.traceId} &R&2Zenvix Secured Document`;
-    }
-
     worksheet.columns = columns;
     worksheet.addRows(
       data.map((row) => {
@@ -335,7 +272,6 @@ export class FileProcessingService {
       }),
     );
 
-    // Styling
     worksheet.getRow(1).font = { bold: true };
     worksheet.getRow(1).fill = {
       type: "pattern",

@@ -1184,6 +1184,35 @@ export class InventoryService {
       });
 
       // Fallback: If not found, try taking the first segment before an underscore or space
+      const onRow = async (data: any) => {
+        totalCount++;
+        
+        // Sanitize data types
+        const sanitized: any = { ...data };
+        if (sanitized.base_price) sanitized.base_price = Number(sanitized.base_price) || 0;
+        if (sanitized.selling_price) sanitized.selling_price = Number(sanitized.selling_price) || 0;
+        if (sanitized.tax_rate) sanitized.tax_rate = Number(sanitized.tax_rate) || 0.11;
+        if (sanitized.discount_rate) sanitized.discount_rate = Number(sanitized.discount_rate) || 0;
+        if (sanitized.quantity) sanitized.quantity = Number(sanitized.quantity) || 0;
+        
+        if (sanitized.pricing_tiers && typeof sanitized.pricing_tiers === 'string') {
+          try { sanitized.pricing_tiers = JSON.parse(sanitized.pricing_tiers); } catch (e) { sanitized.pricing_tiers = null; }
+        }
+        if (sanitized.metadata && typeof sanitized.metadata === 'string') {
+          try { sanitized.metadata = JSON.parse(sanitized.metadata); } catch (e) { sanitized.metadata = null; }
+        }
+        if (sanitized.module_tags && typeof sanitized.module_tags === 'string') {
+           sanitized.module_tags = sanitized.module_tags.split(',').map((t: string) => t.trim());
+        }
+
+        records.push(sanitized);
+        
+        if (records.length >= 200) { // Smaller batches for better feedback
+          const batch = [...records];
+          records.length = 0;
+          await this.processImportBatch(batch, ctx, jobId);
+        }
+      };
       if (!item) {
         const segments = filenameWithoutExt.split(/[_ ]/);
         if (segments.length > 1) {
@@ -1239,33 +1268,69 @@ export class InventoryService {
       const isCsv = job.filename.toLowerCase().endsWith('.csv');
       const dtoClass = ImportItemDto;
 
-      const onBatch = async (batch: any[]) => {
-        await this.batchCreateItems(ctx, batch, job.user_id);
-        await this.prisma.inventory_import_jobs.update({
-          where: { id: jobId },
-          data: { processed_items: { increment: batch.length } },
-        });
+      const records: any[] = [];
+      const results: any[] = [];
+      const errors: any[] = [];
+      let totalCount = 0;
+
+      const fileExtension = path.extname(job.file_path).toLowerCase();
+      
+      const onRow = async (data: any) => {
+        totalCount++;
+        
+        // Sanitize data types
+        const sanitized: any = { ...data };
+        if (sanitized.base_price) sanitized.base_price = Number(sanitized.base_price) || 0;
+        if (sanitized.selling_price) sanitized.selling_price = Number(sanitized.selling_price) || 0;
+        if (sanitized.tax_rate) sanitized.tax_rate = Number(sanitized.tax_rate) || 0.11;
+        if (sanitized.discount_rate) sanitized.discount_rate = Number(sanitized.discount_rate) || 0;
+        if (sanitized.quantity) sanitized.quantity = Number(sanitized.quantity) || 0;
+        
+        if (sanitized.pricing_tiers && typeof sanitized.pricing_tiers === 'string') {
+          try { sanitized.pricing_tiers = JSON.parse(sanitized.pricing_tiers); } catch (e) { sanitized.pricing_tiers = null; }
+        }
+        if (sanitized.metadata && typeof sanitized.metadata === 'string') {
+          try { sanitized.metadata = JSON.parse(sanitized.metadata); } catch (e) { sanitized.metadata = null; }
+        }
+        if (sanitized.module_tags && typeof sanitized.module_tags === 'string') {
+           sanitized.module_tags = sanitized.module_tags.split(',').map((t: string) => t.trim());
+        }
+
+        records.push(sanitized);
+        
+        if (records.length >= 200) { 
+          const batch = [...records];
+          records.length = 0;
+          await this.processImportBatch(batch, ctx, jobId);
+        }
       };
 
-      const result = isCsv
-        ? await this.fileProcessingService.parseCsvStream(job.file_path, dtoClass, onBatch)
-        : await this.fileProcessingService.parseExcelStream(job.file_path, dtoClass, onBatch);
+      if (fileExtension === '.csv') {
+        await this.fileProcessingService.parseCsvStream(job.file_path, onRow);
+      } else {
+        await this.fileProcessingService.parseExcelStream(job.file_path, onRow);
+      }
+
+      // Process remaining
+      if (records.length > 0) {
+        await this.processImportBatch(records, ctx, jobId);
+      }
 
       await this.prisma.inventory_import_jobs.update({
         where: { id: jobId },
         data: {
           status: 'COMPLETED',
           completed_at: new Date(),
-          total_items: result.total,
-          error_count: result.errorCount,
-          errors: result.errors as any,
+          total_items: totalCount,
+          error_count: errors.length,
+          errors: errors as any,
         },
       });
 
-      // Cleanup staging file
+      // Cleanup
       await fsPromises.unlink(job.file_path).catch(() => {});
     } catch (err) {
-      this.logger.error(`Import job ${jobId} failed: ${err.message}`);
+      this.logger.error(`Data import job ${jobId} failed: ${err.message}`);
       await this.prisma.inventory_import_jobs.update({
         where: { id: jobId },
         data: {
@@ -1274,6 +1339,29 @@ export class InventoryService {
           errors: [{ message: err.message }] as any,
         },
       });
+    }
+  }
+
+  private async processImportBatch(batch: any[], ctx: TenantContext, jobId: string) {
+    try {
+      await this.repository.batchCreateItems(ctx, batch);
+      await this.prisma.inventory_import_jobs.update({
+        where: { id: jobId },
+        data: {
+          processed_items: { increment: batch.length },
+        },
+      });
+    } catch (err) {
+      this.logger.error(`Batch processing failed for job ${jobId}: ${err.message}`);
+      // Log the error into the job record
+      await this.prisma.inventory_import_jobs.update({
+        where: { id: jobId },
+        data: {
+          errors: {
+            push: { message: `Batch error: ${err.message}`, timestamp: new Date() }
+          }
+        }
+      }).catch(() => {});
     }
   }
 
