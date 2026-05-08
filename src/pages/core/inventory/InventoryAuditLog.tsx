@@ -48,7 +48,7 @@ export default function InventoryAuditLog() {
     () =>
       (Array.isArray(movements) ? movements : []).filter((item) =>
         search
-          ? `${item.type} ${item.reason} ${item.referenceId ?? ""}`
+          ? `${item.type} ${item.reason} ${item.reference_id ?? ""}`
               .toLowerCase()
               .includes(search.toLowerCase())
           : true,
@@ -117,14 +117,14 @@ export default function InventoryAuditLog() {
               {(Array.isArray(filteredMovements) ? filteredMovements : []).map((item) => (
                 <tr key={item.id} className="border-t">
                   <td className="p-3 text-muted-foreground">
-                    {item.createdAt.slice(0, 16).replace("T", " ")}
+                    {item.created_at.slice(0, 16).replace("T", " ")}
                   </td>
                   <td className="p-3 font-medium">{item.type}</td>
-                  <td className="p-3 text-muted-foreground">{item.itemId}</td>
+                  <td className="p-3 text-muted-foreground">{item.item_id}</td>
                   <td className="p-3">{item.quantity}</td>
                   <td className="p-3">{item.reason}</td>
                   <td className="p-3 text-muted-foreground">
-                    {item.performedBy}
+                    {item.performed_by}
                   </td>
                 </tr>
               ))}
@@ -155,7 +155,7 @@ export default function InventoryAuditLog() {
                     <td className="p-3 font-medium">{cycle.id}</td>
                     <td className="p-3 text-muted-foreground">{cycle.scope}</td>
                     <td className="p-3 text-muted-foreground">
-                      {cycle.locationCode}
+                      {cycle.location_id}
                     </td>
                     <td className="p-3">{cycle.status}</td>
                     <td className="p-3">
@@ -205,11 +205,11 @@ export default function InventoryAuditLog() {
                 {(Array.isArray(integrations) ? integrations : []).map((event) => (
                   <tr key={event.id} className="border-t">
                     <td className="p-3 text-muted-foreground">
-                      {event.createdAt.slice(0, 16).replace("T", " ")}
+                      {event.created_at.slice(0, 16).replace("T", " ")}
                     </td>
                     <td className="p-3 font-medium">{event.target}</td>
                     <td className="p-3 text-muted-foreground">
-                      {event.eventType}
+                      {event.event_type}
                     </td>
                     <td className="p-3">{event.status}</td>
                   </tr>

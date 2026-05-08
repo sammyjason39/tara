@@ -119,10 +119,10 @@ export default function InventoryAdjustments() {
                 session.tenant_id,
                 session,
                 {
-                  itemId: selectedItem,
-                  locationCode,
-                  departmentCode,
-                  requestedDelta: Number(delta || "0"),
+                  item_id: selectedItem,
+                  location_id: locationCode,
+                  department_id: departmentCode,
+                  requested_delta: Number(delta || "0"),
                   reason: reason || "Manual stock reconciliation",
                 },
               );
@@ -164,11 +164,11 @@ export default function InventoryAdjustments() {
               {(Array.isArray(filtered) ? filtered : []).map((item) => (
                 <tr key={item.id} className="border-t">
                   <td className="p-3 font-medium">{item.id}</td>
-                  <td className="p-3 text-muted-foreground">{item.itemId}</td>
+                  <td className="p-3 text-muted-foreground">{item.item_id}</td>
                   <td className="p-3 text-muted-foreground">
-                    {item.locationCode}/{item.departmentCode ?? "GENERAL"}
+                    {item.location_id}/{item.department_id || "GENERAL"}
                   </td>
-                  <td className="p-3">{item.requestedDelta}</td>
+                  <td className="p-3">{item.requested_delta}</td>
                   <td className="p-3">{item.status}</td>
                   <td className="p-3">
                     {item.status === "PENDING_APPROVAL" ? (

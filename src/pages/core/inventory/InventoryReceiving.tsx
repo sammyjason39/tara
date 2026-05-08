@@ -48,8 +48,8 @@ export default function InventoryReceiving() {
   const [isReceiveOpen, setIsReceiveOpen] = useState(false);
   const [receiveLocationId, setReceiveLocationId] = useState("");
   const [receiveItems, setReceiveItems] = useState<
-    Array<{ sku: string; quantity: number; unitCost: number }>
-  >([{ sku: "", quantity: 1, unitCost: 0 }]);
+    Array<{ sku: string; quantity: number; unit_cost: number }>
+  >([{ sku: "", quantity: 1, unit_cost: 0 }]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [currency, setCurrency] = useState<{ code: string; symbol: string }>({ code: "IDR", symbol: "Rp" });
 
@@ -63,7 +63,7 @@ export default function InventoryReceiving() {
           return prev.map((item, idx) => idx === prev.length - 1 ? { ...item, sku: barcode } : item);
         } else {
           // Add new line
-          return [...prev, { sku: barcode, quantity: 1, unitCost: 0 }];
+          return [...prev, { sku: barcode, quantity: 1, unit_cost: 0 }];
         }
       });
       setStatusMessage(`Scanned SKU: ${barcode}`);
@@ -139,8 +139,8 @@ export default function InventoryReceiving() {
     setIsProcessing(true);
     try {
       await inventoryService.processProcurementReceipt(session.tenant_id, session, {
-        finalPoId: selectedPO.id,
-        locationId: receiveLocationId.trim(),
+        final_po_id: selectedPO.id,
+        location_id: receiveLocationId.trim(),
         items: validItems,
       });
       setStatusMessage(
@@ -300,7 +300,7 @@ export default function InventoryReceiving() {
                   size="sm"
                   variant="outline"
                   onClick={() =>
-                    setReceiveItems((prev) => [...prev, { sku: "", quantity: 1, unitCost: 0 }])
+                    setReceiveItems((prev) => [...prev, { sku: "", quantity: 1, unit_cost: 0 }])
                   }
                 >
                   + Add Line
@@ -333,12 +333,12 @@ export default function InventoryReceiving() {
                   <Input
                     type="number"
                     placeholder="Unit Cost"
-                    value={item.unitCost}
+                    value={item.unit_cost}
                     min={0}
                     onChange={(e) =>
                       setReceiveItems((prev) =>
                         (Array.isArray(prev) ? prev : []).map((p, i) =>
-                          i === idx ? { ...p, unitCost: Number(e.target.value) } : p,
+                          i === idx ? { ...p, unit_cost: Number(e.target.value) } : p,
                         ),
                       )
                     }

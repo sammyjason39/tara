@@ -230,12 +230,12 @@ export class InventoryController {
   @RequireInventoryRole(InventoryRole.MANAGER)
   async batchDeleteItems(
     @Req() request: RequestWithTenant,
-    @Body() body: { itemIds: string[] },
+    @Body() body: { item_ids: string[] },
   ) {
     const { tenant_id: tenant_id, user_id } = request.tenantContext;
     await this.inventoryService.batchDeleteItems(
       request.tenantContext,
-      body.itemIds,
+      body.item_ids,
       user_id,
     );
     return {
@@ -505,7 +505,7 @@ export class InventoryController {
   async getBalances(
     @Req() request: RequestWithTenant,
     @Query("location_id") location_id?: string,
-    @Query("departmentId") departmentId?: string,
+    @Query("department_id") department_id?: string,
     @Query("page") page: string = "1",
     @Query("limit") limit: string = "30",
     @Query("search") search?: string,
@@ -514,12 +514,12 @@ export class InventoryController {
     const data = await this.inventoryService.getBalances(
       request.tenantContext,
       location_id,
-      departmentId,
+      department_id,
       parseInt(page),
       parseInt(limit),
       search
     );
-    const total = await this.inventoryService.countBalances(request.tenantContext, location_id, departmentId, search);
+    const total = await this.inventoryService.countBalances(request.tenantContext, location_id, department_id, search);
     return { success: true, tenant_id, count: data.length, meta: { total }, data };
   }
 
@@ -937,7 +937,7 @@ export class InventoryController {
   @RequireInventoryRole(InventoryRole.MANAGER)
   async createAuditCycle(
     @Req() request: RequestWithTenant,
-    @Body() body: { locationCode: string; departmentCode?: string; scope: string },
+    @Body() body: { location_id: string; department_id?: string; scope: string },
   ) {
     const { tenant_id: tenant_id, user_id } = request.tenantContext;
     const data = await this.inventoryService.createAuditCycle(request.tenantContext, {
@@ -951,7 +951,7 @@ export class InventoryController {
       action: "START_AUDIT_CYCLE",
       entity_type: "AUDIT_CYCLE",
       entity_id: (data as any).id || "new",
-      metadata: { locationCode: body.locationCode, scope: body.scope },
+      metadata: { location_id: body.location_id, scope: body.scope },
     });
     return {
       success: true,
@@ -965,7 +965,7 @@ export class InventoryController {
   @RequireInventoryRole(InventoryRole.MANAGER)
   async initiateAudit(
     @Req() request: RequestWithTenant,
-    @Body() body: { locationCode: string; departmentCode?: string; scope: string },
+    @Body() body: { location_id: string; department_id?: string; scope: string },
   ) {
     return this.createAuditCycle(request, body);
   }
@@ -975,12 +975,12 @@ export class InventoryController {
   async updateAuditCycle(
     @Req() request: RequestWithTenant,
     @Param("id") cycleId: string,
-    @Body() body: { countedValue?: number; varianceValue?: number; status?: string; closedBy?: string },
+    @Body() body: { counted_value?: number; variance_value?: number; status?: string; closed_by?: string },
   ) {
     const { tenant_id: tenant_id, user_id } = request.tenantContext;
     const data = await this.inventoryService.updateAuditCycle(request.tenantContext, cycleId, {
       ...body,
-      closedBy: body.closedBy || user_id || "system",
+      closed_by: body.closed_by || user_id || "system",
     });
     await this.auditService.log({
       tenant_id: tenant_id,
@@ -989,7 +989,7 @@ export class InventoryController {
       action: "CLOSE_AUDIT_CYCLE",
       entity_type: "AUDIT_CYCLE",
       entity_id: cycleId,
-      metadata: { status: body.status, variance: body.varianceValue },
+      metadata: { status: body.status, variance: body.variance_value },
     });
     return { success: true, tenant_id, message: "Audit cycle updated", data };
   }
@@ -1130,8 +1130,8 @@ export class InventoryController {
     @Req() request: RequestWithTenant,
     @Param("id") finalPoId: string,
     @Body() body: {
-      locationId: string;
-      items: Array<{ sku: string; quantity: number; unitCost?: number }>;
+      location_id: string;
+      items: Array<{ sku: string; quantity: number; unit_cost?: number }>;
     },
   ) {
     const { tenant_id, user_id } = request.tenantContext;

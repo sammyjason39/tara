@@ -82,16 +82,16 @@ export class InventoryService {
 
   async getBalances(ctx: TenantContext,
     location_id?: string,
-    departmentId?: string,
+    department_id?: string,
     page: number = 1,
     limit: number = 30,
     search?: string
   ) {
-    return this.repository.getBalances(ctx, location_id, departmentId, page, limit, search);
+    return this.repository.getBalances(ctx, location_id, department_id, page, limit, search);
   }
 
-  async countBalances(ctx: TenantContext, location_id?: string, departmentId?: string, search?: string) {
-    return this.repository.countBalances(ctx, location_id, departmentId, search);
+  async countBalances(ctx: TenantContext, location_id?: string, department_id?: string, search?: string) {
+    return this.repository.countBalances(ctx, location_id, department_id, search);
   }
 
   async getMovements(ctx: TenantContext, item_id?: string) {
@@ -1082,8 +1082,8 @@ export class InventoryService {
     ctx: TenantContext,
     finalPoId: string,
     data: {
-      locationId: string;
-      items: Array<{ sku: string; quantity: number; unitCost?: number }>;
+      location_id: string;
+      items: Array<{ sku: string; quantity: number; unit_cost?: number }>;
     },
     user_id?: string,
   ) {
@@ -1092,8 +1092,12 @@ export class InventoryService {
       ctx,
       finalPoId,
       {
-        location_id: data.locationId,
-        items: data.items,
+        location_id: data.location_id,
+        items: data.items.map(item => ({
+          sku: item.sku,
+          quantity: item.quantity,
+          unit_cost: item.unit_cost
+        })),
         receiptType: "FULL", // Defaulting to full for this bridge
       },
       user_id,

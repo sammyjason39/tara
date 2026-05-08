@@ -90,7 +90,7 @@ import { Badge as UIBadge } from "@/components/ui/badge";
 type ViewMode = "total" | "branch" | "ecommerce" | "transfers" | "opname";
 
 interface OpnameEntry {
-  itemId: string;
+  item_id: string;
   sku: string;
   name: string;
   systemCount: number;
@@ -268,15 +268,15 @@ export default function InventoryStockHub() {
     }
 
     setOpnameEntries(prev => {
-      const existing = prev.find(e => e.itemId === item.id);
+      const existing = prev.find(e => e.item_id === item.id);
       if (existing) {
-        return prev.map(e => e.itemId === item.id ? { ...e, actualCount: e.actualCount + 1, timestamp: new Date().toLocaleTimeString() } : e);
+        return prev.map(e => e.item_id === item.id ? { ...e, actualCount: e.actualCount + 1, timestamp: new Date().toLocaleTimeString() } : e);
       }
       
-      const balance = balances.find(b => b.itemId === item.id && (selectedLocationId ? b.locationId === selectedLocationId : true));
+      const balance = balances.find(b => b.item_id === item.id && (selectedLocationId ? b.location_id === selectedLocationId : true));
       
       return [{
-        itemId: item.id,
+        item_id: item.id,
         sku: item.sku,
         name: item.name,
         systemCount: balance?.quantity || 0,
@@ -320,9 +320,9 @@ export default function InventoryStockHub() {
         session.tenant_id,
         session,
         opnameEntries.map(e => ({
-          itemId: e.itemId,
-          locationId: selectedLocationId || session.location_id,
-          actualCount: e.actualCount,
+          item_id: e.item_id,
+          location_id: selectedLocationId || session.location_id,
+          actual_count: e.actualCount,
           reason: e.type === "NORMAL" ? "Stock Opname Audit" : `Audit Discovery: ${e.reason}`,
           notes: e.notes || `Audit Type: ${e.type}`
         }))
@@ -365,7 +365,7 @@ export default function InventoryStockHub() {
         });
 
         setOpnameEntries(prev => [{
-          itemId: newItem.id,
+          item_id: newItem.id,
           sku: newItem.sku,
           name: newItem.name,
           systemCount: 0,
@@ -382,7 +382,7 @@ export default function InventoryStockHub() {
         // Handle Anomaly
         const anomalyId = `ANOM-${Date.now()}`;
         setOpnameEntries(prev => [{
-          itemId: anomalyId,
+          item_id: anomalyId,
           sku: discoverySku || "UNKNOWN",
           name: discoveryName || "Unknown Anomaly",
           systemCount: 0,
@@ -528,8 +528,8 @@ export default function InventoryStockHub() {
   );
 
   const paginatedBalances = useMemo(() => {
-    return filteredBalances.slice((page - 1) * pageSize, page * pageSize);
-  }, [filteredBalances, page, pageSize]);
+    return filteredBalances;
+  }, [filteredBalances]);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) =>
@@ -1041,7 +1041,7 @@ export default function InventoryStockHub() {
                   const isSelected = selectedIds.includes(balance.id);
                   return (
                     <tr
-                      key={balance.id}
+                      key={`${balance.item_id}-${balance.location_id}`}
                       className={`cursor-pointer border-t hover:bg-muted/50 transition-colors ${isSelected ? "bg-primary/5" : ""}`}
                       onClick={() => setSelectedBalance({ balance, item })}
                     >
@@ -1079,10 +1079,10 @@ export default function InventoryStockHub() {
                         {balance.location_id}
                       </td>
                       <td className="p-3 text-muted-foreground">
-                        {balance.department_id ?? "GENERAL"}
+                        {balance.department_id || "GENERAL"}
                       </td>
                       <td className="p-3 text-right font-mono font-bold">
-                        {balance.quantity.toLocaleString()}
+                        {balance.quantity?.toLocaleString()}
                       </td>
                       <td className="p-3 text-muted-foreground">
                         {balance.reorder_point}
@@ -1161,7 +1161,7 @@ export default function InventoryStockHub() {
               </span>
               <span className="text-muted-foreground">Physical Qty:</span>
               <span className="font-bold text-lg">
-                {selectedBalance?.balance.quantity.toLocaleString()}
+                {selectedBalance?.balance.quantity?.toLocaleString()}
               </span>
               <span className="text-muted-foreground">Reorder Point:</span>
               <span>{selectedBalance?.balance.reorder_point}</span>
