@@ -1,14 +1,15 @@
 export class StockBalance {
   id: string;
-  tenant_id: string;
-  item_id: string;
-  location_id: string;
-  departmentId?: string;
+  tenantId: string;
+  itemId: string;
+  locationId: string;
+  locationCode: string;
+  departmentCode?: string;
   quantity: number;
   reservedQuantity: number;
   inTransitQuantity: number;
   avgUnitCost: number;
   reorderPoint: number;
   safetyStock: number;
-  updated_at: Date;
+  updatedAt: Date;
 }
