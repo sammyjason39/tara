@@ -38,11 +38,11 @@ export class InventoryDbRepository implements IInventoryRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async getDashboard(ctx: TenantContext, location_id?: string): Promise<InventoryDashboard> {
-    const scope = { ...MultiTenancyUtil.getScope(ctx) };
-    if (location_id) scope.location_id = location_id;
+    const baseScope = { ...MultiTenancyUtil.getScope(ctx) };
+    const stockScope = { ...baseScope };
+    if (location_id) stockScope.location_id = location_id;
     
-    // For item count, if filtered by location, we count items that have stock levels at that location
-    const itemWhere = { ...MultiTenancyUtil.getScope(ctx) };
+    const itemWhere = { ...baseScope };
     if (location_id) {
       (itemWhere as any).stock_levels = { some: { location_id } };
     }
@@ -51,14 +51,14 @@ export class InventoryDbRepository implements IInventoryRepository {
       where: itemWhere,
     });
     const totalLocations = await this.prisma.locations.count({
-      where: scope,
+      where: baseScope,
     });
     const totalDepartments = await this.prisma.departments.count({
-      where: scope,
+      where: baseScope,
     });
 
     const stockLevels = await this.prisma.stock_levels.findMany({
-      where: scope,
+      where: stockScope,
     });
     const totalOnHandQty = stockLevels.reduce(
       (sum: number, level: StockLevel) => sum + Number(level.on_hand),
@@ -113,7 +113,7 @@ export class InventoryDbRepository implements IInventoryRepository {
     };
   }
 
-  async getItems(ctx: TenantContext, location_id?: string, page: number = 1, limit: number = 100, search?: string): Promise<InventoryItem[]> {
+  async getItems(ctx: TenantContext, location_id?: string, page: number = 1, limit: number = 100, search?: string, category_id?: string): Promise<InventoryItem[]> {
     const skip = (page - 1) * limit;
     const scope = MultiTenancyUtil.getScope(ctx);
     const where: any = { ...scope, status: { not: "deleted" } };
@@ -126,8 +126,10 @@ export class InventoryDbRepository implements IInventoryRepository {
       ];
     }
 
-    // When a specific branch/store location is requested, return only items
-    // that have a stock record at that location
+    if (category_id && category_id !== "all") {
+      where.category_id = category_id;
+    }
+
     if (location_id) {
       where.stock_levels = { some: { location_id } };
     }
@@ -159,7 +161,7 @@ export class InventoryDbRepository implements IInventoryRepository {
     }));
   }
 
-  async countItems(ctx: TenantContext, location_id?: string, search?: string): Promise<number> {
+  async countItems(ctx: TenantContext, location_id?: string, search?: string, category_id?: string): Promise<number> {
     const scope = MultiTenancyUtil.getScope(ctx);
     const where: any = { ...scope, status: { not: "deleted" } };
 
@@ -169,6 +171,10 @@ export class InventoryDbRepository implements IInventoryRepository {
         { name: { contains: search, mode: 'insensitive' } },
         { barcode: { contains: search, mode: 'insensitive' } },
       ];
+    }
+
+    if (category_id && category_id !== "all") {
+      where.category_id = category_id;
     }
 
     if (location_id) {
@@ -241,7 +247,8 @@ export class InventoryDbRepository implements IInventoryRepository {
     department_id?: string,
     page: number = 1,
     limit: number = 100,
-    search?: string
+    search?: string,
+    category_id?: string
   ): Promise<StockBalance[]> {
     const skip = (page - 1) * limit;
     const where: any = { ...MultiTenancyUtil.getScope(ctx) };
@@ -253,7 +260,15 @@ export class InventoryDbRepository implements IInventoryRepository {
         OR: [
           { sku: { contains: search, mode: 'insensitive' } },
           { name: { contains: search, mode: 'insensitive' } },
+          { barcode: { contains: search, mode: 'insensitive' } },
         ]
+      };
+    }
+
+    if (category_id && category_id !== "all") {
+      where.item_masters = {
+        ...(where.item_masters || {}),
+        category_id: category_id
       };
     }
 
@@ -289,7 +304,8 @@ export class InventoryDbRepository implements IInventoryRepository {
     ctx: TenantContext,
     location_id?: string,
     department_id?: string,
-    search?: string
+    search?: string,
+    category_id?: string
   ): Promise<number> {
     const where: any = { ...MultiTenancyUtil.getScope(ctx) };
     if (location_id) where.location_id = location_id;
@@ -300,7 +316,15 @@ export class InventoryDbRepository implements IInventoryRepository {
         OR: [
           { sku: { contains: search, mode: 'insensitive' } },
           { name: { contains: search, mode: 'insensitive' } },
+          { barcode: { contains: search, mode: 'insensitive' } },
         ]
+      };
+    }
+
+    if (category_id && category_id !== "all") {
+      where.item_masters = {
+        ...(where.item_masters || {}),
+        category_id: category_id
       };
     }
 

@@ -123,6 +123,7 @@ export default function InventoryStockHub() {
   const session = useSession();
   const [search, setSearch] = useState("");
   const [moduleFilter, setModuleFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("ALL");
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<InventoryItemMaster[]>([]);
@@ -410,8 +411,8 @@ export default function InventoryStockHub() {
     try {
       const locFilter = selectedLocationId || undefined;
       const [i, b, d, locs, cats, channels, stats] = await Promise.all([
-        inventoryService.listItems(session.tenant_id, session, locFilter, targetPage, pageSize, search),
-        inventoryService.listBalances(session.tenant_id, session, locFilter, undefined, targetPage, pageSize, search),
+        inventoryService.listItems(session.tenant_id, session, locFilter, targetPage, pageSize, search, categoryFilter),
+        inventoryService.listBalances(session.tenant_id, session, locFilter, undefined, targetPage, pageSize, search, categoryFilter),
         orgService.getOrgMap(session.tenant_id, session),
         hrService.listLocations(session.tenant_id, session),
         inventoryService.listCategories(session.tenant_id, session),
@@ -454,7 +455,7 @@ export default function InventoryStockHub() {
   useEffect(() => {
     setPage(1);
     refresh(1);
-  }, [search, selectedLocationId, viewMode]);
+  }, [search, selectedLocationId, viewMode, categoryFilter]);
 
 
   const itemById = useMemo(
@@ -681,10 +682,10 @@ export default function InventoryStockHub() {
           <InventoryFilterHub
             search={search}
             onSearchChange={setSearch}
-            category={newItemCategory}
+            category={categoryFilter}
             onCategoryChange={(v) => {
-              // Note: reusing category state for filtering if needed, or just search
-              // In this view, category filter usually happens via search or specialized dropdown
+              setCategoryFilter(v);
+              setPage(1);
             }}
             categories={dynamicCategories.map(c => ({ id: c.id, name: c.name }))}
             location={selectedLocationId}

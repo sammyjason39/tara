@@ -24,10 +24,12 @@ export const inventoryService = {
     page: number = 1,
     limit: number = 30,
     search?: string,
+    category_id?: string,
   ): Promise<InventoryItemMaster[]> {
     const params = new URLSearchParams();
     if (location_id) params.append("location_id", location_id);
     if (search) params.append("search", search);
+    if (category_id && category_id !== "all") params.append("category_id", category_id);
     params.append("page", page.toString());
     params.append("limit", limit.toString());
     
@@ -59,11 +61,13 @@ export const inventoryService = {
     page: number = 1,
     limit: number = 30,
     search?: string,
+    category_id?: string,
   ): Promise<InventoryStockBalance[]> {
     const params = new URLSearchParams();
     if (location_id) params.append("location_id", location_id);
     if (department_id) params.append("department_id", department_id);
     if (search) params.append("search", search);
+    if (category_id && category_id !== "all") params.append("category_id", category_id);
     params.append("page", page.toString());
     params.append("limit", limit.toString());
     
