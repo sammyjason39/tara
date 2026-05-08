@@ -273,6 +273,7 @@ export class InventoryDbRepository implements IInventoryRepository {
         reorder_point: Number(l.min_buffer || 0),
         safety_stock: Number(l.min_buffer || 0),
         updated_at: l.updated_at,
+        item: l.item_masters,
       }),
     );
   }

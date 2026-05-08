@@ -1036,12 +1036,12 @@ export default function InventoryStockHub() {
               </thead>
               <tbody>
                 {(Array.isArray(paginatedBalances) ? paginatedBalances : []).map((balance) => {
-                  const item = itemById[balance.item_id];
+                  const item = balance.item || itemById[balance.item_id];
                   if (!item) return null;
                   const isSelected = selectedIds.includes(balance.id);
                   return (
                     <tr
-                      key={`${balance.item_id}-${balance.location_id}`}
+                      key={balance.id}
                       className={`cursor-pointer border-t hover:bg-muted/50 transition-colors ${isSelected ? "bg-primary/5" : ""}`}
                       onClick={() => setSelectedBalance({ balance, item })}
                     >

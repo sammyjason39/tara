@@ -11,4 +11,5 @@ export class StockBalance {
   reorder_point: number;
   safety_stock: number;
   updated_at: Date;
+  item?: any;
 }

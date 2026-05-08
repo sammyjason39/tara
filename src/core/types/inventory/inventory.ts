@@ -73,6 +73,7 @@ export type InventoryStockBalance = {
   expiry_date?: string;
   last_counted_at?: string;
   updated_at: string;
+  item?: InventoryItemMaster;
 };
 
 export type InventoryMovement = {

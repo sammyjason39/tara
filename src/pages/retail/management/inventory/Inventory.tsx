@@ -102,7 +102,7 @@ export default function RetailInventory() {
   const fetchInventory = async () => {
     setIsLoading(true);
     try {
-      const data = await retailService.listInventory(session.tenant_id!, session);
+      const data = await retailService.listInventory(session.tenant_id!, session, { locationId: session.location_id });
       const mapped: InventoryItem[] = (data || []).map(p => ({
         ...p,
         minStock: (p.metadata as any)?.min_stock || 5,
