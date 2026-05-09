@@ -75,7 +75,7 @@ import InventoryAuditLog from "@/pages/core/inventory/InventoryAuditLog";
 import InventoryInsights from "@/pages/core/inventory/InventoryInsights";
 import WarehouseManagement from "@/pages/core/inventory/WarehouseManagement";
 import IotEventFeed from "@/pages/core/inventory/IotEventFeed";
-import { TransferDesk } from "@/pages/core/inventory/TransferDesk";
+import TransferDesk from "@/pages/core/inventory/TransferDesk";
 import ITWorkspaceLayout from "@/pages/core/it/ITWorkspaceLayout";
 import ITDashboard from "@/pages/core/it/ITDashboard";
 import SystemHealth from "@/pages/core/it/SystemHealth";

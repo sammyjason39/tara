@@ -54,16 +54,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import ImportDialog from "@/components/shared/ImportDialog";
-import ExportDialog from "@/components/shared/ExportSettingsDialog";
-import CategoryDialog from "@/components/shared/CategoryManager";
+import { ImportDialog } from "@/components/shared/ImportDialog";
+import { ExportSettingsDialog as ExportDialog } from "@/components/shared/ExportSettingsDialog";
+import { CategoryManager as CategoryDialog } from "@/components/shared/CategoryManager";
 import DepartmentWorkspaceLayout from "@/components/layouts/DepartmentWorkspaceLayout";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 // Stubs for missing components (to be restored/fixed later)
-const ItemDetailsModal = ({ open, onOpenChange }: any) => null;
-const CreateItemDialog = ({ open, onOpenChange }: any) => null;
+const ItemDetailsModal = (props: any) => null;
+const CreateItemDialog = (props: any) => null;
 
 const SECTIONS = [
   {
