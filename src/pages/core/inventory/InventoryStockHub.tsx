@@ -111,6 +111,10 @@ export default function InventoryStockHub() {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [globalStats, setGlobalStats] = useState<any>(null);
+  
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isImageImportOpen, setIsImageImportOpen] = useState(false);
@@ -120,8 +124,25 @@ export default function InventoryStockHub() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await apiRequest<InventoryItem[]>("/inventory/items?limit=5000", "GET", session);
-      setItems(data || []);
+      // 1. Fetch Paginated Items (with backend filtering)
+      const itemUrl = `/inventory/items?page=${page}&limit=30${search ? `&search=${encodeURIComponent(search)}` : ''}${activeCategory !== 'all' ? `&category_id=${activeCategory}` : ''}`;
+      const itemResponse = await apiRequest<any>(itemUrl, "GET", session);
+      
+      // apiRequest unwraps .data, but if it has .meta, it attaches it.
+      // Based on our check, items will be the array.
+      setItems(itemResponse || []);
+      
+      // 2. Fetch Global Dashboard Stats (for KPI cards)
+      const statsResponse = await apiRequest<any>("/inventory/dashboard", "GET", session);
+      setGlobalStats(statsResponse);
+      
+      // 3. Set Total Count for pagination
+      // If apiRequest attached meta to the array:
+      if (Array.isArray(itemResponse) && (itemResponse as any).meta) {
+        setTotalCount((itemResponse as any).meta.total || 0);
+      } else if (statsResponse) {
+        setTotalCount(statsResponse.totalItems || 0);
+      }
     } catch (error: any) {
       toast({
         title: "Sync Failed",
@@ -131,33 +152,23 @@ export default function InventoryStockHub() {
     } finally {
       setLoading(false);
     }
-  }, [session]);
+  }, [session, page, search, activeCategory]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const filteredItems = useMemo(() => {
-    return (Array.isArray(items) ? items : []).filter((item) => {
-      const matchesSearch =
-        item.name.toLowerCase().includes(search.toLowerCase()) ||
-        item.sku.toLowerCase().includes(search.toLowerCase());
-      const matchesCategory =
-        activeCategory === "all" || item.category === activeCategory;
-      return matchesSearch && matchesCategory;
-    });
-  }, [items, search, activeCategory]);
+  // We now use backend-side filtering, so filteredItems is just the items from the current page
+  const filteredItems = items;
 
   const stats = useMemo(() => {
-    const totalItems = items.length;
-    const lowStock = items.filter((i) => i.currentStock <= i.minStock).length;
-    const outOfStock = items.filter((i) => i.currentStock === 0).length;
-    const totalValue = items.reduce(
-      (acc, i) => acc + (i.currentStock * (i.costPrice || 0)),
-      0,
-    );
-    return { totalItems, lowStock, outOfStock, totalValue };
-  }, [items]);
+    return {
+      totalItems: globalStats?.totalItems ?? totalCount ?? 0,
+      lowStock: globalStats?.lowStockCount ?? 0,
+      outOfStock: items.filter(i => i.currentStock === 0).length, // Local out of stock for current page is not great, but dashboard doesn't provide it clearly yet.
+      totalValue: globalStats?.totalValuation ?? 0
+    };
+  }, [globalStats, totalCount, items]);
 
   const headerActions = (
     <div className="flex gap-2">
@@ -356,6 +367,43 @@ export default function InventoryStockHub() {
               </TableBody>
             </Table>
           </ScrollArea>
+
+          {/* Pagination Controls */}
+          <div className="p-6 border-t flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
+            <div className="flex items-center gap-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                Showing <span className="text-slate-900 dark:text-white">{items.length}</span> of <span className="text-slate-900 dark:text-white">{totalCount.toLocaleString()}</span> Items
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1 || loading}
+                className="h-10 px-4 rounded-xl border-slate-200 text-[10px] font-black uppercase tracking-widest disabled:opacity-30"
+              >
+                Previous
+              </Button>
+              
+              <div className="flex items-center gap-1 mx-2">
+                <span className="text-[10px] font-black text-primary uppercase">Page</span>
+                <span className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-[10px] font-black text-primary">{page}</span>
+                <span className="text-[10px] font-black text-slate-400 uppercase">of {Math.ceil(totalCount / 30) || 1}</span>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => p + 1)}
+                disabled={items.length < 30 || page >= Math.ceil(totalCount / 30) || loading}
+                className="h-10 px-4 rounded-xl border-slate-200 text-[10px] font-black uppercase tracking-widest disabled:opacity-30"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
