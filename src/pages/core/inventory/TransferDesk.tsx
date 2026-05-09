@@ -109,7 +109,7 @@ export default function InventoryTransferDesk() {
   const headerActions = (
     <div className="flex gap-2">
       <Button
-        className="rounded-xl bg-slate-900 hover:bg-black text-white shadow-sm font-bold text-[10px] uppercase tracking-widest h-9"
+        className="rounded-xl bg-foreground text-background hover:bg-foreground/90 shadow-lg font-black text-[10px] uppercase tracking-widest h-9 px-6"
       >
         <Plus className="h-3 w-3 mr-2" /> New Transfer
       </Button>

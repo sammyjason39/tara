@@ -164,35 +164,35 @@ export default function InventoryStockHub() {
       <Button
         onClick={() => setIsImportOpen(true)}
         variant="outline"
-        className="rounded-xl border-slate-200 bg-white shadow-sm hover:bg-slate-50 font-bold text-[10px] uppercase tracking-widest h-9"
+        className="rounded-xl border-border bg-background/50 backdrop-blur-sm shadow-sm hover:bg-secondary text-foreground font-black text-[10px] uppercase tracking-widest h-9 px-4"
       >
         <Upload className="h-3 w-3 mr-2" /> Data Import
       </Button>
       <Button
         onClick={() => setIsImageImportOpen(true)}
         variant="outline"
-        className="rounded-xl border-slate-200 bg-white shadow-sm hover:bg-slate-50 font-bold text-[10px] uppercase tracking-widest h-9"
+        className="rounded-xl border-border bg-background/50 backdrop-blur-sm shadow-sm hover:bg-secondary text-foreground font-black text-[10px] uppercase tracking-widest h-9 px-4"
       >
         <ImageIcon className="h-3 w-3 mr-2" /> Image Import
       </Button>
       <Button
         onClick={() => setIsExportOpen(true)}
         variant="outline"
-        className="rounded-xl border-slate-200 bg-white shadow-sm hover:bg-slate-50 font-bold text-[10px] uppercase tracking-widest h-9"
+        className="rounded-xl border-border bg-background/50 backdrop-blur-sm shadow-sm hover:bg-secondary text-foreground font-black text-[10px] uppercase tracking-widest h-9 px-4"
       >
         <Download className="h-3 w-3 mr-2" /> Export
       </Button>
-      <div className="w-px h-6 bg-slate-200 mx-1" />
+      <div className="w-px h-6 bg-border mx-2" />
       <Button
         onClick={() => setIsCreateOpen(true)}
-        className="rounded-xl bg-slate-900 hover:bg-black text-white shadow-sm font-bold text-[10px] uppercase tracking-widest h-9"
+        className="rounded-xl bg-foreground text-background hover:bg-foreground/90 shadow-lg font-black text-[10px] uppercase tracking-widest h-9 px-6"
       >
         <Plus className="h-3 w-3 mr-2" /> New Item
       </Button>
       <Button
         onClick={() => setIsCategoryOpen(true)}
         variant="outline"
-        className="rounded-xl border-slate-200 bg-white shadow-sm hover:bg-slate-50 font-bold text-[10px] uppercase tracking-widest h-9"
+        className="rounded-xl border-border bg-background/50 backdrop-blur-sm shadow-sm hover:bg-secondary text-foreground font-black text-[10px] uppercase tracking-widest h-9 px-4"
       >
         <Plus className="h-3 w-3 mr-2" /> New Category
       </Button>
