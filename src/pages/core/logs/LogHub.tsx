@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback } from "react";
-import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { useSession } from "@/core/security/session";
 import { apiRequest } from "@/core/api/apiClient";
@@ -27,8 +26,19 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Search, Info, Loader2, AlertCircle, CheckCircle2, Activity } from "lucide-react";
+import { Search, Info, Loader2, AlertCircle, CheckCircle2, Activity, Terminal, Shield } from "lucide-react";
 import { adminService } from "@/core/services/adminService";
+import DepartmentWorkspaceLayout from "@/components/layouts/DepartmentWorkspaceLayout";
+
+const SECTIONS = [
+  {
+    title: "DIAGNOSTICS",
+    items: [
+      { id: 'logs', icon: Terminal, label: "System Logs", to: "/core/logs" },
+      { id: 'audit', icon: Shield, label: "Audit Vault", to: "/core/audit" },
+    ]
+  }
+];
 
 export default function LogHub({ noShell = false }: { noShell?: boolean }) {
   const session = useSession();
@@ -119,15 +129,8 @@ export default function LogHub({ noShell = false }: { noShell?: boolean }) {
     }
   };
 
-  return (
-    <div className="space-y-6">
-      {!noShell && (
-        <PageHeader
-          title="System Logs"
-          subtitle="Centralized diagnostics for API requests, background jobs, and application errors."
-        />
-      )}
-
+  const mainContent = (
+    <div className="space-y-6 p-6">
       {/* --- OBSERVABILITY PANELS --- */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <WorkspacePanel 
@@ -394,5 +397,24 @@ export default function LogHub({ noShell = false }: { noShell?: boolean }) {
         </SheetContent>
       </Sheet>
     </div>
+  );
+
+  if (noShell) return mainContent;
+
+  return (
+    <DepartmentWorkspaceLayout
+      title="System Logs"
+      subtitle="Centralized diagnostics for API requests, background jobs, and application errors."
+      headerIcon={Terminal}
+      accentColor="slate"
+      engineName="OBSERVABILITY_ENGINE"
+      pulseLabel="Log Pulse"
+      pulseIcon={Activity}
+      sections={SECTIONS}
+      routeLabels={{}}
+      basePath="/core/logs"
+    >
+      {mainContent}
+    </DepartmentWorkspaceLayout>
   );
 }

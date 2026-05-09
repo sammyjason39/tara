@@ -22,7 +22,8 @@ import {
   DollarSign,
   Receipt,
   HandCoins,
-  FileCheck
+  FileCheck,
+  Activity
 } from 'lucide-react';
 import { useSession } from '@/core/security/session';
 import { useApp } from '@/contexts/AppContext';
@@ -211,7 +212,7 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
   if (isLoading) return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-6">
       <div className="w-24 h-24 rounded-[2rem] bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center animate-pulse shadow-[0_0_50px_-12px_rgba(79,70,229,0.5)]">
-        <HeartPulse className="w-10 h-10 text-indigo-400" />
+        <Activity className="w-10 h-10 text-indigo-400" />
       </div>
       <div className="text-center space-y-2">
         <p className="text-lg font-black italic uppercase tracking-[0.3em] text-white animate-pulse">Synchronizing Portal</p>

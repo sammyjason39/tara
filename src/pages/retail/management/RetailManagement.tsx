@@ -138,7 +138,7 @@ export default function RetailManagement() {
       <div className="absolute top-[-5%] left-[-5%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[5%] right-[-5%] w-[35%] h-[35%] bg-violet-600/5 rounded-full blur-[100px] pointer-events-none" />
       
-      <div className="max-w-[1920px] mx-auto p-6 md:p-8 lg:p-10 space-y-20 relative z-10">
+      <div className="max-w-7xl mx-auto p-6 md:p-8 lg:p-10 space-y-20 relative z-10">
         {/* Header Tier */}
         <CommandCenterHeader
           locationName={session.location_id}

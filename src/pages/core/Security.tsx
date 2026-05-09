@@ -9,8 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PageShell } from "@/core/ui/PageShell";
-import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import {
   AlertTriangle,
@@ -19,6 +17,9 @@ import {
   Loader2,
   ShieldCheck,
   UserCog,
+  Shield,
+  Activity,
+  Plus
 } from "lucide-react";
 import { RequestModal } from "@/core/ui/RequestModal";
 import { adminService } from "@/core/services/adminService";
@@ -28,6 +29,7 @@ import { reportingService } from "@/core/services/reportingService";
 import { auditService, type AuditLog, type VerificationResult } from "@/core/services/auditService";
 import { itService, type SystemHealth } from "@/core/services/it/itService";
 import { useEffect, useCallback } from "react";
+import DepartmentWorkspaceLayout from "@/components/layouts/DepartmentWorkspaceLayout";
 
 // Mocks for UI-only sections that don't have endpoints yet
 const roleRows = [
@@ -54,6 +56,16 @@ const roleRows = [
   },
 ];
 
+const SECTIONS = [
+  {
+    title: "SECURITY",
+    items: [
+      { id: 'overview', icon: Shield, label: "Overview", to: "/core/security" },
+      { id: 'roles', icon: UserCog, label: "Roles", to: "/core/security/roles" },
+      { id: 'audit', icon: Clock, label: "Audit Feed", to: "/core/security/audit" },
+    ]
+  }
+];
 
 export default function CoreSecurity() {
   const session = useSession();
@@ -143,104 +155,49 @@ export default function CoreSecurity() {
   const handleDownloadReport = async () => {
     try {
       toast({ title: "Report Generation", description: "Preparing the latest security audit report..." });
-      const job = await reportingService.generateReport(session, { report_type: "SECURITY_AUDIT", format: "PDF" });
+      await reportingService.generateReport(session, { report_type: "SECURITY_AUDIT", format: "PDF" });
       toast({ title: "Processing", description: "Report is being generated in the background." });
     } catch (err) {
       toast({ title: "Generation Failed", description: "Audit engine is currently offline.", variant: "destructive" });
     }
   };
 
-  return (
-    <PageShell
-      header={
-        <PageHeader
-          title="Security & Access Control"
-          subtitle="Enforce policies, manage roles, and monitor audit activity."
-          primaryAction={
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={handleVerifyIntegrity} disabled={integrityStatus === 'scanning'}>
-                {integrityStatus === 'scanning' ? "Scanning..." : "Verify Integrity"}
-              </Button>
-              <Button onClick={() => setIsModalOpen(true)}>
-                <UserCog className="mr-2 h-4 w-4" />
-                Manage Roles
-              </Button>
-            </div>
-          }
-          secondaryActions={<Button onClick={handleDownloadReport} variant="outline">Download report</Button>}
-        />
-      }
-      right={
-        <div className="p-4">
+  const mainContent = (
+    <div className="space-y-6 p-6">
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-6">
           <WorkspacePanel
-            title="System alerts"
-            description="Real-time telemetry and infrastructure status."
+            title="Roles & permissions"
+            description="Defined access roles with scoped capabilities and assigned users."
           >
-            <div className="space-y-4">
-              {health.length === 0 && <p className="text-xs text-muted-foreground">No active infrastructure alerts.</p>}
-              {(Array.isArray(health) ? health : []).map((alert) => (
-                <div
-                  key={alert.id}
-                  className="rounded-lg border p-3"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {alert.component}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Latency: {alert.latencyMs}ms
-                      </p>
-                    </div>
-                    <Badge variant={alert.status === 'HEALTHY' ? 'outline' : 'destructive'}>
-                      {alert.status}
-                    </Badge>
-                  </div>
-                  <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock className="h-3.5 w-3.5" />
-                    {new Date(alert.checkedAt).toLocaleTimeString()}
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-hidden rounded-xl border">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="w-[30%]">Role</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Users</TableHead>
+                    <TableHead>Last updated</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(Array.isArray(roleRows) ? roleRows : []).map((role) => (
+                    <TableRow key={role.id} className="hover:bg-muted/40 transition-colors">
+                      <TableCell className="font-medium">{role.name}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {role.description}
+                      </TableCell>
+                      <TableCell>{role.users}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {role.updated}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           </WorkspacePanel>
-        </div>
-      }
-    >
-      <div className="space-y-6">
-        <WorkspacePanel
-          title="Roles & permissions"
-          description="Defined access roles with scoped capabilities and assigned users."
-        >
-          <div className="overflow-hidden rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[30%]">Role</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Users</TableHead>
-                  <TableHead>Last updated</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(Array.isArray(roleRows) ? roleRows : []).map((role) => (
-                  <TableRow key={role.id} className="hover:bg-muted/40">
-                    <TableCell className="font-medium">{role.name}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {role.description}
-                    </TableCell>
-                    <TableCell>{role.users}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {role.updated}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </WorkspacePanel>
 
-        <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
           <WorkspacePanel
             title="Recent audit log"
             description="Real-time untamperable activity stream."
@@ -248,7 +205,7 @@ export default function CoreSecurity() {
             <div className="space-y-4">
               {loading && <p className="text-sm text-muted-foreground">Fetching records...</p>}
               {(Array.isArray(logs) ? logs : []).map((log) => (
-                <div key={log.id} className="rounded-lg border p-4">
+                <div key={log.id} className="rounded-xl border p-4 hover:bg-muted/30 transition-colors">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div className="flex items-center gap-2">
@@ -276,15 +233,17 @@ export default function CoreSecurity() {
               ))}
             </div>
           </WorkspacePanel>
+        </div>
 
+        <div className="space-y-6">
           <WorkspacePanel
             title="Integrity & Risk"
             description="Compliance controls and chain verification."
           >
             <div className="space-y-4">
-              <div className={`rounded-lg border p-4 transition-colors ${
+              <div className={`rounded-2xl border p-4 transition-all duration-500 ${
                 integrityStatus === 'secure' ? 'bg-emerald-50/50 border-emerald-200' : 
-                integrityStatus === 'tampered' ? 'bg-rose-50 border-rose-200 animate-pulse' : ''
+                integrityStatus === 'tampered' ? 'bg-rose-50 border-rose-200 animate-pulse' : 'bg-muted/30'
               }`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -293,8 +252,8 @@ export default function CoreSecurity() {
                     {integrityStatus === 'secure' && <ShieldCheck className="h-5 w-5 text-emerald-500" />}
                     {integrityStatus === 'tampered' && <AlertTriangle className="h-5 w-5 text-rose-500" />}
                     <div>
-                      <p className="text-sm font-medium">Audit Integrity</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm font-black uppercase tracking-tighter">Audit Integrity</p>
+                      <p className="text-[10px] text-muted-foreground font-medium">
                         {integrityStatus === 'idle' ? 'Chain check pending scan' : 
                          integrityStatus === 'scanning' ? 'Verifying record hashes...' :
                          integrityStatus === 'secure' ? `Secure: ${checkResult?.checkedRecords} logs verified` :
@@ -303,35 +262,57 @@ export default function CoreSecurity() {
                     </div>
                   </div>
                   {integrityStatus === 'tampered' && (
-                    <Button size="sm" variant="destructive" onClick={handleRepairChain}>
-                      Repair Chain
+                    <Button size="sm" variant="destructive" onClick={handleRepairChain} className="rounded-xl font-black text-[9px] uppercase tracking-widest">
+                      Repair
                     </Button>
                   )}
                 </div>
               </div>
 
-              <div className="rounded-lg border p-4">
+              <div className="rounded-2xl border p-4 bg-muted/30">
                 <div className="flex items-center gap-3">
                   <ShieldCheck className="h-5 w-5 text-emerald-500" />
                   <div>
-                    <p className="text-sm font-medium">MFA coverage</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm font-black uppercase tracking-tighter">MFA coverage</p>
+                    <p className="text-[10px] text-muted-foreground font-medium">
                       96% of privileged users enrolled
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="rounded-lg border p-4">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                  <div>
-                    <p className="text-sm font-medium">Access reviews</p>
-                    <p className="text-xs text-muted-foreground">
-                      Next certification due in 12 days
-                    </p>
+            </div>
+          </WorkspacePanel>
+
+          <WorkspacePanel
+            title="System Telemetry"
+            description="Infrastructure health and latency."
+          >
+            <div className="space-y-4">
+              {health.length === 0 && <p className="text-xs text-muted-foreground">No active infrastructure alerts.</p>}
+              {(Array.isArray(health) ? health : []).map((alert) => (
+                <div
+                  key={alert.id}
+                  className="rounded-2xl border p-4 hover:bg-muted/30 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-black uppercase tracking-tighter">
+                        {alert.component}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground font-medium">
+                        Latency: {alert.latencyMs}ms
+                      </p>
+                    </div>
+                    <Badge variant={alert.status === 'HEALTHY' ? 'outline' : 'destructive'} className="rounded-full px-2 py-0.5 text-[8px] font-black uppercase">
+                      {alert.status}
+                    </Badge>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    {new Date(alert.checkedAt).toLocaleTimeString()}
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
           </WorkspacePanel>
         </div>
@@ -345,6 +326,41 @@ export default function CoreSecurity() {
         description="Describe the role adjustment needed for your tenant. Requests are logged for auditing purposes."
         defaultTitle="Role Policy Update"
       />
-    </PageShell>
+    </div>
+  );
+
+  return (
+    <DepartmentWorkspaceLayout
+      title="Security & Access"
+      subtitle="Enforce policies, manage roles, and monitor audit activity."
+      headerIcon={ShieldCheck}
+      accentColor="slate"
+      engineName="SECURITY_ENGINE"
+      pulseLabel="Shield Pulse"
+      pulseIcon={Activity}
+      sections={SECTIONS}
+      routeLabels={{}}
+      basePath="/core/security"
+      headerActions={
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleVerifyIntegrity} 
+            disabled={integrityStatus === 'scanning'}
+            className="rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest border-slate-200"
+          >
+            {integrityStatus === 'scanning' ? "Scanning..." : "Verify Integrity"}
+          </Button>
+          <Button 
+            onClick={() => setIsModalOpen(true)}
+            className="rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest bg-slate-900 hover:bg-black text-white"
+          >
+            <UserCog className="mr-2 h-3.5 w-3.5" /> Manage Roles
+          </Button>
+        </div>
+      }
+    >
+      {mainContent}
+    </DepartmentWorkspaceLayout>
   );
 }

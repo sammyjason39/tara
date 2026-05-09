@@ -1,14 +1,24 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PageShell } from "@/core/ui/PageShell";
-import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
-import { AlertTriangle, Database, KeyRound, ShieldCheck, Loader2 } from "lucide-react";
+import { AlertTriangle, Database, KeyRound, ShieldCheck, Loader2, Plus, Shield, Activity, Terminal } from "lucide-react";
 import { useSession } from "@/core/security/session";
 import { adminService } from "@/core/services/adminService";
 import { useToast } from "@/hooks/use-toast";
 import { RequestModal } from "@/core/ui/RequestModal";
+import DepartmentWorkspaceLayout from "@/components/layouts/DepartmentWorkspaceLayout";
+
+const SECTIONS = [
+  {
+    title: "GOVERNANCE",
+    items: [
+      { id: 'admin', icon: Shield, label: "Administration", to: "/core/admin" },
+      { id: 'logs', icon: Terminal, label: "System Logs", to: "/core/logs" },
+      { id: 'audit', icon: ShieldCheck, label: "Audit Vault", to: "/core/audit" },
+    ]
+  }
+];
 
 export default function CoreAdmin() {
   const session = useSession();
@@ -36,8 +46,11 @@ export default function CoreAdmin() {
 
   if (loading || !data) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="flex h-screen items-center justify-center bg-slate-950">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-12 w-12 animate-spin text-indigo-500" />
+          <p className="text-xs font-black uppercase tracking-widest text-slate-500 italic">Accessing Governance Mainframe...</p>
+        </div>
       </div>
     );
   }
@@ -116,129 +129,120 @@ export default function CoreAdmin() {
     }
   };
 
-  return (
-    <PageShell
-      header={
-        <PageHeader
-          title="Platform Administration"
-          subtitle="Super-admin controls for tenants, security, and platform governance."
-          primaryAction={<Button onClick={handleInvite}>Invite admin</Button>}
-          secondaryActions={
-            <Button variant="outline" onClick={handleExport}>Generate audit report</Button>
-          }
-        />
-      }
-    >
-      <div className="space-y-6">
-        {/* --- MODULE CONTRIBUTIONS --- */}
-        {moduleContributions?.retail && (
-          <WorkspacePanel
-            title="Module Contributions: Retail Presence"
-            description="High-level visibility into the active Retail branch network."
-          >
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-lg border p-3 border-emerald-500/20 bg-emerald-500/5">
-                <p className="text-xs text-muted-foreground">
-                  Active Physical Stores
-                </p>
-                <p className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400">
-                    {moduleContributions?.retail?.activeStores || 0}
-                </p>
-              </div>
-            </div>
-          </WorkspacePanel>
-        )}
-
-        <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
-          <WorkspacePanel
-            title="System-level controls"
-            description="Platform-wide security and governance settings."
-          >
-            <div className="space-y-4">
-              <div className="flex items-center justify-between rounded-lg border p-4">
-                <div className="flex items-center gap-3">
-                  <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-                  <p className="text-sm font-medium text-foreground">
-                    Global MFA enforcement
-                  </p>
-                </div>
-                <Badge variant="outline">Enabled</Badge>
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <KeyRound className="h-4 w-4" />
-                  Configure advanced access policies
-                </div>
-                <Button size="sm" variant="outline" onClick={() => toast({ title: "Policy Configuration", description: "Opening advanced access policy editor..." })}>
-                  Open
-                </Button>
-              </div>
-            </div>
-          </WorkspacePanel>
-
-          <WorkspacePanel
-            title="Platform audit & logs"
-            description="Privileged actions and system activity."
-          >
-            <div className="space-y-4">
-              {(Array.isArray(recentActivity) ? recentActivity : []).map((log: any) => (
-                <div
-                  key={log.id || log.title}
-                  className="rounded-lg border p-4"
-                >
-                  <p className="text-sm font-medium text-foreground">
-                    {log.action || log.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {log.detail || log.detail}
-                  </p>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {log.time || (log.createdAt ? new Date(log.createdAt).toLocaleString() : "Unknown Time")}
-                  </p>
-                </div>
-              ))}
-              <Button variant="outline" size="sm" onClick={() => toast({ title: "Audit Trail", description: "Loading full system audit logs..." })}>
-                View full audit trail
-              </Button>
-            </div>
-          </WorkspacePanel>
-        </div>
-
+  const mainContent = (
+    <div className="space-y-6 p-6">
+      {/* --- MODULE CONTRIBUTIONS --- */}
+      {moduleContributions?.retail && (
         <WorkspacePanel
-          title="Dangerous actions"
-          description="Restricted actions for emergency use only."
+          title="Module Contributions: Retail Presence"
+          description="High-level visibility into the active Retail branch network."
         >
-          <div className="space-y-3">
-            {[
-              "Disable all tenant access",
-              "Rotate global encryption keys",
-              "Purge audit logs",
-            ].map((action) => (
-              <div
-                key={action}
-                className="flex items-center justify-between rounded-lg border border-dashed p-4"
-              >
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <AlertTriangle className="h-4 w-4" />
-                  {action}
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-xl border p-5 border-emerald-500/20 bg-emerald-500/5">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">
+                Active Physical Stores
+              </p>
+              <p className="text-3xl font-black italic text-emerald-600 dark:text-emerald-400">
+                  {moduleContributions?.retail?.activeStores || 0}
+              </p>
+            </div>
+          </div>
+        </WorkspacePanel>
+      )}
+
+      <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
+        <WorkspacePanel
+          title="System-level controls"
+          description="Platform-wide security and governance settings."
+        >
+          <div className="space-y-4">
+            <div className="flex items-center justify-between rounded-2xl border p-5 bg-white dark:bg-slate-900 shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center">
+                  <ShieldCheck className="h-5 w-5 text-indigo-600" />
                 </div>
-                <Button size="sm" variant="outline" disabled>
-                  Disabled
-                </Button>
+                <p className="text-sm font-black uppercase tracking-widest leading-none">
+                  Global MFA enforcement
+                </p>
               </div>
-            ))}
-            <div className="flex items-center justify-between rounded-lg border p-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Database className="h-4 w-4" />
-                Emergency actions require elevated approval.
+              <Badge variant="outline" className="rounded-full px-4 border-emerald-200 text-emerald-500 bg-emerald-50 font-black text-[9px] tracking-widest uppercase">Enabled</Badge>
+            </div>
+            <div className="flex items-center justify-between rounded-2xl border border-dashed p-6 text-sm bg-slate-50/50 dark:bg-slate-800/20">
+              <div className="flex items-center gap-3">
+                <KeyRound className="h-5 w-5 text-slate-400" />
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Configure advanced access policies</span>
               </div>
-              <Button size="sm" variant="outline" onClick={() => setIsModalOpen(true)}>
-                Request access
+              <Button size="sm" variant="outline" className="rounded-xl h-9 px-6 font-black text-[10px] uppercase tracking-widest" onClick={() => toast({ title: "Policy Configuration", description: "Opening advanced access policy editor..." })}>
+                Open
               </Button>
             </div>
           </div>
         </WorkspacePanel>
+
+        <WorkspacePanel
+          title="Platform audit & logs"
+          description="Privileged actions and system activity."
+        >
+          <div className="space-y-4">
+            {(Array.isArray(recentActivity) ? recentActivity : []).slice(0, 5).map((log: any) => (
+              <div
+                key={log.id || log.title}
+                className="rounded-2xl border p-4 bg-white dark:bg-slate-900 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <p className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white italic">
+                    {log.action || log.title}
+                  </p>
+                  <span className="text-[9px] font-mono text-slate-400">
+                    {log.time || (log.createdAt ? new Date(log.createdAt).toLocaleTimeString() : "")}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                  {log.detail}
+                </p>
+              </div>
+            ))}
+            <Button variant="outline" className="w-full rounded-xl h-11 font-black text-[10px] uppercase tracking-widest border-slate-200" onClick={() => toast({ title: "Audit Trail", description: "Loading full system audit logs..." })}>
+              View full audit trail
+            </Button>
+          </div>
+        </WorkspacePanel>
       </div>
+
+      <WorkspacePanel
+        title="Dangerous actions"
+        description="Restricted actions for emergency use only."
+      >
+        <div className="grid gap-4 md:grid-cols-2">
+          {[
+            "Disable all tenant access",
+            "Rotate global encryption keys",
+            "Purge audit logs",
+          ].map((action) => (
+            <div
+              key={action}
+              className="flex items-center justify-between rounded-2xl border border-dashed p-5 bg-rose-50/20 dark:bg-rose-950/5"
+            >
+              <div className="flex items-center gap-3 text-xs font-bold text-slate-500 uppercase tracking-widest">
+                <AlertTriangle className="h-4 w-4 text-rose-500" />
+                {action}
+              </div>
+              <Button size="sm" variant="outline" disabled className="rounded-xl opacity-40">
+                Disabled
+              </Button>
+            </div>
+          ))}
+          <div className="flex items-center justify-between rounded-2xl border p-5 bg-white dark:bg-slate-900 shadow-sm border-indigo-100">
+            <div className="flex items-center gap-3">
+              <Database className="h-5 w-5 text-indigo-600" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">Emergency Authorization Required</span>
+            </div>
+            <Button size="sm" variant="outline" className="rounded-xl h-9 px-6 font-black text-[10px] uppercase tracking-widest border-indigo-200 text-indigo-600" onClick={() => setIsModalOpen(true)}>
+              Request access
+            </Button>
+          </div>
+        </div>
+      </WorkspacePanel>
 
       <RequestModal 
         isOpen={isModalOpen}
@@ -249,6 +253,40 @@ export default function CoreAdmin() {
         defaultTitle="Restricted Action Authorization"
         placeholder="Identify the active incident and the specific restricted action required..."
       />
-    </PageShell>
+    </div>
+  );
+
+  return (
+    <DepartmentWorkspaceLayout
+      title="Platform Administration"
+      subtitle="Super-admin controls for tenants, security, and platform governance."
+      headerIcon={Shield}
+      accentColor="indigo"
+      engineName="GOVERNANCE_ENGINE"
+      pulseLabel="Governance Pulse"
+      pulseIcon={Activity}
+      sections={SECTIONS}
+      routeLabels={{}}
+      basePath="/core/admin"
+      headerActions={
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            className="rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest border-white/10 text-white hover:bg-white/5"
+            onClick={handleExport}
+          >
+            Generate audit report
+          </Button>
+          <Button 
+            onClick={handleInvite}
+            className="rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-500/20"
+          >
+            <Plus className="h-3 w-3 mr-2" /> Invite admin
+          </Button>
+        </div>
+      }
+    >
+      {mainContent}
+    </DepartmentWorkspaceLayout>
   );
 }

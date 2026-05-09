@@ -37,6 +37,8 @@ interface DepartmentWorkspaceLayoutProps {
   sections: MenuSection[];
   routeLabels: Record<string, string>;
   basePath: string; // e.g., '/core/finance'
+  headerActions?: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 export default function DepartmentWorkspaceLayout({
@@ -50,6 +52,8 @@ export default function DepartmentWorkspaceLayout({
   sections,
   routeLabels,
   basePath,
+  headerActions,
+  children,
 }: DepartmentWorkspaceLayoutProps) {
   const session = useSession();
   const location = useLocation();
@@ -138,6 +142,7 @@ export default function DepartmentWorkspaceLayout({
                </div>
                
                <div className="flex items-center gap-2 md:gap-4">
+                  {headerActions}
                   <div className="hidden sm:flex items-center gap-3 bg-white dark:bg-slate-900/50 px-4 py-2.5 rounded-2xl border border-slate-100 dark:border-white/5 shadow-sm">
                      <span className={cn("h-1.5 w-1.5 rounded-full animate-pulse", bgC)} />
                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Telemetry Active</span>
@@ -210,7 +215,7 @@ export default function DepartmentWorkspaceLayout({
       >
         <div className="p-0 h-full overflow-y-auto bg-slate-50 dark:bg-slate-950">
           <ErrorBoundary>
-            <Outlet />
+            {children || <Outlet />}
           </ErrorBoundary>
         </div>
       </PageShell>

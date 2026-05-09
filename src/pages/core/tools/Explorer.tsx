@@ -18,8 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PageHeader } from "@/core/ui/PageHeader";
-import { PageShell } from "@/core/ui/PageShell";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { useSession } from "@/core/security/session";
 import { API_BASE_URL } from "@/lib/api-config";
@@ -51,10 +49,33 @@ import {
   Settings,
   MoreVertical,
   Plus,
-  History
+  History,
+  Briefcase,
+  FolderOpen,
+  Activity,
+  FileSearch,
+  Zap
 } from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
+import DepartmentWorkspaceLayout from "@/components/layouts/DepartmentWorkspaceLayout";
+
+const SECTIONS = [
+  {
+    title: "STORAGE",
+    items: [
+      { id: 'explorer', icon: FolderOpen, label: "Explorer", to: "/core/tools/explorer" },
+      { id: 'recycle', icon: Trash2, label: "Recycle Bin", to: "/core/tools/explorer/recycle" },
+    ]
+  },
+  {
+    title: "AUDIT",
+    items: [
+      { id: 'audit', icon: FileSearch, label: "Forensic Scan", to: "/core/tools/explorer/audit" },
+      { id: 'settings', icon: Settings, label: "Storage Config", to: "/core/tools/explorer/settings" },
+    ]
+  }
+];
 
 const typeLabel = {
   doc: "Doc",
@@ -422,16 +443,50 @@ export default function Explorer() {
     );
   };
 
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        className="rounded-xl border-slate-200 bg-white shadow-sm hover:bg-slate-50"
+        onClick={handleCreateFolder}
+      >
+        <Plus className="mr-2 h-4 w-4" />
+        New Folder
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        className="rounded-xl border-slate-200 bg-white shadow-sm hover:bg-slate-50"
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <Upload className="mr-2 h-4 w-4" />
+        Upload
+      </Button>
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        className="hidden" 
+        onChange={handleUpload}
+      />
+    </div>
+  );
+
   return (
-    <PageShell
-      header={
-        <PageHeader
-          title="File Explorer"
-          subtitle="Secure departmental file management with forensic audit scanning."
-        />
-      }
+    <DepartmentWorkspaceLayout
+      title="File Explorer"
+      subtitle="Secure departmental file management with forensic audit scanning."
+      headerIcon={FolderOpen}
+      accentColor="blue"
+      engineName="STORAGE_ENGINE"
+      pulseLabel="System Storage"
+      pulseIcon={Zap}
+      sections={SECTIONS}
+      routeLabels={{}}
+      basePath="/core/tools/explorer"
+      headerActions={headerActions}
     >
-      <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[240px_1fr] p-6">
         <WorkspacePanel title="Folders" description="Department hierarchy.">
           <div className="space-y-3">
             <div className="flex gap-2">
@@ -1305,6 +1360,6 @@ export default function Explorer() {
           )}
         </DialogContent>
       </Dialog>
-    </PageShell>
+    </DepartmentWorkspaceLayout>
   );
 }

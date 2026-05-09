@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback } from "react";
-import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { useSession } from "@/core/security/session";
 import { apiRequest } from "@/core/api/apiClient";
@@ -27,7 +26,18 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Search, Info, Loader2 } from "lucide-react";
+import { Search, Info, Loader2, Shield, Activity, Terminal } from "lucide-react";
+import DepartmentWorkspaceLayout from "@/components/layouts/DepartmentWorkspaceLayout";
+
+const SECTIONS = [
+  {
+    title: "DIAGNOSTICS",
+    items: [
+      { id: 'logs', icon: Terminal, label: "System Logs", to: "/core/logs" },
+      { id: 'audit', icon: Shield, label: "Audit Vault", to: "/core/audit" },
+    ]
+  }
+];
 
 export default function AuditHub() {
   const session = useSession();
@@ -99,13 +109,8 @@ export default function AuditHub() {
     }
   };
 
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Audit Logs"
-        subtitle="Immutable trail of all critical system actions and data changes."
-      />
-
+  const mainContent = (
+    <div className="space-y-6 p-6">
       <WorkspacePanel title="Activity Explorer">
         <form onSubmit={handleSearch} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6 items-end">
           <div className="space-y-2">
@@ -315,5 +320,22 @@ export default function AuditHub() {
         </SheetContent>
       </Sheet>
     </div>
+  );
+
+  return (
+    <DepartmentWorkspaceLayout
+      title="Audit Vault"
+      subtitle="Immutable trail of all critical system actions and data changes."
+      headerIcon={Shield}
+      accentColor="slate"
+      engineName="GOVERNANCE_ENGINE"
+      pulseLabel="Audit Pulse"
+      pulseIcon={Activity}
+      sections={SECTIONS}
+      routeLabels={{}}
+      basePath="/core/audit"
+    >
+      {mainContent}
+    </DepartmentWorkspaceLayout>
   );
 }

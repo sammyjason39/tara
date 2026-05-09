@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { PageHeader } from "@/core/ui/PageHeader";
+
 import {
   Tag,
   Zap,
@@ -123,10 +123,10 @@ const PricingPromoDesk = () => {
   return (
     <div className="flex flex-col h-[calc(100vh-100px)] overflow-hidden bg-secondary/5">
       <div className="px-6 py-3 border-b bg-background/40 backdrop-blur-md shrink-0 flex items-center justify-between gap-6">
-        <PageHeader
-          title="Revenue Control Desk"
-          subtitle={`Governance Layer: SECURED • Margin Integrity: ${stats.marginImpact > -3 ? "OPTIMAL" : "CRITICAL"}`}
-        />
+        <div className="flex flex-col">
+          <h1 className="text-2xl font-black italic tracking-tighter text-foreground uppercase">Revenue Control Desk</h1>
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Governance Layer: SECURED • Margin Integrity: {stats.marginImpact > -3 ? "OPTIMAL" : "CRITICAL"}</p>
+        </div>
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
@@ -146,7 +146,7 @@ const PricingPromoDesk = () => {
       </div>
 
       <div className="flex-1 overflow-y-auto p-8 lg:p-6">
-        <div className="max-w-[1400px] mx-auto space-y-10">
+        <div className="max-w-7xl mx-auto space-y-10">
           {/* Top KPI row */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card className="rounded-2xl p-6 bg-white border-none shadow-[0_10px_40px_rgba(0,0,0,0.04)] border-l-[6px] border-l-blue-600">

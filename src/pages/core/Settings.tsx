@@ -12,12 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { PageShell } from "@/core/ui/PageShell";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
-import { PageHeader } from "@/core/ui/PageHeader";
-import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { orgSettingsService, OrgProfile, TenantPreferences } from "@/core/services/orgSettingsService";
 import { useToast } from "@/hooks/use-toast";
@@ -28,7 +24,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Table,
@@ -51,14 +46,14 @@ import {
   Users, 
   ShieldCheck, 
   RefreshCw,
-  Search,
   ChevronRight,
   Loader2,
-  Wallet
+  Wallet,
+  Settings,
+  Activity
 } from "lucide-react";
-import { RequestModal } from "@/core/ui/RequestModal";
-import { adminService } from "@/core/services/adminService";
 import { cn } from "@/lib/utils";
+import DepartmentWorkspaceLayout from "@/components/layouts/DepartmentWorkspaceLayout";
 
 const SETTINGS_TABS = [
   { value: "general", label: "Profile", icon: Building2 },
@@ -67,6 +62,19 @@ const SETTINGS_TABS = [
   { value: "roles", label: "Roles", icon: Users },
   { value: "integrations", label: "Connect", icon: Settings2 },
 ] as const;
+
+const SECTIONS = [
+  {
+    title: "CONFIGURATION",
+    items: [
+      { id: 'general', icon: Building2, label: "Profile", to: "/core/settings/general" },
+      { id: 'child-companies', icon: Globe, label: "Hierarchy", to: "/core/settings/child-companies" },
+      { id: 'taxes', icon: ShieldCheck, label: "Compliance", to: "/core/settings/taxes" },
+      { id: 'roles', icon: Users, label: "Roles", to: "/core/settings/roles" },
+      { id: 'integrations', icon: Settings2, label: "Connect", to: "/core/settings/integrations" },
+    ]
+  }
+];
 
 type SettingsTab = (typeof SETTINGS_TABS)[number]["value"];
 const DEFAULT_TAB: SettingsTab = "general";
@@ -110,14 +118,6 @@ export default function CoreSettings() {
     address: "",
     geofence_radius: 200,
   });
-
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const clearStatus = () => {
-    setStatusMessage(null);
-    setErrorMessage(null);
-  };
 
   const init = async () => {
     setLoading(true);
@@ -192,18 +192,11 @@ export default function CoreSettings() {
     setActiveTab(DEFAULT_TAB);
   }, [tab]);
 
-  const handleTabChange = (value: string) => {
-    if (!isSettingsTab(value)) return;
-    setActiveTab(value);
-    navigate(`/core/settings/${value}`);
-  };
-
   const openChildDetail = (child: OrgProfile) => {
     setSelectedChild(child);
     setIsChildDetailOpen(true);
   };
 
-  // Integration Data
   const integrationGroups = [
     {
       title: "Payment Protocols",
@@ -243,327 +236,286 @@ export default function CoreSettings() {
     );
   }
 
-  return (
-    <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full">
-      <PageShell
-        header={
-          <PageHeader
-            title="Registry & Settings"
-            subtitle="Centralized management for organizational identity, hierarchy, and global governance."
-            primaryAction={
-              <Button
-                disabled={saving}
-                className="rounded-[1.5rem] px-8 h-12 font-black text-xs uppercase tracking-widest bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-500/20"
-                onClick={activeTab === 'general' ? handleSaveProfile : handleSavePreferences}
-              >
-                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                COMMIT CHANGES
-              </Button>
-            }
-          />
-        }
-        left={
-          <div className="p-6 space-y-8">
-            <div className="space-y-1">
-              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 italic">Core Control</div>
-              <p className="text-xs font-bold text-slate-500">Telemetry Cluster 01</p>
-            </div>
-            <TabsList className="flex flex-col items-stretch bg-transparent p-0 gap-2">
-              {(Array.isArray(SETTINGS_TABS) ? SETTINGS_TABS : []).map((tab) => (
-                <TabsTrigger
-                  key={tab.value}
-                  value={tab.value}
-                  className="justify-start rounded-2xl px-5 py-4 text-sm font-bold transition-all data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-indigo-600 border-none group"
-                >
-                  <tab.icon className="mr-3 h-5 w-5 opacity-60 group-data-[state=active]:opacity-100 transition-opacity" />
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </div>
-        }
-      >
-        <div className="space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          
-          <TabsContent value="general" className="space-y-8 m-0">
-            <div className="grid gap-8 lg:grid-cols-2">
-              <WorkspacePanel
-                title="Organizational Identity"
-                description="Core parameters used for document generation and global identification."
-              >
-                <div className="space-y-6 pt-4">
-                  <div className="space-y-3">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Business Name</Label>
-                    <Input 
-                      className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
-                      value={profile?.name || ''} 
-                      onChange={(e) => setProfile(p => p ? { ...p, name: e.target.value } : null)}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Industry Sector</Label>
-                      <Select value={profile?.industry || 'retail'}>
-                        <SelectTrigger className="h-12 rounded-xl border-slate-100 bg-slate-50 font-bold">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-none shadow-2xl">
-                          <SelectItem value="retail">Retail Operations</SelectItem>
-                          <SelectItem value="fintech">Financial Services</SelectItem>
-                          <SelectItem value="logistics">Global Logistics</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-3">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Base Currency</Label>
-                      <Select 
-                        value={profile?.currency?.toLowerCase() || 'usd'}
-                        onValueChange={(val) => setProfile(p => p ? { ...p, currency: val?.toUpperCase() } : null)}
-                      >
-                        <SelectTrigger className="h-12 rounded-xl border-slate-100 bg-slate-50 font-bold">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl border-none shadow-2xl">
-                          <SelectItem value="usd">USD ($)</SelectItem>
-                          <SelectItem value="eur">EUR (€)</SelectItem>
-                          <SelectItem value="idr">IDR (Rp)</SelectItem>
-                          <SelectItem value="sgd">SGD (S$)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-              </WorkspacePanel>
-
-              <WorkspacePanel
-                title="Operational Metadata"
-                description="Encrypted contact and registration data."
-              >
-                <div className="space-y-6 pt-4">
-                   <div className="p-6 rounded-[2rem] bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30">
-                      <div className="flex items-center gap-4 mb-4">
-                         <div className="h-12 w-12 rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center shadow-lg">
-                            <Building2 className="h-6 w-6 text-indigo-600" />
-                         </div>
-                         <div>
-                            <p className="text-xs font-black uppercase tracking-widest text-slate-400">Legal Entity</p>
-                            <p className="font-black italic text-slate-900 dark:text-white">#{profile?.code || 'ROOT_TENANT'}</p>
-                         </div>
-                      </div>
-                      <p className="text-sm text-indigo-600/80 font-medium italic">
-                        "Identity verified. All subsidiary nodes inherit this primary cryptographic key."
-                      </p>
-                   </div>
-                   <div className="space-y-3 opacity-60 grayscale cursor-not-allowed">
-                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Registered Address (Immutable)</Label>
-                     <Textarea 
-                        className="rounded-2xl border-slate-100 bg-slate-50 font-medium text-sm min-h-[100px]"
-                        value="88 Enterprise Plaza, Cyber Sector 7, Neo-Jakarta, 12110"
-                        readOnly
-                      />
-                   </div>
-                </div>
-              </WorkspacePanel>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="child-companies" className="space-y-8 m-0">
+  const mainContent = (
+    <div className="p-6">
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        {activeTab === "general" && (
+          <div className="grid gap-8 lg:grid-cols-2">
             <WorkspacePanel
-              title="Global Hierarchy"
-              description="Sub-nodes and subsidiary clusters registered under this master organization."
-              action={
-                <Button onClick={() => setIsAddingChild(true)} className="rounded-xl h-10 gap-2">
-                  <Plus className="h-4 w-4" /> REGISTER NODE
-                </Button>
-              }
+              title="Organizational Identity"
+              description="Core parameters used for document generation and global identification."
             >
-              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 pt-4">
-                {childCompanies.length === 0 ? (
-                  <div className="col-span-full py-20 flex flex-col items-center justify-center rounded-[3rem] border border-dashed border-slate-200 bg-slate-50/30">
-                     <Globe className="h-12 w-12 text-slate-200 mb-4" />
-                     <p className="text-xs font-black uppercase tracking-widest text-slate-400">No Satellite Nodes Detected</p>
+              <div className="space-y-6 pt-4">
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Business Name</Label>
+                  <Input 
+                    className="h-12 rounded-xl border-slate-100 bg-slate-50 focus:bg-white transition-all font-bold"
+                    value={profile?.name || ''} 
+                    onChange={(e) => setProfile(p => p ? { ...p, name: e.target.value } : null)}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Industry Sector</Label>
+                    <Select value={profile?.industry || 'retail'}>
+                      <SelectTrigger className="h-12 rounded-xl border-slate-100 bg-slate-50 font-bold">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-none shadow-2xl">
+                        <SelectItem value="retail">Retail Operations</SelectItem>
+                        <SelectItem value="fintech">Financial Services</SelectItem>
+                        <SelectItem value="logistics">Global Logistics</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                ) : (
-                  (Array.isArray(childCompanies) ? childCompanies : []).map((child: any) => (
-                    <Card 
-                      key={child.id} 
-                      className="rounded-[2.5rem] border-none shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer group bg-white dark:bg-slate-900"
-                      onClick={() => openChildDetail(child)}
+                  <div className="space-y-3">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Base Currency</Label>
+                    <Select 
+                      value={profile?.currency?.toLowerCase() || 'usd'}
+                      onValueChange={(val) => setProfile(p => p ? { ...p, currency: val?.toUpperCase() } : null)}
                     >
-                      <CardContent className="p-8 space-y-6">
-                        <div className="flex justify-between items-start">
-                           <div className="h-14 w-14 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center shadow-inner group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500">
-                              <Building2 className="h-7 w-7" />
-                           </div>
-                           <Badge variant={child.status === 'active' ? 'outline' : 'secondary'} className={cn(
-                             "rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest",
-                             child.status === 'active' ? "border-emerald-200 text-emerald-500 bg-emerald-50/50" : ""
-                           )}>
-                             {child.status}
-                           </Badge>
-                        </div>
-                        <div className="space-y-1">
-                           <h4 className="text-xl font-black italic tracking-tighter uppercase">{child.name}</h4>
-                           <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                             <Globe className="h-3 w-3" /> {child.country} • {child.industry}
-                           </div>
-                        </div>
-                        <Separator className="bg-slate-50 dark:bg-slate-800" />
-                        <div className="flex items-center justify-between">
-                           <p className="text-[10px] font-mono text-indigo-600 font-bold">{child.code}</p>
-                           <ChevronRight className="h-4 w-4 text-slate-300 group-hover:translate-x-1 transition-transform" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
+                      <SelectTrigger className="h-12 rounded-xl border-slate-100 bg-slate-50 font-bold">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl border-none shadow-2xl">
+                        <SelectItem value="usd">USD ($)</SelectItem>
+                        <SelectItem value="eur">EUR (€)</SelectItem>
+                        <SelectItem value="idr">IDR (Rp)</SelectItem>
+                        <SelectItem value="sgd">SGD (S$)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
             </WorkspacePanel>
-          </TabsContent>
 
-          <TabsContent value="integrations" className="space-y-10 m-0">
-             <div className="grid gap-10">
-                {(Array.isArray(integrationGroups) ? integrationGroups : []).map((group, i) => (
-                  <WorkspacePanel
-                    key={i}
-                    title={group.title}
-                    description={group.description}
-                  >
-                    <div className="grid gap-6 md:grid-cols-2 pt-4">
-                       {(Array.isArray(group.items) ? group.items : []).map((item) => (
-                         <div key={item.id} className="p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-2xl transition-all duration-500 group flex flex-col justify-between h-full">
-                            <div className="space-y-6">
-                              <div className="flex justify-between items-start">
-                                <div className="h-14 w-14 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-500 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-inner">
-                                  <item.icon className="h-7 w-7" />
-                                </div>
-                                <Badge variant="outline" className={cn(
-                                  "rounded-full px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em]",
-                                  item.status === 'Connected' ? "bg-emerald-50 text-emerald-500 border-emerald-100" :
-                                  item.status === 'Error' ? "bg-rose-50 text-rose-500 border-rose-100 animate-pulse" :
-                                  "bg-slate-50 text-slate-400 border-slate-100"
-                                )}>
-                                  {item.status}
-                                </Badge>
-                              </div>
-                              <div className="space-y-2">
-                                <h4 className="text-xl font-black uppercase tracking-tighter italic">{item.name}</h4>
-                                <p className="text-xs font-medium text-slate-500 leading-relaxed">{item.detail}</p>
-                              </div>
-                            </div>
-                            <div className="pt-8 flex items-center gap-3">
-                               <Button 
-                                 variant="outline" 
-                                 className="flex-1 rounded-xl h-11 font-black text-[10px] uppercase tracking-widest"
-                                 onClick={() => toast({ title: "Protocol Logs", description: `Fetching live telemetry for ${item.name}...` })}
-                               >
-                                  PROTOCOL LOGS
-                                </Button>
-                               <Button 
-                                 className="flex-1 rounded-xl h-11 font-black text-[10px] uppercase tracking-widest bg-indigo-600 hover:bg-indigo-700 text-white border-none"
-                                 onClick={() => toast({ title: "Handshake Initiated", description: `Establishing secure link with ${item.name} gateway...` })}
-                               >
-                                  {item.status === 'Connected' ? 'CONFIGURE' : 'ESTABLISH LINK'}
-                                </Button>
-                            </div>
-                         </div>
-                       ))}
+            <WorkspacePanel
+              title="Operational Metadata"
+              description="Encrypted contact and registration data."
+            >
+              <div className="space-y-6 pt-4">
+                 <div className="p-6 rounded-[2rem] bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30">
+                    <div className="flex items-center gap-4 mb-4">
+                       <div className="h-12 w-12 rounded-2xl bg-white dark:bg-slate-900 flex items-center justify-center shadow-lg">
+                          <Building2 className="h-6 w-6 text-indigo-600" />
+                       </div>
+                       <div>
+                          <p className="text-xs font-black uppercase tracking-widest text-slate-400">Legal Entity</p>
+                          <p className="font-black italic text-slate-900 dark:text-white">#{profile?.code || 'ROOT_TENANT'}</p>
+                       </div>
                     </div>
-                  </WorkspacePanel>
-                ))}
-             </div>
-          </TabsContent>
-          
-          <TabsContent value="roles" className="space-y-8 m-0">
-             <WorkspacePanel
-                title="Organizational Roles"
-                description="Define permission clusters and access levels across the organization."
-                action={
-                  <Button variant="outline" className="rounded-xl h-10 gap-2 font-black text-[10px] uppercase tracking-widest border-slate-200">
-                    <Plus className="h-3.5 w-3.5" /> ADD ROLE
-                  </Button>
-                }
-              >
-                <div className="pt-4 overflow-hidden">
-                   <div className="rounded-[2rem] border border-slate-100 overflow-hidden">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-slate-50/50 border-none hover:bg-slate-50/50">
-                            <TableHead className="py-6 px-8 text-[10px] font-black uppercase tracking-widest text-slate-400">Identity</TableHead>
-                            <TableHead className="py-6 px-8 text-[10px] font-black uppercase tracking-widest text-slate-400">Description</TableHead>
-                            <TableHead className="py-6 px-8 text-[10px] font-black uppercase tracking-widest text-slate-400">Users</TableHead>
-                            <TableHead className="py-6 px-8 text-[10px] font-black uppercase tracking-widest text-slate-400">Last Sync</TableHead>
-                            <TableHead className="py-6 px-8 text-right"></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {[
-                            { id: 1, name: "Super Administrator", desc: "Unrestricted platform-wide access and governance.", users: 3, updated: "2h ago", status: "Active" },
-                            { id: 2, name: "Branch Manager", desc: "Full operational control over specific location clusters.", users: 12, updated: "1d ago", status: "Active" },
-                            { id: 3, name: "Compliance Officer", desc: "Audit trail decryption and fiscal reporting access.", users: 5, updated: "4d ago", status: "Active" },
-                            { id: 4, name: "Standard Operator", desc: "Restricted access to daily transactional workflows.", users: 154, updated: "1h ago", status: "Active" },
-                          ].map((role) => (
-                            <TableRow key={role.id} className="group border-slate-50 hover:bg-slate-50/30 transition-colors">
-                              <TableCell className="py-6 px-8">
-                                <div className="flex items-center gap-4">
-                                   <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all">
-                                      <Users className="h-5 w-5" />
-                                   </div>
-                                   <span className="font-black text-xs uppercase tracking-tighter italic">{role.name}</span>
-                                </div>
-                              </TableCell>
-                              <TableCell className="py-6 px-8">
-                                <span className="text-[11px] font-medium text-slate-500 leading-relaxed max-w-xs block">{role.desc}</span>
-                              </TableCell>
-                              <TableCell className="py-6 px-8">
-                                <Badge variant="secondary" className="rounded-full px-3 py-0.5 text-[10px] font-black">{role.users}</Badge>
-                              </TableCell>
-                              <TableCell className="py-6 px-8 text-[10px] font-bold text-slate-400 uppercase">{role.updated}</TableCell>
-                              <TableCell className="py-6 px-8 text-right">
-                                 <Button variant="ghost" size="sm" className="rounded-lg h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <ChevronRight className="h-4 w-4" />
-                                 </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                   </div>
-                </div>
-             </WorkspacePanel>
-          </TabsContent>
+                    <p className="text-sm text-indigo-600/80 font-medium italic">
+                      "Identity verified. All subsidiary nodes inherit this primary cryptographic key."
+                    </p>
+                 </div>
+                 <div className="space-y-3 opacity-60 grayscale cursor-not-allowed">
+                   <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Registered Address (Immutable)</Label>
+                   <Textarea 
+                      className="rounded-2xl border-slate-100 bg-slate-50 font-medium text-sm min-h-[100px]"
+                      value="88 Enterprise Plaza, Cyber Sector 7, Neo-Jakarta, 12110"
+                      readOnly
+                    />
+                 </div>
+              </div>
+            </WorkspacePanel>
+          </div>
+        )}
 
-          <TabsContent value="taxes" className="space-y-8 m-0">
-             <WorkspacePanel
-                title="Global Compliance"
-                description="Fiscal protocols, tax logic, and financial reporting parameters."
-              >
-                <div className="grid gap-8 md:grid-cols-2 pt-4">
-                   <div className="space-y-4 p-8 rounded-[2.5rem] border border-slate-100 bg-slate-50/50">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Default Consumption Tax (%)</Label>
-                      <Input type="number" defaultValue={10} className="h-14 rounded-2xl font-black text-2xl border-none shadow-inner" />
-                      <p className="text-[10px] font-bold text-slate-400 italic">"Global fallback rate for non-geocoded transactions."</p>
-                   </div>
-                   <div className="space-y-4 p-8 rounded-[2.5rem] border border-slate-100 bg-slate-50/50">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Rounding Protocol</Label>
-                      <Select defaultValue="nearest">
-                         <SelectTrigger className="h-14 rounded-2xl font-black text-lg border-none shadow-inner">
-                            <SelectValue />
-                         </SelectTrigger>
-                         <SelectContent className="rounded-2xl border-none shadow-2xl">
-                            <SelectItem value="nearest">Nearest Cent (Standard)</SelectItem>
-                            <SelectItem value="floor">Floor (Strict Reconciliation)</SelectItem>
-                            <SelectItem value="ceil">Ceiling (Tax Aggressive)</SelectItem>
-                         </SelectContent>
-                      </Select>
-                   </div>
+        {activeTab === "child-companies" && (
+          <WorkspacePanel
+            title="Global Hierarchy"
+            description="Sub-nodes and subsidiary clusters registered under this master organization."
+            action={
+              <Button onClick={() => setIsAddingChild(true)} className="rounded-xl h-10 gap-2">
+                <Plus className="h-4 w-4" /> REGISTER NODE
+              </Button>
+            }
+          >
+            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 pt-4">
+              {childCompanies.length === 0 ? (
+                <div className="col-span-full py-20 flex flex-col items-center justify-center rounded-[3rem] border border-dashed border-slate-200 bg-slate-50/30">
+                   <Globe className="h-12 w-12 text-slate-200 mb-4" />
+                   <p className="text-xs font-black uppercase tracking-widest text-slate-400">No Satellite Nodes Detected</p>
                 </div>
-             </WorkspacePanel>
-          </TabsContent>
-        </div>
-      </PageShell>
+              ) : (
+                (Array.isArray(childCompanies) ? childCompanies : []).map((child: any) => (
+                  <Card 
+                    key={child.id} 
+                    className="rounded-[2.5rem] border-none shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer group bg-white dark:bg-slate-900"
+                    onClick={() => openChildDetail(child)}
+                  >
+                    <CardContent className="p-8 space-y-6">
+                      <div className="flex justify-between items-start">
+                         <div className="h-14 w-14 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center shadow-inner group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500">
+                            <Building2 className="h-7 w-7" />
+                         </div>
+                         <Badge variant={child.status === 'active' ? 'outline' : 'secondary'} className={cn(
+                           "rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest",
+                           child.status === 'active' ? "border-emerald-200 text-emerald-500 bg-emerald-50/50" : ""
+                         )}>
+                           {child.status}
+                         </Badge>
+                      </div>
+                      <div className="space-y-1">
+                         <h4 className="text-xl font-black italic tracking-tighter uppercase">{child.name}</h4>
+                         <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                           <Globe className="h-3 w-3" /> {child.country} • {child.industry}
+                         </div>
+                      </div>
+                      <Separator className="bg-slate-50 dark:bg-slate-800" />
+                      <div className="flex items-center justify-between">
+                         <p className="text-[10px] font-mono text-indigo-600 font-bold">{child.code}</p>
+                         <ChevronRight className="h-4 w-4 text-slate-300 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </WorkspacePanel>
+        )}
 
-      {/* Satellite Node Registration Modal */}
+        {activeTab === "integrations" && (
+          <div className="grid gap-10">
+            {(Array.isArray(integrationGroups) ? integrationGroups : []).map((group, i) => (
+              <WorkspacePanel
+                key={i}
+                title={group.title}
+                description={group.description}
+              >
+                <div className="grid gap-6 md:grid-cols-2 pt-4">
+                   {(Array.isArray(group.items) ? group.items : []).map((item) => (
+                     <div key={item.id} className="p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-2xl transition-all duration-500 group flex flex-col justify-between h-full">
+                        <div className="space-y-6">
+                          <div className="flex justify-between items-start">
+                            <div className="h-14 w-14 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-500 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-inner">
+                              <item.icon className="h-7 w-7" />
+                            </div>
+                            <Badge variant="outline" className={cn(
+                              "rounded-full px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em]",
+                              item.status === 'Connected' ? "bg-emerald-50 text-emerald-500 border-emerald-100" :
+                              item.status === 'Error' ? "bg-rose-50 text-rose-500 border-rose-100 animate-pulse" :
+                              "bg-slate-50 text-slate-400 border-slate-100"
+                            )}>
+                              {item.status}
+                            </Badge>
+                          </div>
+                          <div className="space-y-2">
+                            <h4 className="text-xl font-black uppercase tracking-tighter italic">{item.name}</h4>
+                            <p className="text-xs font-medium text-slate-500 leading-relaxed">{item.detail}</p>
+                          </div>
+                        </div>
+                        <div className="pt-8 flex items-center gap-3">
+                           <Button 
+                             variant="outline" 
+                             className="flex-1 rounded-xl h-11 font-black text-[10px] uppercase tracking-widest"
+                             onClick={() => toast({ title: "Protocol Logs", description: `Fetching live telemetry for ${item.name}...` })}
+                           >
+                              PROTOCOL LOGS
+                            </Button>
+                           <Button 
+                             className="flex-1 rounded-xl h-11 font-black text-[10px] uppercase tracking-widest bg-indigo-600 hover:bg-indigo-700 text-white border-none"
+                             onClick={() => toast({ title: "Handshake Initiated", description: `Establishing secure link with ${item.name} gateway...` })}
+                           >
+                              {item.status === 'Connected' ? 'CONFIGURE' : 'ESTABLISH LINK'}
+                            </Button>
+                        </div>
+                     </div>
+                   ))}
+                </div>
+              </WorkspacePanel>
+            ))}
+          </div>
+        )}
+
+        {activeTab === "roles" && (
+          <WorkspacePanel
+            title="Organizational Roles"
+            description="Define permission clusters and access levels across the organization."
+            action={
+              <Button variant="outline" className="rounded-xl h-10 gap-2 font-black text-[10px] uppercase tracking-widest border-slate-200">
+                <Plus className="h-3.5 w-3.5" /> ADD ROLE
+              </Button>
+            }
+          >
+            <div className="pt-4 overflow-hidden">
+               <div className="rounded-[2rem] border border-slate-100 overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-slate-50/50 border-none hover:bg-slate-50/50">
+                        <TableHead className="py-6 px-8 text-[10px] font-black uppercase tracking-widest text-slate-400">Identity</TableHead>
+                        <TableHead className="py-6 px-8 text-[10px] font-black uppercase tracking-widest text-slate-400">Description</TableHead>
+                        <TableHead className="py-6 px-8 text-[10px] font-black uppercase tracking-widest text-slate-400">Users</TableHead>
+                        <TableHead className="py-6 px-8 text-[10px] font-black uppercase tracking-widest text-slate-400">Last Sync</TableHead>
+                        <TableHead className="py-6 px-8 text-right"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {[
+                        { id: 1, name: "Super Administrator", desc: "Unrestricted platform-wide access and governance.", users: 3, updated: "2h ago", status: "Active" },
+                        { id: 2, name: "Branch Manager", desc: "Full operational control over specific location clusters.", users: 12, updated: "1d ago", status: "Active" },
+                        { id: 3, name: "Compliance Officer", desc: "Audit trail decryption and fiscal reporting access.", users: 5, updated: "4d ago", status: "Active" },
+                        { id: 4, name: "Standard Operator", desc: "Restricted access to daily transactional workflows.", users: 154, updated: "1h ago", status: "Active" },
+                      ].map((role) => (
+                        <TableRow key={role.id} className="group border-slate-50 hover:bg-slate-50/30 transition-colors">
+                          <TableCell className="py-6 px-8">
+                            <div className="flex items-center gap-4">
+                               <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-all">
+                                  <Users className="h-5 w-5" />
+                               </div>
+                               <span className="font-black text-xs uppercase tracking-tighter italic">{role.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-6 px-8">
+                            <span className="text-[11px] font-medium text-slate-500 leading-relaxed max-w-xs block">{role.desc}</span>
+                          </TableCell>
+                          <TableCell className="py-6 px-8">
+                            <Badge variant="secondary" className="rounded-full px-3 py-0.5 text-[10px] font-black">{role.users}</Badge>
+                          </TableCell>
+                          <TableCell className="py-6 px-8 text-[10px] font-bold text-slate-400 uppercase">{role.updated}</TableCell>
+                          <TableCell className="py-6 px-8 text-right">
+                             <Button variant="ghost" size="sm" className="rounded-lg h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <ChevronRight className="h-4 w-4" />
+                             </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+               </div>
+            </div>
+          </WorkspacePanel>
+        )}
+
+        {activeTab === "taxes" && (
+          <WorkspacePanel
+            title="Global Compliance"
+            description="Fiscal protocols, tax logic, and financial reporting parameters."
+          >
+            <div className="grid gap-8 md:grid-cols-2 pt-4">
+               <div className="space-y-4 p-8 rounded-[2.5rem] border border-slate-100 bg-slate-50/50">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Default Consumption Tax (%)</Label>
+                  <Input type="number" defaultValue={10} className="h-14 rounded-2xl font-black text-2xl border-none shadow-inner" />
+                  <p className="text-[10px] font-bold text-slate-400 italic">"Global fallback rate for non-geocoded transactions."</p>
+               </div>
+               <div className="space-y-4 p-8 rounded-[2.5rem] border border-slate-100 bg-slate-50/50">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Rounding Protocol</Label>
+                  <Select defaultValue="nearest">
+                     <SelectTrigger className="h-14 rounded-2xl font-black text-lg border-none shadow-inner">
+                        <SelectValue />
+                     </SelectTrigger>
+                     <SelectContent className="rounded-2xl border-none shadow-2xl">
+                        <SelectItem value="nearest">Nearest Cent (Standard)</SelectItem>
+                        <SelectItem value="floor">Floor (Strict Reconciliation)</SelectItem>
+                        <SelectItem value="ceil">Ceiling (Tax Aggressive)</SelectItem>
+                     </SelectContent>
+                  </Select>
+               </div>
+            </div>
+          </WorkspacePanel>
+        )}
+      </div>
+
       <Dialog open={isAddingChild} onOpenChange={setIsAddingChild}>
         <DialogContent className="sm:max-w-2xl rounded-[3rem] border-none shadow-2xl p-10 max-h-[90vh] overflow-y-auto">
           <DialogHeader className="space-y-4">
@@ -582,7 +534,6 @@ export default function CoreSettings() {
                 onChange={(e) => setNewChild({ ...newChild, name: e.target.value })}
               />
             </div>
-
             <div className="space-y-3">
               <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">HQ Physical Address</Label>
               <Textarea
@@ -592,15 +543,12 @@ export default function CoreSettings() {
                 onChange={(e) => setNewChild({ ...newChild, address: e.target.value })}
               />
             </div>
-
-            {/* Geospatial Section */}
             <div className="p-6 bg-indigo-50/50 rounded-[2rem] border border-indigo-100/50 space-y-6">
               <div className="flex items-center justify-between">
                 <label className="text-[10px] font-black text-indigo-900 uppercase tracking-widest flex items-center gap-2">
                   <Globe className="w-3.5 h-3.5" /> Geospatial Anchoring
                 </label>
               </div>
-
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Latitude</Label>
@@ -629,7 +577,6 @@ export default function CoreSettings() {
                   />
                 </div>
               </div>
-
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <Label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Geofence Radius</Label>
@@ -648,7 +595,6 @@ export default function CoreSettings() {
                 />
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-8">
               <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Industry Vector</Label>
@@ -693,8 +639,6 @@ export default function CoreSettings() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Satellite Node Detailed Trace */}
       <Dialog open={isChildDetailOpen} onOpenChange={setIsChildDetailOpen}>
         <DialogContent className="sm:max-w-2xl rounded-[4rem] border-none shadow-2xl p-14 bg-white dark:bg-slate-900">
           {selectedChild && (
@@ -709,7 +653,6 @@ export default function CoreSettings() {
                      <Building2 className="h-10 w-10 text-indigo-600" />
                   </div>
                </div>
-
                <div className="grid grid-cols-2 gap-10">
                   <div className="space-y-2">
                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sector</p>
@@ -720,9 +663,7 @@ export default function CoreSettings() {
                      <p className="text-lg font-black italic">{selectedChild.country?.toUpperCase() || "US"}</p>
                   </div>
                </div>
-
                <Separator className="bg-slate-50" />
-
                <div className="space-y-4">
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Satellite Telemetry</p>
                   <div className="grid grid-cols-3 gap-6">
@@ -738,7 +679,6 @@ export default function CoreSettings() {
                      ))}
                   </div>
                </div>
-
                <div className="flex gap-4">
                   <Button variant="outline" className="flex-1 rounded-2xl h-14 font-black text-xs uppercase tracking-widest border-slate-200">
                     SATELLITE LOGS
@@ -751,6 +691,33 @@ export default function CoreSettings() {
           )}
         </DialogContent>
       </Dialog>
-    </Tabs>
+    </div>
+  );
+
+  return (
+    <DepartmentWorkspaceLayout
+      title="Registry & Settings"
+      subtitle="Centralized management for organizational identity, hierarchy, and global governance."
+      headerIcon={Settings}
+      accentColor="indigo"
+      engineName="REGISTRY_ENGINE"
+      pulseLabel="System Pulse"
+      pulseIcon={Activity}
+      sections={SECTIONS}
+      routeLabels={{}}
+      basePath="/core/settings"
+      headerActions={
+        <Button
+          disabled={saving}
+          className="rounded-[1.5rem] px-8 h-12 font-black text-xs uppercase tracking-widest bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-500/20"
+          onClick={activeTab === 'general' ? handleSaveProfile : handleSavePreferences}
+        >
+          {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          COMMIT CHANGES
+        </Button>
+      }
+    >
+      {mainContent}
+    </DepartmentWorkspaceLayout>
   );
 }

@@ -1,1819 +1,422 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useSession } from "@/core/security/session";
+import { apiRequest } from "@/core/api/apiClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { PageHeader } from "@/core/ui/PageHeader";
-import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
-import { DataTableShell } from "@/core/tools/DataTableShell";
-import { FilterBar } from "@/core/tools/FilterBar";
-import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
-import { useSession } from "@/core/security/session";
-import { inventoryService } from "@/core/services/inventory/inventoryService";
-import { orgService, type Department } from "@/core/services/hr/orgService";
-import { hrService } from "@/core/services/hr/hrService";
-import { retailService } from "@/core/services/retail/retailService";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
+  Package,
+  Search,
+  Plus,
+  Filter,
+  ArrowUpDown,
+  MoreHorizontal,
+  ChevronRight,
+  TrendingUp,
+  AlertTriangle,
+  History,
+  Layout,
+  Layers,
+  ArrowRightLeft,
+  Truck,
+  ShoppingCart,
+  Settings,
+  Activity,
+  Box,
+  Tags,
+  Download,
+  Upload,
+  BarChart3,
+  Globe,
+  Database,
+  Archive,
+  BarChart2,
+  ListFilter,
+  Image as ImageIcon
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  MoreHorizontal,
-  MoreVertical,
-  Trash2,
-  ArrowRightLeft,
-  ArrowLeftRight,
-  PackagePlus,
-  Send,
-  ClipboardCheck,
-  ScanLine,
-  CheckCircle2,
-  AlertCircle,
-  RefreshCw,
-  Zap,
-  Box,
-  ShieldCheck,
-  Package,
-  Plus,
-  Upload,
-  FolderTree,
-  Move,
-  Globe,
-  LayoutGrid,
-  Layers,
-  LayoutList,
-  LayoutPanelLeft,
-  Search,
-  Filter,
-  Image as ImageIcon,
-  FileArchive,
-} from "lucide-react";
-import type {
-  InventoryStockBalance,
-  InventoryItemMaster,
-} from "@/core/types/inventory/inventory";
-import { TransferDialog } from "./components/TransferDialog";
-import { BatchIntakeDialog } from "./components/BatchIntakeDialog";
-import { BatchTransferDialog } from "./components/BatchTransferDialog";
-import { CategoryManager } from "@/components/shared/CategoryManager";
-import { ImageManager } from "./components/ImageManager";
-import { AdjustmentDialog } from "./components/AdjustmentDialog";
-import { ExportButton } from "@/components/shared/ExportButton";
-import { ImportDialog } from "@/components/shared/ImportDialog";
-import { ItemCreationTab } from "@/components/shared/ItemCreationTab";
-import { TransferDesk } from "./TransferDesk";
-import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
-import { InventoryGlassHeader } from "@/components/shared/InventoryGlassHeader";
-import { InventoryFilterHub } from "@/components/shared/InventoryFilterHub";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "@/hooks/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import ImportDialog from "@/components/shared/ImportDialog";
+import ExportDialog from "@/components/shared/ExportSettingsDialog";
+import CategoryDialog from "@/components/shared/CategoryManager";
+import DepartmentWorkspaceLayout from "@/components/layouts/DepartmentWorkspaceLayout";
+import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-import { Card } from "@/components/ui/card";
-import { Badge as UIBadge } from "@/components/ui/badge";
+// Stubs for missing components (to be restored/fixed later)
+const ItemDetailsModal = ({ open, onOpenChange }: any) => null;
+const CreateItemDialog = ({ open, onOpenChange }: any) => null;
 
-type ViewMode = "total" | "branch" | "ecommerce" | "transfers" | "opname";
+const SECTIONS = [
+  {
+    title: "INVENTORY OPS",
+    items: [
+      { id: 'stock', icon: Box, label: "Stock Hub", to: "/core/inventory/stock" },
+      { id: 'transfer', icon: ArrowRightLeft, label: "Transfer Desk", to: "/core/inventory/transfer" },
+      { id: 'audit', icon: History, label: "Stock Audit", to: "/core/inventory/audit" },
+    ]
+  },
+  {
+    title: "PROCUREMENT",
+    items: [
+      { id: 'orders', icon: ShoppingCart, label: "Purchase Orders", to: "/core/inventory/orders" },
+      { id: 'vendors', icon: Truck, label: "Vendor Management", to: "/core/inventory/vendors" },
+    ]
+  },
+  {
+    title: "CONFIGURATION",
+    items: [
+      { id: 'categories', icon: Tags, label: "Categories", to: "/core/inventory/categories" },
+      { id: 'settings', icon: Settings, label: "Inventory Settings", to: "/core/inventory/settings" },
+    ]
+  }
+];
 
-interface OpnameEntry {
-  item_id: string;
+interface InventoryItem {
+  id: string;
   sku: string;
   name: string;
-  systemCount: number;
-  actualCount: number;
-  timestamp: string;
-  type: "NORMAL" | "NEW_DISCOVERY" | "ANOMALY";
-  reason?: string;
-  notes?: string;
-  barcode?: string;
+  description?: string;
+  category?: string;
+  status: "ACTIVE" | "INACTIVE" | "DRAFT" | "DISCONTINUED";
+  currentStock: number;
+  minStock: number;
+  unit?: string;
+  costPrice?: number;
+  sellingPrice?: number;
 }
-
-const ITEM_CATEGORIES = [
-  "ITEM",
-  "RAW_MATERIAL",
-  "FINISHED_GOOD",
-  "SERVICE",
-  "CONSUMABLE",
-  "ASSET",
-  "SPARE_PART",
-] as const;
-
-const MODULE_TAG_OPTIONS = [
-  "RETAIL",
-  "PROCUREMENT",
-  "MANUFACTURING",
-  "GENERAL",
-];
 
 export default function InventoryStockHub() {
   const session = useSession();
-  const [search, setSearch] = useState("");
-  const [moduleFilter, setModuleFilter] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [departmentFilter, setDepartmentFilter] = useState("ALL");
+  const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [items, setItems] = useState<InventoryItemMaster[]>([]);
-  const [balances, setBalances] = useState<InventoryStockBalance[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [locations, setLocations] = useState<
-    Array<{ id: string; name: string; code: string; address: string; type: string }>
-  >([]);
-  const [selectedBalance, setSelectedBalance] = useState<{
-    balance: InventoryStockBalance;
-    item: InventoryItemMaster;
-  } | null>(null);
-  const [salesHistory, setSalesHistory] = useState<any[]>([]);
-  const [procurementHistory, setProcurementHistory] = useState<any[]>([]);
-  const [movementHistory, setMovementHistory] = useState<any[]>([]);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [isEditingItem, setIsEditingItem] = useState(false);
-  const [editingItemData, setEditingItemData] = useState<Partial<InventoryItemMaster>>({});
-  const [isSavingItem, setIsSavingItem] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("branch");
-  const [selectedLocationId, setSelectedLocationId] = useState<string>("");
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [isTransferOpen, setIsTransferOpen] = useState(false);
-  const [isBatchIntakeOpen, setIsBatchIntakeOpen] = useState(false);
-  const [isBatchTransferOpen, setIsBatchTransferOpen] = useState(false);
-  const [isAdjustmentOpen, setIsAdjustmentOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isImageImportOpen, setIsImageImportOpen] = useState(false);
-  const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
-  const [dynamicCategories, setDynamicCategories] = useState<any[]>([]);
-  const [page, setPage] = useState(1);
-  const pageSize = 30;
-  const [totalCount, setTotalCount] = useState(0);
-  const [dashboardStats, setDashboardStats] = useState<any | null>(null);
-  const [isReclassifyOpen, setIsReclassifyOpen] = useState(false);
-  const [selectedItemForReclassify, setSelectedItemForReclassify] = useState<any>(null);
-  const [newCategoryId, setNewCategoryId] = useState("");
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
 
-  // Opname state
-  const [opnameActive, setOpnameActive] = useState(false);
-  const [opnameEntries, setOpnameEntries] = useState<OpnameEntry[]>([]);
-  const [isSubmittingOpname, setIsSubmittingOpname] = useState(false);
-  const opnameDiscrepancyWidth = useMemo(() => {
-    if (opnameEntries.length === 0) return 0;
-    return (opnameEntries.filter(e => e.actualCount !== e.systemCount).length / opnameEntries.length) * 100;
-  }, [opnameEntries]);
-
-  // Discovery / Anomaly Dialog state
-  const [isDiscoveryOpen, setIsDiscoveryOpen] = useState(false);
-  const [discoveryBarcode, setDiscoveryBarcode] = useState("");
-  const [discoveryName, setDiscoveryName] = useState("");
-  const [discoverySku, setDiscoverySku] = useState("");
-  const [discoveryCategory, setDiscoveryCategory] = useState("ITEM");
-  const [discoveryType, setDiscoveryType] = useState<"NEW_DISCOVERY" | "ANOMALY">("NEW_DISCOVERY");
-  const [discoveryReason, setDiscoveryReason] = useState("");
-  const [discoveryNotes, setDiscoveryNotes] = useState("");
-  const [isProcessingDiscovery, setIsProcessingDiscovery] = useState(false);
-
-  useBarcodeScanner((barcode) => {
-    if (viewMode === "opname" && opnameActive) {
-      handleOpnameScan(barcode);
-    } else {
-      setSearch(barcode);
-      setStatusMessage(`Scanned barcode: ${barcode}`);
-    }
-  });
-
-  // New Item Dialog state
-  const [isNewItemOpen, setIsNewItemOpen] = useState(false);
-  const [newItemName, setNewItemName] = useState("");
-  const [newItemSku, setNewItemSku] = useState("");
-  const [newItemBarcode, setNewItemBarcode] = useState("");
-  const [newItemPrice, setNewItemPrice] = useState<number>(0);
-  const [newItemDescription, setNewItemDescription] = useState("");
-  const [newItemCategory, setNewItemCategory] = useState<string>("ITEM");
-  const [newItemDepartmentId, setNewItemDepartmentId] = useState<string>("");
-  const [newItemUom, setNewItemUom] = useState("PCS");
-  const [newItemModuleTag, setNewItemModuleTag] = useState("GENERAL");
-  const [newItemStatus, setNewItemStatus] = useState<"pending" | "active">("pending");
-  const [isCreating, setIsCreating] = useState(false);
-
-  // Image Manager state
-  const [isImageManagerOpen, setIsImageManagerOpen] = useState(false);
-  const [selectedItemForImages, setSelectedItemForImages] = useState<{ id: string, name: string } | null>(null);
-
-  const resetNewItemForm = () => {
-    setNewItemName("");
-    setNewItemSku("");
-    setNewItemBarcode("");
-    setNewItemPrice(0);
-    setNewItemDescription("");
-    setNewItemCategory("ITEM");
-    setNewItemDepartmentId("");
-    setNewItemUom("PCS");
-    setNewItemModuleTag("GENERAL");
-    setNewItemStatus("pending");
-  };
-
-  const handleCreateItem = async () => {
-    if (!newItemName.trim()) {
-      setErrorMessage("Item name is required.");
-      return;
-    }
-    setIsCreating(true);
-    try {
-      await inventoryService.createItem(session.tenant_id, session, {
-        sku: newItemSku.trim() || "",
-        barcode: newItemBarcode.trim() || undefined,
-        name: newItemName.trim(),
-        category: newItemCategory as InventoryItemMaster["category"],
-        uom: newItemUom,
-        basePrice: newItemPrice,
-        description: newItemDescription.trim() || undefined,
-        moduleTags: [newItemModuleTag],
-        departmentId: newItemDepartmentId || undefined,
-        status: newItemStatus,
-      });
-      setStatusMessage(
-        `Item "${newItemName}" created successfully. ${newItemStatus === "pending" ? "Pending HOD approval." : ""}`,
-      );
-      setIsNewItemOpen(false);
-      resetNewItemForm();
-      refresh();
-    } catch (err: unknown) {
-      setErrorMessage(
-        `Failed to create item: ${(err as Error)?.message || "Unknown error"}`,
-      );
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
-  const clearStatus = () => {
-    setStatusMessage(null);
-    setErrorMessage(null);
-  };
-
-  const handleOpnameScan = useCallback((barcode: string) => {
-    const item = items.find(i => i.barcode === barcode || i.sku === barcode || i.id === barcode);
-    if (!item) {
-      setDiscoveryBarcode(barcode);
-      setDiscoveryName("");
-      setDiscoverySku("");
-      setDiscoveryType("NEW_DISCOVERY");
-      setDiscoveryReason("");
-      setDiscoveryNotes("");
-      setIsDiscoveryOpen(true);
-      return;
-    }
-
-    setOpnameEntries(prev => {
-      const existing = prev.find(e => e.item_id === item.id);
-      if (existing) {
-        return prev.map(e => e.item_id === item.id ? { ...e, actualCount: e.actualCount + 1, timestamp: new Date().toLocaleTimeString() } : e);
-      }
-      
-      const balance = balances.find(b => b.item_id === item.id && (selectedLocationId ? b.location_id === selectedLocationId : true));
-      
-      return [{
-        item_id: item.id,
-        sku: item.sku,
-        name: item.name,
-        systemCount: balance?.quantity || 0,
-        actualCount: 1,
-        timestamp: new Date().toLocaleTimeString(),
-        type: "NORMAL"
-      }, ...prev];
-    });
-    setStatusMessage(`Added ${item.name} to audit list.`);
-  }, [items, balances, selectedLocationId]);
-
-  const handleManualDiscovery = () => {
-    setDiscoveryBarcode("");
-    setDiscoveryName("");
-    setDiscoverySku("");
-    setDiscoveryType("NEW_DISCOVERY");
-    setDiscoveryReason("");
-    setDiscoveryNotes("");
-    setIsDiscoveryOpen(true);
-  };
-
-  const generateSystemBarcode = () => {
-    setDiscoveryBarcode(`ZVX-${Date.now()}`);
-    setStatusMessage("System barcode generated.");
-  };
-
-  const startOpname = () => {
-    if (!selectedLocationId && viewMode !== "total") {
-      setErrorMessage("Please select a location first to compare system stock.");
-    }
-    setOpnameEntries([]);
-    setOpnameActive(true);
-    setStatusMessage("Opname session started.");
-  };
-
-  const submitOpname = async () => {
-    if (opnameEntries.length === 0) return;
-    setIsSubmittingOpname(true);
-    try {
-      await inventoryService.submitBulkAdjustment(
-        session.tenant_id,
-        session,
-        opnameEntries.map(e => ({
-          item_id: e.item_id,
-          location_id: selectedLocationId || session.location_id,
-          actual_count: e.actualCount,
-          reason: e.type === "NORMAL" ? "Stock Opname Audit" : `Audit Discovery: ${e.reason}`,
-          notes: e.notes || `Audit Type: ${e.type}`
-        }))
-      );
-      setStatusMessage("Opname session submitted for reconciliation.");
-      setOpnameActive(false);
-      setOpnameEntries([]);
-      refresh();
-    } catch (err) {
-      setErrorMessage("Failed to submit opname results.");
-    } finally {
-      setIsSubmittingOpname(false);
-    }
-  };
-
-  const handleDiscovery = async () => {
-    if (discoveryType === "NEW_DISCOVERY" && (!discoveryName.trim() || !discoverySku.trim() || !discoveryBarcode.trim())) {
-      setErrorMessage("Please fill in all item details for stock addition.");
-      return;
-    }
-    if (!discoveryReason.trim()) {
-      setErrorMessage("Reason is mandatory for audit discovery.");
-      return;
-    }
-
-    setIsProcessingDiscovery(true);
-    try {
-      if (discoveryType === "NEW_DISCOVERY") {
-        // Register new item
-        const newItem = await inventoryService.createItem(session.tenant_id, session, {
-          sku: discoverySku,
-          barcode: discoveryBarcode,
-          name: discoveryName.trim(),
-          category: discoveryCategory as any,
-          uom: "PCS",
-          base_price: 0,
-          module_tags: ["GENERAL"],
-          status: "active",
-          description: discoveryNotes
-        });
-
-        setOpnameEntries(prev => [{
-          item_id: newItem.id,
-          sku: newItem.sku,
-          name: newItem.name,
-          systemCount: 0,
-          actualCount: 1,
-          timestamp: new Date().toLocaleTimeString(),
-          type: "NEW_DISCOVERY",
-          reason: discoveryReason,
-          notes: discoveryNotes,
-          barcode: discoveryBarcode
-        }, ...prev]);
-        setStatusMessage(`Successfully registered ${newItem.name} and added to audit.`);
-        refresh();
-      } else {
-        // Handle Anomaly
-        const anomalyId = `ANOM-${Date.now()}`;
-        setOpnameEntries(prev => [{
-          item_id: anomalyId,
-          sku: discoverySku || "UNKNOWN",
-          name: discoveryName || "Unknown Anomaly",
-          systemCount: 0,
-          actualCount: 1,
-          timestamp: new Date().toLocaleTimeString(),
-          type: "ANOMALY",
-          reason: discoveryReason,
-          notes: discoveryNotes,
-          barcode: discoveryBarcode
-        }, ...prev]);
-        setStatusMessage(`Anomaly recorded for investigation.`);
-      }
-
-      setIsDiscoveryOpen(false);
-    } catch (err) {
-      setErrorMessage("Discovery processing failed.");
-    } finally {
-      setIsProcessingDiscovery(false);
-    }
-  };
-
-  const refresh = useCallback(async (targetPage = page) => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const locFilter = selectedLocationId || undefined;
-      const [i, b, d, locs, cats, channels, stats] = await Promise.all([
-        inventoryService.listItems(session.tenant_id, session, locFilter, targetPage, pageSize, search, categoryFilter),
-        inventoryService.listBalances(session.tenant_id, session, locFilter, undefined, targetPage, pageSize, search, categoryFilter),
-        orgService.getOrgMap(session.tenant_id, session),
-        hrService.listLocations(session.tenant_id, session),
-        inventoryService.listCategories(session.tenant_id, session),
-        retailService.listChannels(session.tenant_id, session),
-        inventoryService.getDashboard(session.tenant_id, session, locFilter),
-      ]);
-      setItems(i);
-      setBalances(b);
-      setDepartments(d);
-      setDashboardStats(stats);
-      
-      // Merge locations with ecommerce channels
-      const ecommerceLocations = channels
-        .filter(c => c.type === "ecommerce" || c.type === "DIRECT" || c.type === "OWNED")
-        .map(c => ({
-          id: c.id,
-          name: `${c.name} (Ecommerce)`,
-          code: c.id, // Fallback to ID for code
-          address: "Online",
-          type: "ecommerce"
-        }));
-
-      setLocations([...locs, ...ecommerceLocations]);
-      setDynamicCategories(cats);
-      
-      const total = (b as any).meta?.total || b.length;
-      setTotalCount(total);
-    } catch (err) {
-      console.error("Failed to fetch inventory stock hub data:", err);
-      setErrorMessage("Failed to load inventory data.");
+      const data = await apiRequest<InventoryItem[]>("/inventory/items", "GET", session);
+      setItems(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Could not retrieve catalog data.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
-  }, [session, selectedLocationId, search, page]);
+  }, [session]);
 
   useEffect(() => {
-    refresh(page);
-  }, [page]);
+    fetchData();
+  }, [fetchData]);
 
-  useEffect(() => {
-    if (selectedBalance) {
-      const fetchHistory = async () => {
-        setIsLoadingHistory(true);
-        try {
-          const [sales, procurement, movements] = await Promise.all([
-            inventoryService.getSalesHistory(
-              session.tenant_id,
-              session,
-              selectedBalance.item.id
-            ),
-            inventoryService.getProcurementHistory(
-              session.tenant_id,
-              session,
-              selectedBalance.item.id
-            ),
-            inventoryService.listMovements(
-              session.tenant_id,
-              session,
-              selectedBalance.item.id
-            )
-          ]);
-          setSalesHistory(sales || []);
-          setProcurementHistory(procurement || []);
-          setMovementHistory(movements || []);
-        } catch (error) {
-          console.error("Failed to fetch history:", error);
-        } finally {
-          setIsLoadingHistory(false);
-        }
-      };
-      fetchHistory();
-      setIsEditingItem(false);
-      setEditingItemData({
-        name: selectedBalance.item.name,
-        description: selectedBalance.item.description || "",
-        unit: selectedBalance.item.unit || "pcs",
-        base_price: selectedBalance.item.base_price,
-        selling_price: selectedBalance.item.selling_price
-      });
-    }
-  }, [selectedBalance, session]);
-
-  const handleSaveItemEdit = async () => {
-    if (!selectedBalance) return;
-    setIsSavingItem(true);
-    try {
-      await inventoryService.updateItem(
-        session.tenant_id,
-        session,
-        selectedBalance.item.id,
-        editingItemData
-      );
-      setStatusMessage("Item updated successfully.");
-      refresh();
-      setIsEditingItem(false);
-      // Update local state to reflect changes immediately
-      setSelectedBalance(prev => prev ? {
-        ...prev,
-        item: { ...prev.item, ...editingItemData }
-      } : null);
-    } catch (error) {
-      console.error("Failed to update item:", error);
-      setStatusMessage("Error: Failed to update item.");
-    } finally {
-      setIsSavingItem(false);
-    }
-  };
-
-  useEffect(() => {
-    setPage(1);
-    refresh(1);
-  }, [search, selectedLocationId, viewMode, categoryFilter]);
-
-
-  const itemById = useMemo(
-    () => Object.fromEntries((Array.isArray(items) ? items : []).map((item) => [item.id, item])),
-    [items],
-  );
-
-  const locationById = useMemo(
-    () => Object.fromEntries((Array.isArray(locations) ? locations : []).map((loc) => [loc.id, loc])),
-    [locations],
-  );
-
-  const aggregatedBalances = useMemo(() => {
-    if (viewMode !== "total") return balances;
-    const map = new Map<string, InventoryStockBalance>();
-    balances.forEach((b) => {
-      const existing = map.get(b.item_id);
-      if (existing) {
-        existing.quantity += b.quantity;
-      } else {
-        map.set(b.item_id, {
-          ...b,
-          location_id: "GLOBAL",
-          department_id: "ALL",
-        });
-      }
+  const filteredItems = useMemo(() => {
+    return (Array.isArray(items) ? items : []).filter((item) => {
+      const matchesSearch =
+        item.name.toLowerCase().includes(search.toLowerCase()) ||
+        item.sku.toLowerCase().includes(search.toLowerCase());
+      const matchesCategory =
+        activeCategory === "all" || item.category === activeCategory;
+      return matchesSearch && matchesCategory;
     });
-    return Array.from(map.values());
-  }, [balances, viewMode]);
+  }, [items, search, activeCategory]);
 
-  const filteredBalances = useMemo(
-    () =>
-      (Array.isArray(aggregatedBalances) ? aggregatedBalances : []).filter((balance) => {
-        const item = balance.item || itemById[balance.item_id];
-        if (!item) return false;
+  const stats = useMemo(() => {
+    const totalItems = items.length;
+    const lowStock = items.filter((i) => i.currentStock <= i.minStock).length;
+    const outOfStock = items.filter((i) => i.currentStock === 0).length;
+    const totalValue = items.reduce(
+      (acc, i) => acc + (i.currentStock * (i.costPrice || 0)),
+      0,
+    );
+    return { totalItems, lowStock, outOfStock, totalValue };
+  }, [items]);
 
-        const locInfo = locationById[balance.location_id || ""];
-        const isEcomLoc =
-          locInfo?.type === "ecommerce" ||
-          locInfo?.type === "ECOMMERCE" ||
-          balance.location_id?.toLowerCase()?.includes("e-com");
-
-        const hasEcomTag = (item.module_tags || []).some(
-          (tag) => tag.toUpperCase() === "ECOMMERCE" || tag.toUpperCase() === "RETAIL",
-        );
-
-        // Mode filtering
-        if (viewMode === "ecommerce") {
-          if (!isEcomLoc && !hasEcomTag) return false;
-        } else if (viewMode === "branch") {
-          // In branch mode, we show everything that isn't specifically ecom-only
-          if (isEcomLoc && balance.location_id !== "GLOBAL") return false;
-        }
-
-        const searchable =
-          `${item.sku} ${item.name} ${balance.location_id || ""} ${balance.department_id || ""}`.toLowerCase();
-        const searchMatch = search
-          ? searchable.includes(search.toLowerCase())
-          : true;
-        const moduleMatch = moduleFilter
-          ? (item.module_tags || []).some(
-              (tag) => tag.toLowerCase() === moduleFilter.toLowerCase(),
-            )
-          : true;
-        
-        const itemDeptId = (item as Record<string, unknown>).department_id;
-        const departmentMatch = departmentFilter === "ALL" 
-          ? true 
-          : balance.department_id === departmentFilter || itemDeptId === departmentFilter;
-
-        return searchMatch && moduleMatch && departmentMatch;
-      }),
-    [aggregatedBalances, itemById, moduleFilter, search, viewMode, departmentFilter, locationById],
+  const headerActions = (
+    <div className="flex gap-2">
+      <Button
+        onClick={() => setIsImportOpen(true)}
+        variant="outline"
+        className="rounded-xl border-slate-200 bg-white shadow-sm hover:bg-slate-50 font-bold text-[10px] uppercase tracking-widest h-9"
+      >
+        <Upload className="h-3 w-3 mr-2" /> Data Import
+      </Button>
+      <Button
+        onClick={() => setIsImageImportOpen(true)}
+        variant="outline"
+        className="rounded-xl border-slate-200 bg-white shadow-sm hover:bg-slate-50 font-bold text-[10px] uppercase tracking-widest h-9"
+      >
+        <ImageIcon className="h-3 w-3 mr-2" /> Image Import
+      </Button>
+      <Button
+        onClick={() => setIsExportOpen(true)}
+        variant="outline"
+        className="rounded-xl border-slate-200 bg-white shadow-sm hover:bg-slate-50 font-bold text-[10px] uppercase tracking-widest h-9"
+      >
+        <Download className="h-3 w-3 mr-2" /> Export
+      </Button>
+      <div className="w-px h-6 bg-slate-200 mx-1" />
+      <Button
+        onClick={() => setIsCreateOpen(true)}
+        className="rounded-xl bg-slate-900 hover:bg-black text-white shadow-sm font-bold text-[10px] uppercase tracking-widest h-9"
+      >
+        <Plus className="h-3 w-3 mr-2" /> New Item
+      </Button>
+      <Button
+        onClick={() => setIsCategoryOpen(true)}
+        variant="outline"
+        className="rounded-xl border-slate-200 bg-white shadow-sm hover:bg-slate-50 font-bold text-[10px] uppercase tracking-widest h-9"
+      >
+        <Plus className="h-3 w-3 mr-2" /> New Category
+      </Button>
+    </div>
   );
 
-  const paginatedBalances = useMemo(() => {
-    return filteredBalances;
-  }, [filteredBalances]);
+  const mainContent = (
+    <div className="p-6 space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-slate-900/50 rounded-[2.5rem] overflow-hidden group">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Total Items</CardTitle>
+            <Package className="h-4 w-4 text-primary opacity-50" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black tracking-tighter">{stats.totalItems}</div>
+            <p className="text-[10px] font-bold text-emerald-500 mt-1 uppercase tracking-widest">Across All Nodes</p>
+          </CardContent>
+        </Card>
 
-  const toggleSelect = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? (Array.isArray(prev) ? prev : []).filter((i) => i !== id) : [...prev, id],
-    );
-  };
+        <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-slate-900/50 rounded-[2.5rem] overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Low Stock</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-amber-500 opacity-50" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black tracking-tighter text-amber-600">{stats.lowStock}</div>
+            <p className="text-[10px] font-bold text-amber-500 mt-1 uppercase tracking-widest">Refinement Required</p>
+          </CardContent>
+        </Card>
 
-  const toggleSelectAll = () => {
-    if (selectedIds.length === paginatedBalances.length) setSelectedIds([]);
-    else setSelectedIds((Array.isArray(paginatedBalances) ? paginatedBalances : []).map((b) => b.id));
-  };
+        <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-slate-900/50 rounded-[2.5rem] overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Out of Stock</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-rose-500 opacity-50" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black tracking-tighter text-rose-600">{stats.outOfStock}</div>
+            <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-widest">Critical Shortage</p>
+          </CardContent>
+        </Card>
 
-  const handleBatchDelete = async () => {
-    if (!confirm(`Delete ${selectedIds.length} items?`)) return;
-    try {
-      await inventoryService.batchDeleteItems(
-        session.tenant_id,
-        session,
-        selectedIds,
-      );
-      setStatusMessage("Batch delete successful.");
-      refresh();
-      setSelectedIds([]);
-    } catch (err) {
-      setErrorMessage("Batch delete failed.");
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">Loading inventory records...</p>
+        <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-slate-900/50 rounded-[2.5rem] overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Inventory Value</CardTitle>
+            <BarChart3 className="h-4 w-4 text-emerald-500 opacity-50" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black tracking-tighter">${stats.totalValue.toLocaleString()}</div>
+            <p className="text-[10px] font-bold text-emerald-500 mt-1 uppercase tracking-widest">Financial Asset Value</p>
+          </CardContent>
+        </Card>
       </div>
-    );
-  }
 
-  return (
-    <div className="p-8 space-y-8 bg-slate-950 min-h-screen text-white">
-      <InventoryGlassHeader
-        title="Stock Hub"
-        subtitle="Global -> location -> department stock visibility with module-aware context tags."
-        icon={Package}
-        stats={[
-          { label: "Total Items", value: dashboardStats?.total_items || items.length },
-          { label: "Total Stock", value: dashboardStats?.total_on_hand_qty || 0 },
-          { label: "Locations", value: locations.length },
-        ]}
-      >
-        <div className="flex items-center gap-3">
-          <Button 
-            size="sm"
-            variant="outline"
-            className="rounded-xl border-white/10 bg-slate-900/40 backdrop-blur-md font-black italic text-[10px] uppercase tracking-widest gap-2 h-10 px-4 text-white hover:bg-slate-800 shadow-xl"
-            onClick={() => setIsCategoryManagerOpen(true)}
-          >
-            <Plus className="h-3.5 w-3.5" /> New Categories
-          </Button>
-          <Button 
-            size="sm"
-            className="rounded-xl bg-white text-slate-950 font-black italic text-[10px] uppercase tracking-widest gap-2 h-10 px-6 shadow-2xl hover:scale-105 transition-transform"
-            onClick={() => setIsNewItemOpen(true)}
-          >
-            <Plus className="h-3.5 w-3.5" /> New Items
-          </Button>
-        </div>
-      </InventoryGlassHeader>
-
-      <FeedbackAlert
-        message={statusMessage}
-        error={errorMessage}
-        onClear={clearStatus}
-      />
-
-      <div className="max-w-[1600px] mx-auto space-y-8">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <Tabs
-            value={viewMode}
-            onValueChange={(v) => {
-              setViewMode(v as ViewMode);
-              setPage(1);
-            }}
-            className="w-auto"
-          >
-            <TabsList className="h-14 p-1.5 bg-slate-900/40 backdrop-blur-md border border-white/10 rounded-[1.2rem] shadow-xl">
-              {[
-                { id: "total", label: "Global", icon: Globe },
-                { id: "branch", label: "Branches", icon: LayoutPanelLeft },
-                { id: "ecommerce", label: "Ecommerce", icon: LayoutList },
-                { id: "transfers", label: "Transfers", icon: ArrowLeftRight },
-                { id: "opname", label: "Stock Taking", icon: ClipboardCheck },
-              ].map((t) => (
-                <TabsTrigger
-                  key={t.id}
-                  value={t.id}
-                  className="rounded-xl px-6 font-black italic text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-slate-950 text-slate-400 transition-all gap-2"
-                >
-                  <t.icon className="w-3.5 h-3.5" />
-                  {t.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
-
-        {viewMode !== "transfers" && (
-          <div className="space-y-4">
-            <InventoryFilterHub
-              search={search}
-              onSearchChange={setSearch}
-              category={categoryFilter}
-              onCategoryChange={(v) => {
-                setCategoryFilter(v);
-                setPage(1);
-              }}
-              categories={dynamicCategories.map(c => ({ id: c.id, name: c.name }))}
-              location={selectedLocationId}
-              locationLabel={viewMode === "ecommerce" ? "Ecommerce" : "Location"}
-              onLocationChange={(v) => {
-                setSelectedLocationId(v);
-                setPage(1);
-              }}
-              locations={locations
-                .filter(l => {
-                  if (viewMode === "branch") return l.type !== "ecommerce";
-                  if (viewMode === "ecommerce") return l.type === "ecommerce";
-                  return true;
-                })
-                .map(l => ({ id: l.id, name: l.name }))}
-              moduleTag={moduleFilter}
-              onModuleTagChange={(v) => {
-                setModuleFilter(v);
-                setPage(1);
-              }}
-              onStatusChange={(v) => {}}
+      <Card className="border-none shadow-2xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-slate-900/50 rounded-[3rem] overflow-hidden">
+        <div className="p-8 border-b flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="relative flex-1 w-full max-w-md">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              placeholder="Search by SKU, Name or Category..."
+              className="pl-12 h-14 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl text-sm font-bold shadow-inner focus-visible:ring-1 focus-visible:ring-primary/20"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
-
-            <div className="flex items-center justify-end gap-3 py-2">
-               <ExportButton
-                endpoint="/inventory/items/export"
-                filename={`zenvix_inventory_${session.tenant_id}.xlsx`}
-              />
-               <ExportButton
-                endpoint="/inventory/items/export"
-                filename={`zenvix_inventory_${session.tenant_id}.xlsx`}
-              />
-              <Button
-                variant="outline"
-                size="lg"
-                className="rounded-2xl border-white/10 bg-slate-900/40 backdrop-blur-md font-black italic text-xs uppercase tracking-widest gap-2 h-12 px-6 text-white hover:bg-slate-800"
-                onClick={() => setIsImportOpen(true)}
-              >
-                <Upload className="h-4 w-4" /> Import Data
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="rounded-2xl border-white/10 bg-slate-900/40 backdrop-blur-md font-black italic text-xs uppercase tracking-widest gap-2 h-12 px-6 text-white hover:bg-slate-800"
-                onClick={() => setIsImageImportOpen(true)}
-              >
-                <FileArchive className="h-4 w-4" /> Bulk Images
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="rounded-2xl border-white/10 bg-slate-900/40 backdrop-blur-md font-black italic text-xs uppercase tracking-widest gap-2 h-12 px-6 text-white hover:bg-slate-800"
-                onClick={async () => {
-                  try {
-                    await inventoryService.runLowStockScan(session.tenant_id, session);
-                    setStatusMessage("Low stock scan completed. Alerts refreshed.");
-                    refresh();
-                  } catch (err) {
-                    setErrorMessage("Stock scan failed.");
-                  }
-                }}
-              >
-                <RefreshCw className="h-4 w-4" /> Sync
-              </Button>
-            </div>
           </div>
-        )}
-      </div>
-
-      {viewMode === "transfers" && (
-        <div className="max-w-[1600px] mx-auto">
-          <TransferDesk />
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <Button variant="outline" className="h-14 px-6 rounded-2xl border-slate-200 text-xs font-black uppercase tracking-widest hover:bg-slate-50">
+              <ListFilter className="h-4 w-4 mr-2" /> Filter
+            </Button>
+            <Button variant="outline" className="h-14 px-6 rounded-2xl border-slate-200 text-xs font-black uppercase tracking-widest hover:bg-slate-50">
+              <BarChart2 className="h-4 w-4 mr-2" /> Analytics
+            </Button>
+          </div>
         </div>
-      )}
 
-      {viewMode === "opname" && (
-        <div className="max-w-[1600px] mx-auto space-y-8">
-          {!opnameActive ? (
-            <Card className="rounded-[3rem] border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl overflow-hidden border border-white/10 p-16 text-center space-y-8">
-              <div className="w-24 h-24 rounded-[2rem] bg-indigo-500/20 flex items-center justify-center mx-auto shadow-2xl shadow-indigo-500/20">
-                <ClipboardCheck className="w-12 h-12 text-indigo-400" />
-              </div>
-              <div className="max-w-2xl mx-auto space-y-4">
-                <h2 className="text-4xl font-black italic tracking-tighter uppercase text-white leading-none">
-                  Inventory Audit Terminal
-                </h2>
-                <p className="text-slate-400 font-bold italic text-sm">
-                  Initialize a global stock opname session. Compare physical counts with real-time ledger balances across your selected organizational nodes.
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto py-8">
-                { [
-                  { icon: ScanLine, label: "Precision Scan", desc: "Scan barcodes to sync" },
-                  { icon: Zap, label: "Real-time Sync", desc: "Live ledger comparison" },
-                  { icon: ShieldCheck, label: "Audit Trace", desc: "Approval-gated commit" },
-                ].map((f, i) => (
-                  <div key={i} className="bg-white/5 rounded-[2rem] p-8 border border-white/5 space-y-3">
-                    <f.icon className="w-6 h-6 text-indigo-400 mx-auto" />
-                    <div className="text-xs font-black italic uppercase text-white">{f.label}</div>
-                    <div className="text-[10px] text-slate-500 font-bold uppercase tracking-tight leading-relaxed">{f.desc}</div>
-                  </div>
-                )) }
-              </div>
-              <div className="max-w-md mx-auto space-y-4 py-8">
-                <div className="space-y-2 text-left">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Audit Target Location</label>
-                  <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
-                    <SelectTrigger className="h-14 rounded-2xl bg-slate-950/50 border-white/10 shadow-2xl font-black italic text-sm text-white">
-                      <SelectValue placeholder="CHOOSE AUDIT ZONE..." />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl bg-slate-900 border-white/10 text-white">
-                      {locations.map(loc => (
-                        <SelectItem key={loc.id} value={loc.id} className="font-bold italic">{loc.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest text-center mt-2 italic">
-                    {selectedLocationId ? "ZONE_LOCKED: ACTIVE_SYNC" : "PLEASE SELECT A ZONE TO INITIALIZE LEDGER"}
-                  </p>
-                </div>
-              </div>
-
-              <Button
-                size="lg"
-                onClick={startOpname}
-                disabled={!selectedLocationId}
-                className="h-20 px-12 rounded-[1.5rem] bg-white text-slate-950 font-black italic uppercase tracking-widest text-sm gap-3 shadow-2xl hover:scale-105 transition-transform disabled:opacity-30 disabled:hover:scale-100"
-              >
-                <Zap className="w-6 h-6 fill-current" /> Start Audit Session
-              </Button>
-
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {(() => {
-                const discrepancyWidth = opnameEntries.length > 0 
-                  ? (opnameEntries.filter(ent => ent.actualCount !== ent.systemCount).length / opnameEntries.length) * 100 
-                  : 0;
-                return (
-                  <>
-                    <div className="lg:col-span-2 space-y-8">
-                <Card className="rounded-[2.5rem] border-white/5 bg-slate-900/30 backdrop-blur-3xl shadow-2xl overflow-hidden border border-white/10">
-                  <div className="p-8 border-b border-white/10 flex items-center justify-between bg-white/5">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center">
-                        <ScanLine className="w-6 h-6 text-indigo-400 animate-pulse" />
+        <CardContent className="p-0">
+          <ScrollArea className="h-[600px]">
+            <Table>
+              <TableHeader className="bg-slate-50 dark:bg-slate-800/50">
+                <TableRow className="hover:bg-transparent border-none">
+                  <TableHead className="w-[120px] text-[10px] font-black uppercase tracking-widest pl-8 py-6">SKU</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest py-6">Item Identity</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest py-6 text-right">Balance</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest py-6 text-center">Status</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest py-6 text-right pr-8">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i} className="border-slate-100 dark:border-slate-800">
+                      <TableCell colSpan={5} className="py-6 px-8">
+                        <Skeleton className="h-12 w-full rounded-xl" />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : filteredItems.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-64 text-center">
+                      <div className="flex flex-col items-center justify-center opacity-20">
+                        <Archive className="h-16 w-16 mb-4 stroke-[1]" />
+                        <h3 className="text-xl font-black uppercase tracking-widest">No Inventory Found</h3>
                       </div>
-                      <div>
-                        <h3 className="text-lg font-black italic text-white uppercase tracking-tighter">Live Session Stream</h3>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Awaiting hardware input or manual entry</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Button 
-                        variant="outline" 
-                        onClick={handleManualDiscovery}
-                        className="h-10 px-4 rounded-xl border-white/10 bg-white/5 text-white font-black italic uppercase tracking-widest text-[9px] gap-2 hover:bg-white/10"
-                      >
-                        <Plus className="w-4 h-4 text-indigo-400" /> Discovery
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="p-8">
-                    {opnameEntries.length === 0 ? (
-                      <div className="py-24 text-center opacity-20">
-                        <Box className="w-24 h-24 text-slate-500 mx-auto mb-6" />
-                        <p className="text-xs font-black italic uppercase tracking-[0.3em]">Scanner Ready</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {opnameEntries.map((e, i) => {
-                          const variance = e.actualCount - e.systemCount;
-                          return (
-                            <div key={i} className="group p-6 rounded-[2rem] bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all flex items-center justify-between shadow-lg">
-                              <div className="flex items-center gap-6">
-                                <div className="w-14 h-14 rounded-2xl bg-slate-950/50 flex items-center justify-center text-slate-500 group-hover:text-indigo-400 transition-colors">
-                                  <Box className="w-7 h-7" />
-                                </div>
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <div className="text-base font-black text-white italic tracking-tight">{e.name}</div>
-                                    {e.type === "NEW_DISCOVERY" && <UIBadge className="bg-emerald-500 text-white border-none text-[8px] h-4 font-black italic">NEW DISCOVERY</UIBadge>}
-                                    {e.type === "ANOMALY" && <UIBadge className="bg-red-500 text-white border-none text-[8px] h-4 font-black italic">ANOMALY</UIBadge>}
-                                  </div>
-                                  <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">
-                                    {e.sku} • {e.timestamp} {e.barcode ? `• BC: ${e.barcode}` : ""}
-                                  </div>
-                                  {e.reason && (
-                                    <div className="text-[9px] font-bold text-indigo-400/80 uppercase tracking-tight mt-1 italic">
-                                      Reason: {e.reason}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-center gap-12">
-                                <div className="text-center">
-                                  <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">System</div>
-                                  <div className="text-xl font-black text-slate-400 italic">{e.systemCount}</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-1 italic">Actual</div>
-                                  <div className="flex items-center gap-4">
-                                    <button 
-                                      onClick={() => setOpnameEntries(prev => prev.map((entry, idx) => idx === i ? { ...entry, actualCount: Math.max(0, entry.actualCount - 1) } : entry))}
-                                      className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white"
-                                    >-</button>
-                                    <div className="text-2xl font-black text-white italic min-w-[2rem]">x{e.actualCount}</div>
-                                    <button 
-                                      onClick={() => setOpnameEntries(prev => prev.map((entry, idx) => idx === i ? { ...entry, actualCount: entry.actualCount + 1 } : entry))}
-                                      className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white"
-                                    >+</button>
-                                  </div>
-                                </div>
-                                <div className="text-right min-w-[80px]">
-                                  <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Variance</div>
-                                  <div className={`text-xl font-black italic ${variance === 0 ? "text-emerald-500" : variance > 0 ? "text-blue-500" : "text-red-500"}`}>
-                                    {variance > 0 ? `+${variance}` : variance}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              </div>
-
-              <div className="space-y-8">
-                <Card className="rounded-[2.5rem] border-none bg-slate-900 shadow-3xl overflow-hidden relative">
-                   <div className="absolute -right-8 -bottom-8 opacity-10 pointer-events-none rotate-12">
-                      <RefreshCw className="w-48 h-48 text-indigo-500" />
-                   </div>
-                   <div className="p-10 space-y-8 relative">
-                      <div>
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-indigo-400 italic">Session Reconciliation</h3>
-                        <div className="mt-8 grid grid-cols-2 gap-4">
-                          <div className="p-6 bg-black/40 rounded-[1.5rem] border border-white/5 shadow-inner">
-                            <div className="text-[8px] font-black text-slate-600 uppercase tracking-widest mb-1">Standard Items</div>
-                            <div className="text-3xl font-black text-white italic">{opnameEntries.filter(e => e.type === "NORMAL").length}</div>
-                          </div>
-                          <div className="p-6 bg-black/40 rounded-[1.5rem] border border-white/5 shadow-inner">
-                            <div className="text-[8px] font-black text-emerald-500 uppercase tracking-widest mb-1 italic">Discoveries</div>
-                            <div className="text-3xl font-black text-emerald-500 italic">
-                              {opnameEntries.filter(e => e.type === "NEW_DISCOVERY").length}
-                            </div>
-                          </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredItems.map((item) => (
+                    <TableRow 
+                      key={item.id} 
+                      className="border-slate-100 dark:border-slate-800 group hover:bg-primary/[0.02] cursor-pointer transition-all"
+                      onClick={() => setSelectedItem(item)}
+                    >
+                      <TableCell className="pl-8 py-6">
+                        <span className="text-xs font-mono font-black text-slate-400 group-hover:text-primary transition-colors">{item.sku}</span>
+                      </TableCell>
+                      <TableCell className="py-6">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-sm font-black tracking-tight">{item.name}</span>
+                          <span className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">{item.category || "General"}</span>
                         </div>
-                        <div className="mt-4 p-6 bg-red-500/10 rounded-[1.5rem] border border-red-500/20 shadow-inner flex items-center justify-between">
-                          <div>
-                            <div className="text-[8px] font-black text-red-500 uppercase tracking-widest mb-1 italic">Detected Anomalies</div>
-                            <div className="text-3xl font-black text-red-500 italic">
-                              {opnameEntries.filter(e => e.type === "ANOMALY").length}
-                            </div>
-                          </div>
-                          <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
-                            <AlertCircle className="w-5 h-5 text-red-500" />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="flex justify-between text-[10px] font-black uppercase italic">
-                          <span className="text-slate-500">Discrepancy Vector</span>
-                          <span className="text-red-500">
-                            {opnameEntries.filter(e => e.actualCount !== e.systemCount).length} Anomalies
+                      </TableCell>
+                      <TableCell className="py-6 text-right">
+                        <div className="flex flex-col items-end">
+                          <span className={`text-sm font-black ${item.currentStock <= item.minStock ? 'text-rose-500' : 'text-slate-900 dark:text-white'}`}>
+                            {item.currentStock.toLocaleString()} {item.unit || 'units'}
                           </span>
-                        </div>
-                        <div className="h-2 bg-black/40 rounded-full overflow-hidden border border-white/5">
-                          <div 
-                            className="h-full bg-red-500 transition-all duration-1000" 
-                            style={{ width: `${opnameDiscrepancyWidth}%` }}
-                          ></div>
-                        </div>
-                      </div>
-
-                      <div className="pt-4 flex flex-col gap-3">
-                        <Button
-                          onClick={submitOpname}
-                          disabled={opnameEntries.length === 0 || isSubmittingOpname}
-                          className="h-16 rounded-2xl bg-white text-slate-950 font-black italic uppercase tracking-widest text-xs gap-2 shadow-2xl hover:scale-[1.02] transition-transform"
-                        >
-                          {isSubmittingOpname ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />} 
-                          Commit Audit to Ledger
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => {
-                            if (confirm("Discard session? All uncommitted data will be lost.")) {
-                              setOpnameActive(false);
-                              setOpnameEntries([]);
-                            }
-                          }}
-                          className="h-12 rounded-2xl text-slate-500 hover:text-red-500 font-black italic uppercase tracking-widest text-[9px]"
-                        >
-                          Abort Session
-                        </Button>
-                      </div>
-                   </div>
-                </Card>
-
-                <div className="p-8 rounded-[2rem] bg-indigo-500/5 border border-indigo-500/20 flex gap-5 items-center italic">
-                  <AlertCircle className="w-8 h-8 text-indigo-400 shrink-0" />
-                  <p className="text-[11px] text-indigo-200/60 font-bold leading-relaxed">
-                    Audits are recorded with your digital signature. Large variances will trigger a mandatory management review.
-                  </p>
-                </div>
-              </div>
-          </>
-        );
-      })()}
-            </div>
-          )}
-      </div>
-    )}
-
-      {viewMode !== "transfers" && viewMode !== "opname" && (
-        <Card className="max-w-[1600px] mx-auto rounded-[2.5rem] border-white/5 bg-slate-900/30 backdrop-blur-3xl shadow-2xl overflow-hidden border border-white/10">
-          <div className="p-8 border-b border-white/40 flex items-center justify-between bg-slate-900/5">
-            <div>
-              <h2 className="text-2xl font-black tracking-tighter text-white uppercase italic leading-none">
-                Stock Hub
-              </h2>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 mt-2">
-                Real-time visibility across {viewMode} hierarchy
-              </p>
-            </div>
-            {selectedIds.length > 0 && (
-              <div className="flex items-center gap-3 animate-in fade-in slide-in-from-right-2">
-                <UIBadge className="bg-indigo-500/10 text-indigo-500 border-indigo-500/20 px-3 py-1 font-bold italic text-[10px] uppercase">
-                  {selectedIds.length} SELECTED
-                </UIBadge>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="rounded-xl border-white/5 bg-slate-950/50 font-black italic text-[10px] uppercase tracking-widest gap-2 text-white hover:bg-slate-900">
-                      Actions <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="rounded-2xl border-white/50 backdrop-blur-xl shadow-2xl">
-                    <DropdownMenuItem
-                      className="gap-2 font-bold italic"
-                      onClick={() => setIsBatchIntakeOpen(true)}
-                    >
-                      <PackagePlus className="h-4 w-4" /> Batch Intake
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="gap-2 font-bold italic"
-                      onClick={() => setIsBatchTransferOpen(true)}
-                    >
-                      <ArrowRightLeft className="h-4 w-4" /> Batch Transfer
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="gap-2 text-destructive font-bold italic"
-                      onClick={handleBatchDelete}
-                    >
-                      <Trash2 className="h-4 w-4" /> Delete Selected
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            )}
-          </div>
-          <div className="p-4">
-          <DataTableShell 
-            total={totalCount} 
-            page={page} 
-            pageSize={pageSize}
-            onPageChange={setPage}
-          >
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-white/5 text-[10px] uppercase text-slate-500 border-b border-white/5">
-                  <th className="p-3 text-left w-10">
-                    <Checkbox
-                      checked={
-                        selectedIds.length === paginatedBalances.length &&
-                        paginatedBalances.length > 0
-                      }
-                      onCheckedChange={toggleSelectAll}
-                    />
-                  </th>
-                  <th className="p-3 text-left w-12"></th>
-                  <th className="p-3 text-left">SKU</th>
-                  <th className="p-3 text-left">Item</th>
-                  <th className="p-3 text-left">Location</th>
-                  <th className="p-3 text-left">Department</th>
-                  <th className="p-3 text-right">Qty</th>
-                  <th className="p-3 text-left">Reorder</th>
-                  <th className="p-3 text-left">Module Tags</th>
-                  <th className="p-3 text-right w-10">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(Array.isArray(paginatedBalances) ? paginatedBalances : []).map((balance) => {
-                  const item = balance.item || itemById[balance.item_id];
-                  if (!item) return null;
-                  const isSelected = selectedIds.includes(balance.id);
-                  return (
-                    <tr
-                      key={balance.id}
-                      className={`cursor-pointer border-t hover:bg-muted/50 transition-colors ${isSelected ? "bg-primary/5" : ""}`}
-                      onClick={() => setSelectedBalance({ balance, item })}
-                    >
-                      <td className="p-3" onClick={(e) => e.stopPropagation()}>
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={() => toggleSelect(balance.id)}
-                        />
-                      </td>
-                      <td className="p-3">
-                        <div 
-                          className="w-10 h-10 rounded border bg-muted/50 flex items-center justify-center overflow-hidden cursor-pointer hover:border-primary transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedItemForImages({ id: item.id, name: item.name });
-                            setIsImageManagerOpen(true);
-                          }}
-                        >
-                          {item.image_url ? (
-                            <img 
-                              src={item.image_url.startsWith("/v1") 
-                                ? `http://localhost:3001${item.image_url}` 
-                                : item.image_url} 
-                              alt={item.name} 
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                          {item.currentStock <= item.minStock && (
+                            <span className="text-[9px] font-black uppercase tracking-tighter text-rose-500 mt-0.5">Threshold Alert</span>
                           )}
                         </div>
-                      </td>
-                      <td className="p-3 font-medium">{item.sku}</td>
-                      <td className="p-3">{item.name}</td>
-                      <td className="p-3 text-muted-foreground">
-                        {balance.location_id}
-                      </td>
-                      <td className="p-3 text-muted-foreground">
-                        {balance.department_id || "GENERAL"}
-                      </td>
-                      <td className="p-3 text-right font-mono font-bold">
-                        {balance.quantity?.toLocaleString()}
-                      </td>
-                      <td className="p-3 text-muted-foreground">
-                        {balance.reorder_point}
-                      </td>
-                      <td className="p-3 text-xs text-muted-foreground">
-                        {(item.module_tags || []).join(", ")}
-                      </td>
-                      <td className="p-3 text-right" onClick={(e) => e.stopPropagation()}>
+                      </TableCell>
+                      <TableCell className="py-6 text-center">
+                        <Badge variant="outline" className={`text-[9px] font-black tracking-[0.2em] rounded-lg border-none uppercase ${
+                          item.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-500' : 
+                          item.status === 'DRAFT' ? 'bg-amber-500/10 text-amber-500' : 
+                          'bg-slate-500/10 text-slate-500'
+                        }`}>
+                          {item.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-6 text-right pr-8">
                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4" />
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" className="h-8 w-8 p-0 rounded-xl hover:bg-primary/10">
+                              <MoreHorizontal className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              className="gap-2"
-                              onClick={() => {
-                                setSelectedItemForReclassify(item);
-                                setNewCategoryId("");
-                                setIsReclassifyOpen(true);
-                              }}
-                            >
-                              <Move className="h-4 w-4" /> Change Category
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="gap-2"
-                              onClick={() => {
-                                setSelectedItemForImages({ id: item.id, name: item.name });
-                                setIsImageManagerOpen(true);
-                              }}
-                            >
-                              <ImageIcon className="h-4 w-4" /> Manage Images
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="gap-2 text-destructive"
-                              onClick={() => handleDelete(item.id)}
-                            >
-                              <Trash2 className="h-4 w-4" /> Delete Item
-                            </DropdownMenuItem>
+                          <DropdownMenuContent align="end" className="w-56 rounded-2xl border-none shadow-2xl p-2 bg-white dark:bg-slate-900">
+                            <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest opacity-40 px-4 py-3">Operations</DropdownMenuLabel>
+                            <DropdownMenuItem className="rounded-xl px-4 py-3 text-xs font-bold cursor-pointer"><TrendingUp className="h-4 w-4 mr-3" /> Quick Adjustment</DropdownMenuItem>
+                            <DropdownMenuItem className="rounded-xl px-4 py-3 text-xs font-bold cursor-pointer"><ArrowRightLeft className="h-4 w-4 mr-3" /> Execute Transfer</DropdownMenuItem>
+                            <DropdownMenuItem className="rounded-xl px-4 py-3 text-xs font-bold cursor-pointer"><History className="h-4 w-4 mr-3" /> Movement Logs</DropdownMenuItem>
+                            <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800 my-2 mx-2" />
+                            <DropdownMenuItem className="rounded-xl px-4 py-3 text-xs font-bold cursor-pointer text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"><Settings className="h-4 w-4 mr-3" /> Discontinue Item</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </DataTableShell>
-          </div>
-        </Card>
-      )}
-      <Dialog
-        open={!!selectedBalance}
-        onOpenChange={(open) => { if (!open) setSelectedBalance(null); }}
-      >
-        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-0 overflow-hidden rounded-[2rem] border-none shadow-2xl bg-slate-950/90 backdrop-blur-3xl">
-          <DialogHeader className="p-8 border-b border-white/5 bg-slate-900/50">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
-                {selectedBalance?.item.image_url ? (
-                  <img 
-                    src={selectedBalance.item.image_url.startsWith("/v1") 
-                      ? `http://localhost:3001${selectedBalance.item.image_url}` 
-                      : selectedBalance.item.image_url} 
-                    alt={selectedBalance.item.name} 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <Package className="w-8 h-8 text-white/20" />
+                      </TableCell>
+                    </TableRow>
+                  ))
                 )}
-              </div>
-              <div>
-                <DialogTitle className="text-2xl font-black italic uppercase tracking-tight text-white">
-                  {selectedBalance?.item.name}
-                </DialogTitle>
-                <div className="flex items-center gap-2 mt-1">
-                   <UIBadge variant="outline" className="bg-white/5 border-white/10 text-[10px] font-bold italic py-0 px-2">
-                     {selectedBalance?.item.sku}
-                   </UIBadge>
-                   <UIBadge className="bg-indigo-500/10 text-indigo-400 border-indigo-500/20 text-[10px] font-bold italic py-0 px-2 uppercase">
-                     {selectedBalance?.balance.location_id}
-                   </UIBadge>
-                </div>
-              </div>
-            </div>
-          </DialogHeader>
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </CardContent>
+      </Card>
+    </div>
+  );
 
-          <Tabs defaultValue="overview" className="flex-1 flex flex-col overflow-hidden">
-            <div className="px-8 border-b border-white/5 bg-slate-900/30">
-              <TabsList className="bg-transparent gap-6 h-12 p-0 justify-start">
-                <TabsTrigger value="overview" className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 border-indigo-500 rounded-none h-12 text-[10px] font-black uppercase italic tracking-widest px-0">Overview</TabsTrigger>
-                <TabsTrigger value="sales" className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 border-indigo-500 rounded-none h-12 text-[10px] font-black uppercase italic tracking-widest px-0">Sales</TabsTrigger>
-                <TabsTrigger value="procurement" className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 border-indigo-500 rounded-none h-12 text-[10px] font-black uppercase italic tracking-widest px-0">Procurement</TabsTrigger>
-                <TabsTrigger value="movements" className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 border-indigo-500 rounded-none h-12 text-[10px] font-black uppercase italic tracking-widest px-0">Movements</TabsTrigger>
-                <TabsTrigger value="media" className="data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-b-2 border-indigo-500 rounded-none h-12 text-[10px] font-black uppercase italic tracking-widest px-0">Media</TabsTrigger>
-              </TabsList>
-            </div>
+  return (
+    <DepartmentWorkspaceLayout
+      title="Stock Hub"
+      subtitle="Strategic inventory visibility and logistics command."
+      headerIcon={Package}
+      accentColor="blue"
+      engineName="LOGISTICS_ENGINE"
+      pulseLabel="Supply Pulse"
+      pulseIcon={Activity}
+      sections={SECTIONS}
+      routeLabels={{}}
+      basePath="/core/inventory/stock"
+      headerActions={headerActions}
+    >
+      {mainContent}
 
-            <div className="flex-1 overflow-y-auto p-8">
-              <TabsContent value="overview" className="m-0 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="grid grid-cols-2 gap-8">
-                  <div className="space-y-6">
-                    <div className="space-y-4">
-                      <h4 className="text-[10px] font-black uppercase italic tracking-widest text-indigo-400">Identity & Naming</h4>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500">Item Name</Label>
-                        <Input 
-                          value={editingItemData.name || ""} 
-                          onChange={(e) => setEditingItemData(prev => ({ ...prev, name: e.target.value }))}
-                          className="h-12 rounded-xl bg-white/5 border-white/10 text-white italic font-bold focus:ring-indigo-500"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-bold uppercase text-slate-500">Description</Label>
-                        <textarea 
-                          value={editingItemData.description || ""} 
-                          onChange={(e) => setEditingItemData(prev => ({ ...prev, description: e.target.value }))}
-                          className="w-full h-32 rounded-xl bg-white/5 border-white/10 text-white p-3 text-sm italic font-medium focus:ring-1 focus:ring-indigo-500 outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="pt-4 border-t border-white/5">
-                      <Button 
-                        onClick={handleSaveItemEdit} 
-                        disabled={isSavingItem}
-                        className="w-full h-12 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-black italic uppercase tracking-widest text-[10px] gap-2 shadow-lg shadow-indigo-500/20"
-                      >
-                        {isSavingItem ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-                        Commit Metadata Changes
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-6">
-                    <h4 className="text-[10px] font-black uppercase italic tracking-widest text-indigo-400">Stock Velocity</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                        <span className="text-[10px] font-bold uppercase text-slate-500">Available Stock</span>
-                        <div className="text-2xl font-black text-white italic mt-1">
-                          {selectedBalance?.balance.quantity?.toLocaleString()}
-                          <span className="text-xs text-slate-500 ml-1 font-bold">{selectedBalance?.item.unit}</span>
-                        </div>
-                      </div>
-                      <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                        <span className="text-[10px] font-bold uppercase text-slate-500">Unit Type</span>
-                        <div className="text-2xl font-black text-white italic mt-1 uppercase">
-                          {selectedBalance?.item.unit || "pcs"}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <h4 className="text-[10px] font-black uppercase italic tracking-widest text-indigo-400">Actions</h4>
-                      <div className="grid grid-cols-2 gap-3">
-                        <Button
-                          variant="outline"
-                          className="h-14 rounded-2xl border-white/10 bg-white/5 text-white font-black italic uppercase tracking-widest text-[9px] gap-2 hover:bg-white/10"
-                          onClick={() => {
-                            setSelectedBalance(null);
-                            setTimeout(() => setIsTransferOpen(true), 50);
-                          }}
-                        >
-                          <ArrowRightLeft className="w-4 h-4" /> Transfer
-                        </Button>
-                        <Button
-                          variant="outline"
-                          className="h-14 rounded-2xl border-white/10 bg-white/5 text-white font-black italic uppercase tracking-widest text-[9px] gap-2 hover:bg-white/10"
-                          onClick={() => {
-                            setSelectedBalance(null);
-                            setTimeout(() => setIsAdjustmentOpen(true), 50);
-                          }}
-                        >
-                          <ClipboardCheck className="w-4 h-4" /> Adjustment
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="sales" className="m-0 animate-in fade-in slide-in-from-right-4 duration-500">
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-black uppercase italic tracking-widest text-indigo-400">Recent Outbound Flow</h4>
-                  {isLoadingHistory ? (
-                    <div className="flex items-center justify-center py-20">
-                      <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
-                    </div>
-                  ) : salesHistory.length > 0 ? (
-                    <div className="rounded-2xl border border-white/5 overflow-hidden">
-                      <table className="w-full text-[11px]">
-                        <thead>
-                          <tr className="bg-white/5 text-slate-500 uppercase italic font-black">
-                            <th className="p-3 text-left">Order ID</th>
-                            <th className="p-3 text-left">Date</th>
-                            <th className="p-3 text-right">Qty</th>
-                            <th className="p-3 text-right">Unit Price</th>
-                            <th className="p-3 text-right">Total</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                          {salesHistory.map((s) => (
-                            <tr key={s.id} className="text-white hover:bg-white/5 transition-colors">
-                              <td className="p-3 font-mono font-bold">{s.order_id.substring(0,8)}...</td>
-                              <td className="p-3 font-bold italic">{new Date(s.retail_orders?.created_at).toLocaleDateString()}</td>
-                              <td className="p-3 text-right font-black italic">{s.quantity}</td>
-                              <td className="p-3 text-right text-slate-400">${Number(s.unit_price).toLocaleString()}</td>
-                              <td className="p-3 text-right text-indigo-400 font-black italic">${Number(s.total_price).toLocaleString()}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[2rem]">
-                       <p className="text-slate-500 font-black italic uppercase text-[10px] tracking-widest">No sales data found for this item.</p>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="procurement" className="m-0 animate-in fade-in slide-in-from-right-4 duration-500">
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-black uppercase italic tracking-widest text-indigo-400">Recent Inbound Requisitions</h4>
-                  {isLoadingHistory ? (
-                    <div className="flex items-center justify-center py-20">
-                      <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
-                    </div>
-                  ) : procurementHistory.length > 0 ? (
-                    <div className="rounded-2xl border border-white/5 overflow-hidden">
-                      <table className="w-full text-[11px]">
-                        <thead>
-                          <tr className="bg-white/5 text-slate-500 uppercase italic font-black">
-                            <th className="p-3 text-left">Draft ID</th>
-                            <th className="p-3 text-left">Supplier</th>
-                            <th className="p-3 text-left">Date</th>
-                            <th className="p-3 text-left">Status</th>
-                            <th className="p-3 text-right">Value</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                          {procurementHistory.map((p) => (
-                            <tr key={p.id} className="text-white hover:bg-white/5 transition-colors">
-                              <td className="p-3 font-mono font-bold">{p.id.substring(0,8)}...</td>
-                              <td className="p-3 font-bold">{p.supplier || "Unknown"}</td>
-                              <td className="p-3 italic">{new Date(p.date).toLocaleDateString()}</td>
-                              <td className="p-3">
-                                <UIBadge className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[9px] font-black italic py-0 px-2 uppercase">
-                                  {p.status}
-                                </UIBadge>
-                              </td>
-                              <td className="p-3 text-right font-black italic">${Number(p.total).toLocaleString()}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div className="py-20 text-center border-2 border-dashed border-white/5 rounded-[2rem]">
-                       <p className="text-slate-500 font-black italic uppercase text-[10px] tracking-widest">No procurement records found.</p>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="movements" className="m-0 animate-in fade-in slide-in-from-right-4 duration-500">
-                 <div className="space-y-4">
-                  <h4 className="text-[10px] font-black uppercase italic tracking-widest text-indigo-400">Stock Movement Log</h4>
-                  <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                    <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-white/5">
-                      {movementHistory.map((m, idx) => (
-                        <div key={idx} className="relative">
-                          <div className={`absolute left-[-26px] top-1 w-[18px] h-[18px] rounded-full border-2 bg-slate-950 ${
-                            m.type === 'intake' || m.type === 'RESTOCK' ? 'border-emerald-500' : 
-                            m.type === 'deduction' || m.type === 'CONSUMPTION' || m.type === 'SALE' ? 'border-red-500' : 'border-indigo-500'
-                          }`}></div>
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="text-white font-black italic uppercase text-[11px] tracking-tight">{m.type}</p>
-                              <p className="text-[10px] text-slate-500 font-bold mt-0.5">Reference: {m.reference_id || 'N/A'}</p>
-                              <p className="text-[9px] text-slate-600 italic mt-1 uppercase font-black">{new Date(m.created_at).toLocaleString()}</p>
-                            </div>
-                            <div className={`text-sm font-black italic ${
-                              m.quantity > 0 ? 'text-emerald-400' : 'text-red-400'
-                            }`}>
-                              {m.quantity > 0 ? '+' : ''}{m.quantity}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      {movementHistory.length === 0 && (
-                        <div className="py-10 text-center text-slate-600 uppercase font-black italic text-[10px] tracking-widest">
-                          No movements tracked in this session.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="media" className="m-0 animate-in fade-in slide-in-from-right-4 duration-500">
-                <div className="space-y-6">
-                  <h4 className="text-[10px] font-black uppercase italic tracking-widest text-indigo-400">Media Assets</h4>
-                  <div className="grid grid-cols-4 gap-4">
-                    <div 
-                      className="aspect-square rounded-[2rem] border-2 border-dashed border-white/5 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-white/5 hover:border-indigo-500/50 transition-all group"
-                      onClick={() => {
-                        setSelectedItemForImages({ id: selectedBalance!.item.id, name: selectedBalance!.item.name });
-                        setIsImageManagerOpen(true);
-                      }}
-                    >
-                      <Plus className="w-6 h-6 text-slate-500 group-hover:text-indigo-400 group-hover:scale-110 transition-transform" />
-                      <span className="text-[9px] font-black uppercase italic tracking-widest text-slate-500 group-hover:text-indigo-400">Upload Media</span>
-                    </div>
-                    {/* Primary Image Preview */}
-                    {selectedBalance?.item.image_url && (
-                       <div className="aspect-square rounded-[2rem] border border-white/10 overflow-hidden relative group shadow-2xl">
-                          <img 
-                            src={selectedBalance.item.image_url.startsWith("/v1") 
-                              ? `http://localhost:3001${selectedBalance.item.image_url}` 
-                              : selectedBalance.item.image_url} 
-                            alt="Primary"
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                             <Button size="sm" variant="outline" className="h-8 rounded-xl text-[9px] font-black uppercase italic border-white/20 bg-slate-900/50" onClick={() => {
-                                setSelectedItemForImages({ id: selectedBalance!.item.id, name: selectedBalance!.item.name });
-                                setIsImageManagerOpen(true);
-                             }}>
-                                Manage
-                             </Button>
-                          </div>
-                          <div className="absolute top-3 left-3">
-                             <UIBadge className="bg-indigo-500 text-white border-none text-[8px] font-black italic px-2">PRIMARY</UIBadge>
-                          </div>
-                       </div>
-                    )}
-                  </div>
-                  <div className="p-6 rounded-[2rem] bg-indigo-500/5 border border-indigo-500/10 flex items-center gap-4 italic">
-                    <ImageIcon className="w-6 h-6 text-indigo-400" />
-                    <p className="text-[10px] text-indigo-200/50 leading-relaxed font-bold">
-                      Assets are automatically optimized for all retail channels. Supported formats: JPG, PNG, WEBP.
-                    </p>
-                  </div>
-                </div>
-              </TabsContent>
-            </div>
-
-            <div className="p-8 border-t border-white/5 bg-slate-900/50 flex justify-end">
-               <Button variant="ghost" onClick={() => setSelectedBalance(null)} className="h-12 rounded-xl text-slate-500 hover:text-white font-black italic uppercase tracking-widest text-[10px]">
-                 Dismiss Detail
-               </Button>
-            </div>
-          </Tabs>
-        </DialogContent>
-      </Dialog>
-
-      <TransferDialog
-        open={isTransferOpen}
-        onOpenChange={setIsTransferOpen}
-        selectedBalance={selectedBalance}
-        onSuccess={() => {
-          setStatusMessage("Transfer successfully logged.");
-          refresh();
-        }}
+      <ItemDetailsModal
+        item={selectedItem}
+        open={!!selectedItem}
+        onOpenChange={(open) => !open && setSelectedItem(null)}
+        onUpdated={fetchData}
       />
 
-      <BatchIntakeDialog
-        open={isBatchIntakeOpen}
-        onOpenChange={setIsBatchIntakeOpen}
-        onSuccess={() => {
-          setStatusMessage("Batch intake successfully processed.");
-          refresh();
-        }}
-      />
-
-      <BatchTransferDialog
-        open={isBatchTransferOpen}
-        onOpenChange={setIsBatchTransferOpen}
-        selectedIds={selectedIds}
-        balances={balances}
-        onSuccess={() => {
-          setStatusMessage("Bulk transfer completed.");
-          refresh();
-          setSelectedIds([]);
-        }}
-      />
-
-      <AdjustmentDialog
-        open={isAdjustmentOpen}
-        onOpenChange={setIsAdjustmentOpen}
-        selectedBalance={selectedBalance}
-        onSuccess={() => {
-          setStatusMessage("Adjustment request submitted for approval.");
-          refresh();
-        }}
+      <CreateItemDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        onSuccess={fetchData}
       />
 
       <ImportDialog
         open={isImportOpen}
         onOpenChange={setIsImportOpen}
+        onSuccess={fetchData}
         endpoint="inventory/items/import"
-        title="Import Inventory Items"
-        type="DATA"
-        onSuccess={() => {
-          refresh();
-        }}
+        title="Bulk Inventory Import"
       />
 
       <ImportDialog
         open={isImageImportOpen}
         onOpenChange={setIsImageImportOpen}
-        endpoint="inventory/items/import/images"
-        title="Bulk Image Migration"
+        onSuccess={fetchData}
         type="IMAGES"
-        onSuccess={() => {
-          refresh();
-        }}
+        endpoint="inventory/items/import/images"
+        title="Bulk Image Upload"
       />
 
-      {/* New Item Creation Dialog */}
-      <Dialog
-        open={isNewItemOpen}
-        onOpenChange={(open) => {
-          setIsNewItemOpen(open);
-          if (!open) resetNewItemForm();
-        }}
-      >
-        <DialogContent
-          className="max-w-6xl rounded-[2.5rem] p-0 border-none shadow-2xl bg-slate-50 overflow-hidden h-[90vh] flex flex-col"
-        >
-          <div className="flex-1 overflow-y-auto pt-6 px-1">
-            <ItemCreationTab
-              canWrite={true}
-              session={session}
-              tenantId={session.tenant_id}
-              categoryOptions={
-                dynamicCategories.length > 0
-                  ? dynamicCategories.map((c) => ({ id: c.name, name: c.name }))
-                  : [
-                      { id: "all", name: "All Categories" },
-                      ...ITEM_CATEGORIES.map((c) => ({ id: c, name: c })),
-                    ]
-              }
-              onSuccess={() => {
-                setIsNewItemOpen(false);
-                refresh();
-              }}
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {selectedItemForImages && (
-        <ImageManager
-          itemId={selectedItemForImages.id}
-          itemName={selectedItemForImages.name}
-          isOpen={isImageManagerOpen}
-          onClose={() => {
-            setIsImageManagerOpen(false);
-            setSelectedItemForImages(null);
-          }}
-          onImagesUpdated={refresh}
-        />
-      )}
-      <CategoryManager
-        isOpen={isCategoryManagerOpen}
-        onClose={() => setIsCategoryManagerOpen(false)}
-        onCategoriesChange={refresh}
+      <ExportDialog
+        open={isExportOpen}
+        onOpenChange={setIsExportOpen}
       />
 
-      <Dialog open={isReclassifyOpen} onOpenChange={setIsReclassifyOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reclassify Item</DialogTitle>
-            <DialogDescription>
-              Move <strong>{selectedItemForReclassify?.name}</strong> to a different category.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Select New Category</Label>
-              <Select value={newCategoryId} onValueChange={setNewCategoryId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {dynamicCategories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsReclassifyOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              disabled={!newCategoryId}
-              onClick={async () => {
-                try {
-                  await inventoryService.updateItemCategory(
-                    session.tenant_id,
-                    session,
-                    selectedItemForReclassify.id,
-                    newCategoryId,
-                  );
-                  setStatusMessage("Item reclassified successfully.");
-                  setIsReclassifyOpen(false);
-                  refresh();
-                } catch (err: any) {
-                  setErrorMessage(err.message || "Failed to reclassify item.");
-                }
-              }}
-            >
-              Update Category
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={isDiscoveryOpen} onOpenChange={setIsDiscoveryOpen}>
-        <DialogContent className="rounded-[2.5rem] border-white/10 bg-slate-900 text-white shadow-2xl max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-black italic tracking-tighter uppercase text-indigo-400">
-              Audit Discovery Terminal
-            </DialogTitle>
-            <DialogDescription className="text-slate-400 font-bold italic">
-              Classify and record items found during physical audit that are not synchronized with the digital ledger.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6 py-6">
-            <div className="grid grid-cols-2 gap-4">
-              <Button 
-                variant={discoveryType === "NEW_DISCOVERY" ? "default" : "outline"}
-                onClick={() => setDiscoveryType("NEW_DISCOVERY")}
-                className={`h-20 rounded-2xl flex flex-col items-center justify-center gap-1 border-white/10 ${discoveryType === "NEW_DISCOVERY" ? "bg-white text-slate-950" : "bg-white/5 text-white"}`}
-              >
-                <PackagePlus className="w-6 h-6" />
-                <span className="text-[10px] font-black uppercase italic">Add to Stock</span>
-              </Button>
-              <Button 
-                variant={discoveryType === "ANOMALY" ? "default" : "outline"}
-                onClick={() => setDiscoveryType("ANOMALY")}
-                className={`h-20 rounded-2xl flex flex-col items-center justify-center gap-1 border-white/10 ${discoveryType === "ANOMALY" ? "bg-red-500 text-white" : "bg-white/5 text-white"}`}
-              >
-                <AlertCircle className="w-6 h-6" />
-                <span className="text-[10px] font-black uppercase italic">Mark as Anomaly</span>
-              </Button>
-            </div>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Barcode</Label>
-                  <div className="flex gap-2">
-                    <Input 
-                      value={discoveryBarcode} 
-                      onChange={e => setDiscoveryBarcode(e.target.value)}
-                      placeholder="SCAN OR ENTER..."
-                      className="h-12 rounded-xl bg-white/5 border-white/10 text-white font-bold italic uppercase"
-                    />
-                    {!discoveryBarcode && (
-                      <Button onClick={generateSystemBarcode} variant="outline" className="h-12 w-12 shrink-0 rounded-xl border-white/10 bg-white/5">
-                        <RefreshCw className="w-4 h-4 text-indigo-400" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">SKU</Label>
-                  <Input 
-                    value={discoverySku} 
-                    onChange={e => setDiscoverySku(e.target.value)}
-                    placeholder="ENTER SKU..."
-                    className="h-12 rounded-xl bg-white/5 border-white/10 text-white font-bold italic uppercase"
-                  />
-                </div>
-              </div>
-
-              {discoveryType === "NEW_DISCOVERY" && (
-                <>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Item Name</Label>
-                    <Input 
-                      value={discoveryName} 
-                      onChange={e => setDiscoveryName(e.target.value)}
-                      placeholder="PRODUCT DESCRIPTION..."
-                      className="h-12 rounded-xl bg-white/5 border-white/10 text-white font-bold italic uppercase"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Category</Label>
-                    <Select value={discoveryCategory} onValueChange={setDiscoveryCategory}>
-                      <SelectTrigger className="h-12 rounded-xl bg-white/5 border-white/10 text-white font-bold italic">
-                        <SelectValue placeholder="SELECT CATEGORY..." />
-                      </SelectTrigger>
-                      <SelectContent className="bg-slate-900 border-white/10 text-white">
-                        {ITEM_CATEGORIES.map(c => (
-                          <SelectItem key={c} value={c} className="font-bold italic">{c}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </>
-              )}
-
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Reason for {discoveryType === "ANOMALY" ? "Anomaly" : "Stock Addition"}</Label>
-                <Input 
-                  value={discoveryReason} 
-                  onChange={e => setDiscoveryReason(e.target.value)}
-                  placeholder="E.G. FOUND UNREGISTERED IN BIN 04..."
-                  className="h-12 rounded-xl bg-white/5 border-white/10 text-white font-bold italic uppercase"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Notes / Details</Label>
-                <Input 
-                  value={discoveryNotes} 
-                  onChange={e => setDiscoveryNotes(e.target.value)}
-                  placeholder="ADDITIONAL CONTEXT..."
-                  className="h-12 rounded-xl bg-white/5 border-white/10 text-white font-bold italic uppercase"
-                />
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter className="gap-3">
-            <Button variant="ghost" onClick={() => setIsDiscoveryOpen(false)} className="rounded-xl font-black italic uppercase text-[10px] tracking-widest text-slate-500">Cancel</Button>
-            <Button 
-              onClick={handleDiscovery} 
-              disabled={isProcessingDiscovery || !discoveryReason.trim()}
-              className={`h-14 px-8 rounded-xl font-black italic uppercase tracking-widest text-xs gap-2 ${discoveryType === "ANOMALY" ? "bg-red-500 text-white hover:bg-red-600" : "bg-white text-slate-950 hover:bg-slate-200"}`}
-            >
-              {isProcessingDiscovery ? <RefreshCw className="w-4 h-4 animate-spin" /> : (discoveryType === "ANOMALY" ? <AlertCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />)} 
-              {discoveryType === "ANOMALY" ? "Log Anomaly" : "Add to Audit"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+      <CategoryDialog
+        open={isCategoryOpen}
+        onOpenChange={setIsCategoryOpen}
+        onSuccess={fetchData}
+      />
+    </DepartmentWorkspaceLayout>
   );
 }

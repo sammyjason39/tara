@@ -10,14 +10,14 @@
 
 @layer base {
   :root {
-    /* Core Palette - Ultra Clean Light */
-    --background: 210 40% 98%;
+    /* Core Palette - Ultra Clean Light Tactical */
+    --background: 210 50% 98%;
     --foreground: 224 71% 4%;
 
-    /* Surface Layers - Light Mode Depth */
-    --surface-1: 210 40% 98%;
+    /* Surface Layers - Light Mode Depth (Vibrant) */
+    --surface-1: 210 50% 98%;
     --surface-2: 0 0% 100%;
-    --surface-3: 220 14% 96%;
+    --surface-3: 215 25% 95%;
 
     --card: 0 0% 100%;
     --card-foreground: 224 71% 4%;
@@ -25,23 +25,23 @@
     --popover: 0 0% 100%;
     --popover-foreground: 224 71% 4%;
 
-    /* Primary - Electric Indigo Vibrant */
-    --primary: 243 75% 59%;
+    /* Primary - Electric Indigo Vibrant (More Saturated for Light Mode) */
+    --primary: 243 85% 55%;
     --primary-foreground: 210 40% 98%;
 
     /* Secondary - Professional Slate */
-    --secondary: 220 14% 96%;
+    --secondary: 215 20% 94%;
     --secondary-foreground: 224 71% 4%;
 
-    /* Text Contrast Tokens */
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 12% 40%; /* Darker for accessibility */
-    --label-foreground: 220 12% 30%; /* For small labels */
+    /* Text Contrast Tokens (Strict Readability) */
+    --muted: 215 20% 94%;
+    --muted-foreground: 215 16% 35%; /* Sharper for light mode */
+    --label-foreground: 215 16% 25%; /* Stronger labels */
 
-    --accent: 243 75% 59%;
+    --accent: 243 85% 55%;
     --accent-foreground: 224 71% 4%;
 
-    /* Semantic Colors */
+    /* Semantic Colors (Tactical High-Contrast) */
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
@@ -55,24 +55,24 @@
     --info-foreground: 210 40% 98%;
 
     /* Borders & Inputs */
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 243 75% 59%;
+    --border: 215 20% 90%;
+    --input: 215 20% 90%;
+    --ring: 243 85% 55%;
 
     --radius: 1.25rem;
 
-    /* Sidebar */
+    /* Sidebar - High Contrast Slate */
     --sidebar-background: 222 47% 11%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 243 75% 59%;
+    --sidebar-primary: 243 85% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 243 75% 15%;
+    --sidebar-accent: 243 85% 15%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 217 33% 17%;
-    --sidebar-ring: 243 75% 59%;
+    --sidebar-ring: 243 85% 55%;
 
-    /* Chart Colors */
-    --chart-1: 243 75% 59%;
+    /* Chart Colors - Vibrant */
+    --chart-1: 243 85% 55%;
     --chart-2: 142 76% 36%;
     --chart-3: 38 92% 50%;
     --chart-4: 280 68% 60%;
@@ -103,8 +103,8 @@
 
     /* Text Contrast Tokens - Dark Mode */
     --muted: 217 33% 12%;
-    --muted-foreground: 215 15% 75%; /* Brighter for readability */
-    --label-foreground: 215 15% 85%; /* High visibility labels */
+    --muted-foreground: 215 15% 75%;
+    --label-foreground: 215 15% 85%;
 
     --accent: 243 75% 65%;
     --accent-foreground: 210 40% 98%;

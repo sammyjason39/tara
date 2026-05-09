@@ -265,7 +265,7 @@ export class InventoryController {
     };
   }
 
-  @Post("items/import")
+  @Post(["items/import", "import"])
   @UseInterceptors(FileInterceptor("file", {
     storage: diskStorage({
       destination: (req, file, cb) => {
@@ -312,7 +312,7 @@ export class InventoryController {
     };
   }
 
-  @Post("items/import/images")
+  @Post(["items/import/images", "import/images"])
   @UseInterceptors(FileInterceptor("file", {
     storage: diskStorage({
       destination: (req, file, cb) => {

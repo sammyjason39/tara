@@ -1,5 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
-import { PageHeader } from "@/core/ui/PageHeader";
+﻿import { useEffect, useState, useCallback } from "react";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { useSession } from "@/core/security/session";
 import { apiRequest } from "@/core/api/apiClient";
@@ -33,6 +32,10 @@ import {
   Loader2,
   ChevronRight,
   User,
+  Layout,
+  Radio,
+  FileText,
+  Activity
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -48,6 +51,25 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import DepartmentWorkspaceLayout from "@/components/layouts/DepartmentWorkspaceLayout";
+
+const SECTIONS = [
+  {
+    title: "COMMUNICATION",
+    items: [
+      { id: 'bulletin', icon: Megaphone, label: "Bulletin Board", to: "/core/comms/bulletin" },
+      { id: 'chat', icon: MessageSquare, label: "Live Chat", to: "/core/comms/chat" },
+      { id: 'mail', icon: Send, label: "Secure Mail", to: "/core/comms/mail" },
+    ]
+  },
+  {
+    title: "CONTENT",
+    items: [
+      { id: 'broadcast', icon: Radio, label: "Broadcasts", to: "/core/comms/broadcast" },
+      { id: 'docs', icon: FileText, label: "Internal Docs", to: "/core/comms/docs" },
+    ]
+  }
+];
 
 interface BulletinComment {
   id: string;
@@ -271,47 +293,37 @@ export default function BulletinHub() {
     return matchesSearch && matchesCategory;
   });
 
-  return (
-    <TooltipProvider delayDuration={400}>
-      <div className="space-y-6">
-        <PageHeader
-          title="Bulletin Board"
-          subtitle="Stay informed with the latest announcements and discussions."
-          primaryAction={
-            <div className="flex gap-3">
-              <Button
-                onClick={() => openCreate("TOPIC")}
-                variant="outline"
-                className="border-primary/20 hover:bg-primary/5 shadow-sm transition-all active:scale-95 px-6 font-black uppercase tracking-widest text-[10px] h-12"
-              >
-                <Plus className="h-3 w-3 mr-2" /> New Topic
-              </Button>
-              <Button
-                onClick={() => openCreate("CONTENT")}
-                className="bg-primary hover:bg-primary/90 shadow-lg transition-all active:scale-95 px-6 font-black uppercase tracking-widest text-[10px] h-12"
-              >
-                <Send className="h-3 w-3 mr-2" /> Post Content
-              </Button>
-            </div>
-          }
-        />
+  const headerActions = (
+    <div className="flex gap-2">
+      <Button
+        onClick={() => openCreate("TOPIC")}
+        variant="outline"
+        className="rounded-xl border-slate-200 bg-white shadow-sm hover:bg-slate-50 font-bold text-[10px] uppercase tracking-widest h-9"
+      >
+        <Plus className="h-3 w-3 mr-2" /> New Topic
+      </Button>
+      <Button
+        onClick={() => openCreate("CONTENT")}
+        className="rounded-xl bg-slate-900 hover:bg-black text-white shadow-sm font-bold text-[10px] uppercase tracking-widest h-9"
+      >
+        <Send className="h-3 w-3 mr-2" /> Post Content
+      </Button>
+    </div>
+  );
 
+  const mainContent = (
+    <TooltipProvider delayDuration={400}>
+      <div className="space-y-6 p-6">
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search posts..."
-              className="pl-10 h-12 bg-card border-none shadow-sm focus-visible:ring-1 text-sm font-bold"
+              className="pl-10 h-12 bg-white dark:bg-slate-900 border-slate-200 shadow-sm rounded-2xl text-sm font-bold"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
             />
           </div>
-          <Button
-            onClick={() => openCreate("TOPIC")}
-            className="h-12 px-8 bg-slate-900 hover:bg-black text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-slate-200"
-          >
-            <Plus className="h-4 w-4 mr-2" /> Create Topic
-          </Button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -448,7 +460,7 @@ export default function BulletinHub() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className={`h-10 px-4 text-[10px) font-black uppercase tracking-widest transition-all rounded-xl ${isActionLoading?.startsWith(`${post.id}-DISLIKE`) ? "opacity-50" : ""}`}
+                            className={`h-10 px-4 text-[10px] font-black uppercase tracking-widest transition-all rounded-xl ${isActionLoading?.startsWith(`${post.id}-DISLIKE`) ? "opacity-50" : ""}`}
                             onClick={() => handleReact(post.id, "DISLIKE")}
                             disabled={!!isActionLoading}
                           >
@@ -798,74 +810,99 @@ export default function BulletinHub() {
                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2">Context</label>
                     <Textarea 
                       placeholder="Share your insights..." 
-                      className="min-h-[200px] border-none bg-slate-50 dark:bg-slate-800 rounded-3xl p-6 text-sm font-medium leading-relaxed shadow-inner"
+                      className="min-h-[200px] border-none bg-slate-50 dark:bg-slate-800 rounded-2xl px-6 py-4 text-sm font-medium shadow-inner focus-visible:ring-1 focus-visible:ring-primary/20 resize-none"
                       value={newPost.body}
                       onChange={e => setNewPost({...newPost, body: e.target.value})}
                     />
                   </div>
                </div>
-               
-               <div className="flex justify-end gap-4 pt-4">
-                  <Button variant="ghost" className="h-12 px-8 font-black uppercase tracking-widest text-[10px] text-rose-500 hover:bg-rose-50" onClick={() => setIsCreateOpen(false)}>Discard</Button>
-                  <Button 
-                    className="h-12 px-10 rounded-2xl bg-slate-900 hover:bg-black text-white shadow-xl font-black uppercase tracking-widest text-[10px]"
-                    onClick={handleCreatePost}
-                  >
-                    Transmit Global <ChevronRight className="h-4 w-4 ml-2" />
-                  </Button>
-               </div>
             </div>
+            <DialogFooter className="p-10 bg-slate-50 dark:bg-slate-800/20 border-t">
+              <Button variant="ghost" onClick={() => setIsCreateOpen(false)} className="rounded-xl font-black uppercase tracking-widest text-[10px]">Discard</Button>
+              <Button onClick={handleCreatePost} className="rounded-xl px-8 bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 font-black uppercase tracking-widest text-[10px]">Publish Entry</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* Manage Categories Dialog */}
+        {/* Category Management Dialog */}
         <Dialog open={isCategoryManageOpen} onOpenChange={setIsCategoryManageOpen}>
-          <DialogContent className="sm:max-w-xl border-none shadow-3xl bg-white dark:bg-slate-900 p-0 overflow-hidden rounded-[3rem]">
-             <DialogHeader className="p-10 border-b bg-indigo-500 text-white">
-                <DialogTitle className="text-3xl font-black tracking-tighter">Channel Architect</DialogTitle>
-                <div className="text-[10px] font-black uppercase tracking-widest text-indigo-100 mt-1">Configure Public Interest Groups</div>
-             </DialogHeader>
-             
-             <div className="p-10 space-y-10">
-                <div className="space-y-4 bg-slate-50 dark:bg-slate-800/40 p-6 rounded-[2rem]">
-                   <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Initialize New channel</h4>
-                   <div className="grid grid-cols-2 gap-4">
-                      <Input 
-                        placeholder="Display Name" 
-                        className="h-11 rounded-xl border-none bg-white dark:bg-slate-900 text-xs font-bold"
-                        value={newCategory.name}
-                        onChange={e => setNewCategory({...newCategory, name: e.target.value})}
-                      />
-                      <Input 
-                        placeholder="Unique Code" 
-                        className="h-11 rounded-xl border-none bg-white dark:bg-slate-900 text-xs font-mono font-bold"
-                        value={newCategory.code}
-                        onChange={e => setNewCategory({...newCategory, code: e.target.value})}
-                      />
-                   </div>
-                   <Button className="w-full h-11 bg-slate-900 font-black uppercase tracking-widest text-[10px] rounded-xl" onClick={handleCreateCategory}>Establish channel</Button>
+          <DialogContent className="sm:max-w-md border-none shadow-3xl bg-white dark:bg-slate-900 p-0 overflow-hidden rounded-[3rem]">
+            <DialogHeader className="p-10 border-b bg-slate-50 dark:bg-slate-800/20">
+              <DialogTitle className="text-2xl font-black tracking-tighter">Channel Governance</DialogTitle>
+              <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-1">Configure Discussion Domains</div>
+            </DialogHeader>
+            <div className="p-10 space-y-6">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Name</label>
+                    <Input 
+                      placeholder="General" 
+                      className="h-11 border-none bg-slate-50 dark:bg-slate-800 rounded-xl px-4 text-xs font-black shadow-inner"
+                      value={newCategory.name}
+                      onChange={e => setNewCategory({...newCategory, name: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Code</label>
+                    <Input 
+                      placeholder="general" 
+                      className="h-11 border-none bg-slate-50 dark:bg-slate-800 rounded-xl px-4 text-xs font-black shadow-inner"
+                      value={newCategory.code}
+                      onChange={e => setNewCategory({...newCategory, code: e.target.value})}
+                    />
+                  </div>
                 </div>
-                
-                <div className="space-y-4">
-                   <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Active Infrastructure</h4>
-                   <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                      {(Array.isArray(categories) ? categories : []).map(cat => (
-                        <div key={cat.id} className="flex justify-between items-center p-4 bg-white dark:bg-slate-800 border rounded-2xl">
-                           <div className="flex items-center gap-4">
-                              <div className="h-3 w-3 rounded-full" style={{backgroundColor: cat.color}} />
-                              <span className="text-xs font-black uppercase tracking-widest">{cat.name}</span>
-                           </div>
-                           <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-500 hover:bg-rose-50" onClick={() => handleDeleteCategory(cat.id)}>
-                              <Trash2 className="h-4 w-4" />
-                           </Button>
-                        </div>
-                      ))}
-                   </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Vibrancy</label>
+                  <Input 
+                    type="color" 
+                    className="h-11 w-full border-none bg-slate-50 dark:bg-slate-800 rounded-xl px-2 shadow-inner"
+                    value={newCategory.color}
+                    onChange={e => setNewCategory({...newCategory, color: e.target.value})}
+                  />
                 </div>
-             </div>
+                <Button onClick={handleCreateCategory} className="w-full h-11 rounded-xl bg-slate-900 text-white font-black uppercase tracking-widest text-[10px]">Add Channel</Button>
+              </div>
+
+              <div className="pt-6 border-t space-y-4">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Active Domains</label>
+                <div className="space-y-2">
+                  {(Array.isArray(categories) ? categories : []).map(cat => (
+                    <div key={cat.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center gap-3">
+                        <div className="h-3 w-3 rounded-full" style={{backgroundColor: cat.color}} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">{cat.name}</span>
+                      </div>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-rose-500 hover:bg-rose-50" onClick={() => handleDeleteCategory(cat.id)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
     </TooltipProvider>
+  );
+
+  return (
+    <DepartmentWorkspaceLayout
+      title="Bulletin Board"
+      subtitle="Stay informed with the latest announcements and discussions."
+      headerIcon={Megaphone}
+      accentColor="indigo"
+      engineName="COMMUNICATION_ENGINE"
+      pulseLabel="Bulletin Pulse"
+      pulseIcon={Activity}
+      sections={SECTIONS}
+      routeLabels={{}}
+      basePath="/core/comms/bulletin"
+      headerActions={headerActions}
+    >
+      {mainContent}
+    </DepartmentWorkspaceLayout>
   );
 }

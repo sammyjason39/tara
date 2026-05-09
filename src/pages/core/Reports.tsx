@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PageShell } from "@/core/ui/PageShell";
-import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import {
   Download,
@@ -14,9 +12,14 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle2,
+  BarChart3,
+  Clock,
+  Plus,
+  Activity
 } from "lucide-react";
 import { useSession } from "@/core/security/session";
 import { reportingService } from "@/core/services/reportingService";
+import DepartmentWorkspaceLayout from "@/components/layouts/DepartmentWorkspaceLayout";
 
 interface ActiveJob {
   id: string;
@@ -98,6 +101,16 @@ const scheduledReports = [
   },
 ];
 
+const SECTIONS = [
+  {
+    title: "ANALYTICS",
+    items: [
+      { id: 'reports', icon: BarChart3, label: "All Reports", to: "/core/reports" },
+      { id: 'schedules', icon: Clock, label: "Schedules", to: "/core/reports/schedules" },
+    ]
+  }
+];
+
 export default function CoreReports() {
   const session = useSession();
   const [activeJobs, setActiveJobs] = useState<ActiveJob[]>([]);
@@ -162,179 +175,203 @@ export default function CoreReports() {
     reportingService.downloadReport(session, jobId);
   };
 
-  return (
-    <PageShell
-      header={
-        <PageHeader
-          title="Reports & Analytics"
-          subtitle="Generate, schedule, and export executive-ready reports."
-          primaryAction={<Button onClick={(e) => { e.preventDefault(); alert("Detailed View:\n\nMetadata: " + (typeof window !== "undefined" ? window.location.pathname : "N/A")); }}>New report</Button>}
-          secondaryActions={<Button disabled title="Not available yet" variant="outline">Manage schedules</Button>}
-        />
-      }
-    >
-      <div className="space-y-6">
-        {/* --- ACTIVE JOBS PANEL --- */}
-        {activeJobs.length > 0 && (
-          <WorkspacePanel 
-            title="Active Generation Jobs" 
-            description="Real-time progress of your requested reports."
-          >
-            <div className="space-y-3">
-              {(Array.isArray(activeJobs) ? activeJobs : []).map((job) => (
-                <div key={job.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
-                  <div className="flex items-center gap-3">
-                    {job.status === 'PENDING' || job.status === 'PROCESSING' ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    ) : job.status === 'COMPLETED' ? (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    ) : (
-                      <AlertCircle className="h-4 w-4 text-rose-500" />
-                    )}
-                    <div>
-                      <p className="text-sm font-medium">{job.report_type} ({job.id.slice(0, 8)})</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="w-32 h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-primary transition-all duration-500" 
-                            style={{ width: `${job.progress}%` }}
-                          />
-                        </div>
-                        <span className="text-[10px] text-muted-foreground">{job.progress}%</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={job.status === 'FAILED' ? 'destructive' : 'outline'}>
-                      {job.status}
-                    </Badge>
-                    {job.status === 'COMPLETED' && (
-                      <Button size="xs" variant="ghost" onClick={() => handleDownload(job.id)}>
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </WorkspacePanel>
-        )}
-
-        <WorkspacePanel
-          title="Report templates"
-          description="Click a format to queue generation."
+  const mainContent = (
+    <div className="space-y-6 p-6">
+      {/* --- ACTIVE JOBS PANEL --- */}
+      {activeJobs.length > 0 && (
+        <WorkspacePanel 
+          title="Active Generation Jobs" 
+          description="Real-time progress of your requested reports."
         >
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {(Array.isArray(categories) ? categories : []).map((category) => {
-              const Icon = category.icon;
-              return (
-                <div
-                  key={category.id}
-                  className="rounded-lg border p-4 transition-colors hover:bg-muted/40"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="rounded-lg border bg-muted/50 p-2">
-                      <Icon className="h-5 w-5 text-muted-foreground" />
+          <div className="space-y-3">
+            {(Array.isArray(activeJobs) ? activeJobs : []).map((job) => (
+              <div key={job.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
+                <div className="flex items-center gap-3">
+                  {job.status === 'PENDING' || job.status === 'PROCESSING' ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  ) : job.status === 'COMPLETED' ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 text-rose-500" />
+                  )}
+                  <div>
+                    <p className="text-sm font-medium">{job.report_type} ({job.id.slice(0, 8)})</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="w-32 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-primary transition-all duration-500" 
+                          style={{ width: `${job.progress}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">{job.progress}%</span>
                     </div>
-                    <div className="flex gap-1">
-                      <Button 
-                        size="xs" 
-                        variant="ghost" 
-                        onClick={() => handleGenerate(category.title, 'PDF')}
-                        disabled={loading}
-                      >
-                        PDF
-                      </Button>
-                      <Button 
-                        size="xs" 
-                        variant="ghost" 
-                        onClick={() => handleGenerate(category.title, 'EXCEL')}
-                        disabled={loading}
-                      >
-                        XLS
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="mt-4 space-y-2">
-                    <p className="text-sm font-semibold text-foreground">{category.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {category.description}
-                    </p>
                   </div>
                 </div>
-              );
-            })}
+                <div className="flex items-center gap-2">
+                  <Badge variant={job.status === 'FAILED' ? 'destructive' : 'outline'}>
+                    {job.status}
+                  </Badge>
+                  {job.status === 'COMPLETED' && (
+                    <Button size="icon" variant="ghost" onClick={() => handleDownload(job.id)}>
+                      <Download className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </WorkspacePanel>
+      )}
+
+      <WorkspacePanel
+        title="Report templates"
+        description="Click a format to queue generation."
+      >
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {(Array.isArray(categories) ? categories : []).map((category) => {
+            const Icon = category.icon;
+            return (
+              <div
+                key={category.id}
+                className="rounded-lg border p-4 transition-colors hover:bg-muted/40"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="rounded-lg border bg-muted/50 p-2">
+                    <Icon className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div className="flex gap-1">
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => handleGenerate(category.title, 'PDF')}
+                      disabled={loading}
+                    >
+                      PDF
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => handleGenerate(category.title, 'EXCEL')}
+                      disabled={loading}
+                    >
+                      XLS
+                    </Button>
+                  </div>
+                </div>
+                <div className="mt-4 space-y-2">
+                  <p className="text-sm font-semibold text-foreground">{category.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {category.description}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </WorkspacePanel>
+
+      <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+          <WorkspacePanel
+          title="Recent reports"
+          description="Latest generated reports across teams."
+        >
+          <div className="space-y-4">
+            {(Array.isArray(reports) ? reports : []).map((report) => (
+              <div
+                key={report.id}
+                className="flex items-center justify-between rounded-lg border p-4"
+              >
+                <div>
+                  <p className="text-sm font-medium text-foreground">{report.title}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {report.owner} • {report.updated}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Badge variant="secondary">{report.status}</Badge>
+                  <Button 
+                    onClick={() => handleGenerate(report.title, 'PDF')} 
+                    variant="outline" 
+                    size="sm"
+                    disabled={loading}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Regenerate
+                  </Button>
+                </div>
+              </div>
+            ))}
           </div>
         </WorkspacePanel>
 
-        <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-            <WorkspacePanel
-            title="Recent reports"
-            description="Latest generated reports across teams."
-          >
-            <div className="space-y-4">
-              {(Array.isArray(reports) ? reports : []).map((report) => (
-                <div
-                  key={report.id}
-                  className="flex items-center justify-between rounded-lg border p-4"
-                >
+        <WorkspacePanel
+          title="Scheduled reports"
+          description="Automated delivery for recurring stakeholders."
+        >
+          <div className="space-y-4">
+            {(Array.isArray(scheduledReports) ? scheduledReports : []).map((schedule) => (
+              <div key={schedule.id} className="rounded-lg border p-4">
+                <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium text-foreground">{report.title}</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {schedule.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{schedule.cadence}</p>
                     <p className="text-xs text-muted-foreground">
-                      {report.owner} • {report.updated}
+                      Recipients: {schedule.recipients}
                     </p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant="secondary">{report.status}</Badge>
-                    <Button 
-                      onClick={() => handleGenerate(report.title, 'PDF')} 
-                      variant="outline" 
-                      size="sm"
-                      disabled={loading}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Regenerate
-                    </Button>
-                  </div>
+                  <Button disabled title="Not available yet" size="sm" variant="outline">
+                    Edit
+                  </Button>
                 </div>
-              ))}
-            </div>
-          </WorkspacePanel>
-
-          <WorkspacePanel
-            title="Scheduled reports"
-            description="Automated delivery for recurring stakeholders."
-          >
-            <div className="space-y-4">
-              {(Array.isArray(scheduledReports) ? scheduledReports : []).map((schedule) => (
-                <div key={schedule.id} className="rounded-lg border p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {schedule.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{schedule.cadence}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Recipients: {schedule.recipients}
-                      </p>
-                    </div>
-                    <Button disabled title="Not available yet" size="sm" variant="outline">
-                      Edit
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              <div className="flex items-center justify-between rounded-lg border border-dashed p-4">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <FileText className="h-4 w-4" />
-                  Schedule a new report delivery
-                </div>
-                <Button disabled title="Not available yet" size="sm">Create schedule</Button>
               </div>
+            ))}
+            <div className="flex items-center justify-between rounded-lg border border-dashed p-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <FileText className="h-4 w-4" />
+                Schedule a new report delivery
+              </div>
+              <Button disabled title="Not available yet" size="sm">Create schedule</Button>
             </div>
-          </WorkspacePanel>
-        </div>
+          </div>
+        </WorkspacePanel>
       </div>
-    </PageShell>
+    </div>
+  );
+
+  return (
+    <DepartmentWorkspaceLayout
+      title="Reports & Analytics"
+      subtitle="Generate, schedule, and export executive-ready reports."
+      headerIcon={BarChart3}
+      accentColor="indigo"
+      engineName="ANALYTICS_ENGINE"
+      pulseLabel="Report Pulse"
+      pulseIcon={Activity}
+      sections={SECTIONS}
+      routeLabels={{}}
+      basePath="/core/reports"
+      headerActions={
+        <div className="flex gap-2">
+          <Button 
+            disabled 
+            title="Not available yet" 
+            variant="outline"
+            className="rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest border-slate-200"
+          >
+            Manage schedules
+          </Button>
+          <Button 
+            onClick={() => alert("Detailed View:\n\nMetadata: " + (typeof window !== "undefined" ? window.location.pathname : "N/A"))}
+            className="rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-500/20"
+          >
+            <Plus className="h-3 w-3 mr-2" /> New report
+          </Button>
+        </div>
+      }
+    >
+      {mainContent}
+    </DepartmentWorkspaceLayout>
   );
 }

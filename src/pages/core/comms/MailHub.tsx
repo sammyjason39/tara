@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback } from "react";
-import { PageHeader } from "@/core/ui/PageHeader";
 import { useSession } from "@/core/security/session";
 import { apiRequest } from "@/core/api/apiClient";
 import { Button } from "@/components/ui/button";
@@ -14,20 +13,14 @@ import {
   Star, 
   Plus, 
   Search,
-  MoreVertical,
-  Paperclip,
-  Clock,
-  Archive,
   RefreshCw,
   X,
   Reply,
   Forward,
   ChevronRight,
-  User,
-  ExternalLink,
-  ShieldCheck,
-  AlertCircle,
-  Loader2
+  Loader2,
+  Mail,
+  Activity
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useNotifications } from "@/contexts/NotificationContext";
@@ -36,14 +29,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from "@/components/ui/tooltip";
+import DepartmentWorkspaceLayout from "@/components/layouts/DepartmentWorkspaceLayout";
 
 interface MailMessage {
   id: string;
@@ -61,6 +51,19 @@ interface MailAccount {
   internalEmail: string;
   address: string;
 }
+
+const SECTIONS = [
+  {
+    title: "MESSAGES",
+    items: [
+      { id: 'inbox', icon: Inbox, label: "Inbox", to: "/core/mail?f=inbox" },
+      { id: 'sent', icon: Send, label: "Sent", to: "/core/mail?f=sent" },
+      { id: 'drafts', icon: File, label: "Drafts", to: "/core/mail?f=drafts" },
+      { id: 'starred', icon: Star, label: "Starred", to: "/core/mail?f=starred" },
+      { id: 'trash', icon: Trash2, label: "Trash", to: "/core/mail?f=trash" },
+    ]
+  }
+];
 
 export default function MailHub() {
   const session = useSession();
@@ -198,17 +201,17 @@ export default function MailHub() {
     m.bodyText?.toLowerCase().includes(filter.toLowerCase())
   );
 
-  return (
+  const mainContent = (
     <TooltipProvider delayDuration={400}>
-      <div className="flex flex-col h-[calc(100vh-140px)] gap-6 p-6 bg-slate-50 dark:bg-slate-950 overflow-hidden">
+      <div className="flex flex-col h-full gap-6 p-6 overflow-hidden">
         {/* Top Action Bar */}
-        <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-3xl shadow-sm">
+        <div className="flex justify-between items-center bg-white dark:bg-slate-900/50 p-4 rounded-3xl shadow-sm border border-slate-100 dark:border-white/5">
           <div className="flex items-center gap-4 flex-1">
              <div className="relative w-full max-w-md">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
                   placeholder="Search in mail..." 
-                  className="pl-12 h-11 bg-slate-50 border-none rounded-2xl font-bold text-xs"
+                  className="pl-12 h-11 bg-slate-50 dark:bg-slate-950 border-none rounded-2xl font-bold text-xs"
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
                 />
@@ -219,11 +222,11 @@ export default function MailHub() {
           </div>
           <div className="flex items-center gap-4">
              {userAccount && (
-                <Badge variant="outline" className="h-8 px-4 rounded-full border-primary/20 bg-primary/5 text-primary lowercase font-mono">
+                <Badge variant="outline" className="h-8 px-4 rounded-full border-indigo-500/20 bg-indigo-500/5 text-indigo-600 lowercase font-mono">
                    {userAccount.address}
                 </Badge>
              )}
-             <Button onClick={() => { setComposeData({to:"", subject:"", body:"", status: "sent"}); setIsComposeOpen(true); }} className="h-11 px-8 bg-slate-900 hover:bg-black text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg">
+             <Button onClick={() => { setComposeData({to:"", subject:"", body:"", status: "sent"}); setIsComposeOpen(true); }} className="h-11 px-8 bg-slate-900 dark:bg-indigo-600 hover:bg-black dark:hover:bg-indigo-500 text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg">
                 <Plus className="h-4 w-4 mr-2" /> Compose
              </Button>
           </div>
@@ -242,19 +245,19 @@ export default function MailHub() {
               <Button 
                 key={item.id} 
                 variant={activeFolder === item.id ? "secondary" : "ghost"}
-                className={`w-full justify-start h-12 rounded-2xl px-5 font-black uppercase tracking-[0.2em] text-[10px] transition-all group ${activeFolder === item.id ? 'bg-primary/10 text-primary' : 'text-slate-500 hover:bg-white'}`}
+                className={`w-full justify-start h-12 rounded-2xl px-5 font-black uppercase tracking-[0.2em] text-[10px] transition-all group ${activeFolder === item.id ? 'bg-indigo-500/10 text-indigo-600' : 'text-slate-500 hover:bg-white'}`}
                 onClick={() => { setActiveFolder(item.id); setSelectedMail(null); }}
               >
-                <item.icon className={`h-4 w-4 mr-4 transition-transform group-hover:scale-110 ${activeFolder === item.id ? 'text-primary' : ''}`} />
+                <item.icon className={`h-4 w-4 mr-4 transition-transform group-hover:scale-110 ${activeFolder === item.id ? 'text-indigo-600' : ''}`} />
                 {item.label}
               </Button>
             ))}
           </div>
 
           {/* Master-Detail Container */}
-          <div className="flex-1 flex bg-white dark:bg-slate-900 rounded-[2.5rem] border overflow-hidden shadow-2xl relative min-h-0">
+          <div className="flex-1 flex bg-white dark:bg-slate-900/50 rounded-[2.5rem] border border-slate-100 dark:border-white/5 overflow-hidden shadow-2xl relative min-h-0">
             {/* List Column */}
-            <div className={`flex flex-col border-r bg-slate-50/30 transition-all duration-500 ${selectedMail ? 'w-[380px] shrink-0 opacity-100' : 'w-full'}`}>
+            <div className={`flex flex-col border-r border-slate-100 dark:border-white/5 bg-slate-50/30 transition-all duration-500 ${selectedMail ? 'w-[380px] shrink-0 opacity-100' : 'w-full'}`}>
               <div className="flex-1 overflow-y-auto scrollbar-hide py-2">
                 {loading ? (
                   Array.from({ length: 12 }).map((_, i) => (
@@ -277,10 +280,10 @@ export default function MailHub() {
                     <div 
                       key={msg.id} 
                       onClick={() => handleSelectMail(msg)}
-                      className={`flex items-start gap-4 p-5 border-b cursor-pointer transition-all hover:bg-slate-50 relative group ${selectedMail?.id === msg.id ? 'bg-indigo-50/50 ring-1 ring-inset ring-indigo-500/20' : ''} ${!msg.isRead ? 'before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-primary shadow-sm' : ''}`}
+                      className={`flex items-start gap-4 p-5 border-b border-slate-50 dark:border-white/5 cursor-pointer transition-all hover:bg-slate-50 dark:hover:bg-white/5 relative group ${selectedMail?.id === msg.id ? 'bg-indigo-50/50 dark:bg-indigo-500/10 ring-1 ring-inset ring-indigo-500/20' : ''} ${!msg.isRead ? 'before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-indigo-600 shadow-sm' : ''}`}
                     >
                       <div className="flex flex-col items-center gap-2">
-                        <div className={`h-10 w-10 rounded-xl flex items-center justify-center font-black text-xs ${!msg.isRead ? 'bg-primary text-white' : 'bg-slate-100 text-slate-400'}`}>
+                        <div className={`h-10 w-10 rounded-xl flex items-center justify-center font-black text-xs ${!msg.isRead ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
                           {msg.fromAddress?.[0]?.toUpperCase() || 'S'}
                         </div>
                         <Button 
@@ -294,14 +297,14 @@ export default function MailHub() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-center mb-1">
-                          <span className={`text-[10px] uppercase font-black tracking-widest truncate ${!msg.isRead ? 'text-slate-900' : 'text-slate-500'}`}>
+                          <span className={`text-[10px] uppercase font-black tracking-widest truncate ${!msg.isRead ? 'text-slate-900 dark:text-white' : 'text-slate-500'}`}>
                             {activeFolder === 'sent' ? `To: ${msg.toAddresses?.[0] || 'Unknown'}` : (msg.fromAddress || 'System Correspondence')}
                           </span>
                           <span className="text-[9px] font-bold text-slate-400 shrink-0 whitespace-nowrap ml-2">
                              {new Date(msg.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                           </span>
                         </div>
-                        <h4 className={`text-sm truncate mb-0.5 ${!msg.isRead ? 'font-black text-slate-900' : 'font-bold text-slate-600'}`}>{msg.subject}</h4>
+                        <h4 className={`text-sm truncate mb-0.5 ${!msg.isRead ? 'font-black text-slate-900 dark:text-white' : 'font-bold text-slate-600 dark:text-slate-400'}`}>{msg.subject}</h4>
                         <p className="text-[11px] text-slate-400 line-clamp-1 font-medium">{msg.bodyText}</p>
                       </div>
                     </div>
@@ -311,20 +314,20 @@ export default function MailHub() {
             </div>
 
             {/* Detail Column */}
-            <div className={`flex-1 flex flex-col bg-white dark:bg-slate-950 transition-all duration-300 relative ${!selectedMail ? 'hidden md:flex' : 'flex'}`}>
+            <div className={`flex-1 flex flex-col bg-white dark:bg-slate-950/50 transition-all duration-300 relative ${!selectedMail ? 'hidden md:flex' : 'flex'}`}>
                {selectedMail ? (
                  <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 duration-500 overflow-hidden">
-                   <div className="p-6 border-b flex justify-between items-center bg-white/80 backdrop-blur-md sticky top-0 z-10">
+                   <div className="p-6 border-b border-slate-100 dark:border-white/5 flex justify-between items-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10">
                       <div className="flex items-center gap-3">
                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl" onClick={() => setSelectedMail(null)}>
                             <ChevronRight className="h-5 w-5 rotate-180" />
                          </Button>
-                         <div className="h-6 w-px bg-slate-100 mx-2" />
-                         <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-rose-50 hover:text-rose-500" onClick={() => handleDeleteMail(selectedMail.id)}>
+                         <div className="h-6 w-px bg-slate-100 dark:bg-white/10 mx-2" />
+                         <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-500" onClick={() => handleDeleteMail(selectedMail.id)}>
                             <Trash2 className="h-5 w-5" />
                          </Button>
                          {activeFolder === 'trash' && (
-                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-green-50 hover:text-green-500" onClick={() => handleRestoreMail(selectedMail.id)}>
+                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-green-50 dark:hover:bg-green-500/10 hover:text-green-500" onClick={() => handleRestoreMail(selectedMail.id)}>
                                <RefreshCw className="h-5 w-5" />
                             </Button>
                          )}
@@ -344,32 +347,32 @@ export default function MailHub() {
 
                    <div className="flex-1 overflow-y-auto p-10 space-y-8">
                       <div className="space-y-6">
-                         <h2 className="text-4xl font-black tracking-tighter leading-none text-slate-900">{selectedMail.subject}</h2>
-                         <div className="flex items-center gap-4 py-4 border-y border-slate-50">
-                            <div className="h-12 w-12 rounded-[1.25rem] bg-indigo-500 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-indigo-500/20">
+                         <h2 className="text-4xl font-black tracking-tighter leading-none text-slate-900 dark:text-white uppercase italic">{selectedMail.subject}</h2>
+                         <div className="flex items-center gap-4 py-4 border-y border-slate-50 dark:border-white/5">
+                            <div className="h-12 w-12 rounded-[1.25rem] bg-indigo-600 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-indigo-500/20">
                                {selectedMail.fromAddress?.[0]?.toUpperCase()}
                             </div>
                             <div className="flex-1">
                                <div className="flex justify-between items-center">
-                                  <span className="font-black text-sm uppercase tracking-widest text-slate-800">{selectedMail.fromAddress}</span>
+                                  <span className="font-black text-sm uppercase tracking-widest text-slate-800 dark:text-white">{selectedMail.fromAddress}</span>
                                   <span className="text-[10px] font-black text-slate-400">{new Date(selectedMail.createdAt).toLocaleString()}</span>
                                </div>
                                <div className="text-[10px] font-bold text-slate-400 mt-0.5">
                                   to {selectedMail.toAddresses?.join(', ')}
-                               </div>
+                                </div>
                             </div>
                          </div>
                       </div>
 
-                      <div className="text-base text-slate-700 leading-relaxed font-medium whitespace-pre-wrap tracking-tight min-h-[300px]">
+                      <div className="text-base text-slate-700 dark:text-slate-300 leading-relaxed font-medium whitespace-pre-wrap tracking-tight min-h-[300px]">
                          {selectedMail.bodyText}
                       </div>
 
-                      <div className="pt-10 border-t border-slate-50 flex gap-4 pb-12">
+                      <div className="pt-10 border-t border-slate-50 dark:border-white/5 flex gap-4 pb-12">
                          <Button onClick={() => {
                             setComposeData({ to: selectedMail.fromAddress, subject: `RE: ${selectedMail.subject}`, body: `\n\n--- Original Message ---\n${selectedMail.bodyText}`, status: "sent" });
                             setIsComposeOpen(true);
-                         }} className="rounded-2xl h-14 px-8 bg-slate-900 font-black uppercase tracking-widest text-[10px]">
+                         }} className="rounded-2xl h-14 px-8 bg-slate-900 dark:bg-indigo-600 font-black uppercase tracking-widest text-[10px]">
                             Reply
                          </Button>
                          <Button variant="outline" className="rounded-2xl h-14 px-8 font-black uppercase tracking-widest text-[10px]" onClick={() => {
@@ -383,7 +386,7 @@ export default function MailHub() {
                  </div>
                ) : (
                  <div className="flex-1 flex flex-col items-center justify-center p-20 text-center bg-slate-50/10 animate-in fade-in zoom-in-95 duration-1000">
-                    <div className="h-24 w-24 rounded-[2.5rem] bg-white dark:bg-slate-800 shadow-xl shadow-slate-200/50 flex items-center justify-center mb-8 opacity-40">
+                    <div className="h-24 w-24 rounded-[2.5rem] bg-white dark:bg-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-center mb-8 opacity-40 border border-slate-100 dark:border-white/5">
                        <Inbox className="h-10 w-10 text-slate-300" />
                     </div>
                     <h2 className="text-xl font-black uppercase tracking-widest text-slate-300">Message Intelligence</h2>
@@ -396,12 +399,12 @@ export default function MailHub() {
 
         {/* Compose Dialog */}
         <Dialog open={isComposeOpen} onOpenChange={setIsComposeOpen}>
-          <DialogContent className="sm:max-w-2xl border-none shadow-3xl rounded-[3rem] bg-white p-0 overflow-hidden">
-            <DialogHeader className="p-8 border-b bg-slate-50">
+          <DialogContent className="sm:max-w-2xl border-none shadow-3xl rounded-[3rem] bg-white dark:bg-slate-900 p-0 overflow-hidden">
+            <DialogHeader className="p-8 border-b dark:border-white/5 bg-slate-50 dark:bg-slate-950">
               <div className="flex justify-between items-center">
-                <DialogTitle className="text-2xl font-black tracking-tighter">New Correspondence</DialogTitle>
+                <DialogTitle className="text-2xl font-black tracking-tighter dark:text-white uppercase italic">New Correspondence</DialogTitle>
                 <div className="flex gap-2">
-                   <Button variant="ghost" size="icon" onClick={() => handleSendMail('draft')} className="h-11 w-11 rounded-xl text-slate-400 hover:text-primary"><File className="h-5 w-5" /></Button>
+                   <Button variant="ghost" size="icon" onClick={() => handleSendMail('draft')} className="h-11 w-11 rounded-xl text-slate-400 hover:text-indigo-600"><File className="h-5 w-5" /></Button>
                    <Button variant="ghost" size="icon" onClick={() => setIsComposeOpen(false)} className="h-11 w-11 rounded-xl"><X className="h-5 w-5" /></Button>
                 </div>
               </div>
@@ -409,20 +412,20 @@ export default function MailHub() {
             
             <div className="p-10 space-y-8">
                <div className="space-y-4">
-                  <div className="flex items-center gap-6 border-b pb-4 border-slate-50">
+                  <div className="flex items-center gap-6 border-b pb-4 border-slate-50 dark:border-white/5">
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] w-20 text-slate-400">Recipient</span>
                     <Input 
                       placeholder="address@zenvix.io" 
-                      className="border-none bg-transparent p-0 text-sm font-black focus-visible:ring-0 placeholder:opacity-30"
+                      className="border-none bg-transparent p-0 text-sm font-black focus-visible:ring-0 placeholder:opacity-30 dark:text-white"
                       value={composeData.to}
                       onChange={e => setComposeData({...composeData, to: e.target.value})}
                     />
                   </div>
-                  <div className="flex items-center gap-6 border-b pb-4 border-slate-50">
+                  <div className="flex items-center gap-6 border-b pb-4 border-slate-50 dark:border-white/5">
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] w-20 text-slate-400">Subject</span>
                     <Input 
                       placeholder="Subject of transmission" 
-                      className="border-none bg-transparent p-0 text-sm font-black focus-visible:ring-0 placeholder:opacity-30"
+                      className="border-none bg-transparent p-0 text-sm font-black focus-visible:ring-0 placeholder:opacity-30 dark:text-white"
                       value={composeData.subject}
                       onChange={e => setComposeData({...composeData, subject: e.target.value})}
                     />
@@ -431,15 +434,15 @@ export default function MailHub() {
                
                <Textarea 
                  placeholder="Draft your organizational intelligence here..." 
-                 className="min-h-[350px] border-none bg-slate-50/50 rounded-[2rem] p-10 text-sm font-bold leading-relaxed focus-visible:ring-1 focus-visible:ring-primary/10 shadow-inner"
+                 className="min-h-[350px] border-none bg-slate-50/50 dark:bg-slate-950/50 rounded-[2rem] p-10 text-sm font-bold leading-relaxed focus-visible:ring-1 focus-visible:ring-indigo-500/10 shadow-inner dark:text-slate-300"
                  value={composeData.body}
                  onChange={e => setComposeData({...composeData, body: e.target.value})}
                />
                
                <div className="flex justify-between items-center">
-                  <Button variant="ghost" className="h-14 px-8 font-black uppercase tracking-widest text-[10px] text-rose-500 hover:bg-rose-50" onClick={() => setIsComposeOpen(false)}>Discard</Button>
+                  <Button variant="ghost" className="h-14 px-8 font-black uppercase tracking-widest text-[10px] text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10" onClick={() => setIsComposeOpen(false)}>Discard</Button>
                   <Button 
-                    className="h-14 px-12 rounded-[1.5rem] bg-slate-900 hover:bg-black text-white shadow-2xl shadow-slate-900/40 font-black uppercase tracking-[0.2em] transition-all active:scale-95 disabled:opacity-50"
+                    className="h-14 px-12 rounded-[1.5rem] bg-slate-900 dark:bg-indigo-600 hover:bg-black dark:hover:bg-indigo-500 text-white shadow-2xl shadow-slate-900/40 font-black uppercase tracking-[0.2em] transition-all active:scale-95 disabled:opacity-50"
                     onClick={() => handleSendMail('sent')}
                     disabled={isSending}
                   >
@@ -452,5 +455,22 @@ export default function MailHub() {
         </Dialog>
       </div>
     </TooltipProvider>
+  );
+
+  return (
+    <DepartmentWorkspaceLayout
+      title="Mail Hub"
+      subtitle="Encrypted organizational correspondence and secure tactical messaging."
+      headerIcon={Mail}
+      accentColor="indigo"
+      engineName="COMMS_ENGINE"
+      pulseLabel="Mail Pulse"
+      pulseIcon={Activity}
+      sections={SECTIONS}
+      routeLabels={{}}
+      basePath="/core/mail"
+    >
+      {mainContent}
+    </DepartmentWorkspaceLayout>
   );
 }
