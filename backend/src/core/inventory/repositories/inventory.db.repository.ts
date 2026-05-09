@@ -178,17 +178,7 @@ export class InventoryDbRepository implements IInventoryRepository {
       const productMap = new Map(products.map(p => [p.id, p]));
       const orderedProducts = orderedIds.map(o => productMap.get(o.id)).filter(Boolean);
       
-      return (orderedProducts as any[]).map((p) => ({
-        id: p.id,
-        tenant_id: p.tenant_id,
-        sku: p.sku,
-        name: p.name,
-        category: p.product_categories?.name as any,
-        status: p.status as any,
-        currentStock: 0, // Will be filled by service or separate fetch if needed, 
-        // but here we just return the master data
-        minStock: 0,
-      }));
+      return orderedProducts.map(p => this.mapToInventoryItem(p));
     }
 
     const products = await this.prisma.item_masters.findMany({
@@ -199,23 +189,32 @@ export class InventoryDbRepository implements IInventoryRepository {
       take: limit,
     });
 
-    return (products as any[]).map((p) => ({
+    return products.map(p => this.mapToInventoryItem(p));
+  }
+
+  private mapToInventoryItem(p: any): InventoryItem {
+    return {
       id: p.id,
       tenant_id: p.tenant_id,
       sku: p.sku,
       name: p.name,
-      category: p.product_categories?.name as any,
-      uom: p.unit,
-      barcode: p.barcode,
-      qr_code: p.barcode,
+      category: p.product_categories?.name || "consumable",
+      uom: p.unit || "unit",
+      barcode: p.barcode || p.sku,
+      qr_code: p.barcode || p.sku,
       module_tags: p.module_tags || [],
       department_id: p.department_id || undefined,
       active: p.status === "active",
       image_url: p.image_url || undefined,
       images: p.item_images || [],
+      selling_price: Number(p.selling_price) || 0,
+      discount_rate: Number(p.discount_rate) || 0,
+      discount_type: p.discount_type || "percentage",
+      pricing_tiers: p.pricing_tiers || {},
+      metadata: p.metadata || {},
       created_at: p.created_at,
       updated_at: p.updated_at,
-    }));
+    };
   }
 
   async countItems(ctx: TenantContext, location_id?: string, search?: string, category_id?: string): Promise<number> {
