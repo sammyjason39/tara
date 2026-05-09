@@ -156,7 +156,8 @@
   }
 
   input, textarea, select {
-    @apply bg-surface-2/50 border-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300;
+    background-color: hsl(var(--surface-2) / 0.5);
+    @apply border-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-300;
   }
 
   /* Premium Global Scrollbar Implementation */
