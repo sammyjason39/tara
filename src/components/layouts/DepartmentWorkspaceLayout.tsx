@@ -208,6 +208,10 @@ export default function DepartmentWorkspaceLayout({
           </div>
         }
       >
+        <div className="p-0 h-full overflow-y-auto bg-slate-50 dark:bg-slate-950">
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </div>
       </PageShell>
     </div>
