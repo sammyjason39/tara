@@ -254,20 +254,22 @@ export default function InventoryTransferDesk() {
   );
 
   return (
-    <DepartmentWorkspaceLayout
-      title="Transfer Desk"
-      subtitle="Orchestrate secure asset movement and inter-nodal logistics."
-      headerIcon={ArrowRightLeft}
-      accentColor="indigo"
-      engineName="LOGISTICS_ENGINE"
-      pulseLabel="Logistics Pulse"
-      pulseIcon={Activity}
-      sections={SECTIONS}
-      routeLabels={{}}
-      basePath="/core/inventory/transfer"
-      headerActions={headerActions}
-    >
+    <div className="min-h-full p-8 space-y-10 bg-slate-50/50 dark:bg-slate-950/50">
+      {/* Tactical Header */}
+      <div className="flex items-end justify-between border-b border-slate-200 dark:border-slate-800 pb-8">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-indigo-600 font-black text-[10px] uppercase tracking-[0.3em]">
+            <Layers className="h-3 w-3" /> LOGISTICS_ENGINE
+          </div>
+          <h1 className="text-4xl font-black tracking-tighter uppercase italic text-slate-900 dark:text-white">
+            Transfer Desk
+          </h1>
+          <p className="text-sm text-slate-500 font-medium italic">Orchestrate secure asset movement and inter-nodal logistics.</p>
+        </div>
+        {headerActions}
+      </div>
+
       {mainContent}
-    </DepartmentWorkspaceLayout>
+    </div>
   );
 }

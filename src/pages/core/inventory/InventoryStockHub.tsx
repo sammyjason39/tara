@@ -362,19 +362,21 @@ export default function InventoryStockHub() {
   );
 
   return (
-    <DepartmentWorkspaceLayout
-      title="Stock Hub"
-      subtitle="Strategic inventory visibility and logistics command."
-      headerIcon={Package}
-      accentColor="blue"
-      engineName="LOGISTICS_ENGINE"
-      pulseLabel="Supply Pulse"
-      pulseIcon={Activity}
-      sections={SECTIONS}
-      routeLabels={{}}
-      basePath="/core/inventory/stock"
-      headerActions={headerActions}
-    >
+    <div className="min-h-full p-8 space-y-10 bg-slate-50/50 dark:bg-slate-950/50">
+      {/* Tactical Header */}
+      <div className="flex items-end justify-between border-b border-slate-200 dark:border-slate-800 pb-8">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-[0.3em]">
+            <Layers className="h-3 w-3" /> LOGISTICS_ENGINE
+          </div>
+          <h1 className="text-4xl font-black tracking-tighter uppercase italic text-slate-900 dark:text-white">
+            Stock Hub
+          </h1>
+          <p className="text-sm text-slate-500 font-medium italic">Strategic inventory visibility and logistics command.</p>
+        </div>
+        {headerActions}
+      </div>
+
       {mainContent}
 
       <ItemDetailsModal
@@ -417,6 +419,6 @@ export default function InventoryStockHub() {
         onOpenChange={setIsCategoryOpen}
         onSuccess={fetchData}
       />
-    </DepartmentWorkspaceLayout>
+    </div>
   );
 }
