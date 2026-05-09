@@ -128,6 +128,9 @@ export class InventoryController {
     @Query("limit") limit: string = "30",
     @Query("search") search?: string,
     @Query("category_id") category_id?: string,
+    @Query("status") status?: string,
+    @Query("sortBy") sortBy?: "name" | "quantity" | "created_at",
+    @Query("sortOrder") sortOrder?: "asc" | "desc",
   ) {
     const { tenant_id } = request.tenantContext;
     const data = await this.inventoryService.getItems(
@@ -136,7 +139,10 @@ export class InventoryController {
       parseInt(page),
       parseInt(limit),
       search,
-      category_id
+      category_id,
+      status,
+      sortBy,
+      sortOrder
     );
     const total = await this.inventoryService.countItems(request.tenantContext, location_id, search, category_id);
     return { success: true, tenant_id, count: data.length, meta: { total }, data };

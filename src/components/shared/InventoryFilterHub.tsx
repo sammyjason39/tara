@@ -80,29 +80,16 @@ export const InventoryFilterHub: React.FC<InventoryFilterHubProps> = ({
           />
         </div>
 
-        {/* Quick Category Select */}
-        <Select value={category || "all"} onValueChange={onCategoryChange}>
-          <SelectTrigger className="w-full md:w-56 h-14 rounded-2xl bg-slate-900/40 backdrop-blur-md border-white/10 shadow-xl font-black italic text-xs text-white">
-            <SelectValue placeholder="Category: All" />
-          </SelectTrigger>
-          <SelectContent className="rounded-2xl border-white/10 bg-slate-900/90 backdrop-blur-xl text-white">
-            <SelectItem value="all" className="font-bold italic">All Categories</SelectItem>
-            {categories.map((c) => (
-              <SelectItem key={c.id} value={c.id} className="font-bold italic">{c.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Toggle Advanced Filters */}
+        {/* Advanced Filters Toggle */}
         <Button
           variant={isExpanded ? "default" : "outline"}
           onClick={() => setIsExpanded(!isExpanded)}
-          className={`h-14 px-6 rounded-2xl gap-3 font-black italic text-xs uppercase tracking-widest transition-all ${
+          className={`h-14 px-6 rounded-2xl gap-3 font-black italic text-xs uppercase tracking-widest transition-all flex-1 md:flex-none ${
             isExpanded ? "bg-white text-slate-950" : "bg-slate-900/40 backdrop-blur-md border-white/10 text-slate-400 hover:bg-slate-800"
           }`}
         >
           <SlidersHorizontal className="w-4 h-4" />
-          Filters
+          Filter & Sort
           {activeFilterCount > 0 && (
             <Badge className="bg-indigo-500 text-white ml-1 h-5 min-w-[20px] justify-center px-1">
               {activeFilterCount}
@@ -124,43 +111,65 @@ export const InventoryFilterHub: React.FC<InventoryFilterHubProps> = ({
             className="overflow-hidden"
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-8 rounded-[2.5rem] bg-slate-900/30 backdrop-blur-2xl border border-white/5 shadow-2xl mt-2">
-              {/* Type Filter */}
-              {onTypeChange && (
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Type</label>
-                  <Select value={type || "all"} onValueChange={onTypeChange}>
-                    <SelectTrigger className="h-12 rounded-xl bg-slate-950/50 border-white/5 shadow-sm font-bold italic text-xs text-white">
-                      <SelectValue placeholder="All Types" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl bg-slate-900 border-white/10 text-white">
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="ITEM">ITEM</SelectItem>
-                      <SelectItem value="RAW_MATERIAL">RAW MATERIAL</SelectItem>
-                      <SelectItem value="SERVICE">SERVICE</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+              {/* Category Filter (Moved Inside) */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Category</label>
+                <Select value={category || "all"} onValueChange={onCategoryChange}>
+                  <SelectTrigger className="h-12 rounded-xl bg-slate-950/50 border-white/5 shadow-sm font-bold italic text-xs text-white">
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl bg-slate-900 border-white/10 text-white">
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
               {/* Status Filter */}
               {onStatusChange && (
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Status</label>
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Item Status</label>
                   <Select value={status || "all"} onValueChange={onStatusChange}>
                     <SelectTrigger className="h-12 rounded-xl bg-slate-950/50 border-white/5 shadow-sm font-bold italic text-xs text-white">
                       <SelectValue placeholder="All Status" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl bg-slate-900 border-white/10 text-white">
                       <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="ok">OK</SelectItem>
-                      <SelectItem value="low">LOW STOCK</SelectItem>
-                      <SelectItem value="critical">CRITICAL</SelectItem>
+                      <SelectItem value="active">ACTIVE</SelectItem>
                       <SelectItem value="REPAIR">REPAIR</SelectItem>
                       <SelectItem value="REJECT">REJECT</SelectItem>
+                      <SelectItem value="DISCONTINUED">DISCONTINUED</SelectItem>
+                      <SelectItem value="DRAFT">DRAFT</SelectItem>
+                      <SelectItem value="INACTIVE">INACTIVE</SelectItem>
+                      <SelectItem value="low">STOCK: LOW</SelectItem>
+                      <SelectItem value="critical">STOCK: CRITICAL</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               )}
+
+              {/* Advanced Sorting */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Sort By</label>
+                <Select 
+                  value={type || "created_at-desc"} 
+                  onValueChange={onTypeChange}
+                >
+                  <SelectTrigger className="h-12 rounded-xl bg-slate-950/50 border-white/5 shadow-sm font-bold italic text-xs text-white">
+                    <SelectValue placeholder="Newest First" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl bg-slate-900 border-white/10 text-white">
+                    <SelectItem value="created_at-desc">Newest First</SelectItem>
+                    <SelectItem value="created_at-asc">Oldest First</SelectItem>
+                    <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                    <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+                    <SelectItem value="quantity-desc">Quantity (High-Low)</SelectItem>
+                    <SelectItem value="quantity-asc">Quantity (Low-High)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
               {/* Location Filter */}
               {onLocationChange && locations && (

@@ -50,6 +50,9 @@ export abstract class IInventoryRepository {
     limit?: number,
     search?: string,
     category_id?: string,
+    status?: string,
+    sortBy?: "name" | "quantity" | "created_at",
+    sortOrder?: "asc" | "desc",
   ): Promise<InventoryItem[]>;
   abstract countItems(
     ctx: TenantContext,

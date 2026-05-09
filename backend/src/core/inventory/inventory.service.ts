@@ -40,8 +40,8 @@ export class InventoryService {
     return this.repository.getDashboard(ctx, location_id);
   }
 
-  async getItems(ctx: TenantContext, location_id?: string, page: number = 1, limit: number = 30, search?: string, category_id?: string) {
-    return this.repository.getItems(ctx, location_id, page, limit, search, category_id);
+  async getItems(ctx: TenantContext, location_id?: string, page: number = 1, limit: number = 30, search?: string, category_id?: string, status?: string, sortBy?: "name" | "quantity" | "created_at", sortOrder?: "asc" | "desc") {
+    return this.repository.getItems(ctx, location_id, page, limit, search, category_id, status, sortBy, sortOrder);
   }
 
   async countItems(ctx: TenantContext, location_id?: string, search?: string, category_id?: string) {

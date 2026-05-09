@@ -106,10 +106,12 @@ export default function InventoryStockHub() {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-   const [activeCategory, setActiveCategory] = useState("all");
-  const [activeLocation, setActiveLocation] = useState("all");
-  const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
-  const [locations, setLocations] = useState<{id: string, name: string}[]>([]);
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [activeLocation, setActiveLocation] = useState<string>("all");
+  const [sortConfig, setSortConfig] = useState("created_at-desc");
+  const [activeStatus, setActiveStatus] = useState("all");
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [locations, setLocations] = useState<{ id: string; name: string }[]>([]);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -134,11 +136,25 @@ export default function InventoryStockHub() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // 1. Fetch Paginated Items (with backend filtering)
-      const itemUrl = `/inventory/items?page=${page}&limit=30${search ? `&search=${encodeURIComponent(search)}` : ''}${activeCategory !== 'all' ? `&category_id=${activeCategory}` : ''}${activeLocation !== 'all' ? `&location_id=${activeLocation}` : ''}`;
-      const itemResponse = await apiRequest<any>(itemUrl, "GET", session);
+      const [sortBy, sortOrder] = sortConfig.split("-");
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        limit: "30",
+        search,
+        category_id: activeCategory !== 'all' ? activeCategory : '',
+        location_id: activeLocation !== 'all' ? activeLocation : '',
+        sortBy,
+        sortOrder,
+        status: activeStatus !== 'all' ? activeStatus : '',
+      });
+
+      const response = await apiRequest<any>(
+        `/inventory/items?${queryParams.toString()}`,
+        "GET",
+        session
+      );
       
-      setItems(itemResponse || []);
+      setItems(response.data || response || []);
       
       // 2. Fetch Global Dashboard Stats (for KPI cards)
       const statsResponse = await apiRequest<any>("/inventory/dashboard", "GET", session);
@@ -159,7 +175,7 @@ export default function InventoryStockHub() {
     } finally {
       setLoading(false);
     }
-  }, [session, page, search, activeCategory, activeLocation]);
+  }, [session, page, search, activeCategory, activeLocation, sortConfig, activeStatus]);
 
   const fetchLocations = useCallback(async () => {
     try {
@@ -287,6 +303,10 @@ export default function InventoryStockHub() {
             location={activeLocation}
             onLocationChange={setActiveLocation}
             locations={locations}
+            status={activeStatus}
+            onStatusChange={setActiveStatus}
+            type={sortConfig}
+            onTypeChange={setSortConfig}
             advancedActions={
               <Button 
                 onClick={() => setIsAnalyticsOpen(true)}

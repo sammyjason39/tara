@@ -177,15 +177,22 @@ export function ItemDetailsModal({
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Global Status</label>
-                    <select 
-                      value={editData.status} 
-                      onChange={e => setEditData({...editData, status: e.target.value})}
-                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
+                    <Select
+                      value={editData.status}
+                      onValueChange={(val) => setEditData({ ...editData, status: val })}
                     >
-                      <option value="active">ACTIVE</option>
-                      <option value="REPAIR">REPAIR</option>
-                      <option value="REJECT">REJECT</option>
-                    </select>
+                      <SelectTrigger className="h-12 rounded-xl bg-slate-950/50 border-white/5 font-bold italic text-white">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl bg-slate-900 border-white/10 text-white">
+                        <SelectItem value="active">ACTIVE</SelectItem>
+                        <SelectItem value="REPAIR">REPAIR</SelectItem>
+                        <SelectItem value="REJECT">REJECT</SelectItem>
+                        <SelectItem value="DISCONTINUED">DISCONTINUED</SelectItem>
+                        <SelectItem value="DRAFT">DRAFT</SelectItem>
+                        <SelectItem value="INACTIVE">INACTIVE</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <div className="space-y-2">
