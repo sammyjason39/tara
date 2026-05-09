@@ -197,7 +197,7 @@ const StockOpnameScanner = ({ noShell = false }: { noShell?: boolean }) => {
             serial_number: s 
           }));
         }
-        return [{ sku: h.sku, actualCount: h.actualCount }];
+        return [{ product_id: h.id, sku: h.sku, actualCount: h.actualCount }];
       });
 
       await retailService.submitOpname(
