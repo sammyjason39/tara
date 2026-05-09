@@ -9,6 +9,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   Package, 
   TrendingUp, 
@@ -32,6 +39,7 @@ interface ItemDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdated: () => void;
+  categories: { id: string; name: string }[];
 }
 
 export function ItemDetailsModal({
@@ -39,6 +47,7 @@ export function ItemDetailsModal({
   open,
   onOpenChange,
   onUpdated,
+  categories,
 }: ItemDetailsModalProps) {
   const session = useSession();
   const [movements, setMovements] = useState<any[]>([]);
@@ -47,6 +56,12 @@ export function ItemDetailsModal({
   const [isDecommissioning, setIsDecommissioning] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<any>({});
+  const [isAdjusting, setIsAdjusting] = useState(false);
+  const [adjustmentData, setAdjustmentData] = useState({
+    location_id: "",
+    requested_delta: 0,
+    reason: ""
+  });
 
   useEffect(() => {
     if (open && item) {
@@ -87,6 +102,25 @@ export function ItemDetailsModal({
       toast({ title: "Item Decommissioned", description: "Identity has been archived and removed from active circulation." });
       setIsDecommissioning(false);
       onOpenChange(false);
+      onUpdated();
+    } catch (error: any) {
+      toast({ title: "Action Failed", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleAdjustment = async () => {
+    if (!adjustmentData.location_id || !adjustmentData.reason) {
+      toast({ title: "Validation Error", description: "Please select a location and provide a reason.", variant: "destructive" });
+      return;
+    }
+    try {
+      await apiRequest("/inventory/adjustments", "POST", session, {
+        ...adjustmentData,
+        item_id: item.id,
+      });
+      toast({ title: "Adjustment Requested", description: "Stock adjustment has been submitted for approval." });
+      setAdjustmentData({ location_id: "", requested_delta: 0, reason: "" });
+      fetchExtraData();
       onUpdated();
     } catch (error: any) {
       toast({ title: "Action Failed", description: error.message, variant: "destructive" });
@@ -204,11 +238,28 @@ export function ItemDetailsModal({
                     className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 font-bold focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
                   />
                 </div>
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Category Allocation</h4>
+                  <Select 
+                    value={editData.category_id || item.category_id} 
+                    onValueChange={val => setEditData({...editData, category_id: val})}
+                  >
+                    <SelectTrigger className="w-full h-12 rounded-xl bg-white dark:bg-slate-950 font-bold border-slate-200 dark:border-slate-800">
+                      <SelectValue placeholder="Assign Category" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl border-slate-200">
+                      {categories.map(cat => (
+                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             ) : null}
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 rounded-2xl bg-slate-100 dark:bg-slate-900 p-1 mb-8">
+            <TabsList className="grid w-full grid-cols-4 rounded-2xl bg-slate-100 dark:bg-slate-900 p-1 mb-8">
               <TabsTrigger value="overview" className="rounded-xl font-black text-[10px] uppercase tracking-widest">Overview</TabsTrigger>
+              <TabsTrigger value="adjustment" className="rounded-xl font-black text-[10px] uppercase tracking-widest">Adjust Stock</TabsTrigger>
               <TabsTrigger value="movements" className="rounded-xl font-black text-[10px] uppercase tracking-widest">Movements</TabsTrigger>
               <TabsTrigger value="locations" className="rounded-xl font-black text-[10px] uppercase tracking-widest">Storage Nodes</TabsTrigger>
             </TabsList>
@@ -287,6 +338,73 @@ export function ItemDetailsModal({
                     </>
                   )}
                 </div>
+            </TabsContent>
+
+            <TabsContent value="adjustment" className="space-y-8">
+              <div className="p-8 rounded-[2.5rem] bg-indigo-50/30 border border-indigo-100/50 space-y-6">
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Target Storage Node</h4>
+                  <Select 
+                    value={adjustmentData.location_id} 
+                    onValueChange={val => setAdjustmentData({...adjustmentData, location_id: val})}
+                  >
+                    <SelectTrigger className="w-full h-12 rounded-xl bg-white font-bold border-indigo-100">
+                      <SelectValue placeholder="Select Location" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl border-indigo-100">
+                      {balances.map(b => (
+                        <SelectItem key={b.location_id} value={b.location_id}>
+                          {b.location_name} (Current: {b.quantity})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Adjustment Vector (Delta)</h4>
+                  <div className="flex items-center gap-4">
+                    <Button 
+                      variant="outline" 
+                      className="h-12 w-12 rounded-xl font-black text-lg border-indigo-100"
+                      onClick={() => setAdjustmentData(prev => ({...prev, requested_delta: prev.requested_delta - 1}))}
+                    >
+                      -
+                    </Button>
+                    <Input 
+                      type="number"
+                      value={adjustmentData.requested_delta}
+                      onChange={e => setAdjustmentData({...adjustmentData, requested_delta: parseInt(e.target.value) || 0})}
+                      className="h-12 text-center font-black text-xl bg-white rounded-xl border-indigo-100"
+                    />
+                    <Button 
+                      variant="outline" 
+                      className="h-12 w-12 rounded-xl font-black text-lg border-indigo-100"
+                      onClick={() => setAdjustmentData(prev => ({...prev, requested_delta: prev.requested_delta + 1}))}
+                    >
+                      +
+                    </Button>
+                  </div>
+                  <p className="text-[10px] font-bold text-slate-400 italic">Enter positive value for intake, negative for deduction.</p>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Adjustment Justification</h4>
+                  <textarea 
+                    value={adjustmentData.reason}
+                    onChange={e => setAdjustmentData({...adjustmentData, reason: e.target.value})}
+                    placeholder="e.g., Damaged during transit, Manual correction, etc."
+                    className="w-full bg-white border border-indigo-100 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none resize-none h-24"
+                  />
+                </div>
+
+                <Button 
+                  onClick={handleAdjustment}
+                  className="w-full h-14 rounded-2xl bg-indigo-600 text-white font-black uppercase tracking-widest text-[10px] shadow-xl shadow-indigo-200"
+                >
+                  Submit Adjustment Protocol
+                </Button>
+              </div>
             </TabsContent>
 
             <TabsContent value="movements">

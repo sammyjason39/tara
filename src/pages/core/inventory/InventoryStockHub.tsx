@@ -472,6 +472,7 @@ export default function InventoryStockHub() {
         open={!!selectedItem}
         onOpenChange={(open) => !open && setSelectedItem(null)}
         onUpdated={fetchData}
+        categories={categories}
       />
 
       <CreateItemDialog
