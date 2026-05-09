@@ -213,12 +213,13 @@ export function ImportDialog({
               <div className="rounded-2xl border bg-red-50/50 p-4">
                 <p className="text-sm font-bold text-red-700 mb-2 flex items-center gap-2">
                   <AlertCircle className="h-4 w-4" />
-                  Error Log
+                  Migration Anomalies Detected ({status.error_count || status.errors.length})
                 </p>
-                <ScrollArea className="h-32 pr-4">
+                <ScrollArea className="h-40 pr-4">
                   <div className="space-y-2">
                     {status.errors.map((err: any, i: number) => (
-                      <div key={i} className="text-xs bg-white/80 p-2 rounded-lg border border-red-100 shadow-sm text-red-600 font-mono">
+                      <div key={i} className="text-[10px] bg-white/80 p-3 rounded-xl border border-red-100 shadow-sm text-red-600 font-bold leading-tight">
+                        <span className="text-slate-900 uppercase tracking-tighter mr-2">[{err.identifier || "ITEM"}]</span>
                         {err.message || JSON.stringify(err)}
                       </div>
                     ))}

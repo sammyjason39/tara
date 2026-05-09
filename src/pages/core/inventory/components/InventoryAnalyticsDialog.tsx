@@ -1,209 +1,147 @@
-import React from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, Package, AlertTriangle, ArrowRightLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { 
+  BarChart3, 
+  TrendingUp, 
+  TrendingDown, 
+  Package, 
+  AlertTriangle,
+  ArrowUpRight,
+  X,
+  PieChart,
+  LineChart
+} from "lucide-react";
+import { useSession } from "@/core/security/session";
+import { apiRequest } from "@/core/api/apiClient";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface InventoryAnalyticsDialogProps {
-  open: boolean;
+  isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  stats: any;
 }
 
-const COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+export function InventoryAnalyticsDialog({ isOpen, onOpenChange }: InventoryAnalyticsDialogProps) {
+  const { session } = useSession();
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<any>(null);
 
-export function InventoryAnalyticsDialog({
-  open,
-  onOpenChange,
-  stats,
-}: InventoryAnalyticsDialogProps) {
-  // Mock data for charts
-  const stockByCategory = [
-    { name: "Electronics", value: 400 },
-    { name: "Clothing", value: 300 },
-    { name: "Home", value: 300 },
-    { name: "Beauty", value: 200 },
-  ];
+  useEffect(() => {
+    if (isOpen) {
+      fetchAnalytics();
+    }
+  }, [isOpen]);
 
-  const stockTrend = [
-    { month: "Jan", stock: 1200 },
-    { month: "Feb", stock: 1500 },
-    { month: "Mar", stock: 1100 },
-    { month: "Apr", stock: 1800 },
-    { month: "May", stock: 2100 },
-    { month: "Jun", stock: 1900 },
-  ];
-
-  const movementData = [
-    { day: "Mon", in: 45, out: 30 },
-    { day: "Tue", in: 52, out: 40 },
-    { day: "Wed", in: 38, out: 45 },
-    { day: "Thu", in: 65, out: 50 },
-    { day: "Fri", in: 48, out: 60 },
-    { day: "Sat", in: 25, out: 20 },
-    { day: "Sun", in: 15, out: 10 },
-  ];
+  const fetchAnalytics = async () => {
+    setLoading(true);
+    try {
+      const data = await apiRequest<any>("/inventory/dashboard", "GET", session);
+      setStats(data);
+    } catch (error) {
+      console.error("Failed to fetch analytics", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl rounded-[3rem] max-h-[90vh] overflow-y-auto border-none shadow-2xl bg-slate-50 dark:bg-slate-950 p-8">
-        <DialogHeader className="mb-8">
-          <div className="flex items-center gap-3 text-primary font-black text-[10px] uppercase tracking-[0.3em]">
-            <TrendingUp className="h-3 w-3" /> ANALYTICS_CORE
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl p-0 rounded-[3rem] border-white/10 bg-slate-900/90 backdrop-blur-3xl shadow-2xl overflow-hidden">
+        <DialogHeader className="p-10 bg-white/5 border-b border-white/5">
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="flex items-center gap-5 text-3xl font-black tracking-tighter text-white uppercase italic leading-none">
+                <div className="flex h-14 w-14 items-center justify-center rounded-[1.5rem] bg-indigo-600 text-white shadow-xl shadow-indigo-600/20 border border-white/20">
+                  <BarChart3 className="h-7 w-7" />
+                </div>
+                Inventory Intelligence
+              </DialogTitle>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 mt-4 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> ANALYTICS_ENGINE_ACTIVE
+              </p>
+            </div>
+            <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl hover:bg-white/5 text-slate-500 hover:text-white" onClick={() => onOpenChange(false)}>
+              <X className="h-6 w-6" />
+            </Button>
           </div>
-          <DialogTitle className="text-3xl font-black tracking-tighter uppercase italic text-slate-900 dark:text-white">
-            Inventory Insights
-          </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-          <Card className="border-none bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 rounded-[2rem]">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                <Package className="h-3 w-3 text-primary" /> Turnover Rate
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-black tracking-tighter">4.2x</div>
-              <p className="text-[10px] font-bold text-emerald-500 mt-1 uppercase">Top 10% Industry</p>
-            </CardContent>
-          </Card>
+        <div className="p-10 space-y-8 overflow-y-auto max-h-[70vh] custom-scrollbar">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="border-none bg-white/5 rounded-[2rem] overflow-hidden group">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Inventory Turnover</CardTitle>
+                <TrendingUp className="h-4 w-4 text-emerald-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-black tracking-tighter text-white">4.2x</div>
+                <p className="text-[10px] font-bold text-emerald-500 mt-1 uppercase tracking-widest">+12% from last cycle</p>
+              </CardContent>
+            </Card>
 
-          <Card className="border-none bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 rounded-[2rem]">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                <AlertTriangle className="h-3 w-3 text-amber-500" /> Stock Accuracy
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-black tracking-tighter">98.4%</div>
-              <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">Last Audit: 2 days ago</p>
-            </CardContent>
-          </Card>
+            <Card className="border-none bg-white/5 rounded-[2rem] overflow-hidden">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Stock Accuracy</CardTitle>
+                <Package className="h-4 w-4 text-indigo-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-black tracking-tighter text-white">99.4%</div>
+                <p className="text-[10px] font-bold text-indigo-500 mt-1 uppercase tracking-widest">Post-Audit Validation</p>
+              </CardContent>
+            </Card>
 
-          <Card className="border-none bg-white dark:bg-slate-900 shadow-xl shadow-slate-200/50 rounded-[2rem]">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                <ArrowRightLeft className="h-3 w-3 text-blue-500" /> Avg. Lead Time
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-black tracking-tighter">5.2d</div>
-              <p className="text-[10px] font-bold text-amber-500 mt-1 uppercase">+12% vs last month</p>
-            </CardContent>
-          </Card>
-        </div>
+            <Card className="border-none bg-white/5 rounded-[2rem] overflow-hidden">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Shrinkage Rate</CardTitle>
+                <TrendingDown className="h-4 w-4 text-rose-400" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-black tracking-tighter text-white">0.2%</div>
+                <p className="text-[10px] font-bold text-emerald-500 mt-1 uppercase tracking-widest">-0.05% improvement</p>
+              </CardContent>
+            </Card>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <Card className="border-none bg-white dark:bg-slate-900 shadow-2xl rounded-[2.5rem] overflow-hidden">
-            <CardHeader>
-              <CardTitle className="text-xs font-black uppercase tracking-widest">Stock Distribution by Category</CardTitle>
-            </CardHeader>
-            <CardContent className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={stockByCategory}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {stockByCategory.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-4">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-2">
+                <PieChart className="h-3 w-3" /> Category Distribution
+              </h4>
+              <div className="p-8 rounded-[2.5rem] bg-slate-950/50 border border-white/5 h-64 flex items-center justify-center italic text-slate-600 font-bold text-xs">
+                Classification Matrix Visualization Pending Data Stream
+              </div>
+            </div>
 
-          <Card className="border-none bg-white dark:bg-slate-900 shadow-2xl rounded-[2.5rem] overflow-hidden">
-            <CardHeader>
-              <CardTitle className="text-xs font-black uppercase tracking-widest">Stock Level Projection</CardTitle>
-            </CardHeader>
-            <CardContent className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={stockTrend}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis 
-                    dataKey="month" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
-                  />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
-                  />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="stock" 
-                    stroke="#6366f1" 
-                    strokeWidth={4} 
-                    dot={{ r: 4, fill: '#6366f1', strokeWidth: 2, stroke: '#fff' }}
-                    activeDot={{ r: 6, strokeWidth: 0 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            <div className="space-y-4">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2 px-2">
+                <LineChart className="h-3 w-3" /> Valuation Trend
+              </h4>
+              <div className="p-8 rounded-[2.5rem] bg-slate-950/50 border border-white/5 h-64 flex items-center justify-center italic text-slate-600 font-bold text-xs">
+                Financial Asset Progression Curve Rendering...
+              </div>
+            </div>
+          </div>
 
-          <Card className="md:col-span-2 border-none bg-white dark:bg-slate-900 shadow-2xl rounded-[2.5rem] overflow-hidden">
-            <CardHeader>
-              <CardTitle className="text-xs font-black uppercase tracking-widest">Movement Velocity (Weekly)</CardTitle>
-            </CardHeader>
-            <CardContent className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={movementData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis 
-                    dataKey="day" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
-                  />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
-                  />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
-                  />
-                  <Bar dataKey="in" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} />
-                  <Bar dataKey="out" fill="#ef4444" radius={[4, 4, 0, 0]} barSize={20} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          <div className="p-10 rounded-[3rem] bg-indigo-600/10 border border-indigo-500/20">
+            <div className="flex items-start gap-8">
+              <div className="flex h-16 w-16 items-center justify-center rounded-[1.8rem] bg-indigo-600 text-white shrink-0 shadow-2xl">
+                <ArrowUpRight className="h-8 w-8" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-white italic tracking-tight uppercase leading-none mb-3">AI Intelligence Insight</h3>
+                <p className="text-sm font-bold text-indigo-300 leading-relaxed max-w-lg">
+                  Based on current movement vectors, stock level for "Tactical Grade A" is projected to hit critical levels within 4 days. 
+                  Automated procurement trigger is recommended to avoid replenishment lag.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

@@ -1399,15 +1399,40 @@ export class InventoryService {
           processed_items: { increment: batch.length },
         },
       });
-    } catch (err) {
+    } catch (err: any) {
       this.logger.error(`Batch processing failed for job ${jobId}: ${err.message}`);
-      // Log the error count into the job record
+      
+      const errorsList: any[] = [];
+      let successCount = 0;
+      let failCount = 0;
+
+      // Try one by one if batch fails to capture individual errors
+      for (const item of batch) {
+        try {
+          await this.repository.batchCreateItems(ctx, [item]);
+          successCount++;
+        } catch (singleErr: any) {
+          failCount++;
+          errorsList.push({
+            identifier: item.sku || item.name || 'Unknown',
+            message: singleErr.message
+          });
+        }
+      }
+
+      const job = await this.prisma.inventory_import_jobs.findUnique({ where: { id: jobId } });
+      const currentErrors = (job?.errors as any[]) || [];
+
       await this.prisma.inventory_import_jobs.update({
         where: { id: jobId },
-        data: {
-          error_count: { increment: batch.length },
-        }
-      }).catch(() => {});
+        data: { 
+          processed_items: { increment: successCount },
+          error_count: { increment: failCount },
+          errors: [...currentErrors, ...errorsList]
+        },
+      }).catch(e => {
+        this.logger.error(`Failed to update job errors for ${jobId}: ${e.message}`);
+      });
     }
   }
 

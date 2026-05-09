@@ -58,8 +58,8 @@ import { ImportDialog } from "@/components/shared/ImportDialog";
 import { ExportSettingsDialog as ExportDialog } from "@/components/shared/ExportSettingsDialog";
 import { CategoryManager as CategoryDialog } from "@/components/shared/CategoryManager";
 import { InventoryFilterHub } from "@/components/shared/InventoryFilterHub";
-import { InventoryAnalyticsDialog } from "./components/InventoryAnalyticsDialog";
 import { ItemDetailsModal } from "./components/ItemDetailsModal";
+import { InventoryAnalyticsDialog } from "./components/InventoryAnalyticsDialog";
 import { CreateItemDialog } from "./components/CreateItemDialog";
 
 const SECTIONS = [
@@ -508,10 +508,9 @@ export default function InventoryStockHub() {
         onSuccess={fetchData}
       />
 
-      <InventoryAnalyticsDialog 
-        open={isAnalyticsOpen}
+      <InventoryAnalyticsDialog
+        isOpen={isAnalyticsOpen}
         onOpenChange={setIsAnalyticsOpen}
-        stats={globalStats}
       />
     </div>
   );
