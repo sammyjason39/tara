@@ -241,7 +241,7 @@ export default function InventoryStockHub() {
             <BarChart3 className="h-4 w-4 text-emerald-500 opacity-50" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black tracking-tighter">${stats.totalValue.toLocaleString()}</div>
+            <div className="text-3xl font-black tracking-tighter">${stats.totalValue?.toLocaleString() ?? "0"}</div>
             <p className="text-[10px] font-bold text-emerald-500 mt-1 uppercase tracking-widest">Financial Asset Value</p>
           </CardContent>
         </Card>
@@ -317,7 +317,7 @@ export default function InventoryStockHub() {
                       <TableCell className="py-6 text-right">
                         <div className="flex flex-col items-end">
                           <span className={`text-sm font-black ${item.currentStock <= item.minStock ? 'text-rose-500' : 'text-slate-900 dark:text-white'}`}>
-                            {item.currentStock.toLocaleString()} {item.unit || 'units'}
+                            {item.currentStock?.toLocaleString() ?? "0"} {item.unit || 'units'}
                           </span>
                           {item.currentStock <= item.minStock && (
                             <span className="text-[9px] font-black uppercase tracking-tighter text-rose-500 mt-0.5">Threshold Alert</span>
