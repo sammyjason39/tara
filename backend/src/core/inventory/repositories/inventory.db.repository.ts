@@ -800,7 +800,6 @@ export class InventoryDbRepository implements IInventoryRepository {
     return this.prisma.inventory_audit_cycles.findMany({
       where: {
         tenant_id: ctx.tenant_id,
-        ...(ctx.company_id && { company_id: ctx.company_id }),
       },
     });
   }
@@ -811,7 +810,6 @@ export class InventoryDbRepository implements IInventoryRepository {
         id: uuidv4(),
         updated_at: new Date(),
         tenant_id: ctx.tenant_id,
-        ...(ctx.company_id && { company_id: ctx.company_id }),
         ...data,
       },
     });
@@ -834,7 +832,6 @@ export class InventoryDbRepository implements IInventoryRepository {
     return this.prisma.inventory_integration_events.findMany({
       where: {
         tenant_id: ctx.tenant_id,
-        ...(ctx.company_id && { company_id: ctx.company_id }),
       },
     });
   }
@@ -845,7 +842,6 @@ export class InventoryDbRepository implements IInventoryRepository {
         id: uuidv4(),
         updated_at: new Date(),
         tenant_id: ctx.tenant_id,
-        ...(ctx.company_id && { company_id: ctx.company_id }),
         ...data,
       },
     });

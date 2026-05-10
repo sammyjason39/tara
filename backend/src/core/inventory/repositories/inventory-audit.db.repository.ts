@@ -26,7 +26,6 @@ export class InventoryAuditDbRepository implements IInventoryAuditRepository {
       data: {
         id: uuidv4(),
         tenant_id: ctx.tenant_id,
-        ...(ctx.company_id && { company_id: ctx.company_id }),
         location_code: data.location_id || data.location_code, 
         scope: data.title || data.scope || 'FULL',
         status: 'OPEN',
@@ -39,7 +38,6 @@ export class InventoryAuditDbRepository implements IInventoryAuditRepository {
     return this.db.inventory_audit_cycles.findMany({
       where: {
         tenant_id: ctx.tenant_id,
-        ...(ctx.company_id && { company_id: ctx.company_id }),
       },
       orderBy: { created_at: 'desc' } 
     });
