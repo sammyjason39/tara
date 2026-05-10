@@ -798,7 +798,10 @@ export class InventoryDbRepository implements IInventoryRepository {
 
   async getAuditCycles(ctx: TenantContext): Promise<any[]> {
     return this.prisma.inventory_audit_cycles.findMany({
-      where: MultiTenancyUtil.getScope(ctx),
+      where: {
+        tenant_id: ctx.tenant_id,
+        ...(ctx.company_id && { company_id: ctx.company_id }),
+      },
     });
   }
 
@@ -807,7 +810,8 @@ export class InventoryDbRepository implements IInventoryRepository {
       data: {
         id: uuidv4(),
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
+        tenant_id: ctx.tenant_id,
+        ...(ctx.company_id && { company_id: ctx.company_id }),
         ...data,
       },
     });
@@ -818,14 +822,20 @@ export class InventoryDbRepository implements IInventoryRepository {
     data: any,
   ): Promise<any> {
     return this.prisma.inventory_audit_cycles.update({
-      where: { id, tenant_id: ctx.tenant_id },
+      where: { 
+        id, 
+        tenant_id: ctx.tenant_id 
+      },
       data,
     });
   }
 
   async getIntegrationEvents(ctx: TenantContext): Promise<any[]> {
     return this.prisma.inventory_integration_events.findMany({
-      where: MultiTenancyUtil.getScope(ctx),
+      where: {
+        tenant_id: ctx.tenant_id,
+        ...(ctx.company_id && { company_id: ctx.company_id }),
+      },
     });
   }
 
@@ -834,7 +844,8 @@ export class InventoryDbRepository implements IInventoryRepository {
       data: {
         id: uuidv4(),
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
+        tenant_id: ctx.tenant_id,
+        ...(ctx.company_id && { company_id: ctx.company_id }),
         ...data,
       },
     });

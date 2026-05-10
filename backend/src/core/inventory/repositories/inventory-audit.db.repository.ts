@@ -25,27 +25,35 @@ export class InventoryAuditDbRepository implements IInventoryAuditRepository {
     return this.db.inventory_audit_cycles.create({
       data: {
         id: uuidv4(),
-        ...MultiTenancyUtil.getScope(ctx),
-        location_code: data.location_id, // Mapping location_id to locationCode for compatibility
-        scope: data.title || 'FULL',
+        tenant_id: ctx.tenant_id,
+        ...(ctx.company_id && { company_id: ctx.company_id }),
+        location_code: data.location_id || data.location_code, 
+        scope: data.title || data.scope || 'FULL',
         status: 'OPEN',
-        opened_by: data.openedBy || 'system',
+        opened_by: data.openedBy || data.opened_by || 'system',
       }
     });
   }
 
   async getAuditCycles(ctx: TenantContext): Promise<AuditCycle[]> {
     return this.db.inventory_audit_cycles.findMany({
-      where: MultiTenancyUtil.getScope(ctx),
-      orderBy: { status: 'asc' } // No start_time/created_at? I'll use status
+      where: {
+        tenant_id: ctx.tenant_id,
+        ...(ctx.company_id && { company_id: ctx.company_id }),
+      },
+      orderBy: { created_at: 'desc' } 
     });
   }
 
   async finalizeAudit(ctx: TenantContext, cycleId: string, performedBy: string): Promise<AuditCycle> {
     return this.db.inventory_audit_cycles.update({
-      where: { id: cycleId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { 
+        id: cycleId, 
+        tenant_id: ctx.tenant_id 
+      },
       data: {
         status: 'COMPLETED',
+        closed_by: performedBy,
       }
     });
   }
