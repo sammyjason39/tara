@@ -379,14 +379,33 @@ export class InventoryController {
   }
 
   @Get("import/jobs/active")
-  @RequireInventoryRole(InventoryRole.CLERK)
-  async getActiveJobs(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
+  async getActiveImportJobs(@Req() request: RequestWithTenant) {
     return this.prisma.inventory_import_jobs.findMany({
-      where: { tenant_id, status: { in: ['PENDING', 'PROCESSING'] } },
-      orderBy: { created_at: 'desc' },
+      where: {
+        tenant_id: request.tenantContext.tenant_id,
+        status: "PROCESSING",
+      },
+      orderBy: { created_at: "desc" },
     });
   }
+
+  @Get("import/jobs")
+  async getAllImportJobs(@Req() request: RequestWithTenant) {
+    return this.prisma.inventory_import_jobs.findMany({
+      where: {
+        tenant_id: request.tenantContext.tenant_id,
+      },
+      orderBy: { created_at: "desc" },
+      take: 50,
+    });
+  }
+
+  @Delete("import/jobs/:id")
+  async abortImportJob(@Param("id") id: string, @Req() request: RequestWithTenant) {
+    await this.inventoryService.abortImportJob(id, request.tenantContext);
+    return { success: true, message: "Import job aborted" };
+  }
+
 
   @Get("items/template")
   async getTemplate(

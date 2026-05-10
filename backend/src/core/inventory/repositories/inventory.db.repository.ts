@@ -698,28 +698,39 @@ export class InventoryDbRepository implements IInventoryRepository {
         },
       });
 
-      const level = await tx.stock_levels.upsert({
+      const level = await tx.stock_levels.findFirst({
         where: {
-          tenant_id_location_id_product_id_department_id: {
-            tenant_id: ctx.tenant_id,
-            location_id: adj.location_id,
-            product_id: adj.item_id,
-            department_id: (adj.department_id || null) as any,
-          },
-        },
-        create: {
-          ...MultiTenancyUtil.getScope(ctx),
+          tenant_id: ctx.tenant_id,
           location_id: adj.location_id,
-          department_id: adj.department_id || null,
           product_id: adj.item_id,
-          on_hand: adj.requested_delta,
-          available: adj.requested_delta,
-        },
-        update: {
-          on_hand: { increment: adj.requested_delta },
-          available: { increment: adj.requested_delta },
+          department_id: adj.department_id || null,
         },
       });
+
+      if (level) {
+        await tx.stock_levels.update({
+          where: { id: level.id },
+          data: {
+            on_hand: { increment: adj.requested_delta },
+            available: { increment: adj.requested_delta },
+            updated_at: new Date(),
+          },
+        });
+      } else {
+        await tx.stock_levels.create({
+          data: {
+            id: uuidv4(),
+            ...MultiTenancyUtil.getScope(ctx),
+            location_id: adj.location_id,
+            department_id: adj.department_id || null,
+            product_id: adj.item_id,
+            on_hand: adj.requested_delta,
+            available: adj.requested_delta,
+            updated_at: new Date(),
+          },
+        });
+      }
+
 
       // Add movement log for adjustment
       await tx.stock_movements.create({

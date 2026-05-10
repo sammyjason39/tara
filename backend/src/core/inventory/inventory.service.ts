@@ -1416,7 +1416,18 @@ export class InventoryService {
       });
 
       const onRow = async (data: any) => {
+        // Check if job was aborted
+        const currentJob = await this.prisma.inventory_import_jobs.findUnique({
+          where: { id: jobId },
+          select: { status: true }
+        });
+
+        if (currentJob?.status === 'ABORTED') {
+          throw new Error('IMPORT_ABORTED');
+        }
+
         totalCount++;
+
         
         // Sanitize data types and map alternative column names
         const sanitized: any = { ...data };
@@ -1490,7 +1501,11 @@ export class InventoryService {
 
       // Cleanup
       await fsPromises.unlink(job.file_path).catch(() => {});
-    } catch (err) {
+    } catch (err: any) {
+      if (err.message === 'IMPORT_ABORTED') {
+        console.log(`[Import] Job ${jobId} aborted by user.`);
+        return;
+      }
       this.logger.error(`Data import job ${jobId} failed: ${err.message}`);
       await this.prisma.inventory_import_jobs.update({
         where: { id: jobId },
@@ -1611,8 +1626,8 @@ export class InventoryService {
 
       // Cleanup
       await fsPromises.unlink(job.file_path).catch(() => {});
-    } catch (err) {
-      this.logger.error(`Image import job ${jobId} failed: ${err.message}`);
+    } catch (err: any) {
+      console.error(`[Import] Image job ${jobId} failed:`, err);
       await this.prisma.inventory_import_jobs.update({
         where: { id: jobId },
         data: {
@@ -1622,6 +1637,14 @@ export class InventoryService {
         },
       });
     }
+
   }
 
+  async abortImportJob(id: string, ctx: TenantContext) {
+    return this.prisma.inventory_import_jobs.update({
+      where: { id, tenant_id: ctx.tenant_id },
+      data: { status: 'ABORTED' }
+    });
+  }
 }
+

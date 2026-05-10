@@ -18,13 +18,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Upload,
-  Loader2,
-  FileText,
-  CheckCircle2,
-  AlertCircle,
   FileArchive,
+  XCircle,
+  History,
+  Trash2,
 } from "lucide-react";
+
 import { toast } from "sonner";
 import { useSession } from "@/core/security/session";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -134,6 +133,21 @@ export function ImportDialog({
     }
   };
 
+  const handleAbort = async (id: string) => {
+    try {
+      await apiRequest<any>(`inventory/import/jobs/${id}`, "DELETE", session);
+      toast.success("Import job aborted");
+      if (id === jobId) {
+        setJobId(null);
+        setStatus(null);
+      }
+    } catch (err) {
+      console.error("Abort error:", err);
+      toast.error("Failed to abort job");
+    }
+  };
+
+
   const isProcessing = status && (status.status === "PENDING" || status.status === "PROCESSING");
   const isCompleted = status && status.status === "COMPLETED";
   const isFailed = status && status.status === "FAILED";
@@ -141,6 +155,9 @@ export function ImportDialog({
   const progress = status?.total_items > 0 
     ? Math.round((status.processed_items / status.total_items) * 100) 
     : isProcessing ? 10 : 0;
+
+  const isAborted = status && status.status === "ABORTED";
+
 
   return (
     <Dialog 
@@ -230,6 +247,21 @@ export function ImportDialog({
                   </div>
                 </div>
               )}
+
+              {isAborted && (
+                <div className="w-full space-y-4 py-4">
+                  <div className="h-20 w-20 rounded-full bg-slate-50 flex items-center justify-center mx-auto border-4 border-slate-100">
+                    <XCircle className="h-12 w-12 text-slate-500" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xl font-bold text-slate-600">Import Aborted</p>
+                    <p className="text-slate-500 font-medium">
+                      The operation was cancelled by user.
+                    </p>
+                  </div>
+                </div>
+              )}
+
             </div>
 
             {status?.errors && status.errors.length > 0 && (
@@ -253,12 +285,22 @@ export function ImportDialog({
 
             <DialogFooter className="gap-2 pt-4 border-t">
               {isProcessing ? (
-                <Button 
-                  className="w-full rounded-xl py-6 font-bold shadow-lg"
-                  onClick={() => onOpenChange(false)}
-                >
-                  Continue in Background
-                </Button>
+                <div className="flex gap-2 w-full">
+                  <Button 
+                    variant="outline"
+                    className="flex-1 rounded-xl py-6 font-bold text-red-500 hover:bg-red-50"
+                    onClick={() => handleAbort(jobId)}
+                  >
+                    Abort Sync
+                  </Button>
+                  <Button 
+                    className="flex-[2] rounded-xl py-6 font-bold shadow-lg"
+                    onClick={() => onOpenChange(false)}
+                  >
+                    Continue in Background
+                  </Button>
+                </div>
+
               ) : (
                 <>
                   <Button 
@@ -374,7 +416,7 @@ export function ImportDialog({
               </Button>
             </DialogFooter>
 
-            <ActiveJobsList session={session} onSelectJob={(id) => setJobId(id)} />
+            <ActiveJobsList session={session} onSelectJob={(id) => setJobId(id)} onAbort={handleAbort} />
           </div>
         )}
       </DialogContent>
@@ -382,15 +424,23 @@ export function ImportDialog({
   );
 }
 
-function ActiveJobsList({ session, onSelectJob }: { session: any, onSelectJob: (id: string) => void }) {
+function ActiveJobsList({ 
+  session, 
+  onSelectJob,
+  onAbort
+}: { 
+  session: any, 
+  onSelectJob: (id: string) => void,
+  onAbort: (id: string) => void
+}) {
   const [jobs, setJobs] = useState<any[]>([]);
 
   const fetchJobs = async () => {
     try {
-      const data = await apiRequest<any[]>("inventory/import/jobs/active", "GET", session);
+      const data = await apiRequest<any[]>("inventory/import/jobs", "GET", session);
       setJobs(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Failed to fetch active jobs", err);
+      console.error("Failed to fetch jobs", err);
     }
   };
 
@@ -405,29 +455,41 @@ function ActiveJobsList({ session, onSelectJob }: { session: any, onSelectJob: (
   return (
     <div className="space-y-3 pt-4 border-t border-dashed">
       <div className="flex items-center justify-between px-1">
-        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Ongoing Tasks</h4>
-        <div className="flex items-center space-x-1">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-          </span>
-          <span className="text-[10px] font-medium text-primary uppercase">{jobs.length} Active</span>
-        </div>
+        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+          <History className="w-3 h-3" /> Recent Activity
+        </h4>
+        {jobs.some(j => j.status === 'PROCESSING') && (
+          <div className="flex items-center space-x-1">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+            </span>
+            <span className="text-[10px] font-medium text-primary uppercase">Active</span>
+          </div>
+        )}
       </div>
-      <ScrollArea className="max-h-[200px]">
+      <ScrollArea className="max-h-[250px]">
         <div className="space-y-2 pr-4 pb-2">
           {jobs.map((job) => {
             const progress = job.total_items > 0 ? Math.round((job.processed_items / job.total_items) * 100) : 0;
+            const isActive = job.status === 'PROCESSING' || job.status === 'PENDING';
             return (
               <div 
                 key={job.id} 
-                onClick={() => onSelectJob(job.id)}
-                className="group relative bg-slate-50/50 hover:bg-primary/5 border border-slate-100 hover:border-primary/20 rounded-2xl p-4 transition-all duration-300 cursor-pointer overflow-hidden"
+                className={`group relative bg-slate-50/50 hover:bg-primary/5 border border-slate-100 hover:border-primary/20 rounded-2xl p-4 transition-all duration-300 cursor-pointer overflow-hidden ${isActive ? 'ring-1 ring-primary/20' : ''}`}
               >
-                <div className="flex items-start justify-between relative z-10">
+                <div className="flex items-start justify-between relative z-10" onClick={() => onSelectJob(job.id)}>
                   <div className="flex items-center space-x-3">
                     <div className="p-2 rounded-xl bg-white shadow-sm group-hover:scale-110 transition-transform duration-300">
-                      <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                      {isActive ? (
+                        <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                      ) : job.status === 'COMPLETED' ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      ) : job.status === 'ABORTED' ? (
+                        <XCircle className="w-4 h-4 text-slate-400" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-red-500" />
+                      )}
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-slate-700 truncate max-w-[180px]">
@@ -438,19 +500,36 @@ function ActiveJobsList({ session, onSelectJob }: { session: any, onSelectJob: (
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xs font-bold text-slate-700">{progress}%</p>
-                    <p className="text-[10px] font-medium text-slate-400">
-                      {job.processed_items} / {job.total_items}
-                    </p>
+                  <div className="text-right flex flex-col items-end gap-2">
+                    {isActive && (
+                       <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 rounded-full hover:bg-red-500 hover:text-white"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAbort(job.id);
+                        }}
+                       >
+                         <Trash2 className="w-3 h-3" />
+                       </Button>
+                    )}
+                    <div>
+                      <p className="text-xs font-bold text-slate-700">{progress}%</p>
+                      <p className="text-[10px] font-medium text-slate-400">
+                        {job.processed_items} / {job.total_items}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="mt-3 relative h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                  <div 
-                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary to-blue-500 transition-all duration-500 ease-out"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
+                {isActive && (
+                  <div className="mt-3 relative h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <div 
+                      className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary to-blue-500 transition-all duration-500 ease-out"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                )}
               </div>
             );
           })}
@@ -459,3 +538,4 @@ function ActiveJobsList({ session, onSelectJob }: { session: any, onSelectJob: (
     </div>
   );
 }
+
