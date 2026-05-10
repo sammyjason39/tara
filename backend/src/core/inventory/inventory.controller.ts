@@ -292,6 +292,7 @@ export class InventoryController {
   async importItems(
     @Req() request: RequestWithTenant,
     @UploadedFile() file: Express.Multer.File,
+    @Body('location_id') locationId?: string,
   ) {
     const { tenant_id, user_id } = request.tenantContext;
     if (!file) {
@@ -310,7 +311,7 @@ export class InventoryController {
     });
 
     // Start background processing
-    this.inventoryService.processDataImportJob(job.id, request.tenantContext);
+    this.inventoryService.processDataImportJob(job.id, request.tenantContext, locationId);
 
     return {
       success: true,

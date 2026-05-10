@@ -1004,7 +1004,7 @@ export class InventoryDbRepository implements IInventoryRepository {
                   tenant_id: ctx.tenant_id,
                   location_id: locationId,
                   product_id: product.id,
-                  department_id: itemData.departmentId || null,
+                  department_id: itemData.departmentId || "DEFAULT",
                 }
               },
               update: {
@@ -1017,7 +1017,7 @@ export class InventoryDbRepository implements IInventoryRepository {
                 ...scope,
                 location_id: locationId,
                 product_id: product.id,
-                department_id: itemData.departmentId || null,
+                department_id: itemData.departmentId || "DEFAULT",
                 on_hand: Number(itemData.quantity),
                 available: Number(itemData.quantity),
               },

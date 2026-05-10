@@ -51,7 +51,7 @@ const SECTIONS: MenuSection[] = [
       { label: "Staff Portal", to: "/core/inventory/portal", icon: UserCircle },
       { label: "Stock Request", to: "/core/inventory/prs?dept=INVENTORY", icon: ShoppingCart },
       { label: "Stock Taking", to: "/core/inventory/receiving?dept=INVENTORY", icon: ArrowDownLeft },
-      { label: "Stock Opname", to: "/core/inventory/stock?dept=INVENTORY", icon: Archive },
+      { label: "Stock Opname", to: "/core/inventory/adjustments", icon: Archive },
       { label: "Attendance", to: "/core/inventory/attendance", icon: Clock },
       { label: "Log", to: "/core/inventory/logs?scope=INVENTORY", icon: History },
       { label: "Audit", to: "/core/inventory/audit-log?scope=INVENTORY", icon: ShieldCheck },

@@ -1268,7 +1268,7 @@ export class InventoryService {
     return results;
   }
 
-  async processDataImportJob(jobId: string, ctx: TenantContext) {
+  async processDataImportJob(jobId: string, ctx: TenantContext, locationId?: string) {
     const job = await this.prisma.inventory_import_jobs.findUnique({ where: { id: jobId } });
     if (!job) return;
 
@@ -1315,8 +1315,8 @@ export class InventoryService {
         const sanitized: any = { ...data };
 
         // Flexible naming mapping
-        if (!sanitized.name) sanitized.name = data.item_name || data.product_name || data.title || data.nama_barang;
-        if (!sanitized.sku) sanitized.sku = data.item_code || data.part_number || data.kode_barang;
+        if (!sanitized.name) sanitized.name = data.item_name || data.product_name || data.title || data.nama_barang || "Unnamed Item";
+        if (!sanitized.sku) sanitized.sku = data.item_code || data.part_number || data.kode_barang || `SKU-${Date.now()}-${totalCount}`;
         if (!sanitized.barcode) sanitized.barcode = data.gtin || data.ean || data.upc || sanitized.sku;
         if (!sanitized.category) sanitized.category = data.group || data.type || data.kategori || "General";
         if (!sanitized.unit) sanitized.unit = data.uom || data.satuan || "pcs";
@@ -1325,7 +1325,12 @@ export class InventoryService {
         if (sanitized.selling_price === undefined) sanitized.selling_price = data.price || data.harga_jual || 0;
 
         // Location & Quantity mapping
-        if (!sanitized.location) sanitized.location = data.location_name || data.branch || data.warehouse || data.lokasi || "Bambu Silver Headquarters";
+        if (locationId) {
+          sanitized.locationId = locationId; // Force injected location
+        } else if (!sanitized.location) {
+          sanitized.location = data.location_name || data.branch || data.warehouse || data.lokasi || "Bambu Silver Headquarters";
+        }
+        
         if (!sanitized.quantity) sanitized.quantity = data.initial_quantity || data.initial_stock || data.stok || data.qty || 0;
 
         // Type conversion
@@ -1451,7 +1456,9 @@ export class InventoryService {
       const results = await this.fileProcessingService.processZipImages(
         job.file_path,
         async (fileName, buffer) => {
-          const sku = path.parse(fileName).name.split(/[_-]/)[0];
+          const nameWithoutExt = path.parse(fileName).name;
+          const match = nameWithoutExt.match(/^(.*)[_-]\d+$/);
+          const sku = match ? match[1] : nameWithoutExt;
           const item = await this.prisma.item_masters.findFirst({
             where: { tenant_id: ctx.tenant_id, sku },
           });

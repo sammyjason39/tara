@@ -68,6 +68,7 @@ const SECTIONS = [
     items: [
       { id: 'stock', icon: Box, label: "Stock Hub", to: "/core/inventory/stock" },
       { id: 'transfer', icon: ArrowRightLeft, label: "Transfer Desk", to: "/core/inventory/transfer" },
+      { id: 'opname', icon: Archive, label: "Stock Opname", to: "/core/inventory/adjustments" },
       { id: 'audit', icon: History, label: "Stock Audit", to: "/core/inventory/audit" },
     ]
   },

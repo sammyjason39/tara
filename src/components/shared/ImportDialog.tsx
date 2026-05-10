@@ -11,6 +11,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Upload,
   Loader2,
   FileText,
@@ -45,7 +52,20 @@ export function ImportDialog({
   const [loading, setLoading] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
   const [status, setStatus] = useState<any>(null);
+  const [locationId, setLocationId] = useState<string>("");
+  const [locations, setLocations] = useState<{ id: string; name: string }[]>([]);
   const session = useSession();
+
+  useEffect(() => {
+    if (type === "DATA" && open) {
+      apiRequest<any>("/hr/locations", "GET", session)
+        .then(data => {
+          const locList = Array.isArray(data) ? data : (data as any)?.data || [];
+          setLocations(locList);
+        })
+        .catch(console.error);
+    }
+  }, [type, open, session]);
 
   useEffect(() => {
     let interval: any;
@@ -89,6 +109,9 @@ export function ImportDialog({
 
     const formData = new FormData();
     formData.append("file", file);
+    if (locationId && locationId !== "none") {
+      formData.append("location_id", locationId);
+    }
 
     try {
       const data = await apiRequest<any>(endpoint, "POST", session, formData);
@@ -304,6 +327,30 @@ export function ImportDialog({
                 />
               </div>
             </div>
+
+            {type === "DATA" && (
+              <div className="space-y-3">
+                <Label className="text-sm font-bold text-slate-700 ml-1">
+                  Destination Location (Optional)
+                </Label>
+                <Select value={locationId} onValueChange={setLocationId}>
+                  <SelectTrigger className="rounded-xl h-12 bg-slate-50 border-slate-200">
+                    <SelectValue placeholder="Default to CSV location or Headquarters" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="none">Default to CSV Location</SelectItem>
+                    {locations.map((loc) => (
+                      <SelectItem key={loc.id} value={loc.id}>
+                        {loc.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-slate-400 ml-1">
+                  If selected, this overrides the location specified in the CSV.
+                </p>
+              </div>
+            )}
 
             <DialogFooter className="pt-4 border-t">
               <Button 
