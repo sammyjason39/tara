@@ -521,6 +521,7 @@ export class InventoryController {
     @Query("limit") limit: string = "30",
     @Query("search") search?: string,
     @Query("category_id") category_id?: string,
+    @Query("item_id") item_id?: string,
   ) {
     const { tenant_id: tenant_id } = request.tenantContext;
     const data = await this.inventoryService.getBalances(
@@ -530,9 +531,10 @@ export class InventoryController {
       parseInt(page),
       parseInt(limit),
       search,
-      category_id
+      category_id,
+      item_id
     );
-    const total = await this.inventoryService.countBalances(request.tenantContext, location_id, department_id, search, category_id);
+    const total = await this.inventoryService.countBalances(request.tenantContext, location_id, department_id, search, category_id, item_id);
     return { success: true, tenant_id, count: data.length, meta: { total }, data };
   }
 

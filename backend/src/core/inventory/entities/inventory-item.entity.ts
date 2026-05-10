@@ -22,6 +22,8 @@ export class InventoryItem {
   discount_type?: string;
   pricing_tiers?: any;
   metadata?: any;
+  current_stock?: number;
+  min_stock?: number;
   created_at: Date;
   updated_at: Date;
 }

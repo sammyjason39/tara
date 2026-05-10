@@ -72,6 +72,7 @@ export abstract class IInventoryRepository {
     limit?: number,
     search?: string,
     category_id?: string,
+    item_id?: string
   ): Promise<StockBalance[]>;
   abstract countBalances(
     ctx: TenantContext,
@@ -79,6 +80,7 @@ export abstract class IInventoryRepository {
     department_id?: string,
     search?: string,
     category_id?: string,
+    item_id?: string
   ): Promise<number>;
   abstract getMovements(
     ctx: TenantContext,

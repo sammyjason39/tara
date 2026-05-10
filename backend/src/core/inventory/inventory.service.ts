@@ -86,13 +86,14 @@ export class InventoryService {
     page: number = 1,
     limit: number = 30,
     search?: string,
-    category_id?: string
+    category_id?: string,
+    item_id?: string
   ) {
-    return this.repository.getBalances(ctx, location_id, department_id, page, limit, search, category_id);
+    return this.repository.getBalances(ctx, location_id, department_id, page, limit, search, category_id, item_id);
   }
 
-  async countBalances(ctx: TenantContext, location_id?: string, department_id?: string, search?: string, category_id?: string) {
-    return this.repository.countBalances(ctx, location_id, department_id, search, category_id);
+  async countBalances(ctx: TenantContext, location_id?: string, department_id?: string, search?: string, category_id?: string, item_id?: string) {
+    return this.repository.countBalances(ctx, location_id, department_id, search, category_id, item_id);
   }
 
   async getMovements(ctx: TenantContext, item_id?: string) {

@@ -183,7 +183,13 @@ export class InventoryDbRepository implements IInventoryRepository {
 
     const products = await this.prisma.item_masters.findMany({
       where,
-      include: { product_categories: true, item_images: true },
+      include: { 
+        product_categories: true, 
+        item_images: true,
+        stock_levels: {
+          select: { on_hand: true }
+        }
+      },
       orderBy,
       skip,
       take: limit,
@@ -193,6 +199,9 @@ export class InventoryDbRepository implements IInventoryRepository {
   }
 
   private mapToInventoryItem(p: any): InventoryItem {
+    const currentStock = p.stock_levels?.reduce((sum: number, level: any) => sum + Number(level.on_hand), 0) || 0;
+    const minStock = Number(p.metadata?.min_stock) || 0;
+
     return {
       id: p.id,
       tenant_id: p.tenant_id,
@@ -212,6 +221,8 @@ export class InventoryDbRepository implements IInventoryRepository {
       discount_type: p.discount_type || "percentage",
       pricing_tiers: p.pricing_tiers || {},
       metadata: p.metadata || {},
+      current_stock: currentStock,
+      min_stock: minStock,
       created_at: p.created_at,
       updated_at: p.updated_at,
     };
@@ -304,12 +315,14 @@ export class InventoryDbRepository implements IInventoryRepository {
     page: number = 1,
     limit: number = 100,
     search?: string,
-    category_id?: string
+    category_id?: string,
+    item_id?: string
   ): Promise<StockBalance[]> {
     const skip = (page - 1) * limit;
     const where: any = { ...MultiTenancyUtil.getScope(ctx) };
     if (location_id) where.location_id = location_id;
     if (department_id) where.department_id = department_id;
+    if (item_id) where.product_id = item_id;
 
     if (search) {
       where.item_masters = {
@@ -363,11 +376,13 @@ export class InventoryDbRepository implements IInventoryRepository {
     location_id?: string,
     department_id?: string,
     search?: string,
-    category_id?: string
+    category_id?: string,
+    item_id?: string
   ): Promise<number> {
     const where: any = { ...MultiTenancyUtil.getScope(ctx) };
     if (location_id) where.location_id = location_id;
     if (department_id) where.department_id = department_id;
+    if (item_id) where.product_id = item_id;
 
     if (search) {
       where.item_masters = {
