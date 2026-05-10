@@ -53,6 +53,7 @@ export function ItemDetailsModal({
   const session = useSession();
   const [movements, setMovements] = useState<any[]>([]);
   const [balances, setBalances] = useState<any[]>([]);
+  const [allLocations, setAllLocations] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [isDecommissioning, setIsDecommissioning] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -73,12 +74,14 @@ export function ItemDetailsModal({
   const fetchExtraData = async () => {
     setLoading(true);
     try {
-      const [moveData, balanceData] = await Promise.all([
+      const [moveData, balanceData, locData] = await Promise.all([
         apiRequest<any[]>(`/inventory/movements?item_id=${item.id}`, "GET", session),
         apiRequest<any[]>(`/inventory/balances?item_id=${item.id}`, "GET", session),
+        apiRequest<any>("/settings/locations", "GET", session),
       ]);
       setMovements(moveData || []);
       setBalances(balanceData || []);
+      setAllLocations(locData.data || []);
     } catch (error: any) {
       console.error("Failed to fetch details", error);
     } finally {
@@ -129,7 +132,7 @@ export function ItemDetailsModal({
   };
 
   // Aggregate balances by location to avoid redundancy
-  const aggregatedBalances = balances.reduce((acc: any[], curr: any) => {
+  const aggregatedBalances = (balances || []).reduce((acc: any[], curr: any) => {
     const locId = String(curr.location_id);
     const existing = acc.find(b => String(b.location_id) === locId);
     if (existing) {
@@ -147,6 +150,15 @@ export function ItemDetailsModal({
     }
     return acc;
   }, []);
+
+  const adjustmentLocations = allLocations.map(loc => {
+    const balance = aggregatedBalances.find(b => b.location_id === loc.id);
+    return {
+      id: loc.id,
+      name: loc.name,
+      current: balance ? balance.quantity : 0
+    };
+  });
 
 
   if (!item) return null;
@@ -353,9 +365,9 @@ export function ItemDetailsModal({
                       <UISelectValue placeholder="Select Location" />
                     </UISelectTrigger>
                     <UISelectContent className="rounded-2xl border-indigo-100">
-                      {aggregatedBalances.map(b => (
-                        <UISelectItem key={b.location_id} value={b.location_id}>
-                          {b.location_name} (Current: {b.quantity})
+                      {adjustmentLocations.map((loc) => (
+                        <UISelectItem key={loc.id} value={loc.id}>
+                          {loc.name} (Current: {loc.current})
                         </UISelectItem>
                       ))}
                     </UISelectContent>
@@ -445,39 +457,40 @@ export function ItemDetailsModal({
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="locations">
+             <TabsContent value="locations">
                <ScrollArea className="h-[400px] pr-4">
                 {loading ? (
                   <div className="space-y-4">
                     {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full rounded-2xl" />)}
                   </div>
                 ) : aggregatedBalances.length === 0 ? (
-                  <div className="h-64 flex flex-col items-center justify-center opacity-20 italic">
-                    <MapPin className="h-12 w-12 mb-2" />
-                    <p className="font-bold">No storage data</p>
+                  <div className="h-64 flex flex-col items-center justify-center bg-slate-50/50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
+                    <Box className="h-12 w-12 text-slate-300 mb-4" />
+                    <p className="text-sm font-bold text-slate-500 italic text-center px-8">No inventory records found in any storage node for this identity.</p>
+                    <p className="text-[10px] text-slate-400 mt-2 uppercase tracking-[0.2em] font-black">Add initial stock via adjustment tab</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {aggregatedBalances.map((bal, i) => (
-                      <div key={i} className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                      <div key={i} className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 flex items-center justify-between group hover:border-indigo-200 transition-all">
                         <div className="flex items-center gap-4">
-                          <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                            <MapPin className="h-4 w-4" />
+                          <div className="p-3 rounded-xl bg-indigo-500/10 text-indigo-500 group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                            <MapPin className="h-5 w-5" />
                           </div>
                           <div>
                             <p className="text-xs font-black uppercase tracking-widest">{bal.location_name}</p>
                             <p className="text-[10px] font-bold text-slate-400 uppercase">
                               {bal.reserved > 0 ? `${bal.reserved} reserved • ` : ''}
                               {bal.in_transit > 0 ? `${bal.in_transit} in-transit • ` : ''}
-                              Operational Storage
+                              Operational Storage Node
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-xl font-black text-slate-900 dark:text-white">
-                            {bal.quantity}
+                          <p className="text-2xl font-black text-slate-900 dark:text-white leading-none">
+                            {bal.quantity.toLocaleString()}
                           </p>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase">On Hand</p>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mt-1">Units on hand</p>
                         </div>
                       </div>
                     ))}
