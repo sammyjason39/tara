@@ -652,4 +652,28 @@ export const inventoryService = {
     );
     return res.data;
   },
+  
+  async listLocations(
+    tenantId: string,
+    session: SessionContext,
+  ): Promise<any[]> {
+    const res = await apiRequest<{ success: boolean, data: any[] }>(
+      "/v1/settings/locations",
+      "GET",
+      session,
+    );
+    return Array.isArray(res) ? res : res.data || [];
+  },
+
+  async listDepartments(
+    tenantId: string,
+    session: SessionContext,
+  ): Promise<any[]> {
+    const res = await apiRequest<{ success: boolean, data: any[] }>(
+      "/v1/hr/departments",
+      "GET",
+      session,
+    );
+    return Array.isArray(res) ? res : res.data || [];
+  },
 };
