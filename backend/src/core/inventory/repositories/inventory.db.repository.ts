@@ -677,7 +677,7 @@ export class InventoryDbRepository implements IInventoryRepository {
       department_id: adj.department_id || undefined,
       requested_delta: Number(adj.requested_delta),
       reason: adj.reason,
-      status: "pending" as const,
+      status: adj.status as any,
       requested_by: adj.requested_by,
       created_at: adj.created_at,
       updated_at: adj.updated_at,

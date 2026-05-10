@@ -23,13 +23,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import type {
   InventoryAdjustmentRequest,
   InventoryItemMaster,
 } from "@/core/types/inventory/inventory";
-import { Activity, Box, Database, History, MapPin, User, FileText } from "lucide-react";
+import { Activity, Box, Database, History, MapPin, User, FileText, PlusCircle, LayoutList } from "lucide-react";
 
 export default function InventoryAdjustments() {
   const session = useSession();
@@ -46,21 +52,24 @@ export default function InventoryAdjustments() {
   const [items, setItems] = useState<InventoryItemMaster[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
   
   const [selectedAdj, setSelectedAdj] = useState<InventoryAdjustmentRequest | null>(null);
 
   const refresh = useCallback(async () => {
     try {
-      const [adj, itm, loc, dep] = await Promise.all([
+      const [adj, itm, loc, dep, emp] = await Promise.all([
         inventoryService.listAdjustments(session.tenant_id, session),
         inventoryService.listItems(session.tenant_id, session),
         inventoryService.listLocations(session.tenant_id, session),
         inventoryService.listDepartments(session.tenant_id, session),
+        inventoryService.listEmployees(session.tenant_id, session),
       ]);
       setAdjustments(adj);
       setItems(itm);
       setLocations(loc);
       setDepartments(dep);
+      setEmployees(emp);
     } catch (err) {
       console.error("Failed to fetch inventory adjustments data:", err);
       toast({
@@ -155,6 +164,13 @@ export default function InventoryAdjustments() {
     }
   };
 
+  const getRequesterInfo = (userId: string) => {
+    if (userId === 'system') return { name: 'System Automator', role: 'CORE_ENGINE' };
+    const emp = employees.find(e => e.userId === userId || e.id === userId);
+    if (emp) return { name: `${emp.firstName} ${emp.lastName}`, role: emp.role || emp.positions || 'MEMBER' };
+    return { name: `ID: ${userId.slice(0, 8)}...`, role: 'EXTERNAL_USER' };
+  };
+
   if (loading) {
     return (
       <div className="flex h-[60vh] flex-col items-center justify-center space-y-4">
@@ -165,10 +181,10 @@ export default function InventoryAdjustments() {
   }
 
   return (
-    <div className="space-y-8 pb-20">
+    <div className="space-y-8 pb-20 max-w-6xl mx-auto">
       <PageHeader
-        title="Inventory Command"
-        subtitle="Dynamic stock control & supply chain visibility matrix"
+        title="Adjustment Command"
+        subtitle="Stock reconciliation & approval-gated corrections hub"
         secondaryActions={
           <div className="flex items-center gap-3 bg-slate-900/50 p-1.5 rounded-2xl border border-slate-800">
             <FilterBar searchValue={search} onSearchChange={setSearch} />
@@ -176,102 +192,22 @@ export default function InventoryAdjustments() {
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Creation Panel */}
-        <div className="lg:col-span-1">
+      <Tabs defaultValue="queue" className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2 rounded-2xl bg-slate-900/50 p-1 mb-8 border border-slate-800">
+          <TabsTrigger value="queue" className="rounded-xl flex items-center gap-2">
+            <LayoutList className="h-4 w-4" />
+            Adjustment Queue
+          </TabsTrigger>
+          <TabsTrigger value="create" className="rounded-xl flex items-center gap-2">
+            <PlusCircle className="h-4 w-4" />
+            New Request
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="queue">
           <WorkspacePanel
-            title="Create Adjustment"
-            description="Submit stock correction with reason and approval trace."
-            icon={Box}
-          >
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Select Item</label>
-                <Select value={itemId} onValueChange={setItemId}>
-                  <SelectTrigger className="w-full bg-slate-900/50 border-slate-800 rounded-xl font-bold">
-                    <SelectValue placeholder="Choose product..." />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-slate-800 bg-slate-950/95 backdrop-blur-xl">
-                    {items.map(item => (
-                      <SelectItem key={item.id} value={item.id} className="font-bold">
-                        {item.name} ({item.sku})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Location</label>
-                  <Select value={locationId} onValueChange={setLocationId}>
-                    <SelectTrigger className="w-full bg-slate-900/50 border-slate-800 rounded-xl font-bold">
-                      <SelectValue placeholder="Loc..." />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl border-slate-800 bg-slate-950/95 backdrop-blur-xl">
-                      {locations.map(loc => (
-                        <SelectItem key={loc.id} value={loc.id} className="font-bold">
-                          {loc.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Department</label>
-                  <Select value={departmentId} onValueChange={setDepartmentId}>
-                    <SelectTrigger className="w-full bg-slate-900/50 border-slate-800 rounded-xl font-bold">
-                      <SelectValue placeholder="Dept..." />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl border-slate-800 bg-slate-950/95 backdrop-blur-xl">
-                      {departments.map(dep => (
-                        <SelectItem key={dep.id} value={dep.id} className="font-bold">
-                          {dep.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Adjustment Delta (+/-)</label>
-                <UIInput
-                  type="number"
-                  placeholder="0"
-                  value={delta}
-                  onChange={(e) => setDelta(e.target.value)}
-                  className="h-12 bg-slate-900/50 border-slate-800 rounded-xl font-black text-xl text-center text-indigo-400"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Reason for Correction</label>
-                <Textarea
-                  placeholder="Explain why this adjustment is needed..."
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  className="bg-slate-900/50 border-slate-800 rounded-xl font-bold resize-none h-24"
-                />
-              </div>
-
-              <Button 
-                onClick={handleRequest} 
-                disabled={submitting}
-                className="w-full h-12 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 group"
-              >
-                {submitting ? "Processing..." : "Submit for Approval"}
-                {!submitting && <Activity className="ml-2 h-4 w-4 group-hover:animate-pulse" />}
-              </Button>
-            </div>
-          </WorkspacePanel>
-        </div>
-
-        {/* Queue Panel */}
-        <div className="lg:col-span-2">
-          <WorkspacePanel
-            title="Adjustment Queue"
-            description="Pending and completed adjustment approvals."
+            title="Active Queue"
+            description="View and manage pending stock correction requests."
             icon={History}
           >
             <DataTableShell total={filtered.length} page={1} pageSize={10}>
@@ -279,17 +215,17 @@ export default function InventoryAdjustments() {
                 <thead>
                   <tr className="border-b border-slate-800">
                     <th className="p-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Reference</th>
-                    <th className="p-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Item</th>
-                    <th className="p-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Location</th>
-                    <th className="p-4 text-right text-[10px] font-black uppercase tracking-widest text-muted-foreground">Delta</th>
-                    <th className="p-4 text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground">Status</th>
+                    <th className="p-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Item Info</th>
+                    <th className="p-4 text-left text-[10px] font-black uppercase tracking-widest text-muted-foreground">Storage Node</th>
+                    <th className="p-4 text-right text-[10px] font-black uppercase tracking-widest text-muted-foreground">Delta Impact</th>
+                    <th className="p-4 text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground">Verification</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/50">
                   {filtered.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="p-20 text-center text-muted-foreground font-bold italic">
-                        No adjustment records found matching your criteria.
+                        No adjustment records found.
                       </td>
                     </tr>
                   ) : (
@@ -300,7 +236,7 @@ export default function InventoryAdjustments() {
                         className="group hover:bg-slate-900/40 cursor-pointer transition-all border-l-2 border-l-transparent hover:border-l-indigo-500"
                       >
                         <td className="p-4">
-                          <div className="font-mono text-[11px] font-bold text-slate-400 truncate w-24">
+                          <div className="font-mono text-[11px] font-bold text-slate-400">
                             #{item.id.slice(0, 8)}
                           </div>
                         </td>
@@ -325,14 +261,14 @@ export default function InventoryAdjustments() {
                             "font-black text-sm",
                             item.requested_delta > 0 ? "text-emerald-400" : "text-rose-400"
                           )}>
-                            {item.requested_delta > 0 ? "+" : ""}{item.requested_delta}
+                            {item.requested_delta > 0 ? "+" : ""}{item.requested_delta} Units
                           </span>
                         </td>
                         <td className="p-4 text-center">
                           <Badge variant="outline" className={cn(
                             "font-black text-[9px] uppercase tracking-widest px-2 py-0.5 rounded-full border-none shadow-sm",
-                            item.status === "APPROVED" ? "bg-emerald-500/10 text-emerald-500" :
-                            item.status === "REJECTED" ? "bg-rose-500/10 text-rose-500" :
+                            item.status.toUpperCase() === "APPROVED" ? "bg-emerald-500/10 text-emerald-500" :
+                            item.status.toUpperCase() === "REJECTED" ? "bg-rose-500/10 text-rose-500" :
                             "bg-indigo-500/10 text-indigo-400 animate-pulse"
                           )}>
                             {item.status.replace("_", " ")}
@@ -345,8 +281,98 @@ export default function InventoryAdjustments() {
               </table>
             </DataTableShell>
           </WorkspacePanel>
-        </div>
-      </div>
+        </TabsContent>
+
+        <TabsContent value="create">
+          <WorkspacePanel
+            title="New Adjustment Protocol"
+            description="Submit stock correction for manager approval."
+            icon={Box}
+          >
+            <div className="max-w-2xl space-y-8 p-4">
+              <div className="space-y-4">
+                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Target Product</label>
+                <Select value={itemId} onValueChange={setItemId}>
+                  <SelectTrigger className="w-full bg-slate-900/50 border-slate-800 rounded-xl font-bold h-14">
+                    <SelectValue placeholder="Identify product to adjust..." />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-slate-800 bg-slate-950/95 backdrop-blur-xl max-h-80">
+                    {items.map(item => (
+                      <SelectItem key={item.id} value={item.id} className="font-bold">
+                        {item.name} <span className="text-muted-foreground opacity-50 ml-2">[{item.sku}]</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Location / Node</label>
+                  <Select value={locationId} onValueChange={setLocationId}>
+                    <SelectTrigger className="w-full bg-slate-900/50 border-slate-800 rounded-xl font-bold h-14">
+                      <SelectValue placeholder="Select warehouse..." />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl border-slate-800 bg-slate-950/95 backdrop-blur-xl">
+                      {locations.map(loc => (
+                        <SelectItem key={loc.id} value={loc.id} className="font-bold">
+                          {loc.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Department</label>
+                  <Select value={departmentId} onValueChange={setDepartmentId}>
+                    <SelectTrigger className="w-full bg-slate-900/50 border-slate-800 rounded-xl font-bold h-14">
+                      <SelectValue placeholder="Departmental scope..." />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl border-slate-800 bg-slate-950/95 backdrop-blur-xl">
+                      {departments.map(dep => (
+                        <SelectItem key={dep.id} value={dep.id} className="font-bold">
+                          {dep.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                <div className="md:col-span-1 space-y-4">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Delta Delta (+/-)</label>
+                  <UIInput
+                    type="number"
+                    placeholder="0"
+                    value={delta}
+                    onChange={(e) => setDelta(e.target.value)}
+                    className="h-14 bg-slate-900/50 border-slate-800 rounded-xl font-black text-2xl text-center text-indigo-400 focus:border-indigo-500"
+                  />
+                </div>
+                <div className="md:col-span-2 space-y-4">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Justification Reason</label>
+                  <UIInput
+                    placeholder="Briefly explain this correction..."
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    className="h-14 bg-slate-900/50 border-slate-800 rounded-xl font-bold"
+                  />
+                </div>
+              </div>
+
+              <Button 
+                onClick={handleRequest} 
+                disabled={submitting}
+                className="w-full h-14 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 font-black uppercase tracking-widest shadow-xl shadow-indigo-500/10 group transition-all transform hover:scale-[1.01] active:scale-[0.99]"
+              >
+                {submitting ? "Processing Correction..." : "Authenticate & Request"}
+                {!submitting && <Activity className="ml-2 h-5 w-5 group-hover:animate-pulse" />}
+              </Button>
+            </div>
+          </WorkspacePanel>
+        </TabsContent>
+      </Tabs>
 
       {/* Details Modal */}
       <Dialog open={!!selectedAdj} onOpenChange={(open) => !open && setSelectedAdj(null)}>
@@ -355,26 +381,26 @@ export default function InventoryAdjustments() {
             <>
               <div className="h-24 bg-gradient-to-r from-indigo-600/20 to-violet-600/20 border-b border-slate-800 p-8 flex items-end">
                 <div>
-                  <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">Adjustment Detail</h2>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Request Trace #{selectedAdj.id.slice(0, 8)}</p>
+                  <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white">Adjustment Analysis</h2>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Request ID #{selectedAdj.id.slice(0, 8)}</p>
                 </div>
               </div>
               
               <div className="p-8 space-y-8">
                 <div className="grid grid-cols-2 gap-8">
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-indigo-500/10 rounded-xl">
+                      <div className="p-2.5 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 shadow-inner">
                         <Box className="h-5 w-5 text-indigo-500" />
                       </div>
-                      <div>
+                      <div className="overflow-hidden">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Product</p>
-                        <p className="font-bold text-slate-200 truncate w-40">{items.find(i => i.id === selectedAdj.item_id)?.name || "Unknown"}</p>
+                        <p className="font-bold text-slate-200 truncate">{items.find(i => i.id === selectedAdj.item_id)?.name || "Unknown"}</p>
                       </div>
                     </div>
                     
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-indigo-500/10 rounded-xl">
+                      <div className="p-2.5 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 shadow-inner">
                         <MapPin className="h-5 w-5 text-indigo-500" />
                       </div>
                       <div>
@@ -384,64 +410,65 @@ export default function InventoryAdjustments() {
                     </div>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-indigo-500/10 rounded-xl">
+                      <div className="p-2.5 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 shadow-inner">
                         <Activity className="h-5 w-5 text-indigo-500" />
                       </div>
                       <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Delta</p>
-                        <p className={cn("font-black text-xl", selectedAdj.requested_delta > 0 ? "text-emerald-400" : "text-rose-400")}>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Delta Impact</p>
+                        <p className={cn("font-black text-2xl tracking-tighter", selectedAdj.requested_delta > 0 ? "text-emerald-400" : "text-rose-400")}>
                           {selectedAdj.requested_delta > 0 ? "+" : ""}{selectedAdj.requested_delta} Units
                         </p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-indigo-500/10 rounded-xl">
+                      <div className="p-2.5 bg-indigo-500/10 rounded-2xl border border-indigo-500/20 shadow-inner">
                         <User className="h-5 w-5 text-indigo-500" />
                       </div>
                       <div>
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Requested By</p>
-                        <p className="font-bold text-slate-200 text-xs">User ID: {selectedAdj.requested_by.slice(0, 12)}...</p>
+                        <p className="font-bold text-slate-200 text-sm">{getRequesterInfo(selectedAdj.requested_by).name}</p>
+                        <p className="text-[9px] font-black uppercase text-indigo-400/70">{getRequesterInfo(selectedAdj.requested_by).role}</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="p-6 bg-slate-900/50 rounded-3xl border border-slate-800 space-y-2">
-                  <div className="flex items-center gap-2 mb-2">
+                <div className="p-6 bg-slate-900/50 rounded-[2rem] border border-slate-800 space-y-3 shadow-inner">
+                  <div className="flex items-center gap-2">
                     <FileText className="h-3 w-3 text-indigo-500" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Reason / Justification</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Justification Statement</span>
                   </div>
-                  <p className="text-sm font-bold text-slate-300 leading-relaxed italic">
+                  <p className="text-sm font-bold text-slate-300 leading-relaxed italic opacity-90">
                     "{selectedAdj.reason}"
                   </p>
                 </div>
               </div>
 
-              <DialogFooter className="p-8 bg-slate-900/30 border-t border-slate-800 gap-3">
-                {selectedAdj.status === "PENDING_APPROVAL" ? (
+              <DialogFooter className="p-8 bg-slate-900/40 border-t border-slate-800 gap-3">
+                {selectedAdj.status.toUpperCase() === "PENDING_APPROVAL" ? (
                   <>
                     <Button 
                       variant="outline" 
                       onClick={() => setSelectedAdj(null)}
-                      className="rounded-xl font-black uppercase tracking-widest border-slate-800"
+                      className="rounded-xl font-black uppercase tracking-widest border-slate-800 px-6"
                     >
-                      Cancel
+                      Hold
                     </Button>
                     <Button 
                       variant="destructive" 
                       onClick={() => {
                         toast({ title: "Feature Pending", description: "Rejection logic coming soon." });
                       }}
-                      className="rounded-xl font-black uppercase tracking-widest"
+                      className="rounded-xl font-black uppercase tracking-widest px-6"
                     >
                       Reject
                     </Button>
                     <Button 
                       onClick={() => handleApprove(selectedAdj.id)}
-                      className="rounded-xl font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-500 text-white"
+                      className="rounded-xl font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/20 flex-1 h-12"
                     >
                       Approve & Apply
                     </Button>
@@ -450,7 +477,7 @@ export default function InventoryAdjustments() {
                   <Button 
                     variant="outline" 
                     onClick={() => setSelectedAdj(null)}
-                    className="w-full rounded-xl font-black uppercase tracking-widest border-slate-800"
+                    className="w-full h-12 rounded-xl font-black uppercase tracking-widest border-slate-800"
                   >
                     Close Record
                   </Button>

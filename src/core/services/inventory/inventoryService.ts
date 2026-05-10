@@ -676,4 +676,16 @@ export const inventoryService = {
     );
     return Array.isArray(res) ? res : res.data || [];
   },
+
+  async listEmployees(
+    tenantId: string,
+    session: SessionContext,
+  ): Promise<any[]> {
+    const res = await apiRequest<{ success: boolean, data: any[] }>(
+      "/v1/hr/employees",
+      "GET",
+      session,
+    );
+    return Array.isArray(res) ? res : res.data || [];
+  },
 };
