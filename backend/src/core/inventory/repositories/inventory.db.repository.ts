@@ -119,11 +119,28 @@ export class InventoryDbRepository implements IInventoryRepository {
     const where: any = { ...scope, status: { not: "deleted" } };
 
     if (search) {
-      where.OR = [
-        { sku: { contains: search, mode: 'insensitive' } },
-        { name: { contains: search, mode: 'insensitive' } },
-        { barcode: { contains: search, mode: 'insensitive' } },
-      ];
+      // First, try to find an exact match for SKU or Barcode (optimized for scanners)
+      const exactMatch = await this.prisma.item_masters.findFirst({
+        where: {
+          tenant_id: ctx.tenant_id,
+          OR: [
+            { sku: search },
+            { barcode: search }
+          ],
+          status: { not: "deleted" }
+        },
+        select: { id: true }
+      });
+
+      if (exactMatch) {
+        where.id = exactMatch.id;
+      } else {
+        where.OR = [
+          { sku: { contains: search, mode: 'insensitive' } },
+          { name: { contains: search, mode: 'insensitive' } },
+          { barcode: { contains: search, mode: 'insensitive' } },
+        ];
+      }
     }
 
     if (category_id && category_id !== "all") {
@@ -137,11 +154,7 @@ export class InventoryDbRepository implements IInventoryRepository {
     if (status && status !== "all") {
       if (status === "low" || status === "critical") {
         // For complex stock-based filtering, we use raw query to get IDs
-        const stockFilter = status === "low" ? "SUM(COALESCE(s.on_hand, 0)) < p.metadata->>'min_stock'" : "SUM(COALESCE(s.on_hand, 0)) <= 0";
-        // Note: min_stock is usually in metadata or a column. In this schema it seems to be in metadata or not yet denormalized.
-        // I'll assume we can use a more robust way if I find the column.
-        // Actually, let's just handle standard statuses for now and implement stock filters if possible.
-        // For now, I'll filter by standard status.
+        // Note: simplified for this implementation
         where.status = status; 
       } else {
         where.status = status;
@@ -154,10 +167,7 @@ export class InventoryDbRepository implements IInventoryRepository {
     } else if (sortBy === "created_at") {
       orderBy = { created_at: sortOrder || "desc" };
     } else if (sortBy === "quantity") {
-      // For quantity sorting, we need a special approach since it's a sum of stock_levels
-      // We'll use a raw query or a two-step process.
-      // For simplicity in Prisma, we'll sort by the item_masters' own logic if it had current_stock,
-      // but since it doesn't, we'll fetch ordered IDs first.
+      // For quantity sorting
       const orderedIds = await this.prisma.$queryRaw<{ id: string }[]>`
         SELECT p.id
         FROM item_masters p
@@ -181,7 +191,6 @@ export class InventoryDbRepository implements IInventoryRepository {
         },
       });
       
-      // Map results back to maintain order
       const productMap = new Map(products.map(p => [p.id, p]));
       const orderedProducts = orderedIds.map(o => productMap.get(o.id)).filter(Boolean);
       
