@@ -20,9 +20,10 @@ import {
   StopCircle,
   Play
 } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import api from "@/lib/api";
+import { apiRequest } from "@/core/api/apiClient";
+import { useSession } from "@/core/security/session";
 import { format } from "date-fns";
 
 interface Job {
@@ -49,11 +50,12 @@ export function JobMonitorDialog({ open, onOpenChange }: JobMonitorDialogProps) 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const session = useSession();
 
   const fetchJobs = async () => {
     try {
-      const response = await api.get("/inventory/import/jobs");
-      setJobs(response.data);
+      const response = await apiRequest<Job[]>("/inventory/import/jobs", "GET", session);
+      setJobs(response);
     } catch (error) {
       console.error("Failed to fetch jobs:", error);
     }
@@ -69,7 +71,7 @@ export function JobMonitorDialog({ open, onOpenChange }: JobMonitorDialogProps) 
 
   const handleAbort = async (jobId: string) => {
     try {
-      await api.delete(`/inventory/import/jobs/${jobId}`);
+      await apiRequest(`/inventory/import/jobs/${jobId}`, "DELETE", session);
       toast({
         title: "Job Aborted",
         description: "The background task has been signaled to stop.",
