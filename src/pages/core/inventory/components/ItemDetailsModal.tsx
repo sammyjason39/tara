@@ -27,7 +27,9 @@ import {
   Activity,
   Box,
   BarChart2,
-  Tag
+  Tag,
+  Plus,
+  Image as ImageIcon
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { apiRequest } from "@/core/api/apiClient";
