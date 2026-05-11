@@ -7298,7 +7298,7 @@ model explorer_files {
   size           Int
   mime_type      String
   storage_path   String
-  metadata       Json?     @default("{}")
+  metadata       Json?     @default("{}") // Support for report metadata persistence
   last_edited_by String?
   history        Json?     @default("[]")
   created_at     DateTime  @default(now())

@@ -1,6 +1,6 @@
 {
   "name": "zenvix-backend",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "description": "Zenvix Platform Backend - Multi-Tenant Business OS",
   "author": "Zenvix Team",
   "private": true,
