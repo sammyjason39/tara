@@ -1546,8 +1546,7 @@ export default function Explorer() {
                   </div>
                 ) : null}
               </div>
-            </div>
-          ) : (
+            ) : (
             <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
               Select a file to see preview and metadata.
             </div>
