@@ -889,34 +889,37 @@ export class InventoryService {
       if (!cycle) return;
 
       const reportData = {
-        cycle_id: cycle.id,
+        title: "Stock Opname Report",
+        generated_at: new Date().toISOString(),
+        performer_id: ctx.user_id,
         location: cycle.location_code,
         scope: cycle.scope,
         status: cycle.status,
         expected_value: cycle.expected_value,
         counted_value: cycle.counted_value,
         variance: cycle.variance_value,
-        timestamp: new Date().toISOString(),
-        recognized_items: cycle.audit_items.map(i => ({ sku: i.sku, name: i.name, barcode: i.barcode })),
+        total_items: cycle.total_items,
+        discrepancies: cycle.discrepancies,
+        items: cycle.audit_items.map(i => ({ sku: i.sku, name: i.name, barcode: i.barcode })),
         anomalies: cycle.anomalies.map(a => ({ barcode: a.barcode, scanned_at: a.scanned_at })),
       };
 
       const reportJson = JSON.stringify(reportData, null, 2);
-      const fileName = `AuditReport_${cycle.location_code}_${Date.now()}.json`;
+      const fileName = `StockOpname_${cycle.location_code}_${new Date().toISOString().split('T')[0]}.json`;
       
-      // Ensure Audit Reports folder exists
+      // Ensure Stock Opname Reports folder exists
       const folders = await this.prisma.explorer_folders.findMany({
         where: { 
           tenant_id: ctx.tenant_id, 
           company_id: ctx.company_id,
-          name: "Audit Reports" 
+          name: "Stock Opname Reports" 
         }
       });
 
       let folderId = folders[0]?.id;
       if (!folderId) {
         const folder = await this.explorerService.createFolder(ctx, {
-          name: "Audit Reports",
+          name: "Stock Opname Reports",
           access_level: "shared"
         } as any);
         folderId = folder.id;

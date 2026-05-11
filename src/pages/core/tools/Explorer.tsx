@@ -909,12 +909,13 @@ export default function Explorer() {
                                 const tool = getToolForFile(file);
                                 if (tool !== "none") {
                                   navigate(`/tools/${tool}?fileId=${file.id}`);
-                                } else if (!isRecycleView) {
-                                  setEditingId(file.id);
-                                  setEditingValue(file.name);
+                                } else {
+                                  setSelectedFileId(file.id);
+                                  setPreviewOpen(true);
                                 }
                               } else {
                                 handleSelection(file.id, index, event);
+                                setSelectedFileId(file.id);
                               }
                               setLastClick({ id: file.id, time: now });
                             }}
@@ -1256,10 +1257,14 @@ export default function Explorer() {
           {selectedFile ? (
             <div className="grid gap-4 md:grid-cols-[1.4fr_1fr]">
               <div className="space-y-3">
-                <div className="rounded-lg border p-4 text-sm text-muted-foreground overflow-auto max-h-[400px]">
+                <div className="rounded-lg border p-4 text-sm text-muted-foreground overflow-auto max-h-[400px] bg-muted/20 font-mono">
                   {typeof selectedFile.content === 'string' 
-                    ? selectedFile.content.substring(0, 400) 
-                    : (selectedFile.content ? JSON.stringify(selectedFile.content).substring(0, 400) : "No preview available.")}
+                    ? (selectedFile.content.startsWith('{') || selectedFile.content.startsWith('[')
+                       ? <pre className="whitespace-pre-wrap">{selectedFile.content}</pre>
+                       : selectedFile.content.substring(0, 800))
+                    : (selectedFile.content 
+                       ? <pre className="whitespace-pre-wrap">{JSON.stringify(selectedFile.content, null, 2)}</pre>
+                       : "No preview available.")}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {!isRecycleView ? (
