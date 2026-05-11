@@ -132,7 +132,9 @@ export function JobMonitorDialog({ open, onOpenChange }: JobMonitorDialogProps) 
                       <div className="flex items-center gap-4 text-[10px] text-slate-500">
                         <div className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
-                          {format(new Date(job.created_at), "MMM d, HH:mm:ss")}
+                          {job.created_at && !isNaN(new Date(job.created_at).getTime()) 
+                            ? format(new Date(job.created_at), "MMM d, HH:mm:ss") 
+                            : "Pending..."}
                         </div>
                         <div className="flex items-center gap-1">
                           <User className="w-3 h-3" />
