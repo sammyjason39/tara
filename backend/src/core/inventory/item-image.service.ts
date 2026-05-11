@@ -311,10 +311,27 @@ export class ItemImageService {
   }
 
   async getImagePath(fullPath: string): Promise<string> {
-    // The controller passes the remaining path after /v1/inventory/images/
-    const filePath = path.join(this.storagePath, fullPath);
+    if (!fullPath) {
+      throw new BadRequestException("Image path is required");
+    }
+
+    const relativePath = decodeURIComponent(fullPath).replace(/\\/g, "/");
+    const normalizedPath = path.normalize(relativePath);
+    if (path.isAbsolute(normalizedPath) || normalizedPath.startsWith("..")) {
+      throw new BadRequestException("Invalid image path");
+    }
+
+    const storageRoot = path.resolve(this.storagePath);
+    const filePath = path.resolve(storageRoot, normalizedPath);
+    if (!filePath.startsWith(`${storageRoot}${path.sep}`)) {
+      throw new BadRequestException("Invalid image path");
+    }
+
     try {
-      await fs.access(filePath);
+      const stat = await fs.stat(filePath);
+      if (!stat.isFile()) {
+        throw new NotFoundException("Image not found");
+      }
       return filePath;
     } catch {
       throw new NotFoundException("Image not found");

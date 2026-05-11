@@ -218,11 +218,22 @@ export class InventoryController {
   @Get("images/*")
   async serveImage(
     @Param() params: any,
+    @Req() request: Request,
     @Res() res: Response,
   ) {
-    const fullPath = params[0];
-    const path = await this.itemImageService.getImagePath(fullPath);
-    res.sendFile(path);
+    const marker = "/inventory/images/";
+    const requestPath = request.path || request.url.split("?")[0] || "";
+    const markerIndex = requestPath.indexOf(marker);
+    const paramPath = Array.isArray(params.path)
+      ? params.path.join("/")
+      : params.path || params[0];
+    const fullPath =
+      markerIndex >= 0
+        ? requestPath.slice(markerIndex + marker.length)
+        : paramPath;
+    const imagePath = await this.itemImageService.getImagePath(fullPath);
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    res.sendFile(imagePath);
   }
 
   @Post("items")
