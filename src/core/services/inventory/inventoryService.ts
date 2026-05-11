@@ -45,12 +45,11 @@ export const inventoryService = {
     session: SessionContext,
     barcode: string,
   ): Promise<InventoryItemMaster | null> {
-    const res = await apiRequest<{ data: InventoryItemMaster | null }>(
+    return apiRequest<InventoryItemMaster | null>(
       `/v1/inventory/items/lookup?barcode=${barcode}`,
       "GET",
       session,
     );
-    return res.data;
   },
 
   async listBalances(
