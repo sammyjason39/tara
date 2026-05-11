@@ -80,7 +80,7 @@ export class ExplorerService {
         department_id: toUuid(dto.department_id) ?? toUuid(department_id) ?? null,
         branch_id: toUuid(dto.branch_id) ?? toUuid(branch_id) ?? null,
         ecommerce_id: toUuid(dto.ecommerce_id) ?? toUuid(ecommerce_id) ?? null,
-        access_level: "private",
+        access_level: dto.access_level || "private",
         name: dto.name,
         parent_id: dto.parent_id,
       },
@@ -164,45 +164,64 @@ export class ExplorerService {
       accessibleCompanyIds = childCompanies.map(c => c.id);
     }
 
-    // 2. Build Permission-Based Where Clause
-    // Rule: (Owner OR DepartmentAccess OR HighTierAccess)
-    const baseWhere: any = {
+    // 2. Build Permission-Based Where Clauses
+    const folderWhere: any = {
+      tenant_id,
+      deleted_at: null,
+      OR: [
+        { 
+          department_id, 
+          access_level: "department" 
+        },
+        {
+          company_id: { in: accessibleCompanyIds },
+          access_level: { in: ["department", "shared"] }
+        },
+        {
+          access_level: "shared" 
+        }
+      ]
+    };
+
+    const fileWhere: any = {
       tenant_id,
       deleted_at: null,
       OR: [
         { owner_id: user_id }, // My Private files
         { 
           department_id, 
-          access_level: "department" // Shared with my department
+          access_level: "department" 
         },
         {
           company_id: { in: accessibleCompanyIds },
-          access_level: { in: ["department", "shared"] } // Visible to parent hierarchy
+          access_level: { in: ["department", "shared"] }
         },
         {
-          access_level: "shared" // Publicly shared in company
+          access_level: "shared" 
         }
       ]
     };
 
-    // Override for Admin/Owner to see all in their accessible scope (including global files)
+    // Override for Admin/Owner to see all in their accessible scope
     if (role === "SUPERADMIN" || role === "OWNER") {
-      baseWhere.OR = [
+      const adminOr = [
         { company_id: { in: accessibleCompanyIds } },
-        { company_id: null } // Allow seeing global/unassigned files (like system reports)
+        { company_id: null }
       ];
+      folderWhere.OR = adminOr;
+      fileWhere.OR = adminOr;
     }
 
     const [folders, files] = await Promise.all([
       this.prisma.explorer_folders.findMany({
         where: { 
-          ...baseWhere, 
+          ...folderWhere, 
           parent_id: folder_id ?? null 
         },
       }),
       this.prisma.explorer_files.findMany({
         where: { 
-          ...baseWhere, 
+          ...fileWhere, 
           folder_id: folder_id ?? null 
         },
       }),

@@ -167,15 +167,24 @@ export class InventoryDbRepository implements IInventoryRepository {
     } else if (sortBy === "created_at") {
       orderBy = { created_at: sortOrder || "desc" };
     } else if (sortBy === "quantity") {
-      // For quantity sorting
+      // For quantity sorting with filters - optimized raw query
       const orderedIds = await this.prisma.$queryRaw<{ id: string }[]>`
         SELECT p.id
         FROM item_masters p
         LEFT JOIN stock_levels s ON s.product_id = p.id
         WHERE p.tenant_id = ${ctx.tenant_id}
           AND p.status != 'deleted'
+          ${category_id && category_id !== "all" ? Prisma.raw(`AND p.category_id = '${category_id}'`) : Prisma.empty}
+          ${status && status !== "all" ? Prisma.raw(`AND p.status = '${status}'`) : Prisma.empty}
+          ${search ? Prisma.raw(`AND (p.name ILIKE '%${search}%' OR p.sku ILIKE '%${search}%' OR p.barcode ILIKE '%${search}%')`) : Prisma.empty}
         GROUP BY p.id
-        ORDER BY SUM(COALESCE(s.on_hand, 0)) ${sortOrder === "asc" ? Prisma.raw("ASC") : Prisma.raw("DESC")}
+        ORDER BY SUM(
+          CASE 
+            WHEN ${location_id ? Prisma.raw(`s.location_id = '${location_id}'`) : Prisma.raw("1=1")} 
+            THEN COALESCE(s.on_hand, 0) 
+            ELSE 0 
+          END
+        ) ${sortOrder === "asc" ? Prisma.raw("ASC") : Prisma.raw("DESC")}
         LIMIT ${limit} OFFSET ${skip}
       `;
       

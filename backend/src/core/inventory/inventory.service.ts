@@ -913,6 +913,7 @@ export class InventoryService {
       if (!folderId) {
         const folder = await this.explorerService.createFolder(ctx, {
           name: "Audit Reports",
+          access_level: "shared"
         } as any);
         folderId = folder.id;
       }
