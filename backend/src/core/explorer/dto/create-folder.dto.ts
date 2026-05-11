@@ -23,4 +23,8 @@ export class CreateFolderDto {
   @IsOptional()
   @IsUUID()
   ecommerce_id?: string;
+
+  @IsOptional()
+  @IsString()
+  access_level?: "private" | "department" | "shared";
 }
