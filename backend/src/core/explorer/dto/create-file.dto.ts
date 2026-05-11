@@ -20,4 +20,8 @@ export class CreateFileDto {
   @IsOptional()
   @IsUUID()
   ecommerce_id?: string;
+
+  @IsOptional()
+  @IsString()
+  access_level?: string;
 }
