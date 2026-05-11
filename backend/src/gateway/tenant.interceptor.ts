@@ -23,8 +23,11 @@ export class TenantInterceptor implements NestInterceptor {
       return next.handle();
     }
 
+    console.log(`[TenantInterceptor] URL: ${request.url}`);
+
     // Bypass for public inventory images
     if (request.url.includes("/inventory/images/")) {
+       console.log(`[TenantInterceptor] Bypassing for image: ${request.url}`);
        return next.handle();
     }
 
