@@ -1245,7 +1245,9 @@ export default function Explorer() {
             <div className="grid gap-4 md:grid-cols-[1.4fr_1fr]">
               <div className="space-y-3">
                 <div className="rounded-lg border p-4 text-sm text-muted-foreground">
-                  {selectedFile.content?.slice(0, 400) || "No preview available."}
+                  {typeof selectedFile.content === 'string' 
+                    ? selectedFile.content.slice(0, 400) 
+                    : (selectedFile.content ? JSON.stringify(selectedFile.content).slice(0, 400) : "No preview available.")}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {!isRecycleView ? (
@@ -1304,8 +1306,8 @@ export default function Explorer() {
                     <div>Department: {selectedFile.department_id || "N/A"}</div>
                     {selectedFile.branch_id && <div>Branch: {selectedFile.branch_id}</div>}
                     <div>Folder: {folderMap.get(selectedFile.folderId ?? "root")}</div>
-                    <div>Created: {selectedFile.createdAt?.slice(0, 10) || "N/A"}</div>
-                    <div>Updated: {selectedFile.updatedAt?.slice(0, 10) || "N/A"}</div>
+                    <div>Created: {selectedFile.createdAt ? new Date(selectedFile.createdAt).toISOString().slice(0, 10) : "N/A"}</div>
+                    <div>Updated: {selectedFile.updatedAt ? new Date(selectedFile.updatedAt).toISOString().slice(0, 10) : "N/A"}</div>
                     {selectedFile.last_edited_by && (
                       <div className="mt-2 pt-2 border-t font-medium text-primary">
                         Last Editor ID: {selectedFile.last_edited_by}

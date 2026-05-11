@@ -6,7 +6,7 @@ export type ZenvixTool = "docs" | "sheets" | "slides" | "none";
 
 export function getToolForFile(file: ToolFileRecord): ZenvixTool {
   const type = file.type.toLowerCase();
-  if (["doc", "docx", "txt", "md", "zdoc"].includes(type)) return "docs";
+  if (["doc", "docx", "txt", "md", "zdoc", "json"].includes(type)) return "docs";
   if (["xls", "xlsx", "csv", "zsheet"].includes(type)) return "sheets";
   if (["ppt", "pptx", "zslide"].includes(type)) return "slides";
   return "none";
