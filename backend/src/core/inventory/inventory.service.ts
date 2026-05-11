@@ -1590,6 +1590,20 @@ export class InventoryService {
       });
 
       const errors: string[] = [];
+
+      this.logger.log(`[Worker] Job ${jobId}: Building SKU lookup map for tenant ${ctx.tenant_id}...`);
+      const allItems = await this.prisma.item_masters.findMany({
+        where: { tenant_id: ctx.tenant_id },
+        select: { id: true, sku: true },
+      });
+      const skuMap = new Map<string, { id: string; sku: string }>();
+      for (const item of allItems) {
+        if (!item.sku) continue;
+        const normalized = item.sku.replace(/[\s_-]/g, '').toLowerCase();
+        skuMap.set(normalized, item);
+      }
+      this.logger.log(`[Worker] Built lookup map for ${skuMap.size} unique SKUs.`);
+
       const results = await this.fileProcessingService.processZipImages(
         job.file_path,
         async (fileName, buffer) => {
@@ -1604,15 +1618,44 @@ export class InventoryService {
           }
 
           const nameWithoutExt = path.parse(fileName).name;
+          
+          // Strategy 1: Smart matching (strip suffixes and normalize)
           const match = nameWithoutExt.match(/^(.*)[_-]\d+$/);
-          const sku = match ? match[1] : nameWithoutExt;
-          const item = await this.prisma.item_masters.findFirst({
-            where: { tenant_id: ctx.tenant_id, sku },
-          });
+          const rawSku = match ? match[1] : nameWithoutExt;
+          let normalizedSku = rawSku.replace(/[\s_-]/g, '').toLowerCase();
+          
+          let item = skuMap.get(normalizedSku);
+
+          // Strategy 2: If no match, try the full name without extension normalized
+          if (!item) {
+            normalizedSku = nameWithoutExt.replace(/[\s_-]/g, '').toLowerCase();
+            item = skuMap.get(normalizedSku);
+          }
 
           if (!item) {
-            errors.push(`SKU ${sku} not found for file ${fileName}`);
+            errors.push(`SKU "${rawSku}" not found for file ${fileName}`);
             return;
+          }
+
+          // --- Deduplication Check ---
+          // Check if this specific item already has this image via audit logs (Efficient for large sets)
+          const existing = await this.prisma.audit_logs.findFirst({
+            where: {
+              tenant_id: ctx.tenant_id,
+              action: 'UPLOAD_IMAGE',
+              metadata: {
+                path: ['originalName'],
+                equals: fileName
+              }
+            }
+          });
+
+          if (existing) {
+             const meta = existing.metadata as any;
+             if (meta?.item_id === item.id) {
+               this.logger.log(`[Worker] Skipping duplicate image ${fileName} for item ${item.sku}`);
+               return;
+             }
           }
 
           const file: any = {
@@ -1622,7 +1665,7 @@ export class InventoryService {
             size: buffer.length,
           };
 
-          const customName = `${sku}_${Date.now()}${path.extname(fileName)}`;
+          const customName = `${item.sku.replace(/\s+/g, '_')}_${Date.now()}${path.extname(fileName)}`;
           await this.itemImageService.uploadImage(
             ctx.tenant_id,
             item.id,
