@@ -1597,12 +1597,14 @@ export class InventoryService {
         select: { id: true, sku: true },
       });
       const skuMap = new Map<string, { id: string; sku: string }>();
+      const exactSkuMap = new Map<string, { id: string; sku: string }>();
       for (const item of allItems) {
         if (!item.sku) continue;
+        exactSkuMap.set(item.sku, item);
         const normalized = item.sku.replace(/[\s_-]/g, '').toLowerCase();
         skuMap.set(normalized, item);
       }
-      this.logger.log(`[Worker] Built lookup map for ${skuMap.size} unique SKUs.`);
+      this.logger.log(`[Worker] Built lookup maps for ${skuMap.size} unique SKUs.`);
 
       const results = await this.fileProcessingService.processZipImages(
         job.file_path,
@@ -1619,17 +1621,27 @@ export class InventoryService {
 
           const nameWithoutExt = path.parse(fileName).name;
           
-          // Strategy 1: Smart matching (strip suffixes and normalize)
-          const match = nameWithoutExt.match(/^(.*)[_-]\d+$/);
-          const rawSku = match ? match[1] : nameWithoutExt;
-          let normalizedSku = rawSku.replace(/[\s_-]/g, '').toLowerCase();
-          
-          let item = skuMap.get(normalizedSku);
+          // Strategy 0: Exact match first (filename as SKU)
+          let item = exactSkuMap.get(nameWithoutExt);
+          let rawSku = nameWithoutExt;
 
-          // Strategy 2: If no match, try the full name without extension normalized
           if (!item) {
-            normalizedSku = nameWithoutExt.replace(/[\s_-]/g, '').toLowerCase();
-            item = skuMap.get(normalizedSku);
+            // Strategy 1: Smart matching (strip _1, _2 suffixes)
+            const match = nameWithoutExt.match(/^(.*)[_-]\d+$/);
+            rawSku = match ? match[1] : nameWithoutExt;
+            item = exactSkuMap.get(rawSku);
+            
+            if (!item) {
+              // Strategy 2: Normalized matching
+              const normalizedSku = rawSku.replace(/[\s_-]/g, '').toLowerCase();
+              item = skuMap.get(normalizedSku);
+            }
+
+            if (!item) {
+              // Strategy 3: Try full filename normalized
+              const normalizedFull = nameWithoutExt.replace(/[\s_-]/g, '').toLowerCase();
+              item = skuMap.get(normalizedFull);
+            }
           }
 
           if (!item) {
