@@ -1567,7 +1567,12 @@ export class InventoryService {
 
   async processImageImportJob(jobId: string, ctx: TenantContext) {
     const job = await this.prisma.inventory_import_jobs.findUnique({ where: { id: jobId } });
-    if (!job) return;
+    if (!job) {
+      this.logger.error(`[Worker] Image import job ${jobId} not found in database!`);
+      return;
+    }
+
+    this.logger.log(`[Worker] Starting image import processing for job ${jobId} (File: ${job.filename})`);
 
     await this.prisma.inventory_import_jobs.update({
       where: { id: jobId },

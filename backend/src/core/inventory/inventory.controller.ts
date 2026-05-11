@@ -322,7 +322,7 @@ export class InventoryController {
     };
   }
 
-  @Post("items/import/images")
+  @Post(["bulk-images", "import/images"])
   @UseInterceptors(FileInterceptor("file", {
     storage: diskStorage({
       destination: (req, file, cb) => {
@@ -344,7 +344,6 @@ export class InventoryController {
     @Req() request: RequestWithTenant,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    console.log(`[DEBUG] importImages route hit!`);
     const { tenant_id, user_id } = request.tenantContext;
     if (!file) {
       return { success: false, message: "No file uploaded" };

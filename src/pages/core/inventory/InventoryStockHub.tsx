@@ -504,7 +504,7 @@ export default function InventoryStockHub() {
         onOpenChange={setIsImageImportOpen}
         onSuccess={fetchData}
         type="IMAGES"
-        endpoint="inventory/items/import/images"
+        endpoint="inventory/bulk-images"
         title="Bulk Image Upload"
       />
 
