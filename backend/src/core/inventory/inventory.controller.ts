@@ -337,7 +337,7 @@ export class InventoryController {
         cb(null, `images-${uniqueSuffix}${path.extname(file.originalname)}`);
       },
     }),
-    limits: { fileSize: 1024 * 1024 * 1024 }, // 1GB
+    limits: { fileSize: 5 * 1024 * 1024 * 1024 }, // 5GB
   }))
   @RequireInventoryRole(InventoryRole.MANAGER)
   async importImages(

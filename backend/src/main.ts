@@ -32,8 +32,8 @@ async function bootstrap() {
 
   // Increase body size limits
   const bodyParser = require("body-parser");
-  app.use(bodyParser.json({ limit: "500mb" }));
-  app.use(bodyParser.urlencoded({ limit: "500mb", extended: true }));
+  app.use(bodyParser.json({ limit: "5gb" }));
+  app.use(bodyParser.urlencoded({ limit: "5gb", extended: true }));
 
   const loggerService = app.get(LoggerService);
   
