@@ -16,6 +16,7 @@ import { ProcurementService } from "../procurement/procurement.service";
 import { MultiTenancyUtil } from "../../shared/utils/multi-tenancy.util";
 import * as path from "path";
 import * as fsPromises from "fs/promises";
+import AdmZip from "adm-zip";
 import { ItemImageService } from "./item-image.service";
 import { ImportItemDto } from "./dto/import-item.dto";
 import { FileProcessingService } from "../../shared/file-processing/file-processing.service";
@@ -1574,6 +1575,15 @@ export class InventoryService {
     });
 
     try {
+      const zip = new AdmZip(job.file_path);
+      const entries = zip.getEntries();
+      const imageCount = entries.filter(e => !e.isDirectory && [".jpg", ".jpeg", ".png", ".webp"].includes(path.extname(e.name).toLowerCase())).length;
+
+      await this.prisma.inventory_import_jobs.update({
+        where: { id: jobId },
+        data: { total_items: imageCount },
+      });
+
       const errors: string[] = [];
       const results = await this.fileProcessingService.processZipImages(
         job.file_path,
