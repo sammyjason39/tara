@@ -229,7 +229,11 @@ export class ExplorerService {
       }),
     ]);
 
-    return { folders, files };
+    const currentFolder = folder_id 
+      ? await this.prisma.explorer_folders.findUnique({ where: { id: folder_id } })
+      : null;
+
+    return { folders, files, currentFolder };
   }
 
   async getFile(ctx: any, file_id: string) {

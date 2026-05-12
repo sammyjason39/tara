@@ -141,6 +141,7 @@ export default function Explorer() {
 
   const [files, setFiles] = useState<any[]>([]);
   const [folders, setFolders] = useState<any[]>([]);
+  const [currentFolder, setCurrentFolder] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [groupBy, setGroupBy] = useState<"none" | "company" | "department">("none");
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -149,13 +150,14 @@ export default function Explorer() {
   const fetchFileSystem = async () => {
     setLoading(true);
     try {
-      const { folders, files } = await listFileSystem(
+      const { folders, files, currentFolder } = await listFileSystem(
         session,
         activeFolder === "root" ? undefined : activeFolder
       );
-      console.log("[Explorer] API Result:", { folders, files, activeFolder });
+      console.log("[Explorer] API Result:", { folders, files, currentFolder, activeFolder });
       setFiles(files);
       setFolders(folders);
+      setCurrentFolder(currentFolder || null);
     } catch (err) {
       console.error("Failed to fetch file system", err);
     } finally {
@@ -1134,7 +1136,7 @@ export default function Explorer() {
                         <span className="text-[10px] text-muted-foreground uppercase">{groupFiles.length} items</span>
                       </div>
                     )}
-                    {folderMap.get(activeFolder) === "Stock Opname Reports" ? (
+                    {currentFolder?.name === "Stock Opname Reports" ? (
                       <table className="w-full text-left">
                         <thead className="bg-muted/50 border-b">
                           <tr className="text-left text-xs text-muted-foreground font-semibold">

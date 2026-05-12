@@ -20,15 +20,21 @@ export function getToolForFile(file: ToolFileRecord): ZenvixTool {
 export async function listFileSystem(
   session: SessionContext,
   folderId?: string,
-): Promise<{ folders: ToolFolder[]; files: ToolFileRecord[] }> {
+): Promise<{ folders: ToolFolder[]; files: ToolFileRecord[]; currentFolder?: ToolFolder }> {
   const query = folderId ? `?folder_id=${folderId}` : "";
-  const result = await apiRequest<{ folders: any[]; files: any[] }>(
+  const result = await apiRequest<{ folders: any[]; files: any[]; currentFolder?: any }>(
     `/explorer/system${query}`,
     "GET",
     session,
   );
 
   return {
+    currentFolder: result.currentFolder ? {
+      id: result.currentFolder.id,
+      name: result.currentFolder.name,
+      tenantId: result.currentFolder.tenant_id,
+      parentId: result.currentFolder.parent_id,
+    } : undefined,
     folders: (Array.isArray(result.folders) ? result.folders : []).map(f => ({
       id: f.id,
       name: f.name,
