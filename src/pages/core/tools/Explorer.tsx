@@ -446,18 +446,18 @@ export default function Explorer() {
                   {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 </button>
                 <Folder className="h-4 w-4" />
-                <span className="flex-1">{folder.name}</span>
-                <Button
-                  size="sm"
-                  variant="ghost"
+                <span className="flex-1 truncate">{folder.name}</span>
+                <button
+                  className="p-1 hover:bg-muted rounded text-muted-foreground"
                   onClick={(event) => {
                     event.stopPropagation();
                     setRenameFolderId(folder.id);
                     setRenameFolderValue(folder.name);
                   }}
+                  title="Rename folder"
                 >
-                  Rename
-                </Button>
+                  <Edit2 className="h-3 w-3" />
+                </button>
               </div>
               {isExpanded ? renderFolderNode(folder.id, depth + 1) : null}
             </div>
@@ -512,34 +512,8 @@ export default function Explorer() {
     >
       <div className="grid gap-6 lg:grid-cols-[240px_1fr] p-6">
         <WorkspacePanel title="Folders" description="Department hierarchy.">
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={handleCreateFolder}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                New Folder
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                Upload
-              </Button>
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                className="hidden" 
-                onChange={handleUpload}
-              />
-            </div>
-            <div className="space-y-2">
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1">
             <div className="max-h-[calc(100vh-320px)] overflow-y-auto pr-2 custom-scrollbar">
               <div
                 className={`flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-sm ${
@@ -609,35 +583,45 @@ export default function Explorer() {
             </div>
           </WorkspacePanel>
 
-        <div className="space-y-6">
-          <WorkspacePanel title="Search" description="Find files in your department scope.">
-            <Input
-              placeholder="Search files by name"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
+          <WorkspacePanel title="Address" description="Navigate folders like Windows Explorer.">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" disabled={!canGoBack} onClick={goBack}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" disabled={!canGoForward} onClick={goForward}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex flex-1 items-center gap-2 rounded-xl border bg-muted/20 px-4 py-2 min-w-0">
+                <div className="flex flex-wrap items-center gap-1.5 overflow-hidden">
+                  {(Array.isArray(currentBreadcrumb) ? currentBreadcrumb : []).map((crumb, index) => (
+                    <React.Fragment key={`${crumb.id}-${index}`}>
+                      <button
+                        className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors truncate max-w-[120px]"
+                        onClick={() => navigateToFolder(crumb.id)}
+                      >
+                        {crumb.label}
+                      </button>
+                      {index < currentBreadcrumb.length - 1 ? (
+                        <span className="text-muted-foreground/30 text-xs">/</span>
+                      ) : null}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+            </div>
           </WorkspacePanel>
 
-          <WorkspacePanel title="Address" description="Navigate folders like Windows Explorer.">
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <Button size="sm" variant="outline" disabled={!canGoBack} onClick={goBack}>
-                Back
-              </Button>
-              <Button size="sm" variant="outline" disabled={!canGoForward} onClick={goForward}>
-                Forward
-              </Button>
-              <div className="flex flex-wrap items-center gap-2 rounded-md border bg-background px-3 py-2">
-                {(Array.isArray(currentBreadcrumb) ? currentBreadcrumb : []).map((crumb, index) => (
-                  <button
-                    key={`${crumb.id}-${index}`}
-                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-                    onClick={() => navigateToFolder(crumb.id)}
-                  >
-                    <span className="font-medium text-foreground">{crumb.label}</span>
-                    {index < currentBreadcrumb.length - 1 ? <span>/</span> : null}
-                  </button>
-                ))}
-              </div>
+          <WorkspacePanel title="Search" description="Find files in your department scope.">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search files by name..."
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className="pl-10 h-10 rounded-xl bg-muted/10 border-muted"
+              />
             </div>
           </WorkspacePanel>
 
@@ -1254,21 +1238,23 @@ export default function Explorer() {
                                   setLastClick({ id: file.id, time: now });
                                 }}
                                 className={cn(
-                                  "flex cursor-pointer rounded-lg border p-4 transition-all shadow-sm",
+                                  "flex cursor-pointer rounded-2xl border p-4 transition-all shadow-sm group",
                                   viewMode === "large" ? "flex-col gap-4" : "items-center justify-between gap-3",
-                                  selectedIds.includes(file.id) ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "hover:bg-muted/50"
+                                  selectedIds.includes(file.id) ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "hover:bg-muted/50 hover:shadow-md"
                                 )}
                               >
-                                <div className={cn("flex gap-3", viewMode === "large" ? "flex-col" : "items-center flex-1 min-w-0")}>
+                                <div className={cn("flex gap-4", viewMode === "large" ? "flex-col" : "items-center flex-1 min-w-0")}>
                                   <div className="flex items-center gap-3">
                                     <input
                                       type="checkbox"
                                       checked={selectedIds.includes(file.id)}
                                       onChange={() => toggleSelect(file.id)}
                                       onClick={(event) => event.stopPropagation()}
-                                      className="h-4 w-4 rounded border-muted"
+                                      className="h-4 w-4 rounded-full border-muted text-primary focus:ring-primary"
                                     />
-                                    {iconForFile(file.type, viewMode === "large" ? "lg" : "sm")}
+                                    <div className="p-2 bg-muted/30 rounded-xl group-hover:bg-primary/10 transition-colors">
+                                      {iconForFile(file.type, viewMode === "large" ? "lg" : "sm")}
+                                    </div>
                                   </div>
                                   
                                   <div className="flex-1 min-w-0 overflow-hidden">
@@ -1282,24 +1268,27 @@ export default function Explorer() {
                                           setVersion((prev) => prev + 1);
                                         }}
                                         autoFocus
-                                        className="h-7 text-sm"
+                                        className="h-8 text-sm rounded-lg"
                                       />
                                     ) : (
                                       <p 
-                                        className="text-sm font-bold text-foreground truncate w-full" 
+                                        className="text-sm font-bold text-foreground truncate w-full group-hover:text-primary transition-colors" 
                                         title={file.name}
                                       >
                                         {file.name}
                                       </p>
                                     )}
                                     
-                                    <div className="flex flex-col gap-1.5 mt-1.5">
+                                    <div className="flex flex-col gap-2 mt-2">
                                       <div className="flex items-center gap-2">
-                                        <p className="text-[10px] text-muted-foreground truncate">
-                                          {folderMap.get(file.folderId ?? "root") ?? "Root"}
-                                        </p>
+                                        <div className="flex items-center gap-1 bg-muted/40 px-2 py-0.5 rounded-full border border-muted-foreground/10">
+                                          <Folder className="h-3 w-3 text-muted-foreground" />
+                                          <p className="text-[10px] text-muted-foreground font-medium truncate max-w-[100px]">
+                                            {folderMap.get(file.folderId ?? "root") ?? "Root"}
+                                          </p>
+                                        </div>
                                         {file.access_level && (
-                                          <Badge variant={file.access_level === "private" ? "destructive" : "secondary"} className="h-3 px-1 text-[8px] uppercase">
+                                          <Badge variant={file.access_level === "private" ? "destructive" : "secondary"} className="h-4 px-2 text-[9px] uppercase font-bold rounded-full">
                                             {file.access_level}
                                           </Badge>
                                         )}
@@ -1310,16 +1299,21 @@ export default function Explorer() {
                                         if (typeof meta === 'string') { try { meta = JSON.parse(meta); } catch(e) {} }
                                         if (meta?.type === "STOCK_OPNAME_REPORT") {
                                           return (
-                                            <div className="mt-1 pt-1 border-t space-y-1">
-                                              <div className="flex items-center gap-1.5 flex-wrap">
-                                                <Badge variant="outline" className="bg-primary/10 text-primary text-[9px] px-1 border-primary/20">
+                                            <div className="pt-2 border-t border-dashed space-y-2">
+                                              <div className="flex items-center gap-2 flex-wrap">
+                                                <div className="flex items-center gap-1.5 bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full border border-primary/20 font-bold">
+                                                  <Bot className="h-3 w-3" />
                                                   {meta.ai_name || "Audit AI"}
-                                                </Badge>
-                                                <span className="text-[9px] text-muted-foreground font-medium">{meta.performer}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5 bg-slate-100 text-slate-600 text-[10px] px-2 py-0.5 rounded-full border border-slate-200 font-medium">
+                                                  <User className="h-3 w-3" />
+                                                  {meta.performer}
+                                                </div>
                                               </div>
-                                              <p className="text-[8px] text-muted-foreground opacity-70">
+                                              <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground opacity-80 pl-1">
+                                                <Clock className="h-3 w-3" />
                                                 {meta.timestamp ? format(new Date(meta.timestamp), 'MMM d, HH:mm') : "N/A"}
-                                              </p>
+                                              </div>
                                             </div>
                                           );
                                         }
@@ -1330,7 +1324,7 @@ export default function Explorer() {
                                 </div>
                                 {viewMode !== "large" && (
                                   <div className="ml-2 flex items-center gap-2 flex-shrink-0">
-                                    <Badge variant="outline" className="text-[10px]">{typeLabel[file.type]}</Badge>
+                                    <Badge variant="outline" className="text-[10px] rounded-full px-3 py-0.5 bg-background shadow-sm">{typeLabel[file.type]}</Badge>
                                   </div>
                                 )}
                               </div>
