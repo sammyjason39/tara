@@ -55,7 +55,7 @@ export default function RetailManagement() {
       navigate("/core/sales/intelligence");
       return;
     }
-    navigate(\"/core/operations\");
+    navigate("/core/operations");
   };
 
   // RBAC: Only HOD, owner, superadmins and admins

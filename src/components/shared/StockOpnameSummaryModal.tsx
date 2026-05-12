@@ -1,28 +1,28 @@
-import React, { useEffect, useState } from \"react\";
+import React, { useEffect, useState } from "react";
 import { 
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription 
-} from \"@/components/ui/dialog\";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from \"@/components/ui/table\";
-import { Button } from \"@/components/ui/button\";
-import { Badge } from \"@/components/ui/badge\";
-import { ScrollArea } from \"@/components/ui/scroll-area\";
+} from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   FileText, Save, Download, FileSpreadsheet, Image as ImageIcon, 
   AlertCircle, CheckCircle2, Clock, X, Package, ArrowRight
-} from \"lucide-react\";
-import { inventoryService } from \"@/core/services/inventory/inventoryService\";
-import { useSession } from \"@/core/security/session\";
-import { saveStockOpnameReport, ReportItem } from \"@/core/tools/explorer/reportingService\";
+} from "lucide-react";
+import { inventoryService } from "@/core/services/inventory/inventoryService";
+import { useSession } from "@/core/security/session";
+import { saveStockOpnameReport, ReportItem } from "@/core/tools/explorer/reportingService";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { toast } from \"@/hooks/use-toast\";
-import { cn } from \"@/lib/utils\";
+import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface StockOpnameSummaryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => Promise<void>;
-  items: (ReportItem \u0026 { id?: string })[];
+  items: (ReportItem & { id?: string })[];
   locationName: string;
   auditorName: string;
 }
@@ -36,20 +36,20 @@ export const StockOpnameSummaryModal = ({
   auditorName,
 }: StockOpnameSummaryModalProps) => {
   const session = useSession();
-  const [itemImages, setItemImages] = useState\u003cRecord\u003cstring, string\u003e\u003e({});
+  const [itemImages, setItemImages] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const [hasActioned, setHasActioned] = useState(false);
 
   // Fetch primary images for items
-  useEffect(() =\u003e {
-    if (isOpen \u0026\u0026 items.length \u003e 0) {
-      items.forEach(async (item) =\u003e {
-        if (item.id \u0026\u0026 !itemImages[item.id]) {
+  useEffect(() => {
+    if (isOpen && items.length > 0) {
+      items.forEach(async (item) => {
+        if (item.id && !itemImages[item.id]) {
           try {
             const images = await inventoryService.listItemImages(session.tenant_id, session, item.id);
-            if (images \u0026\u0026 images.length \u003e 0) {
-              const primary = images.find(img =\u003e img.is_primary) || images[0];
-              setItemImages(prev =\u003e ({ ...prev, [item.id!]: primary.url }));
+            if (images && images.length > 0) {
+              const primary = images.find(img => img.is_primary) || images[0];
+              setItemImages(prev => ({ ...prev, [item.id!]: primary.url }));
             }
           } catch (e) {
             console.error("Failed to fetch image for", item.sku);
@@ -217,70 +217,80 @@ export const StockOpnameSummaryModal = ({
             <div className="p-8 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-white/50 dark:bg-black/50 backdrop-blur-xl">
               <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 italic">
                 Final Audit Manifest
-                    \u003cTableHead className=\"text-[9px] font-black uppercase tracking-widest text-slate-400 italic\"\u003eItem\u003c/TableHead\u003e
-                    \u003cTableHead className=\"text-center text-[9px] font-black uppercase tracking-widest text-slate-400 italic\"\u003eExpected\u003c/TableHead\u003e
-                    \u003cTableHead className=\"text-center text-[9px] font-black uppercase tracking-widest text-slate-400 italic\"\u003eActual\u003c/TableHead\u003e
-                    \u003cTableHead className=\"text-right text-[9px] font-black uppercase tracking-widest text-slate-400 italic\"\u003eVariance\u003c/TableHead\u003e
-                  \u003c/TableRow\u003e
-                \u003c/TableHeader\u003e
-                \u003cTableBody\u003e
-                  {items.map((item, idx) =\u003e {
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => !hasActioned && handleFinalCommit()} className="rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 transition-all">
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+            
+            <ScrollArea className="flex-1 p-8">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-none hover:bg-transparent">
+                    <TableHead className="text-[9px] font-black uppercase tracking-widest text-slate-400 italic">Item</TableHead>
+                    <TableHead className="text-center text-[9px] font-black uppercase tracking-widest text-slate-400 italic">Expected</TableHead>
+                    <TableHead className="text-center text-[9px] font-black uppercase tracking-widest text-slate-400 italic">Actual</TableHead>
+                    <TableHead className="text-right text-[9px] font-black uppercase tracking-widest text-slate-400 italic">Variance</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((item, idx) => {
                     const variance = item.actualCount - (item.systemCount || 0);
                     return (
-                      \u003cTableRow key={idx} className=\"border-slate-100 dark:border-slate-800 hover:bg-slate-100/50 dark:hover:bg-slate-900/50 transition-all group\"\u003e
-                        \u003cTableCell className=\"py-6\"\u003e
-                          \u003cdiv className=\"flex items-center gap-4\"\u003e
-                            \u003cdiv className=\"w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 shadow-sm overflow-hidden flex items-center justify-center border border-slate-100 dark:border-slate-800\"\u003e
-                              {item.id \u0026\u0026 itemImages[item.id] ? (
-                                \u003cimg src={itemImages[item.id]} alt={item.name} className=\"w-full h-full object-cover\" /\u003e
+                      <TableRow key={idx} className="border-slate-100 dark:border-slate-800 hover:bg-slate-100/50 dark:hover:bg-slate-900/50 transition-all group">
+                        <TableCell className="py-6">
+                          <div className="flex items-center gap-4">
+                            <div className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 shadow-sm overflow-hidden flex items-center justify-center border border-slate-100 dark:border-slate-800">
+                              {item.id && itemImages[item.id] ? (
+                                <img src={itemImages[item.id]} alt={item.name} className="w-full h-full object-cover" />
                               ) : (
-                                \u003cPackage className=\"w-6 h-6 text-slate-300\" /\u003e
+                                <Package className="w-6 h-6 text-slate-300" />
                               )}
-                            \u003c/div\u003e
-                            \u003cdiv\u003e
-                              \u003cdiv className=\"text-sm font-black italic text-slate-900 dark:text-white uppercase tracking-tight\"\u003e{item.name}\u003c/div\u003e
-                              \u003cdiv className=\"text-[10px] font-bold text-slate-400 uppercase tracking-widest\"\u003e{item.sku}\u003c/div\u003e
-                            \u003c/div\u003e
-                          \u003c/div\u003e
-                        \u003c/TableCell\u003e
-                        \u003cTableCell className=\"text-center font-bold text-slate-400\"\u003e
+                            </div>
+                            <div>
+                              <div className="text-sm font-black italic text-slate-900 dark:text-white uppercase tracking-tight">{item.name}</div>
+                              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.sku}</div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center font-bold text-slate-400">
                           {item.systemCount || 0}
-                        \u003c/TableCell\u003e
-                        \u003cTableCell className=\"text-center\"\u003e
-                          \u003cdiv className=\"inline-flex h-10 w-16 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-black italic\"\u003e
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="inline-flex h-10 w-16 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-black italic">
                             {item.actualCount}
-                          \u003c/div\u003e
-                        \u003c/TableCell\u003e
-                        \u003cTableCell className=\"text-right\"\u003e
-                          \u003cBadge 
-                            variant=\"outline\"
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Badge 
+                            variant="outline"
                             className={cn(
-                              \"rounded-lg px-3 py-1 font-black italic border-none uppercase text-[10px] tracking-widest\",
-                              variance === 0 ? \"bg-emerald-500/10 text-emerald-500\" : 
-                              variance \u003e 0 ? \"bg-blue-500/10 text-blue-500\" : \"bg-rose-500/10 text-rose-500\"
+                              "rounded-lg px-3 py-1 font-black italic border-none uppercase text-[10px] tracking-widest",
+                              variance === 0 ? "bg-emerald-500/10 text-emerald-500" : 
+                              variance > 0 ? "bg-blue-500/10 text-blue-500" : "bg-rose-500/10 text-rose-500"
                             )}
-                          \u003e
-                            {variance === 0 ? \"IN-SYNC\" : variance \u003e 0 ? `+${variance}` : variance}
-                          \u003c/Badge\u003e
-                        \u003c/TableCell\u003e
-                      \u003c/TableRow\u003e
+                          >
+                            {variance === 0 ? "IN-SYNC" : variance > 0 ? `+${variance}` : variance}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                \u003c/TableBody\u003e
-              \u003c/Table\u003e
-            \u003c/ScrollArea\u003e
+                </TableBody>
+              </Table>
+            </ScrollArea>
             
-            \u003cdiv className=\"p-8 bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800\"\u003e
-              \u003cdiv className=\"flex items-center gap-4 text-slate-400\"\u003e
-                \u003cAlertCircle className=\"w-5 h-5 text-blue-500 animate-pulse\" /\u003e
-                \u003cp className=\"text-[10px] font-bold italic uppercase tracking-tight\"\u003e
+            <div className="p-8 bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-4 text-slate-400">
+                <AlertCircle className="w-5 h-5 text-blue-500 animate-pulse" />
+                <p className="text-[10px] font-bold italic uppercase tracking-tight">
                   Final commitment will reconcile all stock variances and update the enterprise ledger.
-                \u003c/p\u003e
-              \u003c/div\u003e
-            \u003c/div\u003e
-          \u003c/div\u003e
-        \u003c/div\u003e
-      \u003c/DialogContent\u003e
-    \u003c/Dialog\u003e
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };

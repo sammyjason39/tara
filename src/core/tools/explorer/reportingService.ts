@@ -7,12 +7,12 @@ import { format } from "date-fns";
  * Returns the ID of the leaf folder.
  */
 export async function ensureFolderPath(session: SessionContext, path: string): Promise<string | undefined> {
-  const parts = path.split("/").filter(p => p.length \u003e 0);
+  const parts = path.split("/").filter(p => p.length > 0);
   let currentParentId: string | undefined = undefined;
 
   for (const part of parts) {
     const { folders } = await listFileSystem(session, currentParentId);
-    const existing = folders.find(f =\u003e f.name.toLowerCase() === part.toLowerCase());
+    const existing = folders.find(f => f.name.toLowerCase() === part.toLowerCase());
     
     if (existing) {
       currentParentId = existing.id;
