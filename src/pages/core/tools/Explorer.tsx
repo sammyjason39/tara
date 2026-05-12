@@ -165,7 +165,7 @@ export default function Explorer() {
     }
   };
 
-  useMemo(() => {
+  useEffect(() => {
     fetchFileSystem();
   }, [activeFolder, version, session]);
 

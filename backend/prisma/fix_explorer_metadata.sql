@@ -1,0 +1,3 @@
+ALTER TABLE explorer_files ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}';
+ALTER TABLE it_system_health ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}';
+ALTER TABLE it_devices ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}';

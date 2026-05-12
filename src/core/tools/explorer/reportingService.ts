@@ -17,8 +17,13 @@ export async function ensureFolderPath(session: SessionContext, path: string): P
     if (existing) {
       currentParentId = existing.id;
     } else {
-      const newFolder = await createFolder(session, part, currentParentId);
-      currentParentId = newFolder.id;
+      // Create with shared access so everyone in the company can see it
+      const result = await apiRequest<any>("/explorer/folders", "POST", session, {
+        name: part,
+        parent_id: currentParentId,
+        access_level: "shared"
+      });
+      currentParentId = result.id;
     }
   }
   
@@ -49,7 +54,7 @@ export async function saveStockOpnameReport(
   const month = format(now, "MMMM");
   const timestamp = format(now, "yyyy-MM-dd_HH-mm");
   
-  const folderPath = `Stock Opname/${locationName}/${year}/${month}`;
+  const folderPath = `Stock Opname Reports/${locationName}/${year}/${month}`;
   const folderId = await ensureFolderPath(session, folderPath);
   
   // Save as .json for specialized Explorer preview
