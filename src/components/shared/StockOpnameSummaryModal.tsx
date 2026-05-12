@@ -153,41 +153,43 @@ export const StockOpnameSummaryModal = ({
       <DialogContent className="max-w-5xl rounded-[2.5rem] p-0 overflow-hidden bg-slate-50 dark:bg-slate-950 border-none shadow-2xl">
         <div className="flex h-[80vh]">
           {/* Left Panel: Summary & Actions */}
-          <div className="w-1/3 bg-slate-900 p-10 flex flex-col justify-between text-white">
-            <div className="space-y-8">
-              <div className="space-y-2">
-                <Badge className="bg-blue-500/20 text-blue-400 border-none font-black italic uppercase tracking-widest text-[9px]">
-                  Audit Protocol v2.4
-                </Badge>
-                <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none">
-                  Review <br /> Commit
-                </h2>
-              </div>
+          <div className="w-1/3 bg-slate-900 flex flex-col text-white">
+            <ScrollArea className="flex-1">
+              <div className="p-10 space-y-8">
+                <div className="space-y-2">
+                  <Badge className="bg-blue-500/20 text-blue-400 border-none font-black italic uppercase tracking-widest text-[9px]">
+                    Audit Protocol v2.4
+                  </Badge>
+                  <h2 className="text-4xl font-black italic tracking-tighter uppercase leading-none">
+                    Review <br /> Commit
+                  </h2>
+                </div>
 
-              <div className="space-y-4">
-                <div className="p-6 bg-white/5 rounded-2xl border border-white/10">
-                  <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Auditor</div>
-                  <div className="font-bold italic text-lg">{auditorName}</div>
+                <div className="space-y-4">
+                  <div className="p-6 bg-white/5 rounded-2xl border border-white/10">
+                    <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Auditor</div>
+                    <div className="font-bold italic text-lg">{auditorName}</div>
+                  </div>
+                  <div className="p-6 bg-white/5 rounded-2xl border border-white/10">
+                    <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Location</div>
+                    <div className="font-bold italic text-lg">{locationName}</div>
+                  </div>
                 </div>
-                <div className="p-6 bg-white/5 rounded-2xl border border-white/10">
-                  <div className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Location</div>
-                  <div className="font-bold italic text-lg">{locationName}</div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
+                    <div className="text-[8px] font-black text-emerald-500 uppercase tracking-widest mb-1">Units</div>
+                    <div className="text-2xl font-black italic">{totalItemsCount}</div>
+                  </div>
+                  <div className="p-4 bg-rose-500/10 rounded-2xl border border-rose-500/20">
+                    <div className="text-[8px] font-black text-rose-500 uppercase tracking-widest mb-1">Variances</div>
+                    <div className="text-2xl font-black italic">{variances}</div>
+                  </div>
                 </div>
               </div>
+            </ScrollArea>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
-                  <div className="text-[8px] font-black text-emerald-500 uppercase tracking-widest mb-1">Units</div>
-                  <div className="text-2xl font-black italic">{totalItemsCount}</div>
-                </div>
-                <div className="p-4 bg-rose-500/10 rounded-2xl border border-rose-500/20">
-                  <div className="text-[8px] font-black text-rose-500 uppercase tracking-widest mb-1">Variances</div>
-                  <div className="text-2xl font-black italic">{variances}</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
+            <div className="p-10 pt-0 space-y-4 bg-slate-900/80 backdrop-blur-md border-t border-white/5">
               <Button 
                 onClick={handleFinalCommit}
                 disabled={isSaving}
