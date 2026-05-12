@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, useEffect } from "react";
+import React, { useMemo, useRef, useState, useEffect } from "react";
 import type { MouseEvent } from "react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -61,7 +61,13 @@ import {
   Zap,
   RefreshCcw,
   HardDrive,
-  Info
+  Info,
+  Edit2,
+  Bot,
+  User,
+  Clock,
+  ChevronLeft,
+  Search
 } from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
