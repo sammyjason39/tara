@@ -44,6 +44,12 @@ export class ExplorerController {
     return this.explorerService.listRecycleBin(tenantContext);
   }
 
+  @Get("folders")
+  async listFolders(@Req() req: RequestWithTenant) {
+    const { tenantContext } = req;
+    return this.explorerService.listFolders(tenantContext);
+  }
+
   @Post("folders")
   async createFolder(
     @Req() req: RequestWithTenant,

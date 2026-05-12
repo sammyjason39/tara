@@ -60,6 +60,22 @@ export async function listFileSystem(
   };
 }
 
+
+export async function listFolders(
+  session: SessionContext,
+): Promise<ToolFolder[]> {
+  const result = await apiRequest<any[]>("/explorer/folders", "GET", session);
+  return (Array.isArray(result) ? result : []).map(f => ({
+    id: f.id,
+    name: f.name,
+    tenantId: f.tenant_id,
+    departmentId: f.department_id,
+    parentId: f.parent_id,
+    createdAt: f.created_at,
+    updatedAt: f.updated_at,
+  }));
+}
+
 export async function createFolder(
   session: SessionContext,
   name: string,

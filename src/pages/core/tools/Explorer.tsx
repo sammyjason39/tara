@@ -26,6 +26,7 @@ import { API_BASE_URL } from "@/lib/api-config";
 import {
   createFolder,
   listFileSystem,
+  listFolders,
   uploadFile,
   deleteFile,
   generateForensicCode,
@@ -141,6 +142,7 @@ export default function Explorer() {
 
   const [files, setFiles] = useState<any[]>([]);
   const [folders, setFolders] = useState<any[]>([]);
+  const [allFolders, setAllFolders] = useState<any[]>([]);
   const [currentFolder, setCurrentFolder] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [groupBy, setGroupBy] = useState<"none" | "company" | "department">("none");
@@ -150,14 +152,15 @@ export default function Explorer() {
   const fetchFileSystem = async () => {
     setLoading(true);
     try {
-      const { folders, files, currentFolder } = await listFileSystem(
-        session,
-        activeFolder === "root" ? undefined : activeFolder
-      );
-      console.log("[Explorer] API Result:", { folders, files, currentFolder, activeFolder });
-      setFiles(files);
-      setFolders(folders);
-      setCurrentFolder(currentFolder || null);
+      const [fsData, foldersData] = await Promise.all([
+        listFileSystem(session, activeFolder === "root" ? undefined : activeFolder),
+        listFolders(session)
+      ]);
+      
+      setFiles(fsData.files);
+      setFolders(fsData.folders);
+      setAllFolders(foldersData);
+      setCurrentFolder(fsData.currentFolder || null);
     } catch (err) {
       console.error("Failed to fetch file system", err);
     } finally {
@@ -182,15 +185,15 @@ export default function Explorer() {
   const folderMap = useMemo(() => {
     const map = new Map<string, string>();
     map.set("root", "Root");
-    folders.forEach((folder) => map.set(folder.id, folder.name));
+    allFolders.forEach((folder) => map.set(folder.id, folder.name));
     return map;
-  }, [folders]);
+  }, [allFolders]);
 
   const folderById = useMemo(() => {
-    const map = new Map<string, (typeof folders)[number]>();
-    folders.forEach((folder) => map.set(folder.id, folder));
+    const map = new Map<string, (typeof allFolders)[number]>();
+    allFolders.forEach((folder) => map.set(folder.id, folder));
     return map;
-  }, [folders]);
+  }, [allFolders]);
 
   const orderedFiles = useMemo(() => {
     const filtered = search 
@@ -201,7 +204,7 @@ export default function Explorer() {
       const nameA = a.name.toLowerCase();
       const nameB = b.name.toLowerCase();
       if (sortKey === "name") return nameA.localeCompare(nameB);
-      if (sortKey === "type") return a.type.localeCompare(b.type);
+      if (sortKey === "type") return a.type.toLowerCase().localeCompare(b.type.toLowerCase());
       return 0;
     });
     return sortDir === "asc" ? sorted : sorted.reverse();
@@ -250,14 +253,14 @@ export default function Explorer() {
   }, [activeFolder, folderById]);
 
   const folderTree = useMemo(() => {
-    const grouped: Record<string, typeof folders> = {};
-    folders.forEach((folder) => {
+    const grouped: Record<string, typeof allFolders> = {};
+    allFolders.forEach((folder) => {
       const parent = folder.parentId ?? "root";
       if (!grouped[parent]) grouped[parent] = [];
       grouped[parent].push(folder);
     });
     return grouped;
-  }, [folders]);
+  }, [allFolders]);
 
   const iconForFile = (type: string, size: "sm" | "lg") => {
     const className = size === "lg" ? "h-6 w-6" : "h-4 w-4";

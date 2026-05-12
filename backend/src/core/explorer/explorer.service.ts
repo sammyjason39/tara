@@ -246,6 +246,41 @@ export class ExplorerService {
     return { folders, files, currentFolder };
   }
 
+  async listFolders(ctx: any) {
+    const { tenant_id, user_id, department_id, accessibleCompanyIds, role } = ctx;
+
+    const folderWhere: any = {
+      tenant_id,
+      deleted_at: null,
+      OR: [
+        { owner_id: user_id },
+        { 
+          department_id, 
+          access_level: "department" 
+        },
+        {
+          company_id: { in: accessibleCompanyIds },
+          access_level: { in: ["department", "shared"] }
+        },
+        {
+          access_level: "shared" 
+        }
+      ]
+    };
+
+    if (role === "SUPERADMIN" || role === "OWNER") {
+      folderWhere.OR = [
+        { company_id: { in: accessibleCompanyIds } },
+        { company_id: null }
+      ];
+    }
+
+    return this.prisma.explorer_folders.findMany({
+      where: folderWhere,
+      orderBy: { name: 'asc' }
+    });
+  }
+
   async getFile(ctx: any, file_id: string) {
     const { tenant_id, user_id, role } = ctx;
     const file = await this.prisma.explorer_files.findFirst({
