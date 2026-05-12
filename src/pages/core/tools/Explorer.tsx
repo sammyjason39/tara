@@ -1136,7 +1136,7 @@ export default function Explorer() {
                         <span className="text-[10px] text-muted-foreground uppercase">{groupFiles.length} items</span>
                       </div>
                     )}
-                    {currentFolder?.name === "Stock Opname Reports" ? (
+                    { (Array.isArray(groupFiles) ? groupFiles : []).some(f => f.metadata?.type === "STOCK_OPNAME_REPORT") ? (
                       <table className="w-full text-left">
                         <thead className="bg-muted/50 border-b">
                           <tr className="text-left text-xs text-muted-foreground font-semibold">
@@ -1144,6 +1144,7 @@ export default function Explorer() {
                             <th className="p-3">Generated At</th>
                             <th className="p-3">Location</th>
                             <th className="p-3">Performer</th>
+                            <th className="p-3">AI Engine</th>
                             <th className="p-3 w-10"></th>
                           </tr>
                         </thead>
@@ -1178,6 +1179,16 @@ export default function Explorer() {
                                   </td>
                                   <td className="p-3 text-sm text-muted-foreground italic">
                                     {file.metadata?.performer || "N/A"}
+                                  </td>
+                                  <td className="p-3 text-sm">
+                                    {file.metadata?.ai_name ? (
+                                      <div className="flex flex-col">
+                                        <span className="font-semibold text-primary">{file.metadata.ai_name}</span>
+                                        <span className="text-[10px] text-muted-foreground">{file.metadata.ai_version}</span>
+                                      </div>
+                                    ) : (
+                                      <span className="text-muted-foreground italic">N/A</span>
+                                    )}
                                   </td>
                                   <td className="p-3 text-right">
                                     <MoreHorizontal className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />

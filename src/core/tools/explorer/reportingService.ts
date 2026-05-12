@@ -54,7 +54,7 @@ export async function saveStockOpnameReport(
   const month = format(now, "MMMM");
   const timestamp = format(now, "yyyy-MM-dd_HH-mm");
   
-  const folderPath = `Stock Opname Reports/${locationName}/${year}/${month}`;
+  const folderPath = `${locationName}/${year}/${month}`;
   const folderId = await ensureFolderPath(session, folderPath);
   
   // Save as .json for specialized Explorer preview
@@ -76,6 +76,8 @@ export async function saveStockOpnameReport(
     location: locationName,
     timestamp: now.toISOString(),
     performer: auditorName,
+    ai_name: "Antigravity",
+    ai_version: "V1.2.0-Elite"
   };
   
   const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: "application/json" });
