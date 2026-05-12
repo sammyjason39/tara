@@ -88,11 +88,13 @@ export async function uploadFile(
   file: File,
   folderId?: string,
   departmentId?: string,
+  metadata?: any,
 ): Promise<ToolFileRecord> {
   const formData = new FormData();
   formData.append("file", file);
   if (folderId) formData.append("folder_id", folderId);
   if (departmentId) formData.append("department_id", departmentId);
+  if (metadata) formData.append("metadata", JSON.stringify(metadata));
 
   const result = await apiRequest<any>("/explorer/files/upload", "POST", session, formData);
 
