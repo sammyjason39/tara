@@ -65,34 +65,43 @@ export class RetailInfrastructureDbRepository implements IRetailInfrastructureRe
     status: string,
     metrics?: any,
   ): Promise<void> {
-    // 1. Upsert it_devices (Asset tracking)
-    await this.prisma.it_devices.upsert({
-      where: { id: deviceId },
-      update: {
-        last_heartbeat: new Date(),
-        status: status,
-      },
-      create: {
-        id: deviceId,
-        tenant_id: tenant_id,
-        name: deviceId,
-        type: "TERMINAL_POS",
-        status: status,
-        connection: "ONLINE",
-        last_heartbeat: new Date(),
-      },
-    });
+    try {
+      console.log(`[INFRA_REPO] Recording heartbeat for ${deviceId} (Tenant: ${tenant_id})`);
+      
+      // 1. Upsert it_devices (Asset tracking)
+      await this.prisma.it_devices.upsert({
+        where: { id: deviceId },
+        update: {
+          last_heartbeat: new Date(),
+          status: status,
+        },
+        create: {
+          id: deviceId,
+          tenant_id: tenant_id,
+          name: deviceId,
+          type: "TERMINAL_POS",
+          status: status,
+          connection: "ONLINE",
+          last_heartbeat: new Date(),
+        },
+      });
 
-    // 2. Log to it_system_health (Diagnostic stream)
-    await this.prisma.it_system_health.create({
-      data: {
-        tenant_id: tenant_id,
-        component: component || "RETAIL_NODE",
-        status: status,
-        latency_ms: metrics?.latency || 0,
-        checked_at: new Date(),
-      },
-    });
+      // 2. Log to it_system_health (Diagnostic stream)
+      await this.prisma.it_system_health.create({
+        data: {
+          tenant_id: tenant_id,
+          component: component || "RETAIL_NODE",
+          status: status,
+          latency_ms: metrics?.latency || 0,
+          checked_at: new Date(),
+        },
+      });
+      
+      console.log(`[INFRA_REPO] Heartbeat recorded successfully for ${deviceId}`);
+    } catch (error) {
+      console.error(`[INFRA_REPO] Error recording heartbeat for ${deviceId}:`, error);
+      throw error;
+    }
   }
 
   // ============================================================
