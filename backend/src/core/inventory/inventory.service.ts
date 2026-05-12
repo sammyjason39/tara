@@ -925,23 +925,12 @@ export class InventoryService {
       const reportJson = JSON.stringify(reportData, null, 2);
       const fileName = `Stock Opname ${cycle.location_code}.json`;
       
-      // Ensure Stock Opname Reports folder exists
-      const folders = await this.prisma.explorer_folders.findMany({
-        where: { 
-          tenant_id: ctx.tenant_id, 
-          company_id: ctx.company_id,
-          name: "Stock Opname Reports" 
-        }
-      });
-
-      let folderId = folders[0]?.id;
-      if (!folderId) {
-        const folder = await this.explorerService.createFolder(ctx, {
-          name: "Stock Opname Reports",
-          access_level: "shared"
-        } as any);
-        folderId = folder.id;
-      }
+      const now = new Date();
+      const year = now.getFullYear().toString();
+      const month = now.toLocaleString('default', { month: 'long' });
+      
+      const pathParts = ["Stock Opname Reports", cycle.location_code, year, month];
+      const folderId = await this.explorerService.ensureFolderPath(ctx, pathParts, "shared");
 
       // Upload via Explorer with metadata
       const mockFile: any = {

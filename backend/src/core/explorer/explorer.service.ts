@@ -82,9 +82,36 @@ export class ExplorerService {
         ecommerce_id: toUuid(dto.ecommerce_id) ?? toUuid(ecommerce_id) ?? null,
         access_level: dto.access_level || "private",
         name: dto.name,
-        parent_id: dto.parent_id,
+        parent_id: dto.parent_id || null,
+        owner_id: user_id
       },
     });
+  }
+
+  async ensureFolderPath(ctx: any, pathParts: string[], access_level: string = "shared"): Promise<string> {
+    const { tenant_id } = ctx;
+    let parent_id: string | null = null;
+
+    for (const part of pathParts) {
+      let folder = await this.prisma.explorer_folders.findFirst({
+        where: {
+          tenant_id,
+          name: part,
+          parent_id: parent_id === null ? null : parent_id
+        }
+      });
+
+      if (!folder) {
+        folder = await this.createFolder(ctx, {
+          name: part,
+          parent_id: parent_id || undefined,
+          access_level
+        } as any);
+      }
+      parent_id = folder.id;
+    }
+
+    return parent_id!;
   }
 
   async uploadFile(

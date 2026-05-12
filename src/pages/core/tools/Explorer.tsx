@@ -1150,7 +1150,7 @@ export default function Explorer() {
                         <span className="text-[10px] text-muted-foreground uppercase">{groupFiles.length} items</span>
                       </div>
                     )}
-                    { (Array.isArray(groupFiles) ? groupFiles : []).some(f => {
+                    { viewMode === "details" && (Array.isArray(groupFiles) ? groupFiles : []).some(f => {
                       let m = f.metadata;
                       if (typeof m === 'string') { try { m = JSON.parse(m); } catch(e) {} }
                       return m?.type === "STOCK_OPNAME_REPORT";
@@ -1253,19 +1253,25 @@ export default function Explorer() {
                                   }
                                   setLastClick({ id: file.id, time: now });
                                 }}
-                                className={`flex cursor-pointer items-center justify-between rounded-lg border p-3 ${
-                                  selectedIds.includes(file.id) ? "border-primary" : ""
-                                }`}
+                                className={cn(
+                                  "flex cursor-pointer rounded-lg border p-3 transition-all",
+                                  viewMode === "large" ? "flex-col gap-3" : "items-center justify-between",
+                                  selectedIds.includes(file.id) ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                                )}
                               >
-                                <div className="flex items-center gap-3">
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedIds.includes(file.id)}
-                                    onChange={() => toggleSelect(file.id)}
-                                    onClick={(event) => event.stopPropagation()}
-                                  />
-                                  {iconForFile(file.type, viewMode === "large" ? "lg" : "sm")}
-                                  <div>
+                                <div className={cn("flex gap-3", viewMode === "large" ? "flex-col" : "items-center flex-1 min-w-0")}>
+                                  <div className="flex items-center gap-3">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedIds.includes(file.id)}
+                                      onChange={() => toggleSelect(file.id)}
+                                      onClick={(event) => event.stopPropagation()}
+                                      className="h-3 w-3"
+                                    />
+                                    {iconForFile(file.type, viewMode === "large" ? "lg" : "sm")}
+                                  </div>
+                                  
+                                  <div className="flex-1 min-w-0">
                                     {editingId === file.id ? (
                                       <Input
                                         value={editingValue}
@@ -1275,25 +1281,52 @@ export default function Explorer() {
                                           setEditingId(null);
                                           setVersion((prev) => prev + 1);
                                         }}
+                                        autoFocus
                                       />
                                     ) : (
-                                      <p className="text-sm font-medium text-foreground">{file.name}</p>
+                                      <p className="text-sm font-semibold text-foreground truncate" title={file.name}>{file.name}</p>
                                     )}
-                                    <div className="flex items-center gap-2">
-                                      <p className="text-xs text-muted-foreground">
-                                        Folder: {folderMap.get(file.folderId ?? "root") ?? "Root"}
-                                      </p>
-                                      {file.access_level && (
-                                        <Badge variant={file.access_level === "private" ? "destructive" : "secondary"} className="h-4 px-1 text-[9px] uppercase">
-                                          {file.access_level}
-                                        </Badge>
-                                      )}
+                                    
+                                    <div className="flex flex-col gap-1 mt-1">
+                                      <div className="flex items-center gap-2">
+                                        <p className="text-[10px] text-muted-foreground truncate">
+                                          {folderMap.get(file.folderId ?? "root") ?? "Root"}
+                                        </p>
+                                        {file.access_level && (
+                                          <Badge variant={file.access_level === "private" ? "destructive" : "secondary"} className="h-3 px-1 text-[8px] uppercase">
+                                            {file.access_level}
+                                          </Badge>
+                                        )}
+                                      </div>
+
+                                      {(() => {
+                                        let meta = file.metadata;
+                                        if (typeof meta === 'string') { try { meta = JSON.parse(meta); } catch(e) {} }
+                                        if (meta?.type === "STOCK_OPNAME_REPORT") {
+                                          return (
+                                            <div className="mt-1 pt-1 border-t space-y-1">
+                                              <div className="flex items-center gap-1.5 flex-wrap">
+                                                <Badge variant="outline" className="bg-primary/10 text-primary text-[9px] px-1 border-primary/20">
+                                                  {meta.ai_name || "Audit AI"}
+                                                </Badge>
+                                                <span className="text-[9px] text-muted-foreground font-medium">{meta.performer}</span>
+                                              </div>
+                                              <p className="text-[8px] text-muted-foreground opacity-70">
+                                                {meta.timestamp ? format(new Date(meta.timestamp), 'MMM d, HH:mm') : "N/A"}
+                                              </p>
+                                            </div>
+                                          );
+                                        }
+                                        return null;
+                                      })()}
                                     </div>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline">{typeLabel[file.type]}</Badge>
-                                </div>
+                                {viewMode !== "large" && (
+                                  <div className="ml-2 flex items-center gap-2 flex-shrink-0">
+                                    <Badge variant="outline" className="text-[10px]">{typeLabel[file.type]}</Badge>
+                                  </div>
+                                )}
                               </div>
                             </ContextMenuTrigger>
                             <ContextMenuContent>
