@@ -1340,15 +1340,29 @@ export default function Explorer() {
           {selectedFile ? (
             <div className="flex flex-col gap-6">
               {/* Specialized Report Header */}
-              {selectedFile.metadata?.type === "STOCK_OPNAME_REPORT" ? (
+              {(() => {
+                let m = selectedFile.metadata;
+                if (typeof m === 'string') { try { m = JSON.parse(m); } catch(e) {} }
+                const isReport = m?.type === "STOCK_OPNAME_REPORT" || 
+                               (selectedFile.name.toLowerCase().startsWith("stock") && selectedFile.name.toLowerCase().includes("opname") && selectedFile.type === "json");
+                return isReport;
+              })() ? (
                 <div className="flex items-center justify-between border-b pb-4">
                   <div className="flex items-center gap-4">
                     <div className="p-3 bg-primary/10 rounded-xl">
-                      <FileSearch className="h-6 w-6 text-primary" />
+                      <FileSearch className="h-4 w-4 text-primary" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold tracking-tight">Stock Opname Report</h3>
-                      <p className="text-sm text-muted-foreground">Location: <span className="text-foreground font-semibold">{selectedFile.metadata.location}</span> - {format(new Date(selectedFile.metadata.timestamp), 'PPpp')}</p>
+                      <h3 className="text-lg font-bold tracking-tight">Stock Opname Report</h3>
+                      {(() => {
+                        let m = selectedFile.metadata;
+                        if (typeof m === 'string') { try { m = JSON.parse(m); } catch(e) {} }
+                        return (
+                          <p className="text-xs text-muted-foreground">
+                            Location: <span className="text-foreground font-semibold">{m?.location || "N/A"}</span> - {m?.timestamp ? format(new Date(m.timestamp), 'PPpp') : "N/A"}
+                          </p>
+                        );
+                      })()}
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -1373,7 +1387,10 @@ export default function Explorer() {
                         const url = URL.createObjectURL(blob);
                         const a = document.createElement("a");
                         a.href = url;
-                        a.download = `Stock_Opname_${selectedFile.metadata.location}_${selectedFile.metadata.timestamp}.csv`;
+                        const m = typeof selectedFile.metadata === 'string' ? JSON.parse(selectedFile.metadata) : selectedFile.metadata;
+                        const loc = m?.location || "Audit";
+                        const time = m?.timestamp ? format(new Date(m.timestamp), 'yyyyMMdd_HHmm') : format(new Date(), 'yyyyMMdd');
+                        a.download = `Stock_Opname_${loc}_${time}.csv`;
                         a.click();
                       }}
                     >
@@ -1398,7 +1415,12 @@ export default function Explorer() {
 
               <div className="grid gap-4 md:grid-cols-[1.6fr_1fr]">
                 <div className="space-y-4">
-                  {selectedFile.metadata?.type === "STOCK_OPNAME_REPORT" ? (
+                 {(() => {
+                let m = selectedFile.metadata;
+                if (typeof m === 'string') { try { m = JSON.parse(m); } catch(e) {} }
+                return m?.type === "STOCK_OPNAME_REPORT" || 
+                       (selectedFile.name.toLowerCase().startsWith("stock") && selectedFile.name.toLowerCase().includes("opname") && selectedFile.type === "json");
+              })() ? (
                     <div className="rounded-xl border bg-muted/5 overflow-hidden">
                       <div className="bg-muted/20 p-3 text-xs font-bold uppercase tracking-wider border-b flex justify-between">
                         <span>Report Items</span>
