@@ -2084,13 +2084,13 @@ export class RetailDbRepository implements IRetailRepository {
           }
         }
 
-        const stock = await tx.stock_levels.findUnique({
+        const stock = await tx.stock_levels.findFirst({
           where: {
-            location_id_product_id_department_id: {
+            tenant_id: ctx.tenant_id,
               location_id: store.location_id,
               product_id: productId,
-              department_id: "DEFAULT",
-            },
+
+
           },
         });
 
@@ -2099,6 +2099,7 @@ export class RetailDbRepository implements IRetailRepository {
         totalCounted += adj.actualCount;
 
         if (stock) {
+          console.log(`[RETAIL_OPNAME] Updating Product ${productId} at ${store.location_id} to ${adj.actualCount}`);
           await tx.stock_levels.update({
             where: { id: stock.id },
             data: {
@@ -2108,6 +2109,7 @@ export class RetailDbRepository implements IRetailRepository {
             },
           });
         } else {
+          console.log(`[RETAIL_OPNAME] Creating new stock level for Product ${productId} with Count ${adj.actualCount}`);
           await tx.stock_levels.create({
             data: {
               id: uuidv4(),
@@ -2115,7 +2117,7 @@ export class RetailDbRepository implements IRetailRepository {
               ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
               location_id: store.location_id,
               product_id: productId,
-              department_id: "DEFAULT",
+              department_id: null,
               on_hand: adj.actualCount,
               available: adj.actualCount,
               lastStockTakeAt: new Date(),

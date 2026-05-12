@@ -784,6 +784,7 @@ export class InventoryService {
   }
 
   async updateAuditCycle(ctx: TenantContext, id: string, data: any) {
+    console.log(`[AUDIT_RECONCILE] Updating Cycle ${id} for Tenant ${ctx.tenant_id}. Items: ${data.items?.length || 0}`);
     const { anomalies, newItems, items: itemsInPayload, ...results } = data;
 
     // 1. Process Anomalies

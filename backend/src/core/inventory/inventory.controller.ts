@@ -1063,7 +1063,15 @@ export class InventoryController {
   async updateAuditCycle(
     @Req() request: RequestWithTenant,
     @Param("id") cycleId: string,
-    @Body() body: { counted_value?: number; variance_value?: number; status?: string; closed_by?: string },
+    @Body() body: { 
+      counted_value?: number; 
+      variance_value?: number; 
+      status?: string; 
+      closed_by?: string;
+      items?: any[];
+      anomalies?: any[];
+      newItems?: any[];
+    },
   ) {
     const { tenant_id: tenant_id, user_id } = request.tenantContext;
     const data = await this.inventoryService.updateAuditCycle(request.tenantContext, cycleId, {
