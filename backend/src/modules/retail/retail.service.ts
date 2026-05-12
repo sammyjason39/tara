@@ -1613,6 +1613,9 @@ export class RetailService {
     data: { store_id: string; adjustments: any[]; shift_id?: string },
     user_id: string,
   ): Promise<{ success: boolean }> {
+    console.log(`[RETAIL_SERVICE] Starting Opname Submission for store ${data.store_id} (User: ${user_id})`);
+    console.log(`[RETAIL_SERVICE] Adjustment count: ${data.adjustments.length}`);
+
     // 1. Emit Opname Event (adjustments handled by listener)
     await this.eventBus.publish({
       event_type: "RETAIL_OPNAME_SUBMITTED",
@@ -1629,20 +1632,27 @@ export class RetailService {
     });
 
     // 2. Call Repository
-    const result = await this.retailRepository.submitOpname(ctx, data);
+    console.log(`[RETAIL_SERVICE] Calling Repository submitOpname...`);
+    try {
+      const result = await this.retailRepository.submitOpname(ctx, data);
+      console.log(`[RETAIL_SERVICE] Repository submitOpname result:`, result);
 
-    // 3. Audit Log
-    await this.auditService.log({
-      tenant_id: ctx.tenant_id,
-      user_id,
-      module: "retail",
-      action: "STOCK_OPNAME",
-      entity_type: "STORE",
-      entity_id: data.store_id,
-      metadata: { adjustmentCount: data.adjustments.length },
-    });
+      // 3. Audit Log
+      await this.auditService.log({
+        tenant_id: ctx.tenant_id,
+        user_id,
+        module: "retail",
+        action: "STOCK_OPNAME",
+        entity_type: "STORE",
+        entity_id: data.store_id,
+        metadata: { adjustmentCount: data.adjustments.length },
+      });
 
-    return result;
+      return result;
+    } catch (error) {
+      console.error(`[RETAIL_SERVICE] Error in submitOpname:`, error);
+      throw error;
+    }
   }
 
   async receiveGoods(ctx: TenantContext,

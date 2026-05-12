@@ -76,13 +76,20 @@ export class RetailInfrastructureController {
     },
   ) {
     const { tenant_id } = request.tenantContext;
-    return this.infraService.recordHeartbeat(
-      tenant_id,
-      data.deviceId,
-      data.component,
-      data.status,
-      data.metrics,
-    );
+    try {
+      console.log(`[INFRA_CTRL] Heartbeat received for ${data.deviceId} (Tenant: ${tenant_id})`);
+      await this.infraService.recordHeartbeat(
+        tenant_id,
+        data.deviceId,
+        data.component,
+        data.status,
+        data.metrics,
+      );
+      return { success: true };
+    } catch (error) {
+      console.error(`[INFRA_CTRL] Heartbeat error for ${data.deviceId}:`, error);
+      throw error;
+    }
   }
 }
 
