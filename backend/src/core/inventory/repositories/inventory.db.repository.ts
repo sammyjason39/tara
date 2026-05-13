@@ -342,23 +342,7 @@ export class InventoryDbRepository implements IInventoryRepository {
       include: { product_categories: true },
     });
 
-    return {
-      id: product.id,
-      tenant_id: product.tenant_id,
-      sku: product.sku,
-      name: product.name,
-      category: product.product_categories.name as any,
-      uom: product.unit,
-      barcode: product.barcode,
-      qr_code: product.barcode,
-      module_tags: product.module_tags || [],
-      active: product.status === "active",
-      department_id: product.department_id || undefined,
-      image_url: product.image_url || undefined,
-      images: [],
-      created_at: product.created_at,
-      updated_at: product.updated_at,
-    };
+    return this.mapToInventoryItem(product);
   }
 
   async getBalances(ctx: TenantContext,
@@ -1127,21 +1111,7 @@ export class InventoryDbRepository implements IInventoryRepository {
           }
         }
 
-        results.push({
-          id: product.id,
-          tenant_id: product.tenant_id,
-          sku: product.sku,
-          name: product.name,
-          category: product.product_categories.name as any,
-          uom: product.unit,
-          barcode: product.barcode,
-          qr_code: product.barcode,
-          module_tags: product.module_tags || [],
-          department_id: product.department_id || undefined,
-          active: product.status === "active",
-          created_at: product.created_at,
-          updated_at: product.updated_at,
-        });
+        results.push(this.mapToInventoryItem(product));
       }
       return results;
     });
@@ -1167,20 +1137,7 @@ export class InventoryDbRepository implements IInventoryRepository {
       include: { product_categories: true },
     });
 
-    return {
-      id: product.id,
-      tenant_id: product.tenant_id,
-      sku: product.sku,
-      name: product.name,
-      category: product.product_categories.name as any,
-      uom: product.unit,
-      barcode: product.barcode,
-      qr_code: product.barcode,
-      module_tags: product.module_tags || [],
-      active: product.status === "active",
-      created_at: product.created_at,
-      updated_at: product.updated_at,
-    };
+    return this.mapToInventoryItem(product);
   }
 
   async getPendingItems(ctx: TenantContext): Promise<InventoryItem[]> {
@@ -1189,20 +1146,7 @@ export class InventoryDbRepository implements IInventoryRepository {
       include: { product_categories: true },
     });
 
-    return (products as any[]).map((p) => ({
-      id: p.id,
-      tenant_id: p.tenant_id,
-      sku: p.sku,
-      name: p.name,
-      category: p.product_categories.name as any,
-      uom: p.unit,
-      barcode: p.barcode,
-      qr_code: p.barcode,
-      module_tags: p.module_tags || [],
-      active: false,
-      created_at: p.created_at,
-      updated_at: p.updated_at,
-    }));
+    return (products as any[]).map((p) => this.mapToInventoryItem(p));
   }
 
   async createMovementRequest(ctx: TenantContext,
