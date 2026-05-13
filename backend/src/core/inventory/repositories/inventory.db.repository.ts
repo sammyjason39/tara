@@ -1883,25 +1883,4 @@ export class InventoryDbRepository implements IInventoryRepository {
     }));
   }
 
-  // --- Audit Anomaly Methods ---
-  async createAuditAnomaly(ctx: TenantContext, data: any): Promise<any> {
-    return this.prisma.inventory_audit_anomalies.create({
-      data: {
-        id: uuidv4(),
-        tenant_id: ctx.tenant_id,
-        audit_cycle_id: data.audit_cycle_id,
-        barcode: data.barcode,
-        metadata: data.metadata || {},
-      },
-    });
-  }
-
-  async getAuditAnomalies(ctx: TenantContext, cycleId: string): Promise<any[]> {
-    return this.prisma.inventory_audit_anomalies.findMany({
-      where: {
-        tenant_id: ctx.tenant_id,
-        audit_cycle_id: cycleId,
-      },
-    });
-  }
 }
