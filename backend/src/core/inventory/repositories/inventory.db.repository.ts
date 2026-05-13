@@ -147,9 +147,11 @@ export class InventoryDbRepository implements IInventoryRepository {
       where.category_id = category_id;
     }
 
+    /* 
     if (location_id && location_id !== "all" && location_id !== "") {
       where.stock_levels = { some: { location_id } };
     }
+    */
 
     if (status && status !== "all") {
       where.status = status;

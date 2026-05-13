@@ -100,28 +100,44 @@ export class RetailDbRepository implements IRetailRepository {
         let finalLocationId = data.location_id;
 
         // If location_id is a placeholder or missing, create a new Location for this Branch
+                // If location_id is a placeholder or missing, try to find an existing location with the same code or name
         if (
           !finalLocationId ||
           finalLocationId === "loc-default" ||
           finalLocationId === "placeholder"
         ) {
-          const newLocation = await tx.locations.create({
-            data: {
-              id: uuidv4(),
-              updated_at: new Date(),
-              ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true, excludeEcommerce: true }),
-              name: data.name,
-              code: data.code,
-              address: data.address || "Main Street",
-              type: "branch",
-              latitude: data.latitude,
-              longitude: data.longitude,
-              geofence_radius: data.geofenceRadius || 200,
-              country: data.country,
-              currency: data.currency,
-            },
+          const existingLoc = await tx.locations.findFirst({
+            where: {
+              tenant_id: ctx.tenant_id,
+              OR: [
+                { code: data.code },
+                { name: data.name }
+              ],
+              deleted_at: null
+            }
           });
-          finalLocationId = newLocation.id;
+
+          if (existingLoc) {
+            finalLocationId = existingLoc.id;
+          } else {
+            const newLocation = await tx.locations.create({
+              data: {
+                id: uuidv4(),
+                updated_at: new Date(),
+                ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true, excludeEcommerce: true }),
+                name: data.name,
+                code: data.code,
+                address: data.address || "Main Street",
+                type: "branch",
+                latitude: data.latitude,
+                longitude: data.longitude,
+                geofence_radius: data.geofenceRadius || 200,
+                country: data.country,
+                currency: data.currency,
+              },
+            });
+            finalLocationId = newLocation.id;
+          }
         }
 
         const store = await tx.stores.create({

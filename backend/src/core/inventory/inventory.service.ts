@@ -849,11 +849,12 @@ export class InventoryService {
           });
 
           if (existingLevel) {
+            const reserved = Number(existingLevel.reserved || 0);
             await this.prisma.stock_levels.update({
               where: { id: existingLevel.id },
               data: {
                 on_hand: item.actualCount,
-                available: item.actualCount,
+                available: Math.max(0, Number(item.actualCount) - reserved),
                 updated_at: new Date()
               }
             });
@@ -866,6 +867,7 @@ export class InventoryService {
                 department_id: cycle.department_code || null,
                 on_hand: item.actualCount,
                 available: item.actualCount,
+                reserved: 0,
                 min_buffer: 0,
                 max_capacity: 0
               }
@@ -951,7 +953,7 @@ export class InventoryService {
       const year = now.getFullYear().toString();
       const month = now.toLocaleString('default', { month: 'long' });
       
-      const pathParts = ["Stock Opname Reports", cycle.location_code, year, month];
+      const pathParts = ["Stock Opname", cycle.location_code, year, month];
       const folderId = await this.explorerService.ensureFolderPath(ctx, pathParts, "shared");
 
       // Upload via Explorer with metadata

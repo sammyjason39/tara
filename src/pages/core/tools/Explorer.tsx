@@ -73,7 +73,8 @@ import {
   User,
   Clock,
   ChevronLeft,
-  Search
+  Search,
+  Eye
 } from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
@@ -1358,9 +1359,20 @@ export default function Explorer() {
                                                   {meta.performer}
                                                 </div>
                                               </div>
-                                              <div className="flex items-center gap-1.5 text-[8px] text-muted-foreground/60 font-black uppercase tracking-tighter pl-1">
-                                                <Clock className="h-3 w-3 opacity-40" />
-                                                {meta.timestamp ? format(new Date(meta.timestamp), 'MMM d, HH:mm') : "SYSTEM_LOG_N/A"}
+                                              <div className="pt-2">
+                                                <Button 
+                                                  variant="secondary" 
+                                                  size="sm" 
+                                                  className="w-full h-7 text-[9px] font-black uppercase tracking-[0.2em] rounded-lg shadow-sm border border-primary/10 hover:bg-primary/10 transition-all group-hover:bg-primary group-hover:text-white"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedFileId(file.id);
+                                                    setPreviewOpen(true);
+                                                  }}
+                                                >
+                                                  <Eye className="h-3 w-3 mr-1.5" />
+                                                  View Detailed Report
+                                                </Button>
                                               </div>
                                             </div>
                                           );
@@ -1498,7 +1510,28 @@ export default function Explorer() {
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      onClick={() => window.print()}
+                      className="border-primary/20 hover:bg-primary/5 text-primary"
+                      onClick={() => {
+                        const style = document.createElement('style');
+                        style.textContent = `
+                          @media print {
+                            body * { visibility: hidden; }
+                            #report-print-content, #report-print-content * { visibility: visible; }
+                            #report-print-content { 
+                              position: absolute; 
+                              left: 0; 
+                              top: 0; 
+                              width: 100%;
+                              background: white !important;
+                              padding: 20px;
+                            }
+                            .no-print { display: none !important; }
+                          }
+                        `;
+                        document.head.appendChild(style);
+                        window.print();
+                        document.head.removeChild(style);
+                      }}
                     >
                       <Download className="h-4 w-4 mr-2" />
                       Export to PDF
@@ -1519,7 +1552,7 @@ export default function Explorer() {
                 return m?.type === "STOCK_OPNAME_REPORT" || 
                        (selectedFile.name.toLowerCase().startsWith("stock") && selectedFile.name.toLowerCase().includes("opname") && selectedFile.type === "json");
               })() ? (
-                    <div className="rounded-xl border bg-muted/5 overflow-hidden">
+                    <div id="report-print-content" className="rounded-xl border bg-muted/5 overflow-hidden">
                       <div className="bg-muted/20 p-3 text-xs font-bold uppercase tracking-wider border-b flex justify-between">
                         <span>Report Items</span>
                         <span>{Array.isArray(selectedFile.content?.items) ? selectedFile.content.items.length : 0} Items</span>
