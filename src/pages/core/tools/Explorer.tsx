@@ -164,15 +164,24 @@ export default function Explorer() {
   const fetchFileSystem = async () => {
     setLoading(true);
     try {
-      const [fsData, foldersData] = await Promise.all([
-        listFileSystem(session, activeFolder === "root" ? undefined : activeFolder),
-        listFolders(session)
-      ]);
-      
-      setFiles(fsData.files);
-      setFolders(fsData.folders);
-      setAllFolders(foldersData);
-      setCurrentFolder(fsData.currentFolder || null);
+      if (activeFolder === "recycle") {
+        const recycleData = await listRecycleBin(session);
+        setFiles(recycleData.files);
+        setFolders(recycleData.folders);
+        const foldersData = await listFolders(session);
+        setAllFolders(foldersData);
+        setCurrentFolder({ id: "recycle", name: "Recycle Bin" });
+      } else {
+        const [fsData, foldersData] = await Promise.all([
+          listFileSystem(session, activeFolder === "root" ? undefined : activeFolder),
+          listFolders(session)
+        ]);
+        
+        setFiles(fsData.files);
+        setFolders(fsData.folders);
+        setAllFolders(foldersData);
+        setCurrentFolder(fsData.currentFolder || null);
+      }
     } catch (err) {
       console.error("Failed to fetch file system", err);
     } finally {
@@ -267,7 +276,9 @@ export default function Explorer() {
   const folderTree = useMemo(() => {
     const grouped: Record<string, typeof allFolders> = {};
     // Deduplicate folders by name within same parent to avoid UI clutter
+    // Also explicitly filter out deleted folders for defense-in-depth
     const uniqueFolders = (Array.isArray(allFolders) ? allFolders : []).filter((f, i, self) => 
+      !f.deletedAt && !f.deleted_at && 
       i === self.findIndex(t => t.name === f.name && t.parentId === f.parentId)
     );
     uniqueFolders.forEach((folder) => {
@@ -303,13 +314,9 @@ export default function Explorer() {
   };
 
   const handleCreateFolder = async () => {
-    const name = prompt("Folder Name:") || "New Folder";
+    const newFolderName = prompt("Folder Name:") || "New Folder";
     try {
-      await createFolder(
-        session,
-        name,
-        activeFolder === "root" ? undefined : activeFolder
-      );
+      await createFolder(session, newFolderName, activeFolder === "root" ? undefined : activeFolder);
       setVersion(v => v + 1);
     } catch (err) {
       console.error("Folder creation failed", err);
@@ -526,230 +533,237 @@ export default function Explorer() {
       basePath="/core/tools/explorer"
       headerActions={headerActions}
     >
-      <div className="grid gap-6 lg:grid-cols-[240px_1fr] p-6">
-        <WorkspacePanel title="Folders" description="Department hierarchy.">
+      <div className="grid gap-6 lg:grid-cols-[280px_1fr] p-6">
+        <WorkspacePanel title="FOLDERS" description="Departmental hierarchy structure.">
           <div className="space-y-4 pt-2">
             <div className="space-y-1">
-            <div className="max-h-[calc(100vh-320px)] overflow-y-auto pr-2 custom-scrollbar">
-              <div
-                className={`flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-sm ${
-                  activeFolder === "root" ? "bg-muted font-bold text-primary" : "hover:bg-muted/50"
-                }`}
-                onClick={() => navigateToFolder("root")}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => {
-                  const folderPayload = event.dataTransfer.getData("application/x-folder");
-                  if (folderPayload && folderPayload !== "root") {
-                    moveFolder(session.tenant_id, session, folderPayload, undefined);
-                    setVersion((prev) => prev + 1);
-                    return;
-                  }
-                  const payload = event.dataTransfer.getData("text/plain");
-                  if (payload) handleDrop(payload, "root");
-                }}
-              >
-                <button
-                  className="flex items-center"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    toggleExpand("root");
+              <div className="max-h-[calc(100vh-320px)] overflow-y-auto pr-2 custom-scrollbar">
+                <div
+                  className={cn(
+                    "flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all",
+                    activeFolder === "root" ? "bg-primary/10 text-primary shadow-sm" : "hover:bg-muted/50 text-muted-foreground/70"
+                  )}
+                  onClick={() => navigateToFolder("root")}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => {
+                    const folderPayload = event.dataTransfer.getData("application/x-folder");
+                    if (folderPayload && folderPayload !== "root") {
+                      moveFolder(session, folderPayload, undefined);
+                      setVersion((prev) => prev + 1);
+                      return;
+                    }
+                    const payload = event.dataTransfer.getData("text/plain");
+                    if (payload) handleDrop(payload, "root");
                   }}
                 >
-                  {expanded.root ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </button>
-                <Folder className="h-4 w-4" />
-                Root
-              </div>
-              {expanded.root ? renderFolderNode("root", 1) : null}
-              <div
-                className={`flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-sm ${
-                  activeFolder === "recycle" ? "bg-muted font-bold text-primary" : "hover:bg-muted/50"
-                }`}
-                onClick={() => navigateToFolder("recycle")}
-              >
-                <Trash2 className="h-4 w-4" />
-                Recycle Bin
-              </div>
-              {renameFolderId ? (
-                <div className="space-y-2 mt-2 p-2 border rounded-lg bg-muted/20">
-                  <Input
-                    value={renameFolderValue}
-                    onChange={(event) => setRenameFolderValue(event.target.value)}
-                    placeholder="New name..."
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => {
-                        renameFolder(session.tenant_id, session, renameFolderId, renameFolderValue);
-                        setRenameFolderId(null);
-                        setRenameFolderValue("");
-                        setVersion((prev) => prev + 1);
-                      }}
-                    >
-                      Save
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setRenameFolderId(null)}>Cancel</Button>
+                  <button
+                    className="flex items-center"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggleExpand("root");
+                    }}
+                  >
+                    {expanded.root ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                  </button>
+                  <Folder className="h-3.5 w-3.5" />
+                  ROOT_TERMINAL
+                </div>
+                {expanded.root ? renderFolderNode("root", 1) : null}
+                
+                <div className="my-4 border-t border-dashed border-muted" />
+
+                <div
+                  className={cn(
+                    "flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all",
+                    activeFolder === "recycle" ? "bg-rose-500/10 text-rose-500 shadow-sm" : "hover:bg-muted/50 text-muted-foreground/70"
+                  )}
+                  onClick={() => navigateToFolder("recycle")}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  RECYCLE_VAULT
+                </div>
+
+                {renameFolderId ? (
+                  <div className="space-y-2 mt-4 p-3 border rounded-2xl bg-muted/20 backdrop-blur-sm">
+                    <Input
+                      value={renameFolderValue}
+                      onChange={(event) => setRenameFolderValue(event.target.value)}
+                      placeholder="NEW_IDENTITY..."
+                      className="h-8 text-[10px] font-black uppercase tracking-widest"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        className="flex-1 rounded-lg font-black text-[9px] uppercase tracking-widest"
+                        onClick={() => {
+                          renameFolder(session, renameFolderId, renameFolderValue);
+                          setRenameFolderId(null);
+                          setRenameFolderValue("");
+                          setVersion((prev) => prev + 1);
+                        }}
+                      >
+                        SAVE
+                      </Button>
+                      <Button size="sm" variant="ghost" className="rounded-lg font-black text-[9px] uppercase tracking-widest" onClick={() => setRenameFolderId(null)}>CANCEL</Button>
+                    </div>
                   </div>
-                </div>
-              ) : null}
-                </div>
+                ) : null}
               </div>
             </div>
-          </WorkspacePanel>
+          </div>
+        </WorkspacePanel>
 
         <div className="space-y-6">
-          <WorkspacePanel title="Address" description="Navigate folders like Windows Explorer.">
+          <WorkspacePanel title="ADDRESS_PROTOCOLS" description="Real-time terminal path and forensic search engine.">
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-1.5">
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" disabled={!canGoBack} onClick={goBack}>
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary transition-colors" disabled={!canGoBack} onClick={goBack}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" disabled={!canGoForward} onClick={goForward}>
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary transition-colors" disabled={!canGoForward} onClick={goForward}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="flex flex-1 items-center gap-2 rounded-xl border bg-muted/20 px-4 py-2 min-w-0">
+              <div className="flex flex-1 items-center gap-2 rounded-2xl border bg-background/50 backdrop-blur-md px-4 py-2 min-w-0 shadow-sm ring-1 ring-primary/5">
                 <div className="flex flex-wrap items-center gap-1.5 overflow-hidden">
                   {(Array.isArray(currentBreadcrumb) ? currentBreadcrumb : []).map((crumb, index) => (
                     <React.Fragment key={`${crumb.id}-${index}`}>
                       <button
-                        className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors truncate max-w-[120px]"
+                        className={cn(
+                          "text-xs font-black transition-all truncate max-w-[150px] uppercase tracking-widest",
+                          index === currentBreadcrumb.length - 1 ? "text-primary" : "text-muted-foreground/60 hover:text-primary"
+                        )}
                         onClick={() => navigateToFolder(crumb.id)}
                       >
                         {crumb.label}
                       </button>
                       {index < currentBreadcrumb.length - 1 ? (
-                        <span className="text-muted-foreground/30 text-xs">/</span>
+                        <ChevronRight className="h-3 w-3 text-muted-foreground/20" />
                       ) : null}
                     </React.Fragment>
                   ))}
                 </div>
               </div>
-            </div>
-          </WorkspacePanel>
-
-          <WorkspacePanel title="Search" description="Find files in your department scope.">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search files by name..."
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                className="pl-10 h-10 rounded-xl bg-muted/10 border-muted"
-              />
+              <div className="relative flex-1 min-w-[300px]">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
+                <Input
+                  placeholder="SEARCH ENGINE: SCAN BY IDENTITY..."
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  className="pl-11 h-10 rounded-2xl bg-background/50 backdrop-blur-md border-primary/10 focus:border-primary/30 transition-all font-black text-[10px] uppercase tracking-widest shadow-sm"
+                />
+              </div>
             </div>
           </WorkspacePanel>
 
           <WorkspacePanel 
-            title={activeFolder === "recycle" ? "Recycle Bin" : folderMap.get(activeFolder) || "Files"} 
-            description={activeFolder === "recycle" ? "Deleted items awaiting restoration." : "Visible files in your scope."}
+            title={activeFolder === "recycle" ? "RECYCLE_BIN_VAULT" : (folderMap.get(activeFolder) || "FILE_REPOSITORY").toUpperCase()} 
+            description={activeFolder === "recycle" ? "Isolated deleted entities awaiting terminal disposal or restoration." : "Verified departmental assets within current terminal scope."}
           >
             <div className="h-[calc(100vh-320px)] overflow-y-auto pr-2 custom-scrollbar">
               <div className="mb-3 flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant={viewMode === "details" ? "default" : "outline"}
-                  onClick={() => setViewMode("details")}
-                >
-                  Details
-                </Button>
-                <Button
-                  size="sm"
-                  variant={viewMode === "grid" ? "default" : "outline"}
-                  onClick={() => setViewMode("grid")}
-                >
-                  Grid
-                </Button>
-                <Button
-                  size="sm"
-                  variant={viewMode === "large" ? "default" : "outline"}
-                  onClick={() => setViewMode("large")}
-                >
-                  Large Icons
-                </Button>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Group by:</span>
-                <Select value={groupBy} onValueChange={(val: any) => setGroupBy(val)}>
-                  <SelectTrigger className="w-[120px] h-8 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="company">Company</SelectItem>
-                    <SelectItem value="department">Department</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {activeFolder !== "recycle" ? (
-                <>
-                  <Select value={bulkMoveTarget} onValueChange={setBulkMoveTarget}>
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="Move to folder" />
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant={viewMode === "details" ? "default" : "outline"}
+                    onClick={() => setViewMode("details")}
+                  >
+                    Details
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={viewMode === "grid" ? "default" : "outline"}
+                    onClick={() => setViewMode("grid")}
+                  >
+                    Grid
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={viewMode === "large" ? "default" : "outline"}
+                    onClick={() => setViewMode("large")}
+                  >
+                    Large Icons
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Group by:</span>
+                  <Select value={groupBy} onValueChange={(val: any) => setGroupBy(val)}>
+                    <SelectTrigger className="w-[120px] h-8 text-xs">
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="root">Root</SelectItem>
-                      {(Array.isArray(allFolders) ? allFolders : []).map((folder) => (
-                        <SelectItem key={folder.id} value={folder.id}>
-                          {folder.name}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="company">Company</SelectItem>
+                      <SelectItem value="department">Department</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                {activeFolder !== "recycle" ? (
+                  <>
+                    <Select value={bulkMoveTarget} onValueChange={setBulkMoveTarget}>
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Move to folder" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="root">Root</SelectItem>
+                        {(Array.isArray(allFolders) ? allFolders : []).map((folder) => (
+                          <SelectItem key={folder.id} value={folder.id}>
+                            {folder.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={selectedIds.length === 0}
+                      onClick={() => {
+                        selectedIds.forEach((id) => moveFile(session, id, bulkMoveTarget));
+                        setSelectedIds([]);
+                        setVersion((prev) => prev + 1);
+                      }}
+                    >
+                      Move selected
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={selectedIds.length === 0}
+                      onClick={() => {
+                        selectedIds.forEach((id) => moveToRecycle(session, id));
+                        setSelectedIds([]);
+                        setVersion((prev) => prev + 1);
+                      }}
+                    >
+                      Delete selected
+                    </Button>
+                  </>
+                ) : (
                   <Button
                     size="sm"
                     variant="outline"
                     disabled={selectedIds.length === 0}
                     onClick={() => {
-                      selectedIds.forEach((id) => moveFile(session.tenant_id, session, id, bulkMoveTarget));
+                      selectedIds.forEach((id) => restoreFromRecycle(session, id));
                       setSelectedIds([]);
                       setVersion((prev) => prev + 1);
                     }}
                   >
-                    Move selected
+                    Restore selected
                   </Button>
+                )}
+                <div className="ml-auto flex gap-2">
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={selectedIds.length === 0}
-                    onClick={() => {
-                      selectedIds.forEach((id) => moveToRecycle(session.tenant_id, session, id));
-                      setSelectedIds([]);
-                      setVersion((prev) => prev + 1);
-                    }}
+                    disabled={!selectedFile}
+                    onClick={() => setExportDialogOpen(true)}
                   >
-                    Delete selected
+                    <Download className="mr-2 h-4 w-4" />
+                    Secure Export
                   </Button>
-                </>
-              ) : (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={selectedIds.length === 0}
-                  onClick={() => {
-                    selectedIds.forEach((id) => restoreFromRecycle(session.tenant_id, session, id));
-                    setSelectedIds([]);
-                    setVersion((prev) => prev + 1);
-                  }}
-                >
-                  Restore selected
-                </Button>
-              )}
-              <div className="ml-auto flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={!selectedFile}
-                  onClick={() => setExportDialogOpen(true)}
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Secure Export
-                </Button>
+                </div>
               </div>
-            </div>
             
             <ExportSettingsDialog
               open={exportDialogOpen}
@@ -1289,64 +1303,64 @@ export default function Explorer() {
                                         value={editingValue}
                                         onChange={(event) => setEditingValue(event.target.value)}
                                         onBlur={() => {
-                                          renameFile(session.tenant_id, session, file.id, editingValue);
+                                          renameFile(session, file.id, editingValue);
                                           setEditingId(null);
                                           setVersion((prev) => prev + 1);
                                         }}
                                         autoFocus
-                                        className="h-8 text-sm rounded-lg"
+                                        className="h-8 text-[10px] rounded-lg font-black uppercase tracking-widest"
                                       />
                                     ) : (
                                       <TooltipProvider>
                                         <Tooltip>
                                           <TooltipTrigger asChild>
                                             <p 
-                                              className="text-sm font-black text-foreground truncate w-full group-hover:text-primary transition-all tracking-tight" 
+                                              className="text-[11px] font-black text-foreground truncate w-full group-hover:text-primary transition-all tracking-widest uppercase" 
                                             >
                                               {file.name}
                                             </p>
                                           </TooltipTrigger>
-                                          <TooltipContent className="bg-slate-900 border-white/10 text-white font-bold italic">
+                                          <TooltipContent className="bg-slate-900 border-white/10 text-white font-bold italic shadow-2xl backdrop-blur-xl">
                                             {file.name}
                                           </TooltipContent>
                                         </Tooltip>
                                       </TooltipProvider>
                                     )}
                                     
-                                    <div className="flex flex-col gap-2.5 mt-2.5">
-                                      <div className="flex items-center gap-2">
-                                        <div className="flex items-center gap-1.5 bg-muted/50 px-2.5 py-1 rounded-full border border-muted-foreground/5 shadow-sm">
-                                          <Folder className="h-3 w-3 text-muted-foreground/70" />
-                                          <p className="text-[9px] text-muted-foreground font-bold tracking-wide truncate max-w-[80px] uppercase">
-                                            {folderMap.get(file.folderId ?? "root") ?? "Root"}
-                                          </p>
+                                    <div className="flex flex-col gap-2 mt-2">
+                                        <div className="flex items-center gap-2">
+                                          <div className="flex items-center gap-1.5 bg-slate-900/5 dark:bg-white/5 px-2.5 py-1 rounded-lg border border-slate-900/5 dark:border-white/5 shadow-inner group-hover:bg-primary/5 transition-all">
+                                            <Folder className="h-2.5 w-2.5 text-slate-400" />
+                                            <p className="text-[8px] text-slate-500 font-black tracking-widest truncate max-w-[120px] uppercase">
+                                              {folderMap.get(file.folderId ?? "root") ?? "ROOT_NODE"}
+                                            </p>
+                                          </div>
+                                          {file.access_level && (
+                                            <Badge variant={file.access_level === "private" ? "destructive" : "secondary"} className="h-4.5 px-2 text-[8px] uppercase font-black rounded-lg border-none shadow-sm tracking-[0.2em] bg-slate-100 dark:bg-slate-800 text-slate-500">
+                                              {file.access_level}
+                                            </Badge>
+                                          )}
                                         </div>
-                                        {file.access_level && (
-                                          <Badge variant={file.access_level === "private" ? "destructive" : "secondary"} className="h-4.5 px-2.5 text-[8px] uppercase font-black rounded-full border-none shadow-sm">
-                                            {file.access_level}
-                                          </Badge>
-                                        )}
-                                      </div>
 
                                       {(() => {
                                         let meta = file.metadata;
                                         if (typeof meta === 'string') { try { meta = JSON.parse(meta); } catch(e) {} }
                                         if (meta?.type === "STOCK_OPNAME_REPORT") {
                                           return (
-                                            <div className="pt-2.5 border-t border-dashed border-primary/20 space-y-2.5">
+                                            <div className="pt-2 border-t border-dashed border-primary/10 space-y-2 mt-1">
                                               <div className="flex items-center gap-2 flex-wrap">
-                                                <div className="flex items-center gap-1.5 bg-gradient-to-r from-primary/20 to-primary/5 text-primary text-[10px] px-3 py-1.5 rounded-full border border-primary/20 font-black shadow-sm backdrop-blur-sm">
-                                                  <Bot className="h-3.5 w-3.5" />
-                                                  {meta.ai_name || "Audit AI"}
+                                                <div className="flex items-center gap-1 bg-gradient-to-r from-indigo-500/10 to-blue-500/5 text-indigo-600 text-[8px] px-2 py-1 rounded-lg border border-indigo-500/20 font-black shadow-sm uppercase tracking-widest">
+                                                  <Bot className="h-3 w-3" />
+                                                  {meta.ai_name || "AUDIT_ENGINE"}
                                                 </div>
-                                                <div className="flex items-center gap-1.5 bg-slate-200/50 text-slate-700 text-[10px] px-3 py-1.5 rounded-full border border-slate-300/50 font-bold shadow-sm backdrop-blur-sm">
-                                                  <User className="h-3.5 w-3.5" />
+                                                <div className="flex items-center gap-1 bg-slate-100 text-slate-500 text-[8px] px-2 py-1 rounded-lg border border-slate-200 font-black shadow-sm uppercase tracking-widest">
+                                                  <User className="h-3 w-3" />
                                                   {meta.performer}
                                                 </div>
                                               </div>
-                                              <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground/80 font-medium pl-1.5">
-                                                <Clock className="h-3.5 w-3.5 opacity-60" />
-                                                {meta.timestamp ? format(new Date(meta.timestamp), 'MMM d, HH:mm') : "N/A"}
+                                              <div className="flex items-center gap-1.5 text-[8px] text-muted-foreground/60 font-black uppercase tracking-tighter pl-1">
+                                                <Clock className="h-3 w-3 opacity-40" />
+                                                {meta.timestamp ? format(new Date(meta.timestamp), 'MMM d, HH:mm') : "SYSTEM_LOG_N/A"}
                                               </div>
                                             </div>
                                           );
@@ -1397,11 +1411,11 @@ export default function Explorer() {
                                   <ContextMenuSeparator />
                                   <ContextMenuItem
                                     onClick={() => {
-                                      moveToRecycle(session.tenant_id, session, file.id);
+                                      moveToRecycle(session, file.id);
                                       setVersion((prev) => prev + 1);
                                     }}
                                   >
-                                    Delete
+                                    Move to recycle bin
                                   </ContextMenuItem>
                                 </>
                               )}
@@ -1582,7 +1596,7 @@ export default function Explorer() {
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            moveToRecycle(session.tenant_id, session, selectedFile.id);
+                            moveToRecycle(session, selectedFile.id);
                             setPreviewOpen(false);
                             setVersion((prev) => prev + 1);
                           }}
@@ -1595,7 +1609,7 @@ export default function Explorer() {
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          restoreFromRecycle(session.tenant_id, session, selectedFile.id);
+                          restoreFromRecycle(session, selectedFile.id);
                           setPreviewOpen(false);
                           setVersion((prev) => prev + 1);
                         }}
@@ -1693,7 +1707,7 @@ export default function Explorer() {
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            moveFile(session.tenant_id, session, selectedFile.id, folder.id);
+                            moveFile(session, selectedFile.id, folder.id);
                             setVersion((prev) => prev + 1);
                           }}
                         >
@@ -1711,6 +1725,8 @@ export default function Explorer() {
           )}
         </DialogContent>
       </Dialog>
+        </div>
+      </div>
     </DepartmentWorkspaceLayout>
   );
 }

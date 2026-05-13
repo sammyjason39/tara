@@ -222,7 +222,7 @@ export default function InventoryStockHub() {
       const locs = Array.from(locationMap.values())
         .filter((loc, index, self) => 
           index === self.findIndex((t) => (
-            t.name === loc.name || t.id === loc.id
+            t.name.trim().toLowerCase() === loc.name.trim().toLowerCase() || t.id === loc.id
           ))
         )
         .sort((a, b) => a.name.localeCompare(b.name));
@@ -244,8 +244,9 @@ export default function InventoryStockHub() {
   const stats = useMemo(() => {
     return {
       totalItems: globalStats?.totalItems ?? totalCount ?? 0,
+      totalOnHand: globalStats?.totalOnHandQty ?? 0,
       lowStock: globalStats?.lowStockCount ?? 0,
-      outOfStock: items.filter(i => i.currentStock === 0).length,
+      outOfStock: items.filter(i => (i.currentStock || 0) === 0).length,
       totalValue: globalStats?.totalValuation ?? 0
     };
   }, [globalStats, totalCount, items]);
@@ -302,12 +303,12 @@ export default function InventoryStockHub() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-slate-900/50 rounded-[2.5rem] overflow-hidden group">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Total Items</CardTitle>
+            <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Items On-Hand</CardTitle>
             <Package className="h-4 w-4 text-primary opacity-50" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black tracking-tighter">{stats.totalItems}</div>
-            <p className="text-[10px] font-bold text-emerald-500 mt-1 uppercase tracking-widest">Across All Nodes</p>
+            <div className="text-3xl font-black tracking-tighter">{stats.totalOnHand}</div>
+            <p className="text-[10px] font-bold text-emerald-500 mt-1 uppercase tracking-widest">Available units</p>
           </CardContent>
         </Card>
 

@@ -147,18 +147,12 @@ export class InventoryDbRepository implements IInventoryRepository {
       where.category_id = category_id;
     }
 
-    if (location_id && !search) {
+    if (location_id && location_id !== "all" && location_id !== "") {
       where.stock_levels = { some: { location_id } };
     }
 
     if (status && status !== "all") {
-      if (status === "low" || status === "critical") {
-        // For complex stock-based filtering, we use raw query to get IDs
-        // Note: simplified for this implementation
-        where.status = status; 
-      } else {
-        where.status = status;
-      }
+      where.status = status;
     }
 
     let orderBy: any = { created_at: "desc" };
@@ -167,41 +161,52 @@ export class InventoryDbRepository implements IInventoryRepository {
     } else if (sortBy === "created_at") {
       orderBy = { created_at: sortOrder || "desc" };
     } else if (sortBy === "quantity") {
-      // For quantity sorting with filters - optimized raw query
-      const orderedIds = await this.prisma.$queryRaw<{ id: string }[]>`
+      // For quantity sorting with filters - robust raw query construction
+      const conditions = [`p.tenant_id = '${ctx.tenant_id}'`, `p.status != 'deleted'`];
+      if (category_id && category_id !== "all") conditions.push(`p.category_id = '${category_id}'`);
+      if (status && status !== "all") conditions.push(`p.status = '${status}'`);
+      if (search) {
+        // Sanitize search input for ILIKE
+        const s = search.replace(/'/g, "''");
+        conditions.push(`(p.name ILIKE '%${s}%' OR p.sku ILIKE '%${s}%' OR p.barcode ILIKE '%${s}%')`);
+      }
+
+      const whereClause = conditions.join(" AND ");
+      const isLocationFiltered = location_id && location_id !== "all" && location_id !== "";
+      const locationCondition = isLocationFiltered ? `s.location_id = '${location_id}'` : "1=1";
+
+      const rawSql = `
         SELECT p.id
         FROM item_masters p
         LEFT JOIN stock_levels s ON s.product_id = p.id
-        WHERE p.tenant_id = ${ctx.tenant_id}
-          AND p.status != 'deleted'
-          ${category_id && category_id !== "all" ? Prisma.raw(`AND p.category_id = '${category_id}'`) : Prisma.empty}
-          ${status && status !== "all" ? Prisma.raw(`AND p.status = '${status}'`) : Prisma.empty}
-          ${search ? Prisma.raw(`AND (p.name ILIKE '%${search}%' OR p.sku ILIKE '%${search}%' OR p.barcode ILIKE '%${search}%')`) : Prisma.empty}
+        WHERE ${whereClause}
         GROUP BY p.id
         ORDER BY SUM(
           CASE 
-            WHEN ${location_id ? Prisma.raw(`s.location_id = '${location_id}'`) : Prisma.raw("1=1")} 
+            WHEN ${locationCondition} 
             THEN COALESCE(s.on_hand, 0) 
             ELSE 0 
           END
-        ) ${sortOrder === "asc" ? Prisma.raw("ASC") : Prisma.raw("DESC")}
+        ) ${sortOrder === "asc" ? "ASC" : "DESC"}
         LIMIT ${limit} OFFSET ${skip}
       `;
       
+      const orderedIds = await this.prisma.$queryRawUnsafe<{ id: string }[]>(rawSql);
+      
       const products = await this.prisma.item_masters.findMany({
-        where: { id: { in: orderedIds.map(p => p.id) } },
+        where: { id: { in: (orderedIds || []).map(p => p.id) } },
         include: { 
           product_categories: true, 
           item_images: true,
           stock_levels: {
-            where: location_id ? { location_id } : undefined,
-            select: { on_hand: true }
+            where: isLocationFiltered ? { location_id } : undefined,
+            select: { on_hand: true, location_id: true }
           }
         },
       });
       
       const productMap = new Map(products.map(p => [p.id, p]));
-      const orderedProducts = orderedIds.map(o => productMap.get(o.id)).filter(Boolean);
+      const orderedProducts = (orderedIds || []).map(o => productMap.get(o.id)).filter(Boolean);
       
       return orderedProducts.map(p => this.mapToInventoryItem(p));
     }
