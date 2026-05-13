@@ -47,16 +47,12 @@ import {
   MovementPayload,
 } from "./components/inventory/modals/InventoryMovementDialog";
 import {
-  InventoryStockEditDialog,
-  BufferUpdatePayload,
-} from "./components/inventory/modals/InventoryStockEditDialog";
-import { ProductDetailEditDialog } from "./components/inventory/modals/ProductDetailEditDialog";
-import {
   PostekPrintModal,
   PrintItem,
 } from "@/components/shared/PostekPrintModal";
 import { MOVEMENT_META } from "./inventory/inventory.types";
 import { CategoryManager } from "@/components/shared/CategoryManager";
+import { ItemDetailsModal } from "@/pages/core/inventory/components/ItemDetailsModal";
 
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { InventoryGlassHeader } from "@/components/shared/InventoryGlassHeader";
@@ -127,8 +123,19 @@ const InventoryVisibility = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedStoreId, setSelectedStoreId] = useState("");
   const [isAggregating, setIsAggregating] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
+  
+  const handleStoreChange = (id: string) => {
+    setSelectedStoreId(id);
+    setPage(1);
+    const store = stores.find((s) => s.id === id);
+    if (store) {
+      updateBranch(store.locationId || store.id);
+    }
+  };
+
   const selectedStore = useMemo(
     () => stores.find((s) => s.locationId === session?.location_id || s.id === session?.location_id),
     [stores, session?.location_id],
@@ -149,7 +156,6 @@ const InventoryVisibility = () => {
   const [dynamicCategories, setDynamicCategories] = useState<
     { id: string; name: string }[]
   >([]);
-  const [editItem, setEditItem] = useState<InventoryItemView | null>(null);
   const [detailItem, setDetailItem] = useState<InventoryItemView | null>(null);
   const [movementType, setMovementType] = useState<MovementType | null>(null);
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
@@ -214,13 +220,14 @@ const InventoryVisibility = () => {
         onHand: p.metadata?.stock_on_hand ?? p.stock ?? 0,
         reserved: p.metadata?.reserved ?? 0,
         available: p.metadata?.available ?? p.stock ?? 0,
-        minBuffer: 10,
+        minBuffer: p.metadata?.minBuffer ?? 0,
         status: (p.status as InventoryItemView["status"]) || "ok",
         barcode: p.barcode,
         price: p.price,
         unit: p.unit,
         type: p.type,
         description: p.description,
+        imageUrl: p.image_url || p.imageUrl,
       }));
       setInventory(mapped);
       setTotalItems(totalCount);
@@ -325,11 +332,22 @@ const InventoryVisibility = () => {
       if (combined.length > 0 && !locationId) {
         const firstStore = combined[0];
         updateBranch(firstStore.locationId || firstStore.id);
+        setSelectedStoreId(firstStore.id);
       }
     } catch (error) {
       console.error(error);
     }
   }, [tenantId, session, locationId, updateBranch]);
+
+  // Sync selectedStoreId with locationId from session
+  useEffect(() => {
+    if (locationId && stores.length > 0) {
+      const store = stores.find((s) => (s.locationId || s.id) === locationId);
+      if (store) {
+        setSelectedStoreId(store.id);
+      }
+    }
+  }, [locationId, stores]);
 
   useEffect(() => {
     if (tenantId) {
@@ -355,6 +373,11 @@ const InventoryVisibility = () => {
     filters.type,
     locationId,
   ]);
+
+  const handleFilterChange = (patch: Partial<InventoryFilters>) => {
+    setFilters((prev) => ({ ...prev, ...patch }));
+    setPage(1);
+  };
 
   const handleSync = useCallback(async () => {
     if (!session || !locationId) return;
@@ -451,43 +474,6 @@ const InventoryVisibility = () => {
     [movementType, locationId, session?.userId, toast],
   );
 
-  const handleEditSubmit = useCallback(
-    (payload: BufferUpdatePayload) => {
-      toast({
-        title: "Buffer Updated",
-        description: `ID: ${payload.id} | New Min: ${payload.minBuffer}`,
-      });
-    },
-    [toast],
-  );
-
-  const handleProductUpdate = useCallback(
-    async (productId: string, data: Partial<RetailProduct>) => {
-      if (!session || !tenantId) return;
-      setIsUpdating(true);
-      try {
-        await retailService.updateProduct(tenantId, session, productId, {
-          ...data,
-          locationId: locationId,
-        } as Parameters<typeof retailService.updateProduct>[3]);
-        toast({
-          title: "Product Updated",
-          description: "Changes saved to core.",
-        });
-        fetchInventory();
-      } catch (err) {
-        console.error(err);
-        toast({
-          title: "Update Failed",
-          description: "Could not save changes.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsUpdating(false);
-      }
-    },
-    [session, tenantId, toast, fetchInventory, locationId],
-  );
 
   // ── Opname handlers ───────────────────────────────────────
   const startOpname = useCallback(() => {
@@ -752,9 +738,11 @@ const InventoryVisibility = () => {
                 onTypeChange={(v) => setFilters(prev => ({ ...prev, type: v }))}
                 status={filters.status}
                 onStatusChange={(v) => setFilters(prev => ({ ...prev, status: v }))}
-                minPrice={filters.minPrice}
-                maxPrice={filters.maxPrice}
-                onPriceRangeChange={(min, max) => setFilters(prev => ({ ...prev, minPrice: min, maxPrice: max }))}
+                location={locationId || ""}
+                onLocationChange={(v) => updateBranch(v)}
+                locations={stores.map(s => ({ id: s.locationId || s.id, name: s.name }))}
+                sortBy={filters.sortBy}
+                onSortChange={(v) => setFilters(prev => ({ ...prev, sortBy: v as any }))}
                 advancedActions={
                   canWrite && (
                     <div className="flex gap-3">
@@ -769,7 +757,7 @@ const InventoryVisibility = () => {
                       <Button 
                         size="lg"
                         className="rounded-2xl bg-secondary text-foreground font-black italic text-xs uppercase tracking-widest gap-2 h-14 px-8"
-                        onClick={() => setEditItem({} as InventoryItemView)}
+                        onClick={() => setDetailItem({} as InventoryItemView)}
                       >
                         <Plus className="h-4 w-4" /> Add SKU
                       </Button>
@@ -788,7 +776,7 @@ const InventoryVisibility = () => {
                   currentCount={inventory.length}
                   onPageChange={setPage}
                   statusBadge={statusBadge}
-                  onEdit={(item) => setEditItem(item)}
+                  onEdit={(item) => setDetailItem(item)}
                   onPrint={(item) => {
                     setPrintItems([
                       {
@@ -1030,20 +1018,12 @@ const InventoryVisibility = () => {
         onSubmit={handleMovementSubmit}
         onPrintBarcodes={(barcodeItems) => setPrintItems(barcodeItems)}
       />
-      <InventoryStockEditDialog
-        item={editItem}
-        open={!!editItem}
-        onClose={() => setEditItem(null)}
-        canWrite={canWrite}
-        onSubmit={handleEditSubmit}
-      />
-      <ProductDetailEditDialog
+      <ItemDetailsModal
         item={detailItem}
         open={!!detailItem}
-        onClose={() => setDetailItem(null)}
-        categories={categoryOptions}
-        onSubmit={handleProductUpdate}
-        isLoading={isUpdating}
+        onOpenChange={(open) => !open && setDetailItem(null)}
+        onUpdated={fetchInventory}
+        categories={dynamicCategories}
       />
       <PostekPrintModal
         open={printItems.length > 0}

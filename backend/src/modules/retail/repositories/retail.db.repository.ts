@@ -2679,6 +2679,7 @@ export class RetailDbRepository implements IRetailRepository {
         stockOnHand: soh,
         reserved: reserved,
         available: available,
+        minBuffer: p.stock_levels.reduce((sum: number, s: any) => sum + (s.min_buffer || 0), 0),
       },
       stock: soh,
       created_at: p.created_at,

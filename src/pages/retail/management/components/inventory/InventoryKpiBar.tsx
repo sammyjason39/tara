@@ -1,5 +1,6 @@
 import React from "react";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Package, Layers, AlertTriangle, Archive, BarChart3, TrendingUp } from "lucide-react";
 
 type InventoryStats = {
   totalSKUs: number;
@@ -13,7 +14,6 @@ type InventoryStats = {
 
 type Props = {
   stats: InventoryStats;
-  /** true while a full-dataset aggregation fetch is in progress */
   isAggregating?: boolean;
 };
 
@@ -37,59 +37,64 @@ export const InventoryKpiBar: React.FC<Props> = ({ stats, isAggregating }) => {
     }).format(val);
   };
 
-  const kpis = [
-    {
-      label: "Branch SKUs",
-      val: stats.totalSKUs,
-      color: "slate",
-      sub: "Active items",
-    },
-    {
-      label: "Branch On Hand",
-      val: isAggregating ? "…" : formatValue(stats.totalSOH),
-      color: "blue",
-      sub: "All units",
-    },
-    {
-      label: "Branch ATS",
-      val: isAggregating ? "…" : formatValue(stats.totalATS),
-      color: "emerald",
-      sub: "Unreserved",
-    },
-    {
-      label: "Low Stock",
-      val: isAggregating ? "…" : formatValue(stats.low),
-      color: "amber",
-      sub: "Below buffer",
-    },
-    {
-      label: "Branch Valuation",
-      val: isAggregating ? "…" : formatCurrency(stats.totalValue),
-      color: "purple",
-      sub: "Local Value",
-    },
-  ] as const;
-
   return (
-    <div className="grid grid-cols-5 gap-4">
-      {(Array.isArray(kpis) ? kpis : []).map((k) => (
-        <Card
-          key={k.label}
-          className="rounded-2xl border-none shadow-md bg-white p-4"
-        >
-          <div
-            className={`text-[9px] font-black uppercase tracking-[0.2em] text-${k.color}-500 italic mb-1`}
-          >
-            {k.label}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-slate-900/50 rounded-[2.5rem] overflow-hidden group">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Branch SKUs</CardTitle>
+          <Layers className="h-4 w-4 text-primary opacity-50" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-3xl font-black tracking-tighter">{formatValue(stats.totalSKUs)}</div>
+          <p className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-widest italic">Active models</p>
+        </CardContent>
+      </Card>
+
+      <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-slate-900/50 rounded-[2.5rem] overflow-hidden group">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Branch On Hand</CardTitle>
+          <Package className="h-4 w-4 text-primary opacity-50" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-3xl font-black tracking-tighter">{isAggregating ? "..." : formatValue(stats.totalSOH)}</div>
+          <p className="text-[10px] font-bold text-emerald-500 mt-1 uppercase tracking-widest italic">Total physical units</p>
+        </CardContent>
+      </Card>
+
+      <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-slate-900/50 rounded-[2.5rem] overflow-hidden group">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Branch ATS</CardTitle>
+          <TrendingUp className="h-4 w-4 text-emerald-500 opacity-50" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-3xl font-black tracking-tighter text-emerald-600">{isAggregating ? "..." : formatValue(stats.totalATS)}</div>
+          <p className="text-[10px] font-bold text-emerald-500 mt-1 uppercase tracking-widest italic">Available to sell</p>
+        </CardContent>
+      </Card>
+
+      <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-slate-900/50 rounded-[2.5rem] overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Low Stock</CardTitle>
+          <AlertTriangle className="h-4 w-4 text-amber-500 opacity-50" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-3xl font-black tracking-tighter text-amber-600">{isAggregating ? "..." : formatValue(stats.low)}</div>
+          <p className="text-[10px] font-bold text-amber-500 mt-1 uppercase tracking-widest italic">Below buffer threshold</p>
+        </CardContent>
+      </Card>
+
+      <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-slate-900/50 rounded-[2.5rem] overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Branch Valuation</CardTitle>
+          <BarChart3 className="h-4 w-4 text-purple-500 opacity-50" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-3xl font-black tracking-tighter text-purple-600">
+            {isAggregating ? "..." : formatCurrency(stats.totalValue)}
           </div>
-          <div className="text-2xl font-black italic tracking-tighter text-foreground truncate">
-            {k.val}
-          </div>
-          <div className="text-[9px] text-muted-foreground font-bold uppercase italic">
-            {k.sub}
-          </div>
-        </Card>
-      ))}
+          <p className="text-[10px] font-bold text-purple-500 mt-1 uppercase tracking-widest italic">Inventory Asset Value</p>
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -14,6 +14,7 @@ export type InventoryItemView = {
   unit?: string;
   type?: string;
   description?: string;
+  imageUrl?: string;
 };
 
 export type InventoryFilters = {

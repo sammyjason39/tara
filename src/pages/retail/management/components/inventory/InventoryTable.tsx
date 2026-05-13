@@ -17,6 +17,7 @@ import {
   Trash2,
   Printer,
   FolderTree,
+  Image as ImageIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InventoryItemView } from "./types";
@@ -146,7 +147,7 @@ export const InventoryTable: React.FC<TableProps> = ({
         <thead>
           <tr className="border-b border-slate-50">
             {[
-              "#",
+              "Image",
               "SKU",
               "Name / Category",
               "On Hand",
@@ -186,8 +187,22 @@ export const InventoryTable: React.FC<TableProps> = ({
                   onClick={() => onRowClick?.(item)}
                   className="group border-b border-slate-50 last:border-none hover:bg-secondary/5/50 transition-colors cursor-pointer"
                 >
-                  <td className="px-4 py-4 text-[11px] text-muted-foreground font-bold">
-                    {number}
+                  <td className="px-6 py-4">
+                    <div className="h-10 w-10 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 flex items-center justify-center">
+                      {item.imageUrl ? (
+                        <img 
+                          src={item.imageUrl} 
+                          alt={item.name} 
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            (e.target as any).src = "";
+                            (e.target as any).className = "hidden";
+                          }}
+                        />
+                      ) : (
+                        <ImageIcon className="h-4 w-4 text-slate-300" />
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 font-mono text-[11px] text-muted-foreground font-bold">
                     {item.sku}

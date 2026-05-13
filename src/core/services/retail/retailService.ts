@@ -428,9 +428,11 @@ export const retailService = {
       updatedAt: (p.updated_at ?? p.updatedAt) as string,
       price: (p.base_price ?? p.basePrice ?? 0) as number,
       stock:
-        (p.metadata as { stock_on_hand?: number })?.stock_on_hand ??
+        (p.metadata as { stock_on_hand?: number; stockOnHand?: number })?.stock_on_hand ??
+        (p.metadata as { stock_on_hand?: number; stockOnHand?: number })?.stockOnHand ??
         (p.stock as number) ??
         0,
+      minBuffer: (p.metadata as { minBuffer?: number })?.minBuffer ?? 0,
     })) as RetailProduct[];
 
     const result = mapped as PaginatedArray<RetailProduct>;
