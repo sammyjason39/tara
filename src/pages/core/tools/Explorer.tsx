@@ -1725,8 +1725,6 @@ export default function Explorer() {
           )}
         </DialogContent>
       </Dialog>
-        </div>
-      </div>
     </DepartmentWorkspaceLayout>
   );
 }
