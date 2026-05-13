@@ -787,7 +787,8 @@ export class InventoryService {
     console.log(`[AUDIT_RECONCILE] Updating Cycle ${id} for Tenant ${ctx.tenant_id}. Items: ${data.items?.length || 0}`);
     const { newItems, items: itemsInPayload, ...results } = data;
 
-    // 2. Link New Items
+    // 2. Link New Items (Disabled due to schema changes)
+    /*
     if (newItems && Array.isArray(newItems)) {
       for (const item of newItems) {
         await this.prisma.item_masters.update({
@@ -796,6 +797,7 @@ export class InventoryService {
         });
       }
     }
+    */
 
     // 3. Process Item Counts & Update Stock Levels
     const items = itemsInPayload;
