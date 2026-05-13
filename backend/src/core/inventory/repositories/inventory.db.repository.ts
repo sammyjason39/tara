@@ -40,6 +40,16 @@ export class InventoryDbRepository implements IInventoryRepository {
   async getDashboard(ctx: TenantContext, location_id?: string): Promise<any> {
     const baseScope = { ...MultiTenancyUtil.getScope(ctx) };
     
+    // Fetch company currency
+    const company = await this.prisma.companies.findFirst({
+      where: { 
+        tenant_id: ctx.tenant_id,
+        deleted_at: null
+      },
+      select: { currency: true }
+    });
+    const currency = company?.currency || "USD";
+    
     // Detect if location_id is actually a Branch (Tenant) ID
     let branchTenantId: string | undefined;
     const isLocationFiltered = location_id && location_id !== "all" && location_id !== "";
@@ -122,6 +132,7 @@ export class InventoryDbRepository implements IInventoryRepository {
       pending_receipt_syncs: pendingReceiptSyncs,
       low_stock_count: lowStockCount,
       expiry_warning_count: expiryWarningCount,
+      currency,
     };
   }
 
@@ -340,10 +351,14 @@ export class InventoryDbRepository implements IInventoryRepository {
     item_id?: string
   ): Promise<StockBalance[]> {
     const skip = (page - 1) * limit;
-    const where: any = { ...MultiTenancyUtil.getScope(ctx) };
+    
+    // If item_id is provided, we want cross-branch visibility for the item details modal
+    const where: any = item_id 
+      ? { tenant_id: ctx.tenant_id, product_id: item_id }
+      : { ...MultiTenancyUtil.getScope(ctx) };
+
     if (location_id) where.location_id = location_id;
     if (department_id) where.department_id = department_id;
-    if (item_id) where.product_id = item_id;
 
     if (search) {
       where.item_masters = {
@@ -400,10 +415,13 @@ export class InventoryDbRepository implements IInventoryRepository {
     category_id?: string,
     item_id?: string
   ): Promise<number> {
-    const where: any = { ...MultiTenancyUtil.getScope(ctx) };
+    // Consistent scoping with getBalances
+    const where: any = item_id 
+      ? { tenant_id: ctx.tenant_id, product_id: item_id }
+      : { ...MultiTenancyUtil.getScope(ctx) };
+
     if (location_id) where.location_id = location_id;
     if (department_id) where.department_id = department_id;
-    if (item_id) where.product_id = item_id;
 
     if (search) {
       where.item_masters = {

@@ -35,6 +35,8 @@ export type InventoryDashboard = {
   total_departments: number;
   total_on_hand_qty: number;
   total_valuation: number;
+  capital_value?: number;
+  currency?: string;
   low_stock_count: number;
   expiry_warning_count: number;
   pending_adjustments: number;

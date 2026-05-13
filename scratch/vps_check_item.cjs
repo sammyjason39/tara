@@ -2,21 +2,17 @@ const { Client } = require('ssh2');
 
 const conn = new Client();
 conn.on('ready', () => {
-    console.log('SSH Ready. Pulling and rebuilding...');
-    const cmd = `cd zenvix && git pull origin main && ./vps-up.sh`;
+    console.log('SSH Ready');
+    const sql = `SELECT id FROM item_masters WHERE name = 'P.FRIDA MIX FLOWER W/GOLD HOOK';`;
+    
+    const cmd = `docker exec bfs-db psql -U zenvix -d zenvix_prod -c "${sql}"`;
     
     conn.exec(cmd, (err, stream) => {
         if (err) throw err;
         let output = '';
-        stream.on('data', (data) => { 
-            process.stdout.write(''+data);
-            output += data; 
-        });
-        stream.stderr.on('data', (data) => {
-            process.stderr.write(''+data);
-        });
+        stream.on('data', (data) => { output += data; });
         stream.on('close', () => {
-            console.log('\nCommand finished.');
+            console.log('Item Result:\n' + output);
             conn.end();
         });
     });

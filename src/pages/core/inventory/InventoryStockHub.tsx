@@ -3,6 +3,7 @@ import { useSession } from "@/core/security/session";
 import { apiRequest } from "@/core/api/apiClient";
 import { inventoryService } from "@/core/services/inventory/inventoryService";
 import { retailService } from "@/core/services/retail/retailService";
+import { formatCurrency } from "@/lib/utils/currency";
 import { Button } from "@/components/ui/button";
 import { Input as UIInput } from "@/components/ui/input";
 import {
@@ -250,7 +251,8 @@ export default function InventoryStockHub() {
       lowStock: statsData?.low_stock_count ?? statsData?.lowStockCount ?? 0,
       outOfStock: statsData?.out_of_stock_count ?? statsData?.outOfStockCount ?? items.filter(i => (i.currentStock || 0) === 0).length,
       totalValue: statsData?.total_valuation ?? statsData?.totalValuation ?? 0,
-      capitalValue: statsData?.capital_value ?? statsData?.capitalValue ?? 0
+      capitalValue: statsData?.capital_value ?? statsData?.capitalValue ?? 0,
+      currency: statsData?.currency || "USD"
     };
   }, [globalStats, totalCount, items]);
 
@@ -354,7 +356,9 @@ export default function InventoryStockHub() {
             <Archive className="h-4 w-4 text-indigo-500 opacity-50" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black tracking-tighter text-indigo-600">${stats.capitalValue?.toLocaleString() ?? "0"}</div>
+            <div className="text-3xl font-black tracking-tighter text-indigo-600">
+              {formatCurrency(stats.capitalValue, stats.currency)}
+            </div>
             <p className="text-[10px] font-bold text-indigo-500 mt-1 uppercase tracking-widest">Initial Investment</p>
           </CardContent>
         </Card>
@@ -365,7 +369,9 @@ export default function InventoryStockHub() {
             <BarChart3 className="h-4 w-4 text-emerald-500 opacity-50" />
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black tracking-tighter text-emerald-600">${stats.totalValue?.toLocaleString() ?? "0"}</div>
+            <div className="text-3xl font-black tracking-tighter text-emerald-600">
+              {formatCurrency(stats.totalValue, stats.currency)}
+            </div>
             <p className="text-[10px] font-bold text-emerald-500 mt-1 uppercase tracking-widest">Financial Asset Value</p>
           </CardContent>
         </Card>

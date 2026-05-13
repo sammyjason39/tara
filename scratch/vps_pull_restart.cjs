@@ -2,21 +2,17 @@ const { Client } = require('ssh2');
 
 const conn = new Client();
 conn.on('ready', () => {
-    console.log('SSH Ready. Pulling and rebuilding...');
-    const cmd = `cd zenvix && git pull origin main && ./vps-up.sh`;
+    console.log('SSH Ready');
+    
+    // Pull and restart
+    const cmd = 'cd business-flow-suite-v2 && git pull origin main && docker compose restart bfs-backend';
     
     conn.exec(cmd, (err, stream) => {
         if (err) throw err;
         let output = '';
-        stream.on('data', (data) => { 
-            process.stdout.write(''+data);
-            output += data; 
-        });
-        stream.stderr.on('data', (data) => {
-            process.stderr.write(''+data);
-        });
+        stream.on('data', (data) => { output += data; });
         stream.on('close', () => {
-            console.log('\nCommand finished.');
+            console.log('VPS Deployment Output:\n' + output);
             conn.end();
         });
     });
