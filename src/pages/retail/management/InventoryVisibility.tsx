@@ -515,27 +515,64 @@ const InventoryVisibility = () => {
   }, [toast]);
 
   const handleBarcodeKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
+    async (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key !== "Enter") return;
       const sku = barcodeInput.trim();
       if (!sku) return;
 
       setBarcodeInput("");
 
-      // Find item in master inventory for this store
-      const product = inventory.find((i) => i.sku === sku || i.barcode === sku);
+      // 1. Find item in local branch inventory list
+      let product = inventory.find((i) => i.sku === sku || i.barcode === sku);
+
+      // 2. If not found in branch list, search in Master Inventory (Tenant-wide)
+      if (!product && tenantId && session) {
+        setIsUpdating(true);
+        try {
+          const masterResults = await retailService.listInventory(tenantId, session, {
+            q: sku,
+            pageSize: 1,
+          });
+          const items = Array.isArray(masterResults) ? masterResults : (masterResults as any).items || [];
+          const masterItem = items[0];
+          
+          if (masterItem) {
+            product = {
+              id: masterItem.id,
+              sku: masterItem.sku,
+              name: masterItem.name,
+              category: masterItem.categoryName || "Uncategorized",
+              categoryId: masterItem.categoryId || "",
+              onHand: 0, // Not in branch, so expected is 0
+              reserved: 0,
+              available: 0,
+              minBuffer: 0,
+              status: masterItem.status || "ok",
+              barcode: masterItem.barcode,
+              price: masterItem.price,
+              unit: masterItem.unit,
+              type: masterItem.type,
+              description: masterItem.description,
+            };
+          }
+        } catch (err) {
+          console.error("[Opname] Master lookup failed:", err);
+        } finally {
+          setIsUpdating(false);
+        }
+      }
 
       if (!product) {
         toast({
-          title: "SKU Not Found",
-          description: `Item ${sku} is not registered in this store's inventory.`,
+          title: "Item Not Found",
+          description: `SKU/Barcode ${sku} was not found in the master catalog.`,
           variant: "destructive",
         });
         return;
       }
 
       setOpnameEntries((prev) => {
-        const idx = prev.findIndex((entry) => entry.sku === product.sku);
+        const idx = prev.findIndex((entry) => entry.sku === product!.sku);
 
         if (idx !== -1) {
           // Increment existing
@@ -546,28 +583,28 @@ const InventoryVisibility = () => {
           };
           toast({
             title: "Count Incremented",
-            description: `${product.name}: ${updated[idx].counted}`,
+            description: `${product!.name}: ${updated[idx].counted}`,
           });
           return updated;
         }
 
         // Add new entry
-        toast({ title: "Item Added", description: product.name });
+        toast({ title: "Item Added", description: product!.name });
         return [
           ...prev,
           {
-            id: product.id,
-            sku: product.sku,
-            name: product.name,
-            expected: product.onHand,
+            id: product!.id,
+            sku: product!.sku,
+            name: product!.name,
+            expected: product!.onHand,
             counted: 1,
-            status: product.status,
-            categoryId: product.categoryId,
+            status: product!.status,
+            categoryId: product!.categoryId,
           },
         ];
       });
     },
-    [barcodeInput, inventory, toast],
+    [barcodeInput, inventory, tenantId, session, toast],
   );
 
   const submitOpname = useCallback(async () => {
@@ -666,10 +703,18 @@ const InventoryVisibility = () => {
         subtitle={`${selectedStore?.name ?? "Select Store"} • Operations Gateway`}
         icon={Package}
         stats={[
-          { label: "Total SKUs", value: stats?.totalSKUs ?? 0 },
-          { label: "Total SOH", value: stats?.totalSOH ?? 0 },
-          { label: "Critical", value: stats?.critical ?? 0, color: "text-destructive" },
-          { label: "Low", value: stats?.low ?? 0, color: "text-amber-500" },
+          { label: "Branch SKUs", value: stats?.totalSKUs ?? 0 },
+          { label: "Branch SOH", value: stats?.totalSOH ?? 0 },
+          { 
+            label: "Branch Value", 
+            value: stats?.totalValue ? new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: stats.currency || "USD",
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0,
+            }).format(stats.totalValue) : "0", 
+            color: "text-emerald-500" 
+          },
         ]}
         actions={
           <div className="flex items-center gap-3">
@@ -737,6 +782,9 @@ const InventoryVisibility = () => {
 
           <TabsContent value="ledger" className="flex-1 m-0 p-8">
             <div className="max-w-[1600px] mx-auto space-y-8">
+              {stats && (
+                <InventoryKpiBar stats={stats} isAggregating={isLoading} />
+              )}
               <InventoryFilterHub
                 search={filters.search}
                 onSearchChange={(v) => setFilters(prev => ({ ...prev, search: v }))}

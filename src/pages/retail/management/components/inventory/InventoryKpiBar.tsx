@@ -39,19 +39,19 @@ export const InventoryKpiBar: React.FC<Props> = ({ stats, isAggregating }) => {
 
   const kpis = [
     {
-      label: "Total SKUs",
+      label: "Branch SKUs",
       val: stats.totalSKUs,
       color: "slate",
       sub: "Active items",
     },
     {
-      label: "Stock On Hand",
+      label: "Branch On Hand",
       val: isAggregating ? "…" : formatValue(stats.totalSOH),
       color: "blue",
       sub: "All units",
     },
     {
-      label: "Available-to-Sell",
+      label: "Branch ATS",
       val: isAggregating ? "…" : formatValue(stats.totalATS),
       color: "emerald",
       sub: "Unreserved",
@@ -63,10 +63,10 @@ export const InventoryKpiBar: React.FC<Props> = ({ stats, isAggregating }) => {
       sub: "Below buffer",
     },
     {
-      label: "Total Valuation",
+      label: "Branch Valuation",
       val: isAggregating ? "…" : formatCurrency(stats.totalValue),
       color: "purple",
-      sub: "Branch Value",
+      sub: "Local Value",
     },
   ] as const;
 
