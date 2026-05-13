@@ -702,7 +702,7 @@ export class RetailService {
   }
 
   async getInventoryStats(ctx: TenantContext,
-    options?: { category_id?: string; q?: string },
+    options?: { category_id?: string; q?: string; location_id?: string },
   ) {
     return this.retailRepository.getInventoryStats(ctx, options);
   }

@@ -82,14 +82,19 @@ export class RetailController {
   async getInventoryStats(
     @Req() request: RequestWithTenant,
     @Query("category_id") category_id?: string,
+    @Query("location_id") location_id?: string,
     @Query("q") q?: string,
   ) {
-    const { tenant_id } = request.tenantContext;
-    const stats = await this.retailService.getInventoryStats(request.tenantContext, {
+    const ctx = request.tenantContext;
+    if (location_id) {
+      ctx.location_id = location_id;
+    }
+    const stats = await this.retailService.getInventoryStats(ctx, {
       category_id,
+      location_id: location_id || ctx.location_id,
       q,
     });
-    return this.respond(request.tenantContext, stats);
+    return this.respond(ctx, stats);
   }
 
   @Get("inventory/status")
