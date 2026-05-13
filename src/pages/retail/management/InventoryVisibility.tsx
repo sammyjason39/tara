@@ -126,6 +126,7 @@ const InventoryVisibility = () => {
   const [stores, setStores] = useState<RetailStore[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAggregating, setIsAggregating] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
   const selectedStore = useMemo(
