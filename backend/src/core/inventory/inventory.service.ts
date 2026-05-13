@@ -967,7 +967,7 @@ export class InventoryService {
       this.logger.error(`Failed to generate audit report: ${err.message}`);
     }
   }
-
+  */
 
   async getIntegrationEvents(ctx: TenantContext) {
     return this.repository.getIntegrationEvents(ctx);
