@@ -922,10 +922,11 @@ export class RetailDbRepository implements IRetailRepository {
       ];
     }
 
-    if (scope.location_id) {
+    const targetLocationId = options?.location_id || scope.location_id;
+    if (targetLocationId) {
       where.stock_levels = {
         some: {
-          location_id: scope.location_id
+          location_id: targetLocationId
         }
       };
     }
@@ -938,7 +939,7 @@ export class RetailDbRepository implements IRetailRepository {
           selling_price: true,
           product_projections: true,
           stock_levels: {
-            where: scope.location_id ? { location_id: scope.location_id } : undefined,
+            where: targetLocationId ? { location_id: targetLocationId } : undefined,
             select: {
               on_hand: true,
               available: true,
