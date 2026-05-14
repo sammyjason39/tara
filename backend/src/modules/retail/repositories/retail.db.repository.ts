@@ -73,6 +73,7 @@ export class RetailDbRepository implements IRetailRepository {
       where,
       orderBy: { created_at: "desc" },
     });
+    console.log(`[RetailDbRepository] listStores: Found ${store.length} stores for where:`, JSON.stringify(where));
     return store.map((s: stores) => this.mapStore(s));
   }
 
