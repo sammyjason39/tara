@@ -113,7 +113,7 @@ const MOCK_AUDIT_LOG: AuditEntry[] = [
 ];
 
 const InventoryVisibility = () => {
-  const { session, updateBranch } = useAuth();
+  const { session, updateBranch, updateLocation } = useAuth();
   const { toast } = useToast();
 
   const [inventory, setInventory] = useState<InventoryItemView[]>([]);
