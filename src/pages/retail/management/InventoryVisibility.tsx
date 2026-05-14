@@ -371,6 +371,19 @@ const InventoryVisibility = () => {
     }
   }, [locationId, stores]);
 
+  // Sync local locationId when the global branch selector (navbar) changes session.location_id
+  useEffect(() => {
+    const sessionLoc = session?.location_id;
+    if (!sessionLoc || !stores.length) return;
+    // Only sync if the session location actually maps to a known retail store
+    const matchedStore = stores.find((s) => (s.locationId || s.id) === sessionLoc);
+    if (matchedStore && sessionLoc !== locationId) {
+      isFetchingRef.current = false; // allow fresh fetch
+      setLocationId(sessionLoc);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.location_id, stores.length]);
+
   useEffect(() => {
     if (tenantId) {
       fetchStores();
