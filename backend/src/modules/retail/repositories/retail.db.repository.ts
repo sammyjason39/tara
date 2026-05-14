@@ -2752,9 +2752,14 @@ export class RetailDbRepository implements IRetailRepository {
       description: customDesc,
       imageUrl: (() => {
         // Priority 1: item_images table (primary image)
+        // item_images.url already contains the full path: /v1/inventory/images/tnt-.../file.jpg
+        // so we only prefix /api (not /api/v1/inventory/images/ again)
         const primaryImg = p.item_images?.find((img: any) => img.is_primary) || p.item_images?.[0];
-        if (primaryImg?.url) return `/api/v1/inventory/images/${primaryImg.url}`;
-        // Priority 2: legacy image_url field
+        if (primaryImg?.url) {
+          const url = primaryImg.url as string;
+          return url.startsWith('/api') ? url : `/api${url}`;
+        }
+        // Priority 2: legacy image_url field (just a filename, needs full prefix)
         if (p.image_url) return `/api/v1/inventory/images/${p.image_url}`;
         return null;
       })(),
