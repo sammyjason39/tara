@@ -357,7 +357,7 @@ export const retailService = {
       minPrice?: number;
       maxPrice?: number;
       q?: string;
-      sortBy?: "name" | "price" | "createdAt";
+      sortBy?: "name" | "price" | "createdAt" | "quantity";
       sortDir?: "asc" | "desc";
       locationId?: string;
     },

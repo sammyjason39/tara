@@ -76,6 +76,12 @@ export const FiltersBar: React.FC<Props> = ({
           <SelectItem value="price-desc" className="font-bold italic">
             Price (High → Low)
           </SelectItem>
+          <SelectItem value="quantity-asc" className="font-bold italic">
+            Stock (Low → High)
+          </SelectItem>
+          <SelectItem value="quantity-desc" className="font-bold italic">
+            Stock (High → Low)
+          </SelectItem>
         </SelectContent>
       </Select>
       <Select

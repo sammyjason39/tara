@@ -446,6 +446,55 @@ export class RetailDbRepository implements IRetailRepository {
       };
     }
 
+    // Handle Quantity Sort (Requires Raw SQL or manual reordering)
+    if (options?.sortBy === "quantity") {
+      const locationId = options.location_id || "";
+      const rawSql = `
+        SELECT p.id
+        FROM item_masters p
+        LEFT JOIN stock_levels s ON s.product_id = p.id AND s.location_id = '${locationId}'
+        WHERE p.tenant_id = '${scope.tenant_id}' AND p.status = 'active'
+        ${options.category_id ? `AND p.category_id = '${options.category_id}'` : ""}
+        ${options.type ? `AND p.type = '${options.type}'` : ""}
+        GROUP BY p.id
+        ORDER BY SUM(COALESCE(s.on_hand, 0)) ${orderDir.toUpperCase()}
+        LIMIT ${pageSize} OFFSET ${skip}
+      `;
+      
+      const orderedIds = await this.prisma.$queryRawUnsafe<{ id: string }[]>(rawSql);
+      
+      const products = await this.prisma.item_masters.findMany({
+        where: { id: { in: (orderedIds || []).map(p => p.id) } },
+        include: {
+          product_categories: true,
+          stock_levels: options?.location_id ? { where: { location_id: options.location_id } } : true,
+          product_projections: true,
+        },
+      });
+
+      const total = await this.prisma.item_masters.count({ where });
+      const configs = await this.prisma.label_configs.findMany({
+        where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }), module_type: "RETAIL" },
+      });
+
+      const productMap = new Map(products.map(p => [p.id, p]));
+      const orderedProducts = (orderedIds || []).map(o => productMap.get(o.id)).filter(Boolean);
+
+      let display_labels = {};
+      const locConfig = configs.find((c: any) => c.location_id === options?.location_id);
+      const globalConfig = configs.find((c: any) => c.location_id === null);
+      if (locConfig) display_labels = locConfig.labels as any;
+      else if (globalConfig) display_labels = globalConfig.labels as any;
+
+      return {
+        items: orderedProducts.map((p: any) => this.mapProduct(p, options?.location_id, "USD")),
+        display_labels,
+        total,
+        page,
+        pageSize,
+      };
+    }
+
     const [total, products, configs] = await this.prisma.$transaction([
       this.prisma.item_masters.count({
         where,
@@ -2702,6 +2751,7 @@ export class RetailDbRepository implements IRetailRepository {
       barcode: p.barcode,
       name: customName,
       description: customDesc,
+      imageUrl: p.image_url ? `/api/v1/inventory/images/${p.image_url}` : null,
       category_id: p.category_id,
       categoryName: p.product_categories?.name,
       base_price: customPrice,

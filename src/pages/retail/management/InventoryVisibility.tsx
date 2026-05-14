@@ -210,6 +210,8 @@ const InventoryVisibility = () => {
         page: page,
         pageSize: PAGE_SIZE,
         locationId: locationId,
+        sortBy: filters.sortBy.split("-")[0] as any,
+        sortDir: filters.sortBy.split("-")[1] as any,
       });
 
       if (!data) {

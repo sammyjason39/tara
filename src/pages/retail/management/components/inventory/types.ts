@@ -24,5 +24,5 @@ export type InventoryFilters = {
   type: string;
   minPrice?: number;
   maxPrice?: number;
-  sortBy: "name-asc" | "name-desc" | "price-asc" | "price-desc";
+  sortBy: "name-asc" | "name-desc" | "price-asc" | "price-desc" | "quantity-asc" | "quantity-desc";
 };

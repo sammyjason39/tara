@@ -155,6 +155,7 @@ export class RetailProduct {
   variants: ProductVariant[];
   seo?: SEOData;
   stock?: number;
+  imageUrl?: string;
   metadata?: Record<string, any>;
   created_at: Date;
   updated_at: Date;
