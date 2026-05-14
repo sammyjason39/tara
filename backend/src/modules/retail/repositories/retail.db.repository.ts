@@ -437,6 +437,14 @@ export class RetailDbRepository implements IRetailRepository {
       ];
     }
 
+    if (options?.location_id) {
+      where.stock_levels = {
+        some: {
+          location_id: options.location_id
+        }
+      };
+    }
+
     const [total, products, configs] = await this.prisma.$transaction([
       this.prisma.item_masters.count({
         where,
@@ -914,11 +922,20 @@ export class RetailDbRepository implements IRetailRepository {
       ];
     }
 
+    if (scope.location_id) {
+      where.stock_levels = {
+        some: {
+          location_id: scope.location_id
+        }
+      };
+    }
+
     const [products, company] = await Promise.all([
       this.prisma.item_masters.findMany({
         where,
         select: {
           base_price: true,
+          product_projections: true,
           stock_levels: {
             where: scope.location_id ? { location_id: scope.location_id } : undefined,
             select: {
@@ -955,13 +972,13 @@ export class RetailDbRepository implements IRetailRepository {
     products.forEach((p: any) => {
       const totalOnHand = p.stock_levels.reduce(
         (sum: Prisma.Decimal, s: any) =>
-          sum.add(new Prisma.Decimal(String(s.on_hand || 0) as any)),
+          sum.add(new Prisma.Decimal(s.on_hand?.toString() || "0")),
         new Prisma.Decimal(0) as any,
       );
 
       const currentATS = p.stock_levels.reduce(
         (sum: Prisma.Decimal, s: any) =>
-          sum.add(new Prisma.Decimal(String(s.available || 0) as any)),
+          sum.add(new Prisma.Decimal(s.available?.toString() || "0")),
         new Prisma.Decimal(0) as any,
       );
 
@@ -970,9 +987,25 @@ export class RetailDbRepository implements IRetailRepository {
         0
       );
 
+      // Resolve price (branch specific or base)
+      let price = new Prisma.Decimal(p.base_price?.toString() || "0");
+      if (p.product_projections && p.product_projections.length > 0) {
+        const locProj = p.product_projections.find(
+          (proj: any) =>
+            proj.location_id === scope.location_id && proj.module_type === "RETAIL",
+        );
+        const globalProj = p.product_projections.find(
+          (proj: any) => proj.location_id === null && proj.module_type === "RETAIL",
+        );
+        const activeProj = locProj || globalProj;
+        if (activeProj?.price) {
+          price = new Prisma.Decimal(activeProj.price.toString());
+        }
+      }
+
       stats.totalSOH = stats.totalSOH.add(totalOnHand);
       stats.totalATS = stats.totalATS.add(currentATS);
-      stats.totalValue = stats.totalValue.add(totalOnHand.mul(new Prisma.Decimal(String(p.base_price || 0))));
+      stats.totalValue = stats.totalValue.add(totalOnHand.mul(price));
 
       if (totalOnHand.lte(0)) {
         stats.outOfStockCount++;

@@ -1,6 +1,7 @@
 # Zenvix VPS Configuration & Secrets
 
-**Server IP:** `150.109.15.108`
+**Public Server IP:** `150.109.15.108`
+**Private Server IP:** `10.3.4.181`
 **SSH User:** `ubuntu`
 **SSH Password:** `ocean-65%-forest`
 **Old VPS IP:** `43.156.118.56` (Password: `forest-38$-storm`)
