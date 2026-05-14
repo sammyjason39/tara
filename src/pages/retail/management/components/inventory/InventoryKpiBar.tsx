@@ -63,12 +63,12 @@ export const InventoryKpiBar: React.FC<Props> = ({ stats, isAggregating }) => {
 
       <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-slate-900/50 rounded-[2.5rem] overflow-hidden group">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Branch ATS</CardTitle>
-          <TrendingUp className="h-4 w-4 text-emerald-500 opacity-50" />
+          <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Out of Stock</CardTitle>
+          <AlertTriangle className="h-4 w-4 text-rose-500 opacity-50" />
         </CardHeader>
         <CardContent>
-          <div className="text-3xl font-black tracking-tighter text-emerald-600">{isAggregating ? "..." : formatValue(stats.totalATS)}</div>
-          <p className="text-[10px] font-bold text-emerald-500 mt-1 uppercase tracking-widest italic">Available to sell</p>
+          <div className="text-3xl font-black tracking-tighter text-rose-600">{isAggregating ? "..." : formatValue(stats.critical)}</div>
+          <p className="text-[10px] font-bold text-rose-500 mt-1 uppercase tracking-widest italic">Critical Shortage</p>
         </CardContent>
       </Card>
 
