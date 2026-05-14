@@ -936,7 +936,7 @@ export class InventoryDbRepository implements IInventoryRepository {
 
   async itemExistsBySku(ctx: TenantContext, sku: string): Promise<boolean> {
     const count = await this.prisma.item_masters.count({
-      where: { ...MultiTenancyUtil.getScope(ctx), sku: sku },
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }), sku: sku },
     });
     return count > 0;
   }
@@ -1189,7 +1189,7 @@ export class InventoryDbRepository implements IInventoryRepository {
   ): Promise<string | null> {
     const product = await this.prisma.item_masters.findFirst({
       where: {
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         product_categories: { name: category },
       },
       orderBy: { sku: "desc" },
@@ -1772,7 +1772,7 @@ export class InventoryDbRepository implements IInventoryRepository {
   // --- Category Management ---
   async getProductCategories(ctx: TenantContext): Promise<any[]> {
     return this.prisma.product_categories.findMany({
-      where: MultiTenancyUtil.getScope(ctx),
+      where: MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
       orderBy: { name: "asc" },
     });
   }
