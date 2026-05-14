@@ -389,7 +389,7 @@ export class RetailDbRepository implements IRetailRepository {
       minPrice?: number;
       maxPrice?: number;
       q?: string;
-      sortBy?: "name" | "price" | "created_at";
+      sortBy?: "name" | "price" | "created_at" | "quantity";
       sortDir?: "asc" | "desc";
       location_id?: string;
     },

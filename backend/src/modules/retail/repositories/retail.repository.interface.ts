@@ -91,7 +91,7 @@ export abstract class IRetailRepository {
       minPrice?: number | string;
       maxPrice?: number | string;
       q?: string;
-      sortBy?: "name" | "price" | "created_at";
+      sortBy?: "name" | "price" | "created_at" | "quantity";
       sortDir?: "asc" | "desc";
     },
   ): Promise<{
