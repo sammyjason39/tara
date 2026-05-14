@@ -349,7 +349,13 @@ const InventoryVisibility = () => {
       setStores(combined);
       
       if (combined.length > 0 && !locationId) {
-        const firstStore = combined[0];
+        // Restore previously active branch from session (RetailContext sets session.location_id = store.id)
+        const sessionLoc = session?.location_id;
+        const sessionStore = sessionLoc
+          ? combined.find((s) => s.id === sessionLoc) ||
+            combined.find((s) => (s.locationId || s.id) === sessionLoc)
+          : null;
+        const firstStore = sessionStore || combined[0];
         if (firstStore) {
           setSelectedStoreId(firstStore.id);
           const locId = firstStore.locationId || firstStore.id;
@@ -371,15 +377,23 @@ const InventoryVisibility = () => {
     }
   }, [locationId, stores]);
 
-  // Sync local locationId when the global branch selector (navbar) changes session.location_id
+  // Sync local locationId when the global branch selector (navbar) changes session.location_id.
+  // IMPORTANT: RetailContext.setStore() calls updateLocation(store.id), so session.location_id
+  // holds the store UUID (e.g. "c2221884-..."), NOT the location UUID (e.g. "ccd6c269-...").
+  // We must map store.id → store.locationId to get the correct location UUID for the API.
   useEffect(() => {
     const sessionLoc = session?.location_id;
     if (!sessionLoc || !stores.length) return;
-    // Only sync if the session location actually maps to a known retail store
-    const matchedStore = stores.find((s) => (s.locationId || s.id) === sessionLoc);
-    if (matchedStore && sessionLoc !== locationId) {
-      isFetchingRef.current = false; // allow fresh fetch
-      setLocationId(sessionLoc);
+    // Match by store.id (set by RetailContext) OR by locationId (set by InventoryFilterHub)
+    const matchedStore =
+      stores.find((s) => s.id === sessionLoc) ||
+      stores.find((s) => (s.locationId || s.id) === sessionLoc);
+    if (matchedStore) {
+      const correctLocId = matchedStore.locationId || matchedStore.id;
+      if (correctLocId !== locationId) {
+        isFetchingRef.current = false; // allow fresh fetch
+        setLocationId(correctLocId);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.location_id, stores.length]);
