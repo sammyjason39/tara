@@ -60,17 +60,13 @@ export class RetailService {
     return this.retailRepository.listStores(ctx, location_id);
   }
 
-  async getStores(ctx: TenantContext) {
-    return this.retailRepository.getStores(ctx);
-  }
-
   private async resolveLocationId(ctx: TenantContext, id?: string): Promise<string | undefined> {
     if (!id) return undefined;
     
     // Check if it's already a physical location ID (usually starts with a prefix or is known)
     // Or just try to find a store with this ID and get its location_id
-    const stores = await this.getStores(ctx);
-    const store = stores.find(s => s.id === id);
+    const stores = await this.listStores(ctx);
+    const store = stores.find((s: RetailStore) => s.id === id);
     return store?.location_id || id;
   }
 
