@@ -687,8 +687,12 @@ export class UpdateProductDto {
   userRole?: string;
 
   @IsOptional()
-  @IsString()
+  @IsNumber()
   location_id?: string;
+
+  @IsOptional()
+  @IsNumber()
+  min_buffer?: number;
 }
 
 // ============================================================

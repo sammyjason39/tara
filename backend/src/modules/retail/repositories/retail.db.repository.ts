@@ -529,7 +529,7 @@ export class RetailDbRepository implements IRetailRepository {
     ];
 
     if (
-      (data.stock_on_hand !== undefined || data.reserved !== undefined) &&
+      (data.stock_on_hand !== undefined || data.reserved !== undefined || data.min_buffer !== undefined) &&
       location_id
     ) {
       const existingStock = await this.prisma.stock_levels.findFirst({
@@ -544,6 +544,10 @@ export class RetailDbRepository implements IRetailRepository {
         data.reserved !== undefined
           ? data.reserved
           : existingStock?.reserved || 0;
+      const min_buffer = 
+        data.min_buffer !== undefined
+          ? data.min_buffer
+          : existingStock?.min_buffer || 0;
       const available = (onHand as unknown as Prisma.Decimal).sub(
         reserved as unknown as Prisma.Decimal,
       );
@@ -552,7 +556,7 @@ export class RetailDbRepository implements IRetailRepository {
         txOperations.push(
           this.prisma.stock_levels.update({
             where: { id: existingStock.id },
-            data: { on_hand: onHand, reserved, available },
+            data: { on_hand: onHand, reserved, available, min_buffer },
           }),
         );
       } else {
@@ -561,12 +565,13 @@ export class RetailDbRepository implements IRetailRepository {
             data: {
               id: uuidv4(),
               updated_at: new Date(),
-              ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
+              tenant_id: ctx.tenant_id,
               location_id: location_id,
               product_id: product_id,
               on_hand: onHand,
               reserved,
               available,
+              min_buffer,
             },
           }),
         );
@@ -1023,6 +1028,7 @@ export class RetailDbRepository implements IRetailRepository {
       }
     });
 
+    console.log(`[RetailDbRepository] getInventoryStats RESULT for ${targetLocationId}:`, JSON.stringify(stats));
     return stats;
   }
 

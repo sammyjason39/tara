@@ -124,6 +124,9 @@ const InventoryVisibility = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedStoreId, setSelectedStoreId] = useState("");
+  const [isBufferDialogOpen, setIsBufferDialogOpen] = useState(false);
+  const [bufferValue, setBufferValue] = useState<number>(0);
+  const [isUpdatingBuffer, setIsUpdatingBuffer] = useState(false);
   const [isAggregating, setIsAggregating] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
   const [locationId, setLocationId] = useState<string | undefined>(session?.location_id);
@@ -163,6 +166,7 @@ const InventoryVisibility = () => {
     { id: string; name: string }[]
   >([]);
   const [detailItem, setDetailItem] = useState<InventoryItemView | null>(null);
+  const [selectedItem, setSelectedItem] = useState<InventoryItemView | null>(null);
   const [movementType, setMovementType] = useState<MovementType | null>(null);
   const [isCategoryManagerOpen, setIsCategoryManagerOpen] = useState(false);
   const [isReclassifyOpen, setIsReclassifyOpen] = useState(false);
@@ -191,8 +195,6 @@ const InventoryVisibility = () => {
 
   const tenantId = session?.tenant_id;
   const userId = session?.user_id;
-  // locationId is already managed by state [locationId, setLocationId] 
-  // ensuring UI updates immediately even before session propagates
 
   const isFetchingRef = React.useRef(false);
   const fetchInventory = useCallback(async () => {
@@ -355,7 +357,6 @@ const InventoryVisibility = () => {
     }
   }, [tenantId, session, locationId, updateLocation]);
 
-  // Sync selectedStoreId with locationId from session
   useEffect(() => {
     if (locationId && stores.length > 0) {
       const store = stores.find((s) => (s.locationId || s.id) === locationId);
@@ -379,7 +380,6 @@ const InventoryVisibility = () => {
     }
   }, [fetchInventory, fetchPendingItems, tenantId]);
 
-  // Reset page when filters or store changes
   useEffect(() => {
     setPage(1);
   }, [
@@ -393,6 +393,31 @@ const InventoryVisibility = () => {
   const handleFilterChange = (patch: Partial<InventoryFilters>) => {
     setFilters((prev) => ({ ...prev, ...patch }));
     setPage(1);
+  };
+
+  const handleUpdateBuffer = async () => {
+    if (!selectedItem || !locationId) return;
+    setIsUpdatingBuffer(true);
+    try {
+      await retailService.updateProduct(tenantId!, session!, selectedItem.id, {
+        min_buffer: bufferValue,
+        location_id: locationId
+      });
+      toast({
+        title: "Threshold Updated",
+        description: `Buffer threshold for ${selectedItem.name} set to ${bufferValue}`,
+      });
+      setIsBufferDialogOpen(false);
+      fetchInventory();
+    } catch (error) {
+      toast({
+        title: "Update Failed",
+        description: "Could not update stock threshold. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingBuffer(false);
+    }
   };
 
   const handleSync = useCallback(async () => {
@@ -490,8 +515,6 @@ const InventoryVisibility = () => {
     [movementType, locationId, session?.userId, toast],
   );
 
-
-  // ── Opname handlers ───────────────────────────────────────
   const startOpname = useCallback(() => {
     setOpnameEntries([]);
     setOpnameActive(true);
@@ -649,7 +672,6 @@ const InventoryVisibility = () => {
     fetchInventory,
   ]);
 
-
   const handleCountChange = useCallback((index: number, value: string) => {
     setOpnameEntries((prev) =>
       (Array.isArray(prev) ? prev : []).map((entry, i) =>
@@ -660,9 +682,8 @@ const InventoryVisibility = () => {
     );
   }, []);
 
-  // Global barcode scanner integration for multi-workflow
   useBarcodeScanner((barcode) => {
-    if (!opnameActive && !movementType && !editItem && !detailItem) {
+    if (!opnameActive && !movementType && !detailItem) {
       const item = inventory.find((i) => i.sku === barcode);
       if (item) {
         toast({
@@ -796,7 +817,11 @@ const InventoryVisibility = () => {
                   currentCount={inventory.length}
                   onPageChange={setPage}
                   statusBadge={statusBadge}
-                  onEdit={(item) => setDetailItem(item)}
+                  onEdit={(item) => {
+                    setSelectedItem(item);
+                    setBufferValue(item.minBuffer);
+                    setIsBufferDialogOpen(true);
+                  }}
                   onPrint={(item) => {
                     setPrintItems([
                       {
@@ -808,7 +833,10 @@ const InventoryVisibility = () => {
                       },
                     ]);
                   }}
-                  onMovement={(type) => setMovementType(type)}
+                  onMovement={(type) => {
+                    setSelectedItem(inventory.find(i => i.id === selectedItem?.id) || null);
+                    setMovementType(type);
+                  }}
                   onReclassify={(item) => {
                     setSelectedItemForReclassify(item);
                     setNewCategoryId(item.categoryId || "");
@@ -1055,6 +1083,62 @@ const InventoryVisibility = () => {
         onClose={() => setIsCategoryManagerOpen(false)}
         onCategoriesChange={fetchCategories}
       />
+
+      <Dialog open={isBufferDialogOpen} onOpenChange={setIsBufferDialogOpen}>
+        <DialogContent className="max-w-md rounded-[2.5rem] bg-slate-900/90 backdrop-blur-2xl border-white/10 shadow-2xl p-8">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black italic uppercase tracking-widest text-white flex items-center gap-3">
+              <ShieldCheck className="w-6 h-6 text-indigo-400" />
+              Stock Threshold
+            </DialogTitle>
+            <DialogDescription className="text-slate-400 font-bold italic text-xs uppercase tracking-wider">
+              Set minimum buffer for {selectedItem?.name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-6">
+            <div className="space-y-3">
+              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Min Buffer Quantity</Label>
+              <div className="relative">
+                <input
+                  type="number"
+                  className="w-full h-14 bg-slate-950/50 border border-white/5 rounded-2xl px-6 font-black italic text-lg text-white focus:ring-2 focus:ring-indigo-500/20 transition-all outline-none"
+                  value={bufferValue}
+                  onChange={(e) => setBufferValue(parseInt(e.target.value) || 0)}
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest text-slate-600 italic">
+                  Units
+                </div>
+              </div>
+              <p className="text-[10px] text-slate-500 font-bold italic px-2">
+                System will trigger LOW STOCK alert when inventory falls below this level.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setIsBufferDialogOpen(false)}
+              className="h-12 rounded-xl font-black italic text-xs uppercase tracking-widest border-white/5 bg-transparent text-slate-400 hover:bg-slate-800"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateBuffer}
+              disabled={isUpdatingBuffer}
+              className="h-12 flex-1 rounded-xl font-black italic text-xs uppercase tracking-widest bg-white text-slate-950 hover:bg-slate-100"
+            >
+              {isUpdatingBuffer ? (
+                <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Zap className="w-4 h-4 mr-2" />
+              )}
+              Update Threshold
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isReclassifyOpen} onOpenChange={setIsReclassifyOpen}>
         <DialogContent>
