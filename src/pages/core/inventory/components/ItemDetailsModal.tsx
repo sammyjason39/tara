@@ -266,29 +266,6 @@ export function ItemDetailsModal({
         <ScrollArea className="max-h-[65vh]">
           <div className="p-8">
             {isEditing ? (
-              <div className="space-y-6 mb-8 p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/30">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Item Name</label>
-                    <UIInput 
-                      value={editData.name} 
-                      onChange={e => setEditData({...editData, name: e.target.value})}
-                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 font-bold focus:ring-2 focus:ring-indigo-500 outline-none"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Global Status</label>
-                    <UISelect
-                      value={editData.status}
-                      onValueChange={(val) => setEditData({ ...editData, status: val })}
-                    >
-                      <UISelectTrigger className="h-12 rounded-xl bg-slate-950/50 border-white/5 font-bold italic text-white">
-                        <UISelectValue placeholder="Status" />
-                      </UISelectTrigger>
-                      <UISelectContent className="rounded-xl bg-slate-900 border-white/10 text-white">
-                        <UISelectItem value="active">ACTIVE</UISelectItem>
-                        <UISelectItem value="REPAIR">REPAIR</UISelectItem>
-                        <UISelectItem value="REJECT">REJECT</UISelectItem>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 bg-slate-50/50 dark:bg-slate-900/50 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 mb-8">
                 <div className="space-y-4">
                   <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Item Name</label>
@@ -368,6 +345,23 @@ export function ItemDetailsModal({
                 </div>
 
                 <div className="space-y-4">
+                  <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Global Status</label>
+                  <UISelect
+                    value={editData.status}
+                    onValueChange={(val) => setEditData({ ...editData, status: val })}
+                  >
+                    <UISelectTrigger className="h-12 rounded-xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 font-bold">
+                      <UISelectValue placeholder="Status" />
+                    </UISelectTrigger>
+                    <UISelectContent className="rounded-xl bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+                      <UISelectItem value="active">ACTIVE</UISelectItem>
+                      <UISelectItem value="REPAIR">REPAIR</UISelectItem>
+                      <UISelectItem value="REJECT">REJECT</UISelectItem>
+                    </UISelectContent>
+                  </UISelect>
+                </div>
+
+                <div className="space-y-4">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Category Allocation</h4>
                   <UISelect 
                     value={editData.category_id || item.category_id} 
@@ -376,9 +370,9 @@ export function ItemDetailsModal({
                     <UISelectTrigger className="w-full h-12 rounded-xl bg-white dark:bg-slate-950 font-bold border-slate-200 dark:border-slate-800">
                       <UISelectValue placeholder="Assign Category" />
                     </UISelectTrigger>
-                    <UISelectContent className="rounded-2xl border-slate-200">
+                    <UISelectContent className="rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
                       {categories.map(cat => (
-                        <UISelectItem key={cat.id} value={cat.id}>{cat.name}</UISelectItem>
+                        <UISelectItem key={cat.id} value={cat.id} className="font-bold">{cat.name}</UISelectItem>
                       ))}
                     </UISelectContent>
                   </UISelect>

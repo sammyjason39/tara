@@ -1185,7 +1185,6 @@ const InventoryVisibility = () => {
                 System will trigger LOW STOCK alert when inventory falls below this level.
               </p>
             </div>
-          </div>
 
           <DialogFooter className="gap-3">
             <Button
