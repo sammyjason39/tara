@@ -111,7 +111,7 @@ export default function InventoryDashboard() {
         {[
           { label: "Master Items", value: metrics.total_items, color: "blue", icon: Box },
           { label: "On-Hand Qty", value: (metrics.total_on_hand_qty || 0).toLocaleString(), color: "emerald", icon: Package },
-          { label: "Stock Valuation", value: `$${((metrics.total_valuation || 0) / 1000).toFixed(1)}k`, color: "indigo", icon: BarChart3 },
+          { label: "Stock Valuation", value: `Rp ${(metrics.total_valuation || 0).toLocaleString()}`, color: "indigo", icon: BarChart3 },
           { label: "Pending Adj", value: metrics.pending_adjustments, color: "rose", icon: Activity },
           { label: "Pending Syncs", value: metrics.pending_receipt_syncs, color: "amber", icon: RefreshCcw },
         ].map((stat, i) => {

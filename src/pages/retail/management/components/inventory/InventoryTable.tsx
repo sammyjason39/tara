@@ -153,6 +153,7 @@ export const InventoryTable: React.FC<TableProps> = ({
               "On Hand",
               "Reserved",
               "ATS",
+              "Price",
               "Buffer Min",
               "Status",
               "",
@@ -241,6 +242,9 @@ export const InventoryTable: React.FC<TableProps> = ({
                   </td>
                   <td className="px-6 py-4 text-muted-foreground font-bold italic text-sm">
                     {item.minBuffer}
+                  </td>
+                  <td className="px-6 py-4 font-black italic text-indigo-600">
+                    Rp {(item.price || 0).toLocaleString()}
                   </td>
                   <td className="px-6 py-4">
                     <Badge

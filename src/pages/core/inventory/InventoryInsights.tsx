@@ -82,7 +82,7 @@ export default function InventoryInsights() {
         id: "inv-ins-2",
         label: "Total valuation",
         category: "FINANCE",
-        value: (dashboard.total_valuation || 0).toLocaleString(),
+        value: `Rp ${(dashboard.total_valuation || 0).toLocaleString()}`,
       },
       {
         id: "inv-ins-3",

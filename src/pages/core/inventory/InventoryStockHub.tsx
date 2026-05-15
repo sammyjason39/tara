@@ -426,6 +426,7 @@ export default function InventoryStockHub() {
                   <TableHead className="w-[80px] text-[10px] font-black uppercase tracking-widest pl-8 py-6">Image</TableHead>
                   <TableHead className="w-[120px] text-[10px] font-black uppercase tracking-widest py-6">SKU</TableHead>
                   <TableHead className="text-[10px] font-black uppercase tracking-widest py-6">Item Identity</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest py-6 text-right">Price</TableHead>
                   <TableHead className="text-[10px] font-black uppercase tracking-widest py-6 text-right">Balance</TableHead>
                   <TableHead className="text-[10px] font-black uppercase tracking-widest py-6 text-center">Status</TableHead>
                   <TableHead className="text-[10px] font-black uppercase tracking-widest py-6 text-right pr-8">Actions</TableHead>
@@ -481,6 +482,9 @@ export default function InventoryStockHub() {
                           <span className="text-sm font-black tracking-tight">{item.name}</span>
                           <span className="text-[10px] font-bold uppercase text-slate-400 tracking-widest">{item.category || "General"}</span>
                         </div>
+                      </TableCell>
+                      <TableCell className="py-6 text-right font-black italic text-indigo-600">
+                        Rp {(item.selling_price || 0).toLocaleString()}
                       </TableCell>
                       <TableCell className="py-6 text-right">
                         <div className="flex flex-col items-end">

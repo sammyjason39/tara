@@ -466,14 +466,22 @@ export function ItemDetailsModal({
                     {item.description || "No description provided for this item identity."}
                   </p>
                   
-                  <div className="pt-4 grid grid-cols-2 gap-4">
+                  <div className="pt-4 grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+                      <p className="text-[8px] font-black uppercase text-slate-400 mb-1">Base Price</p>
+                      <p className="text-sm font-black text-slate-600">Rp {Number(item.base_price || 0).toLocaleString()}</p>
+                    </div>
                     <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
                       <p className="text-[8px] font-black uppercase text-slate-400 mb-1">Selling Price</p>
-                      <p className="text-sm font-black text-indigo-600">{Number(item.selling_price || 0).toLocaleString()} <span className="text-[10px] text-slate-400 font-bold uppercase ml-1">IDR</span></p>
+                      <p className="text-sm font-black text-indigo-600">Rp {Number(item.selling_price || 0).toLocaleString()}</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+                      <p className="text-[8px] font-black uppercase text-slate-400 mb-1">Discount</p>
+                      <p className="text-sm font-black text-emerald-600">{item.discount_rate || 0}%</p>
                     </div>
                     <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
                       <p className="text-[8px] font-black uppercase text-slate-400 mb-1">Min. Threshold</p>
-                      <p className="text-sm font-black text-rose-500">{Number(item.metadata?.min_stock || 0).toLocaleString()} <span className="text-[10px] text-slate-400 font-bold uppercase ml-1">Units</span></p>
+                      <p className="text-sm font-black text-rose-500">{Number(item.metadata?.min_stock || 0).toLocaleString()} Units</p>
                     </div>
                   </div>
                 </div>

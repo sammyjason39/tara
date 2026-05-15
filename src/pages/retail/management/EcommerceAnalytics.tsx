@@ -87,7 +87,7 @@ export function EcommerceAnalytics() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           title="Revenue (Gross)"
-          value={`$${(analytics?.revenue || 0).toLocaleString()}`}
+          value={`Rp ${(analytics?.revenue || 0).toLocaleString()}`}
           trend="+12.5%"
           isPositive={true}
           icon={DollarSign}
