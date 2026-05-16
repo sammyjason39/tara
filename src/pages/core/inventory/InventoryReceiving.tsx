@@ -63,7 +63,7 @@ export default function InventoryReceiving() {
           return prev.map((item, idx) => idx === prev.length - 1 ? { ...item, sku: barcode } : item);
         } else {
           // Add new line
-          return [...prev, { sku: barcode, quantity: 1, unit_cost: 0 }];
+          return [...prev, { id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2, 9), sku: barcode, quantity: 1, unit_cost: 0 }];
         }
       });
       setStatusMessage(`Scanned SKU: ${barcode}`);
