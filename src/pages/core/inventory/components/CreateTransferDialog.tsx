@@ -255,7 +255,7 @@ export function CreateTransferDialog({
           from_location_id: fromLocation,
           to_location_id: toLocation,
           quantity: item.quantity,
-          reason: "Multi-item Transfer Protocol",
+          notes: "Multi-item Transfer Protocol",
         })
       ));
       

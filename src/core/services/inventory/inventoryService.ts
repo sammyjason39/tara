@@ -486,7 +486,7 @@ export const inventoryService = {
       from_location_id: string;
       to_location_id: string;
       quantity: number;
-      reason: string;
+      notes?: string;
     },
   ) {
     return apiRequest<any>("/v1/inventory/stock-transfers", "POST", session, payload);
