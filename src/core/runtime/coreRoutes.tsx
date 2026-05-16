@@ -73,7 +73,8 @@ import InventoryReceiving from "@/pages/core/inventory/InventoryReceiving";
 import InventoryAdjustments from "@/pages/core/inventory/InventoryAdjustments";
 import InventoryAuditLog from "@/pages/core/inventory/InventoryAuditLog";
 import InventoryInsights from "@/pages/core/inventory/InventoryInsights";
-import WarehouseManagement from "@/pages/core/inventory/WarehouseManagement";
+import WarehouseWorkspaceLayout from "@/pages/core/warehouse/WarehouseWorkspaceLayout";
+import WarehouseManagement from "@/pages/core/warehouse/WarehouseManagement";
 import IotEventFeed from "@/pages/core/inventory/IotEventFeed";
 import TransferDesk from "@/pages/core/inventory/TransferDesk";
 import InventoryStockOpname from "@/pages/core/inventory/InventoryStockOpname";
@@ -546,14 +547,6 @@ export function buildCoreRoutes(): JSX.Element[] {
         }
       />
       <Route
-        path="warehouse"
-        element={
-          <ProtectedRoute permission="core.tools.access" scope="COMPANY">
-            <WarehouseManagement />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="iot"
         element={
           <ProtectedRoute permission="core.tools.access" scope="COMPANY">
@@ -564,6 +557,33 @@ export function buildCoreRoutes(): JSX.Element[] {
       <Route path="schedule" element={<DepartmentScheduleStudio workspaceDeptId="INVENTORY" title="Inventory" />} />
       <Route path="attendance" element={<DepartmentAttendanceStudio workspaceDeptId="INVENTORY" title="Inventory" />} />
       <Route path="admin" element={<DeptAdmin departmentId="INVENTORY" departmentName="Inventory & Logistics" />} />
+      <Route path="prs" element={<PurchaseRequestDesk />} />
+      <Route path="portal" element={<MyPulse />} />
+      <Route path="logs" element={<LogHub />} />
+      <Route path="audit-log" element={<AuditHub />} />
+      <Route path="workflow" element={<WorkflowInbox />} />
+    </Route>,
+    <Route
+      key="core-warehouse"
+      path="warehouse/*"
+      element={
+        <ProtectedRoute permission="core.tools.access" scope="COMPANY">
+          <WarehouseWorkspaceLayout />
+        </ProtectedRoute>
+      }
+    >
+      <Route index element={<WarehouseManagement />} />
+      <Route
+        path="dashboard"
+        element={
+          <ProtectedRoute permission="core.tools.access" scope="COMPANY">
+            <WarehouseManagement />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="schedule" element={<DepartmentScheduleStudio workspaceDeptId="WAREHOUSE" title="Warehouse" />} />
+      <Route path="attendance" element={<DepartmentAttendanceStudio workspaceDeptId="WAREHOUSE" title="Warehouse" />} />
+      <Route path="admin" element={<DeptAdmin departmentId="WAREHOUSE" departmentName="Warehouse & Logistics" />} />
       <Route path="prs" element={<PurchaseRequestDesk />} />
       <Route path="portal" element={<MyPulse />} />
       <Route path="logs" element={<LogHub />} />

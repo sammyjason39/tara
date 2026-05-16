@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { locations as Location, stock_movements as StockMovement, stock_levels as StockLevel, inventory_audit_cycles as AuditCycle, inventory_adjustments as InventoryAdjustment } from '@prisma/client';
-import { IWarehouseRepository, WarehouseStats } from './interfaces/warehouse.repository.interface';
+import { IWarehouseRepository, WarehouseStats } from '../../../modules/warehouse/repositories/interfaces/warehouse.repository.interface';
 import { IStockMovementRepository, StockReservation } from './interfaces/stock-movement.repository.interface';
 import { IInventoryAuditRepository } from './interfaces/inventory-audit.repository.interface';
 import { StockIntakeDto } from '../dto/stock-intake.dto';

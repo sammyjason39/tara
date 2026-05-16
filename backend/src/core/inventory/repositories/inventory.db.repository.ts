@@ -1754,7 +1754,7 @@ export class InventoryDbRepository implements IInventoryRepository {
   async getAgenticEvents(ctx: TenantContext): Promise<AgenticEvent[]> {
     const events = await this.prisma.agentic_events.findMany({
       where: {
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         entity_type: "INVENTORY",
       },
       orderBy: { created_at: "desc" },
@@ -1780,7 +1780,7 @@ export class InventoryDbRepository implements IInventoryRepository {
     const event = await this.prisma.agentic_events.create({
       data: {
         id: uuidv4(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         event_type: data.event_type,
         entity_id: data.entity_id,
         entity_type: data.entity_type,

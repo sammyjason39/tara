@@ -13,7 +13,7 @@ import { Request } from "express";
 import { WarehouseService } from "./warehouse.service";
 import { TenantContext } from "../../gateway/tenant-context.interface";
 import { TenantInterceptor } from "../../gateway/tenant.interceptor";
-import { ModuleStateGuard } from "../auth/guards/module-state.guard";
+import { ModuleStateGuard } from "../../core/auth/guards/module-state.guard";
 import { RolesGuard } from "../../shared/guards/roles.guard";
 import { RequiredModule } from "../../shared/decorators/required-module.decorator";
 
@@ -74,4 +74,3 @@ export class WarehouseController {
     return { success: true, data: assignment };
   }
 }
-

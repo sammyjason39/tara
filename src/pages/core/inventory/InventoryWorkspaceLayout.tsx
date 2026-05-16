@@ -34,7 +34,6 @@ const SECTIONS: MenuSection[] = [
       { label: "Stock Hub", to: "/core/inventory/stock", icon: Archive },
       { label: "Receiving Desk", to: "/core/inventory/receiving", icon: ArrowDownLeft },
       { label: "Transfer Desk", to: "/core/inventory/transfers", icon: RefreshCcw },
-      { label: "Warehouse Map", to: "/core/inventory/warehouse", icon: Warehouse },
     ],
   },
   {

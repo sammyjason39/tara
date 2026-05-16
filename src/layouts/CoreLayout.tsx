@@ -41,6 +41,7 @@ import {
   FileText,
   ChevronLeft,
   ChevronRight,
+  Warehouse,
 } from "lucide-react";
 
 type NavItem = {
@@ -70,6 +71,7 @@ const baseNavSections: NavSection[] = [
       { path: "/core/finance", icon: Wallet, label: "Finance" },
       { path: "/core/procurement", icon: ShoppingCart, label: "Procurement" },
       { path: "/core/inventory", icon: Package, label: "Inventory" },
+      { path: "/core/warehouse", icon: Warehouse, label: "Warehouse" },
       { path: "/core/hr", icon: Users2, label: "HR" },
       { path: "/core/it", icon: ShieldCheck, label: "IT" },
     ],
