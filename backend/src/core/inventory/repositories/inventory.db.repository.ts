@@ -1448,7 +1448,6 @@ export class InventoryDbRepository implements IInventoryRepository {
           },
         });
       }
-      });
 
       return t.stock_movements.create({
         data: {
