@@ -72,6 +72,7 @@ export default function InventoryTransferDesk() {
   const [selectedTransferId, setSelectedTransferId] = useState<string | null>(null);
   const [manifestOpen, setManifestOpen] = useState(false);
   const [futureIntegrationOpen, setFutureIntegrationOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -144,11 +145,15 @@ export default function InventoryTransferDesk() {
     fetchData();
   }, [fetchData]);
 
-  const filteredTransfers = (Array.isArray(transfers) ? transfers : []).filter((t) =>
-    t.transferNo.toLowerCase().includes(search.toLowerCase()) ||
-    t.fromLocation.toLowerCase().includes(search.toLowerCase()) ||
-    t.toLocation.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredTransfers = (Array.isArray(transfers) ? transfers : []).filter((t) => {
+    const matchesSearch = t.transferNo.toLowerCase().includes(search.toLowerCase()) ||
+      t.fromLocation.toLowerCase().includes(search.toLowerCase()) ||
+      t.toLocation.toLowerCase().includes(search.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'ALL' || t.status === statusFilter;
+    
+    return matchesSearch && matchesStatus;
+  });
 
   const headerActions = (
     <div className="flex gap-2">
@@ -216,9 +221,26 @@ export default function InventoryTransferDesk() {
             />
           </div>
           <div className="flex items-center gap-3 w-full md:w-auto">
-            <Button variant="outline" className="h-14 px-6 rounded-2xl border-slate-200 text-xs font-black uppercase tracking-widest hover:bg-slate-50">
-              <Filter className="h-4 w-4 mr-2" /> Filter
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="h-14 px-6 rounded-2xl border-slate-200 text-xs font-black uppercase tracking-widest hover:bg-slate-50">
+                  <Filter className="h-4 w-4 mr-2" /> {statusFilter === 'ALL' ? 'Filter' : `Status: ${statusFilter}`}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 rounded-2xl p-2">
+                <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest opacity-40 px-4 py-3">Filter by Status</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {['ALL', 'REQUESTED', 'PICKED', 'SHIPPED', 'RECEIVED'].map((status) => (
+                  <DropdownMenuItem 
+                    key={status}
+                    className={`rounded-xl px-4 py-3 text-xs font-bold cursor-pointer transition-colors ${statusFilter === status ? 'bg-primary/10 text-primary' : ''}`}
+                    onClick={() => setStatusFilter(status)}
+                  >
+                    {status}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
