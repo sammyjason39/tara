@@ -1230,9 +1230,7 @@ export class InventoryService {
   async listIotEvents(ctx: TenantContext) {
     // Mapping Inventory IoT Feed to IT device events as a generic operational stream
     const events = await this.prisma.it_device_events.findMany({
-      where: {
-        ...MultiTenancyUtil.getScope(ctx),
-      },
+      where: MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
       include: {
         it_devices: true,
       },
@@ -1258,7 +1256,7 @@ export class InventoryService {
     // Receipts are pending final POs that need to be intake into inventory
     return this.prisma.procurement_final_pos.findMany({
       where: {
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         status: { in: ["APPROVED", "PARTIALLY_RECEIVED", "RELEASED"] },
       },
       include: {

@@ -58,7 +58,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
       data: {
         id: uuidv4(),
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         actor_id: actor_id,
         action,
         entity_type: entity_type,
@@ -70,7 +70,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async getAuditEvents(ctx: TenantContext): Promise<any[]> {
     const events = await this.prisma.procurement_audit_events.findMany({
-      where: MultiTenancyUtil.getScope(ctx),
+      where: MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
       orderBy: { created_at: "desc" },
       take: 200,
     });
@@ -90,7 +90,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async getCategories(ctx: TenantContext): Promise<any[]> {
     return this.prisma.procurement_categories.findMany({
-      where: { ...MultiTenancyUtil.getScope(ctx), active: true },
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }), active: true },
       orderBy: { name: "asc" },
     });
   }
@@ -106,7 +106,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
     if ("id" in data && data.id) {
       return this.prisma.procurement_categories.update({
-        where: { id: data.id, ...MultiTenancyUtil.getScope(ctx) },
+        where: { id: data.id, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
         data: categoryData,
       });
     } else {
@@ -115,7 +115,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
         id: uuidv4(),
         updated_at: new Date(),
           ...categoryData,
-          ...MultiTenancyUtil.getScope(ctx),
+          ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         },
       });
     }
@@ -123,7 +123,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async deleteCategory(ctx: TenantContext, id: string): Promise<any> {
     return this.prisma.procurement_categories.update({
-      where: { id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
       data: { active: false },
     });
   }
@@ -132,7 +132,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async getSuppliers(ctx: TenantContext): Promise<Supplier[]> {
     const suppliers = await this.prisma.supplier_masters.findMany({
-      where: { ...MultiTenancyUtil.getScope(ctx), deleted_at: null },
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }), deleted_at: null },
       orderBy: { created_at: "desc" },
     });
     return suppliers.map((s: any) => ({
@@ -157,7 +157,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
       data: {
         id: uuidv4(),
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         name: data.name,
         tax_id: data.taxId,
         categories: [data.category],
@@ -189,7 +189,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async getSupplierBranches(ctx: TenantContext): Promise<any[]> {
     const branches = await this.prisma.supplier_branches.findMany({
-      where: { ...MultiTenancyUtil.getScope(ctx), deleted_at: null },
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }), deleted_at: null },
       orderBy: { created_at: "desc" },
     });
     return branches.map((b: any) => ({
@@ -210,7 +210,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async createSupplierBranch(ctx: TenantContext, data: CreateSupplierBranchDto): Promise<any> {
     const supplier = await this.prisma.supplier_masters.findUnique({
-      where: { id: data.supplierId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: data.supplierId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
     });
     if (!supplier) throw new NotFoundException("Supplier not found");
 
@@ -218,7 +218,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
       data: {
         id: uuidv4(),
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         supplier_id: data.supplierId,
         branch_code: data.branchCode,
         branch_name: data.branchName,
@@ -253,7 +253,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async getSupplierProducts(ctx: TenantContext): Promise<any[]> {
     const products = await this.prisma.supplier_products.findMany({
-      where: { ...MultiTenancyUtil.getScope(ctx), active: true },
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }), active: true },
     });
     return products.map((p: SupplierProduct) => ({
       id: p.id,
@@ -274,7 +274,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
   async upsertSupplierProduct(ctx: TenantContext, data: UpsertSupplierProductDto): Promise<any> {
     if (data.id) {
       const updated = await this.prisma.supplier_products.update({
-        where: { id: data.id, ...MultiTenancyUtil.getScope(ctx) },
+        where: { id: data.id, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
         data: {
           sku: data.sku,
           name: data.name,
@@ -291,7 +291,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
         data: {
         id: uuidv4(),
         updated_at: new Date(),
-          ...MultiTenancyUtil.getScope(ctx),
+          ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
           supplier_id: data.supplierId,
           branch_id: data.branch_id,
           sku: data.sku,
@@ -312,7 +312,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
   ): Promise<any[]> {
     const products = await this.prisma.supplier_products.findMany({
       where: {
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         category: params.category,
         active: true,
         supplier_branches: {
@@ -341,7 +341,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async getRequisitions(ctx: TenantContext): Promise<Requisition[]> {
     const requisitions = await this.prisma.procurement_requisitions.findMany({
-      where: MultiTenancyUtil.getScope(ctx),
+      where: MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
       orderBy: { created_at: "desc" },
     });
     return (requisitions as any[]).map((r) => ({
@@ -369,7 +369,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
       data: {
         id: uuidv4(),
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         requester_id: data.createdBy || "system",
         department_id: data.requesterDept,
         branch_code: data.branchCode,
@@ -404,7 +404,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async approveRequesterHod(ctx: TenantContext, requisitionId: string): Promise<Requisition> {
     const updated = await this.prisma.procurement_requisitions.update({
-      where: { id: requisitionId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: requisitionId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
       data: { status: "APPROVED_REQUESTER_HOD" },
     });
     return {
@@ -429,7 +429,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async approveFinal(ctx: TenantContext, requisitionId: string, data: ApproveFinalDto): Promise<Requisition> {
     const req = await this.prisma.procurement_requisitions.findUnique({
-      where: { id: requisitionId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: requisitionId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
     });
     if (!req) throw new NotFoundException("Requisition not found");
 
@@ -439,7 +439,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
       data.approver === "FINANCE_HOD" ? "FINAL_APPROVED" : "FINAL_APPROVAL_PENDING";
 
     const updated = await this.prisma.procurement_requisitions.update({
-      where: { id: requisitionId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: requisitionId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
       data: { status: newStatus },
     });
     return {
@@ -466,7 +466,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async getDraftPurchaseOrders(ctx: TenantContext): Promise<any[]> {
     const drafts = await this.prisma.procurement_draft_pos.findMany({
-      where: MultiTenancyUtil.getScope(ctx),
+      where: MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
       orderBy: { created_at: "desc" },
     });
     return (drafts as any[]).map((d) => ({
@@ -486,7 +486,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async createDraftPurchaseOrder(ctx: TenantContext, data: CreateDraftPoDto, createdBy: string): Promise<any> {
     const requisition = await this.prisma.procurement_requisitions.findUnique({
-      where: { id: data.requisitionId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: data.requisitionId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
     });
     if (!requisition) throw new NotFoundException("Requisition not found");
 
@@ -497,7 +497,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
       data: {
         id: uuidv4(),
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         requisition_id: data.requisitionId,
         branch_code: requisition.branch_code,
         supplier_id: data.supplierId,
@@ -512,7 +512,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
     // Update requisition status
     await this.prisma.procurement_requisitions.update({
-      where: { id: data.requisitionId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: data.requisitionId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
       data: { status: "DRAFT_PO_PREPARED" },
     });
 
@@ -534,17 +534,17 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async approveDraftByProcurementHod(ctx: TenantContext, draftPoId: string): Promise<any> {
     const draft = await this.prisma.procurement_draft_pos.findUnique({
-      where: { id: draftPoId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: draftPoId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
     });
     if (!draft) throw new NotFoundException("Draft PO not found");
 
     const updated = await this.prisma.procurement_draft_pos.update({
-      where: { id: draftPoId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: draftPoId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
       data: { status: "PROCUREMENT_HOD_APPROVED" },
     });
 
     await this.prisma.procurement_requisitions.update({
-      where: { id: draft.requisition_id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: draft.requisition_id, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
       data: { status: "DRAFT_PO_APPROVED" },
     });
 
@@ -553,12 +553,12 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async confirmSupplierQuote(ctx: TenantContext, draftPoId: string, data: ConfirmQuoteDto): Promise<any> {
     const draft = await this.prisma.procurement_draft_pos.findUnique({
-      where: { id: draftPoId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: draftPoId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
     });
     if (!draft) throw new NotFoundException("Draft PO not found");
 
     const updated = await this.prisma.procurement_draft_pos.update({
-      where: { id: draftPoId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: draftPoId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
       data: {
         status: "SUPPLIER_CONFIRMED",
         ...(data.quotedTotal != null ? { quotedTotal: data.quotedTotal } : {}),
@@ -566,7 +566,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
     });
 
     await this.prisma.procurement_requisitions.update({
-      where: { id: draft.requisition_id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: draft.requisition_id, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
       data: { status: "SUPPLIER_CONFIRMED" },
     });
 
@@ -577,7 +577,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async releasePurchaseOrder(ctx: TenantContext, data: ReleasePoDto): Promise<PurchaseOrder> {
     const requisition = await this.prisma.procurement_requisitions.findUnique({
-      where: { id: data.requisitionId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: data.requisitionId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
     });
     if (!requisition) throw new NotFoundException("Requisition not found");
 
@@ -585,7 +585,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
       data: {
         id: uuidv4(),
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         requisition_id: requisition.id,
         draft_po_id: "auto",
         supplier_id: data.supplierId,
@@ -597,17 +597,17 @@ export class ProcurementDbRepository extends IProcurementRepository {
     });
 
     await this.prisma.procurement_requisitions.update({
-      where: { id: requisition.id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: requisition.id, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
       data: { status: "PO_RELEASED" },
     });
 
     // Cross-Module: create payable
-    const supplier = await this.prisma.supplier_masters.findUnique({ where: { id: data.supplierId, ...MultiTenancyUtil.getScope(ctx) } });
+    const supplier = await this.prisma.supplier_masters.findUnique({ where: { id: data.supplierId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) } });
     await this.prisma.payables.create({
       data: {
         id: uuidv4(),
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         vendor_name: supplier?.name || "Unknown Supplier",
         amount: data.total_amount,
         currency: requisition.currency || "IDR",
@@ -632,7 +632,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async getPurchaseOrders(ctx: TenantContext): Promise<PurchaseOrder[]> {
     const pos = await this.prisma.procurement_final_pos.findMany({
-      where: MultiTenancyUtil.getScope(ctx),
+      where: MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
       orderBy: { created_at: "desc" },
     });
     return (pos as any[]).map((po) => ({
@@ -653,13 +653,13 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async createReceipt(ctx: TenantContext, data: CreateReceiptDto, createdBy: string): Promise<any> {
     const finalPo = await this.prisma.procurement_final_pos.findUnique({
-      where: { id: data.finalPoId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: data.finalPoId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
     });
     if (!finalPo) throw new NotFoundException("Final PO not found");
 
     // Update PO status to RECEIVED
     await this.prisma.procurement_final_pos.update({
-      where: { id: data.finalPoId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: data.finalPoId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
       data: { status: "RECEIVED" },
     });
 
@@ -668,7 +668,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
     const newRating = Math.max(0, Math.min(100, qualityScore));
 
     await this.prisma.supplier_masters.update({
-      where: { id: finalPo.supplier_id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: finalPo.supplier_id, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
       data: { global_rating: Math.round(newRating) },
     });
 
@@ -689,7 +689,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async getContracts(ctx: TenantContext): Promise<any[]> {
     const contracts = await this.prisma.procurement_contracts.findMany({
-      where: MultiTenancyUtil.getScope(ctx),
+      where: MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
       orderBy: { created_at: "desc" },
     });
     return (contracts as any[]).map((c) => ({
@@ -710,13 +710,13 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async createContract(ctx: TenantContext, data: CreateContractDto, createdBy: string): Promise<any> {
     const existing = await this.prisma.procurement_contracts.findFirst({
-      where: { ...MultiTenancyUtil.getScope(ctx), requisition_id: data.requisitionId },
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }), requisition_id: data.requisitionId },
     });
 
     if (existing) {
       // Increment version and reset
       const updated = await this.prisma.procurement_contracts.update({
-        where: { id: existing.id, ...MultiTenancyUtil.getScope(ctx) },
+        where: { id: existing.id, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
         data: {
           supplier_id: data.supplierId,
           status: "LEGAL_REVIEW",
@@ -734,7 +734,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
       data: {
         id: uuidv4(),
         updated_at: new Date(),
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         requisition_id: data.requisitionId,
         supplier_id: data.supplierId,
         status: "LEGAL_REVIEW",
@@ -748,7 +748,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
     });
 
     await this.prisma.procurement_requisitions.update({
-      where: { id: data.requisitionId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: data.requisitionId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
       data: { status: "LEGAL_APPROVED" },
     }).catch(() => {}); // Non-fatal; requisition may not exist in edge cases
 
@@ -757,12 +757,12 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async approveLegalContract(ctx: TenantContext, contractId: string): Promise<any> {
     const contract = await this.prisma.procurement_contracts.findUnique({
-      where: { id: contractId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: contractId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
     });
     if (!contract) throw new NotFoundException("Contract not found");
 
     const updated = await this.prisma.procurement_contracts.update({
-      where: { id: contractId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: contractId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
       data: { status: "LEGAL_APPROVED" },
     });
     return { ...updated };
@@ -770,7 +770,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
   async signContract(ctx: TenantContext, contractId: string, data: SignContractDto): Promise<any> {
     const contract = await this.prisma.procurement_contracts.findUnique({
-      where: { id: contractId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: contractId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
     });
     if (!contract) throw new NotFoundException("Contract not found");
 
@@ -780,7 +780,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
     if (data.party === "FINANCE_HOD") signPatch.signed_by_finance_hod = true;
 
     const updated = await this.prisma.procurement_contracts.update({
-      where: { id: contractId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: contractId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
       data: signPatch,
     });
 
@@ -790,7 +790,7 @@ export class ProcurementDbRepository extends IProcurementRepository {
 
     const finalStatus = allSigned ? "SIGNED" : anySigned ? "PARTIAL_SIGNED" : updated.status;
     const finalContract = await this.prisma.procurement_contracts.update({
-      where: { id: contractId, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id: contractId, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
       data: { status: finalStatus },
     });
 

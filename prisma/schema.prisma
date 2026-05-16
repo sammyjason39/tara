@@ -26,6 +26,7 @@ model tenants {
   agentic_events                         agentic_events[]
   asset_depreciation_entries             asset_depreciation_entries[]
   asset_events                           asset_events[]
+  audit_chain_repairs                    audit_chain_repairs[]
   audit_hash_anchors                     audit_hash_anchors[]
   audit_logs                             audit_logs[]
   bin_assignments                        bin_assignments[]
@@ -460,6 +461,26 @@ model audit_logs {
   @@index([company_id])
   @@index([tenant_id, source_module])
   @@index([user_id])
+}
+
+model audit_chain_repairs {
+  id             String    @id @default(uuid())
+  tenant_id      String
+  actor_id       String
+  previous_hash  String?
+  new_hash       String?
+  reason         String
+  source_ip      String?
+  request_id     String?
+  permission_by  String?
+  permission_at  DateTime?
+  snapshot_json  Json?
+  range_start_id String?
+  range_end_id   String?
+  created_at     DateTime  @default(now())
+  tenants        tenants   @relation(fields: [tenant_id], references: [id])
+
+  @@index([tenant_id])
 }
 
 model bulletin_categories {
@@ -3363,6 +3384,7 @@ model it_system_health {
   checked_at DateTime   @default(now())
   company_id String?
   updated_at DateTime   @default(now())
+  metadata   Json?
   companies  companies? @relation(fields: [company_id], references: [id])
   tenants    tenants    @relation(fields: [tenant_id], references: [id])
 
@@ -6898,7 +6920,7 @@ model explorer_files {
   created_at     DateTime          @default(now())
   updated_at     DateTime          @default(now())
   deleted_at     DateTime?
-  metadata       Json?             @default("{}")
+  metadata       Json?
   companies      companies?        @relation(fields: [company_id], references: [id])
   departments    departments?      @relation(fields: [department_id], references: [id])
   folder         explorer_folders? @relation(fields: [folder_id], references: [id])

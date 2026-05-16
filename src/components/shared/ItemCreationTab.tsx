@@ -17,6 +17,7 @@ type Props = {
   tenantId?: string;
   categoryOptions?: { id: string; name: string }[];
   initialRows?: Partial<NewItemLine>[];
+  onSuccess?: (createdItems: any[]) => void;
 };
 
 export const ItemCreationTab: React.FC<Props> = ({
@@ -203,7 +204,7 @@ export const ItemCreationTab: React.FC<Props> = ({
             primaryImageIndex: 0,
           },
         ]);
-        if (onSuccess) onSuccess();
+        if (onSuccess) onSuccess(createdItems);
       }
     } catch (error) {
       toast({ title: "Error", description: "Failed to create batch items." });

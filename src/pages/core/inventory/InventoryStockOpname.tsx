@@ -69,32 +69,43 @@ export default function InventoryStockOpname() {
 
         (Array.isArray(coreLocations) ? coreLocations : []).forEach((loc: any) => {
           if (!loc?.id) return;
-          locationMap.set(loc.id, {
-            id: loc.id,
-            name: loc.name || loc.code || loc.id,
-          });
+          const name = loc.name || loc.code || loc.id;
+          const nameKey = name.toLowerCase().trim();
+          
+          if (!locationMap.has(nameKey)) {
+            locationMap.set(nameKey, {
+              id: loc.id,
+              name: name,
+            });
+          }
         });
 
         (Array.isArray(retailStores) ? retailStores : []).forEach((store: any) => {
           const locationId = store.location_id || store.locationId;
           if (!locationId) return;
           
-          // Overwrite location name with store name if available
-          locationMap.set(locationId, {
-            id: locationId,
-            name: store.name || store.code || locationId,
-          });
+          const name = store.name || store.code || locationId;
+          const nameKey = name.toLowerCase().trim();
+
+          if (!locationMap.has(nameKey)) {
+            locationMap.set(nameKey, {
+              id: locationId,
+              name: name,
+            });
+          }
         });
 
         (Array.isArray(channels) ? channels : []).forEach((channel: any) => {
           const locationId = channel.branchId || channel.branch_id || channel.id;
           if (!locationId) return;
 
-          // Add ecommerce channels to the list
-          if (!locationMap.has(locationId)) {
-            locationMap.set(locationId, {
+          const name = channel.name ? `${channel.name} (Ecommerce)` : locationId;
+          const nameKey = name.toLowerCase().trim();
+
+          if (!locationMap.has(nameKey)) {
+            locationMap.set(nameKey, {
               id: locationId,
-              name: `${channel.name} (Ecommerce)`,
+              name: name,
             });
           }
         });
@@ -259,7 +270,9 @@ export default function InventoryStockOpname() {
     }
   };
 
-  const handleItemsRegistered = (barcodes: string[]) => {
+  const handleItemsRegistered = (createdItems: any[]) => {
+    const barcodes = createdItems.map(item => item.barcode);
+    setNewItems(prev => [...prev, ...createdItems]);
     setUnresolvedBarcodes(prev => prev.filter(b => !barcodes.includes(b)));
     
     if (unresolvedBarcodes.length - barcodes.length === 0) {

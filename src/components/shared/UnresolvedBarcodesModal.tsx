@@ -90,11 +90,9 @@ export const UnresolvedBarcodesModal: React.FC<UnresolvedBarcodesModalProps> = (
               session={session} 
               tenantId={session.tenant_id} 
               categoryOptions={categoryOptions}
-              onSuccess={() => {
+              onSuccess={(createdItems) => {
                 // When items are registered successfully, we need to notify the parent
-                // The parent needs to add them to newItems and remove them from unresolved.
-                // For simplicity, we just pass the selected barcodes back.
-                onItemsRegistered(selected);
+                onItemsRegistered(createdItems);
                 setShowItemCreation(false);
                 if (selected.length === unresolvedBarcodes.length) {
                   onClose();

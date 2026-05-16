@@ -4,7 +4,8 @@ import {
   ArrowDownLeft, 
   History,
   BoxSelect,
-  RefreshCw
+  RefreshCw,
+  Plus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -12,27 +13,53 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useSession } from "@/core/security/session";
 import { retailService } from "@/core/services/retail/retailService";
 import { useToast } from "@/hooks/use-toast";
+import { InventoryFilterHub } from "@/components/shared/InventoryFilterHub";
+import { inventoryService } from "@/core/services/inventory/inventoryService";
 
 export default function RetailInventory() {
   const navigate = useNavigate();
   const session = useSession();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [inventory, setInventory] = useState<any[]>([]);
+  const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [sortBy, setSortBy] = useState("name");
+
+  const fetchInventory = async () => {
+    setLoading(true);
+    try {
+      const [invData, cats] = await Promise.all([
+        retailService.listInventory(session.tenant_id!, session, { locationId: session.location_id }),
+        inventoryService.listCategories(session.tenant_id!, session)
+      ]);
+      setInventory(invData || []);
+      setCategories(cats || []);
+    } catch (e) {
+      toast({ title: "Sync Error", description: "Failed to pull live inventory logs.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (session.tenant_id) fetchInventory();
+  }, [session]);
 
   const handleAdjust = useCallback(async (action: string) => {
     if (!session.tenant_id) return;
     setLoading(true);
     try {
-      // Logic for adjusting inventory / processing shipment
       toast({
         title: "Action Initialized",
         description: `Triggering ${action} for location ${session.location_id || "Global"}`
       });
-      // Simulate real-time adjustment
       setTimeout(() => {
         toast({ title: "Inventory Synced", description: "Ledger updated successfully." });
         setLoading(false);
@@ -48,17 +75,40 @@ export default function RetailInventory() {
       <PageHeader 
         title="Inventory Operations" 
         subtitle="Operational Stock Management & Receiving"
-        primaryAction={
-          <Button 
-            onClick={() => handleAdjust("STOCK_COUNT")} 
-            disabled={loading}
-            className="rounded-xl bg-secondary text-foreground font-black italic uppercase text-[10px] tracking-widest gap-2 shadow-xl"
-          >
-            {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Package className="w-4 h-4" />} 
-            New Stock Count
-          </Button>
-        }
       />
+
+      <div className="p-4 bg-slate-950/40 border-b border-white/5">
+        <InventoryFilterHub 
+          search={searchTerm}
+          onSearchChange={setSearchTerm}
+          category={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          categories={categories}
+          status={filterStatus}
+          onStatusChange={setFilterStatus}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          advancedActions={
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                className="h-14 px-6 rounded-2xl bg-slate-900/40 border-white/10 text-white font-black italic uppercase text-[10px] tracking-widest gap-2"
+                onClick={() => {}}
+              >
+                <Plus className="w-4 h-4" />
+                New Category
+              </Button>
+              <Button 
+                className="h-14 px-8 rounded-2xl bg-primary text-primary-foreground font-black italic uppercase text-xs tracking-widest gap-3 shadow-xl"
+                onClick={() => {}}
+              >
+                <Package className="w-5 h-5" />
+                Register Item
+              </Button>
+            </div>
+          }
+        />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">

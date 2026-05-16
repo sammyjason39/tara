@@ -49,6 +49,8 @@ import { retailService } from "@/core/services/retail/retailService";
 import { RetailProduct } from "@/core/types/retail/retail";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
+import { InventoryFilterHub } from "@/components/shared/InventoryFilterHub";
+import { inventoryService } from "@/core/services/inventory/inventoryService";
 
 // Types for inventory specific data
 interface InventoryItem extends RetailProduct {
@@ -98,12 +100,23 @@ export default function RetailInventory() {
   const [reorderRequests, setReorderRequests] = useState<ReorderRequest[]>(
     initialReorderRequests,
   );
+  const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [locations, setLocations] = useState<{id: string, name: string}[]>([]);
+  const [selectedLocation, setSelectedLocation] = useState(session.location_id || "all");
 
   const fetchInventory = async () => {
     setIsLoading(true);
     try {
-      const data = await retailService.listInventory(session.tenant_id!, session, { locationId: session.location_id });
-      const mapped: InventoryItem[] = (data || []).map(p => ({
+      const [invData, cats, locs] = await Promise.all([
+        retailService.listInventory(session.tenant_id!, session, { 
+          locationId: selectedLocation === "all" ? undefined : selectedLocation 
+        }),
+        inventoryService.listCategories(session.tenant_id!, session),
+        inventoryService.listLocations(session.tenant_id!, session)
+      ]);
+
+      const mapped: InventoryItem[] = (invData || []).map(p => ({
         ...p,
         minStock: (p.metadata as any)?.min_stock || 5,
         maxStock: (p.metadata as any)?.max_stock || 100,
@@ -112,6 +125,18 @@ export default function RetailInventory() {
         lastRestocked: p.updatedAt,
       }));
       setInventory(mapped);
+      setCategories(cats || []);
+      
+      const locationMap = new Map<string, { id: string; name: string }>();
+      (Array.isArray(locs) ? locs : []).forEach((loc: any) => {
+        if (!loc?.id) return;
+        const name = loc.name || loc.code || loc.id;
+        const nameKey = name.toLowerCase().trim();
+        if (!locationMap.has(nameKey)) {
+          locationMap.set(nameKey, { id: loc.id, name });
+        }
+      });
+      setLocations(Array.from(locationMap.values()).sort((a, b) => a.name.localeCompare(b.name)));
     } catch (e) {
       toast({
         title: "Sync Error",
@@ -127,7 +152,7 @@ export default function RetailInventory() {
     if (session.tenant_id) {
       fetchInventory();
     }
-  }, [session.tenant_id]);
+  }, [session.tenant_id, selectedLocation]);
 
   // Dialog states
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -174,20 +199,22 @@ export default function RetailInventory() {
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.barcode?.includes(searchTerm);
 
+      const matchesCategory = selectedCategory === "all" || item.categoryId === selectedCategory;
+
+      if (!matchesSearch || !matchesCategory) return false;
+
       if (filterStatus === "low")
         return (
-          matchesSearch &&
           item.stock !== undefined &&
           item.stock <= item.reorderPoint
         );
-      if (filterStatus === "out") return matchesSearch && item.stock === 0;
+      if (filterStatus === "critical") return item.stock === 0;
       if (filterStatus === "ok")
         return (
-          matchesSearch &&
           item.stock !== undefined &&
           item.stock > item.reorderPoint
         );
-      return matchesSearch;
+      return true;
     })
     .sort((a, b) => {
       if (sortBy === "name") return a.name.localeCompare(b.name);
@@ -563,49 +590,41 @@ export default function RetailInventory() {
       <div className="flex gap-4 flex-1 min-h-0">
         {/* Inventory List */}
         <Card className="flex-1 flex flex-col">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Inventory</CardTitle>
-              <div className="flex gap-2">
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Filter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Items</SelectItem>
-                    <SelectItem value="low">Low Stock</SelectItem>
-                    <SelectItem value="out">Out of Stock</SelectItem>
-                    <SelectItem value="ok">In Stock</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-32">
-                    <ArrowUpDown className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Sort" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="name">Name</SelectItem>
-                    <SelectItem value="stock-asc">Stock (Low)</SelectItem>
-                    <SelectItem value="stock-desc">Stock (High)</SelectItem>
-                    <SelectItem value="value">Value</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button onClick={() => setIsAddOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Item
+        <div className="p-4 bg-slate-950/40 border-b border-white/5 rounded-t-[2rem]">
+          <InventoryFilterHub 
+            search={searchTerm}
+            onSearchChange={setSearchTerm}
+            category={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+            categories={categories}
+            status={filterStatus}
+            onStatusChange={setFilterStatus}
+            location={selectedLocation}
+            onLocationChange={setSelectedLocation}
+            locations={locations}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            advancedActions={
+              <div className="flex gap-3">
+                <Button 
+                  variant="outline" 
+                  className="h-14 px-6 rounded-2xl bg-slate-900/40 border-white/10 text-white font-black italic uppercase text-[10px] tracking-widest gap-2"
+                  onClick={() => {/* Category dialog */}}
+                >
+                  <Plus className="w-4 h-4" />
+                  New Category
+                </Button>
+                <Button 
+                  className="h-14 px-8 rounded-2xl bg-primary text-primary-foreground font-black italic uppercase text-xs tracking-widest gap-3 shadow-xl"
+                  onClick={() => setIsAddOpen(true)}
+                >
+                  <Package className="w-5 h-5" />
+                  Register Item
                 </Button>
               </div>
-            </div>
-            <div className="relative mt-2">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search products or barcodes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-          </CardHeader>
+            }
+          />
+        </div>
           <CardContent className="flex-1 p-0">
             <ScrollArea className="h-[calc(100vh-22rem)]">
               {isLoading ? (

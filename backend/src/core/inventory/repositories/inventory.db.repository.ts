@@ -355,7 +355,7 @@ export class InventoryDbRepository implements IInventoryRepository {
     // If item_id is provided, we want cross-branch visibility for the item details modal
     const where: any = item_id 
       ? { tenant_id: ctx.tenant_id, product_id: item_id }
-      : { ...MultiTenancyUtil.getScope(ctx) };
+      : { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) };
 
     if (location_id) where.location_id = location_id;
     if (department_id) where.department_id = department_id;
@@ -418,7 +418,7 @@ export class InventoryDbRepository implements IInventoryRepository {
     // Consistent scoping with getBalances
     const where: any = item_id 
       ? { tenant_id: ctx.tenant_id, product_id: item_id }
-      : { ...MultiTenancyUtil.getScope(ctx) };
+      : { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) };
 
     if (location_id) where.location_id = location_id;
     if (department_id) where.department_id = department_id;
@@ -449,7 +449,7 @@ export class InventoryDbRepository implements IInventoryRepository {
   ): Promise<StockMovement[]> {
     const where = MultiTenancyUtil.getScope(ctx, {
       ...(item_id && { product_id: item_id }),
-    });
+    }, { excludeBranch: true });
 
     const movements = await this.prisma.stock_movements.findMany({
       where,
@@ -1709,7 +1709,7 @@ export class InventoryDbRepository implements IInventoryRepository {
 
   async getTransfers(ctx: TenantContext): Promise<any[]> {
     return this.prisma.inventory_transfers.findMany({
-      where: MultiTenancyUtil.getScope(ctx),
+      where: MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
       include: {
         item_masters: true,
         from_location: true,
@@ -1721,7 +1721,7 @@ export class InventoryDbRepository implements IInventoryRepository {
 
   async getTransferById(ctx: TenantContext, id: string): Promise<any | null> {
     return this.prisma.inventory_transfers.findFirst({
-      where: { id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id, ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }) },
       include: {
         item_masters: true,
         from_location: true,
