@@ -716,7 +716,7 @@ export class InventoryController {
   }
 
   @Get("stock-transfers/:id")
-  @RequireInventoryRole(InventoryRole.VIEWER)
+  @RequireInventoryRole(InventoryRole.CLERK)
   async getStockTransfer(
     @Req() request: RequestWithTenant,
     @Param("id") id: string,

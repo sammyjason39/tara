@@ -48,6 +48,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { inventoryService } from "@/core/services/inventory/inventoryService";
+import { TransferManifestDialog } from "./components/TransferManifestDialog";
+import { FutureIntegrationDialog } from "./components/FutureIntegrationDialog";
+import { Zap } from "lucide-react";
 
 interface TransferRecord {
   id: string;
@@ -66,6 +69,9 @@ export default function InventoryTransferDesk() {
   const [search, setSearch] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [selectedTransferId, setSelectedTransferId] = useState<string | null>(null);
+  const [manifestOpen, setManifestOpen] = useState(false);
+  const [futureIntegrationOpen, setFutureIntegrationOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -302,12 +308,20 @@ export default function InventoryTransferDesk() {
                             )}
 
                             {t.status === 'PICKED' && (
-                              <DropdownMenuItem 
-                                className="rounded-xl px-4 py-3 text-xs font-bold cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-indigo-600 transition-colors"
-                                onClick={() => handleShip(t.id)}
-                              >
-                                <Truck className="h-4 w-4 mr-3" /> Dispatch Shipment
-                              </DropdownMenuItem>
+                              <>
+                                <DropdownMenuItem 
+                                  className="rounded-xl px-4 py-3 text-xs font-bold cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-indigo-600 transition-colors"
+                                  onClick={() => handleShip(t.id)}
+                                >
+                                  <Zap className="h-4 w-4 mr-3" /> Direct Shipment (Manual)
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  className="rounded-xl px-4 py-3 text-xs font-bold cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-500/10 text-slate-600 transition-colors"
+                                  onClick={() => setFutureIntegrationOpen(true)}
+                                >
+                                  <Truck className="h-4 w-4 mr-3" /> Courier Integration
+                                </DropdownMenuItem>
+                              </>
                             )}
 
                             {t.status === 'SHIPPED' && (
@@ -320,7 +334,13 @@ export default function InventoryTransferDesk() {
                             )}
 
                             <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800 my-2 mx-2" />
-                            <DropdownMenuItem className="rounded-xl px-4 py-3 text-xs font-bold cursor-pointer">
+                            <DropdownMenuItem 
+                              className="rounded-xl px-4 py-3 text-xs font-bold cursor-pointer"
+                              onClick={() => {
+                                setSelectedTransferId(t.id);
+                                setManifestOpen(true);
+                              }}
+                            >
                               <FileText className="h-4 w-4 mr-3" /> View Manifest
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -359,6 +379,17 @@ export default function InventoryTransferDesk() {
         open={isCreateModalOpen} 
         onOpenChange={setIsCreateModalOpen}
         onSuccess={fetchData}
+      />
+
+      <TransferManifestDialog 
+        open={manifestOpen} 
+        onOpenChange={setManifestOpen} 
+        transferId={selectedTransferId} 
+      />
+
+      <FutureIntegrationDialog 
+        open={futureIntegrationOpen} 
+        onOpenChange={setFutureIntegrationOpen} 
       />
     </div>
   );
