@@ -145,25 +145,25 @@ export function TransferManifestDialog({
                   <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800">
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Requested</div>
                     <div className="text-[11px] font-bold truncate">
-                      {formatDate(transfer.requested_at || transfer.created_at)}
+                      {formatDate(transfer.requested_at || transfer.requestedAt || transfer.created_at || transfer.createdAt)}
                     </div>
                   </div>
                   <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800">
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Picked</div>
                     <div className="text-[11px] font-bold truncate">
-                      {formatDate(transfer.picked_at)}
+                      {formatDate(transfer.picked_at || transfer.pickedAt)}
                     </div>
                   </div>
                   <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800">
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Shipped</div>
                     <div className="text-[11px] font-bold truncate">
-                      {formatDate(transfer.shipped_at)}
+                      {formatDate(transfer.shipped_at || transfer.shippedAt)}
                     </div>
                   </div>
                   <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800">
                     <div className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Received</div>
                     <div className="text-[11px] font-bold truncate">
-                      {formatDate(transfer.received_at)}
+                      {formatDate(transfer.received_at || transfer.receivedAt)}
                     </div>
                   </div>
                 </div>
