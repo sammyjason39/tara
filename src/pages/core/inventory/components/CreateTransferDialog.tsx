@@ -171,7 +171,7 @@ export function CreateTransferDialog({
       setSelectedItems(prev => [
         ...prev,
         {
-          id: crypto.randomUUID(),
+          id: Math.random().toString(36).substring(2, 9),
           item,
           quantity: 1,
           maxQuantity: maxQty
