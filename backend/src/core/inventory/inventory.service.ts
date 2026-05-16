@@ -506,15 +506,27 @@ export class InventoryService {
       // If was PICKED, release reservation and then transfer out. 
       // If was REQUESTED, just transfer out (which checks available).
       if (transfer.status === 'PICKED') {
-        await this.repository.releaseStock(
-            ctx,
-            transfer.item_id,
-            transfer.from_location_id,
-            transfer.quantity,
-            transfer.id,
-            'STOCK_TRANSFER',
-            tx
-        );
+        const reservation = await tx.stock_reservations.findFirst({
+          where: {
+            tenant_id: ctx.tenant_id,
+            product_id: transfer.item_id,
+            location_id: transfer.from_location_id,
+            reference_id: transfer.id,
+            status: 'PENDING'
+          }
+        });
+
+        if (reservation) {
+          await this.repository.releaseStock(
+              ctx,
+              transfer.item_id,
+              transfer.from_location_id,
+              Number(transfer.quantity),
+              transfer.id,
+              'STOCK_TRANSFER',
+              tx
+          );
+        }
       }
 
       // Atomic movement to Transit Pool
