@@ -478,6 +478,14 @@ export const inventoryService = {
     return apiRequest<any[]>("/v1/inventory/stock-transfers", "GET", session);
   },
 
+  async getStockTransfer(
+    tenantId: string,
+    session: SessionContext,
+    id: string,
+  ): Promise<any> {
+    return apiRequest<any>(`/v1/inventory/stock-transfers/${id}`, "GET", session);
+  },
+
   async createStockTransfer(
     tenantId: string,
     session: SessionContext,

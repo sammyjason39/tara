@@ -715,6 +715,17 @@ export class InventoryController {
     return { success: true, tenant_id, count: data.length, data };
   }
 
+  @Get("stock-transfers/:id")
+  @RequireInventoryRole(InventoryRole.VIEWER)
+  async getStockTransfer(
+    @Req() request: RequestWithTenant,
+    @Param("id") id: string,
+  ) {
+    const data = await this.inventoryService.getTransfer(request.tenantContext, id);
+    if (!data) throw new Error("Transfer not found");
+    return { success: true, data };
+  }
+
   @Post("stock-transfers")
   @RequireInventoryRole(InventoryRole.SUPERVISOR)
   async createStockTransfer(

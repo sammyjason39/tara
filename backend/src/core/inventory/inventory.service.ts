@@ -432,6 +432,10 @@ export class InventoryService {
     return this.repository.getTransfers(ctx);
   }
 
+  async getTransfer(ctx: TenantContext, id: string) {
+    return this.repository.getTransferById(ctx, id);
+  }
+
   async createTransfer(ctx: TenantContext, data: any, user_id: string) {
     const transfer = await this.repository.createStockTransfer(ctx, {
       ...data,
@@ -527,10 +531,9 @@ export class InventoryService {
       );
 
       const updated = await this.repository.updateStockTransfer(ctx, id, {
-        status: 'IN_TRANSIT',
+        status: 'SHIPPED',
         shipped_by: user_id,
         shipped_at: new Date(),
-        tracking_number,
       }, tx);
 
       await this.auditService.log({
