@@ -39,38 +39,22 @@ import { toast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import DepartmentWorkspaceLayout from "@/components/layouts/DepartmentWorkspaceLayout";
 import { CreateTransferDialog } from "./components/CreateTransferDialog";
-
-const SECTIONS = [
-  {
-    title: "INVENTORY OPS",
-    items: [
-      { id: 'stock', icon: BoxIcon, label: "Stock Hub", to: "/core/inventory/stock" },
-      { id: 'transfer', icon: ArrowRightLeft, label: "Transfer Desk", to: "/core/inventory/transfer" },
-      { id: 'audit', icon: History, label: "Stock Audit", to: "/core/inventory/audit" },
-    ]
-  },
-  {
-    title: "PROCUREMENT",
-    items: [
-      { id: 'orders', icon: ShoppingCart, label: "Purchase Orders", to: "/core/inventory/orders" },
-      { id: 'vendors', icon: Truck, label: "Vendor Management", to: "/core/inventory/vendors" },
-    ]
-  },
-  {
-    title: "CONFIGURATION",
-    items: [
-      { id: 'categories', icon: Tags, label: "Categories", to: "/core/inventory/categories" },
-      { id: 'settings', icon: Settings, label: "Inventory Settings", to: "/core/inventory/settings" },
-    ]
-  }
-];
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { inventoryService } from "@/core/services/inventory/inventoryService";
 
 interface TransferRecord {
   id: string;
   transferNo: string;
   fromLocation: string;
   toLocation: string;
-  status: "DRAFT" | "PENDING" | "SHIPPED" | "RECEIVED" | "CANCELLED";
+  status: "REQUESTED" | "PICKED" | "SHIPPED" | "RECEIVED" | "CANCELLED";
   createdAt: string;
   itemCount: number;
 }
@@ -81,6 +65,7 @@ export default function InventoryTransferDesk() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -109,6 +94,45 @@ export default function InventoryTransferDesk() {
       setLoading(false);
     }
   }, [session]);
+
+  const handlePick = async (id: string) => {
+    setActionLoading(id);
+    try {
+      await inventoryService.pickStockTransfer(session.tenant_id, session, id);
+      toast({ title: "Authorization Success", description: "Transfer has been authorized and items picked." });
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Authorization Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleShip = async (id: string) => {
+    setActionLoading(id);
+    try {
+      await inventoryService.shipStockTransfer(session.tenant_id, session, id, `TRK-${id.split('-')[0].toUpperCase()}`);
+      toast({ title: "Logistics Engaged", description: "Items are now in transit." });
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Logistics Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleReceive = async (id: string) => {
+    setActionLoading(id);
+    try {
+      await inventoryService.receiveStockTransfer(session.tenant_id, session, id);
+      toast({ title: "Asset Reconciled", description: "Inventory has been updated at destination node." });
+      fetchData();
+    } catch (err: any) {
+      toast({ title: "Reconciliation Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -154,7 +178,7 @@ export default function InventoryTransferDesk() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black tracking-tighter text-amber-600">
-              {transfers.filter(t => t.status === 'PENDING').length}
+              {transfers.filter(t => t.status === 'REQUESTED' || t.status === 'PICKED').length}
             </div>
             <p className="text-[10px] font-bold text-amber-500 mt-1 uppercase tracking-widest">Awaiting Authorization</p>
           </CardContent>
@@ -226,7 +250,7 @@ export default function InventoryTransferDesk() {
                   filteredTransfers.map((t) => (
                     <TableRow 
                       key={t.id} 
-                      className="border-slate-100 dark:border-slate-800 group hover:bg-primary/[0.02] cursor-pointer transition-all"
+                      className="border-slate-100 dark:border-slate-800 group hover:bg-primary/[0.02] transition-all"
                     >
                       <TableCell className="pl-8 py-6">
                         <span className="text-xs font-mono font-black text-slate-400 group-hover:text-primary transition-colors">{t.transferNo}</span>
@@ -247,15 +271,60 @@ export default function InventoryTransferDesk() {
                         <Badge variant="outline" className={`text-[9px] font-black tracking-[0.2em] rounded-lg border-none uppercase ${
                           t.status === 'SHIPPED' ? 'bg-indigo-500/10 text-indigo-500' : 
                           t.status === 'RECEIVED' ? 'bg-emerald-500/10 text-emerald-500' : 
+                          t.status === 'REQUESTED' ? 'bg-amber-500/10 text-amber-500' :
+                          t.status === 'PICKED' ? 'bg-blue-500/10 text-blue-500' :
                           'bg-slate-500/10 text-slate-500'
                         }`}>
                           {t.status}
                         </Badge>
                       </TableCell>
                       <TableCell className="py-6 text-right pr-8">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl hover:bg-primary/10">
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800" disabled={actionLoading === t.id}>
+                              {actionLoading === t.id ? (
+                                <Activity className="h-4 w-4 animate-spin text-primary" />
+                              ) : (
+                                <MoreHorizontal className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56 rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2 shadow-2xl">
+                            <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest opacity-40 px-4 py-3">Protocol Actions</DropdownMenuLabel>
+                            
+                            {t.status === 'REQUESTED' && (
+                              <DropdownMenuItem 
+                                className="rounded-xl px-4 py-3 text-xs font-bold cursor-pointer hover:bg-amber-50 dark:hover:bg-amber-500/10 text-amber-600 transition-colors"
+                                onClick={() => handlePick(t.id)}
+                              >
+                                <Box className="h-4 w-4 mr-3" /> Authorize & Pick Items
+                              </DropdownMenuItem>
+                            )}
+
+                            {t.status === 'PICKED' && (
+                              <DropdownMenuItem 
+                                className="rounded-xl px-4 py-3 text-xs font-bold cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-500/10 text-indigo-600 transition-colors"
+                                onClick={() => handleShip(t.id)}
+                              >
+                                <Truck className="h-4 w-4 mr-3" /> Dispatch Shipment
+                              </DropdownMenuItem>
+                            )}
+
+                            {t.status === 'SHIPPED' && (
+                              <DropdownMenuItem 
+                                className="rounded-xl px-4 py-3 text-xs font-bold cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-emerald-600 transition-colors"
+                                onClick={() => handleReceive(t.id)}
+                              >
+                                <ChevronRight className="h-4 w-4 mr-3" /> Confirm Reception
+                              </DropdownMenuItem>
+                            )}
+
+                            <DropdownMenuSeparator className="bg-slate-100 dark:bg-slate-800 my-2 mx-2" />
+                            <DropdownMenuItem className="rounded-xl px-4 py-3 text-xs font-bold cursor-pointer">
+                              <FileText className="h-4 w-4 mr-3" /> View Manifest
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))
