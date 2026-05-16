@@ -565,8 +565,12 @@ export class InventoryService {
   async receiveTransfer(ctx: TenantContext, id: string, user_id: string) {
     return this.prisma.$transaction(async (tx) => {
       const transfer = await this.repository.getTransferById(ctx, id);
-      if (!transfer || transfer.status !== 'IN_TRANSIT') {
-        throw new Error('Transfer not found or not in IN_TRANSIT status');
+      if (!transfer || (transfer.status !== 'IN_TRANSIT' && transfer.status !== 'SHIPPED' && transfer.status !== 'RECEIVED')) {
+        throw new Error('Transfer not found or not in a receivable status');
+      }
+
+      if (transfer.status === 'RECEIVED') {
+        return transfer;
       }
 
       const transitLocation = await this.getOrCreateTransitLocation(ctx, transfer.from_location_id, transfer.to_location_id);

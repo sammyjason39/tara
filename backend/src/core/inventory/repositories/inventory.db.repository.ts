@@ -1543,23 +1543,38 @@ export class InventoryDbRepository implements IInventoryRepository {
         );
       }
 
-      return t.stock_movements.create({
-        data: {
-          id: uuidv4(),
-          updated_at: new Date(),
-          ...MultiTenancyUtil.getScope(ctx),
-          product_id: product_id,
-          location_id: toLocationId,
-          from_location_id: fromLocationId,
-          to_location_id: toLocationId,
-          quantity: quantity,
-          type: "TRANSFER_IN",
+      // 3. Create movement if not exists
+      const existingMovement = await t.stock_movements.findFirst({
+        where: {
+          tenant_id: ctx.tenant_id,
           reference_id: referenceId,
           reference_type: referenceType,
-          transfer_group_id: transferGroupId,
-          performed_by: "system",
-        },
+          type: "TRANSFER_IN",
+          product_id,
+          location_id: toLocationId,
+        }
       });
+
+      if (!existingMovement) {
+        return t.stock_movements.create({
+          data: {
+            id: uuidv4(),
+            updated_at: new Date(),
+            ...MultiTenancyUtil.getScope(ctx),
+            product_id: product_id,
+            location_id: toLocationId,
+            from_location_id: fromLocationId,
+            to_location_id: toLocationId,
+            quantity: quantity,
+            type: "TRANSFER_IN",
+            reference_id: referenceId,
+            reference_type: referenceType,
+            transfer_group_id: transferGroupId,
+            performed_by: "system",
+          },
+        });
+      }
+      return existingMovement;
     };
     return tx ? execute(tx) : this.prisma.$transaction(execute);
   }
