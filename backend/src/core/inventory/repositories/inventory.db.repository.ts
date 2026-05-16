@@ -1735,7 +1735,7 @@ export class InventoryDbRepository implements IInventoryRepository {
     return db.inventory_transfers.create({
       data: {
         ...data,
-        ...MultiTenancyUtil.getScope(ctx),
+        ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
         id: uuidv4(),
         updated_at: new Date(),
       },
@@ -1744,8 +1744,9 @@ export class InventoryDbRepository implements IInventoryRepository {
 
   async updateStockTransfer(ctx: TenantContext, id: string, data: any, tx?: any): Promise<any> {
     const db = tx || this.prisma;
+    const scope = MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true });
     return db.inventory_transfers.update({
-      where: { id, ...MultiTenancyUtil.getScope(ctx) },
+      where: { id, ...scope },
       data: {
         ...data,
         updated_at: new Date(),
