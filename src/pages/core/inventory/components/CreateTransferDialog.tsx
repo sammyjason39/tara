@@ -289,8 +289,8 @@ export function CreateTransferDialog({
         onOpenChange(o);
       }}
     >
-      <DialogContent className="max-w-3xl bg-slate-950 border-slate-800 rounded-[2.5rem] p-0 overflow-hidden shadow-2xl">
-        <DialogHeader className="h-28 bg-gradient-to-r from-indigo-600/20 to-violet-600/20 border-b border-slate-800/50 p-8 flex flex-row items-end justify-between m-0 space-y-0">
+      <DialogContent className="max-w-3xl max-h-[90vh] bg-slate-950 border-slate-800 rounded-[2.5rem] p-0 overflow-hidden shadow-2xl flex flex-col">
+        <DialogHeader className="shrink-0 h-28 bg-gradient-to-r from-indigo-600/20 to-violet-600/20 border-b border-slate-800/50 p-8 flex flex-row items-end justify-between m-0 space-y-0">
           <div>
             <DialogTitle className="text-3xl font-black italic uppercase tracking-tighter text-white leading-none">
               Logistics Protocol
@@ -304,7 +304,7 @@ export function CreateTransferDialog({
           </Badge>
         </DialogHeader>
 
-        <div className="p-8 space-y-8">
+        <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
           {/* Origin/Dest Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-900/30 p-6 rounded-[2rem] border border-slate-800/50">
             <div className="space-y-3">
@@ -374,96 +374,101 @@ export function CreateTransferDialog({
               <Layers className="h-3 w-3" /> Manifest Items
             </Label>
             
-            <ScrollArea className="h-72 w-full rounded-3xl border border-slate-800 bg-slate-900/20 p-2">
-              <div className="space-y-2 p-2">
-                {selectedItems.length === 0 ? (
-                  <div className="h-60 flex flex-col items-center justify-center text-slate-700">
-                    <ShoppingBag className="h-12 w-12 mb-4 opacity-20" />
-                    <p className="text-sm font-black uppercase tracking-[0.2em] italic">Manifest Empty</p>
-                  </div>
-                ) : (
-                  selectedItems.map((item, index) => (
-                    <div 
-                      key={item.id} 
-                      className="group flex items-center gap-4 bg-slate-900/60 hover:bg-slate-900 border border-slate-800 p-3 rounded-2xl transition-all shadow-sm"
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-slate-950 flex items-center justify-center text-[10px] font-black text-slate-600 border border-slate-800">
-                        {String(index + 1).padStart(2, '0')}
-                      </div>
-                      
-                      <div className="w-14 h-14 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center shrink-0">
+            <div className="space-y-2">
+              {selectedItems.length === 0 ? (
+                <div className="h-60 flex flex-col items-center justify-center text-slate-700 bg-slate-900/20 rounded-3xl border border-dashed border-slate-800">
+                  <ShoppingBag className="h-12 w-12 mb-4 opacity-20" />
+                  <p className="text-sm font-black uppercase tracking-[0.2em] italic">Manifest Empty</p>
+                </div>
+              ) : (
+                selectedItems.map((item, index) => (
+                  <div 
+                    key={item.id} 
+                    className="group flex items-center gap-4 bg-slate-900/60 hover:bg-slate-900 border border-slate-800 p-3 rounded-2xl transition-all shadow-sm"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-slate-950 flex items-center justify-center text-[10px] font-black text-slate-600 border border-slate-800">
+                      {String(index + 1).padStart(2, '0')}
+                    </div>
+                    
+                    <div className="w-14 h-14 rounded-xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center shrink-0">
+                       {(item.item as any).image_url ? (
+                         <img 
+                           src={(item.item as any).image_url} 
+                           alt={item.item.name} 
+                           className="h-full w-full object-cover"
+                         />
+                       ) : (
                          <Package className="h-6 w-6 text-slate-800" />
-                         {/* Image would go here if available */}
-                      </div>
+                       )}
+                    </div>
 
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-black uppercase tracking-tighter text-slate-200 truncate leading-none">
-                          {item.item.name}
-                        </p>
-                        <p className="text-[10px] font-mono font-bold text-indigo-400 mt-1 uppercase">
-                          {item.item.sku}
-                        </p>
-                      </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-black uppercase tracking-tighter text-slate-200 truncate leading-none">
+                        {item.item.name}
+                      </p>
+                      <p className="text-[10px] font-mono font-bold text-indigo-400 mt-1 uppercase">
+                        {item.item.sku}
+                      </p>
+                    </div>
 
-                      <div className="flex items-center gap-3 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 rounded-lg hover:bg-rose-500/10 hover:text-rose-500"
-                          onClick={() => updateItemQuantity(item.id, item.quantity - 1)}
-                        >
-                          <Minus className="h-3 w-3" />
-                        </Button>
-                        <div className="w-10 text-center">
-                          <p className="text-sm font-black italic">{item.quantity}</p>
-                          <p className="text-[8px] font-bold text-slate-600 uppercase">Max: {item.maxQuantity}</p>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 rounded-lg hover:bg-emerald-500/10 hover:text-emerald-500"
-                          onClick={() => updateItemQuantity(item.id, item.quantity + 1)}
-                        >
-                          <PlusIcon className="h-3 w-3" />
-                        </Button>
-                      </div>
-
+                    <div className="flex items-center gap-3 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-10 w-10 rounded-xl hover:bg-rose-500 hover:text-white transition-colors"
-                        onClick={() => removeItem(item.id)}
+                        className="h-8 w-8 rounded-lg hover:bg-rose-500/10 hover:text-rose-500"
+                        onClick={() => updateItemQuantity(item.id, item.quantity - 1)}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <div className="w-10 text-center">
+                        <p className="text-sm font-black italic">{item.quantity}</p>
+                        <p className="text-[8px] font-bold text-slate-600 uppercase">Max: {item.maxQuantity}</p>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 rounded-lg hover:bg-emerald-500/10 hover:text-emerald-500"
+                        onClick={() => updateItemQuantity(item.id, item.quantity + 1)}
+                      >
+                        <PlusIcon className="h-3 w-3" />
                       </Button>
                     </div>
-                  ))
-                )}
-              </div>
-            </ScrollArea>
+
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-10 w-10 rounded-xl hover:bg-rose-500 hover:text-white transition-colors"
+                      onClick={() => removeItem(item.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
 
         {error && (
-          <div className="mx-8 mb-4 flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-400 font-bold">
+          <div className="mx-8 mb-4 flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-400 font-bold shrink-0">
             <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
           </div>
         )}
 
-        <DialogFooter className="p-8 bg-slate-900/40 border-t border-slate-800 gap-4">
+        <DialogFooter className="shrink-0 p-8 bg-slate-900/40 border-t border-slate-800 gap-4 flex flex-row items-center">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={loading}
-            className="h-14 px-8 rounded-2xl border-slate-800 font-black uppercase tracking-[0.2em] text-[10px] hover:bg-slate-800 transition-all"
+            className="h-14 px-8 rounded-2xl border-slate-800 font-black uppercase tracking-[0.2em] text-[10px] hover:bg-slate-800 transition-all m-0"
           >
             Abort
           </Button>
           <Button
             onClick={handleExecute}
             disabled={loading || selectedItems.length === 0}
-            className="flex-1 h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-indigo-500/20 group transition-all transform hover:scale-[1.01] active:scale-[0.99]"
+            className="flex-1 h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl shadow-indigo-500/20 group transition-all transform hover:scale-[1.01] active:scale-[0.99] m-0"
           >
             {loading ? (
               <span className="flex items-center gap-2 animate-pulse">
