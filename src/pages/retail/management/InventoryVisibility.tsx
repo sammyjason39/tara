@@ -62,7 +62,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { inventoryService } from "@/core/services/inventory/inventoryService";
 import { retailService } from "@/core/services/retail/retailService";
 import { crisisManagementService } from "@/core/services/retail/crisisManagementService";
-import type { RetailProduct, RetailStore } from "@/core/types/retail/retail";
+import type { RetailProduct, RetailStore, RetailChannel } from "@/core/types/retail/retail";
 import type {
   InventoryItemView,
   InventoryFilters,
@@ -139,7 +139,10 @@ const InventoryVisibility = () => {
   useEffect(() => {
     const activeEntity = activeStore || activeChannel;
     if (activeEntity) {
-      const locId = activeEntity.locationId || activeEntity.id;
+      // RetailStore has locationId; RetailChannel has branchId
+      const locId = activeStore
+        ? activeStore.locationId
+        : (activeEntity as RetailChannel).branchId || activeEntity.id;
       setSelectedStoreId(activeEntity.id);
       setLocationId(locId);
       isFetchingRef.current = false;
@@ -221,9 +224,9 @@ const InventoryVisibility = () => {
         q: debouncedSearch || undefined,
         page: page,
         pageSize: PAGE_SIZE,
-        locationId: locationId,
-        sortBy: filters.sortBy.split("-")[0] as any,
-        sortDir: filters.sortBy.split("-")[1] as any,
+        locationId,
+        sortBy: filters.sortBy.split("-")[0] as "name" | "quantity" | "price",
+        sortDir: filters.sortBy.split("-")[1] as "asc" | "desc",
         minPrice: filters.minPrice,
         maxPrice: filters.maxPrice,
       });
@@ -233,16 +236,16 @@ const InventoryVisibility = () => {
         return;
       }
 
-      const items = Array.isArray(data) ? data : (data as any).items || [];
-      const totalCount = data.meta?.total ?? items.length;
+      const items: RetailProduct[] = Array.isArray(data) ? data : (data as { items: RetailProduct[] }).items || [];
+      const totalCount = (data as { meta?: { total?: number } }).meta?.total ?? items.length;
 
-      const mapped: InventoryItemView[] = items.map((p: any) => {
-        const onHandVal  = Number(p.metadata?.stockOnHand ?? p.metadata?.stock_on_hand ?? p.stock ?? 0);
-        const minBufVal  = Number(p.metadata?.minBuffer ?? p.metadata?.min_stock ?? 0);
+      const mapped: InventoryItemView[] = items.map((p) => {
+        const onHandVal  = Number((p.metadata as Record<string,unknown>)?.stockOnHand ?? (p.metadata as Record<string,unknown>)?.stock_on_hand ?? p.stock ?? 0);
+        const minBufVal  = Number((p.metadata as Record<string,unknown>)?.minBuffer ?? (p.metadata as Record<string,unknown>)?.min_stock ?? 0);
         // Derive display stock status from quantities
         let stockStatus: InventoryItemView["status"] = (p.status as InventoryItemView["status"]) || "ok";
-        if (onHandVal === 0) stockStatus = "critical" as any;                       // filter value="critical"
-        else if (minBufVal > 0 && onHandVal <= minBufVal) stockStatus = "low" as any; // filter value="low"
+        if (onHandVal === 0) stockStatus = "critical" as InventoryItemView["status"];
+        else if (minBufVal > 0 && onHandVal <= minBufVal) stockStatus = "low" as InventoryItemView["status"];
         // else: preserve item's own status (active/inactive/etc.) for those filters
 
         return {
@@ -261,15 +264,13 @@ const InventoryVisibility = () => {
           unit: p.unit,
           type: p.type,
           description: p.description,
-          imageUrl: p.imageUrl || p.image_url || null,
+          imageUrl: (p as unknown as Record<string,string>).imageUrl || (p as unknown as Record<string,string>).image_url || null,
         };
       });
       setInventory(mapped);
       setTotalItems(totalCount);
 
-      const sData = (await retailService.getInventoryStats(tenantId, session, {
-        locationId: locationId
-      })) as any;
+      const sData = await retailService.getInventoryStats(tenantId, session);
 
       if (sData) {
         setStats({
@@ -298,6 +299,8 @@ const InventoryVisibility = () => {
     filters.category,
     filters.type,
     filters.sortBy,
+    filters.minPrice,
+    filters.maxPrice,
     locationId,
     page,
   ]);
@@ -348,13 +351,13 @@ const InventoryVisibility = () => {
       ]);
       
       const ecommerceStores = (Array.isArray(channelsData) ? channelsData : [])
-        .filter(c => c.type === "ecommerce" || c.type === "DIRECT" || c.type === "OWNED")
+        .filter(c => c.type === "DIRECT" || c.type === "OWNED" || c.type === "MARKETPLACE")
         .map(c => ({
           id: c.id,
           name: `${c.name} (Ecommerce)`,
           locationId: c.branchId || c.id,
-          type: "warehouse" as any,
-          status: "active" as any,
+          type: "warehouse" as RetailStore["type"],
+          status: "active" as RetailStore["status"],
           code: c.id,
           tenantId: tenantId,
           infrastructureRegistry: {},
@@ -366,11 +369,11 @@ const InventoryVisibility = () => {
 
       const mappedStores = (Array.isArray(storesData) ? storesData : []).map(s => ({
         ...s,
-        locationId: s.locationId || s.location_id || s.id,
+        locationId: s.locationId || s.id,
       }));
 
       const combined = [...mappedStores, ...ecommerceStores];
-      setStores(combined);
+      setStores(combined as RetailStore[]);
       
       if (combined.length > 0 && !activeStore) {
         // Restore previously active branch from session (RetailContext sets session.location_id = store.id)
@@ -432,18 +435,12 @@ const InventoryVisibility = () => {
     if (!selectedItem || !locationId) return;
     setIsUpdatingBuffer(true);
     try {
-      // Update location-specific buffer
       await retailService.updateProduct(tenantId!, session!, selectedItem.id, {
-        min_buffer: bufferValue,
-        location_id: locationId
-      });
-
-      // Update global min_stock metadata
-      await inventoryService.updateItem(session!, selectedItem.id, {
         metadata: {
-          ...((selectedItem as any).metadata || {}),
-          min_stock: globalMinStock
-        }
+          ...((selectedItem as unknown as RetailProduct).metadata || {}),
+          minBuffer: bufferValue,
+          min_stock: globalMinStock,
+        },
       });
 
       toast({
@@ -544,7 +541,7 @@ const InventoryVisibility = () => {
       console.log("MOVEMENT_REQUEST_SUBMIT", {
         type: movementType,
         locationId,
-        actor: session?.userId,
+        actor: session?.user_id,
         payload: data,
       });
 
@@ -555,7 +552,7 @@ const InventoryVisibility = () => {
 
       setMovementType(null);
     },
-    [movementType, locationId, session?.userId, toast],
+    [movementType, locationId, session?.user_id, toast],
   );
 
   const startOpname = useCallback(() => {
@@ -584,7 +581,7 @@ const InventoryVisibility = () => {
             q: sku,
             pageSize: 1,
           });
-          const items = Array.isArray(masterResults) ? masterResults : (masterResults as any).items || [];
+          const items: RetailProduct[] = Array.isArray(masterResults) ? masterResults : (masterResults as { items: RetailProduct[] }).items || [];
           const masterItem = items[0];
           
           if (masterItem) {
@@ -598,7 +595,7 @@ const InventoryVisibility = () => {
               reserved: 0,
               available: 0,
               minBuffer: 0,
-              status: masterItem.status || "ok",
+              status: (masterItem.status as InventoryItemView["status"]) || "ok",
               barcode: masterItem.barcode,
               price: masterItem.price,
               unit: masterItem.unit,
@@ -677,16 +674,15 @@ const InventoryVisibility = () => {
 
     setIsSubmitting(true);
     try {
-      await retailService.submitOpname(tenantId, session, {
-        locationId: locationId!,
-        items: (Array.isArray(opnameEntries) ? opnameEntries : []).map((e: any) => ({
-          productId: e.id,
+      await retailService.submitOpname(
+        tenantId,
+        session,
+        locationId!,
+        (Array.isArray(opnameEntries) ? opnameEntries : []).map((e) => ({
           sku: e.sku,
-          countedQty: e.counted,
-          expectedQty: e.expected,
-          notes: e.notes,
+          actualCount: Number(e.counted) || 0,
         })),
-      });
+      );
 
       toast({
         title: "Opname Submitted",
@@ -830,7 +826,7 @@ const InventoryVisibility = () => {
                 maxPrice={filters.maxPrice}
                 onPriceRangeChange={(min, max) => setFilters(prev => ({ ...prev, minPrice: min, maxPrice: max }))}
                 sortBy={filters.sortBy}
-                onSortChange={(v) => setFilters(prev => ({ ...prev, sortBy: v as any }))}
+                onSortChange={(v) => setFilters(prev => ({ ...prev, sortBy: v as InventoryFilters["sortBy"] }))}
                 advancedActions={
                   canWrite ? (
                     <Button
@@ -858,7 +854,7 @@ const InventoryVisibility = () => {
                   onEdit={(item) => {
                     setSelectedItem(item);
                     setBufferValue(item.minBuffer || 0);
-                    setGlobalMinStock(Number((item as any).metadata?.min_stock || 0));
+                    setGlobalMinStock(Number((item as unknown as RetailProduct).metadata?.min_stock || 0));
                     setIsBufferDialogOpen(true);
                   }}
                   onPrint={(item) => {
@@ -906,10 +902,8 @@ const InventoryVisibility = () => {
                 onBarcodeChange={setBarcodeInput}
                 onBarcodeKeyDown={handleBarcodeKeyDown}
                 onCountChange={handleCountChange}
-                onEntryChange={setOpnameEntries}
                 isLoading={isSubmitting}
                 statusBadge={statusBadge}
-                selectedStoreId={locationId || ""}
               />
             </div>
           </TabsContent>
@@ -918,7 +912,6 @@ const InventoryVisibility = () => {
             <MovementsTab
               canWrite={canWrite}
               auditLog={MOCK_AUDIT_LOG}
-              selectedStoreId={locationId || ""}
               onMovement={(type) => setMovementType(type)}
             />
           </TabsContent>
@@ -1240,10 +1233,10 @@ const InventoryVisibility = () => {
                   });
                   setIsReclassifyOpen(false);
                   fetchInventory();
-                } catch (err: any) {
+                } catch (err: unknown) {
                   toast({
                     title: "Error",
-                    description: err.message || "Failed to reclassify item.",
+                    description: err instanceof Error ? err.message : "Failed to reclassify item.",
                     variant: "destructive",
                   });
                 }
