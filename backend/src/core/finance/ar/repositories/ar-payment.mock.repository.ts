@@ -60,4 +60,11 @@ export class ArPaymentMockRepository implements IArPaymentRepository {
   async findAllocationsByPayment(tenant_id: string, company_id: string, paymentId: string): Promise<IArPaymentAllocation[]> {
     return this.allocation.filter((a: any) => a.paymentId === paymentId);
   }
+
+  async findOrphanedEntries(tenant_id: string, company_id: string): Promise<any[]> {
+    return this.payments.filter(p => {
+      const allocations = this.allocation.filter(a => a.paymentId === p.id);
+      return allocations.length === 0;
+    });
+  }
 }

@@ -16,6 +16,7 @@ import {
   HttpStatus,
   Patch,
   Headers,
+  BadRequestException,
 } from "@nestjs/common";
 import { Request } from "express";
 import { RetailService } from "./retail.service";

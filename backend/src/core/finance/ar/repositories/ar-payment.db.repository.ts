@@ -81,6 +81,17 @@ export class ArPaymentDbRepository implements IArPaymentRepository {
     return this.mapAllocationToDomain(created);
   }
 
+  async findOrphanedEntries(tenant_id: string, company_id: string): Promise<any[]> {
+    return this.db.finance_ar_payments.findMany({
+      where: {
+        tenant_id: tenant_id,
+        finance_ar_payment_allocations: {
+          none: {}
+        }
+      }
+    });
+  }
+
   private mapToDomain(item: any): IArPayment {
     return {
       id: item.id,

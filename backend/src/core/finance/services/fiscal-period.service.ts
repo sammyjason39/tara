@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import { Injectable, BadRequestException, Inject, Logger } from '@nestjs/common';
 import { IFiscalPeriodRepository } from '../repositories/interfaces/fiscal.repository.interface';
 import { IJournalRepository } from '../repositories/interfaces/journal.repository.interface';
 import { FiscalPeriodStatus } from '../domain/finance.constants';
@@ -6,6 +6,8 @@ import { FinanceFiscalPeriod, FinanceFiscalYear, PeriodClosingRecord } from '../
 
 @Injectable()
 export class FiscalPeriodService {
+  private readonly logger = new Logger(FiscalPeriodService.name);
+
   constructor(
     @Inject('IFiscalPeriodRepository')
     private readonly fiscalRepo: IFiscalPeriodRepository,
