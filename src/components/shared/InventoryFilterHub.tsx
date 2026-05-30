@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, SlidersHorizontal, ChevronDown, ChevronUp, X } from "lucide-react";
+import { Search, SlidersHorizontal, ChevronDown, ChevronUp } from "lucide-react";
 import {
   Select as UISelect,
   SelectContent as UISelectContent,
@@ -22,8 +22,11 @@ export interface InventoryFilterHubProps {
   onTypeChange?: (val: string) => void;
   status?: string;
   onStatusChange?: (val: string) => void;
+  /** @deprecated Location is now driven by the global header selector. Pass nothing. */
   location?: string;
+  /** @deprecated Location is now driven by the global header selector. Pass nothing. */
   onLocationChange?: (val: string) => void;
+  /** @deprecated Location is now driven by the global header selector. Pass nothing. */
   locations?: { id: string; name: string }[];
   moduleTag?: string;
   onModuleTagChange?: (val: string) => void;
@@ -31,10 +34,20 @@ export interface InventoryFilterHubProps {
   minPrice?: number;
   maxPrice?: number;
   onPriceRangeChange?: (min?: number, max?: number) => void;
+  /** Slot for the + Add Item button (and other right-aligned actions) */
   advancedActions?: React.ReactNode;
   sortBy?: string;
   onSortChange?: (val: string) => void;
 }
+
+const SORT_OPTIONS = [
+  { value: "name-asc", label: "Name (A-Z)" },
+  { value: "name-desc", label: "Name (Z-A)" },
+  { value: "quantity-desc", label: "Highest Quantity" },
+  { value: "quantity-asc", label: "Lowest Quantity" },
+  { value: "price-desc", label: "Highest Price" },
+  { value: "price-asc", label: "Lowest Price" },
+];
 
 export const InventoryFilterHub: React.FC<InventoryFilterHubProps> = ({
   search,
@@ -46,17 +59,11 @@ export const InventoryFilterHub: React.FC<InventoryFilterHubProps> = ({
   onTypeChange,
   status,
   onStatusChange,
-  location,
-  onLocationChange,
-  locations,
-  locationLabel = "Location",
-  moduleTag,
-  onModuleTagChange,
   minPrice,
   maxPrice,
   onPriceRangeChange,
   advancedActions,
-  sortBy = "created_at-desc",
+  sortBy = "name-asc",
   onSortChange,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -65,15 +72,16 @@ export const InventoryFilterHub: React.FC<InventoryFilterHubProps> = ({
     category !== "all" && category !== "",
     type && type !== "all",
     status && status !== "all",
-    location && location !== "all" && location !== "",
-    moduleTag && moduleTag !== "",
-    (minPrice !== undefined || maxPrice !== undefined)
+    minPrice !== undefined || maxPrice !== undefined,
+    sortBy && sortBy !== "name-asc",
   ].filter(Boolean).length;
 
   return (
     <div className="w-full space-y-4">
-      <div className="flex flex-col md:flex-row items-stretch gap-4">
-        {/* Main Search Bar */}
+      {/* ── Top Row: Search │ Filter & Sort │ Actions ── */}
+      <div className="flex flex-col md:flex-row items-stretch gap-3">
+
+        {/* Quick Search */}
         <div className="relative flex-1 group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
           <UIInput
@@ -84,16 +92,18 @@ export const InventoryFilterHub: React.FC<InventoryFilterHubProps> = ({
           />
         </div>
 
-        {/* Advanced Filters Toggle */}
+        {/* Filter & Sort Toggle */}
         <Button
           variant={isExpanded ? "default" : "outline"}
           onClick={() => setIsExpanded(!isExpanded)}
-          className={`h-14 px-6 rounded-2xl gap-3 font-black italic text-xs uppercase tracking-widest transition-all flex-1 md:flex-none ${
-            isExpanded ? "bg-white text-slate-950" : "bg-slate-900/40 backdrop-blur-md border-white/10 text-slate-400 hover:bg-slate-800"
+          className={`h-14 px-6 rounded-2xl gap-3 font-black italic text-xs uppercase tracking-widest transition-all whitespace-nowrap ${
+            isExpanded
+              ? "bg-white text-slate-950"
+              : "bg-slate-900/40 backdrop-blur-md border-white/10 text-slate-400 hover:bg-slate-800"
           }`}
         >
           <SlidersHorizontal className="w-4 h-4" />
-          Filter & Sort
+          Filter &amp; Sort
           {activeFilterCount > 0 && (
             <Badge className="bg-indigo-500 text-white ml-1 h-5 min-w-[20px] justify-center px-1">
               {activeFilterCount}
@@ -102,10 +112,11 @@ export const InventoryFilterHub: React.FC<InventoryFilterHubProps> = ({
           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </Button>
 
+        {/* Right-aligned slot: + Add Item etc. */}
         {advancedActions}
       </div>
 
-      {/* Advanced Filter Panel */}
+      {/* ── Expandable Filter Panel ── */}
       <AnimatePresence>
         {isExpanded && (
           <motion.div
@@ -115,7 +126,8 @@ export const InventoryFilterHub: React.FC<InventoryFilterHubProps> = ({
             className="overflow-hidden"
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-8 rounded-[2.5rem] bg-slate-900/30 backdrop-blur-2xl border border-white/5 shadow-2xl mt-2">
-              {/* Category Filter (Moved Inside) */}
+
+              {/* Category */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Category</label>
                 <UISelect value={category || "all"} onValueChange={onCategoryChange}>
@@ -124,14 +136,33 @@ export const InventoryFilterHub: React.FC<InventoryFilterHubProps> = ({
                   </UISelectTrigger>
                   <UISelectContent className="rounded-xl bg-slate-900 border-white/10 text-white">
                     <UISelectItem value="all">All Categories</UISelectItem>
-                    {categories.map((c) => (
-                      <UISelectItem key={c.id} value={c.id}>{c.name}</UISelectItem>
+                    {categories
+                      .filter((c) => c.id !== "all")
+                      .map((c) => (
+                        <UISelectItem key={c.id} value={c.id}>{c.name}</UISelectItem>
+                      ))}
+                  </UISelectContent>
+                </UISelect>
+              </div>
+
+              {/* Sort By */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Sort By</label>
+                <UISelect value={sortBy} onValueChange={onSortChange ?? (() => {})}>
+                  <UISelectTrigger className="h-12 rounded-xl bg-slate-950/50 border-white/5 shadow-sm font-bold italic text-xs text-white">
+                    <UISelectValue placeholder="Sort By" />
+                  </UISelectTrigger>
+                  <UISelectContent className="rounded-xl bg-slate-900 border-white/10 text-white">
+                    {SORT_OPTIONS.map((opt) => (
+                      <UISelectItem key={opt.value} value={opt.value} className="font-bold italic">
+                        {opt.label}
+                      </UISelectItem>
                     ))}
                   </UISelectContent>
                 </UISelect>
               </div>
 
-              {/* Status Filter */}
+              {/* Status */}
               {onStatusChange && (
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Item Status</label>
@@ -141,91 +172,48 @@ export const InventoryFilterHub: React.FC<InventoryFilterHubProps> = ({
                     </UISelectTrigger>
                     <UISelectContent className="rounded-xl bg-slate-900 border-white/10 text-white">
                       <UISelectItem value="all">All Status</UISelectItem>
-                      <UISelectItem value="active">ACTIVE</UISelectItem>
-                      <UISelectItem value="REPAIR">REPAIR</UISelectItem>
-                      <UISelectItem value="REJECT">REJECT</UISelectItem>
-                      <UISelectItem value="DISCONTINUED">DISCONTINUED</UISelectItem>
-                      <UISelectItem value="DRAFT">DRAFT</UISelectItem>
-                      <UISelectItem value="INACTIVE">INACTIVE</UISelectItem>
-                      <UISelectItem value="low">STOCK: LOW</UISelectItem>
-                      <UISelectItem value="critical">STOCK: CRITICAL</UISelectItem>
-                    </UISelectContent>
-                  </UISelect>
-                </div>
-              )}
-              {/* Advanced Sorting */}
-              {onSortChange && (
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Sort By</label>
-                  <UISelect 
-                    value={sortBy} 
-                    onValueChange={onSortChange}
-                  >
-                    <UISelectTrigger className="h-12 rounded-xl bg-slate-950/50 border-white/5 shadow-sm font-bold italic text-xs text-white">
-                      <UISelectValue placeholder="Newest First" />
-                    </UISelectTrigger>
-                    <UISelectContent className="rounded-xl bg-slate-900 border-white/10 text-white">
-                      <UISelectItem value="created_at-desc">Newest First</UISelectItem>
-                      <UISelectItem value="created_at-asc">Oldest First</UISelectItem>
-                      <UISelectItem value="name-asc">Name (A-Z)</UISelectItem>
-                      <UISelectItem value="name-desc">Name (Z-A)</UISelectItem>
-                      <UISelectItem value="quantity-desc">Highest Quantity</UISelectItem>
-                      <UISelectItem value="quantity-asc">Lowest Quantity</UISelectItem>
+                      <UISelectItem value="active">Active</UISelectItem>
+                      <UISelectItem value="REPAIR">Repair</UISelectItem>
+                      <UISelectItem value="REJECT">Reject</UISelectItem>
+                      <UISelectItem value="DISCONTINUED">Discontinued</UISelectItem>
+                      <UISelectItem value="DRAFT">Draft</UISelectItem>
+                      <UISelectItem value="INACTIVE">Inactive</UISelectItem>
+                      <UISelectItem value="low">Stock: Low</UISelectItem>
+                      <UISelectItem value="critical">Stock: Critical</UISelectItem>
                     </UISelectContent>
                   </UISelect>
                 </div>
               )}
 
-              {/* Location Filter */}
-              {onLocationChange && locations && (
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">{locationLabel}</label>
-                  <UISelect value={location || "all"} onValueChange={onLocationChange}>
-                    <UISelectTrigger className="h-12 rounded-xl bg-slate-950/50 border-white/5 shadow-sm font-bold italic text-xs text-white">
-                      <UISelectValue placeholder={`All ${locationLabel}s`} />
-                    </UISelectTrigger>
-                    <UISelectContent className="rounded-xl bg-slate-900 border-white/10 text-white">
-                      <UISelectItem value="all">All {locationLabel}s</UISelectItem>
-                      {locations.map(loc => (
-                        <UISelectItem key={loc.id} value={loc.id} className="font-bold italic">{loc.name}</UISelectItem>
-                      ))}
-                    </UISelectContent>
-                  </UISelect>
-                </div>
-              )}
-
-              {/* Module Tag Filter */}
-              {onModuleTagChange && (
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Context Tag</label>
-                  <UIInput 
-                    placeholder="e.g. RETAIL"
-                    className="h-12 rounded-xl bg-slate-950/50 border-white/5 shadow-sm font-bold italic text-xs text-white placeholder:text-slate-700"
-                    value={moduleTag || ""}
-                    onChange={(e) => onModuleTagChange(e.target.value)}
-                  />
-                </div>
-              )}
-
-              {/* Price Range Filter */}
+              {/* Price Range */}
               {onPriceRangeChange && (
-                <div className="space-y-2 sm:col-span-2 lg:col-span-1">
+                <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">Price Range</label>
-                  <div className="flex items-center gap-2 h-12 rounded-xl bg-slate-950/50 border-white/5 shadow-sm px-4">
-                    <UIInput 
+                  <div className="flex items-center gap-2 h-12 rounded-xl bg-slate-950/50 border border-white/5 shadow-sm px-4">
+                    <UIInput
                       type="number"
                       placeholder="Min"
                       className="h-7 border-none bg-transparent font-bold italic text-xs p-0 focus-visible:ring-0 text-white placeholder:text-slate-700"
                       value={minPrice ?? ""}
-                      onChange={(e) => onPriceRangeChange(e.target.value ? parseFloat(e.target.value) : undefined, maxPrice)}
+                      onChange={(e) =>
+                        onPriceRangeChange(
+                          e.target.value ? parseFloat(e.target.value) : undefined,
+                          maxPrice
+                        )
+                      }
                     />
                     <span className="text-slate-700">/</span>
-                    <UIInput 
+                    <UIInput
                       type="number"
                       placeholder="Max"
                       className="h-7 border-none bg-transparent font-bold italic text-xs p-0 focus-visible:ring-0 text-right text-white placeholder:text-slate-700"
                       value={maxPrice ?? ""}
-                      onChange={(e) => onPriceRangeChange(minPrice, e.target.value ? parseFloat(e.target.value) : undefined)}
+                      onChange={(e) =>
+                        onPriceRangeChange(
+                          minPrice,
+                          e.target.value ? parseFloat(e.target.value) : undefined
+                        )
+                      }
                     />
                   </div>
                 </div>

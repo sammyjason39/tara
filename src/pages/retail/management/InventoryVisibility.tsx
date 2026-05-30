@@ -824,57 +824,26 @@ const InventoryVisibility = () => {
                 category={filters.category}
                 onCategoryChange={(v) => setFilters(prev => ({ ...prev, category: v }))}
                 categories={categoryOptions}
-                type={filters.type}
-                onTypeChange={(v) => setFilters(prev => ({ ...prev, type: v }))}
                 status={filters.status}
                 onStatusChange={(v) => setFilters(prev => ({ ...prev, status: v }))}
-                location={locationId}
-                onLocationChange={handleStoreChange}
-                locations={stores.map(s => ({ id: s.id, name: s.name }))}
                 minPrice={filters.minPrice}
                 maxPrice={filters.maxPrice}
                 onPriceRangeChange={(min, max) => setFilters(prev => ({ ...prev, minPrice: min, maxPrice: max }))}
+                sortBy={filters.sortBy}
+                onSortChange={(v) => setFilters(prev => ({ ...prev, sortBy: v as any }))}
                 advancedActions={
-                  <div className="flex gap-3">
-                    <Select 
-                      value={filters.sortBy} 
-                      onValueChange={(v) => setFilters(prev => ({ ...prev, sortBy: v as any }))}
+                  canWrite ? (
+                    <Button
+                      size="lg"
+                      className="rounded-2xl bg-secondary text-foreground font-black italic text-xs uppercase tracking-widest gap-2 h-14 px-8 whitespace-nowrap"
+                      onClick={() => setDetailItem({} as InventoryItemView)}
                     >
-                      <SelectTrigger className="h-14 w-[180px] rounded-2xl border-white/10 bg-slate-900/40 backdrop-blur-md font-black italic text-xs uppercase tracking-widest text-slate-400 hover:bg-slate-800">
-                        <SelectValue placeholder="Sort By" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-2xl bg-slate-900 border-white/10 text-white">
-                        <SelectItem value="name-asc" className="font-bold italic">Name (A-Z)</SelectItem>
-                        <SelectItem value="name-desc" className="font-bold italic">Name (Z-A)</SelectItem>
-                        <SelectItem value="quantity-desc" className="font-bold italic">Highest Quantity</SelectItem>
-                        <SelectItem value="quantity-asc" className="font-bold italic">Lowest Quantity</SelectItem>
-                        <SelectItem value="price-desc" className="font-bold italic">Highest Price</SelectItem>
-                        <SelectItem value="price-asc" className="font-bold italic">Lowest Price</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    {canWrite && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="lg"
-                          className="rounded-2xl border-border bg-secondary/40 backdrop-blur-md font-black italic text-xs uppercase tracking-widest gap-2 h-14 px-6 text-foreground hover:bg-secondary/60"
-                          onClick={() => setIsCategoryManagerOpen(true)}
-                        >
-                          Categories
-                        </Button>
-                        <Button 
-                          size="lg"
-                          className="rounded-2xl bg-secondary text-foreground font-black italic text-xs uppercase tracking-widest gap-2 h-14 px-8"
-                          onClick={() => setDetailItem({} as InventoryItemView)}
-                        >
-                          <Plus className="h-4 w-4" /> Add SKU
-                        </Button>
-                      </>
-                    )}
-                  </div>
+                      <Plus className="h-4 w-4" /> Add Item
+                    </Button>
+                  ) : undefined
                 }
               />
+
               <Card className="rounded-2xl border-border bg-secondary/30 backdrop-blur-3xl shadow-2xl overflow-hidden border">
                 <InventoryTable
                   items={inventory}
