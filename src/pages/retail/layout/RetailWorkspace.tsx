@@ -128,12 +128,12 @@ const RetailWorkspace = () => {
                 {section.apps.map((app) => (
                   <Card
                     key={app.id}
-                    className="group hover:border-blue-400 hover:shadow-2xl transition-all cursor-pointer bg-white border-2 border-slate-100 rounded-[2rem] overflow-hidden"
+                    className="group hover:border-blue-500/50 hover:shadow-2xl transition-all cursor-pointer bg-white/[0.03] border border-white/5 rounded-[2rem] overflow-hidden backdrop-blur-3xl"
                     onClick={() => navigate(app.route)}
                   >
                     <CardContent className="p-6 space-y-4">
                       <div
-                        className={`w-14 h-14 ${app.bg} rounded-2xl flex items-center justify-center ${app.color} group-hover:scale-110 group-hover:rotate-3 transition-transform`}
+                        className={`w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 group-hover:rotate-3 transition-transform`}
                       >
                         <app.icon className="w-7 h-7" />
                       </div>
@@ -154,9 +154,9 @@ const RetailWorkspace = () => {
         </div>
 
         {/* 3. Operational Quick-Jump */}
-        <div className="p-1 border-t border-slate-200 mt-12 bg-white rounded-[2.5rem] shadow-sm flex items-center justify-between">
+        <div className="p-1 border border-white/5 mt-12 bg-white/[0.02] rounded-[2.5rem] shadow-2xl flex items-center justify-between backdrop-blur-3xl">
           <div className="px-8 flex items-center gap-4">
-            <div className="w-10 h-10 bg-primary/5 rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
               <Monitor className="w-5 h-5 text-primary" />
             </div>
             <div>
@@ -170,7 +170,7 @@ const RetailWorkspace = () => {
           </div>
           <Button
             variant="outline"
-            className="h-14 px-8 rounded-2xl border-2 border-indigo-100 font-black italic tracking-widest text-primary hover:bg-primary hover:text-white transition-all gap-3"
+            className="h-14 px-8 rounded-2xl border border-indigo-500/30 bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all gap-3"
             onClick={() => navigate("/m/retail/operational/gateway")}
           >
             GO TO OPERATIONAL MODE

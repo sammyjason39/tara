@@ -38,10 +38,11 @@ interface AuditLog {
   action: string;
   user_id: string;
   created_at: string;
+  updated_at?: string;
   hash_chain: string;
   metadata?: {
     impact?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -95,6 +96,13 @@ const ComplianceAuditLedger = ({ noShell = false }: { noShell?: boolean }) => {
     }
   };
 
+  const formatLogDate = (created_at: string | undefined, updated_at?: string | undefined) => {
+    const dVal = created_at || updated_at;
+    if (!dVal) return "—";
+    const d = new Date(dVal);
+    return isNaN(d.getTime()) ? "—" : d.toLocaleString();
+  };
+
   const filteredLogs = useMemo(() => {
     if (!searchTerm.trim()) return logs;
     const q = searchTerm.toLowerCase();
@@ -103,7 +111,7 @@ const ComplianceAuditLedger = ({ noShell = false }: { noShell?: boolean }) => {
         (l.action || "").toLowerCase().includes(q) ||
         (l.user_id || "").toLowerCase().includes(q) ||
         (l.hash_chain || "").toLowerCase().includes(q) ||
-        new Date(l.created_at).toLocaleString().includes(q),
+        formatLogDate(l.created_at, l.updated_at).toLowerCase().includes(q),
     );
   }, [searchTerm, logs]);
 
@@ -297,7 +305,7 @@ const ComplianceAuditLedger = ({ noShell = false }: { noShell?: boolean }) => {
                   >
                     <td className="px-10 py-6 whitespace-nowrap">
                       <div className="text-xs font-bold text-foreground font-mono tracking-tight group-hover:text-primary transition-colors">
-                        {new Date(log.created_at).toLocaleString()}
+                        {formatLogDate(log.created_at, log.updated_at)}
                       </div>
                     </td>
                     <td className="px-10 py-6">

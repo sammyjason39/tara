@@ -371,7 +371,7 @@ const DeviceControlCenter = () => {
           ].map((k, i) => (
             <Card
               key={i}
-              className="rounded-2xl border-none shadow-sm bg-white"
+              className="rounded-2xl border border-white/5 bg-white/[0.03] shadow-2xl backdrop-blur-3xl"
             >
               <CardContent className="p-5 flex items-start gap-3">
                 <div className="mt-0.5">{k.icon}</div>
@@ -394,17 +394,17 @@ const DeviceControlCenter = () => {
         </div>
 
         {/* Tab bar */}
-        <div className="flex items-center gap-1 bg-white border border-slate-100 rounded-2xl p-1.5 shadow-sm w-fit">
+        <div className="flex items-center gap-1 bg-black/40 border border-white/5 rounded-2xl p-1.5 shadow-2xl w-fit">
           {(Array.isArray(TABS) ? TABS : []).map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[11px] font-black italic uppercase tracking-widest transition-all ${tab === t.id ? "bg-secondary text-foreground shadow-md" : "text-muted-foreground hover:text-slate-800 hover:bg-secondary/5"}`}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[11px] font-black italic uppercase tracking-widest transition-all ${tab === t.id ? "bg-white/10 text-foreground shadow-md" : "text-muted-foreground hover:text-foreground hover:bg-white/5"}`}
             >
               {t.icon}
               {t.label}
               <span
-                className={`text-[9px] rounded-full px-2 py-0.5 font-black ${tab === t.id ? "bg-white/20 text-foreground" : "bg-secondary/10 text-muted-foreground"}`}
+                className={`text-[9px] rounded-full px-2 py-0.5 font-black ${tab === t.id ? "bg-white/20 text-foreground" : "bg-white/10 text-muted-foreground"}`}
               >
                 {t.count}
               </span>
@@ -428,7 +428,7 @@ const DeviceControlCenter = () => {
                   onClick={() => setSelDevice(dev)}
                   className="text-left w-full"
                 >
-                  <Card className="rounded-3xl border border-slate-100 bg-white shadow-sm hover:shadow-xl hover:border-blue-200 hover:-translate-y-0.5 transition-all cursor-pointer group h-full">
+                  <Card className="rounded-3xl border border-white/5 bg-white/[0.03] shadow-2xl hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] hover:border-blue-500/30 hover:-translate-y-0.5 transition-all cursor-pointer group h-full backdrop-blur-3xl">
                     <CardContent className="p-5 space-y-3">
                       <div className="flex items-start justify-between">
                         <div
@@ -487,7 +487,7 @@ const DeviceControlCenter = () => {
               <div className="flex flex-col gap-4 col-span-1 min-h-[160px]">
                 <button
                   onClick={() => setShowReg(true)}
-                  className="flex-1 rounded-3xl border-2 border-dashed border-slate-200 bg-secondary/5/50 hover:border-slate-400 hover:bg-white transition-all flex flex-col items-center justify-center py-4 gap-2 group"
+                  className="flex-1 rounded-3xl border-2 border-dashed border-white/10 bg-white/[0.01] hover:border-blue-500/30 hover:bg-white/[0.04] hover:shadow-lg transition-all flex flex-col items-center justify-center py-4 gap-2 group text-foreground"
                 >
                   <PlusCircle className="w-6 h-6 text-muted-foreground/60 group-hover:text-muted-foreground transition-all" />
                   <div className="text-[10px] font-black italic uppercase tracking-widest text-muted-foreground group-hover:text-muted-foreground">
@@ -496,7 +496,7 @@ const DeviceControlCenter = () => {
                 </button>
                 <button
                   onClick={handleScan}
-                  className="flex-1 rounded-3xl border-2 border-dashed border-slate-200 bg-secondary/5/50 hover:border-slate-400 hover:bg-white transition-all flex flex-col items-center justify-center py-4 gap-2 group"
+                  className="flex-1 rounded-3xl border-2 border-dashed border-white/10 bg-white/[0.01] hover:border-blue-500/30 hover:bg-white/[0.04] hover:shadow-lg transition-all flex flex-col items-center justify-center py-4 gap-2 group text-foreground"
                 >
                   <RefreshCw className="w-6 h-6 text-muted-foreground/60 group-hover:text-primary transition-all" />
                   <div className="text-[10px] font-black italic uppercase tracking-widest text-muted-foreground group-hover:text-primary">
@@ -522,7 +522,7 @@ const DeviceControlCenter = () => {
                   onClick={() => setSelCamForView(cam)}
                   className="text-left w-full focus:outline-none"
                 >
-                  <Card className="rounded-3xl border border-slate-100 bg-white shadow-sm hover:shadow-xl hover:border-blue-200 hover:-translate-y-0.5 transition-all group overflow-hidden h-full">
+                  <Card className="rounded-3xl border border-white/5 bg-white/[0.03] shadow-2xl hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] hover:border-blue-500/30 hover:-translate-y-0.5 transition-all group overflow-hidden h-full backdrop-blur-3xl">
                     <div
                       className={`h-32 flex items-center justify-center relative ${cam.status === "live" || cam.status === "recording" ? "bg-secondary/60" : "bg-secondary/10"}`}
                     >
@@ -603,7 +603,7 @@ const DeviceControlCenter = () => {
               ))}
               <button
                 onClick={() => setShowCctvReg(true)}
-                className="rounded-3xl border-2 border-dashed border-slate-200 bg-secondary/5/50 hover:border-slate-400 hover:bg-white transition-all flex flex-col items-center justify-center py-10 gap-3 group min-h-[200px]"
+                className="rounded-3xl border-2 border-dashed border-white/10 bg-white/[0.01] hover:border-blue-500/30 hover:bg-white/[0.04] hover:shadow-lg transition-all flex flex-col items-center justify-center py-10 gap-3 group min-h-[200px] text-foreground"
               >
                 <PlusCircle className="w-9 h-9 text-muted-foreground/60 group-hover:text-muted-foreground group-hover:scale-110 transition-all" />
                 <div className="text-[10px] font-black italic uppercase tracking-widest text-muted-foreground group-hover:text-muted-foreground">
@@ -624,14 +624,14 @@ const DeviceControlCenter = () => {
           ) : (
             <div className="space-y-4">
               {alertSens > 0 && (
-                <div className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-3.5">
+                <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl px-5 py-3.5">
                   <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />
                   <div>
-                    <div className="text-[11px] font-black text-amber-800">
+                    <div className="text-[11px] font-black text-amber-400">
                       {alertSens} sensor{alertSens > 1 ? "s" : ""} require
                       attention
                     </div>
-                    <div className="text-[10px] text-amber-600 font-medium">
+                    <div className="text-[10px] text-amber-400/70 font-medium">
                       Thresholds may have been exceeded — click a sensor for
                       details.
                     </div>
@@ -645,7 +645,7 @@ const DeviceControlCenter = () => {
                     onClick={() => setSelSensor(sensor)}
                     className="text-left w-full"
                   >
-                    <Card className="rounded-3xl border border-slate-100 bg-white shadow-sm hover:shadow-xl hover:border-blue-200 hover:-translate-y-0.5 transition-all cursor-pointer h-full">
+                    <Card className="rounded-3xl border border-white/5 bg-white/[0.03] shadow-2xl hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] hover:border-blue-500/30 hover:-translate-y-0.5 transition-all cursor-pointer h-full backdrop-blur-3xl">
                       <CardContent className="p-5 space-y-3">
                         <div className="flex items-start justify-between">
                           <div
@@ -722,7 +722,7 @@ const DeviceControlCenter = () => {
                 <div className="flex flex-col gap-4 col-span-1 min-h-[160px]">
                   <button
                     onClick={() => setShowReg(true)}
-                    className="flex-1 rounded-3xl border-2 border-dashed border-slate-200 bg-secondary/5/50 hover:border-slate-400 hover:bg-white transition-all flex flex-col items-center justify-center py-4 gap-2 group"
+                    className="flex-1 rounded-3xl border-2 border-dashed border-white/10 bg-white/[0.01] hover:border-blue-500/30 hover:bg-white/[0.04] hover:shadow-lg transition-all flex flex-col items-center justify-center py-4 gap-2 group text-foreground"
                   >
                     <PlusCircle className="w-6 h-6 text-muted-foreground/60 group-hover:text-muted-foreground transition-all" />
                     <div className="text-[10px] font-black italic uppercase tracking-widest text-muted-foreground group-hover:text-muted-foreground">
@@ -731,7 +731,7 @@ const DeviceControlCenter = () => {
                   </button>
                   <button
                     onClick={handleScan}
-                    className="flex-1 rounded-3xl border-2 border-dashed border-slate-200 bg-secondary/5/50 hover:border-slate-400 hover:bg-white transition-all flex flex-col items-center justify-center py-4 gap-2 group"
+                    className="flex-1 rounded-3xl border-2 border-dashed border-white/10 bg-white/[0.01] hover:border-blue-500/30 hover:bg-white/[0.04] hover:shadow-lg transition-all flex flex-col items-center justify-center py-4 gap-2 group text-foreground"
                   >
                     <RefreshCw className="w-6 h-6 text-muted-foreground/60 group-hover:text-primary transition-all" />
                     <div className="text-[10px] font-black italic uppercase tracking-widest text-muted-foreground group-hover:text-primary">

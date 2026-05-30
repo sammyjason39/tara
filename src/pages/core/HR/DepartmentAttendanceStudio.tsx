@@ -96,50 +96,50 @@ export default function DepartmentAttendanceStudio({
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
                 placeholder="Search staff by name or role..." 
-                className="pl-9 bg-slate-50/50"
+                className="pl-9 bg-white/[0.03] border-white/5 text-foreground placeholder:text-muted-foreground/50"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button variant="ghost" size="icon" className="rounded-full">
+            <Button variant="ghost" size="icon" className="rounded-full text-foreground hover:bg-white/10">
               <Filter className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="rounded-full">
+            <Button variant="ghost" size="icon" className="rounded-full text-foreground hover:bg-white/10">
               <Calendar className="h-4 w-4" />
             </Button>
           </div>
 
-          <div className="rounded-2xl border border-slate-100 overflow-hidden">
+          <div className="rounded-2xl border border-white/5 overflow-hidden bg-slate-950/40 backdrop-blur-md">
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50/50">
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest">Personnel</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest">Check-In</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest">Check-Out</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest">Status</TableHead>
-                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-right">Actions</TableHead>
+                <TableRow className="bg-white/[0.02] border-b border-white/5 hover:bg-white/[0.02]">
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Personnel</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Check-In</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Check-Out</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Status</TableHead>
+                  <TableHead className="text-[10px] font-black uppercase tracking-widest text-right text-muted-foreground">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredRecords.map((record) => (
-                  <TableRow key={record.id} className="hover:bg-slate-50/30 transition-colors">
+                  <TableRow key={record.id} className="hover:bg-white/[0.02] border-b border-white/5 transition-colors">
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="font-bold text-sm tracking-tight">{record.name}</span>
+                        <span className="font-bold text-sm tracking-tight text-foreground">{record.name}</span>
                         <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{record.role}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono text-xs">{record.checkIn}</TableCell>
-                    <TableCell className="font-mono text-xs">{record.checkOut}</TableCell>
+                    <TableCell className="font-mono text-xs text-foreground">{record.checkIn}</TableCell>
+                    <TableCell className="font-mono text-xs text-foreground">{record.checkOut}</TableCell>
                     <TableCell>
                       <Badge 
                         variant="outline" 
                         className={cn(
-                          "text-[8px] font-black uppercase tracking-tighter px-1.5 py-0.5",
-                          record.status === "Present" && "bg-emerald-50 text-emerald-700 border-emerald-100",
-                          record.status === "On Duty" && "bg-sky-50 text-sky-700 border-sky-100",
-                          record.status === "Absent" && "bg-rose-50 text-rose-700 border-rose-100",
-                          record.status === "Late" && "bg-amber-50 text-amber-700 border-amber-100"
+                          "text-[8px] font-black uppercase tracking-tighter px-1.5 py-0.5 border-none",
+                          record.status === "Present" && "bg-emerald-500/10 text-emerald-400",
+                          record.status === "On Duty" && "bg-sky-500/10 text-sky-400",
+                          record.status === "Absent" && "bg-rose-500/10 text-rose-400",
+                          record.status === "Late" && "bg-amber-500/10 text-amber-400"
                         )}
                       >
                         {record.status}
@@ -149,7 +149,7 @@ export default function DepartmentAttendanceStudio({
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="h-7 text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white rounded-lg px-3"
+                        className="h-7 text-[10px] font-black uppercase tracking-widest text-foreground hover:bg-white/10 rounded-lg px-3"
                         onClick={() => handleAdjust(record.id)}
                       >
                         Adjust
@@ -177,10 +177,10 @@ export default function DepartmentAttendanceStudio({
             <div className="flex items-center gap-2">
               {canManagePersonnel && (
                 <Select value={selectedDeptId} onValueChange={setSelectedDeptId}>
-                  <SelectTrigger className="w-[180px] bg-white border-slate-100 shadow-sm">
+                  <SelectTrigger className="w-[180px] bg-slate-900/60 border-white/5 text-foreground shadow-sm hover:bg-slate-900/80">
                     <SelectValue placeholder="Department" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-slate-950 border-white/5">
                     <SelectItem value="FINANCE">Finance</SelectItem>
                     <SelectItem value="HR">Human Resources</SelectItem>
                     <SelectItem value="IT">IT Support</SelectItem>
@@ -193,7 +193,7 @@ export default function DepartmentAttendanceStudio({
                   </SelectContent>
                 </Select>
               )}
-              <Button variant="outline" className="gap-2">
+              <Button variant="outline" className="gap-2 border-white/5 hover:bg-white/10 text-foreground">
                 <FileSpreadsheet className="h-4 w-4" /> Export Report
               </Button>
             </div>
@@ -206,22 +206,22 @@ export default function DepartmentAttendanceStudio({
   );
 }
 
-function StatCard({ icon: Icon, label, value, color }: { icon: any, label: string, value: string, color: string }) {
+function StatCard({ icon: Icon, label, value, color }: { icon: React.ElementType, label: string, value: string, color: string }) {
   const colorMap: Record<string, string> = {
-    emerald: "text-emerald-600 bg-emerald-50",
-    amber: "text-amber-600 bg-amber-50",
-    rose: "text-rose-600 bg-rose-50",
-    slate: "text-slate-600 bg-slate-50",
+    emerald: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+    amber: "text-amber-400 bg-amber-500/10 border-amber-500/20",
+    rose: "text-rose-400 bg-rose-500/10 border-rose-500/20",
+    slate: "text-slate-400 bg-slate-500/10 border-slate-500/20",
   };
 
   return (
-    <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
-      <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center", colorMap[color])}>
+    <div className="bg-white/[0.03] border border-white/5 p-4 rounded-3xl shadow-2xl backdrop-blur-md flex items-center gap-4">
+      <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center border", colorMap[color])}>
         <Icon className="h-5 w-5" />
       </div>
       <div className="flex flex-col">
-        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 leading-none mb-1">{label}</span>
-        <span className="text-xl font-black italic tracking-tighter leading-none">{value}</span>
+        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground leading-none mb-1">{label}</span>
+        <span className="text-xl font-black italic tracking-tighter leading-none text-foreground">{value}</span>
       </div>
     </div>
   );

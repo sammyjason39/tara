@@ -25,7 +25,7 @@ import { format } from "date-fns";
 import { useSession } from "@/core/security/session";
 import { retailInfrastructureService } from "@/core/services/retail/retailInfrastructureService";
 import { itSettingsService, type ITProvisioningRequest } from "@/core/services/it/itSettingsService";
-import type { RetailGatewayNode, RetailLoadBalancer } from "@/core/types/retail/retail";
+import type { RetailGatewayNode, RetailLoadBalancer, GatewayNodeStatus } from "@/core/types/retail/retail";
 import { useToast } from "@/hooks/use-toast";
 
 import {
@@ -72,11 +72,11 @@ const InfrastructureControl = () => {
     if (!session.tenant_id) return;
     try {
       setLoading(true);
-      await retailInfrastructureService.updateNodeStatus(session.tenant_id, session, nodeId, "RESETTING");
+      await retailInfrastructureService.setNodeStatus(session.tenant_id, session, nodeId, "STANDBY" satisfies GatewayNodeStatus);
       
       // Simulate real-time delay for maintenance cycle
       setTimeout(async () => {
-        await retailInfrastructureService.updateNodeStatus(session.tenant_id, session, nodeId, "ACTIVE");
+        await retailInfrastructureService.setNodeStatus(session.tenant_id, session, nodeId, "ACTIVE");
         toast({
           title: "Maintenance Complete",
           description: `Node ${nodeId.split("-").pop()} has been successfully ${action.toLowerCase()}ed.`,
@@ -126,13 +126,13 @@ const InfrastructureControl = () => {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-secondary text-foreground border-0 shadow-2xl relative overflow-hidden group">
+        <Card className="bg-white/[0.03] border border-white/5 text-foreground shadow-2xl relative overflow-hidden group backdrop-blur-3xl">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
              <Activity className="w-16 h-16" />
           </div>
           <CardContent className="p-6">
             <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Global Traffic</div>
-            <div className="text-3xl font-black italic tracking-tighter flex items-end gap-2">
+            <div className="text-3xl font-black italic tracking-tighter flex items-end gap-2 text-foreground">
               1.2M <span className="text-sm font-bold text-success mb-1">req/min</span>
             </div>
             <div className="flex items-center gap-2 mt-4 text-[10px] font-bold text-success uppercase">
@@ -142,17 +142,17 @@ const InfrastructureControl = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 shadow-md">
+        <Card className="border border-white/5 bg-white/[0.03] shadow-2xl backdrop-blur-3xl">
           <CardContent className="p-6">
             <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Active Nodes</div>
             <div className="text-3xl font-black italic tracking-tighter text-foreground">
               {(Array.isArray(nodes) ? nodes : []).filter(n => n.status === "ACTIVE").length} <span className="text-sm text-muted-foreground">/ {nodes.length}</span>
             </div>
-            <Progress value={((Array.isArray(nodes) ? nodes : []).filter(n => n.status === "ACTIVE").length / (nodes.length || 1)) * 100} className="h-1.5 mt-4" />
+            <Progress value={((Array.isArray(nodes) ? nodes : []).filter(n => n.status === "ACTIVE").length / (nodes.length || 1)) * 100} className="h-1.5 mt-4 bg-white/10" />
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 shadow-md">
+        <Card className="border border-white/5 bg-white/[0.03] shadow-2xl backdrop-blur-3xl">
           <CardContent className="p-6">
             <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Avg. Latency</div>
             <div className="text-3xl font-black italic tracking-tighter text-foreground">
@@ -165,7 +165,7 @@ const InfrastructureControl = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 shadow-md">
+        <Card className="border border-white/5 bg-white/[0.03] shadow-2xl backdrop-blur-3xl">
           <CardContent className="p-6">
             <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Error Rate</div>
             <div className="text-3xl font-black italic tracking-tighter text-foreground">
@@ -195,8 +195,8 @@ const InfrastructureControl = () => {
 
             <div className="grid grid-cols-1 gap-6">
               {(Array.isArray(lbs) ? lbs : []).map(lb => (
-                <Card key={lb.id} className="border-2 border-slate-100 rounded-3xl overflow-hidden shadow-sm">
-                  <div className="bg-secondary/5 p-4 border-b border-slate-100 flex justify-between items-center">
+                <Card key={lb.id} className="border border-white/5 bg-white/[0.03] rounded-3xl overflow-hidden shadow-2xl backdrop-blur-3xl">
+                  <div className="bg-white/[0.02] p-4 border-b border-white/5 flex justify-between items-center">
                     <div className="flex items-center gap-4">
                       <div className={`w-3 h-3 rounded-full ${lb.status === 'ONLINE' ? 'bg-success animate-pulse' : 'bg-red-500'}`} />
                       <div>
@@ -205,17 +205,17 @@ const InfrastructureControl = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button disabled title="Not available yet" variant="ghost" size="icon" className="text-muted-foreground"><RefreshCw className="w-4 h-4" /></Button>
-                      <Button disabled title="Not available yet" variant="ghost" size="icon" className="text-muted-foreground"><MoreVertical className="w-4 h-4" /></Button>
+                      <Button disabled title="Not available yet" variant="ghost" size="icon" className="text-muted-foreground hover:bg-white/10 hover:text-foreground"><RefreshCw className="w-4 h-4" /></Button>
+                      <Button disabled title="Not available yet" variant="ghost" size="icon" className="text-muted-foreground hover:bg-white/10 hover:text-foreground"><MoreVertical className="w-4 h-4" /></Button>
                     </div>
                   </div>
                   <CardContent className="p-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {(Array.isArray(lb.nodes) ? lb.nodes : []).map(node => (
-                        <div key={node.id} className="bg-white border-2 border-slate-50 rounded-2xl p-5 hover:border-blue-200 transition-all group">
+                        <div key={node.id} className="bg-white/[0.02] border border-white/5 rounded-2xl p-5 hover:border-blue-500/30 transition-all group">
                           <div className="flex justify-between items-start mb-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-xl bg-secondary text-foreground flex items-center justify-center">
+                              <div className="w-10 h-10 rounded-xl bg-white/5 text-foreground flex items-center justify-center">
                                 <Cpu className="w-5 h-5" />
                               </div>
                               <div>
@@ -255,9 +255,9 @@ const InfrastructureControl = () => {
                                   <span className="text-muted-foreground">Health</span>
                                   <span className={node.healthScore > 80 ? 'text-success' : 'text-amber-500'}>{node.healthScore}%</span>
                                </div>
-                               <Progress value={node.healthScore} className="h-1" />
+                               <Progress value={node.healthScore} className="h-1 bg-white/10" />
                             </div>
-                            <div className="grid grid-cols-2 gap-2 text-[10px] font-bold uppercase text-muted-foreground bg-secondary/5/50 p-2 rounded-lg">
+                            <div className="grid grid-cols-2 gap-2 text-[10px] font-bold uppercase text-muted-foreground bg-black/40 p-2 rounded-lg">
                                <div>Version: {node.version || 'v2.4.1'}</div>
                                <div className="text-right">{node.region || 'ID-JKT'}</div>
                             </div>
@@ -267,7 +267,7 @@ const InfrastructureControl = () => {
                       
                       {/* Fake Node for Visuals if list is empty */}
                       {(!lb.nodes || lb.nodes.length === 0) && (
-                         <div className="border-2 border-dashed border-slate-200 rounded-2xl p-6 flex flex-col items-center justify-center text-center opacity-50">
+                         <div className="border-2 border-dashed border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center text-center opacity-50">
                             <Server className="w-8 h-8 text-muted-foreground mb-2" />
                             <div className="text-[10px] font-black uppercase text-muted-foreground">No nodes attached</div>
                          </div>
@@ -290,13 +290,13 @@ const InfrastructureControl = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {(Array.isArray(requests) ? requests : []).map(req => (
-                <Card key={req.id} className="border-2 border-slate-100 rounded-3xl overflow-hidden hover:border-blue-300 transition-all shadow-sm">
+                <Card key={req.id} className="border border-white/5 bg-white/[0.03] rounded-3xl overflow-hidden hover:border-blue-500/30 transition-all shadow-2xl backdrop-blur-3xl">
                   <CardContent className="p-5">
                     <div className="flex justify-between items-start mb-4">
-                      <div className="w-10 h-10 rounded-xl bg-primary/5 text-primary flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-xl bg-white/5 text-primary flex items-center justify-center">
                         <Zap className="w-5 h-5" />
                       </div>
-                      <Badge className={`text-[9px] font-black tracking-widest uppercase ${
+                      <Badge className={`text-[9px] font-black tracking-widest uppercase text-foreground ${
                         req.status === 'FULFILLED' ? 'bg-success' : 
                         req.status === 'PROCUREMENT_TRIGGERED' ? 'bg-primary' : 'bg-amber-500'
                       }`}>
@@ -307,13 +307,13 @@ const InfrastructureControl = () => {
                       <div className="text-sm font-black italic text-foreground leading-tight">{req.name}</div>
                       <div className="text-[10px] text-muted-foreground font-bold uppercase">SKU: {req.sku}</div>
                     </div>
-                    <Separator className="my-3 opacity-50" />
+                    <Separator className="my-3 opacity-10" />
                     <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                       <span>Requested</span>
                       <span>{format(new Date(req.createdAt), 'MMM dd, HH:mm')}</span>
                     </div>
                     {req.requisitionId && (
-                      <div className="mt-2 p-2 bg-secondary/5 rounded-lg text-[9px] font-mono text-primary break-all">
+                      <div className="mt-2 p-2 bg-black/40 rounded-lg text-[9px] font-mono text-primary break-all">
                         REQ: {req.requisitionId}
                       </div>
                     )}
@@ -321,8 +321,8 @@ const InfrastructureControl = () => {
                 </Card>
               ))}
               {requests.length === 0 && (
-                <div className="col-span-full border-2 border-dashed border-slate-200 rounded-3xl p-6 flex flex-col items-center justify-center text-center">
-                  <div className="w-12 h-12 rounded-full bg-secondary/5 flex items-center justify-center mb-4">
+                <div className="col-span-full border-2 border-dashed border-white/10 rounded-3xl p-6 flex flex-col items-center justify-center text-center">
+                  <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4">
                     <Network className="w-6 h-6 text-muted-foreground/60" />
                   </div>
                   <div className="text-sm font-black italic text-muted-foreground uppercase tracking-widest">No Active Provisioning Requests</div>
@@ -333,7 +333,7 @@ const InfrastructureControl = () => {
           </section>
 
           {/* Infrastructure Logs section */}
-          <section className="bg-secondary/5 rounded-2xl p-8 border border-slate-100">
+          <section className="bg-white/[0.02] rounded-2xl p-8 border border-white/5 backdrop-blur-3xl">
              <div className="flex items-center gap-3 mb-6">
                 <BarChart3 className="w-6 h-6 text-foreground" />
                 <h2 className="text-xl font-black italic uppercase tracking-tighter text-foreground">Infrastructure Events</h2>
@@ -345,7 +345,7 @@ const InfrastructureControl = () => {
                   { time: '11:40:15', msg: 'Load Balancer LB-CORE-01 synchronized configuration across 3 nodes.', type: 'info' },
                   { time: '11:38:42', msg: 'Health check passed for region: ASIA-SOUTH-1.', type: 'success' },
                 ].map((log, i) => (
-                  <div key={i} className="flex gap-4 p-4 bg-white rounded-2xl border border-slate-100 text-xs font-bold font-mono">
+                  <div key={i} className="flex gap-4 p-4 bg-white/[0.02] rounded-2xl border border-white/5 text-xs font-bold font-mono">
                     <span className="text-muted-foreground shrink-0">{log.time}</span>
                     <span className="text-foreground">{log.msg}</span>
                   </div>

@@ -7,7 +7,6 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
-import { DataTableShell } from "@/core/ui/DataTableShell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -25,6 +24,22 @@ import { apiRequest } from "@/core/api/apiClient";
 import { toast } from "@/hooks/use-toast";
 import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval } from "date-fns";
 
+interface Employee {
+  id: string;
+  firstName: string;
+  lastName: string;
+  jobRole?: string;
+}
+
+interface Shift {
+  id: string;
+  employeeId: string;
+  type: string;
+  startTime: string;
+  endTime: string;
+  date: string;
+}
+
 interface WorkforceSchedulerProps {
   departmentId: string;
   title?: string;
@@ -39,8 +54,8 @@ export function WorkforceScheduler({
   onDepartmentChange
 }: WorkforceSchedulerProps) {
   const session = useSession();
-  const [employees, setEmployees] = useState<any[]>([]);
-  const [shifts, setShifts] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [shifts, setShifts] = useState<Shift[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
 
@@ -53,16 +68,18 @@ export function WorkforceScheduler({
     const fetchData = async () => {
       setLoading(true);
       try {
-        const data = await apiRequest<any>(`/v1/hr/employees?departmentId=${departmentId}`, "GET", session);
-        setEmployees(data?.data || data || []);
+        const response = await apiRequest<{ data?: Employee[] } | Employee[]>(`/v1/hr/employees?departmentId=${departmentId}`, "GET", session);
+        const data = Array.isArray(response) ? response : (response?.data || []);
+        setEmployees(data);
 
         // Fetch shifts for the selected week
         // Note: Real implementation would query WorkShifts
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error("Failed to load workforce data", err);
+        const errMsg = err instanceof Error ? err.message : "Failed to load team data.";
         toast({
           title: "Synchronization Error",
-          description: err.message || "Failed to load team data.",
+          description: errMsg,
           variant: "destructive"
         });
       } finally {
@@ -88,10 +105,10 @@ export function WorkforceScheduler({
                   <p className="text-xs text-muted-foreground whitespace-nowrap">Week of {format(weekStart, "MMMM dd, yyyy")}</p>
                   {isHR && (
                     <Select value={departmentId} onValueChange={onDepartmentChange}>
-                      <SelectTrigger className="h-6 text-[9px] font-black uppercase tracking-widest bg-white border-primary/20 text-primary w-[140px] rounded-lg">
+                      <SelectTrigger className="h-6 text-[9px] font-black uppercase tracking-widest bg-slate-900/60 border-white/5 text-primary w-[140px] rounded-lg hover:bg-slate-900/80">
                         <SelectValue placeholder="Switch Department" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-slate-950 border-white/5">
                         <SelectItem value="HR">HR & Legal</SelectItem>
                         <SelectItem value="FINANCE">Finance</SelectItem>
                         <SelectItem value="IT">IT & Tech</SelectItem>
@@ -167,12 +184,12 @@ export function WorkforceScheduler({
                                 {(Array.isArray(days) ? days : []).map(day => (
                                     <td key={day.toString()} className="p-2 h-20 group relative">
                                         {/* Mock Shift Card */}
-                                        <div className="h-full w-full rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2 text-[10px] flex flex-col justify-between group-hover:bg-emerald-500/20 cursor-pointer transition-all">
+                                        <div className="h-full w-full rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2 text-[10px] flex flex-col justify-between group-hover:bg-emerald-500/25 cursor-pointer transition-all">
                                             <div className="flex justify-between items-start">
-                                                <span className="font-bold text-emerald-600">Morning</span>
+                                                <span className="font-bold text-emerald-400">Morning</span>
                                                 <Clock className="h-3 w-3 text-emerald-400 opacity-0 group-hover:opacity-100" />
                                             </div>
-                                            <span className="text-emerald-700 font-medium">08:00 - 16:00</span>
+                                            <span className="text-emerald-300 font-medium font-mono">08:00 - 16:00</span>
                                         </div>
                                         
                                         {/* Action Overlay */}

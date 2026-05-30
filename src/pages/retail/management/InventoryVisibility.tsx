@@ -788,7 +788,7 @@ const InventoryVisibility = () => {
       <div className="flex-1">
         <Tabs defaultValue="ledger" className="flex flex-col">
           <div className="max-w-[1600px] mx-auto pt-4 shrink-0">
-            <TabsList className="h-14 p-1.5 bg-white/70 backdrop-blur-md border border-white rounded-[1.2rem] shadow-sm w-full md:w-auto overflow-x-auto overflow-y-hidden no-scrollbar">
+            <TabsList className="h-14 p-1.5 bg-slate-900/50 backdrop-blur-md border border-white/5 rounded-[1.2rem] shadow-sm w-full md:w-auto overflow-x-auto overflow-y-hidden no-scrollbar">
               {[
                 { val: "ledger", label: "Ledger", icon: Layers },
                 { val: "opname", label: "Opname", icon: ClipboardCheck },
@@ -926,7 +926,7 @@ const InventoryVisibility = () => {
           </TabsContent>
 
           <TabsContent value="approvals" className="flex-1 m-0 p-8">
-            <div className="max-w-7xl mx-auto space-y-6">
+            <div className="max-w-7xl mx-auto space-y-6 text-foreground">
               <div className="flex items-center justify-between mb-2">
                 <div>
                   <h2 className="text-2xl font-black italic tracking-tight">
@@ -934,7 +934,6 @@ const InventoryVisibility = () => {
                   </h2>
                   <p className="text-muted-foreground text-sm font-medium">
                     Items waiting for HOD verification before entering
-                    inventory.
                   </p>
                 </div>
                 <Button
@@ -951,8 +950,8 @@ const InventoryVisibility = () => {
               </div>
 
               {pendingItems.length === 0 ? (
-                <div className="h-[400px] rounded-2xl bg-secondary/5 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-center p-8">
-                  <div className="w-16 h-16 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-4">
+                <div className="h-[400px] rounded-2xl bg-white/[0.02] border border-dashed border-white/5 flex flex-col items-center justify-center text-center p-8">
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 shadow-sm flex items-center justify-center mb-4 border border-white/5">
                     <ShieldCheck className="w-8 h-8 text-muted-foreground/60" />
                   </div>
                   <h3 className="text-lg font-black italic tracking-tight">
@@ -967,7 +966,7 @@ const InventoryVisibility = () => {
                   {(Array.isArray(pendingItems) ? pendingItems : []).map((item) => (
                     <Card
                       key={item.id}
-                      className="rounded-[2rem] border-none shadow-xl overflow-hidden bg-white p-6 border-l-4 border-l-indigo-600"
+                      className="rounded-[2rem] border border-white/5 shadow-xl overflow-hidden bg-white/[0.03] p-6 border-l-4 border-l-indigo-600 backdrop-blur-3xl"
                     >
                       <div className="flex justify-between items-start mb-4">
                         <Badge className="bg-primary/5 text-primary hover:bg-primary/10 rounded-lg text-[10px] font-black italic uppercase">

@@ -40,9 +40,49 @@ const SECTIONS = [
   }
 ];
 
+interface LogEntry {
+  id?: string;
+  createdAt?: string;
+  created_at?: string;
+  updated_at?: string;
+  updatedAt?: string;
+  timestamp?: string;
+  level: string;
+  module: string;
+  event: string;
+  durationMs?: number;
+  duration_ms?: number;
+  message: string;
+  requestId?: string;
+  request_id?: string;
+  userId?: string;
+  user_id?: string;
+  payload?: unknown;
+  errorStack?: string;
+  error_stack?: string;
+}
+
+interface IntegrityStatus {
+  status: string;
+  details: string;
+  verified_at: string | number | Date;
+}
+
+interface StuckEventsStatus {
+  processing: number;
+  failed: number;
+}
+
+const formatLogDate = (log: LogEntry) => {
+  const dVal = log.createdAt || log.created_at || log.updated_at || log.updatedAt || log.timestamp;
+  if (!dVal) return "—";
+  const d = new Date(dVal);
+  return isNaN(d.getTime()) ? "—" : d.toLocaleString();
+};
+
 export default function LogHub({ noShell = false }: { noShell?: boolean }) {
   const session = useSession();
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -57,9 +97,9 @@ export default function LogHub({ noShell = false }: { noShell?: boolean }) {
     endDate: "",
   });
 
-  const [selectedLog, setSelectedLog] = useState<any>(null);
-  const [stuckEvents, setStuckEvents] = useState<any>(null);
-  const [integrityStatus, setIntegrityStatus] = useState<any>(null);
+  const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
+  const [stuckEvents, setStuckEvents] = useState<StuckEventsStatus | null>(null);
+  const [integrityStatus, setIntegrityStatus] = useState<IntegrityStatus | null>(null);
 
   const fetchObservability = useCallback(async () => {
     try {
@@ -88,7 +128,7 @@ export default function LogHub({ noShell = false }: { noShell?: boolean }) {
         ...(filters.endDate && { endDate: filters.endDate }),
       });
 
-      const result = await apiRequest<any>(`/v1/logs?${params.toString()}`, "GET", session);
+      const result = await apiRequest<LogEntry[] | { data?: LogEntry[]; total?: number }>(`/v1/logs?${params.toString()}`, "GET", session);
       
       if (Array.isArray(result)) {
         setLogs(result);
@@ -97,7 +137,7 @@ export default function LogHub({ noShell = false }: { noShell?: boolean }) {
         setLogs(result.data || []);
         setTotal(result.total || result.data?.length || 0);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to fetch system logs:", error);
     } finally {
       setLoading(false);
@@ -285,7 +325,7 @@ export default function LogHub({ noShell = false }: { noShell?: boolean }) {
                       onClick={() => setSelectedLog(log)}
                     >
                       <TableCell className="font-mono text-[10px] whitespace-nowrap">
-                        {new Date(log.createdAt || log.created_at || log.timestamp).toLocaleString()}
+                        {formatLogDate(log)}
                       </TableCell>
                       <TableCell>{getLevelBadge(log.level)}</TableCell>
                       <TableCell className="capitalize text-xs font-medium">{log.module}</TableCell>
@@ -393,7 +433,8 @@ export default function LogHub({ noShell = false }: { noShell?: boolean }) {
                 </div>
               )}
             </div>
-          )})}
+          );
+          })()}
         </SheetContent>
       </Sheet>
     </div>
