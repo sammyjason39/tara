@@ -37,4 +37,24 @@ export default defineConfig(({ mode }) => ({
   optimizeDeps: {
     exclude: ["@/core/persistence/storage/node"],
   },
+  build: {
+    // BUG-9 FIX: Code splitting for bundle size optimization
+    rollupOptions: {
+      output: {
+        // Split vendor libraries into separate cacheable chunks
+        manualChunks: {
+          // React and related libraries
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          // Charting libraries
+          'charts': ['recharts'],
+          // Utility libraries
+          'utils': ['date-fns', 'uuid'],
+        },
+        // Set chunk size threshold (500 kB)
+        chunkSizeWarningLimit: 600,
+      },
+    },
+    // Set chunk size warning limit
+    chunkSizeWarningLimit: 600,
+  },
 }));

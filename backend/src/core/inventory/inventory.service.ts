@@ -576,11 +576,13 @@ export class InventoryService {
       const transitLocation = await this.getOrCreateTransitLocation(ctx, transfer.from_location_id, transfer.to_location_id);
 
       // Move FROM transit pool to Destination
+      // BUG FIX: Use transfer.to_location_id as fromLocationId because shipTransfer()
+      // incremented in_transit at the destination location, not at the transit location
       await this.repository.transferIn(
         ctx,
         transfer.item_id,
-        transitLocation.id,
-        transfer.to_location_id,
+        transfer.to_location_id,  // fromLocationId: where in_transit was incremented
+        transfer.to_location_id,  // toLocationId: destination where on_hand increases
         transfer.quantity,
         transfer.id,
         'STOCK_TRANSFER',
@@ -849,6 +851,10 @@ export class InventoryService {
         }
 
         for (const item of items) {
+          if (!item.id || item.id === 'unregistered' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id)) {
+            console.log(`[AUDIT_RECONCILE] Skipping unregistered item SKU: ${item.sku}`);
+            continue;
+          }
           const existingLevel = await this.prisma.stock_levels.findFirst({
             where: {
               tenant_id: ctx.tenant_id,

@@ -114,10 +114,23 @@ export class LedgerPostingService {
 
       const fiscalPeriodId = posting.payload.fiscalPeriodId;
       const fiscalPeriod = await this.fiscalRepo.findById(tenant_id, company_id, fiscalPeriodId);
-      if (!fiscalPeriod || 
-          fiscalPeriod.status === FiscalPeriodStatus.HARD_LOCK || 
+      if (!fiscalPeriod) {
+        throw new BadRequestException(`Fiscal period ${fiscalPeriodId} not found`);
+      }
+      
+      // BUG-5 FIX: Reject postings for locked periods
+      if (fiscalPeriod.status === FiscalPeriodStatus.HARD_LOCK || 
           fiscalPeriod.status === FiscalPeriodStatus.CLOSED ||
           fiscalPeriod.status === FiscalPeriodStatus.CLOSING) {
+        // BUG-5 FIX: Set posting status to FAILED when period is locked
+        await this.ledgerRepo.updateStatus(
+          tenant_id, 
+          company_id, 
+          posting.id, 
+          LedgerPostingStatus.FAILED, 
+          0, 
+          `Fiscal period ${fiscalPeriodId} is ${fiscalPeriod.status} - postings not allowed`
+        );
         throw new FiscalPeriodLockedError(fiscalPeriodId);
       }
 

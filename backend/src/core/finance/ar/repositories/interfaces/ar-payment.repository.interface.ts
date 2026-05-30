@@ -8,4 +8,7 @@ export interface IArPaymentRepository {
   findAllocationByIdempotencyKey(tenant_id: string, company_id: string, key: string): Promise<IArPaymentAllocation | null>;
   findAllocationsByInvoice(tenant_id: string, company_id: string, invoiceId: string): Promise<IArPaymentAllocation[]>;
   findAllocationsByPayment(tenant_id: string, company_id: string, paymentId: string): Promise<IArPaymentAllocation[]>;
+  
+  // BUG-3 FIX: Find orphaned entries for reconciliation
+  findOrphanedEntries(tenant_id: string, company_id: string): Promise<any[]>;
 }

@@ -65,6 +65,15 @@ export class FiscalPeriodService {
       throw new BadRequestException(`Invalid State Transition: ${currentStatus} -> ${targetStatus}`);
     }
 
+    // BUG-5 FIX: Auto-void DRAFT journals when transitioning to HARD_LOCK
+    if (targetStatus === FiscalPeriodStatus.HARD_LOCK) {
+      const draftCount = await this.journalRepo.countDraftsInPeriod(tenant_id, company_id, periodId);
+      if (draftCount > 0) {
+        this.logger.log(`Auto-voiding ${draftCount} DRAFT journals in period ${periodId} before HARD_LOCK transition`);
+        await this.journalRepo.voidDraftsInPeriod(tenant_id, company_id, periodId);
+      }
+    }
+
     // Guard: No DRAFT journals allowed in locked/closing periods
     if ([FiscalPeriodStatus.SOFT_LOCK, FiscalPeriodStatus.HARD_LOCK, FiscalPeriodStatus.CLOSING].includes(targetStatus)) {
       const draftCount = await this.journalRepo.countDraftsInPeriod(tenant_id, company_id, periodId);

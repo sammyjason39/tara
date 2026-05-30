@@ -928,6 +928,7 @@ export const retailService = {
       lowStockCount: number;
       outOfStockCount: number;
       totalValue: number;
+      totalCapitalValue: number;
       currency?: string;
     }>(path, "GET", session);
     return response;

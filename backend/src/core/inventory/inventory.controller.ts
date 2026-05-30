@@ -215,18 +215,18 @@ export class InventoryController {
     );
   }
 
-  @Get("images/*")
+  @Get("images/*path")
   async serveImage(
-    @Param() params: any,
+    @Param('path') pathParam: string | string[],
     @Req() request: Request,
     @Res() res: Response,
   ) {
     const marker = "/inventory/images/";
     const requestPath = request.path || request.url.split("?")[0] || "";
     const markerIndex = requestPath.indexOf(marker);
-    const paramPath = Array.isArray(params.path)
-      ? params.path.join("/")
-      : params.path || params[0];
+    const paramPath = Array.isArray(pathParam)
+      ? pathParam.join("/")
+      : pathParam || '';
     const fullPath =
       markerIndex >= 0
         ? requestPath.slice(markerIndex + marker.length)

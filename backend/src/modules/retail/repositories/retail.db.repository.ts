@@ -977,6 +977,7 @@ export class RetailDbRepository implements IRetailRepository {
     lowStockCount: number;
     outOfStockCount: number;
     totalValue: Prisma.Decimal;
+    totalCapitalValue: Prisma.Decimal;
     currency?: string;
   }> {
     const scope = MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true });
@@ -1042,6 +1043,7 @@ export class RetailDbRepository implements IRetailRepository {
       lowStockCount: 0,
       outOfStockCount: 0,
       totalValue: new Prisma.Decimal(0) as any,
+      totalCapitalValue: new Prisma.Decimal(0) as any,
       currency: company?.currency || "USD"
     };
 
@@ -1079,9 +1081,13 @@ export class RetailDbRepository implements IRetailRepository {
         }
       }
 
+      // Capital/supplier price
+      const basePrice = new Prisma.Decimal(p.base_price?.toString() || "0");
+
       stats.totalSOH = stats.totalSOH.add(totalOnHand);
       stats.totalATS = stats.totalATS.add(currentATS);
       stats.totalValue = stats.totalValue.add(totalOnHand.mul(price));
+      stats.totalCapitalValue = stats.totalCapitalValue.add(totalOnHand.mul(basePrice));
 
       if (totalOnHand.lte(0)) {
         stats.outOfStockCount++;

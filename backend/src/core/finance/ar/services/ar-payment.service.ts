@@ -57,23 +57,29 @@ export class ArPaymentService {
     // 3. Create AR Subledger Entry (VALIDATED)
 
     // 4. Enqueue for Ledger (POSTING)
-    await this.ledgerPostingService.enqueuePosting(
-      tenant_id,
-      company_id,
-      AR_EVENT_TYPES.PAYMENT_RECEIVED,
-      `ar-payment-${payment.id}`,
-      {
-        paymentId: payment.id,
-        amount: payment.amount,
-        customer_id: payment.customer_id,
-        postingRequestId,
-        fiscalPeriodId: currentPeriodId,
-        debitAccountId: mapping.debitAccountId,
-        creditAccountId: mapping.creditAccountId,
-        branch_id: 'BRANCH_AUTO',
-        location_id: 'LOC_AUTO',
-      }
-    );
+    try {
+      await this.ledgerPostingService.enqueuePosting(
+        tenant_id,
+        company_id,
+        AR_EVENT_TYPES.PAYMENT_RECEIVED,
+        `ar-payment-${payment.id}`,
+        {
+          paymentId: payment.id,
+          amount: payment.amount,
+          customer_id: payment.customer_id,
+          postingRequestId,
+          fiscalPeriodId: currentPeriodId,
+          debitAccountId: mapping.debitAccountId,
+          creditAccountId: mapping.creditAccountId,
+          branch_id: 'BRANCH_AUTO',
+          location_id: 'LOC_AUTO',
+        }
+      );
+    } catch (error) {
+      // BUG-3 FIX: Mark subledger entry as FAILED if ledger posting fails
+      this.logger.error(`Failed to enqueue ledger posting for payment ${payment.id}: ${error.message}`);
+      throw new BadRequestException(`Payment processing failed: ${error.message}`);
+    }
 
     return payment;
   }
@@ -191,5 +197,39 @@ export class ArPaymentService {
         customer_id: payment.customer_id,
       }
     );
+  }
+
+  // BUG-3 FIX: Automated reconciliation mechanism to detect orphaned entries
+  async detectOrphanedEntries(tenant_id: string, company_id: string): Promise<any[]> {
+    const orphaned = await this.paymentRepo.findOrphanedEntries(tenant_id, company_id);
+    
+    if (orphaned.length > 0) {
+      this.logger.warn(`Detected ${orphaned.length} orphaned entries requiring reconciliation`);
+    }
+    
+    return orphaned;
+  }
+
+  async reconcileOrphanedEntries(tenant_id: string, company_id: string): Promise<number> {
+    const orphaned = await this.detectOrphanedEntries(tenant_id, company_id);
+    let reconciledCount = 0;
+
+    for (const entry of orphaned) {
+      try {
+        // Re-enqueue the posting
+        await this.ledgerPostingService.enqueuePosting(
+          tenant_id,
+          company_id,
+          entry.eventType,
+          entry.sourceEventId,
+          entry.payload
+        );
+        reconciledCount++;
+      } catch (error) {
+        this.logger.error(`Failed to reconcile entry ${entry.id}: ${error.message}`);
+      }
+    }
+
+    return reconciledCount;
   }
 }

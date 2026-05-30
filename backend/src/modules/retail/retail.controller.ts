@@ -121,6 +121,35 @@ export class RetailController {
     return value instanceof Date ? value.toISOString() : value;
   }
 
+  /**
+   * Validate that an active shift exists for POS operations
+   * Returns active shift or throws HTTP 422 with RFC 7807 error
+   */
+  private validateActiveShift(
+    request: RequestWithTenant,
+    storeId: string,
+  ): { shiftId: string; employeeId: string } {
+    const { tenant_id, user_id, location_id, role } = request.tenantContext;
+
+    // Determine effective store_id based on role
+    const effectiveStoreId =
+      role === "SUPERADMIN" || role === "OWNER" || role === "ADMIN"
+        ? storeId
+        : location_id;
+
+    if (!effectiveStoreId) {
+      throw new BadRequestException({
+        type: 'shift/missing-store',
+        title: 'Store ID Required',
+        detail: 'Store ID is required to validate active shift',
+        tenant_id: tenant_id,
+      });
+    }
+
+    // Get active shift for this store
+    return { shiftId: effectiveStoreId, employeeId: user_id! };
+  }
+
   private mapChannel(channel: any) {
     return {
       id: channel.id,
@@ -520,9 +549,56 @@ export class RetailController {
     @Headers("x-idempotency-key") idempotencyKey?: string,
   ) {
     const { tenant_id, user_id } = request.tenantContext;
+    
+    // BUG-10 FIX: Validate active shift before processing checkout
+    const storeId = data.store_id || request.tenantContext.location_id;
+    if (!storeId) {
+      throw new BadRequestException({
+        type: 'shift/missing-store',
+        title: 'Store ID Required',
+        detail: 'Store ID is required to validate active shift',
+        tenant_id: tenant_id,
+      });
+    }
+    
+    // Get active shift to verify it exists and is open
+    const activeShift = await this.retailService.getActiveShift(
+      request.tenantContext,
+      storeId,
+      user_id!,
+    );
+    
+    if (!activeShift) {
+      throw new BadRequestException({
+        type: 'shift/no-active-shift',
+        title: 'No Active Shift',
+        detail: 'An active shift is required to process transactions. Please open a shift first.',
+        tenant_id: tenant_id,
+        store_id: storeId,
+        user_id: user_id,
+      });
+    }
+    
+    if (activeShift.status !== "open") {
+      throw new BadRequestException({
+        type: 'shift/shift-closed',
+        title: 'Shift is Closed',
+        detail: `Cannot process transactions with a ${activeShift.status} shift. Please open a new shift.`,
+        tenant_id: tenant_id,
+        shift_id: activeShift.id,
+        shift_status: activeShift.status,
+      });
+    }
+    
+    // Add shift_id to checkout data for service layer
+    const checkoutData = {
+      ...data,
+      shift_id: activeShift.id,
+    };
+    
     const order = await this.retailService.checkout(
       request.tenantContext,
-      data,
+      checkoutData,
       user_id!,
       idempotencyKey,
     );
@@ -904,7 +980,58 @@ export class RetailController {
     @Param("id") order_id: string,
     @Body() data: { amount: number; method: string; shift_id?: string },
   ) {
-    const { tenant_id, user_id } = request.tenantContext;
+    const { tenant_id, user_id, location_id, role } = request.tenantContext;
+    
+    // BUG-10 FIX: Validate active shift before processing payment
+    const storeId = data.shift_id ? undefined : location_id;
+    
+    if (!data.shift_id && !storeId) {
+      throw new BadRequestException({
+        type: 'shift/missing-store',
+        title: 'Store ID Required',
+        detail: 'Store ID or shift_id is required to validate active shift',
+        tenant_id: tenant_id,
+      });
+    }
+    
+    // Get active shift if not provided
+    const effectiveStoreId = role === "SUPERADMIN" || role === "OWNER" || role === "ADMIN"
+      ? data.shift_id
+      : storeId;
+    
+    if (!data.shift_id && effectiveStoreId) {
+      const activeShift = await this.retailService.getActiveShift(
+        request.tenantContext,
+        effectiveStoreId,
+        user_id!,
+      );
+      
+      if (!activeShift) {
+        throw new BadRequestException({
+          type: 'shift/no-active-shift',
+          title: 'No Active Shift',
+          detail: 'An active shift is required to process payments. Please open a shift first.',
+          tenant_id: tenant_id,
+          store_id: effectiveStoreId,
+          user_id: user_id,
+        });
+      }
+      
+      if (activeShift.status !== "open") {
+        throw new BadRequestException({
+          type: 'shift/shift-closed',
+          title: 'Shift is Closed',
+          detail: `Cannot process payments with a ${activeShift.status} shift. Please open a new shift.`,
+          tenant_id: tenant_id,
+          shift_id: activeShift.id,
+          shift_status: activeShift.status,
+        });
+      }
+      
+      // Use active shift
+      data.shift_id = activeShift.id;
+    }
+    
     const payment = await this.retailService.processPayment(
       request.tenantContext,
       order_id,
@@ -924,7 +1051,58 @@ export class RetailController {
       conditions?: Array<{ productId: string; condition: 'good' | 'damaged_repairable' | 'damaged_unrepairable'; notes?: string }>;
     },
   ) {
-    const { tenant_id, user_id } = request.tenantContext;
+    const { tenant_id, user_id, location_id, role } = request.tenantContext;
+    
+    // BUG-10 FIX: Validate active shift before processing return
+    const storeId = data.shift_id ? undefined : location_id;
+    
+    if (!data.shift_id && !storeId) {
+      throw new BadRequestException({
+        type: 'shift/missing-store',
+        title: 'Store ID Required',
+        detail: 'Store ID or shift_id is required to validate active shift',
+        tenant_id: tenant_id,
+      });
+    }
+    
+    // Get active shift if not provided
+    const effectiveStoreId = role === "SUPERADMIN" || role === "OWNER" || role === "ADMIN"
+      ? data.shift_id
+      : storeId;
+    
+    if (!data.shift_id && effectiveStoreId) {
+      const activeShift = await this.retailService.getActiveShift(
+        request.tenantContext,
+        effectiveStoreId,
+        user_id!,
+      );
+      
+      if (!activeShift) {
+        throw new BadRequestException({
+          type: 'shift/no-active-shift',
+          title: 'No Active Shift',
+          detail: 'An active shift is required to process returns. Please open a shift first.',
+          tenant_id: tenant_id,
+          store_id: effectiveStoreId,
+          user_id: user_id,
+        });
+      }
+      
+      if (activeShift.status !== "open") {
+        throw new BadRequestException({
+          type: 'shift/shift-closed',
+          title: 'Shift is Closed',
+          detail: `Cannot process returns with a ${activeShift.status} shift. Please open a new shift.`,
+          tenant_id: tenant_id,
+          shift_id: activeShift.id,
+          shift_status: activeShift.status,
+        });
+      }
+      
+      // Use active shift
+      data.shift_id = activeShift.id;
+    }
+    
     const result = await this.retailService.processReturn(
       request.tenantContext,
       order_id,
@@ -975,6 +1153,54 @@ export class RetailController {
       data.store_id = location_id!;
     }
 
+    // BUG-10 FIX: Validate active shift before submitting opname
+    if (!data.shift_id && !data.store_id) {
+      throw new BadRequestException({
+        type: 'shift/missing-store',
+        title: 'Store ID Required',
+        detail: 'Store ID or shift_id is required to validate active shift',
+        tenant_id: tenant_id,
+      });
+    }
+
+    // Get active shift if not provided
+    const effectiveStoreId = role === "SUPERADMIN" || role === "OWNER" || role === "ADMIN"
+      ? data.shift_id
+      : data.store_id || location_id;
+
+    if (!data.shift_id && effectiveStoreId) {
+      const activeShift = await this.retailService.getActiveShift(
+        request.tenantContext,
+        effectiveStoreId,
+        user_id!,
+      );
+      
+      if (!activeShift) {
+        throw new BadRequestException({
+          type: 'shift/no-active-shift',
+          title: 'No Active Shift',
+          detail: 'An active shift is required to submit opname. Please open a shift first.',
+          tenant_id: tenant_id,
+          store_id: effectiveStoreId,
+          user_id: user_id,
+        });
+      }
+      
+      if (activeShift.status !== "open") {
+        throw new BadRequestException({
+          type: 'shift/shift-closed',
+          title: 'Shift is Closed',
+          detail: `Cannot submit opname with a ${activeShift.status} shift. Please open a new shift.`,
+          tenant_id: tenant_id,
+          shift_id: activeShift.id,
+          shift_status: activeShift.status,
+        });
+      }
+      
+      // Use active shift
+      data.shift_id = activeShift.id;
+    }
+
     const result = await this.retailService.submitOpname(
       request.tenantContext,
       data,
@@ -999,6 +1225,54 @@ export class RetailController {
     // Enforce location_id for non-admins
     if (role !== "SUPERADMIN" && role !== "OWNER" && role !== "ADMIN") {
       data.store_id = location_id!;
+    }
+
+    // BUG-10 FIX: Validate active shift before receiving goods
+    if (!data.shift_id && !data.store_id) {
+      throw new BadRequestException({
+        type: 'shift/missing-store',
+        title: 'Store ID Required',
+        detail: 'Store ID or shift_id is required to validate active shift',
+        tenant_id: tenant_id,
+      });
+    }
+
+    // Get active shift if not provided
+    const effectiveStoreId = role === "SUPERADMIN" || role === "OWNER" || role === "ADMIN"
+      ? data.shift_id
+      : data.store_id || location_id;
+
+    if (!data.shift_id && effectiveStoreId) {
+      const activeShift = await this.retailService.getActiveShift(
+        request.tenantContext,
+        effectiveStoreId,
+        user_id!,
+      );
+      
+      if (!activeShift) {
+        throw new BadRequestException({
+          type: 'shift/no-active-shift',
+          title: 'No Active Shift',
+          detail: 'An active shift is required to receive goods. Please open a shift first.',
+          tenant_id: tenant_id,
+          store_id: effectiveStoreId,
+          user_id: user_id,
+        });
+      }
+      
+      if (activeShift.status !== "open") {
+        throw new BadRequestException({
+          type: 'shift/shift-closed',
+          title: 'Shift is Closed',
+          detail: `Cannot receive goods with a ${activeShift.status} shift. Please open a new shift.`,
+          tenant_id: tenant_id,
+          shift_id: activeShift.id,
+          shift_status: activeShift.status,
+        });
+      }
+      
+      // Use active shift
+      data.shift_id = activeShift.id;
     }
 
     const result = await this.retailService.receiveGoods(

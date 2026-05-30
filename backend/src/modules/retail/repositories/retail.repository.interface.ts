@@ -198,6 +198,7 @@ export abstract class IRetailRepository {
     lowStockCount: number;
     outOfStockCount: number;
     totalValue: Prisma.Decimal;
+    totalCapitalValue: Prisma.Decimal;
     currency?: string;
   }>;
 

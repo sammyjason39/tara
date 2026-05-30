@@ -14,6 +14,7 @@ export default defineConfig({
     include: [
       'backend/src/**/*.{test,spec}.{ts,tsx}',
       'tests/**/*.{test,spec}.{ts,tsx}',
+      'backend/audit/**/*.{test,spec}.{ts,tsx}',
     ],
     exclude: ['**/node_modules/**', '**/dist/**'],
   },

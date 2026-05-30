@@ -136,8 +136,8 @@ export async function apiRequest<T>(
     }
     
     if (hasData) {
-      // If data is null or undefined, but exists, return a safe fallback based on expected type T
-      return (result.data ?? {}) as T;
+      if (result.data === null) return null as unknown as T;
+      return result.data as T;
     }
   }
 

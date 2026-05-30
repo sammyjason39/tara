@@ -1,5 +1,5 @@
 import { TenantContext } from "../../gateway/tenant-context.interface";
-import { Injectable } from "@nestjs/common";
+import { Injectable, BadRequestException } from "@nestjs/common";
 import { PaymentStateMachine } from "./utils/payment-state.machine";
 import { AttachDisputeEvidenceDto } from "./dto/attach-dispute-evidence.dto";
 import { CreateDisputeDto } from "./dto/create-dispute.dto";
@@ -90,7 +90,45 @@ export class PaymentService {
     dto: CreatePaymentTransactionDto,
     actor_id: string,
   ) {
+    // BUG-11 FIX: Check offline payment matrix
+    const isOffline = this.isOfflineMode(ctx);
+    const blockedPaymentTypes = ['CARD', 'QRIS', 'E_WALLET', 'LOYALTY_POINTS'];
+    
+    // Determine payment type from request
+    const paymentType = this.determinePaymentType(dto);
+    
+    if (isOffline && blockedPaymentTypes.includes(paymentType)) {
+      throw new BadRequestException({
+        type: 'payment/offline-not-allowed',
+        title: 'Payment Method Unavailable Offline',
+        detail: `Payment method ${paymentType} is not available in offline mode. Only CASH and VOUCHER payments are allowed.`,
+        tenant_id: ctx.tenant_id,
+      });
+    }
+    
     return this.repository.createTransaction(ctx, dto, actor_id);
+  }
+  
+  /**
+   * Determine payment type from request DTO
+   */
+  private determinePaymentType(dto: CreatePaymentTransactionDto): string {
+    // Map channel to payment type
+    if (dto.channel === 'card_online' || dto.channel === 'card_pos') return 'CARD';
+    if (dto.channel === 'wallet') return 'E_WALLET';
+    if (dto.channel === 'qr') return 'QRIS';
+    if (dto.method === 'EDC') return 'CARD';
+    if (dto.method === 'CASH') return 'CASH';
+    if (dto.method === 'GATEWAY') return dto.provider || 'GATEWAY';
+    return 'UNKNOWN';
+  }
+  
+  /**
+   * Check if system is in offline mode
+   * Uses OFFLINE_MODE environment variable for simple configuration
+   */
+  private isOfflineMode(ctx: TenantContext): boolean {
+    return process.env.OFFLINE_MODE === "true";
   }
 
   async approveTransaction(ctx: TenantContext,
@@ -363,6 +401,7 @@ export class PaymentService {
     dto: CreatePaymentTransactionDto,
     actor_id: string,
   ) {
+    // BUG-11 FIX: Cash payments are allowed in offline mode
     const transaction = await this.repository.createTransaction(
       ctx,
       {
@@ -388,6 +427,7 @@ export class PaymentService {
     dto: CreatePaymentTransactionDto,
     actor_id: string,
   ) {
+    // BUG-11 FIX: EDC payments are allowed in offline mode
     const transaction = await this.repository.createTransaction(
       ctx,
       {
@@ -414,6 +454,17 @@ export class PaymentService {
     dto: CreatePaymentTransactionDto,
     actor_id: string,
   ) {
+    // BUG-11 FIX: Check offline payment matrix for gateway payments
+    const isOffline = this.isOfflineMode(ctx);
+    if (isOffline) {
+      throw new BadRequestException({
+        type: 'payment/offline-not-allowed',
+        title: 'Gateway Payment Unavailable Offline',
+        detail: 'Gateway payments (CARD, QRIS, E-Wallet) are not available in offline mode.',
+        tenant_id: ctx.tenant_id,
+      });
+    }
+    
     const settings = await this.getPaymentSettings(ctx);
     const provider = dto.provider || "STRIPE";
     

@@ -57,7 +57,7 @@ import { ItemDetailsModal } from "@/pages/core/inventory/components/ItemDetailsM
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { InventoryGlassHeader } from "@/components/shared/InventoryGlassHeader";
 import { InventoryFilterHub } from "@/components/shared/InventoryFilterHub";
-import { Package, LayoutGrid, Layers, Globe, ArrowLeftRight, Search, Plus, Filter, LayoutList, LayoutPanelLeft, RefreshCw, Lock } from "lucide-react";
+import { Package, LayoutGrid, Globe, Search, Plus, Filter, LayoutList, LayoutPanelLeft, Lock } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { inventoryService } from "@/core/services/inventory/inventoryService";
 import { retailService } from "@/core/services/retail/retailService";
@@ -68,6 +68,7 @@ import type {
   InventoryFilters,
 } from "./components/inventory/types";
 import { MovementType } from "./components/inventory/movementMeta";
+import { useRetail } from "../context/RetailContext";
 
 const PAGE_SIZE = 20;
 
@@ -78,6 +79,7 @@ interface InventoryStats {
   critical: number;
   low: number;
   totalValue?: number;
+  totalCapitalValue?: number;
   currency?: string;
 }
 
@@ -115,6 +117,7 @@ const MOCK_AUDIT_LOG: AuditEntry[] = [
 const InventoryVisibility = () => {
   const { session, updateBranch, updateLocation } = useAuth();
   const { toast } = useToast();
+  const { activeStore, activeChannel, setStore } = useRetail();
 
   const [inventory, setInventory] = useState<InventoryItemView[]>([]);
   const [totalItems, setTotalItems] = useState(0);
@@ -131,21 +134,25 @@ const InventoryVisibility = () => {
   const [isAggregating, setIsAggregating] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
   const [locationId, setLocationId] = useState<string | undefined>(undefined);
+
+  // Sync local selection state when central activeStore, activeChannel, or session location changes
+  useEffect(() => {
+    const activeEntity = activeStore || activeChannel;
+    if (activeEntity) {
+      const locId = activeEntity.locationId || activeEntity.id;
+      setSelectedStoreId(activeEntity.id);
+      setLocationId(locId);
+      isFetchingRef.current = false;
+    } else if (session?.location_id) {
+      setSelectedStoreId(session.location_id);
+      setLocationId(session.location_id);
+      isFetchingRef.current = false;
+    }
+  }, [activeStore, activeChannel, session?.location_id]);
   
   const handleStoreChange = (id: string) => {
-    setSelectedStoreId(id);
+    setStore(id);
     setPage(1);
-    const store = stores.find((s) => s.id === id);
-    const locId = store?.locationId || (store as any)?.location_id || id;
-    // Reset the fetch guard so the new location triggers a fresh load
-    isFetchingRef.current = false;
-    setLocationId(locId);
-
-    try {
-      updateLocation(locId);
-    } catch (e) {
-      console.warn("[InventoryVisibility] Failed to update location context:", e);
-    }
   };
 
   const selectedStore = useMemo(
@@ -272,6 +279,7 @@ const InventoryVisibility = () => {
           critical: sData.critical ?? sData.outOfStockCount ?? 0,
           low: sData.lowStock ?? sData.lowStockCount ?? 0,
           totalValue: Number(sData.totalValue ?? 0),
+          totalCapitalValue: Number(sData.totalCapitalValue ?? 0),
           currency: sData.currency || "USD"
         });
       }
@@ -364,7 +372,7 @@ const InventoryVisibility = () => {
       const combined = [...mappedStores, ...ecommerceStores];
       setStores(combined);
       
-      if (combined.length > 0 && !locationId) {
+      if (combined.length > 0 && !activeStore) {
         // Restore previously active branch from session (RetailContext sets session.location_id = store.id)
         const sessionLoc = session?.location_id;
         const sessionStore = sessionLoc
@@ -373,16 +381,13 @@ const InventoryVisibility = () => {
           : null;
         const firstStore = sessionStore || combined[0];
         if (firstStore) {
-          setSelectedStoreId(firstStore.id);
-          const locId = firstStore.locationId || firstStore.id;
-          setLocationId(locId);
-          updateLocation(locId);
+          setStore(firstStore.id);
         }
       }
     } catch (error) {
       console.error(error);
     }
-  }, [tenantId, session, locationId, updateLocation]);
+  }, [tenantId, session, activeStore, setStore]);
 
   useEffect(() => {
     const init = async () => {
@@ -436,7 +441,7 @@ const InventoryVisibility = () => {
       // Update global min_stock metadata
       await inventoryService.updateItem(session!, selectedItem.id, {
         metadata: {
-          ...(selectedItem.metadata || {}),
+          ...((selectedItem as any).metadata || {}),
           min_stock: globalMinStock
         }
       });
@@ -742,14 +747,24 @@ const InventoryVisibility = () => {
           { label: "Branch SKUs", value: stats?.totalSKUs ?? 0 },
           { label: "Branch SOH", value: stats?.totalSOH ?? 0 },
           { 
-            label: "Branch Value", 
+            label: "Branch Value (Capital)", 
+            value: stats?.totalCapitalValue ? new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: stats.currency || "USD",
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0,
+            }).format(stats.totalCapitalValue) : "0", 
+            color: "text-indigo-500" 
+          },
+          { 
+            label: "Branch Value (Selling)", 
             value: stats?.totalValue ? new Intl.NumberFormat("en-US", {
               style: "currency",
               currency: stats.currency || "USD",
               minimumFractionDigits: 0,
               maximumFractionDigits: 0,
             }).format(stats.totalValue) : "0", 
-            color: "text-emerald-500" 
+            color: "text-purple-500" 
           },
         ]}
         actions={

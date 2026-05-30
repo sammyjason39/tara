@@ -159,8 +159,36 @@ export default function InventoryStockOpname() {
       if (!item) {
         if (!unresolvedBarcodes.includes(barcode) && !anomalies.includes(barcode)) {
           setUnresolvedBarcodes(prev => [...prev, barcode]);
-          toast({ title: "Unregistered Barcode", description: `Added ${barcode} to unresolved list.` });
         }
+
+        setHistory((prev) => {
+          const existingIdx = prev.findIndex((h) => h.sku === barcode);
+          if (existingIdx > -1) {
+            const newHistory = [...prev];
+            newHistory[existingIdx] = {
+              ...newHistory[existingIdx],
+              actualCount: newHistory[existingIdx].actualCount + 1,
+              timestamp: new Date().toLocaleTimeString(),
+            };
+            return newHistory;
+          }
+          return [
+            {
+              id: "unregistered",
+              sku: barcode,
+              name: `[Unregistered] Barcode: ${barcode}`,
+              systemCount: 0,
+              actualCount: 1,
+              timestamp: new Date().toLocaleTimeString(),
+            },
+            ...prev,
+          ];
+        });
+
+        toast({
+          title: "Unregistered Barcode Added",
+          description: `Barcode: ${barcode} added to count list.`,
+        });
         return;
       }
 

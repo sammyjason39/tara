@@ -330,7 +330,7 @@ export class AuditService implements OnModuleDestroy {
    * Step 2: External Anchor Publishing (Multi-Region Replication)
    */
   private publishAnchorExternal(anchor: any) {
-    const entry = `${anchor.anchoredAt.toISOString()} | ${anchor.tenant_id} | ${anchor.anchorHash}\n`;
+    const entry = `${anchor.anchored_at.toISOString()} | ${anchor.tenant_id} | ${anchor.anchor_hash}\n`;
     
     // Primary local log
     try {

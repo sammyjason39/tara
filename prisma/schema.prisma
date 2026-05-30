@@ -5999,6 +5999,8 @@ model tenant_settings {
   procurement_mode            ProcurementMode @default(DIRECT)
   enable_biometric_attendance Boolean         @default(false)
   biometric_config            Json?
+  offline_mode                Boolean         @default(false)
+  offline_tolerance_threshold Int             @default(300)
   created_at                  DateTime        @default(now())
   updated_at                  DateTime        @default(now())
   companies                   companies?      @relation(fields: [company_id], references: [id])
