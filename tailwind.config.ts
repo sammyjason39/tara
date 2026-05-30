@@ -14,6 +14,19 @@ export default {
     },
     extend: {
       colors: {
+        white: "hsl(var(--surface-2))",
+        slate: {
+          50: "hsl(var(--surface-3))",
+          100: "hsl(var(--border))",
+          200: "hsl(var(--border))",
+          300: "hsl(var(--border) / 0.8)",
+          400: "hsl(var(--muted-foreground) / 0.8)",
+          500: "hsl(var(--muted-foreground))",
+          600: "hsl(var(--muted-foreground))",
+          700: "hsl(var(--muted-foreground))",
+          800: "hsl(var(--foreground))",
+          900: "hsl(var(--foreground))",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
