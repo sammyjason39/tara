@@ -311,7 +311,7 @@ export default function ProcurementRiskCenter() {
               ) : (
                 (Array.isArray(auditEvents) ? auditEvents : []).map((event) => (
                   <tr key={event.id} className="border-t">
-                    <td className="p-3 text-muted-foreground">{event.createdAt.slice(0, 16).replace("T", " ")}</td>
+                    <td className="p-3 text-muted-foreground">{(event.createdAt ?? "").slice(0, 16).replace("T", " ")}</td>
                     <td className="p-3 font-medium">{event.action}</td>
                     <td className="p-3 text-muted-foreground">
                       {event.entityType} / {event.entityId}

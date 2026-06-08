@@ -15,7 +15,8 @@ import {
   Calendar,
   Layers,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  XCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -300,11 +301,11 @@ export default function ForecastDesk() {
                     <td className="px-10 py-8">
                        <div className="flex items-center gap-4">
                           <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-xs group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                             {item.accountName.charAt(0)}
+                             {(item.accountName ?? "?").charAt(0)}
                           </div>
                           <div>
                              <p className="font-black text-sm">{item.accountName}</p>
-                             <p className="text-[10px] font-bold text-slate-400 uppercase italic">ID: {item.id.slice(-6)}</p>
+                             <p className="text-[10px] font-bold text-slate-400 uppercase italic">ID: {(item.id ?? "").slice(-6)}</p>
                           </div>
                        </div>
                     </td>

@@ -83,7 +83,7 @@ export default function CoreSecurity() {
         auditService.getLogs(session),
         itService.getSystemHealth(session.tenant_id, session),
       ]);
-      setLogs(l.data.slice(0, 10)); // Top 10 for recent view
+      setLogs((l?.data ?? []).slice(0, 10)); // Top 10 for recent view — guard against undefined
       setHealth(h);
     } catch (err) {
       console.error("Failed to fetch security data:", err);
