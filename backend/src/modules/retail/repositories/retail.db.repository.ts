@@ -1926,6 +1926,9 @@ export class RetailDbRepository implements IRetailRepository {
         const now = new Date();
         const periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const periodEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+        // fiscal_year_id is a required non-null column; generate a deterministic identifier
+        // scoped to the tenant + calendar year (no FK model exists in the schema).
+        const fiscalYearId = `FY-${ctx.tenant_id}-${now.getFullYear()}`;
         activePeriod = await tx.finance_fiscal_periods.create({
           data: {
             id: require('crypto').randomUUID(),
@@ -1934,6 +1937,7 @@ export class RetailDbRepository implements IRetailRepository {
             start_date: periodStart,
             end_date: periodEnd,
             status: 'OPEN',
+            fiscal_year_id: fiscalYearId,
             updated_at: new Date(),
           },
         });

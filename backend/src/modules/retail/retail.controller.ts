@@ -597,22 +597,13 @@ export class RetailController {
       shift_id: activeShift.id,
     };
     
-    // TEMP DIAGNOSTIC (revert): surface the real checkout exception so we can see the
-    // masked 500 root cause without VPS log access.
-    try {
-      const order = await this.retailService.checkout(
-        request.tenantContext,
-        checkoutData,
-        user_id!,
-        idempotencyKey,
-      );
-      return this.respond(request.tenantContext, order);
-    } catch (e: any) {
-      // TEMP DIAGNOSTIC (revert): the global filter renders `name: message`, so pass the
-      // real error as a plain string message to surface it through the sanitizer.
-      const frame = String(e?.stack ?? "").split("\n")[1]?.trim() ?? "";
-      throw new BadRequestException(`CHECKOUT_DEBUG :: ${e?.name ?? "Error"}: ${e?.message ?? e} @@ ${frame}`);
-    }
+    const order = await this.retailService.checkout(
+      request.tenantContext,
+      checkoutData,
+      user_id!,
+      idempotencyKey,
+    );
+    return this.respond(request.tenantContext, order);
   }
 
   @Get("shifts/active")
