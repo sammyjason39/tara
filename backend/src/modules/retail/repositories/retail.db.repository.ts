@@ -2230,9 +2230,11 @@ export class RetailDbRepository implements IRetailRepository {
         
         let productId = adj.product_id;
 
-        // If product_id is missing but SKU is provided, resolve it
+        // If product_id is missing but SKU is provided, resolve it. Use findFirst — sku is
+        // only unique together with tenant_id (composite), so findUnique({sku,tenant_id}) is
+        // invalid and threw a 500.
         if (!productId && adj.sku) {
-          const product = await tx.item_masters.findUnique({
+          const product = await tx.item_masters.findFirst({
             where: { sku: adj.sku, tenant_id: ctx.tenant_id },
             select: { id: true }
           });
