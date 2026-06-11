@@ -2213,6 +2213,10 @@ export class RetailDbRepository implements IRetailRepository {
     data: { store_id: string; adjustments: any[]; shift_id?: string },
   ): Promise<{ success: boolean; skipped: string[] }> {
     const skipped: string[] = [];
+    // Unique reference per opname session so repeated counts of the same product/location
+    // don't collide on the stock_movements unique key (tenant,reference_id,reference_type,
+    // type,product_id,location_id). Previously a constant "OPNAME" fallback collided.
+    const opnameRef = `OPNAME-${data.shift_id ? data.shift_id + "-" : ""}${uuidv4().slice(0, 8)}`;
     await this.prisma.$transaction(async (tx: any) => {
       const store = await tx.stores.findUnique({
         where: { id: data.store_id },
@@ -2332,7 +2336,7 @@ export class RetailDbRepository implements IRetailRepository {
             to_location_id: store.location_id,
             quantity: adj.actualCount - currentOnHand,
             type: "STOCK_OPNAME",
-            reference_id: data.shift_id || "OPNAME",
+            reference_id: opnameRef,
             reference_type: adj.serial_number ? "UNIT_SCAN" : "BULK_SCAN",
             performed_by: "system",
           },
