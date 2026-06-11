@@ -2256,7 +2256,7 @@ export class RetailDbRepository implements IRetailRepository {
             data: {
               on_hand: adj.actualCount,
               available: new Prisma.Decimal(adj.actualCount.toString()).minus(stock.reserved),
-              lastStockTakeAt: new Date(),
+              last_stock_take_at: new Date(),
             },
           });
         } else {
@@ -2271,25 +2271,25 @@ export class RetailDbRepository implements IRetailRepository {
               department_id: null,
               on_hand: adj.actualCount,
               available: adj.actualCount,
-              lastStockTakeAt: new Date(),
+              last_stock_take_at: new Date(),
             },
           });
         }
 
-        // Log movement
+        // Log movement (column names must match the stock_movements schema exactly)
         await tx.stock_movements.create({
           data: {
             id: uuidv4(),
             updated_at: new Date(),
             ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
             product_id: productId,
+            location_id: store.location_id,
             to_location_id: store.location_id,
             quantity: adj.actualCount - currentOnHand,
             type: "STOCK_OPNAME",
-            referenceId: data.shift_id || "OPNAME",
+            reference_id: data.shift_id || "OPNAME",
             reference_type: adj.serial_number ? "UNIT_SCAN" : "BULK_SCAN",
-            metadata: adj.serial_number ? { serial_number: adj.serial_number } : null,
-            performedBy: "system",
+            performed_by: "system",
           },
         });
       }
@@ -2334,13 +2334,11 @@ export class RetailDbRepository implements IRetailRepository {
       if (!store) throw new Error("Store not found");
 
       for (const item of data.items) {
-        const stock = await tx.stock_levels.findUnique({
+        const stock = await tx.stock_levels.findFirst({
           where: {
-            location_id_product_id_department_id: {
-              location_id: store.location_id,
-              product_id: item.product_id,
-              department_id: "DEFAULT",
-            },
+            tenant_id: ctx.tenant_id,
+            location_id: store.location_id,
+            product_id: item.product_id,
           },
         });
 
@@ -2360,25 +2358,27 @@ export class RetailDbRepository implements IRetailRepository {
               ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
               location_id: store.location_id,
               product_id: item.product_id,
-              department_id: "DEFAULT",
+              department_id: null,
               on_hand: item.quantity,
               available: item.quantity,
             },
           });
         }
 
-        // Log movement
+        // Log movement (column names must match the stock_movements schema exactly)
         await tx.stock_movements.create({
           data: {
             id: uuidv4(),
             updated_at: new Date(),
             ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }),
             product_id: item.product_id,
+            location_id: store.location_id,
             to_location_id: store.location_id,
             quantity: item.quantity,
             type: "RECEIVE_GOODS",
-            referenceId: data.shipment_id,
-            performedBy: "system",
+            reference_id: data.shipment_id,
+            reference_type: "GRN",
+            performed_by: "system",
           },
         });
       }
