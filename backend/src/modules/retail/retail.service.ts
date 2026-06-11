@@ -822,7 +822,17 @@ export class RetailService {
     store_id: string,
     employee_id: string,
   ): Promise<RetailShift | null> {
-    return this.retailRepository.getActiveShift(ctx, store_id, employee_id);
+    // Shifts are persisted against the resolved `employees.id`, but controllers pass the
+    // auth `user_id`. Resolve user_id -> employee_id (read-only, no auto-create) before the
+    // lookup so the active-shift check actually matches the open shift. Falls back to the
+    // supplied id when it is already an employee id (no employee row keyed by that user_id).
+    let resolvedEmployeeId = employee_id;
+    const employee = await this.prisma.employees.findFirst({
+      where: { user_id: employee_id, tenant_id: ctx.tenant_id },
+      select: { id: true },
+    });
+    if (employee) resolvedEmployeeId = employee.id;
+    return this.retailRepository.getActiveShift(ctx, store_id, resolvedEmployeeId);
   }
 
   async openShift(ctx: TenantContext,
