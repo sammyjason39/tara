@@ -252,13 +252,15 @@ export class RetailService {
       throw new BadRequestException("name and location_id are required");
     }
 
-    // Derive a deterministic code when the caller does not supply one.
+    // Derive a unique code when the caller does not supply one. A short random suffix keeps
+    // it readable while guaranteeing uniqueness (the (tenant,code) unique index previously
+    // collided when two storefronts shared a domain/name prefix after truncation).
     const code =
       data.code ||
       `EC-${(data.domain || data.name)
         .replace(/[^a-zA-Z0-9]/g, "")
-        .slice(0, 12)
-        .toUpperCase()}`;
+        .slice(0, 8)
+        .toUpperCase()}-${randomBytes(3).toString("hex").toUpperCase()}`;
 
     // Build the virtual-branch creation payload. The "ecommerce" type places the new
     // presence INSIDE the hierarchy; channel_binding records the originating platform.
