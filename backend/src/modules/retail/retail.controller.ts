@@ -597,13 +597,26 @@ export class RetailController {
       shift_id: activeShift.id,
     };
     
-    const order = await this.retailService.checkout(
-      request.tenantContext,
-      checkoutData,
-      user_id!,
-      idempotencyKey,
-    );
-    return this.respond(request.tenantContext, order);
+    // TEMP DIAGNOSTIC (revert): surface the real checkout exception so we can see the
+    // masked 500 root cause without VPS log access.
+    try {
+      const order = await this.retailService.checkout(
+        request.tenantContext,
+        checkoutData,
+        user_id!,
+        idempotencyKey,
+      );
+      return this.respond(request.tenantContext, order);
+    } catch (e: any) {
+      throw new BadRequestException({
+        type: "debug/checkout-error",
+        title: "Checkout Debug",
+        detail: String(e?.message ?? e),
+        name: String(e?.name ?? ""),
+        code: String(e?.code ?? ""),
+        stack: String(e?.stack ?? "").split("\n").slice(0, 6),
+      });
+    }
   }
 
   @Get("shifts/active")
