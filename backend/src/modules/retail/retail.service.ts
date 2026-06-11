@@ -645,7 +645,11 @@ export class RetailService {
     // REAL-TIME SALES BONUS INTEGRATION (If Paid immediately)
     if (order.status === "paid" || order.status === "completed") {
       const bonusRate = 0.02; // 2% commission (standard)
-      const bonusAmount = new Prisma.Decimal(order.grand_total.toString()).mul(bonusRate);
+      // NOTE: atomicCheckout returns the raw retail_orders record (cast to RetailOrder)
+      // whose monetary column is `total_amount` — the RetailOrder type's `grand_total` does
+      // not exist at runtime, so reading it was undefined and threw on `.toString()`,
+      // 500-ing checkout AFTER the order/stock had already been committed.
+      const bonusAmount = new Prisma.Decimal((order as any).total_amount.toString()).mul(bonusRate);
 
       if (bonusAmount.gt(0) && order.cashier_id) {
         // Log to HR Sales Bonuses for payroll
@@ -677,7 +681,7 @@ export class RetailService {
       entity_type: "ORDER",
       entity_id: order.id,
       metadata: { 
-        total: order.grand_total, 
+        total: (order as any).total_amount, 
         method: data.payment_method,
         idempotency_key: idempotency_key || "N/A"
       },
