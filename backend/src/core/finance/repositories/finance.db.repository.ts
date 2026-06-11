@@ -1013,7 +1013,9 @@ export class FinanceDbRepository extends IFinanceRepository {
       totalNet = totalNet.plus(net);
 
       return {
-        ...MultiTenancyUtil.getScope(ctx),
+        id: randomUUID(),
+        updated_at: new Date(),
+        tenant_id: ctx.tenant_id,
         employee_id: emp.id,
         base_salary: new Prisma.Decimal(gross),
         gross_income: new Prisma.Decimal(gross),
@@ -1031,7 +1033,9 @@ export class FinanceDbRepository extends IFinanceRepository {
       const run = await tx.hr_payroll_runs.create({
         data: {
         id: randomUUID(),
-          ...MultiTenancyUtil.getScope(ctx),
+          // hr_payroll_runs / payroll_lines have no branch_id/location_id columns; getScope
+          // injected them -> 500. Scope by tenant_id only.
+          tenant_id: ctx.tenant_id,
           period_start: periodDate,
           period_end: periodEnd,
           status: "approved",
@@ -1045,53 +1049,23 @@ export class FinanceDbRepository extends IFinanceRepository {
         },
       });
 
-      // 2. Create the Ledger Journal Entry for the Payroll Run
-      await tx.finance_journal_entries.create({
-        data: {
-        id: randomUUID(),
-          ...MultiTenancyUtil.getScope(ctx),
-          fiscal_period_id: period, 
-          posting_date: new Date(),
-          description: `Payroll posting for ${period}`,
+      // 2. Create the Ledger Journal Entry via the shared helper, which resolves a real OPEN
+      //    fiscal period and resolve-or-creates the GL accounts (the previous inline create
+      //    used fiscal_period_id=period string + non-existent ACC-* ids + branch scope -> 500).
+      await this.validateAndCreateJournal(
+        ctx,
+        {
           ref: `PAY-${period}-${run.id.substring(0, 8)}`,
-          status: "POSTED",
-          finance_journal_lines: {
-            create: [
-              {
-                ...MultiTenancyUtil.getScope(ctx),
-                account_id: "ACC-PAYROLL-EXP",
-                account_code: "EXP-PAYROLL", // Debit Expense
-                side: "DEBIT",
-                amount: totalGross,
-                description: `Gross Payroll Extracted ${period}`,
-                debit: totalGross,
-                credit: new Prisma.Decimal(0),
-              },
-              {
-                ...MultiTenancyUtil.getScope(ctx),
-                account_id: "ACC-CASH",
-                account_code: "BS-CASH", // Credit Cash/Bank
-                side: "CREDIT",
-                amount: totalNet,
-                description: `Net Payroll Disbursed ${period}`,
-                debit: new Prisma.Decimal(0),
-                credit: totalNet,
-              },
-              {
-                ...MultiTenancyUtil.getScope(ctx),
-                account_id: "ACC-TAX-LIAB",
-                account_code: "LIAB-TAXES", // Credit Liabilities
-                side: "CREDIT",
-                amount: totalGross.minus(totalNet),
-                description: `Payroll Deductions ${period}`,
-                debit: new Prisma.Decimal(0),
-                credit: totalGross.minus(totalNet),
-              },
-            ],
-          },
-        },
-      });
-      
+          description: `Payroll posting for ${period}`,
+          lines: [
+            { accountCode: "6200", description: `Gross Payroll ${period}`, debit: totalGross.toNumber(), credit: 0 },
+            { accountCode: "1001", description: `Net Payroll Disbursed ${period}`, debit: 0, credit: totalNet.toNumber() },
+            { accountCode: "2100", description: `Payroll Deductions ${period}`, debit: 0, credit: totalGross.minus(totalNet).toNumber() },
+          ],
+        } as any,
+        tx as any,
+      );
+
       // We could also log to audit service here if it accepts a Prisma transaction client.
     });
   }
