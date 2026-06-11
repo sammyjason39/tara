@@ -966,7 +966,9 @@ export class FinanceDbRepository extends IFinanceRepository {
   ): Promise<void> {
     const db = tx ?? this.prisma;
     const employees = await db.employees.findMany({
-      where: { ...MultiTenancyUtil.getScope(ctx), status: "active" },
+      // employees has no branch_id/location_id columns; use excludeBranch to avoid injecting
+      // them into the where clause (which 500-ed payroll execute).
+      where: { ...MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true }), status: "active" },
       include: { compensations: true }
     });
 
@@ -1515,14 +1517,19 @@ export class FinanceDbRepository extends IFinanceRepository {
   }
 
   async createLoan(ctx: TenantContext, data: any, tx?: Prisma.TransactionClient) {
-    const { tenant_id, company_id } = ctx;
+    const { tenant_id } = ctx;
     const client = tx || this.prisma;
     return (client as any).finance_loans.create({
       data: {
         ...data,
         tenant_id,
-        company_id: data.company_id || company_id,
-        currency: data.currency || "USD",
+        // company_id is a nullable FK; ctx.company_id is not a real companies.id, so null.
+        company_id: null,
+        // interest_rate and start_date are required (no DB default) — supply sensible defaults.
+        interest_rate: data.interest_rate ?? 0,
+        start_date: data.start_date ? new Date(data.start_date) : new Date(),
+        currency: data.currency || "IDR",
+        updated_at: new Date(),
       },
     });
   }
