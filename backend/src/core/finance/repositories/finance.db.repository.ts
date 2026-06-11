@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, BadRequestException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { randomUUID } from "crypto";
 import { PrismaService } from "../../../persistence/prisma.service";
@@ -1027,6 +1027,16 @@ export class FinanceDbRepository extends IFinanceRepository {
 
     const periodDate = new Date(`${period}-01`);
     const periodEnd = new Date(periodDate.getFullYear(), periodDate.getMonth() + 1, 0);
+
+    // Payroll runs are unique per (tenant, period). Reject a duplicate run for the same
+    // period with a clear 400 instead of a Prisma unique-constraint 500.
+    const existingRun = await db.hr_payroll_runs.findFirst({
+      where: { tenant_id: ctx.tenant_id, period_start: periodDate, period_end: periodEnd },
+      select: { id: true },
+    });
+    if (existingRun) {
+      throw new BadRequestException(`Payroll has already been executed for period ${period}`);
+    }
 
     await this.prisma.$transaction(async (tx) => {
       // 1. Create the PayrollRun
