@@ -74,7 +74,7 @@ export class JournalReversalService {
       const reversalJournal = await this.journalRepo.createEntry(postingCtx, {
         tenant_id,
         company_id,
-        ref: `REV-${originalJournal.id}`,
+        ref: `REV-${originalJournal.id}-${Date.now()}`,
         fiscalPeriodId: originalJournal.fiscalPeriodId,
         postingDate: new Date(),
         status: JournalStatus.POSTED,
