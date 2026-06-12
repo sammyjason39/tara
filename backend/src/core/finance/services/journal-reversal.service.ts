@@ -82,21 +82,24 @@ export class JournalReversalService {
       });
 
       // 2. Transpose Lines (Debit -> Credit, Credit -> Debit)
+      // NOTE: journalRepo.findLines returns raw snake_case DB rows, so we read
+      // snake_case fields (with camelCase fallback) and must carry account_code.
       const reversalLines = originalLines.map((line: any) => ({
-        accountId: line.accountId,
+        accountId: line.account_id ?? line.accountId,
+        accountCode: line.account_code ?? line.accountCode,
         side: line.side === PostingSide.DEBIT ? PostingSide.CREDIT : PostingSide.DEBIT,
         amount: line.amount,
-        currency: line.currency,
+        currency: line.currency ?? 'IDR',
         branch_id: line.branch_id,
-        dimensionBranchId: line.dimensionBranchId,
-        dimensionChannelId: line.dimensionChannelId,
+        dimensionBranchId: line.branch_id ?? line.dimensionBranchId,
+        dimensionChannelId: line.dimension_channel_id ?? line.dimensionChannelId,
         location_id: line.location_id,
-        departmentId: line.departmentId,
-        costCenterId: line.costCenterId,
-        projectId: line.projectId,
-        dimensionCostCenterId: line.dimensionCostCenterId,
-        dimensionDepartmentId: line.dimensionDepartmentId,
-        dimensionProjectId: line.dimensionProjectId,
+        departmentId: line.department_id ?? line.departmentId,
+        costCenterId: line.cost_center_id ?? line.costCenterId,
+        projectId: line.project_id ?? line.projectId,
+        dimensionCostCenterId: line.cost_center_id ?? line.dimensionCostCenterId,
+        dimensionDepartmentId: line.department_id ?? line.dimensionDepartmentId,
+        dimensionProjectId: line.project_id ?? line.dimensionProjectId,
       }));
 
       await this.journalRepo.createLines(postingCtx, reversalJournal.id, reversalLines);
