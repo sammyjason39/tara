@@ -13,6 +13,8 @@ import {
 import { FiscalPeriodStatus, JournalStatus, JournalType, PostingSide } from '../domain/finance.constants';
 import { HashingService } from '../utils/hashing.service';
 import { Prisma } from '@prisma/client';
+import { FiscalPeriodDbRepository } from '../repositories/fiscal-period.db.repository';
+import { JournalDbRepository } from '../repositories/journal.db.repository';
 
 @Injectable()
 export class PeriodClosingService {
@@ -69,10 +71,13 @@ export class PeriodClosingService {
     await this.fiscalRepo.saveExecutionLock(tenant_id, company_id, exeLock);
 
     try {
-        // 3. Perform Closing in Unit-of-Work
-        const result = await this.uow.execute(async (tx: any) => {
+        // 3. Perform Closing in Unit-of-Work (tx-bound repos → atomic).
+        const result = await this.uow.execute(async (tx: Prisma.TransactionClient) => {
+            const fiscalRepoTx = new FiscalPeriodDbRepository(tx as any);
+            const journalRepoTx = new JournalDbRepository(tx);
+
             // Calculate Net Income (Sum of Revenues - Expenses)
-            const incomeAccounts = await this.journalRepo.getRawBalances(tenant_id, company_id, periodId, period.start_date, period.end_date);
+            const incomeAccounts = await journalRepoTx.getRawBalances(tenant_id, company_id, periodId, period.start_date, period.end_date);
             let netIncome = new Prisma.Decimal(0);
             for (const bal of Object.values(incomeAccounts)) {
                 netIncome = netIncome.plus(bal);
@@ -98,8 +103,8 @@ export class PeriodClosingService {
               closedAt: new Date(),
             };
 
-            await this.fiscalRepo.saveClosingRecord(tenant_id, company_id, closingRecord);
-            await this.fiscalRepo.updateStatus(tenant_id, company_id, periodId, FiscalPeriodStatus.CLOSED);
+            await fiscalRepoTx.saveClosingRecord(tenant_id, company_id, closingRecord);
+            await fiscalRepoTx.updateStatus(tenant_id, company_id, periodId, FiscalPeriodStatus.CLOSED);
 
             return closingRecord;
         });
@@ -125,8 +130,9 @@ export class PeriodClosingService {
       throw new BadRequestException('Only COMPLETED closing can be reversed');
     }
 
-    await this.uow.execute(async (tx: any) => {
-        await this.fiscalRepo.updateStatus(tenant_id, company_id, periodId, FiscalPeriodStatus.OPEN);
+    await this.uow.execute(async (tx: Prisma.TransactionClient) => {
+        const fiscalRepoTx = new FiscalPeriodDbRepository(tx as any);
+        await fiscalRepoTx.updateStatus(tenant_id, company_id, periodId, FiscalPeriodStatus.OPEN);
         // Clear closing artifact but keep lock for audit
     });
   }
