@@ -7,6 +7,10 @@ import { IFiscalPeriodRepository } from '../repositories/interfaces/fiscal.repos
 import { IUnitOfWork } from '../repositories/interfaces/uow.interface';
 import { JournalStatus, FiscalPeriodStatus, PostingSide } from '../domain/finance.constants';
 import { Prisma } from '@prisma/client';
+import { JournalDbRepository } from '../repositories/journal.db.repository';
+import { AccountBalanceDbRepository } from '../repositories/account-balance.db.repository';
+import { JournalReversalDbRepository } from '../repositories/journal-reversal.db.repository';
+import { FiscalPeriodDbRepository } from '../repositories/fiscal-period.db.repository';
 
 @Injectable()
 export class JournalReversalService {
@@ -26,52 +30,89 @@ export class JournalReversalService {
     private readonly auditService: AuditService,
   ) {}
 
+  /**
+   * Reverses a POSTED journal entry atomically.
+   *
+   * ATOMICITY CONTRACT:
+   *   All validation reads AND writes execute inside a single RepeatableRead
+   *   transaction, using tx-bound repository instances (NOT the injected
+   *   singletons, which are bound to the base connection and would auto-commit
+   *   independently). Either the full reversal commits — reversal entry, its
+   *   lines, balance updates, trace record, and the original status flip — or
+   *   nothing does. Audit logging happens AFTER commit so an audit failure can
+   *   never roll back a valid financial reversal.
+   */
   async reverseJournal(
-    tenant_id: string, 
+    tenant_id: string,
     company_id: string,
-    journalId: string, 
-    reason: string, 
-    requested_by: string
+    journalId: string,
+    reason: string,
+    requested_by: string,
   ): Promise<string> {
-    const originalJournal = await this.journalRepo.findById(tenant_id, company_id, journalId);
-    if (!originalJournal) {
-      throw new BadRequestException(`Journal ${journalId} not found`);
-    }
+    let reversalJournalId = '';
 
-    if (originalJournal.status === JournalStatus.REVERSED) {
-      throw new BadRequestException(`Journal ${journalId} is already REVERSED.`);
-    }
+    await this.uow.execute(async (tx: Prisma.TransactionClient) => {
+      // tx-bound repositories: every read/write below participates in THIS transaction.
+      const journalRepoTx = new JournalDbRepository(tx);
+      const balanceRepoTx = new AccountBalanceDbRepository(tx);
+      const reversalRepoTx = new JournalReversalDbRepository(tx);
+      const fiscalRepoTx = new FiscalPeriodDbRepository(tx as any);
 
-    if (originalJournal.status !== JournalStatus.POSTED) {
-      throw new BadRequestException(`Only POSTED journals can be reversed. Current status is ${originalJournal.status}`);
-    }
+      // 1. Load + validate the original journal (inside tx → race-safe snapshot).
+      const originalJournal = await journalRepoTx.findById(tenant_id, company_id, journalId);
+      if (!originalJournal) {
+        throw new BadRequestException(`Journal ${journalId} not found`);
+      }
+      if (originalJournal.status === JournalStatus.REVERSED) {
+        throw new BadRequestException(`Journal ${journalId} is already REVERSED.`);
+      }
+      if (originalJournal.status !== JournalStatus.POSTED) {
+        throw new BadRequestException(
+          `Only POSTED journals can be reversed. Current status is ${originalJournal.status}`,
+        );
+      }
 
-    const existingReversal = await this.reversalRepo.findByOriginalJournalId(tenant_id, company_id, journalId);
+      // 2. Guard against double reversal (inside tx).
+      const existingReversal = await reversalRepoTx.findByOriginalJournalId(
+        tenant_id,
+        company_id,
+        journalId,
+      );
+      if (existingReversal) {
+        throw new BadRequestException(
+          `Journal ${journalId} has already been reversed by Reversal ID ${existingReversal.id}`,
+        );
+      }
 
-    if (existingReversal) {
-      throw new BadRequestException(`Journal ${journalId} has already been reversed by Reversal ID ${existingReversal.id}`);
-    }
+      // 3. Fiscal period must be open enough to accept a reversal.
+      const fiscalPeriod = await fiscalRepoTx.findById(
+        tenant_id,
+        company_id,
+        originalJournal.fiscalPeriodId,
+      );
+      if (
+        !fiscalPeriod ||
+        fiscalPeriod.status === FiscalPeriodStatus.HARD_LOCK ||
+        fiscalPeriod.status === FiscalPeriodStatus.CLOSED
+      ) {
+        throw new BadRequestException(
+          `Cannot reverse journal. Fiscal period ${originalJournal.fiscalPeriodId} is ${fiscalPeriod?.status || 'NOT_FOUND'}.`,
+        );
+      }
 
+      const originalLines = await journalRepoTx.findLines(journalId);
+      if (originalLines.length === 0) {
+        throw new BadRequestException('Original journal has no lines.');
+      }
 
+      // Issue HMAC posting context for the reversal.
+      const postingCtx = (await import('../domain/posting-context-factory')).PostingContextFactory.issue(
+        tenant_id,
+        company_id,
+      );
 
-    const fiscalPeriod = await this.fiscalRepo.findById(tenant_id, company_id, originalJournal.fiscalPeriodId);
-    if (!fiscalPeriod || 
-        fiscalPeriod.status === FiscalPeriodStatus.HARD_LOCK || 
-        fiscalPeriod.status === FiscalPeriodStatus.CLOSED) {
-      throw new BadRequestException(`Cannot reverse journal. Fiscal period ${originalJournal.fiscalPeriodId} is ${fiscalPeriod?.status || 'NOT_FOUND'}.`);
-    }
-
-    const originalLines = await this.journalRepo.findLines(journalId);
-    if (originalLines.length === 0) {
-      throw new BadRequestException('Original journal has no lines.');
-    }
-
-    return await this.uow.execute(async () => {
-      // Issue HMAC posting context for reversal
-      const postingCtx = (await import('../domain/posting-context-factory')).PostingContextFactory.issue(tenant_id, company_id);
-
-      // 1. Create the Reversal Journal
-      const reversalJournal = await this.journalRepo.createEntry(postingCtx, {
+      // 4. Create the reversal journal header.
+      const reversalJournal = await journalRepoTx.createEntry(postingCtx, {
         tenant_id,
         company_id,
         ref: `REV-${originalJournal.id}-${Date.now()}`,
@@ -81,9 +122,9 @@ export class JournalReversalService {
         sourceEventId: `reversal_${originalJournal.sourceEventId || originalJournal.id}`,
       });
 
-      // 2. Transpose Lines (Debit -> Credit, Credit -> Debit)
-      // NOTE: journalRepo.findLines returns raw snake_case DB rows, so we read
-      // snake_case fields (with camelCase fallback) and must carry account_code.
+      // 5. Transpose lines (Debit -> Credit, Credit -> Debit).
+      // NOTE: findLines returns raw snake_case DB rows, so we read snake_case
+      // fields (with camelCase fallback) and must carry account_code.
       const reversalLines = originalLines.map((line: any) => ({
         accountId: line.account_id ?? line.accountId,
         accountCode: line.account_code ?? line.accountCode,
@@ -102,43 +143,68 @@ export class JournalReversalService {
         dimensionProjectId: line.project_id ?? line.dimensionProjectId,
       }));
 
-      await this.journalRepo.createLines(postingCtx, reversalJournal.id, reversalLines);
+      await journalRepoTx.createLines(postingCtx, reversalJournal.id, reversalLines);
 
-      // 3. Update Balances
+      // 6. Update account balances (tx-bound).
       for (const line of reversalLines) {
-        await this.updateAccountBalance(tenant_id, company_id, originalJournal.fiscalPeriodId, line);
+        await this.updateAccountBalance(
+          balanceRepoTx,
+          tenant_id,
+          company_id,
+          originalJournal.fiscalPeriodId,
+          line,
+        );
       }
 
-      // 4. Create Trace Record
-      await this.reversalRepo.createReversalRecord(tenant_id, company_id, {
+      // 7. Create the reversal trace record.
+      await reversalRepoTx.createReversalRecord(tenant_id, company_id, {
         originalJournalId: originalJournal.id,
         reversalJournalId: reversalJournal.id,
         reversalReason: reason,
         requested_by,
       });
 
-      // 5. Update Original Journal Status
-      await this.journalRepo.updateStatus(tenant_id, company_id, originalJournal.id, JournalStatus.REVERSED);
+      // 8. Flip the original journal to REVERSED.
+      await journalRepoTx.updateStatus(
+        tenant_id,
+        company_id,
+        originalJournal.id,
+        JournalStatus.REVERSED,
+      );
 
-      // 6. Audit Logging
-      if (this.auditService?.log) {
+      reversalJournalId = reversalJournal.id;
+      this.logger.log(
+        `Successfully reversed journal ${originalJournal.id} into ${reversalJournal.id}`,
+      );
+    });
+
+    // 9. Audit logging AFTER commit — must not be able to roll back the reversal.
+    if (this.auditService?.log) {
+      try {
         await this.auditService.log({
           tenant_id,
           user_id: requested_by || 'SYSTEM',
           module: 'FINANCE',
           action: 'REVERSE_JOURNAL',
           entity_type: 'JournalEntry',
-          entity_id: originalJournal.id,
-          metadata: { company_id, reversalJournalId: reversalJournal.id, reason, requested_by },
+          entity_id: journalId,
+          metadata: { company_id, reversalJournalId, reason, requested_by },
         });
+      } catch (err: any) {
+        this.logger.error(`Reversal audit log failed (reversal already committed): ${err?.message}`);
       }
+    }
 
-      this.logger.log(`Successfully reversed journal ${originalJournal.id} into ${reversalJournal.id}`);
-      return reversalJournal.id;
-    });
+    return reversalJournalId;
   }
 
-  private async updateAccountBalance(tenant_id: string, company_id: string, fiscalPeriodId: string, line: any): Promise<void> {
+  private async updateAccountBalance(
+    balanceRepo: IAccountBalanceRepository,
+    tenant_id: string,
+    company_id: string,
+    fiscalPeriodId: string,
+    line: any,
+  ): Promise<void> {
     const params = {
       fiscalPeriodId,
       accountId: line.accountId,
@@ -151,11 +217,11 @@ export class JournalReversalService {
     };
 
     const isDebit = line.side === PostingSide.DEBIT;
-    // Area 1: Using Decimal for all math
+    // Using Decimal for all math.
     const amount = new Prisma.Decimal(line.amount);
-    
-    // Area 1: Perform atomic increment via repository
-    await this.balanceRepo.incrementBalance(tenant_id, company_id, params, {
+
+    // Atomic increment via the tx-bound repository.
+    await balanceRepo.incrementBalance(tenant_id, company_id, params, {
       debit: isDebit ? amount : undefined,
       credit: !isDebit ? amount : undefined,
       net: isDebit ? amount : amount.negated(),

@@ -1,5 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../../../persistence/prisma.service';
 import { IJournalReversalRepository } from './interfaces/journal-reversal.repository.interface';
 import { JournalReversal } from '../domain/finance.interfaces';
@@ -22,8 +23,7 @@ export class JournalReversalDbRepository implements IJournalReversalRepository {
   async createReversalRecord(tenant_id: string, company_id: string, data: Partial<JournalReversal>): Promise<JournalReversal> {
     const created = await this.db.finance_journal_reversals.create({
       data: {
-        id: 'f6oqlj4c',
-        
+        id: randomUUID(),
         tenant_id: tenant_id,
         original_journal_id: data.originalJournalId!,
         reversal_journal_id: data.reversalJournalId!,
