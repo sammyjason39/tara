@@ -31,6 +31,23 @@ export class TenantInterceptor implements NestInterceptor {
        return next.handle();
     }
 
+    // SECURITY: If TenantMiddleware already established a verified security context
+    // (JWT-derived role/user_id/tenant association), DO NOT let client headers
+    // override it. Trusting x-user-role / x-actor-id / x-company-id here would let
+    // a caller spoof their role or forge action attribution (created_by, audit
+    // actor, etc.) at the handler level. Authenticated routes always pass through
+    // the middleware first, so we simply preserve its trusted context.
+    if (request.tenantContext && request.user) {
+      const location_id = request.headers["x-location-id"];
+      if (location_id && !request.tenantContext.location_id) {
+        request.tenantContext.location_id = location_id as string;
+      }
+      return next.handle();
+    }
+
+    // Fallback (routes intentionally excluded from TenantMiddleware, e.g. public
+    // retail endpoints): derive a minimal context from headers. These routes are
+    // gated by their own guards and never perform privileged identity-bound writes.
     // Extract tenant ID from header (required)
     const tenant_id = request.headers["x-tenant-id"];
 

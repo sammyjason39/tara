@@ -62,6 +62,7 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-zenvix}:${POSTGRES_PASSWORD:-zenvix_dev_password}@db:5432/${POSTGRES_DB:-zenvix_dev}?schema=public
       - RUNTIME=docker
       - PERSISTENCE_MODE=db
+      - JWT_SECRET=${JWT_SECRET}
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
       - FRONTEND_URL=${FRONTEND_URL}

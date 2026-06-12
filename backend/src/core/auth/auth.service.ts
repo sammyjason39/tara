@@ -14,8 +14,7 @@ import { PrismaService } from "../../persistence/prisma.service";
 
 @Injectable()
 export class AuthService {
-  private readonly jwtSecret =
-    process.env.JWT_SECRET || "dev-secret-key-do-not-use-in-prod";
+  private readonly jwtSecret: string;
 
   private readonly systemCtx: TenantContext = {
     tenant_id: "system",
@@ -27,7 +26,22 @@ export class AuthService {
   constructor(
     @Inject(IAuthRepository) private readonly authRepo: IAuthRepository,
     private readonly prisma: PrismaService,
-  ) {}
+  ) {
+    const secret = process.env.JWT_SECRET;
+    const INSECURE_DEFAULT = "dev-secret-key-do-not-use-in-prod";
+    if (!secret || secret === INSECURE_DEFAULT) {
+      if (process.env.NODE_ENV === "production") {
+        // Fail fast: refuse to run with a missing/known JWT secret in production.
+        // A known secret means anyone can forge valid tokens for any user.
+        throw new Error(
+          "FATAL: JWT_SECRET must be set to a strong, secret value in production. Refusing to start with a missing or default secret.",
+        );
+      }
+      this.jwtSecret = INSECURE_DEFAULT;
+    } else {
+      this.jwtSecret = secret;
+    }
+  }
 
   async register(dto: RegisterDto) {
     const normalizedEmail = dto.email.toLowerCase();
