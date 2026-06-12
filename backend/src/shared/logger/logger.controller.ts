@@ -8,7 +8,8 @@ export class LoggerController {
 
   @Get()
   query(@Req() req: any, @Query() filters: LogQueryDto) {
-    return this.loggerService.query(req.tenant_id, filters);
+    const tenant_id = req.tenantContext?.tenant_id ?? req.tenant_id;
+    return this.loggerService.query(tenant_id, filters);
   }
 
   @Delete('prune')

@@ -29,6 +29,19 @@ export class DecimalSerializationInterceptor implements NestInterceptor {
       return data.toNumber();
     }
 
+    // Preserve Date objects — they have no enumerable own properties, so the
+    // generic object branch below would turn them into `{}`. Returning the Date
+    // lets JSON serialization use Date.prototype.toJSON (ISO 8601 string).
+    if (data instanceof Date) {
+      return data;
+    }
+
+    // BigInt is not JSON-serializable by default; emit as string to avoid
+    // "Do not know how to serialize a BigInt" errors.
+    if (typeof data === "bigint") {
+      return data.toString();
+    }
+
     if (typeof data === "object") {
       if (visited.has(data)) {
         return "[Circular]";
