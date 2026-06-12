@@ -79,7 +79,6 @@ export class AccountBalanceDbRepository implements IAccountBalanceRepository {
 
     const dims = {
       tenant_id: tenant_id,
-      company_id: company_id,
       fiscal_period_id: params.fiscalPeriodId,
       account_id: params.accountId,
       currency: params.currency,
@@ -89,6 +88,12 @@ export class AccountBalanceDbRepository implements IAccountBalanceRepository {
       cost_center_id: params.costCenterId || 'GLOBAL',
       project_id: params.projectId || 'GLOBAL'
     };
+
+    // company_id is NOT part of the compound unique key, so it must be excluded
+    // from the `where`. It also FKs to companies(id): callers sometimes pass the
+    // tenant_id as a placeholder (no real company), which would violate the FK,
+    // so normalize that case to null (tenant-level balance).
+    const safeCompanyId = company_id && company_id !== tenant_id ? company_id : null;
 
     await this.db.finance_account_balances.upsert({
       where: {
@@ -104,6 +109,7 @@ export class AccountBalanceDbRepository implements IAccountBalanceRepository {
       create: {
         id: uuid(),
         ...dims,
+        company_id: safeCompanyId,
         debit_total: debit,
         credit_total: credit,
         net_balance: net,
