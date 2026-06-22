@@ -83,7 +83,7 @@ export default function ComplianceCommand() {
         </Card>
 
         <div className="space-y-8">
-          <Card className="bg-success border-emerald-500/20 backdrop-blur-3xl rounded-[2.5rem] shadow-2xl overflow-hidden border transition-all hover:bg-success">
+          <Card className="bg-success border-success/20 backdrop-blur-3xl rounded-[2.5rem] shadow-2xl overflow-hidden border transition-all hover:bg-success">
             <CardContent className="p-10 space-y-6 text-center">
               <div className="w-16 h-16 bg-success rounded-2xl flex items-center justify-center text-white shadow-xl mx-auto">
                 <Zap className="w-8 h-8" />

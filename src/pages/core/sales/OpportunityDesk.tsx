@@ -26,7 +26,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { GlassCard } from "@/components/shared/GlassCard";
+import { EmptyState } from "@/components/shared/AsyncState";
 import {
   Select,
   SelectContent,
@@ -53,6 +55,7 @@ import {
 import { useSession } from "@/core/security/session";
 import { salesService } from "@/core/services/sales/salesService";
 import { cn } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
 import type { OpportunityStage, SalesOpportunity, SalesQuote } from "@/core/types/sales/sales";
 
@@ -178,12 +181,12 @@ export default function OpportunityDesk() {
                Opportunity Flux Active
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent italic">Strategic Deals</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground italic">Strategic Deals</h1>
 
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed">High-fidelity deal lifecycle execution and probability orchestration.</p>
         </div>
         
-        <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-slate-800/20 shadow-2xl">
+        <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-border/20 shadow-2xl">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -205,8 +208,8 @@ export default function OpportunityDesk() {
       </div>
 
       {/* Main Table Area */}
-      <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden">
-        <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-slate-800/20">
+      <GlassCard className="rounded-[3rem] border-none shadow-2xl overflow-hidden">
+        <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-border/20">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
@@ -276,14 +279,14 @@ export default function OpportunityDesk() {
                     </td>
                     <td className="px-10 py-8">
                        <div className="flex items-center gap-2 pt-1">
-                          <div className="h-6 w-6 rounded-full bg-muted dark:bg-muted flex items-center justify-center text-[10px] font-black text-muted-foreground border border-slate-200 dark:border-slate-800">
+                          <div className="h-6 w-6 rounded-full bg-muted dark:bg-muted flex items-center justify-center text-[10px] font-black text-muted-foreground border border-border dark:border-border">
                              {op.ownerName.charAt(0)}
                           </div>
                           <span className="text-xs font-black uppercase tracking-tight">{op.ownerName}</span>
                        </div>
                     </td>
                     <td className="px-10 py-8 text-primary font-black text-base">
-                       ${op.amount.toLocaleString()}
+                       {formatCurrency(op.amount, op.currency)}
                     </td>
                     <td className="px-10 py-8">
                        <div onClick={(e) => e.stopPropagation()}>
@@ -291,7 +294,7 @@ export default function OpportunityDesk() {
                             value={op.stage}
                             onValueChange={(value: OpportunityStage) => moveStage(op.id, value)}
                           >
-                            <SelectTrigger className="h-10 rounded-xl border-slate-100 bg-muted hover:bg-muted transition-all text-[9px] font-black uppercase tracking-[0.2em] w-[140px]">
+                            <SelectTrigger className="h-10 rounded-xl border-border bg-muted hover:bg-muted transition-all text-[9px] font-black uppercase tracking-[0.2em] w-[140px]">
                               <SelectValue placeholder="Stage" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl border-none shadow-2xl p-2">
@@ -358,8 +361,16 @@ export default function OpportunityDesk() {
               </tbody>
             </table>
           </div>
+          {!loading && filtered.length === 0 && (
+            <EmptyState
+              title="No opportunities"
+              description="No deals match the current filter. Convert qualified leads to populate the deal board."
+              icon={Target}
+              className="m-10"
+            />
+          )}
         </CardContent>
-      </Card>
+      </GlassCard>
 
       {/* Opportunity Detail Modal */}
       <Dialog open={!!selectedOpp} onOpenChange={() => setSelectedOpp(null)}>
@@ -396,12 +407,12 @@ export default function OpportunityDesk() {
                <div className="grid grid-cols-2 gap-x-12 gap-y-8">
                   <div className="space-y-1">
                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Projected Revenue</p>
-                     <p className="text-2xl font-black text-primary">${selectedOpp?.amount.toLocaleString()}</p>
+                     <p className="text-2xl font-black text-primary">{formatCurrency(selectedOpp?.amount, selectedOpp?.currency)}</p>
                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-tighter">{selectedOpp?.currency} Nominal Value</p>
                   </div>
                   <div className="space-y-1">
                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Expected Closing</p>
-                     <p className="text-xl font-black">{selectedOpp?.expected_close_date ? new Date(selectedOpp.expected_close_date).toLocaleDateString() : "TBD"}</p>
+                     <p className="text-xl font-black">{selectedOpp?.expected_close_date ? formatDate(selectedOpp.expected_close_date) : "TBD"}</p>
                      <p className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
                         <Calendar className="h-3 w-3" /> Q2 Tactical Horizon
                      </p>
@@ -409,7 +420,7 @@ export default function OpportunityDesk() {
                   <div className="space-y-1">
                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Deal Custodian</p>
                      <div className="flex items-center gap-2 pt-1">
-                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-black text-muted-foreground border border-slate-200">
+                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-black text-muted-foreground border border-border">
                            {selectedOpp?.ownerName.charAt(0)}
                         </div>
                         <span className="text-sm font-black uppercase tracking-tight">{selectedOpp?.ownerName}</span>
@@ -447,7 +458,7 @@ export default function OpportunityDesk() {
                    >
                      <FileText className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" /> INITIALIZE QUOTE GEN
                    </Button>
-                  <Button variant="outline" className="h-16 w-16 rounded-[1.5rem] border-slate-200 hover:bg-white" onClick={() => setSelectedOpp(null)}>
+                  <Button variant="outline" className="h-16 w-16 rounded-[1.5rem] border-border hover:bg-white" onClick={() => setSelectedOpp(null)}>
                      <ChevronRight className="h-5 w-5" />
                   </Button>
                </div>

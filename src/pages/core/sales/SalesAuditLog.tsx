@@ -21,9 +21,12 @@ import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { GlassCard } from "@/components/shared/GlassCard";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { useSession } from "@/core/security/session";
 import { salesService } from "@/core/services/sales/salesService";
 import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 import { toast } from "sonner";
 import type { SalesAuditEvent } from "@/core/types/sales/sales";
 
@@ -91,11 +94,11 @@ export default function SalesAuditLog() {
                Real-time Audit Stream Active
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent italic">Audit Log</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground italic">Audit Log</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic">"Integrity is the bedrock of every enterprise transaction."</p>
         </div>
         
-        <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-slate-800/20 shadow-2xl">
+        <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-border/20 shadow-2xl">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -118,7 +121,7 @@ export default function SalesAuditLog() {
 
       {/* Audit Intelligence Overlay */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-         <Card className="rounded-[2.5rem] border-none shadow-xl bg-white/40 dark:bg-muted backdrop-blur-xl p-8 flex items-center gap-6 group hover:shadow-indigo-500/10 transition-all">
+         <GlassCard className="rounded-[2.5rem] border-none shadow-xl p-8 flex items-center gap-6 group hover:shadow-indigo-500/10 transition-all">
             <div className="h-14 w-14 rounded-2xl bg-primary flex items-center justify-center group-hover:scale-110 transition-transform">
                <Lock className="h-7 w-7 text-primary" />
             </div>
@@ -126,8 +129,8 @@ export default function SalesAuditLog() {
                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">LEDGER STATUS</p>
                <h4 className="text-2xl font-black">IMMUTABLE</h4>
             </div>
-         </Card>
-         <Card className="rounded-[2.5rem] border-none shadow-xl bg-white/40 dark:bg-muted backdrop-blur-xl p-8 flex items-center gap-6 group hover:shadow-emerald-500/10 transition-all">
+         </GlassCard>
+         <GlassCard className="rounded-[2.5rem] border-none shadow-xl p-8 flex items-center gap-6 group hover:shadow-emerald-500/10 transition-all">
             <div className="h-14 w-14 rounded-2xl bg-success flex items-center justify-center group-hover:scale-110 transition-transform">
                <FileSearch className="h-7 w-7 text-success" />
             </div>
@@ -135,7 +138,7 @@ export default function SalesAuditLog() {
                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">EVENTS RECORDED</p>
                <h4 className="text-2xl font-black text-success">{events.length}</h4>
             </div>
-         </Card>
+         </GlassCard>
          <Card className="rounded-[2.5rem] border-none shadow-xl bg-muted dark:bg-white p-8 flex items-center gap-6 group hover:shadow-slate-500/20 transition-all">
             <div className="h-14 w-14 rounded-2xl bg-white/10 dark:bg-muted backdrop-blur-md flex items-center justify-center group-hover:scale-110 transition-transform">
                <ShieldCheck className="h-7 w-7 text-white dark:text-muted-foreground" />
@@ -148,8 +151,8 @@ export default function SalesAuditLog() {
       </div>
 
       {/* Main Audit Registry */}
-      <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden">
-        <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-slate-800/20">
+      <GlassCard className="rounded-[3rem] border-none shadow-2xl overflow-hidden">
+        <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-border/20">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
@@ -184,12 +187,12 @@ export default function SalesAuditLog() {
                   <tr key={item.id} className="group hover:bg-muted dark:hover:bg-muted transition-all cursor-default">
                     <td className="px-10 py-8">
                        <div className="space-y-1">
-                          <p className="text-xs font-black uppercase tracking-tight text-muted-foreground dark:text-white">{new Date(item.createdAt).toLocaleDateString()}</p>
+                          <p className="text-xs font-black uppercase tracking-tight text-muted-foreground dark:text-white">{formatDate(item.createdAt)}</p>
                           <p className="text-[10px] font-bold text-muted-foreground">{new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
                        </div>
                     </td>
                     <td className="px-10 py-8">
-                       <Badge variant="outline" className="rounded-full font-black text-[9px] px-3 py-1 border-slate-200 dark:border-slate-800 uppercase tracking-[0.1em] text-muted-foreground dark:text-white bg-white dark:bg-muted shadow-sm">{item.action}</Badge>
+                       <Badge variant="outline" className="rounded-full font-black text-[9px] px-3 py-1 border-border dark:border-border uppercase tracking-[0.1em] text-muted-foreground dark:text-white bg-white dark:bg-muted shadow-sm">{item.action}</Badge>
                     </td>
                     <td className="px-10 py-8">
                        <div className="flex items-center gap-3">
@@ -222,13 +225,15 @@ export default function SalesAuditLog() {
             </table>
           </div>
           {filtered.length === 0 && (
-             <div className="p-20 text-center space-y-4 grayscale opacity-30">
-                <History className="h-12 w-12 mx-auto" />
-                <p className="text-[10px] font-black uppercase tracking-widest">The ledger is empty.</p>
-             </div>
+             <EmptyState
+                title="The ledger is empty"
+                description="No audit events have been recorded for this view yet."
+                icon={History}
+                className="m-10"
+             />
           )}
         </CardContent>
-      </Card>
+      </GlassCard>
 
     </div>
   );

@@ -56,7 +56,7 @@ const DiscoveryModal = ({
           (Array.isArray(results) ? results : []).map((r, i) => (
             <div
               key={i}
-              className="flex items-center gap-4 p-4 rounded-2xl border border-slate-50 bg-secondary/5 hover:bg-white hover:shadow-md transition-all group"
+              className="flex items-center gap-4 p-4 rounded-2xl border border-border bg-secondary/5 hover:bg-white hover:shadow-md transition-all group"
             >
               <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
                 <DeviceIcon type={r.type} cls="w-5 h-5" />
@@ -85,7 +85,7 @@ const DiscoveryModal = ({
         <Button
           variant="outline"
           onClick={onClose}
-          className="w-full rounded-xl border-slate-200 text-muted-foreground font-black italic uppercase text-[10px] tracking-widest h-10"
+          className="w-full rounded-xl border-border text-muted-foreground font-black italic uppercase text-[10px] tracking-widest h-10"
         >
           Close
         </Button>

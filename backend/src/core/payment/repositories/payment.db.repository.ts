@@ -1,6 +1,8 @@
 import { TenantContext } from "../../../gateway/tenant-context.interface";
-import { MultiTenancyUtil } from "../../../shared/utils/multi-tenancy.util";
+import { MultiTenancyUtil, ScopeLike } from "../../../shared/utils/multi-tenancy.util";
 import { Injectable } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
+import { BadRequestException, NotFoundException } from "../../_shared";
 import {
   payment_transactions as PrismaTransaction,
   payment_providers as PrismaProvider,
@@ -46,6 +48,92 @@ import {
   IPaymentRepository,
   PaymentDashboard,
 } from "./payment.repository.interface";
+import { defineFieldMap } from "../../common";
+
+/**
+ * `payment_transactions` writable columns sourced from the inbound
+ * {@link CreatePaymentTransactionDto}. The remaining columns (`id`, `tenant_id`,
+ * `status`, `created_by`, `payment_status`, the platform-fee fields, …) are bound
+ * explicitly by the repository rather than from the DTO.
+ *
+ * `provider` is intentionally excluded: the DTO carries a provider *name*
+ * ("STRIPE" | "MANUAL") used only to select a gateway adapter, not the
+ * `provider_id` FK column, so it is declared as a known non-column field and
+ * dropped rather than rejected. `idempotency_key` is computed/handled explicitly
+ * below and is likewise ignored by the map.
+ */
+const PAYMENT_TRANSACTION_COLUMNS = [
+  "external_reference",
+  "external_ref",
+  "type",
+  "amount",
+  "currency",
+  "destination",
+  "source",
+  "channel",
+  "method",
+] as const;
+
+/**
+ * Explicit DTO-to-column mapping for payment-transaction creation
+ * (Requirements 5.1–5.4): each supplied field binds to exactly the schema column
+ * its name deterministically resolves to, and any field that resolves to no
+ * column rejects the whole request, naming the field and persisting nothing.
+ */
+const mapTransactionToColumns = defineFieldMap({
+  columns: PAYMENT_TRANSACTION_COLUMNS,
+  ignore: ["provider", "idempotency_key"],
+});
+
+/**
+ * Payment_Lifecycle transition guards (Requirements 12.3, 12.4, 12.7, 12.8,
+ * 12.9, 12.10, 4.6, 4.7).
+ *
+ * The persisted `status` columns use upper-snake values. The transaction
+ * lifecycle is REQUEST_CREATED → APPROVED → PROVIDER_SELECTED (route) →
+ * SETTLEMENT_PENDING (execute) → SETTLED, with REJECTED reachable from the
+ * request state and FAILED reachable from execution; the refund lifecycle is
+ * REQUESTED → APPROVED → SETTLED; the dispute lifecycle is OPENED → (in-progress)
+ * → RESOLVED. Every transition reads the entity's CURRENT state inside the
+ * Atomic_Operation BEFORE any write and validates it against the legal source
+ * states for the requested edge. An illegal transition is rejected with a
+ * `BadRequestException` that names the current and target state, and because the
+ * throw happens before any write nothing is persisted and the entity is left
+ * unchanged (Requirements 12.4, 12.8, 12.10, 4.7).
+ */
+
+/** Legacy request-state alias persisted by older rows, treated like REQUEST_CREATED. */
+const TXN_REQUEST_STATES = new Set(["REQUEST_CREATED", "APPROVAL_PENDING"]);
+/** A transaction may be approved/rejected only while awaiting approval. */
+const TXN_ROUTE_FROM = "APPROVED";
+const TXN_EXECUTE_FROM = "PROVIDER_SELECTED";
+const TXN_SETTLE_FROM = "SETTLEMENT_PENDING";
+/** A refund may be approved only from REQUESTED and executed only from APPROVED. */
+const REFUND_APPROVE_FROM = "REQUESTED";
+const REFUND_EXECUTE_FROM = "APPROVED";
+/** Terminal dispute states — no progress or resolve transition is legal from these. */
+const DISPUTE_TERMINAL_STATES = new Set(["RESOLVED", "REJECTED"]);
+
+/** Normalise a persisted/requested state value to its canonical upper form. */
+function normPaymentState(value: unknown): string {
+  return String(value ?? "").toUpperCase();
+}
+
+/**
+ * Build the standard invalid-transition error naming the entity, its current
+ * state, and the rejected target state (Requirements 12.4, 12.8, 12.10).
+ */
+function invalidPaymentTransition(
+  entity: string,
+  id: string,
+  current: string,
+  target: string,
+): BadRequestException {
+  return new BadRequestException(
+    `Invalid Payment_Lifecycle transition for ${entity} '${id}': ` +
+      `cannot transition from '${current}' to '${target}'.`,
+  );
+}
 
 @Injectable()
 export class PaymentDbRepository implements IPaymentRepository {
@@ -66,8 +154,10 @@ export class PaymentDbRepository implements IPaymentRepository {
     entity_type: string,
     entity_id: string,
     detail: string,
+    tx?: Prisma.TransactionClient,
   ) {
-    await this.prisma.payment_audit_events.create({
+    const client = tx ?? this.prisma;
+    await client.payment_audit_events.create({
       data: {
         id: uuidv4(),
         // Only tenant_id is valid here; getScope() injected branch_id/location_id (not
@@ -82,7 +172,7 @@ export class PaymentDbRepository implements IPaymentRepository {
     });
   }
 
-  async getDashboard(ctx: TenantContext): Promise<PaymentDashboard> {
+  async getDashboard(ctx: ScopeLike): Promise<PaymentDashboard> {
     const now = new Date();
     const startOfDay = new Date(
       now.getFullYear(),
@@ -101,7 +191,13 @@ export class PaymentDbRepository implements IPaymentRepository {
     });
 
     const pendingApprovals = await this.prisma.payment_transactions.count({
-      where: { ...scope, status: "APPROVAL_PENDING" },
+      where: {
+        ...scope,
+        // A newly created transaction is now persisted in the REQUEST state
+        // (`REQUEST_CREATED`, Requirement 12.1); both it and any legacy
+        // `APPROVAL_PENDING` rows are awaiting approval.
+        status: { in: ["REQUEST_CREATED", "APPROVAL_PENDING"] },
+      },
     });
 
     const executingPayments = await this.prisma.payment_transactions.count({
@@ -149,7 +245,7 @@ export class PaymentDbRepository implements IPaymentRepository {
     };
   }
 
-  async getTransactions(ctx: TenantContext): Promise<PaymentTransaction[]> {
+  async getTransactions(ctx: ScopeLike): Promise<PaymentTransaction[]> {
     const txs = await this.prisma.payment_transactions.findMany({
       where: MultiTenancyUtil.getScope(ctx),
       include: { payment_retry_attempts: true },
@@ -173,29 +269,35 @@ export class PaymentDbRepository implements IPaymentRepository {
     });
     if (existing) return this.mapTransaction(existing as PrismaTransaction);
 
+    // Explicit, deterministic DTO-to-column mapping (Requirements 5.1–5.4): an
+    // unknown field rejects the request before any write, so the count of
+    // persisted values equals the count of supplied mappable values.
+    const mapped = mapTransactionToColumns(
+      dto as unknown as Record<string, unknown>,
+    ) as Record<string, any>;
+
     const created = await this.prisma.payment_transactions.create({
       data: {
+        ...mapped,
         id: uuidv4(),
         // payment_transactions only carries tenant_id + (optional) company_id. Using the
         // full getScope() here injected branch_id/location_id, which are not columns on this
         // model -> PrismaClientValidationError that 500-ed POS checkout's payment step.
         tenant_id: ctx.tenant_id,
-        external_reference: dto.externalReference,
-        type: dto.type,
-        amount: dto.amount,
         currency: dto.currency ?? "IDR",
-        destination: dto.destination,
-        source: dto.source,
         channel: dto.channel ?? "BANK_TRANSFER",
-        idempotency_key: key,
-        status: "APPROVAL_PENDING",
-        created_by: actor_id,
         method: dto.method ?? "GATEWAY",
+        idempotency_key: key,
+        // Requirement 12.1: a newly created transaction is persisted in the
+        // REQUEST state (schema default `REQUEST_CREATED`) — the entry point of
+        // the Payment_Lifecycle (REQUEST → APPROVED → ROUTED → EXECUTED →
+        // SETTLED). The previous `APPROVAL_PENDING` skipped the request state.
+        status: "REQUEST_CREATED",
+        created_by: actor_id,
         payment_status: "PENDING",
-        external_ref: dto.externalRef,
         platform_fee_pending: 0,
         platform_fee_realized: 0,
-      },
+      } as any,
     });
 
     await this.addAudit(
@@ -212,9 +314,24 @@ export class PaymentDbRepository implements IPaymentRepository {
   async approveTransaction(ctx: TenantContext,
     paymentId: string,
     actor_id: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<PaymentTransaction> {
-    const updated = await this.prisma.payment_transactions.update({
+    const client = tx ?? this.prisma;
+    // Read the CURRENT state inside the Atomic_Operation, scoped by tenant_id,
+    // BEFORE any write (Requirements 12.3, 12.4, 4.6, 4.7).
+    const payment = await client.payment_transactions.findFirst({
       where: { id: paymentId, tenant_id: ctx.tenant_id },
+    });
+    if (!payment) throw new NotFoundException("Payment not found");
+
+    const current = normPaymentState(payment.status);
+    // A transaction may be approved only from the request state.
+    if (!TXN_REQUEST_STATES.has(current)) {
+      throw invalidPaymentTransition("transaction", paymentId, current, "APPROVED");
+    }
+
+    const updated = await client.payment_transactions.update({
+      where: { id: paymentId },
       data: {
         status: "APPROVED",
         approved_by: actor_id,
@@ -228,6 +345,7 @@ export class PaymentDbRepository implements IPaymentRepository {
       "TRANSACTION",
       updated.id,
       "APPROVED",
+      client as Prisma.TransactionClient,
     );
     return this.mapTransaction(updated);
   }
@@ -235,9 +353,24 @@ export class PaymentDbRepository implements IPaymentRepository {
   async rejectTransaction(ctx: TenantContext,
     paymentId: string,
     actor_id: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<PaymentTransaction> {
-    const updated = await this.prisma.payment_transactions.update({
+    const client = tx ?? this.prisma;
+    // Read the CURRENT state inside the Atomic_Operation, scoped by tenant_id,
+    // BEFORE any write (Requirements 12.3, 12.4, 4.6, 4.7).
+    const payment = await client.payment_transactions.findFirst({
       where: { id: paymentId, tenant_id: ctx.tenant_id },
+    });
+    if (!payment) throw new NotFoundException("Payment not found");
+
+    const current = normPaymentState(payment.status);
+    // A transaction may be rejected only from the request state.
+    if (!TXN_REQUEST_STATES.has(current)) {
+      throw invalidPaymentTransition("transaction", paymentId, current, "REJECTED");
+    }
+
+    const updated = await client.payment_transactions.update({
+      where: { id: paymentId },
       data: {
         status: "REJECTED",
         approved_by: actor_id,
@@ -251,6 +384,7 @@ export class PaymentDbRepository implements IPaymentRepository {
       "TRANSACTION",
       updated.id,
       "REJECTED",
+      client as Prisma.TransactionClient,
     );
     return this.mapTransaction(updated);
   }
@@ -259,24 +393,39 @@ export class PaymentDbRepository implements IPaymentRepository {
     paymentId: string,
     dto: RoutePaymentDto,
     actor_id: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<PaymentTransaction> {
-    const payment = await this.prisma.payment_transactions.findUnique({
+    const client = tx ?? this.prisma;
+    // Composite-key read of the CURRENT state inside the Atomic_Operation,
+    // scoped by tenant_id, BEFORE any write (Requirements 12.3, 12.4, 4.5, 4.6).
+    const payment = await client.payment_transactions.findFirst({
       where: { id: paymentId, tenant_id: ctx.tenant_id },
     });
-    if (!payment) throw new Error("Payment not found");
+    if (!payment) throw new NotFoundException("Payment not found");
+
+    const current = normPaymentState(payment.status);
+    // Routing (provider selection) is legal only from the APPROVED state.
+    if (current !== TXN_ROUTE_FROM) {
+      throw invalidPaymentTransition(
+        "transaction",
+        paymentId,
+        current,
+        "PROVIDER_SELECTED",
+      );
+    }
 
     let providerId = dto.providerId;
     if (!providerId) {
-      const policy = await this.prisma.payment_routing_policies.findFirst({
-        where: { ...MultiTenancyUtil.getScope(ctx), enabled: true },
+      const policy = await client.payment_routing_policies.findFirst({
+        where: { tenant_id: ctx.tenant_id, enabled: true },
       });
-      if (!policy) throw new Error("No active routing policy");
+      if (!policy) throw new BadRequestException("No active routing policy");
       if (policy.priorities.length > 0) providerId = (policy.priorities as string[])[0];
     }
 
-    if (!providerId) throw new Error("No provider available");
+    if (!providerId) throw new BadRequestException("No provider available");
 
-    const updated = await this.prisma.payment_transactions.update({
+    const updated = await client.payment_transactions.update({
       where: { id: paymentId },
       data: {
         provider_id: providerId,
@@ -291,6 +440,7 @@ export class PaymentDbRepository implements IPaymentRepository {
       "ROUTING",
       updated.id,
       providerId,
+      client as Prisma.TransactionClient,
     );
     return this.mapTransaction(updated);
   }
@@ -299,22 +449,40 @@ export class PaymentDbRepository implements IPaymentRepository {
     paymentId: string,
     dto: ExecutePaymentDto,
     actor_id: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<PaymentTransaction> {
-    const payment = await this.prisma.payment_transactions.findUnique({
+    const client = tx ?? this.prisma;
+    // Composite-key read of the CURRENT state inside the Atomic_Operation,
+    // scoped by tenant_id, BEFORE any write (Requirements 12.3, 12.4, 4.5, 4.6).
+    const payment = await client.payment_transactions.findFirst({
       where: { id: paymentId, tenant_id: ctx.tenant_id },
     });
-    if (!payment) throw new Error("Payment not found");
+    if (!payment) throw new NotFoundException("Payment not found");
+
+    const current = normPaymentState(payment.status);
+    // Execution is legal only from the routed (provider-selected) state. The
+    // edge resolves to SETTLEMENT_PENDING on success or FAILED on a forced
+    // failure; both targets are reachable only from PROVIDER_SELECTED.
+    if (current !== TXN_EXECUTE_FROM) {
+      throw invalidPaymentTransition(
+        "transaction",
+        paymentId,
+        current,
+        dto.forceFail ? "FAILED" : "SETTLEMENT_PENDING",
+      );
+    }
 
     const success = !dto.forceFail;
 
     if (!success) {
-      const updated = await this.prisma.payment_transactions.update({
+      const updated = await client.payment_transactions.update({
         where: { id: paymentId },
         data: {
           status: "FAILED",
           payment_retry_attempts: {
             create: {
-              ...MultiTenancyUtil.getScope(ctx),
+              tenant_id: ctx.tenant_id,
+              company_id: ctx.company_id ?? null,
               id: uuidv4(),
               attempt: 1,
               result: "FAILED",
@@ -330,28 +498,31 @@ export class PaymentDbRepository implements IPaymentRepository {
         "TRANSACTION",
         updated.id,
         "Simulated Failure",
+        client as Prisma.TransactionClient,
       );
       return this.mapTransaction(updated as PrismaTransaction);
     }
 
-    const settlement = await this.prisma.payment_settlements.create({
+    const settlement = await client.payment_settlements.create({
       data: {
         id: uuidv4(),
-        ...MultiTenancyUtil.getScope(ctx),
+        tenant_id: ctx.tenant_id,
+        company_id: ctx.company_id ?? null,
         payment_id: paymentId,
         provider_reference: `${payment.provider_id}-${Date.now()}`,
         status: "PENDING",
       },
     });
 
-    const updated = await this.prisma.payment_transactions.update({
+    const updated = await client.payment_transactions.update({
       where: { id: paymentId },
       data: {
         status: "SETTLEMENT_PENDING",
         settlement_id: settlement.id,
         payment_retry_attempts: {
           create: {
-            ...MultiTenancyUtil.getScope(ctx),
+            tenant_id: ctx.tenant_id,
+            company_id: ctx.company_id ?? null,
             id: uuidv4(),
             attempt: 1,
             result: "SUCCESS",
@@ -368,6 +539,7 @@ export class PaymentDbRepository implements IPaymentRepository {
       "TRANSACTION",
       updated.id,
       settlement.provider_reference,
+      client as Prisma.TransactionClient,
     );
     return this.mapTransaction(updated);
   }
@@ -375,13 +547,26 @@ export class PaymentDbRepository implements IPaymentRepository {
   async settleTransaction(ctx: TenantContext,
     paymentId: string,
     actor_id: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<PaymentTransaction> {
-    const payment = await this.prisma.payment_transactions.findUnique({
+    const client = tx ?? this.prisma;
+    // Composite-key read of the CURRENT state inside the Atomic_Operation,
+    // scoped by tenant_id, BEFORE any write (Requirements 12.3, 12.4, 4.5, 4.6).
+    const payment = await client.payment_transactions.findFirst({
       where: { id: paymentId, tenant_id: ctx.tenant_id },
     });
-    if (!payment?.settlement_id) throw new Error("Settlement not found");
+    if (!payment) throw new NotFoundException("Payment not found");
 
-    const settlement = await this.prisma.payment_settlements.update({
+    const current = normPaymentState(payment.status);
+    // Settlement is legal only from the executed (settlement-pending) state.
+    // NOTE: the Finance settlement record is wired in task 10.4; this method
+    // makes the state transition atomic and validated only.
+    if (current !== TXN_SETTLE_FROM) {
+      throw invalidPaymentTransition("transaction", paymentId, current, "SETTLED");
+    }
+    if (!payment.settlement_id) throw new NotFoundException("Settlement not found");
+
+    const settlement = await client.payment_settlements.update({
       where: { id: payment.settlement_id },
       data: {
         status: "CONFIRMED",
@@ -389,10 +574,11 @@ export class PaymentDbRepository implements IPaymentRepository {
       },
     });
 
-    const evidence = await this.prisma.payment_evidence_packs.create({
+    const evidence = await client.payment_evidence_packs.create({
       data: {
         id: uuidv4(),
-        ...MultiTenancyUtil.getScope(ctx),
+        tenant_id: ctx.tenant_id,
+        company_id: ctx.company_id ?? null,
         payment_id: paymentId,
         provider_proof: settlement.provider_reference,
         approval_signatures: [payment.created_by, actor_id],
@@ -401,7 +587,7 @@ export class PaymentDbRepository implements IPaymentRepository {
       },
     });
 
-    const updated = await this.prisma.payment_transactions.update({
+    const updated = await client.payment_transactions.update({
       where: { id: paymentId },
       data: {
         status: "SETTLED",
@@ -417,11 +603,12 @@ export class PaymentDbRepository implements IPaymentRepository {
       "SETTLEMENT",
       settlement.id,
       "Sync Triggered",
+      client as Prisma.TransactionClient,
     );
     return this.mapTransaction(updated);
   }
 
-  async getProviders(ctx: TenantContext): Promise<PaymentProvider[]> {
+  async getProviders(ctx: ScopeLike): Promise<PaymentProvider[]> {
     const providers = await this.prisma.payment_providers.findMany({
       where: MultiTenancyUtil.getScope(ctx),
     });
@@ -501,7 +688,7 @@ export class PaymentDbRepository implements IPaymentRepository {
     }));
   }
 
-  async getRoutingPolicies(ctx: TenantContext): Promise<PaymentRoutingPolicy[]> {
+  async getRoutingPolicies(ctx: ScopeLike): Promise<PaymentRoutingPolicy[]> {
     const policies = await this.prisma.payment_routing_policies.findMany({
       where: MultiTenancyUtil.getScope(ctx),
     });
@@ -519,7 +706,7 @@ export class PaymentDbRepository implements IPaymentRepository {
     }));
   }
 
-  async getDevices(ctx: TenantContext): Promise<PaymentDevice[]> {
+  async getDevices(ctx: ScopeLike): Promise<PaymentDevice[]> {
     const devices = await this.prisma.payment_pos_devices.findMany({
       where: MultiTenancyUtil.getScope(ctx),
     });
@@ -535,7 +722,7 @@ export class PaymentDbRepository implements IPaymentRepository {
     }));
   }
 
-  async getDevicePools(ctx: TenantContext): Promise<PaymentDevicePool[]> {
+  async getDevicePools(ctx: ScopeLike): Promise<PaymentDevicePool[]> {
     return [];
   }
 
@@ -569,7 +756,7 @@ export class PaymentDbRepository implements IPaymentRepository {
     };
   }
 
-  async getRefunds(ctx: TenantContext): Promise<PaymentRefund[]> {
+  async getRefunds(ctx: ScopeLike): Promise<PaymentRefund[]> {
     const refunds = await this.prisma.payment_refunds.findMany({
       where: MultiTenancyUtil.getScope(ctx),
     });
@@ -607,9 +794,24 @@ export class PaymentDbRepository implements IPaymentRepository {
   async approveRefund(ctx: TenantContext,
     refundId: string,
     actor_id: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<PaymentRefund> {
-    const updated = await this.prisma.payment_refunds.update({
+    const client = tx ?? this.prisma;
+    // Read the CURRENT state inside the Atomic_Operation, scoped by tenant_id,
+    // BEFORE any write (Requirements 12.7, 12.8, 4.6, 4.7).
+    const refund = await client.payment_refunds.findFirst({
       where: { id: refundId, tenant_id: ctx.tenant_id },
+    });
+    if (!refund) throw new NotFoundException("Refund not found");
+
+    const current = normPaymentState(refund.status);
+    // A refund may be approved only from the requested (create) state.
+    if (current !== REFUND_APPROVE_FROM) {
+      throw invalidPaymentTransition("refund", refundId, current, "APPROVED");
+    }
+
+    const updated = await client.payment_refunds.update({
+      where: { id: refundId },
       data: {
         status: "APPROVED",
         approved_by: actor_id,
@@ -622,6 +824,7 @@ export class PaymentDbRepository implements IPaymentRepository {
       "REFUND",
       updated.id,
       "APPROVED",
+      client as Prisma.TransactionClient,
     );
     return this.mapRefund(updated);
   }
@@ -629,9 +832,24 @@ export class PaymentDbRepository implements IPaymentRepository {
   async executeRefund(ctx: TenantContext,
     refundId: string,
     actor_id: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<PaymentRefund> {
-    const updated = await this.prisma.payment_refunds.update({
+    const client = tx ?? this.prisma;
+    // Read the CURRENT state inside the Atomic_Operation, scoped by tenant_id,
+    // BEFORE any write (Requirements 12.7, 12.8, 4.6, 4.7).
+    const refund = await client.payment_refunds.findFirst({
       where: { id: refundId, tenant_id: ctx.tenant_id },
+    });
+    if (!refund) throw new NotFoundException("Refund not found");
+
+    const current = normPaymentState(refund.status);
+    // A refund may be executed only from the approved state.
+    if (current !== REFUND_EXECUTE_FROM) {
+      throw invalidPaymentTransition("refund", refundId, current, "SETTLED");
+    }
+
+    const updated = await client.payment_refunds.update({
+      where: { id: refundId },
       data: {
         status: "SETTLED",
         provider_reference: `RFD-${Date.now()}`,
@@ -644,11 +862,12 @@ export class PaymentDbRepository implements IPaymentRepository {
       "REFUND",
       updated.id,
       updated.provider_reference!,
+      client as Prisma.TransactionClient,
     );
     return this.mapRefund(updated);
   }
 
-  async getDisputes(ctx: TenantContext): Promise<PaymentDispute[]> {
+  async getDisputes(ctx: ScopeLike): Promise<PaymentDispute[]> {
     const disputes = await this.prisma.payment_disputes.findMany({
       where: MultiTenancyUtil.getScope(ctx),
     });
@@ -715,9 +934,27 @@ export class PaymentDbRepository implements IPaymentRepository {
     disputeId: string,
     dto: ProgressDisputeDto,
     actor_id: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<PaymentDispute> {
-    const updated = await this.prisma.payment_disputes.update({
+    const client = tx ?? this.prisma;
+    // Read the CURRENT state inside the Atomic_Operation, scoped by tenant_id,
+    // BEFORE any write (Requirements 12.9, 12.10, 4.6, 4.7).
+    const dispute = await client.payment_disputes.findFirst({
       where: { id: disputeId, tenant_id: ctx.tenant_id },
+    });
+    if (!dispute) throw new NotFoundException("Dispute not found");
+
+    const current = normPaymentState(dispute.status);
+    const target = normPaymentState(dto.status);
+    // A dispute may be progressed only while it is still open / in progress; a
+    // dispute that is already resolved (or rejected) is terminal and cannot be
+    // progressed (rejected naming current+target, leaving it unchanged).
+    if (DISPUTE_TERMINAL_STATES.has(current)) {
+      throw invalidPaymentTransition("dispute", disputeId, current, target);
+    }
+
+    const updated = await client.payment_disputes.update({
+      where: { id: disputeId },
       data: {
         status: dto.status,
         provider_case_id:
@@ -733,6 +970,7 @@ export class PaymentDbRepository implements IPaymentRepository {
       "DISPUTE",
       updated.id,
       dto.status,
+      client as Prisma.TransactionClient,
     );
     return this.mapDispute(updated);
   }
@@ -741,19 +979,39 @@ export class PaymentDbRepository implements IPaymentRepository {
     disputeId: string,
     dto: ResolveDisputeDto,
     actor_id: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<PaymentDispute> {
-    const updated = await this.prisma.payment_disputes.update({
+    const client = tx ?? this.prisma;
+    // Read the CURRENT state inside the Atomic_Operation, scoped by tenant_id,
+    // BEFORE any write (Requirements 12.9, 12.10, 4.6, 4.7).
+    const dispute = await client.payment_disputes.findFirst({
       where: { id: disputeId, tenant_id: ctx.tenant_id },
+    });
+    if (!dispute) throw new NotFoundException("Dispute not found");
+
+    const current = normPaymentState(dispute.status);
+    // A dispute may be resolved only from a non-terminal (open / in-progress)
+    // state; resolving an already-resolved dispute is rejected naming
+    // current+target, leaving it unchanged.
+    if (DISPUTE_TERMINAL_STATES.has(current)) {
+      throw invalidPaymentTransition("dispute", disputeId, current, "RESOLVED");
+    }
+
+    const updated = await client.payment_disputes.update({
+      where: { id: disputeId },
       data: {
         status: "RESOLVED",
         resolution: dto.resolution,
       },
     });
 
-    const chargeback = await this.prisma.payment_chargebacks.create({
+    // The resolution and its resulting chargeback record are written on the
+    // same transaction client so both commit together or neither (Req 12.9).
+    const chargeback = await client.payment_chargebacks.create({
       data: {
         id: uuidv4(),
-        ...MultiTenancyUtil.getScope(ctx),
+        tenant_id: ctx.tenant_id,
+        company_id: ctx.company_id ?? null,
         payment_id: updated.payment_id,
         dispute_id: updated.id,
         amount: updated.amount,
@@ -768,11 +1026,12 @@ export class PaymentDbRepository implements IPaymentRepository {
       "CHARGEBACK",
       chargeback.id,
       dto.resolution,
+      client as Prisma.TransactionClient,
     );
     return this.mapDispute(updated);
   }
 
-  async getChargebacks(ctx: TenantContext): Promise<PaymentChargeback[]> {
+  async getChargebacks(ctx: ScopeLike): Promise<PaymentChargeback[]> {
     const chargebacks = await this.prisma.payment_chargebacks.findMany({
       where: MultiTenancyUtil.getScope(ctx),
     });
@@ -788,7 +1047,7 @@ export class PaymentDbRepository implements IPaymentRepository {
     }));
   }
 
-  async getSettlements(ctx: TenantContext): Promise<PaymentSettlement[]> {
+  async getSettlements(ctx: ScopeLike): Promise<PaymentSettlement[]> {
     const settlements = await this.prisma.payment_settlements.findMany({
       where: MultiTenancyUtil.getScope(ctx),
     });
@@ -810,7 +1069,7 @@ export class PaymentDbRepository implements IPaymentRepository {
     }));
   }
 
-  async getEvidencePacks(ctx: TenantContext): Promise<PaymentEvidencePack[]> {
+  async getEvidencePacks(ctx: ScopeLike): Promise<PaymentEvidencePack[]> {
     const packs = await this.prisma.payment_evidence_packs.findMany({
       where: MultiTenancyUtil.getScope(ctx),
     });
@@ -826,7 +1085,7 @@ export class PaymentDbRepository implements IPaymentRepository {
     }));
   }
 
-  async getAuditEvents(ctx: TenantContext): Promise<PaymentAuditEvent[]> {
+  async getAuditEvents(ctx: ScopeLike): Promise<PaymentAuditEvent[]> {
     const audits = await this.prisma.payment_audit_events.findMany({
       where: MultiTenancyUtil.getScope(ctx),
       orderBy: { created_at: "desc" },
@@ -911,7 +1170,7 @@ export class PaymentDbRepository implements IPaymentRepository {
     };
   }
 
-  async getPaymentSettings(ctx: TenantContext): Promise<any> {
+  async getPaymentSettings(ctx: ScopeLike): Promise<any> {
     let settings = await this.prisma.payment_settings.findUnique({
       where: { tenant_id: ctx.tenant_id },
     });

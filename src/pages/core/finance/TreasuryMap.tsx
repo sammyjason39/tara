@@ -27,6 +27,9 @@ import { logService } from "@/core/services/finance/logService";
 import { Roles, type Role } from "@/core/security/roles";
 import type { MoneySource } from "@/core/types/finance/accounts";
 import type { TreasuryTransfer } from "@/core/types/finance/treasury";
+import { formatNumber } from "@/lib/format";
+import { EmptyState } from "@/components/shared/AsyncState";
+import { TreasuryTransferModal, SettlementReconcileModal } from "@/core/finance/FinanceModalForms";
 
 export default function TreasuryMap() {
   const session = useSession();
@@ -102,7 +105,7 @@ export default function TreasuryMap() {
       );
 
       setStatusMessage(
-        `Transfer of ${Number(amount).toLocaleString()} ${
+        `Transfer of ${formatNumber(Number(amount))} ${
           isHighLevelRole ? "saved" : "requested"
         } successfully.`,
       );
@@ -184,15 +187,21 @@ export default function TreasuryMap() {
                   </td>
                   <td className="p-3 text-muted-foreground">{src.type}</td>
                   <td className="p-3 text-muted-foreground">
-                    {src.balance.toLocaleString()}
+                    {formatNumber(src.balance)}
                   </td>
                   <td className="p-3 text-muted-foreground">
-                    {src.pendingSettlement?.toLocaleString() ?? 0}
+                    {formatNumber(src.pendingSettlement ?? 0)}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          {(Array.isArray(filteredSources) ? filteredSources : []).length === 0 ? (
+            <EmptyState
+              title="No treasury accounts"
+              description="No treasury accounts match this view in the current tenant scope."
+            />
+          ) : null}
         </DataTableShell>
       </WorkspacePanel>
 
@@ -211,7 +220,7 @@ export default function TreasuryMap() {
                 <div>
                   <p className="font-semibold text-foreground">{src.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    Pending: {src.pendingSettlement?.toLocaleString()}
+                    Pending: {formatNumber(src.pendingSettlement ?? 0)}
                   </p>
                 </div>
                 <Button
@@ -264,7 +273,7 @@ export default function TreasuryMap() {
                     {trf.toSourceId}
                   </td>
                   <td className="p-3 text-muted-foreground">
-                    {trf.amount.toLocaleString()}
+                    {formatNumber(trf.amount)}
                   </td>
                   <td className="p-3">
                     <ApprovalStatusBadge status={trf.status.toUpperCase()} />
@@ -276,6 +285,12 @@ export default function TreasuryMap() {
               ))}
             </tbody>
           </table>
+          {(Array.isArray(transfers) ? transfers : []).length === 0 ? (
+            <EmptyState
+              title="No transfers"
+              description="No inter-account transfers exist for this tenant scope yet."
+            />
+          ) : null}
         </DataTableShell>
       </WorkspacePanel>
 
@@ -298,7 +313,7 @@ export default function TreasuryMap() {
                     <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">Source Account</p>
                     <p className="font-semibold">{selectedFromSource?.name || "Select Account"}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Available: <span className="font-medium text-foreground">Rp {selectedFromSource?.balance?.toLocaleString() || "0"}</span>
+                      Available: <span className="font-medium text-foreground">Rp {formatNumber(selectedFromSource?.balance ?? 0)}</span>
                     </p>
                   </div>
                   <div className="flex justify-center -my-2 relative z-10">
@@ -310,7 +325,7 @@ export default function TreasuryMap() {
                     <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">Destination Account</p>
                     <p className="font-semibold">{selectedToSource?.name || "Select Account"}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Current: <span className="font-medium text-foreground">Rp {selectedToSource?.balance?.toLocaleString() || "0"}</span>
+                      Current: <span className="font-medium text-foreground">Rp {formatNumber(selectedToSource?.balance ?? 0)}</span>
                     </p>
                   </div>
                 </div>
@@ -408,7 +423,7 @@ export default function TreasuryMap() {
                 onChange={(e) => setReconcileAmount(Number(e.target.value))}
               />
               <p className="text-xs text-muted-foreground">
-                Max pending: {selectedSource?.pending.toLocaleString()}
+                Max pending: {formatNumber(selectedSource?.pending ?? 0)}
               </p>
             </div>
             <Button className="w-full" onClick={handleReconcile}>
@@ -436,12 +451,11 @@ export default function TreasuryMap() {
               <span>{selectedAccountDetail?.type}</span>
               <span className="text-muted-foreground">Available Balance:</span>
               <span className="font-bold">
-                {selectedAccountDetail?.balance.toLocaleString()}
+                {formatNumber(selectedAccountDetail?.balance ?? null)}
               </span>
               <span className="text-muted-foreground">Pending Settlement:</span>
               <span>
-                {selectedAccountDetail?.pendingSettlement?.toLocaleString() ??
-                  0}
+                {formatNumber(selectedAccountDetail?.pendingSettlement ?? 0)}
               </span>
             </div>
             <div className="border-t pt-4">
@@ -475,7 +489,7 @@ export default function TreasuryMap() {
               <span>{selectedTransferDetail?.toSourceId}</span>
               <span className="text-muted-foreground">Amount:</span>
               <span className="font-bold text-primary">
-                {selectedTransferDetail?.amount.toLocaleString()}
+                {formatNumber(selectedTransferDetail?.amount ?? null)}
               </span>
               <span className="text-muted-foreground">Status:</span>
               <span>

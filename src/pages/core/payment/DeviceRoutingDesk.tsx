@@ -6,6 +6,8 @@ import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { useSession } from "@/core/security/session";
 import { paymentService } from "@/core/services/payment/paymentService";
 import type { PosDevice, DevicePool } from "@/core/types/payment/payment";
+import { safeText } from "@/lib/format";
+import { EmptyState } from "@/components/shared/AsyncState";
 
 export default function DeviceRoutingDesk() {
   const session = useSession();
@@ -68,6 +70,12 @@ export default function DeviceRoutingDesk() {
             );
           })}
         </div>
+        {(Array.isArray(pools) ? pools : []).length === 0 ? (
+          <EmptyState
+            title="No device pools"
+            description="No location device pools are configured for this tenant scope yet."
+          />
+        ) : null}
       </WorkspacePanel>
 
       <WorkspacePanel title="Device Governance" description="Payment cannot execute on unapproved or offline hardware.">
@@ -87,7 +95,7 @@ export default function DeviceRoutingDesk() {
               <tr key={device.id} className="border-t">
                 <td className="p-3 font-medium">{device.deviceCode}</td>
                 <td className="p-3 text-muted-foreground">{device.location}</td>
-                <td className="p-3 text-muted-foreground">{device.providerId}</td>
+                <td className="p-3 text-muted-foreground">{safeText(device.providerId)}</td>
                 <td className="p-3">
                   <Badge variant={device.approved ? "secondary" : "destructive"}>
                     {device.approved ? "APPROVED" : "UNAPPROVED"}
@@ -107,6 +115,16 @@ export default function DeviceRoutingDesk() {
                 </td>
               </tr>
             ))}
+            {(Array.isArray(devices) ? devices : []).length === 0 ? (
+              <tr>
+                <td colSpan={6} className="p-0">
+                  <EmptyState
+                    title="No devices registered"
+                    description="No POS devices exist for this tenant scope yet."
+                  />
+                </td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </WorkspacePanel>

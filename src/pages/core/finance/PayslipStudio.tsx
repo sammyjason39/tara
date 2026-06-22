@@ -76,7 +76,7 @@ export default function PayslipStudio() {
     <div className="min-h-screen bg-muted p-4 md:p-8">
       <div className="max-w-[1600px] mx-auto space-y-8">
         {/* Studio Header */}
-        <div className="flex justify-between items-end border-b border-slate-200 pb-8">
+        <div className="flex justify-between items-end border-b border-border pb-8">
           <div className="space-y-1">
             <h1 className="text-4xl font-black text-muted-foreground tracking-tighter uppercase italic flex items-center gap-3">
               <FileText className="w-10 h-10 text-primary" />
@@ -88,7 +88,7 @@ export default function PayslipStudio() {
              <Button variant="outline" className="h-12 px-6 rounded-xl font-black uppercase italic tracking-widest text-[10px] gap-2">
                 <Eye className="w-4 h-4" /> Preview PDF
              </Button>
-             <Button className="h-12 px-8 rounded-xl font-black uppercase italic tracking-widest text-[10px] bg-primary hover:bg-primary gap-2 shadow-lg shadow-indigo-600/20" onClick={handleSaveTemplate}>
+             <Button className="h-12 px-8 rounded-xl font-black uppercase italic tracking-widest text-[10px] bg-primary hover:bg-primary gap-2 shadow-lg shadow-primary/20" onClick={handleSaveTemplate}>
                 <Save className="w-4 h-4" /> Finalize Template
              </Button>
           </div>
@@ -96,7 +96,7 @@ export default function PayslipStudio() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[350px_1fr_400px] gap-8 h-[calc(100vh-250px)]">
           {/* Left Sidebar: Components Tree */}
-          <Card className="border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          <Card className="border-border shadow-sm overflow-hidden flex flex-col">
             <CardHeader className="p-6 bg-muted text-white shrink-0">
                <CardTitle className="text-sm font-black uppercase italic tracking-wider">Document Structure</CardTitle>
                <CardDescription className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Ordered Layout Nodes</CardDescription>
@@ -108,7 +108,7 @@ export default function PayslipStudio() {
                       key={comp.id} 
                       className={cn(
                         "group flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer",
-                        activeComponentId === comp.id ? "bg-primary border-primary" : "bg-white border-slate-100 hover:border-slate-200"
+                        activeComponentId === comp.id ? "bg-primary border-primary" : "bg-card border-border hover:border-border"
                       )}
                       onClick={() => setActiveComponentId(comp.id)}
                     >
@@ -127,7 +127,7 @@ export default function PayslipStudio() {
                     </div>
                   ))}
                </div>
-               <div className="mt-6 pt-6 border-t border-slate-100 grid grid-cols-2 gap-2">
+               <div className="mt-6 pt-6 border-t border-border grid grid-cols-2 gap-2">
                   <Button variant="outline" className="text-[9px] font-black uppercase tracking-widest h-9 rounded-lg gap-2" onClick={() => addComponent('earnings')}>
                      <Plus className="w-3 h-3" /> Earnings
                   </Button>
@@ -143,9 +143,9 @@ export default function PayslipStudio() {
 
           {/* Center: Live Preview Area */}
           <div className="flex flex-col gap-6 overflow-hidden">
-             <div className="bg-white border border-slate-200 rounded-2xl shadow-xl flex-1 overflow-hidden flex flex-col mx-auto w-full max-w-[800px]">
+             <div className="bg-card border border-border rounded-2xl shadow-xl flex-1 overflow-hidden flex flex-col mx-auto w-full max-w-[800px]">
                 <div className="h-1 bg-primary shrink-0" />
-                <ScrollArea className="flex-1 p-12 bg-white">
+                <ScrollArea className="flex-1 p-12 bg-card">
                    <div className="space-y-8 max-w-[650px] mx-auto">
                       {(Array.isArray(components) ? components : []).filter(c => c.visible).sort((a, b) => a.order - b.order).map((comp) => (
                          <div key={comp.id} className={cn("relative group border-2 border-transparent transition-all", activeComponentId === comp.id && "border-primary rounded-xl p-4 -m-4 bg-primary")}>
@@ -168,7 +168,7 @@ export default function PayslipStudio() {
                             )}
 
                             {comp.type === 'identity' && (
-                               <div className="grid grid-cols-2 gap-8 py-6 border-y border-slate-100">
+                               <div className="grid grid-cols-2 gap-8 py-6 border-y border-border">
                                   <div className="space-y-3">
                                      <div className="space-y-0.5">
                                         <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">Employee Name</p>
@@ -244,10 +244,10 @@ export default function PayslipStudio() {
                             )}
 
                             {comp.type === 'footer' && (
-                               <div className="mt-12 pt-8 border-t border-slate-100 flex justify-between items-end opacity-50 grayscale">
+                               <div className="mt-12 pt-8 border-t border-border flex justify-between items-end opacity-50 grayscale">
                                   <div className="space-y-2">
                                      <p className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground leading-tight">This is an electronically generated document.<br/>Authorized by the Finance & HR Governance Node.</p>
-                                     <div className="w-24 h-8 bg-muted rounded border border-slate-200" />
+                                     <div className="w-24 h-8 bg-muted rounded border border-border" />
                                   </div>
                                   <div className="text-right">
                                      <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">Zenvix Payload Sync</p>
@@ -263,8 +263,8 @@ export default function PayslipStudio() {
           </div>
 
           {/* Right Sidebar: Component Config */}
-          <Card className="border-slate-200 shadow-sm overflow-hidden flex flex-col">
-             <CardHeader className="p-6 bg-white border-b border-slate-100 shrink-0">
+          <Card className="border-border shadow-sm overflow-hidden flex flex-col">
+             <CardHeader className="p-6 bg-card border-b border-border shrink-0">
                 <div className="flex items-center gap-2 mb-1">
                    <Settings className="w-4 h-4 text-muted-foreground" />
                    <CardTitle className="text-sm font-black uppercase italic tracking-wider">Node Config</CardTitle>
@@ -328,7 +328,7 @@ export default function PayslipStudio() {
                          {activeComponent.type === 'deductions' && (
                            <div className="space-y-3">
                               <p className="text-[9px] font-bold text-muted-foreground uppercase leading-relaxed">Includes Taxes, Social, Loans, and other mandatory subtractions.</p>
-                              <div className="p-3 bg-destructive border border-red-100 rounded-xl">
+                              <div className="p-3 bg-destructive border border-destructive/30 rounded-xl">
                                  <p className="text-[8px] font-black text-destructive uppercase tracking-widest">Logic Binding: PAYROLL_DEDUCTIONS_MAP</p>
                               </div>
                            </div>
@@ -343,8 +343,8 @@ export default function PayslipStudio() {
                 )}
              </ScrollArea>
 
-             <div className="p-6 bg-muted border-t border-slate-100">
-                <div className="p-4 bg-white border border-slate-200 rounded-2xl flex gap-3">
+             <div className="p-6 bg-muted border-t border-border">
+                <div className="p-4 bg-card border border-border rounded-2xl flex gap-3">
                    <AlertCircle className="w-5 h-5 text-primary shrink-0" />
                    <p className="text-[8px] font-bold text-muted-foreground uppercase leading-relaxed">Changes made here affect all future payslips generated using this template. Proceed with caution.</p>
                 </div>

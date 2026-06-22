@@ -96,7 +96,7 @@ export function CreatePaymentDialog({
                 <label className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2.5 block">Payment Amount (IDR)</label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-black">Rp</span>
-                  <Input className="pl-11 h-14 text-xl font-black rounded-2xl border-slate-200"
+                  <Input className="pl-11 h-14 text-xl font-black rounded-2xl border-border"
                     value={amount} onChange={(e) => setAmount(e.target.value)}
                     placeholder="0" type="number" />
                 </div>
@@ -105,7 +105,7 @@ export function CreatePaymentDialog({
                 <div>
                   <label className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2.5 block">Payment Method</label>
                   <Select value={method} onValueChange={(v) => setMethod(v as PaymentMethod)}>
-                    <SelectTrigger className="w-full h-12 rounded-2xl font-bold border-slate-200"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="w-full h-12 rounded-2xl font-bold border-border"><SelectValue /></SelectTrigger>
                     <SelectContent className="rounded-2xl">
                       {(Array.isArray(PAYMENT_METHODS) ? PAYMENT_METHODS : []).map((m) => (
                         <SelectItem key={m} value={m} className="font-bold">{m.replace("_", " ")}</SelectItem>
@@ -116,7 +116,7 @@ export function CreatePaymentDialog({
                 <div>
                   <label className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2.5 block">Funding Source</label>
                   <Select value={source} onValueChange={setSource}>
-                    <SelectTrigger className="w-full h-12 rounded-2xl font-bold border-slate-200">
+                    <SelectTrigger className="w-full h-12 rounded-2xl font-bold border-border">
                       <SelectValue placeholder="Select source" />
                     </SelectTrigger>
                     <SelectContent className="rounded-2xl">
@@ -134,27 +134,27 @@ export function CreatePaymentDialog({
                 <div>
                   <label className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2.5 block">Beneficiary</label>
                   <Input value={destination} onChange={(e) => setDestination(e.target.value)}
-                    placeholder="Name / Account No." className="h-12 rounded-2xl font-bold border-slate-200" />
+                    placeholder="Name / Account No." className="h-12 rounded-2xl font-bold border-border" />
                 </div>
                 <div>
                   <label className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2.5 block">Requesting Dept</label>
                   <Input value={department} onChange={(e) => setDepartment(e.target.value)}
-                    placeholder="e.g. IT, HR, OPS" className="h-12 rounded-2xl font-bold border-slate-200" />
+                    placeholder="e.g. IT, HR, OPS" className="h-12 rounded-2xl font-bold border-border" />
                 </div>
               </div>
               <div>
                 <label className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2.5 block">Purpose of Payment</label>
                 <Textarea value={purpose} onChange={(e) => setPurpose(e.target.value)}
                   placeholder="Justification aligned with budget..." rows={2}
-                  className="resize-none rounded-2xl p-4 font-medium border-slate-200" />
+                  className="resize-none rounded-2xl p-4 font-medium border-border" />
               </div>
               <div>
                 <label className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2.5 block">Extra Metadata (JSON)</label>
                 <Textarea value={extraInfo} onChange={(e) => setExtraInfo(e.target.value)}
                   placeholder='{"invoiceId": "INV-1234"}' rows={2}
-                  className="font-mono text-xs resize-none rounded-2xl p-4 border-slate-200 bg-muted" />
+                  className="font-mono text-xs resize-none rounded-2xl p-4 border-border bg-muted" />
               </div>
-              <div className="border-t border-slate-100 pt-5 flex justify-end gap-3">
+              <div className="border-t border-border pt-5 flex justify-end gap-3">
                 <Button onClick={() => onOpenChange(false)} variant="outline" className="h-12 rounded-2xl px-7 font-bold">Cancel</Button>
                 <Button onClick={onSubmit} className="h-12 rounded-2xl px-7 gap-2 font-black shadow-lg shadow-primary/20">
                   <Send className="w-4 h-4" />
@@ -196,7 +196,7 @@ export function WorkflowDetailDialog({ workflow, onClose, onApprove, onReject }:
             <span className="text-muted-foreground font-semibold">Status</span>
             <ApprovalStatusBadge status={workflow?.status || "PENDING"} />
           </div>
-          <div className="border-t border-slate-100 pt-5">
+          <div className="border-t border-border pt-5">
             <p className="text-xs font-medium leading-relaxed text-muted-foreground bg-muted p-4 rounded-2xl">
               Automatically routed based on departmental thresholds. Verify supporting documentation if required.
             </p>
@@ -206,7 +206,7 @@ export function WorkflowDetailDialog({ workflow, onClose, onApprove, onReject }:
                   onClick={() => { onApprove(workflow.id); onClose(); }}>
                   Approve
                 </Button>
-                <Button className="flex-1 h-12 rounded-2xl border border-rose-200 bg-destructive text-destructive hover:bg-destructive font-black" variant="outline"
+                <Button className="flex-1 h-12 rounded-2xl border border-destructive bg-destructive text-destructive hover:bg-destructive font-black" variant="outline"
                   onClick={() => { onReject(workflow.id); onClose(); }}>
                   Reject
                 </Button>
@@ -232,7 +232,7 @@ export function AlertDetailDialog({ alert, onClose }: AlertDetailProps) {
           <DialogTitle className="text-2xl font-black tracking-tighter">Operational Alert</DialogTitle>
         </DialogHeader>
         <div className="space-y-6 pt-4">
-          <div className="rounded-2xl bg-destructive border border-rose-100 p-5 text-destructive">
+          <div className="rounded-2xl bg-destructive border border-destructive p-5 text-destructive">
             <div className="flex items-center gap-3 mb-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
               <p className="font-black text-lg">{alert?.title}</p>
@@ -247,7 +247,7 @@ export function AlertDetailDialog({ alert, onClose }: AlertDetailProps) {
               {alert?.action || "Review Required"}
             </span>
           </div>
-          <div className="border-t border-slate-100 pt-4 text-center">
+          <div className="border-t border-border pt-4 text-center">
             <p className="text-xs font-medium text-muted-foreground">
               Triggered by automated treasury monitoring. Review linked accounts immediately.
             </p>

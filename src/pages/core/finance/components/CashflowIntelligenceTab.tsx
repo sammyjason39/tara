@@ -100,7 +100,7 @@ export const CashflowIntelligenceTab: React.FC<CashflowIntelligenceTabProps> = (
           )}
 
           {cashflow.isBelowSafeBuffer && !cashflow.deficitRisk && (
-            <Alert variant="warning" className="border-2 border-amber-500 bg-warning text-warning animate-in fade-in slide-in-from-top-4">
+            <Alert variant="warning" className="border-2 border-warning bg-warning text-warning animate-in fade-in slide-in-from-top-4">
               <AlertTriangle size={18} className="text-warning" />
               <AlertTitle className="font-black uppercase tracking-wider text-[11px]">
                 Safety Buffer Breach Predicted

@@ -23,9 +23,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { GlassCard } from "@/components/shared/GlassCard";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { useSession } from "@/core/security/session";
 import { salesService } from "@/core/services/sales/salesService";
 import { cn } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
 import type {
   SalesDashboardMetrics,
@@ -116,11 +119,11 @@ export default function SalesDashboard() {
                Operational
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">Sales Command</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground">Sales Command</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic">"The art of war is of vital importance to the State. In sales, it is the art of the deal." — Neural Strategist.</p>
         </div>
         
-        <div className="flex items-center gap-4 bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-slate-800/20 shadow-2xl">
+        <div className="flex items-center gap-4 bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-border/20 shadow-2xl">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -144,8 +147,8 @@ export default function SalesDashboard() {
       {/* High-Impact Metrics Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Active Pipeline", value: `$${metrics.pipelineValue.toLocaleString()}`, sub: "GROSS NOMINAL VALUE", icon: DollarSign, color: "indigo" },
-          { label: "Weighted Forecast", value: `$${metrics.weightedPipelineValue.toLocaleString()}`, sub: "ADJUSTED PROBABILITY", icon: TrendingUp, color: "emerald" },
+          { label: "Active Pipeline", value: formatCurrency(metrics.pipelineValue), sub: "GROSS NOMINAL VALUE", icon: DollarSign, color: "indigo" },
+          { label: "Weighted Forecast", value: formatCurrency(metrics.weightedPipelineValue), sub: "ADJUSTED PROBABILITY", icon: TrendingUp, color: "emerald" },
           { label: "Open Leads", value: metrics.openLeads, sub: "UNQUALIFIED DEMAND", icon: Users, color: "blue" },
           { label: "SLA Pressure", value: metrics.slaDueToday, sub: "DUE WITHIN 24H", icon: Clock, color: "rose" },
         ].map((stat, i) => (
@@ -156,7 +159,7 @@ export default function SalesDashboard() {
                 <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center shadow-inner", `bg-${stat.color}-500/10`)}>
                   <stat.icon className={cn("h-7 w-7", `text-${stat.color}-500`)} />
                 </div>
-                <Badge variant="outline" className="rounded-full font-black text-[9px] px-2 py-0.5 border-slate-200 uppercase tracking-widest">+4.2%</Badge>
+                <Badge variant="outline" className="rounded-full font-black text-[9px] px-2 py-0.5 border-border uppercase tracking-widest">+4.2%</Badge>
               </div>
               <div className="space-y-1">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{stat.sub}</p>
@@ -172,8 +175,8 @@ export default function SalesDashboard() {
         {/* Main Content Area */}
         <div className="col-span-12 lg:col-span-8 space-y-8">
           {/* Today's Priority Queue */}
-          <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden">
-            <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-slate-800/20">
+          <GlassCard className="rounded-[3rem] border-none shadow-2xl overflow-hidden">
+            <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-border/20">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
@@ -182,7 +185,7 @@ export default function SalesDashboard() {
                   </CardTitle>
                   <CardDescription className="text-sm font-medium">SLA-aware lead pool requiring immediate executive engagement.</CardDescription>
                 </div>
-                <Button variant="outline" className="rounded-2xl h-12 font-black text-xs gap-2 border-slate-200 hover:bg-white" onClick={async () => {
+                <Button variant="outline" className="rounded-2xl h-12 font-black text-xs gap-2 border-border hover:bg-white" onClick={async () => {
                    await salesService.runSlaSweep(session.tenant_id, session);
                    refresh(true);
                 }}>
@@ -234,7 +237,7 @@ export default function SalesDashboard() {
                           <div className="space-y-1">
                              <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
                                <Calendar className="h-3 w-3" />
-                               {item.slaDueAt ? new Date(item.slaDueAt).toLocaleDateString() : "TBD"}
+                               {item.slaDueAt ? formatDate(item.slaDueAt) : "TBD"}
                              </div>
                              <div className="h-1 w-20 bg-muted dark:bg-muted rounded-full overflow-hidden">
                                 <div className="h-full bg-primary w-2/3" />
@@ -251,13 +254,20 @@ export default function SalesDashboard() {
                   </tbody>
                 </table>
               </div>
-              <div className="p-8 border-t border-white/20 dark:border-slate-800/20 text-center">
+              {filteredLeads.length === 0 && (
+                <EmptyState
+                  title="No leads in queue"
+                  description="No high-priority leads match the current scope. New qualified demand will surface here."
+                  className="m-8"
+                />
+              )}
+              <div className="p-8 border-t border-white/20 dark:border-border/20 text-center">
                  <Button variant="link" className="text-primary font-black uppercase tracking-widest text-[10px] h-auto p-0 gap-2">
                     Access Complete Lead Registry <ArrowUpRight className="h-4 w-4" />
                  </Button>
               </div>
             </CardContent>
-          </Card>
+          </GlassCard>
         </div>
 
         {/* Sidebar Actions */}
@@ -313,8 +323,8 @@ export default function SalesDashboard() {
           </Card>
 
           {/* Activity Pulse */}
-          <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden">
-            <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-slate-800/20">
+          <GlassCard className="rounded-[3rem] border-none shadow-2xl overflow-hidden">
+            <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-border/20">
                <CardTitle className="text-xl font-black tracking-tight flex items-center gap-3">
                   <BarChart3 className="h-5 w-5 text-primary" />
                   Secondary KPI Pulse
@@ -340,7 +350,7 @@ export default function SalesDashboard() {
                  </div>
                ))}
                
-               <div className="pt-6 border-t border-white/20 dark:border-slate-800/20">
+               <div className="pt-6 border-t border-white/20 dark:border-border/20">
                   <div className="flex items-center gap-3 text-success mb-4">
                      <TrendingUp className="h-5 w-5" />
                      <span className="text-xs font-black uppercase tracking-widest">Growth Vector: Positive</span>
@@ -350,7 +360,7 @@ export default function SalesDashboard() {
                   </div>
                </div>
             </CardContent>
-          </Card>
+          </GlassCard>
         </div>
       </div>
     </div>

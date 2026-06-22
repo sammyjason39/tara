@@ -30,7 +30,7 @@ export const MovementsTab: React.FC<Props> = ({
   const colorMap: Record<string, { bg: string; icon: string; text: string; border: string }> = {
     blue: { bg: "bg-primary", icon: "text-primary", text: "text-primary", border: "border-primary" },
     indigo: { bg: "bg-primary", icon: "text-primary", text: "text-primary", border: "border-primary" },
-    emerald: { bg: "bg-success", icon: "text-success", text: "text-success", border: "border-emerald-500/20" },
+    emerald: { bg: "bg-success", icon: "text-success", text: "text-success", border: "border-success/20" },
   };
 
   return (
@@ -133,10 +133,10 @@ export const MovementsTab: React.FC<Props> = ({
                       className={cn(
                         "border font-black italic text-[9px] uppercase",
                         log.status === "approved"
-                          ? "bg-success text-success border-emerald-500/20"
+                          ? "bg-success text-success border-success/20"
                           : log.status === "pending"
-                            ? "bg-warning text-warning border-amber-500/20"
-                            : "bg-destructive text-destructive border-rose-500/20",
+                            ? "bg-warning text-warning border-warning/20"
+                            : "bg-destructive text-destructive border-destructive/20",
                       )}
                     >
                       {log.status}

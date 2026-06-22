@@ -26,7 +26,7 @@ export const DeviceNetworkTable: React.FC<DeviceNetworkTableProps> = ({ data = [
   };
 
   return (
-    <div className="flex flex-col h-full rounded-[2.5rem] border border-slate-800 bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group overflow-hidden relative">
+    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group overflow-hidden relative">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary border border-primary">
@@ -75,12 +75,12 @@ export const DeviceNetworkTable: React.FC<DeviceNetworkTableProps> = ({ data = [
                   <td className="px-4 py-4 bg-white/2 border-y border-white/5 group-hover/row:bg-white/5 transition-colors">
                     <div className="flex items-center gap-2.5">
                       {device.status === 'ONLINE' ? (
-                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-success border border-emerald-500/20 text-success">
+                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-success border border-success/20 text-success">
                            <Wifi className="h-3 w-3" />
                            <span className="text-[9px] font-black uppercase tracking-[0.1em]">Signal Active</span>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-destructive border border-rose-500/20 text-destructive">
+                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-destructive border border-destructive/20 text-destructive">
                            <WifiOff className="h-3 w-3" />
                            <span className="text-[9px] font-black uppercase tracking-[0.1em]">Signal Lost</span>
                         </div>
@@ -94,7 +94,7 @@ export const DeviceNetworkTable: React.FC<DeviceNetworkTableProps> = ({ data = [
                           "text-[10px] font-black",
                           device.battery < 20 ? 'text-destructive' : 'text-muted-foreground'
                         )}>{device.battery}%</span>
-                        <div className="relative w-6 h-3 border border-slate-700 rounded-[2px] p-[1px]">
+                        <div className="relative w-6 h-3 border border-border rounded-[2px] p-[1px]">
                            <div 
                              className={cn(
                                "h-full rounded-[1px]",

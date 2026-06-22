@@ -3,6 +3,7 @@ import { Injectable, Logger, Inject } from '@nestjs/common';
 import { IIoTRepository, TelemetryReading } from './repositories/iot.repository.interface';
 import { AuditService } from '../audit/audit.service';
 import { EventBusService } from '../events/event-bus.service';
+import { PrismaService } from '../../persistence/prisma.service';
 
 @Injectable()
 export class UniversalIoTService {
@@ -12,7 +13,35 @@ export class UniversalIoTService {
     private readonly repository: IIoTRepository,
     private readonly auditService: AuditService,
     private readonly eventBus: EventBusService,
+    private readonly prisma: PrismaService,
   ) {}
+
+  /**
+   * Get paginated telemetry readings for a tenant.
+   */
+  async getReadingsPaginated(tenantId: string, pagination: { page: number; pageSize: number }, sensorId?: string) {
+    const skip = (pagination.page - 1) * pagination.pageSize;
+    const where: any = { tenant_id: tenantId };
+    if (sensorId) where.sensor_id = sensorId;
+
+    const [data, totalCount] = await Promise.all([
+      this.prisma.iot_telemetry.findMany({
+        where,
+        skip,
+        take: pagination.pageSize,
+        orderBy: { created_at: 'desc' },
+      }),
+      this.prisma.iot_telemetry.count({ where }),
+    ]);
+
+    return {
+      data,
+      totalCount,
+      currentPage: pagination.page,
+      pageSize: pagination.pageSize,
+      totalPages: Math.ceil(totalCount / pagination.pageSize),
+    };
+  }
 
   /**
    * Universal Entry Point for High-Frequency Telemetry.

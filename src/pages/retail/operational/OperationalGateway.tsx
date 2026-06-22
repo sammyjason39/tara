@@ -5,7 +5,8 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useRetail } from '../context/RetailContext';
-import { Card, CardContent } from '@/components/ui/card';
+import { GlassCard } from '@/components/shared/GlassCard';
+import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
@@ -75,7 +76,7 @@ const RetailOperationalGateway = () => {
            
            <div className="relative z-10 max-w-4xl w-full animate-in fade-in zoom-in duration-700">
               <div className="text-center mb-16">
-                 <div className="w-28 h-28 bg-primary rounded-[3rem] mx-auto flex items-center justify-center shadow-[0_0_80px_rgba(79,70,229,0.5)] mb-10 transform -rotate-6 hover:rotate-0 transition-transform duration-500">
+                 <div className="w-28 h-28 bg-primary rounded-[3rem] mx-auto flex items-center justify-center shadow-[0_0_80px_hsl(var(--primary)/0.5)] mb-10 transform -rotate-6 hover:rotate-0 transition-transform duration-500">
                     <Store className="w-14 h-14 text-primary-foreground" />
                  </div>
                  <h1 className="text-6xl font-black text-foreground italic tracking-tighter uppercase mb-4 leading-none">
@@ -88,7 +89,7 @@ const RetailOperationalGateway = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                  {stores.map(store => (
-                    <Card 
+                    <GlassCard 
                        key={store.id}
                        className="bg-card/50 border-border hover:border-primary/50 hover:bg-card/80 transition-all duration-500 cursor-pointer rounded-[3rem] group overflow-hidden shadow-2xl hover:-translate-y-2 active:scale-95"
                        onClick={() => setStore(store.id)}
@@ -112,7 +113,7 @@ const RetailOperationalGateway = () => {
                              </div>
                           </div>
                        </CardContent>
-                    </Card>
+                    </GlassCard>
                  ))}
               </div>
 
@@ -184,7 +185,7 @@ const RetailOperationalGateway = () => {
           
           
           <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
-            <div className="w-20 h-20 bg-primary rounded-3xl flex items-center justify-center shadow-[0_0_50px_rgba(79,70,229,0.4)] transform hover:rotate-12 transition-transform duration-500">
+            <div className="w-20 h-20 bg-primary rounded-3xl flex items-center justify-center shadow-[0_0_50px_hsl(var(--primary)/0.4)] transform hover:rotate-12 transition-transform duration-500">
               <Store className="w-10 h-10 text-primary-foreground" />
             </div>
             <div className="text-center md:text-left">
@@ -210,8 +211,8 @@ const RetailOperationalGateway = () => {
 
              <div className="flex items-center gap-10">
                {activeShift ? (
-                 <div className="flex items-center gap-6 px-8 py-4 bg-success/10 rounded-3xl border border-success/20 shadow-[0_0_40px_rgba(16,185,129,0.15)]">
-                   <div className="w-3 h-3 rounded-full bg-success animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.8)]" />
+                 <div className="flex items-center gap-6 px-8 py-4 bg-success/10 rounded-3xl border border-success/20 shadow-[0_0_40px_hsl(var(--success)/0.15)]">
+                   <div className="w-3 h-3 rounded-full bg-success animate-pulse shadow-[0_0_15px_hsl(var(--success)/0.8)]" />
                    <div className="flex flex-col">
                       <span className="text-[10px] font-black uppercase text-success tracking-widest leading-none mb-1.5">Shift Active</span>
                       <span className="text-xs font-black uppercase text-success/80 tracking-tighter italic">{activeShift.id.slice(-16).toUpperCase()}</span>
@@ -219,7 +220,7 @@ const RetailOperationalGateway = () => {
                  </div>
                ) : (
                  <div className="flex items-center gap-6 px-8 py-4 bg-destructive/10 rounded-3xl border border-destructive/20">
-                   <div className="w-3 h-3 rounded-full bg-destructive shadow-[0_0_15px_rgba(244,63,94,0.8)]" />
+                   <div className="w-3 h-3 rounded-full bg-destructive shadow-[0_0_15px_hsl(var(--destructive)/0.8)]" />
                    <div className="flex flex-col">
                       <span className="text-[10px] font-black uppercase text-destructive tracking-widest leading-none mb-1.5">Lockdown</span>
                       <span className="text-xs font-black uppercase text-destructive/80 tracking-tighter italic">RE-AUTH_REQUIRED</span>
@@ -249,7 +250,7 @@ const RetailOperationalGateway = () => {
             >
               {/* Outer Glow Effect */}
               <div className={`absolute inset-0 ${app.bg} blur-[60px] opacity-0 group-hover:opacity-40 transition-opacity duration-700 rounded-full`} />
-                             <Card className="relative h-56 bg-card/40 border-border hover:border-primary/30 transition-all duration-500 overflow-hidden backdrop-blur-3xl rounded-[3rem] shadow-2xl flex flex-col group-hover:-translate-y-3 group-active:scale-95">
+                             <GlassCard className="relative h-56 bg-card/40 border-border hover:border-primary/30 transition-all duration-500 overflow-hidden backdrop-blur-3xl rounded-[3rem] shadow-2xl flex flex-col group-hover:-translate-y-3 group-active:scale-95">
                 <div className={`absolute top-0 right-0 w-32 h-32 ${app.bg} blur-3xl -mr-16 -mt-16 opacity-20 group-hover:scale-150 transition-transform duration-1000`} />
                 
                 <CardContent className="p-10 flex flex-col justify-between h-full relative z-10">
@@ -274,7 +275,7 @@ const RetailOperationalGateway = () => {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+              </GlassCard>
 
             </div>
           ))}

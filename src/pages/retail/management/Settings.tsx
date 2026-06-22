@@ -24,8 +24,11 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { apiRequest } from '@/core/api/apiClient';
+import { useSession } from '@/core/security/session';
 
 export default function RetailSettings() {
+  const session = useSession();
   const [settings, setSettings] = useState({
     // Scanner settings
     scannerEnabled: true,
@@ -454,8 +457,13 @@ export default function RetailSettings() {
                   </div>
                 </div>
                 <Button 
-                  onClick={() => {
-                    toast({ title: "Discovery Initialized", description: "Scanning for BLE/Network terminals in region..." });
+                  onClick={async () => {
+                    try {
+                      await apiRequest("/retail/settings/discovery", "POST", session);
+                      toast({ title: "Discovery Initialized", description: "Scanning for BLE/Network terminals in region..." });
+                    } catch (e) {
+                      toast({ title: "Discovery Failed", description: "Could not initiate device discovery.", variant: "destructive" });
+                    }
                   }}
                   variant="outline" 
                   size="sm"

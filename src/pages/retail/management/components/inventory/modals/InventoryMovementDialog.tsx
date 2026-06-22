@@ -103,7 +103,7 @@ interface Props {
 // ─── Empty-state helper ───────────────────────────────────────────────────────
 
 const EmptyDropdownNote: React.FC<{ message: string }> = ({ message }) => (
-  <div className="flex items-center gap-2 h-10 px-3 rounded-xl bg-secondary/5 border border-dashed border-slate-200">
+  <div className="flex items-center gap-2 h-10 px-3 rounded-xl bg-secondary/5 border border-dashed border-border">
     <span className="text-[10px] font-black italic uppercase tracking-widest text-muted-foreground">
       {message}
     </span>
@@ -397,7 +397,7 @@ export const InventoryMovementDialog: React.FC<Props> = ({
         </Select>
       </div>
 
-      <div className="rounded-xl border-2 border-slate-50 overflow-hidden shadow-sm bg-white flex flex-col min-h-[320px]">
+      <div className="rounded-xl border-2 border-border overflow-hidden shadow-sm bg-white flex flex-col min-h-[320px]">
         <div className="grid grid-cols-12 bg-secondary/5 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground px-4 py-3">
           <div className="col-span-8 italic">Item SKU &amp; Name</div>
           <div className="col-span-2 italic">Stock</div>
@@ -449,7 +449,7 @@ export const InventoryMovementDialog: React.FC<Props> = ({
           )}
         </div>
         {/* Pagination */}
-        <div className="px-4 py-3 border-t border-slate-50 bg-secondary/5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between shrink-0">
+        <div className="px-4 py-3 border-t border-border bg-secondary/5 flex flex-col gap-2 md:flex-row md:items-center md:justify-between shrink-0">
           <span className="text-[9px] font-black italic uppercase tracking-widest text-muted-foreground">
             Page {currentPage} of {Math.max(1, totalPages)} •{" "}
             {filteredItems.length} items
@@ -505,14 +505,14 @@ export const InventoryMovementDialog: React.FC<Props> = ({
         <Button
           size="sm"
           variant="outline"
-          className="h-7 gap-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border-emerald-200 text-success hover:bg-success"
+          className="h-7 gap-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border-success text-success hover:bg-success"
           onClick={addNewProductLine}
         >
           <Plus className="w-3 h-3" /> Add Item
         </Button>
       </div>
       {newProductLines.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-emerald-100 bg-success flex flex-col items-center justify-center py-10 text-center gap-2">
+        <div className="rounded-xl border-2 border-dashed border-success bg-success flex flex-col items-center justify-center py-10 text-center gap-2">
           <PackagePlus className="w-8 h-8 text-success" />
           <p className="text-[10px] font-black italic uppercase tracking-widest text-success">
             No new products added yet.
@@ -581,8 +581,8 @@ export const InventoryMovementDialog: React.FC<Props> = ({
                   className={cn(
                     "rounded-[1rem] border-2 p-4 text-left transition-all",
                     purchaseMode === m.key
-                      ? "border-emerald-400 bg-success shadow-sm"
-                      : "border-slate-100 bg-white hover:border-emerald-200 hover:bg-success",
+                      ? "border-success bg-success shadow-sm"
+                      : "border-border bg-white hover:border-success hover:bg-success",
                   )}
                 >
                   <div
@@ -630,7 +630,7 @@ export const InventoryMovementDialog: React.FC<Props> = ({
           {(purchaseMode === "new_product" || purchaseMode === "mixed") && (
             <div>
               {purchaseMode === "mixed" && (
-                <div className="border-t-2 border-dashed border-slate-100 pt-6" />
+                <div className="border-t-2 border-dashed border-border pt-6" />
               )}
               {renderNewProductPanel()}
             </div>
@@ -689,7 +689,7 @@ export const InventoryMovementDialog: React.FC<Props> = ({
     // Receive from PO → Supplier
     if (type === "receive_po") {
       return (
-        <div className="bg-success rounded-xl p-5 border border-emerald-100 space-y-3">
+        <div className="bg-success rounded-xl p-5 border border-success space-y-3">
           <Label className="text-[10px] font-black uppercase tracking-widest text-success flex items-center gap-2">
             <Building2 className="w-3.5 h-3.5" /> Supplier *
           </Label>
@@ -703,7 +703,7 @@ export const InventoryMovementDialog: React.FC<Props> = ({
             </>
           ) : (
             <Select value={supplierId} onValueChange={setSupplierId}>
-              <SelectTrigger className="h-10 rounded-xl font-bold bg-white border-emerald-100 text-xs">
+              <SelectTrigger className="h-10 rounded-xl font-bold bg-white border-success text-xs">
                 <SelectValue placeholder="Select supplier..." />
               </SelectTrigger>
               <SelectContent className="rounded-xl font-bold italic">
@@ -722,7 +722,7 @@ export const InventoryMovementDialog: React.FC<Props> = ({
     // Receive Transfer → Source location
     if (isReceiveTransfer) {
       return (
-        <div className="bg-success rounded-xl p-5 border border-emerald-100 space-y-3">
+        <div className="bg-success rounded-xl p-5 border border-success space-y-3">
           <Label className="text-[10px] font-black uppercase tracking-widest text-success flex items-center gap-2">
             <MapPin className="w-3.5 h-3.5" /> Transferring From *
           </Label>
@@ -736,7 +736,7 @@ export const InventoryMovementDialog: React.FC<Props> = ({
             </>
           ) : (
             <Select value={sourceStoreId} onValueChange={setSourceStoreId}>
-              <SelectTrigger className="h-10 rounded-xl font-bold bg-white border-emerald-100 text-xs">
+              <SelectTrigger className="h-10 rounded-xl font-bold bg-white border-success text-xs">
                 <SelectValue placeholder="Select source location..." />
               </SelectTrigger>
               <SelectContent className="rounded-xl font-bold italic">
@@ -790,7 +790,7 @@ export const InventoryMovementDialog: React.FC<Props> = ({
             </button>
           )}
         </div>
-        <div className="rounded-xl border-2 border-slate-50 overflow-hidden shadow-sm flex flex-col bg-secondary/5 min-h-[160px] max-h-[260px]">
+        <div className="rounded-xl border-2 border-border overflow-hidden shadow-sm flex flex-col bg-secondary/5 min-h-[160px] max-h-[260px]">
           <div className="grid grid-cols-12 bg-secondary/5 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground px-4 py-3">
             <div className="col-span-8 italic">Item Info</div>
             <div className="col-span-4 text-right italic pr-4">Qty</div>
@@ -829,7 +829,7 @@ export const InventoryMovementDialog: React.FC<Props> = ({
                           qty: Math.max(1, Number(e.target.value) || 1),
                         })
                       }
-                      className="h-8 rounded-lg font-black italic border-slate-100 text-center text-primary text-[11px] px-1"
+                      className="h-8 rounded-lg font-black italic border-border text-center text-primary text-[11px] px-1"
                     />
                   </div>
                 </div>
@@ -870,7 +870,7 @@ export const InventoryMovementDialog: React.FC<Props> = ({
                           qty: Math.max(1, parseInt(e.target.value) || 1),
                         })
                       }
-                      className="h-8 rounded-lg font-black italic border-slate-100 text-center text-success text-[11px] px-1"
+                      className="h-8 rounded-lg font-black italic border-border text-center text-success text-[11px] px-1"
                     />
                   </div>
                 </div>
@@ -994,7 +994,7 @@ export const InventoryMovementDialog: React.FC<Props> = ({
                 </div>
               </div>
 
-              <div className="bg-warning border border-amber-100 rounded-xl p-3 text-[10px] font-bold italic text-warning flex items-start gap-3">
+              <div className="bg-warning border border-warning rounded-xl p-3 text-[10px] font-bold italic text-warning flex items-start gap-3">
                 <Lock className="w-3.5 h-3.5 text-warning mt-0.5 shrink-0" />
                 <p className="leading-relaxed">
                   Total{" "}

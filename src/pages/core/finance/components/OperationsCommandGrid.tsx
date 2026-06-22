@@ -5,6 +5,9 @@ import {
 import { NavWidget, SectionLabel } from "./DashboardPrimitives";
 import type { PaymentDashboardMetrics, PaymentProvider, PosDevice } from "@/core/types/payment/payment";
 import { activeProviderCount, onlineDeviceCount, formatIdr } from "@/core/hooks/usePaymentDashboard";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/core/api/apiClient";
+import { useSession } from "@/core/security/session";
 
 interface OperationsCommandGridProps {
   payMetrics?: PaymentDashboardMetrics | null;
@@ -28,8 +31,25 @@ export function OperationsCommandGrid({
   pendingApprovals = 0,
   processedPayments = 0,
 }: OperationsCommandGridProps) {
+  const session = useSession();
   const onlineDevices = onlineDeviceCount(devices);
   const healthyProviders = activeProviderCount(providers);
+
+  // Fetch governance & operations metrics from backend for stub replacement
+  const { data: opsMetrics } = useQuery({
+    queryKey: ["finance-operations-metrics"],
+    queryFn: () => apiRequest<{
+      budgetUtilization?: string;
+      closePeriodLabel?: string;
+      closePeriodSub?: string;
+      activePolicies?: number;
+      pendingPolicyReview?: number;
+      assetRegistryValue?: string;
+      taxStatus?: string;
+      taxSub?: string;
+    }>("/finance/dashboard/operations-metrics", "GET", session),
+    staleTime: 30_000,
+  });
 
   // Derive a live "Pay Flow" volume from pending + executing counts
   const livePayFlowLabel = payMetrics
@@ -84,24 +104,24 @@ export function OperationsCommandGrid({
           />
           <NavWidget
             label="Budget Studio"
-            value="87%"
+            value={opsMetrics?.budgetUtilization ?? "—"}
             sub="Q1 utilization rate"
             icon={BarChart3}
             color="text-success"
             iconBg="bg-success"
             href="/core/finance/budget"
-            trend="+1.4%"
+            trend={opsMetrics?.budgetUtilization ? "Live" : "Loading..."}
             trendUp
           />
           <NavWidget
             label="Close Period"
-            value="Q1 2026"
-            sub="In progress — T-14 days"
+            value={opsMetrics?.closePeriodLabel ?? "—"}
+            sub={opsMetrics?.closePeriodSub ?? "Loading..."}
             icon={Lock}
             color="text-destructive"
             iconBg="bg-destructive"
             href="/core/finance/close"
-            trend="T-14d"
+            trend={opsMetrics?.closePeriodSub ?? "—"}
             trendUp={false}
           />
           <NavWidget
@@ -170,14 +190,14 @@ export function OperationsCommandGrid({
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           <NavWidget
             label="Policy Manager"
-            value="24 Active"
-            sub="3 pending review"
+            value={opsMetrics?.activePolicies != null ? `${opsMetrics.activePolicies} Active` : "—"}
+            sub={opsMetrics?.pendingPolicyReview != null ? `${opsMetrics.pendingPolicyReview} pending review` : "Loading..."}
             icon={ShieldCheck}
             color="text-primary"
             iconBg="bg-primary"
             href="/core/finance/policy"
-            trend="Review"
-            trendUp={false}
+            trend={opsMetrics?.pendingPolicyReview && opsMetrics.pendingPolicyReview > 0 ? "Review" : "On Track"}
+            trendUp={!opsMetrics?.pendingPolicyReview || opsMetrics.pendingPolicyReview === 0}
           />
           <NavWidget
             label="Invoice Capture"
@@ -192,24 +212,24 @@ export function OperationsCommandGrid({
           />
           <NavWidget
             label="Asset Registry"
-            value="Rp 8.4B"
+            value={opsMetrics?.assetRegistryValue ?? "—"}
             sub="Capital deployed"
             icon={Building2}
             color="text-teal-500"
             iconBg="bg-teal-500/10"
             href="/core/finance/assets"
-            trend="+3.5%"
+            trend={opsMetrics?.assetRegistryValue ? "Live" : "Loading..."}
             trendUp
           />
           <NavWidget
             label="Tax Center"
-            value="IDR Ready"
-            sub="Q1 2026 filing"
+            value={opsMetrics?.taxStatus ?? "—"}
+            sub={opsMetrics?.taxSub ?? "Loading..."}
             icon={Target}
             color="text-warning"
             iconBg="bg-warning"
             href="/core/finance/tax"
-            trend="On Track"
+            trend={opsMetrics?.taxStatus ? "On Track" : "—"}
             trendUp
           />
         </div>

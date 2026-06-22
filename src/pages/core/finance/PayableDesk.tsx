@@ -15,6 +15,9 @@ import { useSession } from "@/core/security/session";
 import { financeApiClient } from "@/core/services/finance/financeApiClient";
 import type { FinancePayableRow } from "@/core/services/finance/financeService";
 import { logService } from "@/core/services/finance/logService";
+import { formatNumber } from "@/lib/format";
+import { EmptyState } from "@/components/shared/AsyncState";
+import { CreatePayableModal } from "@/core/finance/FinanceModalForms";
 
 type PayableTab = "PENDING" | "APPROVED" | "PAID" | "OVERDUE";
 
@@ -141,7 +144,7 @@ export default function PayableDesk() {
             >
               <td className="p-3">{payable.vendorName}</td>
               <td className="p-3">{payable.billNumber}</td>
-              <td className="p-3 text-muted-foreground">{payable.amount.toLocaleString()}</td>
+              <td className="p-3 text-muted-foreground">{formatNumber(payable.amount)}</td>
               <td className="p-3">{payable.dueDate}</td>
               <td className="p-3">
                 <ApprovalStatusBadge status={payable.status} />
@@ -164,6 +167,12 @@ export default function PayableDesk() {
           ))}
         </tbody>
       </table>
+      {(Array.isArray(items) ? items : []).length === 0 ? (
+        <EmptyState
+          title="No payables"
+          description="No payables exist for this view in the current tenant scope."
+        />
+      ) : null}
     </DataTableShell>
   );
 
@@ -362,7 +371,7 @@ export default function PayableDesk() {
                 <p className="text-sm text-muted-foreground uppercase font-semibold tracking-wider mb-1">Financials</p>
                 <div className="bg-primary/5 p-4 rounded-xl border border-primary/10">
                   <p className="text-sm font-medium mb-1">Total Due</p>
-                  <p className="text-3xl font-bold tracking-tight">Rp {selectedItem?.amount.toLocaleString()}</p>
+                  <p className="text-3xl font-bold tracking-tight">Rp {formatNumber(selectedItem?.amount ?? null)}</p>
                 </div>
               </div>
               <div className="border-t pt-4">

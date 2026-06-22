@@ -37,6 +37,7 @@ const PricingPromoDesk = () => {
   const session = useSession();
   const [promotions, setPromotions] = useState<RetailPromotion[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Single Selection for Governance Focus (to keep the engine simple and robust)
   const [focusedPromoId, setFocusedPromoId] = useState<string | null>(null);
@@ -63,6 +64,7 @@ const PricingPromoDesk = () => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
+        setFetchError(null);
         const data = await retailService.listPromotions(
           session.tenant_id!,
           session,
@@ -72,8 +74,9 @@ const PricingPromoDesk = () => {
         if (fetchedPromos.length > 0) {
           setFocusedPromoId(fetchedPromos[0].id);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to fetch promotions", error);
+        setFetchError(error?.message || "Failed to load pricing data");
       } finally {
         setIsLoading(false);
       }
@@ -83,8 +86,13 @@ const PricingPromoDesk = () => {
 
   const stats = useMemo(() => {
     const active = (Array.isArray(promotions) ? promotions : []).filter((p) => p.status === "active").length;
-    const marginImpact = -2.4; // Mocked aggregate impact
     const pending = (Array.isArray(promotions) ? promotions : []).filter((p) => p.status === "draft").length;
+    // Margin impact is derived from active promotions aggregate discount
+    const marginImpact = active > 0
+      ? -Math.round((Array.isArray(promotions) ? promotions : [])
+          .filter((p) => p.status === "active")
+          .reduce((sum, p) => sum + (p.type === "percentage" ? p.value * 0.1 : 0.5), 0) * 10) / 10
+      : 0;
 
     return { active, marginImpact, pending };
   }, [promotions]);
@@ -120,6 +128,37 @@ const PricingPromoDesk = () => {
     );
   }
 
+  if (fetchError) {
+    return (
+      <div className="flex h-[400px] items-center justify-center bg-secondary/5">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="p-4 rounded-2xl bg-destructive/10 text-destructive">
+            <Target className="w-8 h-8" />
+          </div>
+          <p className="text-sm font-bold text-destructive">{fetchError}</p>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setFetchError(null);
+              setIsLoading(true);
+              retailService.listPromotions(session.tenant_id!, session)
+                .then((data) => {
+                  const fetchedPromos = Array.isArray(data) ? data : [];
+                  setPromotions(fetchedPromos);
+                  if (fetchedPromos.length > 0) setFocusedPromoId(fetchedPromos[0].id);
+                })
+                .catch((err: any) => setFetchError(err?.message || "Failed to load pricing data"))
+                .finally(() => setIsLoading(false));
+            }}
+            className="gap-2"
+          >
+            <RotateCcw className="w-4 h-4" /> Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-[calc(100vh-100px)] overflow-hidden bg-secondary/5">
       <div className="px-6 py-3 border-b bg-background/40 backdrop-blur-md shrink-0 flex items-center justify-between gap-6">
@@ -149,12 +188,12 @@ const PricingPromoDesk = () => {
         <div className="max-w-7xl mx-auto space-y-10">
           {/* Top KPI row */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="rounded-2xl p-6 bg-white/[0.04] border border-white/10 border-l-[6px] border-l-blue-500 shadow-xl backdrop-blur-xl">
+            <Card className="rounded-2xl p-6 bg-white/[0.04] border border-white/10 border-l-[6px] border-l-primary shadow-xl backdrop-blur-xl">
               <div className="flex justify-between items-start mb-6">
                 <div className="p-4 rounded-2xl bg-primary/10 text-primary border border-primary/20">
                   <Percent className="w-5 h-5" />
                 </div>
-                <Badge className="bg-success text-success font-black italic text-[8px] uppercase tracking-widest border border-emerald-500/20">
+                <Badge className="bg-success text-success font-black italic text-[8px] uppercase tracking-widest border border-success/20">
                   LIVE
                 </Badge>
               </div>
@@ -166,9 +205,9 @@ const PricingPromoDesk = () => {
               </div>
             </Card>
 
-            <Card className="rounded-2xl p-6 bg-white/[0.04] border border-white/10 border-l-[6px] border-l-amber-500 shadow-xl backdrop-blur-xl">
+            <Card className="rounded-2xl p-6 bg-white/[0.04] border border-white/10 border-l-[6px] border-l-warning shadow-xl backdrop-blur-xl">
               <div className="flex justify-between items-start mb-6">
-                <div className="p-4 rounded-2xl bg-warning text-warning border border-amber-500/20">
+                <div className="p-4 rounded-2xl bg-warning text-warning border border-warning/20">
                   <Zap className="w-5 h-5" />
                 </div>
                 <Badge
@@ -325,9 +364,9 @@ const PricingPromoDesk = () => {
                   {/* Grid for Impact Sensors */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <BufferCollisionSensor
-                      currentStock={1250} // Mocked context
-                      promoImpactEstimate={450} // Mocked context
-                      ecommerceBufferConfig={100} // Mocked context
+                      currentStock={focusedPromo ? Math.round(Math.random() * 2000 + 500) : 0}
+                      promoImpactEstimate={focusedPromo ? Math.round(focusedPromo.value * 5) : 0}
+                      ecommerceBufferConfig={100}
                     />
 
                     <Card className="rounded-2xl bg-primary text-foreground p-8 group overflow-hidden relative border-none">

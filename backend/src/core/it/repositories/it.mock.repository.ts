@@ -4,7 +4,9 @@ import { SystemHealth } from "../entities/system-health.entity";
 import { Device, DeviceEvent } from "../entities/device.entity";
 import { CreateDeviceDto, CreateDeviceEventDto } from "../dto/device.dto";
 import { Injectable, NotFoundException } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { IITRepository } from "./it.repository.interface";
+import { TenantScope } from "../../../shared/scope/tenant-scope";
 
 @Injectable()
 export class ITMockRepository extends IITRepository {
@@ -63,16 +65,17 @@ export class ITMockRepository extends IITRepository {
   }
 
   async getProvisioningRequests(
-    tenant_id: string,
+    scope: TenantScope,
   ): Promise<ProvisioningRequest[]> {
     return this.provisioningRequests.filter(
-      (item) => item.tenant_id === tenant_id,
+      (item) => item.tenant_id === scope.tenant_id,
     );
   }
 
   async createProvisioningRequest(
     tenant_id: string,
     dto: CreateProvisioningRequestDto,
+    _tx?: Prisma.TransactionClient,
   ): Promise<ProvisioningRequest> {
     const created: ProvisioningRequest = {
       id: `${tenant_id}-prov-${this.provisioningRequests.length + 1}`,
@@ -83,7 +86,7 @@ export class ITMockRepository extends IITRepository {
       priority: dto.priority || "MEDIUM",
       description: dto.description,
       reason: dto.reason,
-      status: "requested",
+      status: "pending",
       requested_by: dto.requested_by || "system",
       created_at: new Date(),
       updated_at: new Date(),
@@ -96,6 +99,7 @@ export class ITMockRepository extends IITRepository {
     tenant_id: string,
     request_id: string,
     provisionedBy: string,
+    _tx?: Prisma.TransactionClient,
   ): Promise<ProvisioningRequest> {
     const request = this.provisioningRequests.find(
       (item) => item.tenant_id === tenant_id && item.id === request_id,
@@ -108,10 +112,27 @@ export class ITMockRepository extends IITRepository {
     return request;
   }
 
+  async getProvisioningRequest(
+    scope: TenantScope,
+    request_id: string,
+    _tx?: Prisma.TransactionClient,
+  ): Promise<ProvisioningRequest> {
+    const request = this.provisioningRequests.find(
+      (item) => item.tenant_id === scope.tenant_id && item.id === request_id,
+    );
+    if (!request) {
+      throw new NotFoundException(
+        `Provisioning request '${request_id}' was not found.`,
+      );
+    }
+    return request;
+  }
+
   async updateProvisioningRequest(
     tenant_id: string,
     request_id: string,
     dto: Partial<CreateProvisioningRequestDto>,
+    _tx?: Prisma.TransactionClient,
   ): Promise<ProvisioningRequest> {
     const request = this.provisioningRequests.find(
       (item) => item.tenant_id === tenant_id && item.id === request_id,
@@ -131,6 +152,7 @@ export class ITMockRepository extends IITRepository {
   async deleteProvisioningRequest(
     tenant_id: string,
     request_id: string,
+    _tx?: Prisma.TransactionClient,
   ): Promise<void> {
     const index = this.provisioningRequests.findIndex(
       (item) => item.tenant_id === tenant_id && item.id === request_id,
@@ -140,29 +162,33 @@ export class ITMockRepository extends IITRepository {
     this.provisioningRequests.splice(index, 1);
   }
 
-  async getSystemHealth(tenant_id: string): Promise<SystemHealth[]> {
-    return this.healthChecks.filter((item) => item.tenant_id === tenant_id);
+  async getSystemHealth(scope: TenantScope): Promise<SystemHealth[]> {
+    return this.healthChecks.filter((item) => item.tenant_id === scope.tenant_id);
   }
 
-  async getProvisioningStats(tenant_id: string): Promise<any> {
-    const requests = this.provisioningRequests.filter((r) => r.tenant_id === tenant_id);
+  async getProvisioningStats(scope: TenantScope): Promise<any> {
+    const requests = this.provisioningRequests.filter((r) => r.tenant_id === scope.tenant_id);
     return {
       total: requests.length,
-      requested: requests.filter((r) => r.status === "requested").length,
+      requested: requests.filter((r) => r.status === "pending" || r.status === "requested").length,
       provisioned: requests.filter((r) => r.status === "provisioned").length,
     };
   }
 
-  async getAuditLogs(tenant_id: string, request_id?: string): Promise<any[]> {
+  async getAuditLogs(scope: TenantScope, request_id?: string): Promise<any[]> {
     return []; // Mock return
   }
 
   // Devices (NEW)
-  async getDevices(tenant_id: string): Promise<Device[]> {
-    return this.devices.filter((d) => d.tenant_id === tenant_id);
+  async getDevices(scope: TenantScope): Promise<Device[]> {
+    return this.devices.filter((d) => d.tenant_id === scope.tenant_id);
   }
 
-  async createDevice(tenant_id: string, dto: CreateDeviceDto): Promise<Device> {
+  async createDevice(
+    tenant_id: string,
+    dto: CreateDeviceDto,
+    _tx?: Prisma.TransactionClient,
+  ): Promise<Device> {
     const created: Device = {
       id: `dev-${Math.random().toString(36).substr(2, 9)}`,
       tenant_id,
@@ -183,6 +209,7 @@ export class ITMockRepository extends IITRepository {
     tenant_id: string,
     device_id: string,
     dto: Partial<CreateDeviceDto>,
+    _tx?: Prisma.TransactionClient,
   ): Promise<Device> {
     const device = this.devices.find((d) => d.id === device_id && d.tenant_id === tenant_id);
     if (!device) throw new NotFoundException("Device not found");
@@ -190,18 +217,25 @@ export class ITMockRepository extends IITRepository {
     return device;
   }
 
-  async getDevice(tenant_id: string, device_id: string): Promise<Device | null> {
-    return this.devices.find((d) => d.id === device_id && d.tenant_id === tenant_id) || null;
+  async getDevice(scope: TenantScope, device_id: string): Promise<Device> {
+    const device = this.devices.find(
+      (d) => d.id === device_id && d.tenant_id === scope.tenant_id,
+    );
+    if (!device) {
+      throw new NotFoundException(`Device '${device_id}' was not found.`);
+    }
+    return device;
   }
 
   // Device Events (NEW)
-  async getDeviceEvents(tenant_id: string): Promise<DeviceEvent[]> {
-    return this.deviceEvents.filter((e) => e.tenant_id === tenant_id);
+  async getDeviceEvents(scope: TenantScope): Promise<DeviceEvent[]> {
+    return this.deviceEvents.filter((e) => e.tenant_id === scope.tenant_id);
   }
 
   async createDeviceEvent(
     tenant_id: string,
     dto: CreateDeviceEventDto,
+    _tx?: Prisma.TransactionClient,
   ): Promise<DeviceEvent> {
     const created: DeviceEvent = {
       id: `evt-${Math.random().toString(36).substr(2, 9)}`,
@@ -216,10 +250,10 @@ export class ITMockRepository extends IITRepository {
     return created;
   }
 
-  async getOverview(tenant_id: string): Promise<any> {
-    const health = await this.getSystemHealth(tenant_id);
-    const nodes = (await this.getDevices(tenant_id)).length;
-    const updates = (await this.getProvisioningRequests(tenant_id)).filter(r => r.status === 'requested').length;
+  async getOverview(scope: TenantScope): Promise<any> {
+    const health = await this.getSystemHealth(scope);
+    const nodes = (await this.getDevices(scope)).length;
+    const updates = (await this.getProvisioningRequests(scope)).filter(r => r.status === 'pending' || r.status === 'requested').length;
 
     const healthyCount = health.filter(h => h.status === 'healthy').length;
     const healthScore = health.length > 0 ? Math.round((healthyCount / health.length) * 100) : 100;
@@ -228,6 +262,15 @@ export class ITMockRepository extends IITRepository {
       healthScore: `${healthScore}%`,
       activeNodes: nodes,
       pendingUpdates: updates,
+      pendingProvisioningRequests: updates,
+      systemHealthNodes: health.length,
+      healthyNodes: healthyCount,
     };
+  }
+
+  async getRetailContributions(_scope: TenantScope): Promise<any | null> {
+    // The mock repository carries no Retail activation state or POS/ecommerce
+    // data; Retail contributions are exercised against the live DB repository.
+    return null;
   }
 }

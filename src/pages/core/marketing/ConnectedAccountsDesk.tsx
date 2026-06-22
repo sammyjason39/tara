@@ -61,6 +61,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useSession } from "@/core/security/session";
 import { marketingService } from "@/core/services/marketing/marketingService";
+import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
@@ -69,6 +70,8 @@ import type {
   ConnectedProvider,
   ConnectionStatus,
 } from "@/core/types/marketing/marketing";
+import { ConnectAccountModal } from "./modals/ConnectAccountModal";
+import { AccountSettingsModal } from "./modals/AccountSettingsModal";
 
 const PROVIDERS: ConnectedProvider[] = ["META", "GOOGLE", "TIKTOK", "YOUTUBE", "INSTAGRAM", "FACEBOOK"];
 
@@ -213,7 +216,7 @@ export default function ConnectedAccountsDesk() {
                Cloud Links Secure
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent text-left italic">Connected Accounts</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground text-left italic">Connected Accounts</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic text-left">"Authorize and orchestrate multi-cloud synchronization with total intelligence."</p>
         </div>
         
@@ -253,7 +256,7 @@ export default function ConnectedAccountsDesk() {
           { label: 'Sync Latency', val: '142ms', icon: Activity, color: 'text-warning' },
           { label: 'Verified Scopes', val: '24', icon: ShieldCheck, color: 'text-primary' },
         ].map((stat, i) => (
-          <Card key={i} className="rounded-[2.5rem] border-none shadow-xl bg-white/40 dark:bg-muted backdrop-blur-md group hover:shadow-2xl transition-all">
+          <Card key={i} className="rounded-[2.5rem] border-none shadow-xl glass-card group hover:shadow-2xl transition-all">
             <CardContent className="p-8 flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground italic leading-none">{stat.label}</p>
@@ -269,7 +272,7 @@ export default function ConnectedAccountsDesk() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {(Array.isArray(accounts) ? accounts : []).map((item) => (
-          <Card key={item.id} className="rounded-[3rem] border-none shadow-2xl bg-white/60 dark:bg-muted backdrop-blur-xl group relative overflow-hidden flex flex-col hover:shadow-[0_40px_80px_-20px_rgba(79,70,229,0.2)] transition-all duration-500">
+          <Card key={item.id} className="rounded-[3rem] border-none shadow-2xl glass-card group relative overflow-hidden flex flex-col hover:shadow-[0_40px_80px_-20px_rgba(79,70,229,0.2)] transition-all duration-500">
             {/* Status Indicator */}
             <div className={cn(
               "absolute top-0 right-0 h-32 w-32 rounded-full blur-3xl -mr-16 -mt-16 opacity-20",
@@ -306,7 +309,7 @@ export default function ConnectedAccountsDesk() {
                      <Badge variant="outline" className={cn(
                        "rounded-full font-black text-[7px] px-2 py-0.5 border shadow-sm tracking-widest uppercase italic",
                        item.syncStatus === 'SYNCING' ? "border-primary text-primary animate-pulse" :
-                       item.syncStatus === 'FAILED' ? "border-rose-500 text-destructive" : "border-slate-200 text-muted-foreground"
+                       item.syncStatus === 'FAILED' ? "border-destructive text-destructive" : "border-border text-muted-foreground"
                      )}>
                        Sync: {item.syncStatus}
                      </Badge>
@@ -322,12 +325,12 @@ export default function ConnectedAccountsDesk() {
             </CardHeader>
             
             <CardContent className="p-10 pt-0 flex-1 space-y-8 relative z-10">
-              <div className="space-y-6 bg-muted dark:bg-muted p-6 rounded-[2rem] border border-white/20 dark:border-slate-700/20 shadow-inner">
+              <div className="space-y-6 bg-muted dark:bg-muted p-6 rounded-[2rem] border border-white/20 dark:border-border/20 shadow-inner">
                 <div className="flex items-center justify-between">
                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                       <Clock className="h-4 w-4 text-primary" /> Token Expiry
                    </div>
-                   <span className="text-[11px] font-black uppercase italic">{new Date(item.tokenExpiresAt).toLocaleDateString()}</span>
+                   <span className="text-[11px] font-black uppercase italic">{formatDate(item.tokenExpiresAt)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
@@ -384,7 +387,7 @@ export default function ConnectedAccountsDesk() {
         
         {/* Placeholder for expansion */}
         <button 
-          className="rounded-[3rem] border-4 border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-6 h-[450px] group hover:border-primary transition-all hover:bg-white/40 dark:hover:bg-muted"
+          className="rounded-[3rem] border-4 border-dashed border-border dark:border-border flex flex-col items-center justify-center gap-6 h-[450px] group hover:border-primary transition-all hover:bg-white/40 dark:hover:bg-muted"
           onClick={() => setConnectOpen(true)}
         >
            <div className="h-20 w-20 rounded-full bg-muted dark:bg-muted flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all shadow-xl">
@@ -394,114 +397,25 @@ export default function ConnectedAccountsDesk() {
         </button>
       </div>
 
-      {/* Initialize Cloud Link Wizard */}
-      <Dialog open={connectOpen} onOpenChange={setConnectOpen}>
-        <DialogContent className="sm:max-w-[500px] rounded-[3rem] border-none bg-white dark:bg-muted p-0 overflow-hidden shadow-2xl">
-          <div className="h-2 bg-primary" />
-          <div className="p-12 space-y-10">
-            <DialogHeader>
-              <div className="flex items-center gap-3 mb-2">
-                 <Badge className="bg-primary text-white font-black text-[10px] uppercase tracking-widest">Auth Protocol</Badge>
-                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Node Initialization</p>
-              </div>
-              <DialogTitle className="text-4xl font-black tracking-tighter uppercase italic">Initialize Link</DialogTitle>
-              <DialogDescription className="text-base font-medium italic italic">Authorize a new multi-cloud synchronization node via secure OAuth handshake.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-8">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Target Provider</Label>
-                <Select value={provider} onValueChange={(value: ConnectedProvider) => setProvider(value)}>
-                  <SelectTrigger className="h-16 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-lg">
-                    <SelectValue placeholder="Protocol Matrix" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-none shadow-2xl p-2">
-                    {(Array.isArray(PROVIDERS) ? PROVIDERS : []).map((item) => (
-                      <SelectItem key={item} value={item} className="rounded-xl py-3 font-bold uppercase tracking-widest text-xs">
-                        {item} CLOUD ENGINE
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button 
-                 className="w-full h-16 rounded-2xl bg-primary hover:bg-primary font-black text-xs uppercase tracking-widest shadow-2xl shadow-indigo-500/30 gap-3"
-                 onClick={handleConnect}
-                 disabled={refreshing}
-              >
-                {refreshing ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Lock className="h-5 w-5" />}
-                AUTHORIZE CLOUD HANDSHAKE
-              </Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Connect Account Modal */}
+      <ConnectAccountModal
+        isOpen={connectOpen}
+        onClose={() => setConnectOpen(false)}
+        onSuccess={() => refresh(true)}
+      />
 
-      {/* Settings Dialog */}
-      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="rounded-[2.5rem] border-none shadow-2xl bg-white dark:bg-muted max-w-lg p-10">
-          <DialogHeader className="mb-6">
-            <DialogTitle className="text-3xl font-black tracking-tighter uppercase italic flex items-center gap-4">
-               <Settings className="h-8 w-8 text-primary" />
-               Account Configuration
-            </DialogTitle>
-            <DialogDescription className="text-base font-medium italic opacity-60 italic">
-              Adjust synchronization frequency and budget safeguards for {selectedAccount?.accountName}.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-8 py-4">
-            <div className="space-y-3">
-              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground italic">Daily Budget Safe-Limit (USD)</Label>
-              <div className="relative">
-                <Hash className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input 
-                  type="number"
-                  placeholder="0.00" 
-                  className="h-14 pl-12 bg-muted dark:bg-muted border-none rounded-2xl font-bold"
-                  value={budget}
-                  onChange={(e) => setBudget(e.target.value)}
-                />
-              </div>
-              <p className="text-[10px] text-muted-foreground italic font-medium leading-none px-1">Automated pause will trigger if spend exceeds this threshold.</p>
-            </div>
-
-            <div className="space-y-3">
-              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground italic">Synchronization Frequency</Label>
-              <Select value={frequency} onValueChange={setFrequency}>
-                <SelectTrigger className="h-14 bg-muted dark:bg-muted border-none rounded-2xl font-bold">
-                  <SelectValue placeholder="Select frequency" />
-                </SelectTrigger>
-                <SelectContent className="rounded-2xl border-none shadow-2xl">
-                  <SelectItem value="1H">Real-time (1 Hour)</SelectItem>
-                  <SelectItem value="4H">Standard (4 Hours)</SelectItem>
-                  <SelectItem value="12H">Optimized (12 Hours)</SelectItem>
-                  <SelectItem value="24H">Daily Sync (24 Hours)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <DialogFooter className="mt-8 gap-4 sm:justify-start">
-            <Button 
-              className="h-14 px-8 rounded-2xl bg-primary hover:bg-primary font-black text-xs uppercase tracking-widest gap-2 flex-1 shadow-xl shadow-indigo-500/20"
-              onClick={handleSaveSettings}
-              disabled={savingSettings}
-            >
-              {savingSettings ? <RefreshCw className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
-              AUTHORIZE CHANGES
-            </Button>
-            <Button 
-              variant="ghost"
-              className="h-14 px-8 rounded-2xl font-black text-xs uppercase tracking-widest"
-              onClick={() => setSettingsOpen(false)}
-            >
-              CANCEL
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Account Settings Modal */}
+      <AccountSettingsModal
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        accountId={selectedAccount?.id ?? ""}
+        accountName={selectedAccount?.accountName ?? ""}
+        defaultValues={{
+          dailyBudgetLimit: selectedAccount?.dailyBudgetLimit,
+          syncFrequency: selectedAccount?.syncFrequency,
+        }}
+        onSuccess={() => refresh(true)}
+      />
     </div>
   );
 }

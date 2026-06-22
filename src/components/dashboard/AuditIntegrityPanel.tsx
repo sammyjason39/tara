@@ -17,7 +17,7 @@ interface AuditIntegrityPanelProps {
 
 export const AuditIntegrityPanel: React.FC<AuditIntegrityPanelProps> = ({ data, onVerify, loading }) => {
   return (
-    <div className="flex flex-col h-full rounded-[2.5rem] border border-slate-800 bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 overflow-hidden group">
+    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 overflow-hidden group">
       <div className="flex items-center justify-between mb-10">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary border border-primary">
@@ -44,9 +44,9 @@ export const AuditIntegrityPanel: React.FC<AuditIntegrityPanelProps> = ({ data, 
         <div className="relative flex flex-col items-center">
           <div className={cn(
             "flex h-36 w-36 items-center justify-center rounded-full border-[12px] transition-all duration-1000 shadow-[0_0_40px_-10px]",
-            data.status === 'CLEAN' ? 'border-emerald-500/10 text-success shadow-emerald-500/30' : 
-            data.status === 'WARNINGS' ? 'border-amber-500/10 text-warning shadow-amber-500/20' : 
-            'border-rose-500/10 text-destructive shadow-rose-500/20'
+            data.status === 'CLEAN' ? 'border-success/10 text-success shadow-emerald-500/30' : 
+            data.status === 'WARNINGS' ? 'border-warning/10 text-warning shadow-amber-500/20' : 
+            'border-destructive/10 text-destructive shadow-rose-500/20'
           )}>
             {data.status === 'CLEAN' ? <ShieldCheck className="h-14 w-14" /> : <ShieldAlert className="h-14 w-14" />}
           </div>

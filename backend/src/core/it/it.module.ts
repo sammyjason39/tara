@@ -6,11 +6,15 @@ import { ITDbRepository } from "./repositories/it.db.repository";
 import { IITRepository } from "./repositories/it.repository.interface";
 import { ITMockRepository } from "./repositories/it.mock.repository";
 import { PrismaService } from "../../persistence/prisma.service";
+import { ScopeModule } from "../../shared/scope/scope.module";
+import { AtomicOperationModule } from "../shared/atomic";
+import { AsyncRejectionModule } from "../shared/async";
 
 import { ITEventHandler } from "./it-event.handler";
 import { WebhookService } from "./webhook.service";
 
 @Module({
+  imports: [ScopeModule, AtomicOperationModule, AsyncRejectionModule],
   controllers: [ITController],
   providers: [
     ITService,

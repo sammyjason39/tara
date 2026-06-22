@@ -4,8 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input as UIInput } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertCircle } from "lucide-react";
-import { inventoryService } from "@/core/services/inventory/inventoryService";
 import { useSession } from "@/core/security/session";
+import { useBatchTransfer } from "../hooks/useInventoryQueries";
 import type { InventoryStockBalance } from "@/core/types/inventory/inventory";
 
 interface BatchTransferDialogProps {
@@ -18,10 +18,10 @@ interface BatchTransferDialogProps {
 
 export function BatchTransferDialog({ open, onOpenChange, selectedIds, balances, onSuccess }: BatchTransferDialogProps) {
   const session = useSession();
+  const batchTransferMutation = useBatchTransfer();
   const [toLocation, setToLocation] = useState("");
   const [toDepartment, setToDepartment] = useState("");
   const [reason, setReason] = useState("Batch Internal Transfer");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const selectedBalances = (Array.isArray(balances) ? balances : []).filter(b => selectedIds.includes(b.id));
@@ -31,29 +31,23 @@ export function BatchTransferDialog({ open, onOpenChange, selectedIds, balances,
       setError("Destination location is required.");
       return;
     }
-    setLoading(true);
     setError(null);
     try {
-      await Promise.all(
-        (Array.isArray(selectedBalances) ? selectedBalances : []).map(b =>
-          inventoryService.recordTransfer(session.tenant_id, session, {
-            item_id: b.item_id,
-            from_location_id: b.location_id,
-            from_department_id: b.department_id,
-            to_location_id: toLocation,
-            to_department_id: toDepartment || undefined,
-            quantity: b.quantity,
-            reason: reason || "Batch transfer",
-          })
-        )
-      );
+      const transfers = (Array.isArray(selectedBalances) ? selectedBalances : []).map(b => ({
+        item_id: b.item_id,
+        from_location_id: b.location_id,
+        from_department_id: b.department_id,
+        to_location_id: toLocation,
+        to_department_id: toDepartment || undefined,
+        quantity: b.quantity,
+        reason: reason || "Batch transfer",
+      }));
+      await batchTransferMutation.mutateAsync({ transfers });
       onSuccess();
       onOpenChange(false);
       setToLocation(""); setToDepartment(""); setError(null);
     } catch (err: any) {
       setError(err?.message || "Batch transfer failed. Check all selections.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -111,9 +105,9 @@ export function BatchTransferDialog({ open, onOpenChange, selectedIds, balances,
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => { setError(null); onOpenChange(false); }} disabled={loading}>Cancel</Button>
-          <Button onClick={handleBatchTransfer} disabled={loading || !toLocation}>
-            {loading ? "Moving..." : "Perform Bulk Move"}
+          <Button variant="outline" onClick={() => { setError(null); onOpenChange(false); }} disabled={batchTransferMutation.isPending}>Cancel</Button>
+          <Button onClick={handleBatchTransfer} disabled={batchTransferMutation.isPending || !toLocation}>
+            {batchTransferMutation.isPending ? "Moving..." : "Perform Bulk Move"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -37,6 +37,8 @@ import { staffService } from "@/core/services/hr/staffService";
 import { trainingService } from "@/core/services/hr/trainingService";
 import { apiRequest } from "@/core/api/apiClient";
 import { useBackgroundRefresh } from "@/core/runtime/events/useBackgroundRefresh";
+import { EmptyState } from "@/components/shared/AsyncState";
+import { safeText } from "@/lib/format";
 
 export default function RosterGrid() {
   const session = useSession();
@@ -264,12 +266,12 @@ export default function RosterGrid() {
   return (
     <div className="space-y-6">
       {statusMessage && (
-        <div className="rounded-lg bg-success border border-emerald-100 p-3 text-success text-sm animate-in fade-in slide-in-from-top-1">
+        <div className="rounded-lg bg-success border border-success/30 p-3 text-success text-sm animate-in fade-in slide-in-from-top-1">
           {statusMessage}
         </div>
       )}
       {errorMessage && (
-        <div className="rounded-lg bg-destructive border border-rose-100 p-3 text-destructive text-sm">
+        <div className="rounded-lg bg-destructive border border-destructive/30 p-3 text-destructive text-sm">
           {errorMessage}
         </div>
       )}
@@ -438,8 +440,11 @@ export default function RosterGrid() {
                 </tr>
               ) : staff.items.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-muted-foreground">
-                    No employees found.
+                  <td colSpan={5} className="p-0">
+                    <EmptyState
+                      title="No employees found"
+                      description="No staff match the current filters. Adjust your search or add a new professional."
+                    />
                   </td>
                 </tr>
               ) : (
@@ -450,10 +455,10 @@ export default function RosterGrid() {
                     onClick={() => handleOpenDetail(employee)}
                   >
                     <td className="p-3">
-                      <div className="font-medium text-foreground">{employee.fullName}</div>
-                      <div className="text-xs text-muted-foreground">{employee.email}</div>
+                      <div className="font-medium text-foreground">{safeText(employee.fullName)}</div>
+                      <div className="text-xs text-muted-foreground">{safeText(employee.email)}</div>
                     </td>
-                    <td className="p-3 text-sm text-muted-foreground">{employee.roleTitle}</td>
+                    <td className="p-3 text-sm text-muted-foreground">{safeText(employee.roleTitle)}</td>
                     <td className="p-3 text-sm text-muted-foreground">
                       {departments.find(d => d.id === employee.departmentId)?.name ?? employee.departmentId}
                     </td>

@@ -72,7 +72,7 @@ export function EmptyState({
 
   return (
     <div className={cn(
-      "flex flex-col items-center justify-center p-12 text-center rounded-[2.5rem] border border-dashed border-slate-200 dark:border-slate-800 transition-all duration-500",
+      "flex flex-col items-center justify-center p-12 text-center rounded-[2.5rem] border border-dashed border-border dark:border-border transition-all duration-500",
       config.bg,
       className
     )}>
@@ -97,7 +97,7 @@ export function EmptyState({
         <Button 
           onClick={onRetry}
           variant="outline"
-          className="rounded-xl h-12 px-6 font-black text-xs gap-2 border-slate-200 hover:bg-white dark:border-slate-800 hover:scale-105 transition-all"
+          className="rounded-xl h-12 px-6 font-black text-xs gap-2 border-border hover:bg-white dark:border-border hover:scale-105 transition-all"
         >
           <RefreshCw className="h-4 w-4" />
           {actionLabel.toUpperCase()}

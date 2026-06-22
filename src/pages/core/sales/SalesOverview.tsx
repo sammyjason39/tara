@@ -23,9 +23,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { GlassCard } from "@/components/shared/GlassCard";
 import { useSession } from "@/core/security/session";
 import { salesService } from "@/core/services/sales/salesService";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
 import { 
   BarChart, 
@@ -98,11 +100,11 @@ export default function SalesOverview() {
                Global Sales Pulse Active
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent italic">Sales Overview</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground italic">Sales Overview</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic">"Revenue is the result of strategic coordination and relentless execution."</p>
         </div>
         
-        <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-slate-800/20 shadow-2xl">
+        <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-border/20 shadow-2xl">
           <Button
             variant="secondary"
             className="h-14 w-14 rounded-[1.5rem] bg-primary text-white hover:bg-primary transition-all shadow-xl shadow-indigo-500/20"
@@ -118,7 +120,7 @@ export default function SalesOverview() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <KPIItem 
           title="Won Revenue" 
-          value={`$${forecast.wonThisPeriod.toLocaleString()}`} 
+          value={formatCurrency(forecast.wonThisPeriod)} 
           trend="+12.5%" 
           trendUp={true}
           icon={DollarSign}
@@ -127,7 +129,7 @@ export default function SalesOverview() {
         />
         <KPIItem 
           title="Weighted Forecast" 
-          value={`$${forecast.weightedForecastValue.toLocaleString()}`} 
+          value={formatCurrency(forecast.weightedForecastValue)} 
           trend="+5.2%" 
           trendUp={true}
           icon={TargetIcon}
@@ -248,7 +250,7 @@ export default function SalesOverview() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-base font-black text-primary">${Number(rep.total).toLocaleString()}</p>
+                  <p className="text-base font-black text-primary">{formatCurrency(Number(rep.total))}</p>
                   <div className="h-1.5 w-32 bg-muted dark:bg-muted rounded-full mt-2 overflow-hidden shadow-inner">
                     <div 
                       className={cn("h-full transition-all duration-1000", idx === 0 ? "bg-warning" : "bg-primary")}
@@ -264,7 +266,7 @@ export default function SalesOverview() {
 
       <div className="grid gap-10 md:grid-cols-2">
         {/* Revenue Distribution */}
-        <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden p-10 space-y-6">
+        <GlassCard className="rounded-[3rem] border-none shadow-2xl overflow-hidden p-10 space-y-6">
           <div className="space-y-2">
             <h3 className="text-2xl font-black tracking-tight flex items-center gap-3">
               <BarChart3 className="h-6 w-6 text-primary" />
@@ -300,10 +302,10 @@ export default function SalesOverview() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </Card>
+        </GlassCard>
 
         {/* Funnel Health Matrix */}
-        <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl p-10 space-y-8">
+        <GlassCard className="rounded-[3rem] border-none shadow-2xl p-10 space-y-8">
            <div className="space-y-2">
               <h3 className="text-2xl font-black tracking-tight flex items-center gap-3">
                  <ShieldCheck className="h-6 w-6 text-success" />
@@ -328,7 +330,7 @@ export default function SalesOverview() {
               />
               <HealthMetric 
                  label="Lost Deal Value" 
-                 value={`$${forecast.lostThisPeriod.toLocaleString()}`} 
+                 value={formatCurrency(forecast.lostThisPeriod)} 
                  detail="Gross slippage this month" 
                  color="text-destructive"
                  icon={ArrowDownRight}
@@ -341,7 +343,7 @@ export default function SalesOverview() {
                  icon={TrendingUp}
               />
            </div>
-        </Card>
+        </GlassCard>
       </div>
     </div>
   );

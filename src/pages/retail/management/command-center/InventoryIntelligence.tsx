@@ -101,14 +101,14 @@ export const InventoryIntelligence: React.FC<InventoryIntelligenceProps> = ({
         <div className="space-y-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-destructive/10 rounded-2xl border border-rose-500/20 shadow-lg">
+              <div className="p-2.5 bg-destructive/10 rounded-2xl border border-destructive/20 shadow-lg">
                 <AlertTriangle className="w-5 h-5 text-destructive" />
               </div>
               <p className="text-[11px] font-black uppercase tracking-widest text-foreground italic">
                 Critical Depletion (7D)
               </p>
             </div>
-            <span className="text-[10px] font-black text-destructive bg-destructive/10 px-4 py-1.5 rounded-xl border border-rose-500/20 animate-pulse tracking-widest italic">
+            <span className="text-[10px] font-black text-destructive bg-destructive/10 px-4 py-1.5 rounded-xl border border-destructive/20 animate-pulse tracking-widest italic">
               ACTION REQUIRED
             </span>
           </div>
@@ -116,7 +116,7 @@ export const InventoryIntelligence: React.FC<InventoryIntelligenceProps> = ({
             {(data.lowStockPrediction || []).map((item, idx) => (
               <div
                 key={idx}
-                className="group/item flex items-center gap-6 p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-rose-500/30 hover:bg-white/[0.04] transition-all duration-500 cursor-default shadow-xl"
+                className="group/item flex items-center gap-6 p-6 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-destructive/30 hover:bg-white/[0.04] transition-all duration-500 cursor-default shadow-xl"
               >
                 <div className="min-w-[5.5rem] h-16 rounded-[1.75rem] bg-secondary/50 flex flex-col items-center justify-center text-muted-foreground group-hover/item:bg-destructive group-hover/item:text-foreground transition-all duration-500 border border-white/5 shadow-inner">
                   <span className="text-xl font-black italic leading-none mb-1 tracking-tighter">

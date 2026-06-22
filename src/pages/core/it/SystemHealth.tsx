@@ -26,28 +26,32 @@ import { useSession } from "@/core/security/session";
 import { itService, type SystemHealth as SystemHealthType } from "@/core/services/it/itService";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import { formatDateTime } from "@/lib/format";
 
 export default function SystemHealth() {
   const session = useSession();
   const [healthData, setHealthData] = useState<SystemHealthType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [search, setSearch] = useState("");
   const [version, setVersion] = useState(0);
 
   useEffect(() => {
     const fetchHealth = async () => {
       setLoading(true);
+      setError(false);
       try {
         const data = await itService.getSystemHealth(session.tenant_id, session);
-        setHealthData(data);
+        setHealthData(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Failed to fetch system health", err);
+        setError(true);
       } finally {
         setLoading(false);
       }
     };
     fetchHealth();
-  }, [session.tenant_id, session, version]);
+  }, [session, version]);
 
   const filtered = (Array.isArray(healthData) ? healthData : []).filter((evt) =>
     search ? evt.component.toLowerCase().includes(search.toLowerCase()) : true,
@@ -115,7 +119,7 @@ export default function SystemHealth() {
          <WorkspacePanel 
           title="Infrastructure Event Log" 
           description="Tactical sequence of LAN-first system events."
-          className="rounded-[2.5rem] border-slate-200 dark:border-slate-800 shadow-xl"
+          className="rounded-[2.5rem] border-muted dark:border-muted shadow-xl"
          >
            <div className="mb-6 flex items-center gap-4 bg-muted p-2 rounded-2xl border border-border">
               <Search className="h-4 w-4 text-muted-foreground ml-3" />
@@ -142,6 +146,14 @@ export default function SystemHealth() {
                    <tr><td colSpan={4} className="p-12 text-center">
                      <Activity className="h-8 w-8 text-primary animate-pulse mx-auto mb-4" />
                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Syncing telemetry...</p>
+                   </td></tr>
+                 ) : error ? (
+                   <tr><td colSpan={4} className="p-12 text-center">
+                     <AlertTriangle className="h-8 w-8 text-destructive mx-auto mb-4" />
+                     <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4">Telemetry feed failed to load.</p>
+                     <Button variant="outline" size="sm" onClick={() => setVersion(v => v + 1)} className="gap-2">
+                       <RefreshCcw className="h-3 w-3" /> Retry
+                     </Button>
                    </td></tr>
                  ) : filtered.length === 0 ? (
                    <tr><td colSpan={4} className="p-12 text-center text-muted-foreground italic">No health events in current sequence.</td></tr>
@@ -178,7 +190,7 @@ export default function SystemHealth() {
                           </div>
                        </td>
                        <td className="p-4 text-muted-foreground text-[10px] font-mono">
-                         {new Date(evt.checkedAt).toLocaleTimeString()}
+                         {formatDateTime(evt.checkedAt)}
                        </td>
                      </tr>
                    ))

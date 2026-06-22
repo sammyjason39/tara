@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { NotificationCenter } from "@/components/shared/NotificationCenter";
+import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { getSettings } from "@/lib/local-storage";
 import { getAllModuleContracts } from "@/core/runtime/moduleRegistry";
 import { OfflineIndicator } from "@/components/shared/OfflineIndicator";
@@ -334,7 +335,9 @@ export function CoreLayout() {
         {/* Page Content */}
         <main className="flex-1 overflow-auto transition-all">
           <div className="mx-auto w-full">
-            <Outlet />
+            <PageErrorBoundary key={location.pathname} routeLabel="Core">
+              <Outlet />
+            </PageErrorBoundary>
           </div>
         </main>
       </div>

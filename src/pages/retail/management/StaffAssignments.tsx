@@ -32,6 +32,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { hrService } from "@/core/services/hr/hrService";
+import { apiRequest } from "@/core/api/apiClient";
 import { useSession } from "@/core/security/session";
 import type { Employee } from "@/core/types/hr/employee";
 
@@ -53,6 +54,7 @@ const StaffAssignments = () => {
   const [staff, setStaff] = useState<Employee[]>([]);
   const [activeShifts, setActiveShifts] = useState<RetailShift[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
 
   // Modals state
   const [selectedStaffForDetails, setSelectedStaffForDetails] =
@@ -72,6 +74,7 @@ const StaffAssignments = () => {
     if (!session.tenant_id) return;
     try {
       setIsLoading(true);
+      setIsError(false);
       const [staffData, shiftsData] = await Promise.all([
         hrService.listEmployees(
           session.tenant_id,
@@ -84,6 +87,7 @@ const StaffAssignments = () => {
       setActiveShifts((Array.isArray(shiftsData) ? shiftsData : []).filter(s => s.status === "active"));
     } catch (error) {
       console.error("Failed to fetch staff", error);
+      setIsError(true);
     } finally {
       setIsLoading(false);
     }
@@ -192,13 +196,13 @@ const StaffAssignments = () => {
         <div className="flex items-center gap-3">
           <Button
             variant="outline"
-            className="h-10 rounded-xl px-4 font-black italic border-slate-200 text-[10px] uppercase tracking-widest gap-2 hover:bg-secondary/5 text-muted-foreground"
+            className="h-10 rounded-xl px-4 font-black italic border-border text-[10px] uppercase tracking-widest gap-2 hover:bg-secondary/5 text-muted-foreground"
             onClick={() => setIsAuditModalOpen(true)}
           >
             <FileText className="w-3 h-3" /> SECURITY LOG
           </Button>
           <Button
-            className="h-10 rounded-xl px-4 font-black italic border-slate-900 bg-secondary text-foreground text-[10px] uppercase tracking-widest gap-2"
+            className="h-10 rounded-xl px-4 font-black italic border-border bg-secondary text-foreground text-[10px] uppercase tracking-widest gap-2"
             onClick={handleProvision}
           >
             <UserPlus className="w-3 h-3" /> PROVISION
@@ -216,39 +220,39 @@ const StaffAssignments = () => {
                 val: staff.length,
                 sub: `${activeCount} Active`,
                 icon: Users,
-                color: "blue",
+                tone: "bg-primary/10 text-primary",
               },
               {
                 label: "Active Shifts",
                 val: onShiftCount,
                 sub: "Live Deployment",
                 icon: Activity,
-                color: "emerald",
+                tone: "bg-success/10 text-success",
               },
               {
                 label: "Biometric Sync",
                 val: "100%",
                 sub: "All Verified",
                 icon: ShieldCheck,
-                color: "indigo",
+                tone: "bg-info/10 text-info",
               },
               {
                 label: "Adherence Rate",
                 val: `${adherenceRate}%`,
                 sub: "Shift Adherence Score",
                 icon: Clock,
-                color: "amber",
+                tone: "bg-warning/10 text-warning",
               },
             ].map((m, i) => (
               <Card
                 key={i}
-                className="rounded-[2rem] bg-white border-none shadow-xl p-6 group hover:shadow-2xl transition-all"
+                className="rounded-[2rem] bg-card border-none shadow-xl p-6 group hover:shadow-2xl transition-all"
               >
                 <div className="flex justify-between items-start mb-6">
                   <div
-                    className={`w-12 h-12 rounded-2xl bg-${m.color}-50 flex items-center justify-center`}
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center ${m.tone}`}
                   >
-                    <m.icon className={`w-5 h-5 text-${m.color}-600`} />
+                    <m.icon className="w-5 h-5" />
                   </div>
                   <Badge className="bg-secondary/5 text-muted-foreground font-black italic text-[8px] uppercase tracking-widest border-none">
                     Live
@@ -272,30 +276,36 @@ const StaffAssignments = () => {
             {/* Personnel Table */}
             <div className="lg:col-span-3 space-y-6">
               {/* Search Bar */}
-              <div className="flex items-center gap-3 bg-white rounded-[2rem] p-3 border border-slate-100 shadow-lg">
+              <div className="flex items-center gap-3 bg-card rounded-[2rem] p-3 border border-border shadow-lg">
                 <div className="relative flex-1">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
                   <Input
-                    className="pl-12 h-12 bg-secondary/5 border-none rounded-xl text-sm font-bold italic placeholder:text-muted-foreground/60 focus-visible:ring-blue-500"
+                    className="pl-12 h-12 bg-secondary/5 border-none rounded-xl text-sm font-bold italic placeholder:text-muted-foreground/60 focus-visible:ring-primary"
                     placeholder="Search Personnel, Role, or ID..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
                 <Button 
-                  onClick={() => {
-                    toast({ title: "Segmentation Active", description: "Filtering roster by operational groups (POS, Retail, Audit)." });
+                  onClick={async () => {
+                    try {
+                      const filters = { search: searchQuery };
+                      await apiRequest("/retail/staff/segmentation", "POST", session, { filters });
+                      toast({ title: "Segmentation Active", description: "Filtering roster by operational groups (POS, Retail, Audit)." });
+                    } catch (e) {
+                      toast({ title: "Segmentation Failed", description: "Could not activate staff segmentation.", variant: "destructive" });
+                    }
                   }}
                   variant="outline"
-                  className="h-12 px-5 rounded-xl gap-2 font-black italic border-slate-100 hover:bg-secondary/5 text-[10px] uppercase tracking-widest"
+                  className="h-12 px-5 rounded-xl gap-2 font-black italic border-border hover:bg-secondary/5 text-[10px] uppercase tracking-widest"
                 >
                   <Filter className="w-4 h-4" /> Groups
                 </Button>
               </div>
 
               {/* Table Shell */}
-              <Card className="rounded-2xl border-none shadow-xl overflow-hidden bg-white">
-                <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between">
+              <Card className="rounded-2xl border-none shadow-xl overflow-hidden bg-card">
+                <div className="px-8 py-6 border-b border-border flex items-center justify-between">
                   <div>
                     <h3 className="text-base font-black italic uppercase tracking-tight text-foreground">
                       Store Personnel Registry
@@ -311,7 +321,7 @@ const StaffAssignments = () => {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-slate-50">
+                      <tr className="border-b border-border">
                         {[
                           "Personnel",
                           "Role & Location",
@@ -341,6 +351,27 @@ const StaffAssignments = () => {
                             </div>
                           </td>
                         </tr>
+                      ) : isError ? (
+                        <tr>
+                          <td colSpan={6} className="px-8 py-16 text-center">
+                            <div className="flex flex-col items-center gap-4">
+                              <ShieldAlert className="w-8 h-8 text-destructive" />
+                              <span className="text-[11px] font-black italic uppercase tracking-widest text-foreground">
+                                Couldn't load personnel
+                              </span>
+                              <span className="text-[10px] font-bold text-muted-foreground max-w-sm">
+                                The staff roster could not be loaded for this location. Check your connection and try again.
+                              </span>
+                              <Button
+                                variant="outline"
+                                onClick={fetchData}
+                                className="h-9 rounded-xl gap-2 font-black italic text-[10px] uppercase tracking-widest"
+                              >
+                                <RefreshCw className="w-3.5 h-3.5" /> Retry
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
                       ) : filteredStaff.length === 0 ? (
                         <tr>
                           <td
@@ -354,7 +385,7 @@ const StaffAssignments = () => {
                         (Array.isArray(filteredStaff) ? filteredStaff : []).map((s, i) => (
                           <tr
                             key={i}
-                            className="group hover:bg-secondary/5 transition-colors border-b border-slate-50 last:border-none cursor-pointer"
+                            className="group hover:bg-secondary/5 transition-colors border-b border-border last:border-none cursor-pointer"
                             onClick={() => setSelectedStaffForDetails(s)}
                           >
                             <td className="px-8 py-5">
@@ -496,11 +527,20 @@ const StaffAssignments = () => {
                       for new POS hardware.
                     </div>
                     <Button 
-                      onClick={() => {
-                        toast({ 
-                          title: "Reminders Broadcasted", 
-                          description: "3 personnel notified of pending biometric sync via Zenvix Push." 
-                        });
+                      onClick={async () => {
+                        try {
+                          const recipientIds = staff
+                            .filter((s) => s.status === "active")
+                            .slice(0, 3)
+                            .map((s) => s.id);
+                          await apiRequest("/retail/staff/reminders", "POST", session, { recipientIds });
+                          toast({ 
+                            title: "Reminders Broadcasted", 
+                            description: "3 personnel notified of pending biometric sync via Zenvix Push." 
+                          });
+                        } catch (e) {
+                          toast({ title: "Broadcast Failed", description: "Could not send reminders.", variant: "destructive" });
+                        }
                       }}
                       variant="ghost"
                       size="sm"

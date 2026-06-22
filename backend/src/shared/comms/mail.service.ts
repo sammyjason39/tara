@@ -183,6 +183,84 @@ export class MailService {
     });
   }
 
+  /**
+   * Get paginated mail messages using standard pagination envelope.
+   */
+  async getMessagesPaginated(tenant_id: string, user_id: string, folder: string, pagination: { page: number; pageSize: number }) {
+    const skip = (pagination.page - 1) * pagination.pageSize;
+
+    // Ensure user has at least one account
+    let account = await this.prisma.mail_accounts.findFirst({
+      where: { tenant_id, user_id, deleted_at: null }
+    });
+
+    if (!account) {
+      account = await this.prisma.mail_accounts.create({
+        data: {
+          id: uuidv4(),
+          updated_at: new Date(),
+          tenant_id,
+          user_id,
+          address: `${user_id.split('-')[0]}@zenvix.internal`,
+          type: 'internal',
+          display_name: 'Employee Account',
+          status: 'active'
+        }
+      });
+    }
+
+    const where: any = {
+      tenant_id,
+      deleted_at: folder === 'trash' ? { not: null } : null,
+    };
+
+    if (folder === 'inbox') {
+      where.to_addresses = { array_contains: account.address };
+      where.status = 'sent';
+      where.deleted_at = null;
+    } else if (folder === 'sent') {
+      where.from_account_id = account.id;
+      where.status = 'sent';
+      where.deleted_at = null;
+    } else if (folder === 'drafts') {
+      where.from_account_id = account.id;
+      where.status = 'draft';
+      where.deleted_at = null;
+    } else if (folder === 'starred' || folder === 'flagged') {
+      where.is_starred = true;
+      where.deleted_at = null;
+      where.OR = [
+        { from_account_id: account.id },
+        { to_addresses: { array_contains: account.address } }
+      ];
+    } else if (folder === 'trash') {
+      where.deleted_at = { not: null };
+      where.OR = [
+        { from_account_id: account.id },
+        { to_addresses: { array_contains: account.address } }
+      ];
+    }
+
+    const [data, totalCount] = await Promise.all([
+      this.prisma.mail_messages.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: pagination.pageSize,
+        include: { mail_accounts: true },
+      }),
+      this.prisma.mail_messages.count({ where }),
+    ]);
+
+    return {
+      data,
+      totalCount,
+      currentPage: pagination.page,
+      pageSize: pagination.pageSize,
+      totalPages: Math.ceil(totalCount / pagination.pageSize),
+    };
+  }
+
   async markAsRead(tenant_id: string, id: string) {
     return this.prisma.mail_messages.update({
       where: { id, tenant_id: tenant_id },

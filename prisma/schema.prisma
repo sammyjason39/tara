@@ -3407,6 +3407,7 @@ model item_masters {
   module_tags                 String[]                      @default([])
   status                      String                        @default("active")
   type                        ItemType                      @default(ITEM)
+  is_anomaly                  Boolean                       @default(false)
   created_at                  DateTime                      @default(now())
   updated_at                  DateTime                      @default(now())
   department_id               String?

@@ -113,7 +113,7 @@ export default function Customer360() {
                { label: 'Strategic Purchases', val: '14', color: 'text-muted-foreground dark:text-white', sub: 'Unified Offline + Online' },
                { label: 'Engagement CTR', val: '24.2%', color: 'text-success', sub: 'High-velocity interaction' },
              ].map((stat, i) => (
-               <Card key={i} className="rounded-[2.5rem] border-none shadow-xl bg-white/40 dark:bg-muted backdrop-blur-md group hover:shadow-2xl transition-all">
+               <Card key={i} className="rounded-[2.5rem] border-none shadow-xl glass-card group hover:shadow-2xl transition-all">
                   <CardContent className="p-8 space-y-2">
                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground italic mb-2">{stat.label}</p>
                      <p className={cn("text-4xl font-black tracking-tighter uppercase italic leading-none", stat.color)}>{stat.val}</p>
@@ -123,8 +123,8 @@ export default function Customer360() {
              ))}
           </div>
 
-          <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden">
-            <CardHeader className="p-10 pb-6 border-b border-white/10 dark:border-slate-800/10">
+          <Card className="rounded-[3rem] border-none shadow-2xl glass-card overflow-hidden">
+            <CardHeader className="p-10 pb-6 border-b border-white/10 dark:border-border/10">
                <div className="flex items-center justify-between">
                   <div className="space-y-1">
                      <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-3 uppercase italic">
@@ -133,7 +133,7 @@ export default function Customer360() {
                      </CardTitle>
                      <CardDescription className="text-xs font-medium italic italic">Omnichannel interactions across Marketing, Sales, and Retail clusters.</CardDescription>
                   </div>
-                  <Badge variant="outline" className="rounded-full font-black text-[9px] px-3 py-1 border-slate-200 dark:border-slate-800 uppercase tracking-widest text-muted-foreground">LIVE FEED</Badge>
+                  <Badge variant="outline" className="rounded-full font-black text-[9px] px-3 py-1 border-border dark:border-border uppercase tracking-widest text-muted-foreground">LIVE FEED</Badge>
                </div>
             </CardHeader>
             <CardContent className="p-10">
@@ -141,7 +141,7 @@ export default function Customer360() {
                  <div className="absolute left-4 top-2 bottom-2 w-0.5 bg-primary" />
                  {(Array.isArray(TIMELINE_EVENTS) ? TIMELINE_EVENTS : []).map((event) => (
                   <div key={event.id} className="relative group">
-                    <div className={cn("absolute -left-12 top-0 h-9 w-9 rounded-xl flex items-center justify-center border-4 border-white dark:border-slate-900 shadow-xl z-10 group-hover:scale-125 transition-all", event.bg)}>
+                    <div className={cn("absolute -left-12 top-0 h-9 w-9 rounded-xl flex items-center justify-center border-4 border-white dark:border-border shadow-xl z-10 group-hover:scale-125 transition-all", event.bg)}>
                       <event.icon className={cn("h-4 w-4", event.color)} />
                     </div>
                     <div className="space-y-1 group-hover:translate-x-1 transition-transform">

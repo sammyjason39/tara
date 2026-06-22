@@ -36,7 +36,7 @@ import { SettingsModule } from "./core/settings/settings.module";
 import { IncentivesModule } from "./core/incentives/incentives.module";
 
 
-import { APP_GUARD } from "@nestjs/core";
+import { APP_GUARD, APP_PIPE } from "@nestjs/core";
 import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ConfigModule } from "@nestjs/config";
@@ -44,6 +44,8 @@ import { validate } from "./config/env.validation";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 
 import { JVReadOnlyGuard } from "./gateway/jv-read-only.guard";
+import { GlobalValidationPipe } from "./shared/pipes/global-validation.pipe";
+import { AppCacheModule } from "./shared/cache";
 
 /**
  * App Module
@@ -63,6 +65,7 @@ import { JVReadOnlyGuard } from "./gateway/jv-read-only.guard";
       },
     ]),
     EventEmitterModule.forRoot(),
+    AppCacheModule,
     LoggerModule,
     LicenseModule,
     CommsModule,
@@ -99,6 +102,10 @@ import { JVReadOnlyGuard } from "./gateway/jv-read-only.guard";
   ],
   controllers: [HealthController],
   providers: [
+    {
+      provide: APP_PIPE,
+      useClass: GlobalValidationPipe,
+    },
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

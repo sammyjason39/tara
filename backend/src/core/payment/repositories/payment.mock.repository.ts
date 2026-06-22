@@ -38,6 +38,7 @@ import {
   PaymentDashboard,
 } from "./payment.repository.interface";
 import { TenantContext } from "../../../gateway/tenant-context.interface";
+import { ScopeLike } from "../../../shared/utils/multi-tenancy.util";
 
 type TenantPaymentStore = {
   transactions: PaymentTransaction[];
@@ -318,7 +319,7 @@ export class PaymentMockRepository extends IPaymentRepository {
     return this.getStore(tenant_id).routing.find((item) => item.enabled);
   }
 
-  async getDashboard(ctx: TenantContext): Promise<PaymentDashboard> {
+  async getDashboard(ctx: ScopeLike): Promise<PaymentDashboard> {
     const store = this.getStore(ctx.tenant_id);
     const now = this.now();
     const settledToday = store.transactions.filter((item) => {
@@ -355,7 +356,7 @@ export class PaymentMockRepository extends IPaymentRepository {
     };
   }
 
-  async getTransactions(ctx: TenantContext): Promise<PaymentTransaction[]> {
+  async getTransactions(ctx: ScopeLike): Promise<PaymentTransaction[]> {
     return this.getStore(ctx.tenant_id).transactions;
   }
 
@@ -634,7 +635,7 @@ export class PaymentMockRepository extends IPaymentRepository {
     return payment;
   }
 
-  async getProviders(ctx: TenantContext): Promise<PaymentProvider[]> {
+  async getProviders(ctx: ScopeLike): Promise<PaymentProvider[]> {
     return this.getStore(ctx.tenant_id).providers;
   }
 
@@ -681,15 +682,15 @@ export class PaymentMockRepository extends IPaymentRepository {
     return providers;
   }
 
-  async getRoutingPolicies(ctx: TenantContext): Promise<PaymentRoutingPolicy[]> {
+  async getRoutingPolicies(ctx: ScopeLike): Promise<PaymentRoutingPolicy[]> {
     return this.getStore(ctx.tenant_id).routing;
   }
 
-  async getDevices(ctx: TenantContext): Promise<PaymentDevice[]> {
+  async getDevices(ctx: ScopeLike): Promise<PaymentDevice[]> {
     return this.getStore(ctx.tenant_id).devices;
   }
 
-  async getDevicePools(ctx: TenantContext): Promise<PaymentDevicePool[]> {
+  async getDevicePools(ctx: ScopeLike): Promise<PaymentDevicePool[]> {
     return this.getStore(ctx.tenant_id).pools;
   }
 
@@ -715,7 +716,7 @@ export class PaymentMockRepository extends IPaymentRepository {
     return device;
   }
 
-  async getRefunds(ctx: TenantContext): Promise<PaymentRefund[]> {
+  async getRefunds(ctx: ScopeLike): Promise<PaymentRefund[]> {
     return this.getStore(ctx.tenant_id).refunds;
   }
 
@@ -797,7 +798,7 @@ export class PaymentMockRepository extends IPaymentRepository {
     return refund;
   }
 
-  async getDisputes(ctx: TenantContext): Promise<PaymentDispute[]> {
+  async getDisputes(ctx: ScopeLike): Promise<PaymentDispute[]> {
     return this.getStore(ctx.tenant_id).disputes;
   }
 
@@ -908,23 +909,23 @@ export class PaymentMockRepository extends IPaymentRepository {
     return dispute;
   }
 
-  async getChargebacks(ctx: TenantContext): Promise<PaymentChargeback[]> {
+  async getChargebacks(ctx: ScopeLike): Promise<PaymentChargeback[]> {
     return this.getStore(ctx.tenant_id).chargebacks;
   }
 
-  async getSettlements(ctx: TenantContext): Promise<PaymentSettlement[]> {
+  async getSettlements(ctx: ScopeLike): Promise<PaymentSettlement[]> {
     return this.getStore(ctx.tenant_id).settlements;
   }
 
-  async getEvidencePacks(ctx: TenantContext): Promise<PaymentEvidencePack[]> {
+  async getEvidencePacks(ctx: ScopeLike): Promise<PaymentEvidencePack[]> {
     return this.getStore(ctx.tenant_id).evidence;
   }
 
-  async getAuditEvents(ctx: TenantContext): Promise<PaymentAuditEvent[]> {
+  async getAuditEvents(ctx: ScopeLike): Promise<PaymentAuditEvent[]> {
     return this.getStore(ctx.tenant_id).audit;
   }
 
-  async getPaymentSettings(ctx: TenantContext): Promise<any> {
+  async getPaymentSettings(ctx: ScopeLike): Promise<any> {
     return this.getStore(ctx.tenant_id).settings;
   }
 

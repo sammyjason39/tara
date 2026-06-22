@@ -184,7 +184,7 @@ export function WorkforceScheduler({
                                 {(Array.isArray(days) ? days : []).map(day => (
                                     <td key={day.toString()} className="p-2 h-20 group relative">
                                         {/* Mock Shift Card */}
-                                        <div className="h-full w-full rounded-lg bg-success border border-emerald-500/20 p-2 text-[10px] flex flex-col justify-between group-hover:bg-success cursor-pointer transition-all">
+                                        <div className="h-full w-full rounded-lg bg-success border border-success/20 p-2 text-[10px] flex flex-col justify-between group-hover:bg-success cursor-pointer transition-all">
                                             <div className="flex justify-between items-start">
                                                 <span className="font-bold text-success">Morning</span>
                                                 <Clock className="h-3 w-3 text-success opacity-0 group-hover:opacity-100" />

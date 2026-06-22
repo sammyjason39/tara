@@ -136,7 +136,7 @@ export class InventoryDbRepository implements IInventoryRepository {
     };
   }
 
-  async getItems(ctx: TenantContext, location_id?: string, page: number = 1, limit: number = 100, search?: string, category_id?: string, status?: string, sortBy?: "name" | "quantity" | "created_at", sortOrder?: "asc" | "desc"): Promise<InventoryItem[]> {
+  async getItems(ctx: TenantContext, location_id?: string, page: number = 1, limit: number = 100, search?: string, category_id?: string, status?: string, is_anomaly?: boolean, sortBy?: "name" | "quantity" | "created_at", sortOrder?: "asc" | "desc"): Promise<InventoryItem[]> {
     const skip = (page - 1) * limit;
     const scope = MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true });
     
@@ -158,6 +158,10 @@ export class InventoryDbRepository implements IInventoryRepository {
       // If it's a regular status, apply it to the master table
       const regularStatus = (status && !isStockStatus && status !== "all") ? status : null;
       if (regularStatus) conditions.push(`p.status = '${regularStatus}'`);
+
+      if (is_anomaly !== undefined) {
+        conditions.push(`p.is_anomaly = ${is_anomaly}`);
+      }
 
       if (search) {
         const s = search.replace(/'/g, "''");
@@ -224,6 +228,7 @@ export class InventoryDbRepository implements IInventoryRepository {
     }
     if (category_id && category_id !== "all") where.category_id = category_id;
     if (status && status !== "all") where.status = status;
+    if (is_anomaly !== undefined) where.is_anomaly = is_anomaly;
 
     const products = await this.prisma.item_masters.findMany({
       where,
@@ -271,12 +276,13 @@ export class InventoryDbRepository implements IInventoryRepository {
       currentStock: currentStock,
       min_stock: minStock,
       minStock: minStock,
+      is_anomaly: p.is_anomaly || false,
       created_at: p.created_at,
       updated_at: p.updated_at,
     };
   }
 
-  async countItems(ctx: TenantContext, location_id?: string, search?: string, category_id?: string): Promise<number> {
+  async countItems(ctx: TenantContext, location_id?: string, search?: string, category_id?: string, is_anomaly?: boolean): Promise<number> {
     const scope = MultiTenancyUtil.getScope(ctx, {}, { excludeBranch: true });
     const where: any = { ...scope, status: { not: "deleted" } };
 
@@ -290,6 +296,10 @@ export class InventoryDbRepository implements IInventoryRepository {
 
     if (category_id && category_id !== "all") {
       where.category_id = category_id;
+    }
+
+    if (is_anomaly !== undefined) {
+      where.is_anomaly = is_anomaly;
     }
 
     if (location_id) {
@@ -446,7 +456,10 @@ export class InventoryDbRepository implements IInventoryRepository {
   async getMovements(
     ctx: TenantContext,
     item_id?: string,
+    page: number = 1,
+    limit: number = 50,
   ): Promise<StockMovement[]> {
+    const skip = (page - 1) * limit;
     const where = MultiTenancyUtil.getScope(ctx, {
       ...(item_id && { product_id: item_id }),
     }, { excludeBranch: true });
@@ -454,7 +467,8 @@ export class InventoryDbRepository implements IInventoryRepository {
     const movements = await this.prisma.stock_movements.findMany({
       where,
       orderBy: { created_at: "desc" },
-      take: 100, // Limit for safety
+      skip,
+      take: limit,
     });
 
     return movements.map((m: any) => ({
@@ -471,6 +485,17 @@ export class InventoryDbRepository implements IInventoryRepository {
       created_by: m.performed_by,
       created_at: m.created_at,
     }));
+  }
+
+  async countMovements(
+    ctx: TenantContext,
+    item_id?: string,
+  ): Promise<number> {
+    const where = MultiTenancyUtil.getScope(ctx, {
+      ...(item_id && { product_id: item_id }),
+    }, { excludeBranch: true });
+
+    return this.prisma.stock_movements.count({ where });
   }
 
   async intakeStock(ctx: TenantContext,
@@ -1054,6 +1079,7 @@ export class InventoryDbRepository implements IInventoryRepository {
             discount_type: itemData.discount_type || "percentage",
             pricing_tiers: itemData.pricing_tiers ? (typeof itemData.pricing_tiers === 'string' ? JSON.parse(itemData.pricing_tiers) : itemData.pricing_tiers) : null,
             metadata: itemData.metadata ? (typeof itemData.metadata === 'string' ? JSON.parse(itemData.metadata) : itemData.metadata) : null,
+            is_anomaly: itemData.is_anomaly ?? false,
           },
           create: {
             id: uuidv4(),
@@ -1075,6 +1101,7 @@ export class InventoryDbRepository implements IInventoryRepository {
             discount_type: itemData.discount_type || "percentage",
             pricing_tiers: itemData.pricing_tiers ? (typeof itemData.pricing_tiers === 'string' ? JSON.parse(itemData.pricing_tiers) : itemData.pricing_tiers) : null,
             metadata: itemData.metadata ? (typeof itemData.metadata === 'string' ? JSON.parse(itemData.metadata) : itemData.metadata) : null,
+            is_anomaly: itemData.is_anomaly ?? false,
           },
           include: { product_categories: true },
         });
@@ -1699,7 +1726,6 @@ export class InventoryDbRepository implements IInventoryRepository {
           { barcode: { equals: barcode, mode: 'insensitive' } },
           { sku: { equals: barcode, mode: 'insensitive' } }
         ],
-        status: 'active',
       },
       include: { product_categories: true },
     });
@@ -1944,6 +1970,21 @@ export class InventoryDbRepository implements IInventoryRepository {
     });
   }
 
+  async getItemById(ctx: TenantContext, itemId: string): Promise<any> {
+    return this.prisma.item_masters.findFirst({
+      where: { id: itemId, tenant_id: ctx.tenant_id },
+      include: {
+        product_categories: true
+      }
+    });
+  }
+
+  async getCategoryById(ctx: TenantContext, categoryId: string): Promise<any> {
+    return this.prisma.product_categories.findFirst({
+      where: { id: categoryId, tenant_id: ctx.tenant_id }
+    });
+  }
+
   async getSalesHistory(ctx: TenantContext, itemId: string): Promise<any[]> {
     return this.prisma.retail_order_items.findMany({
       where: {
@@ -1994,6 +2035,119 @@ export class InventoryDbRepository implements IInventoryRepository {
       total: Number(line.total_cost),
       final_po: line.procurement_draft_pos.procurement_final_pos?.[0]?.id
     }));
+  }
+
+  // --- Void Request & Approval Workflow Methods ---
+  async createVoidRequest(
+    ctx: TenantContext,
+    data: {
+      entity_type: string;
+      entity_id: string;
+      reason: string;
+      requested_by: string;
+      company_id?: string;
+      status?: "PENDING" | "APPROVED" | "REJECTED";
+      approved_by?: string;
+      approved_at?: Date;
+    },
+    tx?: any
+  ): Promise<any> {
+    const db = tx || this.prisma;
+    
+    return db.void_requests.create({
+      data: MultiTenancyUtil.wrapCreate(ctx, {
+        id: uuidv4(),
+        entity_type: data.entity_type,
+        entity_id: data.entity_id,
+        reason: data.reason,
+        requested_by: data.requested_by,
+        status: data.status || "PENDING",
+        company_id: data.company_id,
+        approved_by: data.status === "APPROVED" ? data.approved_by || data.requested_by : null,
+        approved_at: data.status === "APPROVED" ? data.approved_at || new Date() : null,
+      }),
+    });
+  }
+
+  async approveVoidRequest(
+    ctx: TenantContext,
+    voidRequest_id: string,
+    approver_id: string,
+    tx?: any
+  ): Promise<any> {
+    const db = tx || this.prisma;
+    
+    return db.void_requests.update({
+      where: { id: voidRequest_id, tenant_id: ctx.tenant_id },
+      data: {
+        status: "APPROVED",
+        approved_by: approver_id,
+        approved_at: new Date(),
+        last_action: "APPROVED",
+        updated_at: new Date(),
+      },
+    });
+  }
+
+  async rejectVoidRequest(
+    ctx: TenantContext,
+    voidRequest_id: string,
+    rejector_id: string,
+    tx?: any
+  ): Promise<any> {
+    const db = tx || this.prisma;
+    
+    return db.void_requests.update({
+      where: { id: voidRequest_id, tenant_id: ctx.tenant_id },
+      data: {
+        status: "REJECTED",
+        rejected_by: rejector_id,
+        rejected_at: new Date(),
+        last_action: "REJECTED",
+        updated_at: new Date(),
+      },
+    });
+  }
+
+  async getVoidRequestById(ctx: TenantContext, voidRequest_id: string): Promise<any | null> {
+    return this.prisma.void_requests.findFirst({
+      where: { id: voidRequest_id, tenant_id: ctx.tenant_id },
+    });
+  }
+
+  async getVoidRequestsByEntity(
+    ctx: TenantContext,
+    entity_type: string,
+    entity_id: string
+  ): Promise<any[]> {
+    return this.prisma.void_requests.findMany({
+      where: {
+        tenant_id: ctx.tenant_id,
+        entity_type,
+        entity_id,
+      },
+      orderBy: { created_at: "desc" },
+    });
+  }
+
+  async listVoidRequests(
+    ctx: TenantContext,
+    filters?: {
+      status?: string;
+      entity_type?: string;
+    }
+  ): Promise<any[]> {
+    const where: any = { tenant_id: ctx.tenant_id };
+    if (filters?.status) {
+      where.status = filters.status;
+    }
+    if (filters?.entity_type) {
+      where.entity_type = filters.entity_type;
+    }
+    return this.prisma.void_requests.findMany({
+      where,
+      orderBy: { created_at: "desc" },
+    });
   }
 
 }

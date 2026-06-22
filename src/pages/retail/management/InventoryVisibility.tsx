@@ -42,8 +42,7 @@ import { OpnameEntry } from "./components/inventory/opname/OpnameTable";
 import { MovementsTab, AuditEntry } from "./components/inventory/MovementsTab";
 import { ItemCreationTab } from "@/components/shared/ItemCreationTab";
 import { StockReportTab } from "./components/inventory/StockReportTab";
-import {
-  InventoryMovementDialog,
+import { InventoryMovementDialog,
   MovementPayload,
 } from "./components/inventory/modals/InventoryMovementDialog";
 import {
@@ -53,6 +52,9 @@ import {
 import { MOVEMENT_META } from "./inventory/inventory.types";
 import { CategoryManager } from "@/components/shared/CategoryManager";
 import { ItemDetailsModal } from "@/pages/core/inventory/components/ItemDetailsModal";
+import { UnresolvedBarcodesModal } from "@/components/shared/UnresolvedBarcodesModal";
+import { AnomalyCompletionDialog, CompletionSubmitPayload } from "./components/inventory/modals/AnomalyCompletionDialog";
+import { saveOpnameSession, loadOpnameSession, clearOpnameSession } from "@/lib/opname-session";
 
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { InventoryGlassHeader } from "@/components/shared/InventoryGlassHeader";
@@ -168,6 +170,7 @@ const InventoryVisibility = () => {
 
   const [opnameActive, setOpnameActive] = useState(false);
   const [opnameEntries, setOpnameEntries] = useState<OpnameEntry[]>([]);
+  const [unresolvedBarcodes, setUnresolvedBarcodes] = useState<string[]>([]);
   const [opnameFilters, setOpnameFilters] = useState<InventoryFilters>({
     search: "",
     category: "all",
@@ -178,6 +181,11 @@ const InventoryVisibility = () => {
   const [barcodeInput, setBarcodeInput] = useState("");
   const [pendingItems, setPendingItems] = useState<InventoryItemView[]>([]);
   const [isApproving, setIsApproving] = useState(false);
+  const [anomalies, setAnomalies] = useState<string[]>([]);
+  const [newItems, setNewItems] = useState<any[]>([]);
+  const [isUnresolvedOpen, setIsUnresolvedOpen] = useState(false);
+  const [completionItem, setCompletionItem] = useState<InventoryItemView | null>(null);
+  const [isCompletionLoading, setIsCompletionLoading] = useState(false);
 
   const canWrite = ["OWNER", "COMPANY_ADMIN", "DEPT_HEAD"].includes(
     session?.role || "",
@@ -541,14 +549,62 @@ const InventoryVisibility = () => {
     [movementType, locationId, session?.user_id, toast],
   );
 
+  const handleCompleteAnomaly = useCallback(
+    async (itemId: string, data: CompletionSubmitPayload) => {
+      if (!tenantId || !session) return;
+      setIsCompletionLoading(true);
+      try {
+        await inventoryService.completeAnomalyItem(tenantId, session, itemId, {
+          name: data.name || undefined,
+          category_id: data.category_id || undefined,
+          base_price: data.base_price ? Number(data.base_price) : undefined,
+          is_anomaly: data.is_anomaly,
+        });
+        toast({
+          title: "Item Completed",
+          description: data.is_anomaly === false
+            ? "Item updated and removed from Anomaly category."
+            : "Item details updated successfully.",
+        });
+        setCompletionItem(null);
+        fetchInventory();
+      } catch (err) {
+        toast({
+          title: "Completion Failed",
+          description: err instanceof Error ? err.message : "Could not complete anomaly item.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsCompletionLoading(false);
+      }
+    },
+    [tenantId, session, toast, fetchInventory],
+  );
+
   const startOpname = useCallback(() => {
     setOpnameEntries([]);
+    setUnresolvedBarcodes([]);
+    setAnomalies([]);
+    setNewItems([]);
     setOpnameActive(true);
     toast({
       title: "Opname Session Started",
       description: "Scan items to begin physical count audit.",
     });
   }, [toast]);
+
+  // Load session on mount if exists
+  useEffect(() => {
+    if (tenantId && locationId && opnameActive) {
+      const savedSession = loadOpnameSession(tenantId, locationId);
+      if (savedSession) {
+        setOpnameEntries(savedSession.entries);
+        setUnresolvedBarcodes(savedSession.unresolvedBarcodes);
+        setAnomalies(savedSession.anomalies);
+        setNewItems(savedSession.newItems);
+      }
+    }
+  }, [tenantId, locationId, opnameActive]);
 
   const handleBarcodeKeyDown = useCallback(
     async (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -563,9 +619,11 @@ const InventoryVisibility = () => {
       if (!product && tenantId && session) {
         setIsUpdating(true);
         try {
+          // Filter item lookups to activeStore?.id for branch-scoped operations
           const masterResults = await retailService.listInventory(tenantId, session, {
             q: sku,
             pageSize: 1,
+            locationId: activeStore?.id || locationId,
           });
           const items: RetailProduct[] = Array.isArray(masterResults) ? masterResults : (masterResults as { items: RetailProduct[] }).items || [];
           const masterItem = items[0];
@@ -597,11 +655,19 @@ const InventoryVisibility = () => {
       }
 
       if (!product) {
-        toast({
-          title: "Item Not Found",
-          description: `SKU/Barcode ${sku} was not found in the master catalog.`,
-          variant: "destructive",
-        });
+        // Add to unresolved barcodes instead of rejecting
+        if (!unresolvedBarcodes.includes(sku)) {
+          setUnresolvedBarcodes(prev => [...prev, sku]);
+          toast({
+            title: "Unregistered Barcode",
+            description: `Barcode ${sku} added to unresolved list for later resolution.`,
+          });
+        } else {
+          toast({
+            title: "Already Unresolved",
+            description: `Barcode ${sku} is already in unresolved list.`,
+          });
+        }
         return;
       }
 
@@ -636,7 +702,7 @@ const InventoryVisibility = () => {
         ];
       });
     },
-    [barcodeInput, inventory, tenantId, session, toast],
+    [barcodeInput, inventory, tenantId, session, toast, unresolvedBarcodes, activeStore?.id, locationId],
   );
 
   const submitOpname = useCallback(async () => {
@@ -655,6 +721,13 @@ const InventoryVisibility = () => {
         description: "Please select a branch first.",
         variant: "destructive",
       });
+      return;
+    }
+
+    // Check for unresolved barcodes before submitting
+    if (unresolvedBarcodes.length > 0) {
+      // Open unresolved barcodes modal
+      setIsUnresolvedOpen(true);
       return;
     }
 
@@ -677,7 +750,15 @@ const InventoryVisibility = () => {
 
       setOpnameActive(false);
       setOpnameEntries([]);
+      setUnresolvedBarcodes([]);
+      setAnomalies([]);
+      setNewItems([]);
       fetchInventory();
+      
+      // Clear session after successful commit
+      if (tenantId && locationId) {
+        clearOpnameSession(tenantId, locationId);
+      }
     } catch (err) {
       console.error(err);
       toast({
@@ -690,12 +771,60 @@ const InventoryVisibility = () => {
     }
   }, [
     opnameEntries,
+    unresolvedBarcodes,
     toast,
     tenantId,
     session,
     locationId,
     fetchInventory,
   ]);
+
+  const handleResolveUnresolvedBarcodes = useCallback(async (barcodes: string[], resolveType: "flag" | "register") => {
+    if (!tenantId || !session || !locationId) {
+      toast({
+        title: "Context Missing",
+        description: "Please select a branch first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (resolveType === "flag") {
+      // Flag as anomalies
+      setAnomalies(prev => [...prev, ...barcodes]);
+      setUnresolvedBarcodes(prev => prev.filter(b => !barcodes.includes(b)));
+      toast({
+        title: "Anomalies Flagged",
+        description: `${barcodes.length} barcodes flagged for review.`,
+      });
+    } else if (resolveType === "register") {
+      // Items are already registered via Quick Register
+      setNewItems(prev => [...prev, ...barcodes.map(b => ({ barcode: b }))]);
+      setUnresolvedBarcodes(prev => prev.filter(b => !barcodes.includes(b)));
+      toast({
+        title: "Items Registered",
+        description: `${barcodes.length} barcodes registered as anomalies.`,
+      });
+    }
+
+    // Save session state after resolution
+    saveOpnameSession({
+      cycleId: `opname-${Date.now()}`, // In real implementation, use actual cycle ID from server
+      locationId,
+      entries: opnameEntries,
+      unresolvedBarcodes: unresolvedBarcodes.filter(b => !barcodes.includes(b)),
+      anomalies: resolveType === "flag" ? [...anomalies, ...barcodes] : anomalies,
+      newItems: resolveType === "register" ? [...newItems, ...barcodes.map(b => ({ barcode: b }))] : newItems,
+      createdAt: Date.now(),
+      lastUpdated: Date.now(),
+    });
+
+    if (unresolvedBarcodes.length - barcodes.length === 0) {
+      setIsUnresolvedOpen(false);
+      // Now submit since all barcodes are resolved
+      submitOpname();
+    }
+  }, [tenantId, session, locationId, opnameEntries, unresolvedBarcodes, anomalies, newItems, toast, submitOpname]);
 
   const handleCountChange = useCallback((index: number, value: string) => {
     setOpnameEntries((prev) =>
@@ -706,6 +835,22 @@ const InventoryVisibility = () => {
       ),
     );
   }, []);
+
+  // Save session state when opname entries or unresolved barcodes change
+  useEffect(() => {
+    if (opnameActive && tenantId && locationId) {
+      saveOpnameSession({
+        cycleId: `opname-${Date.now()}`,
+        locationId,
+        entries: opnameEntries,
+        unresolvedBarcodes: unresolvedBarcodes,
+        anomalies: anomalies,
+        newItems: newItems,
+        createdAt: Date.now(),
+        lastUpdated: Date.now(),
+      });
+    }
+  }, [opnameEntries, unresolvedBarcodes, anomalies, newItems, opnameActive, tenantId, locationId]);
 
   useBarcodeScanner((barcode) => {
     if (!opnameActive && !movementType && !detailItem) {
@@ -863,6 +1008,7 @@ const InventoryVisibility = () => {
                     setNewCategoryId(item.categoryId || "");
                     setIsReclassifyOpen(true);
                   }}
+                  onComplete={(item) => setCompletionItem(item)}
                   onCategoryClick={handleCategoryClick}
                   onRowClick={(item) => setDetailItem(item)}
                 />
@@ -876,6 +1022,7 @@ const InventoryVisibility = () => {
                 storeName={selectedStore?.name}
                 opnameActive={opnameActive}
                 opnameEntries={opnameEntries}
+                unresolvedBarcodes={unresolvedBarcodes}
                 filters={opnameFilters}
                 categoryOptions={categoryOptions}
                 onFiltersChange={(patch) =>
@@ -883,11 +1030,20 @@ const InventoryVisibility = () => {
                 }
                 barcodeInput={barcodeInput}
                 onStart={startOpname}
-                onDiscard={() => setOpnameActive(false)}
+                onDiscard={() => {
+                  setOpnameActive(false);
+                  setUnresolvedBarcodes([]);
+                  setAnomalies([]);
+                  setNewItems([]);
+                  if (tenantId && locationId) {
+                    clearOpnameSession(tenantId, locationId);
+                  }
+                }}
                 onSubmit={submitOpname}
                 onBarcodeChange={setBarcodeInput}
                 onBarcodeKeyDown={handleBarcodeKeyDown}
                 onCountChange={handleCountChange}
+                onResolveUnresolvedBarcodes={handleResolveUnresolvedBarcodes}
                 isLoading={isSubmitting}
                 statusBadge={statusBadge}
               />
@@ -1021,7 +1177,7 @@ const InventoryVisibility = () => {
                         </Button>
                         <Button
                           variant="outline"
-                          className="flex-1 rounded-xl h-10 font-black italic uppercase text-[10px] tracking-widest text-destructive border-red-100 hover:bg-destructive"
+                          className="flex-1 rounded-xl h-10 font-black italic uppercase text-[10px] tracking-widest text-destructive border-destructive hover:bg-destructive"
                           disabled={isApproving}
                           onClick={async () => {
                             setIsApproving(true);
@@ -1171,6 +1327,26 @@ const InventoryVisibility = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Unresolved Barcodes Modal */}
+      <UnresolvedBarcodesModal
+        isOpen={isUnresolvedOpen}
+        onClose={() => setIsUnresolvedOpen(false)}
+        unresolvedBarcodes={unresolvedBarcodes}
+        onFlagAnomalies={(barcodes) => handleResolveUnresolvedBarcodes(barcodes, "flag")}
+        onItemsRegistered={(items) => handleResolveUnresolvedBarcodes(items.map(i => i.barcode || ""), "register")}
+        categoryOptions={categoryOptions}
+      />
+
+      {/* Anomaly Completion Dialog */}
+      <AnomalyCompletionDialog
+        item={completionItem}
+        open={!!completionItem}
+        onClose={() => setCompletionItem(null)}
+        categories={dynamicCategories}
+        onSubmit={handleCompleteAnomaly}
+        isLoading={isCompletionLoading}
+      />
 
       <Dialog open={isReclassifyOpen} onOpenChange={setIsReclassifyOpen}>
         <DialogContent>

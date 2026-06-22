@@ -38,12 +38,12 @@ const FeedItem: React.FC<FeedItemProps> = ({
       className={cn(
         "w-12 h-12 rounded-2xl flex items-center justify-center border shrink-0 transition-all duration-500 group-hover:scale-110 shadow-2xl",
         type === "FINANCE"
-          ? "bg-success/10 border-emerald-500/20 text-success"
+          ? "bg-success/10 border-success/20 text-success"
           : type === "INFRA"
             ? "bg-primary/10 border-primary text-primary"
             : type === "SECURITY"
-              ? "bg-destructive/10 border-rose-500/20 text-destructive"
-              : "bg-warning border-amber-500/20 text-warning",
+              ? "bg-destructive/10 border-destructive/20 text-destructive"
+              : "bg-warning border-warning/20 text-warning",
       )}
     >
       {type === "FINANCE" ? (
@@ -174,7 +174,7 @@ export const GlobalActivityFeed = ({
               className={cn(
                 "flex items-center gap-3 px-6 h-14 border rounded-2xl shadow-xl transition-all",
                 verifyResult 
-                  ? verifyResult.valid ? "bg-success/10 border-emerald-500/20 text-success" : "bg-destructive/10 border-rose-500/20 text-destructive"
+                  ? verifyResult.valid ? "bg-success/10 border-success/20 text-success" : "bg-destructive/10 border-destructive/20 text-destructive"
                   : "bg-secondary/40 border-border text-muted-foreground hover:bg-white/10 hover:text-foreground"
               )}
             >
@@ -187,7 +187,7 @@ export const GlobalActivityFeed = ({
                 {verifyResult ? (verifyResult.valid ? "Chain Verified" : "Drift Detected") : "Verify Chain"}
               </span>
             </button>
-            <div className="flex items-center gap-3 px-5 h-14 bg-success/10 border border-emerald-500/20 rounded-2xl shadow-xl">
+            <div className="flex items-center gap-3 px-5 h-14 bg-success/10 border border-success/20 rounded-2xl shadow-xl">
               <div className="w-2.5 h-2.5 rounded-full bg-success animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
               <span className="text-[10px] font-black italic uppercase text-success tracking-[0.2em]">
                 Live

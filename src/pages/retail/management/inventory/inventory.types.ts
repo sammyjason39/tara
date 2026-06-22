@@ -94,42 +94,6 @@ export const AUDIT_STATUS_BADGE: Record<AuditStatus, string> = {
   rejected: "bg-destructive text-destructive",
 };
 
-// ─── Mock seed data ───────────────────────────────────────────
-export const MOCK_AUDIT: AuditEntry[] = [
-  {
-    id: "a1",
-    actor: "Budi S.",
-    action: "STOCK_ADJUST",
-    detail: "SKU-001 × -5",
-    reason: "Damaged goods write-off",
-    ts: "2026-02-26 14:10",
-    status: "approved",
-  },
-  {
-    id: "a2",
-    actor: "System",
-    action: "CORE_SYNC",
-    detail: "148 SKUs",
-    reason: "Scheduled core sync",
-    ts: "2026-02-26 13:00",
-    status: "approved",
-  },
-  {
-    id: "a3",
-    actor: "Dewi K.",
-    action: "TRANSFER_OUT",
-    detail: "SKU-042 × 20",
-    reason: "Branch rebalancing",
-    ts: "2026-02-26 11:30",
-    status: "pending",
-  },
-  {
-    id: "a4",
-    actor: "Reza P.",
-    action: "RECEIVE_PO",
-    detail: "PO-8801 × 50",
-    reason: "Weekly restock",
-    ts: "2026-02-25 09:00",
-    status: "approved",
-  },
-];
+// ─── Mock seed data — REMOVED ─────────────────────────────────
+// Mock data was replaced with real backend fetches (Task 13.2).
+// Audit entries are now fetched via GET /retail/inventory/audit endpoint.

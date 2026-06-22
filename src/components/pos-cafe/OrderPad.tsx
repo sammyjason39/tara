@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { type Table, type Product, formatCurrency } from '@/lib/mock-data';
+import { type Table, type Product } from '@/lib/mock-data';
+import { formatCurrency } from '@/lib/format';
 import { Minus, Plus, X, Send, Trash2 } from 'lucide-react';
 
 interface OrderItem {

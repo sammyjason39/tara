@@ -15,6 +15,8 @@ import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { DataTableShell } from "@/core/tools/DataTableShell";
 import { FilterBar } from "@/core/tools/FilterBar";
 import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
+import { LoadingSkeleton } from "@/components/shared/AsyncState";
+import { formatDate } from "@/lib/format";
 import { useSession } from "@/core/security/session";
 import { inventoryService } from "@/core/services/inventory/inventoryService";
 import { peopleService } from "@/core/services/hr/peopleService";
@@ -164,8 +166,8 @@ export default function InventoryReceiving() {
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">Loading receiving queue...</p>
+      <div className="space-y-6">
+        <LoadingSkeleton variant="rows" count={6} label="Loading receiving queue" />
       </div>
     );
   }
@@ -247,7 +249,7 @@ export default function InventoryReceiving() {
                     </td>
                     <td className="p-3 text-muted-foreground text-xs">
                       {po.expectedDeliveryDate
-                        ? new Date(po.expectedDeliveryDate).toLocaleDateString()
+                        ? formatDate(po.expectedDeliveryDate)
                         : "—"}
                     </td>
                     <td className="p-3">
@@ -347,7 +349,7 @@ export default function InventoryReceiving() {
               ))}
             </div>
 
-            <div className="flex items-center gap-1 rounded border border-amber-200 bg-warning px-3 py-2 text-warning text-xs dark:bg-warning dark:border-amber-800 dark:text-warning">
+            <div className="flex items-center gap-1 rounded border border-warning bg-warning px-3 py-2 text-warning text-xs dark:bg-warning dark:border-warning dark:text-warning">
               <AlertTriangle className="h-3 w-3 shrink-0" />
               This will update stock levels for each line item and mark the PO as RECEIVED.
             </div>

@@ -124,7 +124,7 @@ export default function NexusCommand() {
 
         {/* Live Incident Stream */}
         <div className="grid grid-cols-12 gap-6">
-           <Card className="col-span-12 xl:col-span-8 rounded-2xl border-none shadow-2xl bg-white dark:bg-secondary/40 p-6 overflow-hidden flex flex-col group">
+           <Card className="col-span-12 xl:col-span-8 rounded-2xl border-none shadow-2xl bg-card dark:bg-secondary/40 p-6 overflow-hidden flex flex-col group">
               <div className="flex items-center justify-between mb-10">
                  <div className="space-y-2">
                     <h3 className="text-3xl font-black italic uppercase tracking-tighter flex items-center gap-4">

@@ -26,28 +26,34 @@ import {
   BarChart3
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ErrorState } from "@/components/shared/AsyncState";
+import { formatCurrency, formatNumber } from "@/lib/format";
+import { InventoryItemSummary } from "./components/InventoryItemSummary";
 
 export default function InventoryDashboard() {
   const session = useSession();
   const [metrics, setMetrics] = useState<InventoryDashboardMetrics | null>(null);
   const [alerts, setAlerts] = useState<InventoryAlert[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const refresh = useCallback(async () => {
     setLoading(true);
+    setError(false);
     try {
       const [m, a] = await Promise.all([
         inventoryService.getDashboard(session.tenant_id, session),
         inventoryService.listAlerts(session.tenant_id, session),
       ]);
       setMetrics(m);
-      setAlerts(a);
+      setAlerts(Array.isArray(a) ? a : []);
     } catch (error) {
       console.error("Failed to fetch inventory dashboard data:", error);
+      setError(true);
     } finally {
       setLoading(false);
     }
-  }, [session.tenant_id]);
+  }, [session]);
 
   useEffect(() => {
     refresh();
@@ -57,6 +63,18 @@ export default function InventoryDashboard() {
     () => (Array.isArray(alerts) ? alerts : []).filter((item) => item.status === "OPEN").slice(0, 8),
     [alerts],
   );
+
+  if (error && !metrics) {
+    return (
+      <div className="min-h-full p-8 bg-muted dark:bg-muted">
+        <ErrorState
+          title="Couldn't load inventory command"
+          description="The stock intelligence dashboard failed to load for this tenant. Check your connection and try again."
+          onRetry={refresh}
+        />
+      </div>
+    );
+  }
 
   if (loading || !metrics) {
     return (
@@ -72,7 +90,7 @@ export default function InventoryDashboard() {
   return (
     <div className="min-h-full p-8 space-y-10 bg-muted dark:bg-muted">
       {/* Tactical Header */}
-      <div className="flex items-end justify-between border-b border-slate-200 dark:border-slate-800 pb-8">
+      <div className="flex items-end justify-between border-b border-muted dark:border-muted pb-8">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-[0.3em]">
             <Layers className="h-3 w-3" /> Global Stock Control Node
@@ -89,7 +107,7 @@ export default function InventoryDashboard() {
               await inventoryService.runExpiryScan(session.tenant_id, session);
               refresh();
             }}
-            className="rounded-xl border-slate-200 dark:border-slate-800 hover:bg-muted dark:hover:bg-muted text-[10px] font-black uppercase tracking-widest px-6"
+            className="rounded-xl border-muted dark:border-muted hover:bg-muted dark:hover:bg-muted text-[10px] font-black uppercase tracking-widest px-6"
           >
             Expiry Scan
           </Button>
@@ -98,7 +116,7 @@ export default function InventoryDashboard() {
               await inventoryService.runLowStockScan(session.tenant_id, session);
               refresh();
             }}
-            className="rounded-xl bg-primary hover:bg-primary text-white shadow-lg shadow-blue-600/20 gap-2 text-[10px] font-black uppercase tracking-widest px-6"
+            className="rounded-xl bg-primary hover:bg-primary text-white shadow-lg shadow-primary/20 gap-2 text-[10px] font-black uppercase tracking-widest px-6"
           >
             <RefreshCcw className={cn("h-4 w-4", loading && "animate-spin")} />
             Sync Pulse
@@ -110,14 +128,14 @@ export default function InventoryDashboard() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
         {[
           { label: "Master Items", value: metrics.total_items, color: "blue", icon: Box },
-          { label: "On-Hand Qty", value: (metrics.total_on_hand_qty || 0).toLocaleString(), color: "emerald", icon: Package },
-          { label: "Stock Valuation", value: `Rp ${(metrics.total_valuation || 0).toLocaleString()}`, color: "indigo", icon: BarChart3 },
+          { label: "On-Hand Qty", value: formatNumber(metrics.total_on_hand_qty || 0), color: "emerald", icon: Package },
+          { label: "Stock Valuation", value: formatCurrency(metrics.total_valuation || 0, "IDR", "id-ID"), color: "indigo", icon: BarChart3 },
           { label: "Pending Adj", value: metrics.pending_adjustments, color: "rose", icon: Activity },
           { label: "Pending Syncs", value: metrics.pending_receipt_syncs, color: "amber", icon: RefreshCcw },
         ].map((stat, i) => {
           const Icon = stat.icon;
           return (
-            <div key={i} className="group relative p-6 rounded-[2rem] bg-white dark:bg-muted border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+            <div key={i} className="group relative p-6 rounded-[2rem] bg-white dark:bg-muted border border-muted dark:border-muted shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
               <div className="relative z-10 space-y-4">
                 <div className={cn(
                   "h-10 w-10 rounded-xl flex items-center justify-center transition-all duration-500 group-hover:rotate-12",
@@ -152,17 +170,17 @@ export default function InventoryDashboard() {
           
           <div className="grid gap-4">
             {openAlerts.length === 0 ? (
-              <div className="p-12 rounded-[2.5rem] border border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center gap-4">
+              <div className="p-12 rounded-[2.5rem] border border-dashed border-muted dark:border-muted flex flex-col items-center gap-4">
                  <CheckCircle2 className="h-8 w-8 text-success" />
                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Stock Posture Stable. No Open Incidents.</p>
               </div>
             ) : (
               (Array.isArray(openAlerts) ? openAlerts : []).map((alert) => (
-                <div key={alert.id} className="group flex items-center justify-between p-6 rounded-3xl bg-white dark:bg-muted border border-slate-100 dark:border-slate-800 hover:border-rose-500/30 hover:shadow-xl transition-all duration-500">
+                <div key={alert.id} className="group flex items-center justify-between p-6 rounded-3xl bg-white dark:bg-muted border border-muted dark:border-muted hover:border-destructive/30 hover:shadow-xl transition-all duration-500">
                   <div className="flex items-center gap-6">
                     <div className={cn(
                       "h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-500",
-                      alert.severity === 'HIGH' ? "bg-destructive text-white shadow-lg shadow-rose-500/20" : "bg-muted dark:bg-muted text-muted-foreground"
+                      alert.severity === 'HIGH' ? "bg-destructive text-white shadow-lg shadow-destructive/20" : "bg-muted dark:bg-muted text-muted-foreground"
                     )}>
                       <ShieldAlert className="h-5 w-5" />
                     </div>
@@ -189,7 +207,7 @@ export default function InventoryDashboard() {
              </h3>
           </div>
 
-          <div className="p-8 rounded-[2.5rem] bg-muted text-white relative overflow-hidden group shadow-2xl shadow-slate-900/20">
+          <div className="p-8 rounded-[2.5rem] bg-muted text-white relative overflow-hidden group shadow-2xl shadow-muted/20">
              <div className="absolute top-0 right-0 h-40 w-40 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl group-hover:scale-150 transition-transform duration-1000" />
              <div className="relative z-10 space-y-6">
                 <div className="space-y-2">
@@ -214,7 +232,7 @@ export default function InventoryDashboard() {
                    ))}
                 </div>
 
-                <Button className="w-full bg-primary hover:bg-primary text-white border-none text-[9px] font-black uppercase tracking-widest py-6 rounded-2xl shadow-xl shadow-blue-600/20">
+                <Button className="w-full bg-primary hover:bg-primary text-white border-none text-[9px] font-black uppercase tracking-widest py-6 rounded-2xl shadow-xl shadow-primary/20">
                    View Logistics Map
                 </Button>
              </div>
@@ -222,7 +240,7 @@ export default function InventoryDashboard() {
 
           {/* Module Contributions */}
           {metrics.module_contributions?.retail && (
-             <div className="p-6 rounded-3xl bg-success border border-emerald-500/20 space-y-4">
+             <div className="p-6 rounded-3xl bg-success border border-success/20 space-y-4">
                 <div className="flex items-center gap-3 text-success">
                    <Zap className="h-5 w-5" />
                    <span className="text-xs font-black uppercase tracking-widest">Retail Contribution</span>
@@ -239,6 +257,15 @@ export default function InventoryDashboard() {
                 </div>
              </div>
           )}
+
+          {/* Inventory Item Summary — replaces stub element (Requirement 7.6) */}
+          <div className="p-6 rounded-3xl bg-white dark:bg-muted border border-muted dark:border-muted space-y-4">
+            <div className="flex items-center gap-3">
+              <Package className="h-5 w-5 text-primary" />
+              <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Top Items</span>
+            </div>
+            <InventoryItemSummary limit={5} />
+          </div>
         </div>
       </div>
     </div>

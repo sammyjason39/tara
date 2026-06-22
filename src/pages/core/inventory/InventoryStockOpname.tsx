@@ -24,6 +24,12 @@ import { useNavigate } from "react-router-dom";
 import { UnresolvedBarcodesModal } from "@/components/shared/UnresolvedBarcodesModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { StockOpnameSummaryModal } from "@/components/shared/StockOpnameSummaryModal";
+import { 
+  saveOpnameSession, 
+  loadOpnameSession, 
+  clearOpnameSession,
+  OpnameSession 
+} from "@/lib/opname-session";
 
 
 interface OpnameEntry {
@@ -53,6 +59,20 @@ export default function InventoryStockOpname() {
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Load session on mount if exists
+  useEffect(() => {
+    if (session.tenant_id && selectedLocation) {
+      const savedSession = loadOpnameSession(session.tenant_id, selectedLocation);
+      if (savedSession) {
+        setActiveCycleId(savedSession.cycleId);
+        setHistory(savedSession.entries);
+        setUnresolvedBarcodes(savedSession.unresolvedBarcodes);
+        setAnomalies(savedSession.anomalies);
+        setNewItems(savedSession.newItems);
+      }
+    }
+  }, [session.tenant_id, selectedLocation]);
 
 
   // Fetch locations on mount
@@ -189,6 +209,28 @@ export default function InventoryStockOpname() {
           title: "Unregistered Barcode Added",
           description: `Barcode: ${barcode} added to count list.`,
         });
+        
+        // Save session state after scan
+        if (session.tenant_id && selectedLocation && activeCycleId) {
+          saveOpnameSession({
+            cycleId: activeCycleId,
+            locationId: selectedLocation,
+            entries: [...history, {
+              id: "unregistered",
+              sku: barcode,
+              name: `[Unregistered] Barcode: ${barcode}`,
+              systemCount: 0,
+              actualCount: 1,
+              timestamp: new Date().toLocaleTimeString(),
+            }],
+            unresolvedBarcodes: [...unresolvedBarcodes, barcode],
+            anomalies: [...anomalies],
+            newItems: [...newItems],
+            createdAt: Date.now(),
+            lastUpdated: Date.now(),
+            tenantId: session.tenant_id
+          });
+        }
         return;
       }
 
@@ -217,10 +259,32 @@ export default function InventoryStockOpname() {
       });
 
       toast({ title: "Count Updated", description: `${item.name} recorded.` });
+      
+      // Save session state after scan
+      if (session.tenant_id && selectedLocation && activeCycleId) {
+        saveOpnameSession({
+          cycleId: activeCycleId,
+          locationId: selectedLocation,
+          entries: [...history, {
+            id: item.id,
+            sku: item.sku,
+            name: item.name,
+            systemCount: 0,
+            actualCount: 1,
+            timestamp: new Date().toLocaleTimeString(),
+          }],
+          unresolvedBarcodes: [...unresolvedBarcodes],
+          anomalies: [...anomalies],
+          newItems: [...newItems],
+          createdAt: Date.now(),
+          lastUpdated: Date.now(),
+          tenantId: session.tenant_id
+        });
+      }
     } catch (err) {
       console.error("Scan processing failed", err);
     }
-  }, [session, unresolvedBarcodes, anomalies]);
+  }, [session, unresolvedBarcodes, anomalies, history, selectedLocation, activeCycleId, newItems]);
 
   const handleManualScan = (e: React.FormEvent) => {
     e.preventDefault();
@@ -228,6 +292,30 @@ export default function InventoryStockOpname() {
     processScan(scanInput);
     setScanInput("");
     inputRef.current?.focus();
+  };
+
+  // Save session state when removing from history
+  const handleRemoveEntry = (index: number) => {
+    setHistory(prev => {
+      const newHistory = prev.filter((_, i) => i !== index);
+      
+      // Save session state after removal
+      if (session.tenant_id && selectedLocation && activeCycleId) {
+        saveOpnameSession({
+          cycleId: activeCycleId,
+          locationId: selectedLocation,
+          entries: newHistory,
+          unresolvedBarcodes: [...unresolvedBarcodes],
+          anomalies: [...anomalies],
+          newItems: [...newItems],
+          createdAt: Date.now(),
+          lastUpdated: Date.now(),
+          tenantId: session.tenant_id
+        });
+      }
+      
+      return newHistory;
+    });
   };
 
   const startAudit = async () => {
@@ -279,6 +367,11 @@ export default function InventoryStockOpname() {
       setNewItems([]);
       setUnresolvedBarcodes([]);
       setActiveCycleId(null);
+      
+      // Clear session after successful commit
+      if (session.tenant_id && selectedLocation) {
+        clearOpnameSession(session.tenant_id, selectedLocation);
+      }
     } catch (err) {
       console.error("Final commit failed", err);
       throw err;
@@ -292,6 +385,21 @@ export default function InventoryStockOpname() {
     setUnresolvedBarcodes(prev => prev.filter(b => !barcodes.includes(b)));
     toast({ title: "Anomalies Flagged", description: `${barcodes.length} barcodes flagged for review.` });
     
+    // Save session state after flagging anomalies
+    if (session.tenant_id && selectedLocation && activeCycleId) {
+      saveOpnameSession({
+        cycleId: activeCycleId,
+        locationId: selectedLocation,
+        entries: [...history],
+        unresolvedBarcodes: unresolvedBarcodes.filter(b => !barcodes.includes(b)),
+        anomalies: [...anomalies, ...barcodes],
+        newItems: [...newItems],
+        createdAt: Date.now(),
+        lastUpdated: Date.now(),
+        tenantId: session.tenant_id
+      });
+    }
+    
     if (unresolvedBarcodes.length - barcodes.length === 0) {
       setIsUnresolvedOpen(false);
       setIsSummaryOpen(true);
@@ -302,6 +410,21 @@ export default function InventoryStockOpname() {
     const barcodes = createdItems.map(item => item.barcode);
     setNewItems(prev => [...prev, ...createdItems]);
     setUnresolvedBarcodes(prev => prev.filter(b => !barcodes.includes(b)));
+    
+    // Save session state after registering items
+    if (session.tenant_id && selectedLocation && activeCycleId) {
+      saveOpnameSession({
+        cycleId: activeCycleId,
+        locationId: selectedLocation,
+        entries: [...history],
+        unresolvedBarcodes: unresolvedBarcodes.filter(b => !barcodes.includes(b)),
+        anomalies: [...anomalies],
+        newItems: [...newItems, ...createdItems],
+        createdAt: Date.now(),
+        lastUpdated: Date.now(),
+        tenantId: session.tenant_id
+      });
+    }
     
     if (unresolvedBarcodes.length - barcodes.length === 0) {
       setIsUnresolvedOpen(false);
@@ -343,7 +466,7 @@ export default function InventoryStockOpname() {
 
               <div className="space-y-4 max-w-sm mx-auto">
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                  <SelectTrigger className="h-16 rounded-2xl bg-background border-2 border-slate-200 font-black italic text-sm">
+                  <SelectTrigger className="h-16 rounded-2xl bg-background border-2 border-muted font-black italic text-sm">
                     <SelectValue placeholder="Select Target Location..." />
                   </SelectTrigger>
                   <SelectContent className="rounded-2xl border-none shadow-2xl">
@@ -387,7 +510,7 @@ export default function InventoryStockOpname() {
                     />
                   </div>
 
-                  <div className="flex items-center gap-4 px-6 py-3 bg-success rounded-full border border-emerald-500/20">
+                  <div className="flex items-center gap-4 px-6 py-3 bg-success rounded-full border border-success/20">
                     <div className="w-2 h-2 rounded-full bg-success animate-ping" />
                     <span className="text-[10px] font-black italic uppercase tracking-widest text-success">Scanner Engine: Active & Calibrated</span>
                   </div>
@@ -396,7 +519,7 @@ export default function InventoryStockOpname() {
             </Card>
 
             <Card className="flex-1 bg-white/70 dark:bg-muted backdrop-blur-2xl border-none shadow-2xl rounded-[2.5rem] overflow-hidden flex flex-col">
-              <CardHeader className="p-8 border-b border-slate-100 dark:border-slate-800">
+              <CardHeader className="p-8 border-b border-muted dark:border-muted">
                 <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground flex items-center justify-between italic">
                   Live Audit Stream
                   <Badge variant="outline" className="rounded-lg border-primary/20 text-primary font-black italic">{history.length} Unique SKUs</Badge>
@@ -412,7 +535,7 @@ export default function InventoryStockOpname() {
                   ) : (
                     <div className="space-y-4">
                       {history.map((entry, idx) => (
-                        <div key={idx} className="p-6 bg-muted dark:bg-muted rounded-3xl border border-slate-200/50 dark:border-slate-700/50 flex items-center justify-between group hover:bg-primary/[0.02] transition-all">
+                        <div key={idx} className="p-6 bg-muted dark:bg-muted rounded-3xl border border-muted/50 dark:border-muted/50 flex items-center justify-between group hover:bg-primary/[0.02] transition-all">
                           <div className="flex gap-4">
                             <div className="w-12 h-12 rounded-2xl bg-white dark:bg-muted shadow-sm flex items-center justify-center">
                               <Box className="w-6 h-6 text-muted-foreground" />
@@ -431,7 +554,7 @@ export default function InventoryStockOpname() {
                               variant="ghost" 
                               size="icon" 
                               className="h-10 w-10 rounded-xl hover:bg-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
-                              onClick={() => setHistory(prev => prev.filter((_, i) => i !== idx))}
+                              onClick={() => handleRemoveEntry(idx)}
                              >
                                <Trash2 className="w-4 h-4" />
                              </Button>
@@ -495,6 +618,14 @@ export default function InventoryStockOpname() {
                       if (confirm("Abort current audit session? Data will not be saved.")) {
                         setActiveCycleId(null);
                         setHistory([]);
+                        setAnomalies([]);
+                        setNewItems([]);
+                        setUnresolvedBarcodes([]);
+                        
+                        // Clear session on abort
+                        if (session.tenant_id && selectedLocation) {
+                          clearOpnameSession(session.tenant_id, selectedLocation);
+                        }
                       }
                     }}
                     disabled={isSubmitting}

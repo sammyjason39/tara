@@ -1,13 +1,12 @@
+import { formatCurrency as formatCurrencyCanonical } from "@/lib/format";
+
+// Thin wrapper delegating to the canonical formatter. Preserves the legacy
+// IDR / id-ID defaults so existing imports render unchanged.
+// Prefer importing from `@/lib/format` and passing currency/locale explicitly.
 export const formatCurrency = (
   amount: number,
   currency: string = "IDR",
-): string => {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency,
-    minimumFractionDigits: 0,
-  }).format(amount);
-};
+): string => formatCurrencyCanonical(amount, currency, "id-ID");
 
 export const parseCurrency = (value: string): number => {
   const numeric = value.replace(/[^0-9.-]+/g, "");

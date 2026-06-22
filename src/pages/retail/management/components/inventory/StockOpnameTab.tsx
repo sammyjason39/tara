@@ -7,11 +7,17 @@ import { OpnameSessionHeader } from "./opname/OpnameSessionHeader";
 import { OpnameFilters } from "./opname/OpnameFilters";
 import { OpnameTable, type OpnameEntry } from "./opname/OpnameTable";
 import { InventoryFilters } from "./types";
+import { UnresolvedBarcodesModal } from "@/components/shared/UnresolvedBarcodesModal";
+
+interface OpnameEntryWithUnresolved extends OpnameEntry {
+  barcode?: string;
+}
 
 type Props = {
   storeName?: string;
   opnameActive: boolean;
   opnameEntries: OpnameEntry[];
+  unresolvedBarcodes: string[];
   filters: InventoryFilters;
   categoryOptions: { id: string; name: string }[];
   onFiltersChange: (patch: Partial<InventoryFilters>) => void;
@@ -22,6 +28,7 @@ type Props = {
   onBarcodeChange: (val: string) => void;
   onBarcodeKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   onCountChange: (index: number, value: string) => void;
+  onResolveUnresolvedBarcodes: (barcodes: string[], resolveType: "flag" | "register") => void;
   isLoading?: boolean;
   statusBadge: (status: string) => string;
 };
@@ -30,6 +37,7 @@ export const StockOpnameTab: React.FC<Props> = ({
   storeName,
   opnameActive,
   opnameEntries,
+  unresolvedBarcodes,
   filters,
   categoryOptions,
   onFiltersChange,
@@ -40,6 +48,7 @@ export const StockOpnameTab: React.FC<Props> = ({
   onBarcodeChange,
   onBarcodeKeyDown,
   onCountChange,
+  onResolveUnresolvedBarcodes,
   isLoading = false,
   statusBadge,
 }) => {
@@ -74,6 +83,16 @@ export const StockOpnameTab: React.FC<Props> = ({
       return matchesSearch && matchesCategory && matchesStatus;
     });
   }, [opnameEntries, filters]);
+
+  // Handle submit with unresolved barcodes check
+  const handleSubmitWithUnresolvedCheck = () => {
+    if (unresolvedBarcodes.length > 0) {
+      // Show unresolved modal instead of submitting
+      onResolveUnresolvedBarcodes(unresolvedBarcodes, "flag");
+    } else {
+      onSubmit();
+    }
+  };
 
   if (!opnameActive) {
     return (
@@ -139,7 +158,7 @@ export const StockOpnameTab: React.FC<Props> = ({
       <OpnameSessionHeader
         storeName={storeName}
         onDiscard={onDiscard}
-        onSubmit={onSubmit}
+        onSubmit={handleSubmitWithUnresolvedCheck}
       />
 
       <OpnameFilters
@@ -166,6 +185,16 @@ export const StockOpnameTab: React.FC<Props> = ({
           }
         }}
         statusBadge={statusBadge}
+      />
+
+      {/* Unresolved Barcodes Modal */}
+      <UnresolvedBarcodesModal
+        isOpen={false}
+        onClose={() => {}}
+        unresolvedBarcodes={unresolvedBarcodes}
+        onFlagAnomalies={(barcodes) => onResolveUnresolvedBarcodes(barcodes, "flag")}
+        onItemsRegistered={(items) => onResolveUnresolvedBarcodes(items.map(i => i.barcode || ""), "register")}
+        categoryOptions={categoryOptions}
       />
     </div>
   );

@@ -14,6 +14,8 @@ import { TenantInterceptor } from "../../gateway/tenant.interceptor";
 import { TenantGuard } from "../guards/tenant.guard";
 import { Request } from "express";
 import { TenantContext } from "../../gateway/tenant-context.interface";
+import { PaginationPipe, PaginationParams } from "../pipes/pagination.pipe";
+import { CacheInterceptor, CacheTTL, CacheInvalidationHelper } from "../cache";
 
 interface RequestWithTenant extends Request {
   tenantContext: TenantContext;
@@ -23,7 +25,10 @@ interface RequestWithTenant extends Request {
 // @UseInterceptors(TenantInterceptor)
 // @UseGuards(TenantGuard)
 export class WorkflowController {
-  constructor(private readonly workflowService: WorkflowService) {
+  constructor(
+    private readonly workflowService: WorkflowService,
+    private readonly cacheHelper: CacheInvalidationHelper,
+  ) {
     console.log("WorkflowController initialized with path: zenvix-workflow");
   }
 
@@ -34,9 +39,14 @@ export class WorkflowController {
   }
 
   @Get("list")
-  async listRequests(@Req() request: RequestWithTenant) {
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
+  async listRequests(
+    @Req() request: RequestWithTenant,
+    @Query(PaginationPipe) pagination: PaginationParams,
+  ) {
     const { tenant_id } = request.tenantContext;
-    return this.workflowService.listAll(tenant_id);
+    return this.workflowService.listAll(tenant_id, pagination);
   }
 
   @Post("request")
@@ -53,20 +63,25 @@ export class WorkflowController {
     },
   ) {
     const { tenant_id, user_id } = request.tenantContext;
-    return this.workflowService.createRequest({
+    const result = await this.workflowService.createRequest({
       tenant_id,
       ...body,
       requested_by: user_id || "system",
     });
+    await this.cacheHelper.invalidateAll();
+    return result;
   }
 
   @Get("inbox")
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   async getInbox(
     @Req() request: RequestWithTenant,
     @Query("dept") dept: string,
+    @Query(PaginationPipe) pagination: PaginationParams,
   ) {
     const { tenant_id } = request.tenantContext;
-    return this.workflowService.listInbox(tenant_id, dept);
+    return this.workflowService.listInbox(tenant_id, dept, pagination);
   }
 
   @Post(":id/approve")
@@ -76,7 +91,9 @@ export class WorkflowController {
     @Body("notes") notes?: string,
   ) {
     const { tenant_id, user_id } = request.tenantContext;
-    return this.workflowService.approveRequest(tenant_id, id, user_id || "system", notes);
+    const result = await this.workflowService.approveRequest(tenant_id, id, user_id || "system", notes);
+    await this.cacheHelper.invalidateAll();
+    return result;
   }
 
   @Post(":id/reject")
@@ -86,6 +103,8 @@ export class WorkflowController {
     @Body("notes") notes?: string,
   ) {
     const { tenant_id, user_id } = request.tenantContext;
-    return this.workflowService.rejectRequest(tenant_id, id, user_id || "system", notes);
+    const result = await this.workflowService.rejectRequest(tenant_id, id, user_id || "system", notes);
+    await this.cacheHelper.invalidateAll();
+    return result;
   }
 }

@@ -61,8 +61,11 @@ import {
 import { useSession } from "@/core/security/session";
 import { marketingService } from "@/core/services/marketing/marketingService";
 import type { CampaignExecutionRun, MarketingCampaign } from "@/core/types/marketing/marketing";
+import { formatCurrency, formatDateTime } from "@/lib/format";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { ScheduleExecutionModal } from "./modals/ScheduleExecutionModal";
 
 const CHANNELS: CampaignExecutionRun["channel"][] = [
   "META_ADS",
@@ -140,7 +143,7 @@ export default function ExecutionDesk() {
       });
       setRunOpen(false);
       toast.success("Strategic Run Initialized", {
-        description: `${channel} protocol scheduled for ${new Date(scheduledAt).toLocaleString()}.`
+        description: `${channel} protocol scheduled for ${formatDateTime(scheduledAt)}.`
       });
       refresh(true);
     } catch (err) {
@@ -188,7 +191,7 @@ export default function ExecutionDesk() {
                Engine V4.2 Online
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent text-left italic">Execution Desk</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground text-left italic">Execution Desk</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic text-left">"Orchestrate multi-channel campaign dispatch with total operational command."</p>
         </div>
         
@@ -219,7 +222,7 @@ export default function ExecutionDesk() {
           </Button>
           <Button 
             variant="outline"
-            className="h-[4.5rem] px-10 rounded-[2rem] border-slate-200 dark:border-slate-800 bg-white dark:bg-muted shadow-2xl font-black text-sm gap-3 group transition-all hover:scale-105 active:scale-95"
+            className="h-[4.5rem] px-10 rounded-[2rem] border-border dark:border-border bg-white dark:bg-muted shadow-2xl font-black text-sm gap-3 group transition-all hover:scale-105 active:scale-95"
             onClick={() => setRunOpen(true)}
           >
             <Plus className="h-6 w-6 group-hover:rotate-90 transition-transform duration-500" /> 
@@ -236,7 +239,7 @@ export default function ExecutionDesk() {
            { name: 'Email API', status: 'Warning', color: 'text-warning', icon: Radio },
            { name: 'WhatsApp', status: 'Healthy', color: 'text-success', icon: Activity }
          ].map(ch => (
-           <Card key={ch.name} className="rounded-[2rem] border-none shadow-xl bg-white/40 dark:bg-muted backdrop-blur-md group hover:shadow-2xl transition-all">
+           <Card key={ch.name} className="rounded-[2rem] border-none shadow-xl glass-card group hover:shadow-2xl transition-all">
               <CardContent className="p-6 flex items-center gap-4">
                  <div className="h-12 w-12 rounded-2xl bg-white dark:bg-muted flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                     <ch.icon className="h-6 w-6 text-primary" />
@@ -256,8 +259,8 @@ export default function ExecutionDesk() {
       <div className="grid grid-cols-12 gap-10 flex-1 min-h-0">
          {/* Left: Execution Matrix */}
          <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
-            <Card className="flex-1 rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden flex flex-col">
-               <CardHeader className="p-10 pb-6 border-b border-white/10 dark:border-slate-800/10 flex flex-row items-center justify-between">
+            <Card className="flex-1 rounded-[3rem] border-none shadow-2xl glass-card overflow-hidden flex flex-col">
+               <CardHeader className="p-10 pb-6 border-b border-white/10 dark:border-border/10 flex flex-row items-center justify-between">
                   <div className="space-y-1">
                      <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-3 uppercase italic">
                         <Layers className="h-6 w-6 text-primary" />
@@ -265,7 +268,7 @@ export default function ExecutionDesk() {
                      </CardTitle>
                      <CardDescription className="text-xs font-medium italic italic">Monitor scheduled and past execution performance across the grid.</CardDescription>
                   </div>
-                  <Badge variant="outline" className="rounded-full font-black text-[9px] px-3 py-1 border-slate-200 dark:border-slate-800 uppercase tracking-widest text-muted-foreground">LIVE FEED</Badge>
+                  <Badge variant="outline" className="rounded-full font-black text-[9px] px-3 py-1 border-border dark:border-border uppercase tracking-widest text-muted-foreground">LIVE FEED</Badge>
                </CardHeader>
                <ScrollArea className="flex-1">
                   <div className="p-0">
@@ -282,7 +285,7 @@ export default function ExecutionDesk() {
                        </thead>
                        <tbody>
                           {(Array.isArray(filtered) ? filtered : []).map((run) => (
-                            <tr key={run.id} className="border-t border-white/10 dark:border-slate-800/10 group hover:bg-primary transition-all">
+                            <tr key={run.id} className="border-t border-white/10 dark:border-border/10 group hover:bg-primary transition-all">
                                <td className="p-8">
                                   <div className="flex items-center gap-4">
                                      <div className="h-12 w-12 rounded-xl bg-primary text-primary flex items-center justify-center shadow-sm">
@@ -306,14 +309,14 @@ export default function ExecutionDesk() {
                                <td className="p-8">
                                   <div className="flex items-center gap-3 text-xs font-bold text-muted-foreground italic">
                                      <Clock className="h-4 w-4 text-primary" />
-                                     {new Date(run.scheduledAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                                     {formatDateTime(run.scheduledAt, "short", "short")}
                                   </div>
                                </td>
                                <td className="p-8">
                                   <div className="space-y-3 min-w-[120px]">
                                      <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
                                         <span className="text-muted-foreground italic">{run.leadsGenerated} Leads</span>
-                                        <span className="text-success italic">${run.spend.toLocaleString()}</span>
+                                        <span className="text-success italic">{formatCurrency(run.spend)}</span>
                                      </div>
                                      <div className="h-1.5 w-full bg-muted dark:bg-muted rounded-full overflow-hidden shadow-inner">
                                         <Progress value={Math.min(100, (run.leadsGenerated / 50) * 100)} className="h-full bg-primary transition-all duration-1000" />
@@ -347,6 +350,13 @@ export default function ExecutionDesk() {
                           ))}
                        </tbody>
                     </table>
+                    {(Array.isArray(filtered) ? filtered : []).length === 0 && (
+                      <EmptyState
+                        title="No execution runs"
+                        description="No scheduled or past dispatch runs match the current view in this tenant scope."
+                        icon={Rocket}
+                      />
+                    )}
                   </div>
                </ScrollArea>
             </Card>
@@ -411,73 +421,13 @@ export default function ExecutionDesk() {
          </div>
       </div>
 
-      {/* Initialize Run Wizard */}
-      <Dialog open={runOpen} onOpenChange={setRunOpen}>
-        <DialogContent className="sm:max-w-[500px] rounded-[3rem] border-none bg-white dark:bg-muted p-0 overflow-hidden shadow-2xl">
-          <div className="h-2 bg-primary" />
-          <div className="p-12 space-y-10">
-            <DialogHeader>
-              <div className="flex items-center gap-3 mb-2">
-                 <Badge className="bg-primary text-white font-black text-[10px] uppercase tracking-widest">Protocol Delta</Badge>
-                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Run Initialization</p>
-              </div>
-              <DialogTitle className="text-4xl font-black tracking-tighter uppercase italic">Initialize Run</DialogTitle>
-              <DialogDescription className="text-base font-medium italic italic">Define the tactical parameters for your next strategic campaign dispatch.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-8">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Strategic Campaign</Label>
-                <Select value={campaignId} onValueChange={setCampaignId}>
-                  <SelectTrigger className="h-16 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-lg">
-                    <SelectValue placeholder="Target Protocol" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-none shadow-2xl p-2">
-                    {(Array.isArray(campaigns) ? campaigns : []).map(c => (
-                      <SelectItem key={c.id} value={c.id} className="rounded-xl py-3 font-bold uppercase tracking-widest text-xs">
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Dispatch Channel</Label>
-                <Select value={channel} onValueChange={(v: any) => setChannel(v)}>
-                  <SelectTrigger className="h-16 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-lg">
-                    <SelectValue placeholder="Channel Gate" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-none shadow-2xl p-2">
-                    {(Array.isArray(CHANNELS) ? CHANNELS : []).map(ch => (
-                      <SelectItem key={ch} value={ch} className="rounded-xl py-3 font-bold uppercase tracking-widest text-xs">
-                        {ch.replace('_', ' ')}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Dispatch Time</Label>
-                <Input 
-                   type="datetime-local" 
-                   value={scheduledAt} 
-                   onChange={e => setScheduledAt(e.target.value)} 
-                   className="h-16 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-lg text-primary"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button 
-                 className="w-full h-16 rounded-2xl bg-primary hover:bg-primary font-black text-xs uppercase tracking-widest shadow-2xl shadow-indigo-500/30 gap-3"
-                 onClick={handleInitializeRun}
-                 disabled={refreshing}
-              >
-                {refreshing ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Rocket className="h-5 w-5" />}
-                EXECUTE INITIALIZATION
-              </Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Schedule Execution Modal */}
+      <ScheduleExecutionModal
+        isOpen={runOpen}
+        onClose={() => setRunOpen(false)}
+        campaigns={campaigns.map(c => ({ id: c.id, name: c.name }))}
+        onSuccess={() => refresh(true)}
+      />
     </div>
   );
 }

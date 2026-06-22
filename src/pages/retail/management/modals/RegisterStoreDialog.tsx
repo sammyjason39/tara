@@ -193,7 +193,7 @@ export const RegisterStoreDialog: React.FC<RegisterStoreDialogProps> = ({
                   type="text"
                   name="name"
                   required
-                  className="flex h-12 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex h-12 w-full rounded-xl border border-border bg-white px-3 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g. Jakarta South Plaza"
                   autoFocus
                 />
@@ -206,7 +206,7 @@ export const RegisterStoreDialog: React.FC<RegisterStoreDialogProps> = ({
                   type="text"
                   name="code"
                   required
-                  className="flex h-12 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex h-12 w-full rounded-xl border border-border bg-white px-3 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g. JK-002"
                 />
               </div>
@@ -217,7 +217,7 @@ export const RegisterStoreDialog: React.FC<RegisterStoreDialogProps> = ({
                 <select
                   name="type"
                   defaultValue="flagship"
-                  className="w-full h-12 rounded-xl border border-slate-200 px-3 font-bold italic text-sm bg-white"
+                  className="w-full h-12 rounded-xl border border-border px-3 font-bold italic text-sm bg-white"
                 >
                   <option value="flagship">Flagship</option>
                   <option value="express">Express</option>
@@ -235,7 +235,7 @@ export const RegisterStoreDialog: React.FC<RegisterStoreDialogProps> = ({
                   <input
                     type="tel"
                     name="phone"
-                    className="flex h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex h-12 w-full rounded-xl border border-border bg-white pl-10 pr-3 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="+62 21..."
                   />
                 </div>
@@ -249,7 +249,7 @@ export const RegisterStoreDialog: React.FC<RegisterStoreDialogProps> = ({
                   <input
                     type="email"
                     name="email"
-                    className="flex h-12 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex h-12 w-full rounded-xl border border-border bg-white pl-10 pr-3 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="branch@company.com"
                   />
                 </div>
@@ -266,7 +266,7 @@ export const RegisterStoreDialog: React.FC<RegisterStoreDialogProps> = ({
                   required
                   value={selectedLocationId}
                   onChange={(e) => setSelectedLocationId(e.target.value)}
-                  className="w-full h-12 rounded-xl border border-slate-200 px-3 font-bold italic text-sm bg-white"
+                  className="w-full h-12 rounded-xl border border-border px-3 font-bold italic text-sm bg-white"
                 >
                   <option value="" disabled>
                     Select HR Location...
@@ -317,7 +317,7 @@ export const RegisterStoreDialog: React.FC<RegisterStoreDialogProps> = ({
                   }
                   onChange={(e) => setManualAddress(e.target.value)}
                   disabled={useOfficeAddress}
-                  className="flex min-h-[80px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="flex min-h-[80px] w-full rounded-xl border border-border bg-white px-3 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                   placeholder="Street, City, Building..."
                 />
               </div>
@@ -338,7 +338,7 @@ export const RegisterStoreDialog: React.FC<RegisterStoreDialogProps> = ({
                       step="any"
                       name="latitude"
                       placeholder="0.0000"
-                      className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-2 font-bold text-xs"
+                      className="flex h-10 w-full rounded-lg border border-border bg-white px-2 font-bold text-xs"
                     />
                   </div>
                   <div className="space-y-1">
@@ -348,7 +348,7 @@ export const RegisterStoreDialog: React.FC<RegisterStoreDialogProps> = ({
                       step="any"
                       name="longitude"
                       placeholder="0.0000"
-                      className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-2 font-bold text-xs"
+                      className="flex h-10 w-full rounded-lg border border-border bg-white px-2 font-bold text-xs"
                     />
                   </div>
                 </div>
@@ -374,7 +374,7 @@ export const RegisterStoreDialog: React.FC<RegisterStoreDialogProps> = ({
                 <select
                   value={selectedCountryCode}
                   onChange={(e) => setSelectedCountryCode(e.target.value)}
-                  className="w-full h-12 rounded-xl border border-slate-200 px-3 font-bold italic text-sm bg-white"
+                  className="w-full h-12 rounded-xl border border-border px-3 font-bold italic text-sm bg-white"
                 >
                   <option value="">Inherit from Head Office</option>
                   {(Array.isArray(COUNTRIES) ? COUNTRIES : []).map((c) => (
@@ -405,7 +405,7 @@ export const RegisterStoreDialog: React.FC<RegisterStoreDialogProps> = ({
                 </Label>
                 <select
                   name="managerId"
-                  className="w-full h-12 rounded-xl border border-slate-200 px-3 font-bold italic text-sm bg-white"
+                  className="w-full h-12 rounded-xl border border-border px-3 font-bold italic text-sm bg-white"
                 >
                   <option value="">(None assigned)</option>
                   {(Array.isArray(managers) ? managers : []).map((m) => (
@@ -422,7 +422,7 @@ export const RegisterStoreDialog: React.FC<RegisterStoreDialogProps> = ({
                 </Label>
                 <select
                   name="inventoryPoolId"
-                  className="w-full h-12 rounded-xl border border-slate-200 px-3 font-bold italic text-sm bg-white"
+                  className="w-full h-12 rounded-xl border border-border px-3 font-bold italic text-sm bg-white"
                 >
                   <option value="">Private (Self-managed)</option>
                   {(Array.isArray(pools) ? pools : []).map((p) => (

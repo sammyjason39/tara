@@ -1057,6 +1057,43 @@ export const retailService = {
       entry,
     );
   },
+
+  async getGovernanceAuditLog(
+    tenantId: string,
+    session: SessionContext,
+    entityId: string,
+  ) {
+    return apiRequest<unknown[]>(
+      `/v1/retail/governance/audit-log?entity_id=${encodeURIComponent(entityId)}`,
+      "GET",
+      session,
+    );
+  },
+
+  async getCCTVEvents(
+    tenantId: string,
+    session: SessionContext,
+    cameraId: string,
+    date: string,
+  ) {
+    return apiRequest<Array<{ time: string; label: string; type: string }>>(
+      `/v1/retail/cctvs/${cameraId}/events?date=${encodeURIComponent(date)}`,
+      "GET",
+      session,
+    );
+  },
+
+  async getKioskTelemetry(
+    tenantId: string,
+    session: SessionContext,
+    locationId: string,
+  ) {
+    return apiRequest<{ nodeId: string; powerStatus: string; latencyMs: number }>(
+      `/v1/retail/kiosk/telemetry?location_id=${encodeURIComponent(locationId)}`,
+      "GET",
+      session,
+    );
+  },
   
   async recordHeartbeat(
     tenantId: string,

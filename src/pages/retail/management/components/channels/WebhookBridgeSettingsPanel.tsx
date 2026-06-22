@@ -58,49 +58,7 @@ const BRIDGE_EVENTS = [
   { key: "customer.created", label: "Customer Created" },
 ];
 
-// Mock delivery log data
-const MOCK_LOGS: DeliveryLog[] = [
-  {
-    id: "1",
-    timestamp: "2026-03-04 14:20:11",
-    event: "orders.created",
-    statusCode: 200,
-    latencyMs: 142,
-    success: true,
-  },
-  {
-    id: "2",
-    timestamp: "2026-03-04 13:55:02",
-    event: "inventory.updated",
-    statusCode: 200,
-    latencyMs: 97,
-    success: true,
-  },
-  {
-    id: "3",
-    timestamp: "2026-03-04 12:10:45",
-    event: "orders.updated",
-    statusCode: 502,
-    latencyMs: 3012,
-    success: false,
-  },
-  {
-    id: "4",
-    timestamp: "2026-03-04 11:30:00",
-    event: "orders.created",
-    statusCode: 200,
-    latencyMs: 188,
-    success: true,
-  },
-  {
-    id: "5",
-    timestamp: "2026-03-04 10:05:33",
-    event: "refund.issued",
-    statusCode: 200,
-    latencyMs: 203,
-    success: true,
-  },
-];
+// Delivery logs fetched from backend (Task 13.2)
 
 export const WebhookBridgeSettingsPanel: React.FC<Props> = ({
   channel,
@@ -115,6 +73,11 @@ export const WebhookBridgeSettingsPanel: React.FC<Props> = ({
     latencyMs: number;
     error?: string;
   } | null>(null);
+
+  // Delivery logs fetched from backend
+  const [deliveryLogs, setDeliveryLogs] = useState<DeliveryLog[]>([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+  const [logError, setLogError] = useState<string | null>(null);
 
   // Form state
   const [targetUrl, setTargetUrl] = useState("");
@@ -139,6 +102,26 @@ export const WebhookBridgeSettingsPanel: React.FC<Props> = ({
     setEnabledEvents(new Set(events));
     setTestResult(null);
   }, [channel.id, channel.settings]);
+
+  // Fetch delivery logs from backend
+  useEffect(() => {
+    if (!channel.id || !session?.tenant_id) return;
+    const fetchLogs = async () => {
+      setIsLoadingLogs(true);
+      setLogError(null);
+      try {
+        const data = await ecommerceHubService.getChannelDeliveryLogs?.(session, channel.id);
+        setDeliveryLogs(Array.isArray(data) ? data : []);
+      } catch (err: any) {
+        console.warn("Failed to fetch delivery logs", err);
+        setLogError("Failed to load delivery log");
+        setDeliveryLogs([]);
+      } finally {
+        setIsLoadingLogs(false);
+      }
+    };
+    fetchLogs();
+  }, [channel.id, session?.tenant_id]);
 
   const toggleEvent = (key: string) => {
     setEnabledEvents((prev) => {
@@ -248,10 +231,10 @@ export const WebhookBridgeSettingsPanel: React.FC<Props> = ({
                 className={cn(
                   "h-11 px-4 rounded-xl font-black italic text-xs gap-1.5 shrink-0 border-2 transition-all",
                   testResult?.success === true &&
-                    "border-emerald-300 text-success bg-success",
+                    "border-success text-success bg-success",
                   testResult?.success === false &&
-                    "border-red-300 text-destructive bg-destructive",
-                  !testResult && "border-slate-200",
+                    "border-destructive text-destructive bg-destructive",
+                  !testResult && "border-border",
                 )}
               >
                 {isTesting ? (
@@ -377,7 +360,7 @@ export const WebhookBridgeSettingsPanel: React.FC<Props> = ({
             Select which Zenvix events are forwarded to your SaaS
           </p>
         </div>
-        <div className="rounded-2xl border border-slate-100 overflow-hidden divide-y divide-slate-50">
+        <div className="rounded-2xl border border-border overflow-hidden divide-y divide-slate-50">
           {(Array.isArray(BRIDGE_EVENTS) ? BRIDGE_EVENTS : []).map((ev) => (
             <div
               key={ev.key}
@@ -426,60 +409,73 @@ export const WebhookBridgeSettingsPanel: React.FC<Props> = ({
             Delivery Log
           </h3>
           <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-            Last 5 deliveries
+            {isLoadingLogs ? "Loading…" : `${deliveryLogs.length} deliveries`}
           </span>
         </div>
-        <div className="rounded-2xl border border-slate-100 overflow-hidden divide-y divide-slate-50">
-          {(Array.isArray(MOCK_LOGS) ? MOCK_LOGS : []).map((log) => (
-            <div
-              key={log.id}
-              className="flex items-center gap-3 px-4 py-3 hover:bg-secondary/5 transition-colors"
-            >
+        {isLoadingLogs && (
+          <div className="flex items-center justify-center py-8">
+            <RefreshCw className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
+        {!isLoadingLogs && logError && (
+          <div className="text-sm text-destructive text-center py-4">{logError}</div>
+        )}
+        {!isLoadingLogs && !logError && deliveryLogs.length === 0 && (
+          <div className="text-sm text-muted-foreground text-center py-4">No delivery logs yet.</div>
+        )}
+        {!isLoadingLogs && !logError && deliveryLogs.length > 0 && (
+          <div className="rounded-2xl border border-border overflow-hidden divide-y divide-slate-50">
+            {deliveryLogs.map((log) => (
               <div
-                className={cn(
-                  "w-6 h-6 rounded-full flex items-center justify-center shrink-0",
-                  log.success ? "bg-success" : "bg-destructive",
-                )}
+                key={log.id}
+                className="flex items-center gap-3 px-4 py-3 hover:bg-secondary/5 transition-colors"
               >
-                {log.success ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-success" />
-                ) : (
-                  <AlertCircle className="w-3.5 h-3.5 text-destructive" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <code className="text-[10px] font-mono font-bold text-muted-foreground">
-                    {log.event}
-                  </code>
-                  <Badge
-                    className={cn(
-                      "text-[9px] font-black border-none px-1.5 py-0",
-                      log.success
-                        ? "bg-success text-success"
-                        : "bg-destructive text-destructive",
-                    )}
-                  >
-                    {log.statusCode}
-                  </Badge>
+                <div
+                  className={cn(
+                    "w-6 h-6 rounded-full flex items-center justify-center shrink-0",
+                    log.success ? "bg-success" : "bg-destructive",
+                  )}
+                >
+                  {log.success ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-success" />
+                  ) : (
+                    <AlertCircle className="w-3.5 h-3.5 text-destructive" />
+                  )}
                 </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
-                  <span className="text-[10px] text-muted-foreground font-bold">
-                    {log.timestamp}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground font-bold">
-                    ·
-                  </span>
-                  <ArrowUpRight className="w-3 h-3 text-muted-foreground shrink-0" />
-                  <span className="text-[10px] text-muted-foreground font-bold">
-                    {log.latencyMs}ms
-                  </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <code className="text-[10px] font-mono font-bold text-muted-foreground">
+                      {log.event}
+                    </code>
+                    <Badge
+                      className={cn(
+                        "text-[9px] font-black border-none px-1.5 py-0",
+                        log.success
+                          ? "bg-success text-success"
+                          : "bg-destructive text-destructive",
+                      )}
+                    >
+                      {log.statusCode}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
+                    <span className="text-[10px] text-muted-foreground font-bold">
+                      {log.timestamp}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-bold">
+                      ·
+                    </span>
+                    <ArrowUpRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                    <span className="text-[10px] text-muted-foreground font-bold">
+                      {log.latencyMs}ms
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

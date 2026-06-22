@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 export const LogisticsRadar = () => {
   return (
-    <Card className="rounded-2xl bg-white border-slate-200 shadow-xl p-8 space-y-8">
+    <Card className="rounded-2xl bg-white border-border shadow-xl p-8 space-y-8">
       <div className="text-[10px] font-black italic uppercase tracking-widest text-muted-foreground">
         Logistics Radar
       </div>

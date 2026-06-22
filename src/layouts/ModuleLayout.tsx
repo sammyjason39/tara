@@ -13,6 +13,7 @@
 
 import { Outlet, useParams, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 
 export function ModuleLayout() {
   const { moduleId } = useParams();
@@ -29,14 +30,19 @@ export function ModuleLayout() {
     <div className="min-h-screen flex flex-col">
       {/* Header - Suppressed for immersion-heavy modes */}
       {!hideHeader && (
-        <header className="border-b px-6 py-3 font-semibold bg-white z-[40]">
+        <header className="border-b px-6 py-3 font-semibold bg-background z-[40]">
           Module: {moduleId}
         </header>
       )}
 
       {/* Module Content */}
       <main className={cn("flex-1", !noPadding && "p-6")}>
-        <Outlet />
+        <PageErrorBoundary
+          key={location.pathname}
+          routeLabel={moduleId ? `Module: ${moduleId}` : "Module"}
+        >
+          <Outlet />
+        </PageErrorBoundary>
       </main>
     </div>
   );

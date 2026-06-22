@@ -27,6 +27,7 @@ import { retailInfrastructureService } from "@/core/services/retail/retailInfras
 import { itSettingsService, type ITProvisioningRequest } from "@/core/services/it/itSettingsService";
 import type { RetailGatewayNode, RetailLoadBalancer, GatewayNodeStatus } from "@/core/types/retail/retail";
 import { useToast } from "@/hooks/use-toast";
+import { ErrorState } from "@/components/shared/AsyncState";
 
 import {
   DropdownMenu,
@@ -43,9 +44,11 @@ const InfrastructureControl = () => {
   const [lbs, setLbs] = useState<RetailLoadBalancer[]>([]);
   const [requests, setRequests] = useState<ITProvisioningRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
+      setIsError(false);
       const [nodeData, lbData, reqData] = await Promise.all([
         retailInfrastructureService.listGatewayNodes(session.tenant_id, session),
         retailInfrastructureService.listLoadBalancers(session.tenant_id, session),
@@ -56,6 +59,7 @@ const InfrastructureControl = () => {
       setRequests(reqData);
     } catch (err) {
       console.error(err);
+      setIsError(true);
       toast({ title: "Error", description: "Failed to load infrastructure data", variant: "destructive" });
     } finally {
       setLoading(false);
@@ -125,28 +129,37 @@ const InfrastructureControl = () => {
         subtitle="Real-time monitoring and cluster management for Zenvix Retail connectivity."
       />
 
+      {isError && nodes.length === 0 && lbs.length === 0 && requests.length === 0 ? (
+        <ErrorState
+          title="Couldn't load infrastructure data"
+          description="The cluster, load-balancer, and provisioning feeds could not be reached for this tenant. Check your connection and try again."
+          onRetry={refresh}
+        />
+      ) : null}
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="bg-white/[0.03] border border-white/5 text-foreground shadow-2xl relative overflow-hidden group backdrop-blur-3xl">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
              <Activity className="w-16 h-16" />
           </div>
           <CardContent className="p-6">
-            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Global Traffic</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Active Nodes</div>
             <div className="text-3xl font-black italic tracking-tighter flex items-end gap-2 text-foreground">
-              1.2M <span className="text-sm font-bold text-success mb-1">req/min</span>
+              {(Array.isArray(nodes) ? nodes : []).filter(n => n.status === "ACTIVE").length}
+              <span className="text-sm font-bold text-muted-foreground mb-1">/ {nodes.length}</span>
             </div>
             <div className="flex items-center gap-2 mt-4 text-[10px] font-bold text-success uppercase">
               <TrendingUp className="w-3 h-3" />
-              +12% from last hour
+              Online cluster nodes
             </div>
           </CardContent>
         </Card>
 
         <Card className="border border-white/5 bg-white/[0.03] shadow-2xl backdrop-blur-3xl">
           <CardContent className="p-6">
-            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Active Nodes</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Load Balancers</div>
             <div className="text-3xl font-black italic tracking-tighter text-foreground">
-              {(Array.isArray(nodes) ? nodes : []).filter(n => n.status === "ACTIVE").length} <span className="text-sm text-muted-foreground">/ {nodes.length}</span>
+              {lbs.length}
             </div>
             <Progress value={((Array.isArray(nodes) ? nodes : []).filter(n => n.status === "ACTIVE").length / (nodes.length || 1)) * 100} className="h-1.5 mt-4 bg-white/10" />
           </CardContent>
@@ -154,26 +167,28 @@ const InfrastructureControl = () => {
 
         <Card className="border border-white/5 bg-white/[0.03] shadow-2xl backdrop-blur-3xl">
           <CardContent className="p-6">
-            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Avg. Latency</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Avg. Node Health</div>
             <div className="text-3xl font-black italic tracking-tighter text-foreground">
-              42ms
+              {nodes.length > 0
+                ? `${Math.round((Array.isArray(nodes) ? nodes : []).reduce((sum, n) => sum + (n.healthScore || 0), 0) / nodes.length)}%`
+                : "—"}
             </div>
             <div className="flex items-center gap-2 mt-4 text-[10px] font-bold text-primary uppercase">
               <Zap className="w-3 h-3" />
-              Optimal Performance
+              {nodes.length > 0 ? "Across active cluster" : "No nodes reporting"}
             </div>
           </CardContent>
         </Card>
 
         <Card className="border border-white/5 bg-white/[0.03] shadow-2xl backdrop-blur-3xl">
           <CardContent className="p-6">
-            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Error Rate</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Provisioning Queue</div>
             <div className="text-3xl font-black italic tracking-tighter text-foreground">
-              0.003%
+              {requests.length}
             </div>
             <div className="flex items-center gap-2 mt-4 text-[10px] font-bold text-success uppercase">
               <ShieldCheck className="w-3 h-3" />
-              All Systems Nominal
+              IT provisioning requests
             </div>
           </CardContent>
         </Card>
@@ -257,7 +272,7 @@ const InfrastructureControl = () => {
                                </div>
                                <Progress value={node.healthScore} className="h-1 bg-white/10" />
                             </div>
-                            <div className="grid grid-cols-2 gap-2 text-[10px] font-bold uppercase text-muted-foreground bg-black/40 p-2 rounded-lg">
+                            <div className="grid grid-cols-2 gap-2 text-[10px] font-bold uppercase text-muted-foreground bg-background/40 p-2 rounded-lg">
                                <div>Version: {node.version || 'v2.4.1'}</div>
                                <div className="text-right">{node.region || 'ID-JKT'}</div>
                             </div>
@@ -313,7 +328,7 @@ const InfrastructureControl = () => {
                       <span>{format(new Date(req.createdAt), 'MMM dd, HH:mm')}</span>
                     </div>
                     {req.requisitionId && (
-                      <div className="mt-2 p-2 bg-black/40 rounded-lg text-[9px] font-mono text-primary break-all">
+                      <div className="mt-2 p-2 bg-background/40 rounded-lg text-[9px] font-mono text-primary break-all">
                         REQ: {req.requisitionId}
                       </div>
                     )}
@@ -338,18 +353,13 @@ const InfrastructureControl = () => {
                 <BarChart3 className="w-6 h-6 text-foreground" />
                 <h2 className="text-xl font-black italic uppercase tracking-tighter text-foreground">Infrastructure Events</h2>
              </div>
-             
-             <div className="space-y-4">
-                {[
-                  { time: '11:42:01', msg: 'Node GTY-JKT-01 reached 85% CPU load. Auto-scaling standby node...', type: 'warn' },
-                  { time: '11:40:15', msg: 'Load Balancer LB-CORE-01 synchronized configuration across 3 nodes.', type: 'info' },
-                  { time: '11:38:42', msg: 'Health check passed for region: ASIA-SOUTH-1.', type: 'success' },
-                ].map((log, i) => (
-                  <div key={i} className="flex gap-4 p-4 bg-white/[0.02] rounded-2xl border border-white/5 text-xs font-bold font-mono">
-                    <span className="text-muted-foreground shrink-0">{log.time}</span>
-                    <span className="text-foreground">{log.msg}</span>
-                  </div>
-                ))}
+
+             <div className="border-2 border-dashed border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center text-center">
+                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                  <BarChart3 className="w-6 h-6 text-muted-foreground/60" />
+                </div>
+                <div className="text-sm font-black italic text-muted-foreground uppercase tracking-widest">No infrastructure events</div>
+                <p className="text-[10px] text-muted-foreground mt-2 font-medium">Event telemetry for this cluster has no feed wired yet. Node and load-balancer status above reflect live data.</p>
              </div>
           </section>
         </div>

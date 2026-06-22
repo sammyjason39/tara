@@ -38,6 +38,7 @@ import {
   Activity
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { formatDate, formatDateTime, safeText } from "@/lib/format";
 import {
   Dialog,
   DialogContent,
@@ -298,13 +299,13 @@ export default function BulletinHub() {
       <Button
         onClick={() => openCreate("TOPIC")}
         variant="outline"
-        className="rounded-xl border-slate-200 bg-white shadow-sm hover:bg-muted font-bold text-[10px] uppercase tracking-widest h-9"
+        className="rounded-xl bg-card shadow-sm hover:bg-muted font-bold text-[10px] uppercase tracking-widest h-9"
       >
         <Plus className="h-3 w-3 mr-2" /> New Topic
       </Button>
       <Button
         onClick={() => openCreate("CONTENT")}
-        className="rounded-xl bg-muted hover:bg-black text-white shadow-sm font-bold text-[10px] uppercase tracking-widest h-9"
+        className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm font-bold text-[10px] uppercase tracking-widest h-9"
       >
         <Send className="h-3 w-3 mr-2" /> Post Content
       </Button>
@@ -319,7 +320,7 @@ export default function BulletinHub() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search posts..."
-              className="pl-10 h-12 bg-white dark:bg-muted border-slate-200 shadow-sm rounded-2xl text-sm font-bold"
+              className="pl-10 h-12 bg-card shadow-sm rounded-2xl text-sm font-bold"
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
             />
@@ -356,7 +357,7 @@ export default function BulletinHub() {
               (Array.isArray(filteredPosts) ? filteredPosts : []).map((post) => (
                 <Card
                   key={post.id}
-                  className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-muted overflow-hidden group hover:-translate-y-1 transition-all rounded-[2.5rem]"
+                  className="border-none shadow-xl shadow-primary/5 dark:shadow-none bg-card overflow-hidden group hover:-translate-y-1 transition-all rounded-[2.5rem]"
                 >
                   <CardHeader className="pb-4">
                     <div className="flex justify-between items-start">
@@ -376,7 +377,7 @@ export default function BulletinHub() {
                           className="text-2xl font-black tracking-tighter cursor-pointer hover:text-primary transition-colors leading-tight"
                           onClick={() => handleViewDetail(post)}
                         >
-                          {post.title}
+                          {safeText(post.title)}
                         </CardTitle>
                       </div>
                       <div className="flex items-center gap-2">
@@ -384,7 +385,7 @@ export default function BulletinHub() {
                           variant="secondary"
                           className="text-[10px] font-mono bg-muted/30 border-none rounded-lg"
                         >
-                          {new Date(post.createdAt).toLocaleDateString()}
+                          {formatDate(post.createdAt)}
                         </Badge>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -413,17 +414,17 @@ export default function BulletinHub() {
                       className="text-sm text-muted-foreground dark:text-muted-foreground leading-relaxed line-clamp-3 font-medium cursor-pointer"
                       onClick={() => handleViewDetail(post)}
                     >
-                      {post.body}
+                      {safeText(post.body)}
                     </p>
                   </CardContent>
-                  <CardFooter className="bg-muted dark:bg-muted px-8 py-4 flex justify-between items-center border-t border-slate-100 dark:border-slate-800">
+                  <CardFooter className="bg-muted dark:bg-muted px-8 py-4 flex justify-between items-center border-t border-border">
                     <div className="flex items-center gap-6">
                       <div className="flex items-center gap-2">
                         <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
                           <UserIcon className="h-3.5 w-3.5 text-primary" />
                         </div>
                         <span className="text-[10px] font-black uppercase text-muted-foreground tracking-tighter">
-                          @{post.authorId?.split("-")[0] || "anon"}
+                          @{safeText(post.authorId?.split("-")[0], "anon")}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -532,7 +533,7 @@ export default function BulletinHub() {
               <div className="space-y-4">
                 <Button
                   onClick={() => setIsCategoryManageOpen(true)}
-                  className="w-full h-11 rounded-xl bg-primary/10 text-primary border-primary/20 border hover:bg-primary hover:text-white font-black uppercase tracking-widest text-[10px] mb-2 shadow-none transition-all"
+                  className="w-full h-11 rounded-xl bg-primary/10 text-primary border-primary/20 border hover:bg-primary hover:text-primary-foreground font-black uppercase tracking-widest text-[10px] mb-2 shadow-none transition-all"
                 >
                   <Plus className="h-4 w-4 mr-2" /> Create Channel
                 </Button>
@@ -553,7 +554,7 @@ export default function BulletinHub() {
                   </div>
                   <Badge
                     variant="outline"
-                    className={`text-[10px] font-black border-none px-2 h-5 rounded-md ${activeCategory === "all" ? "bg-primary text-white" : "bg-muted/30"}`}
+                    className={`text-[10px] font-black border-none px-2 h-5 rounded-md ${activeCategory === "all" ? "bg-primary text-primary-foreground" : "bg-muted/30"}`}
                   >
                     {posts.length}
                   </Badge>
@@ -600,7 +601,7 @@ export default function BulletinHub() {
                         </div>
                         <Badge
                           variant="outline"
-                          className={`text-[10px] font-black border-none px-2 h-5 rounded-md ${activeCategory === cat.code ? "bg-primary text-white" : "bg-muted/30"}`}
+                          className={`text-[10px] font-black border-none px-2 h-5 rounded-md ${activeCategory === cat.code ? "bg-primary text-primary-foreground" : "bg-muted/30"}`}
                         >
                           {(Array.isArray(posts) ? posts : []).filter((p) => p.category?.toLowerCase() === cat.code?.toLowerCase()).length}
                         </Badge>
@@ -678,7 +679,7 @@ export default function BulletinHub() {
                           TRANSMITTED
                         </div>
                         <div className="text-[9px] font-bold text-muted-foreground">
-                          {new Date(selectedPost.createdAt).toLocaleString()}
+                          {formatDateTime(selectedPost.createdAt)}
                         </div>
                       </div>
                     </div>
@@ -687,10 +688,10 @@ export default function BulletinHub() {
 
                 <div className="flex-1 overflow-y-auto p-12 space-y-12 scrollbar-hide">
                   <div className="text-base text-muted-foreground dark:text-muted-foreground leading-[2] font-medium whitespace-pre-wrap tracking-tight">
-                    {selectedPost.body}
+                    {safeText(selectedPost.body)}
                   </div>
 
-                  <div className="flex gap-4 pt-6 border-t border-slate-100 italic font-bold text-xs text-muted-foreground">
+                  <div className="flex gap-4 pt-6 border-t border-border italic font-bold text-xs text-muted-foreground">
                     <div className="flex items-center gap-2">
                        <ThumbsUp className="h-4 w-4" /> {selectedPost.likesCount}{" "}
                       UPVOTES
@@ -716,22 +717,20 @@ export default function BulletinHub() {
                             key={comment.id}
                             className="flex gap-5 animate-in slide-in-from-left duration-500"
                           >
-                            <div className="h-10 w-10 shrink-0 rounded-[1.25rem] bg-primary flex items-center justify-center text-primary font-black text-xs">
-                              {comment.authorId?.[0]?.toUpperCase() || "A"}
+                            <div className="h-10 w-10 shrink-0 rounded-[1.25rem] bg-primary flex items-center justify-center text-primary-foreground font-black text-xs">
+                              {safeText(comment.authorId?.[0]?.toUpperCase(), "A")}
                             </div>
                             <div className="space-y-2 flex-1">
                               <div className="flex justify-between items-center">
                                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground dark:text-white">
-                                  @{comment.authorId?.split("-")[0] || "anon"}
+                                  @{safeText(comment.authorId?.split("-")[0], "anon")}
                                 </span>
                                 <span className="text-[9px] font-bold text-muted-foreground opacity-40">
-                                  {new Date(
-                                    comment.createdAt,
-                                  ).toLocaleTimeString()}
+                                  {formatDateTime(comment.createdAt)}
                                 </span>
                               </div>
-                              <div className="p-5 rounded-3xl bg-muted dark:bg-muted text-sm font-medium leading-relaxed border border-slate-100 dark:border-slate-800">
-                                {comment.body}
+                              <div className="p-5 rounded-3xl bg-muted dark:bg-muted text-sm font-medium leading-relaxed border border-border">
+                                {safeText(comment.body)}
                               </div>
                             </div>
                           </div>
@@ -749,7 +748,7 @@ export default function BulletinHub() {
                   <div className="flex gap-4">
                     <Textarea
                       placeholder="Write a comment..."
-                      className="h-14 min-h-[56px] bg-white dark:bg-muted rounded-2xl border-none shadow-sm font-bold text-sm px-6 py-4"
+                      className="h-14 min-h-[56px] bg-card rounded-2xl border-none shadow-sm font-bold text-sm px-6 py-4"
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                     />
@@ -862,14 +861,14 @@ export default function BulletinHub() {
                     onChange={e => setNewCategory({...newCategory, color: e.target.value})}
                   />
                 </div>
-                <Button onClick={handleCreateCategory} className="w-full h-11 rounded-xl bg-muted text-white font-black uppercase tracking-widest text-[10px]">Add Channel</Button>
+                <Button onClick={handleCreateCategory} className="w-full h-11 rounded-xl bg-primary text-primary-foreground font-black uppercase tracking-widest text-[10px]">Add Channel</Button>
               </div>
 
               <div className="pt-6 border-t space-y-4">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-2">Active Domains</label>
                 <div className="space-y-2">
                   {(Array.isArray(categories) ? categories : []).map(cat => (
-                    <div key={cat.id} className="flex justify-between items-center p-3 bg-muted dark:bg-muted rounded-xl border border-slate-100 dark:border-slate-800">
+                    <div key={cat.id} className="flex justify-between items-center p-3 bg-muted dark:bg-muted rounded-xl border border-border">
                       <div className="flex items-center gap-3">
                         <div className="h-3 w-3 rounded-full" style={{backgroundColor: cat.color}} />
                         <span className="text-[10px] font-black uppercase tracking-widest">{cat.name}</span>

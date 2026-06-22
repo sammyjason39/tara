@@ -1,8 +1,9 @@
 import React from "react";
 import { Package, Hash, Plus } from "lucide-react";
 import { RetailProduct } from "@/core/types/retail/retail";
-import { Card } from "@/components/ui/card";
+import { GlassCard } from "@/components/shared/GlassCard";
 import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from "@/lib/format";
 
 interface ProductGridProps {
   products: RetailProduct[];
@@ -16,26 +17,26 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
       {(Array.isArray(products) ? products : []).map((p) => (
-        <Card
+        <GlassCard
           key={p.id}
-          className="group cursor-pointer border-2 border-white/40 backdrop-blur-xl bg-white/30 hover:bg-white/60 hover:border-primary hover:shadow-[0_20px_60px_-15px_rgba(79,70,229,0.15)] hover:-translate-y-1.5 transition-all duration-500 active:scale-95 overflow-hidden rounded-[2rem] relative"
+          className="group cursor-pointer border-2 border-border backdrop-blur-xl bg-card/40 hover:bg-accent/40 hover:border-primary hover:shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.15)] hover:-translate-y-1.5 transition-all duration-500 active:scale-95 overflow-hidden rounded-[2rem] relative"
           onClick={() => onAddToCart(p)}
         >
           <div className="aspect-square bg-secondary/20 flex items-center justify-center p-10 group-hover:bg-primary/10 transition-colors relative overflow-hidden">
             <Package className="w-12 h-12 text-muted-foreground/40 group-hover:text-primary/60 transition-all duration-500 group-hover:scale-110" />
 
-            <div className="absolute top-5 right-5 p-2.5 bg-white rounded-xl shadow-lg opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+            <div className="absolute top-5 right-5 p-2.5 bg-card rounded-xl shadow-lg opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
               <Plus className="w-4 h-4 text-primary" />
             </div>
 
             <div className="absolute bottom-5 left-5">
-              <span className="text-[8px] font-black uppercase tracking-[0.2em] px-2.5 py-1.5 bg-white/90 backdrop-blur-sm rounded-lg text-muted-foreground border border-slate-100/50 shadow-sm leading-none">
+              <span className="text-[8px] font-black uppercase tracking-[0.2em] px-2.5 py-1.5 bg-card/90 backdrop-blur-sm rounded-lg text-muted-foreground border border-border/50 shadow-sm leading-none">
                 {p.categoryName || "GLOBAL"}
               </span>
             </div>
 
             {/* Hover Decor */}
-            <div className="absolute -inset-2 bg-gradient-to-tr from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute -inset-2 bg-gradient-to-tr from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
 
           <div className="p-5 space-y-4">
@@ -57,18 +58,18 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
                   Value
                 </span>
                 <span className="text-lg font-black text-foreground italic leading-none truncate">
-                  Rp {p.price.toLocaleString()}
+                  {formatCurrency(p.price, "IDR", "id-ID")}
                 </span>
               </div>
               <Badge
                 variant="outline"
-                className="text-[9px] font-black uppercase py-0.5 px-2.5 border-slate-100 text-muted-foreground bg-secondary/5 shrink-0"
+                className="text-[9px] font-black uppercase py-0.5 px-2.5 border-border text-muted-foreground bg-secondary/5 shrink-0"
               >
                 {p.stock}
               </Badge>
             </div>
           </div>
-        </Card>
+        </GlassCard>
       ))}
     </div>
   );

@@ -18,10 +18,11 @@ import {
   SelectTrigger as UISelectTrigger,
   SelectValue as UISelectValue,
 } from "@/components/ui/select";
-import { apiRequest } from "@/core/api/apiClient";
 import { useSession } from "@/core/security/session";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Plus, Box, Tags, BarChart3, Tag } from "lucide-react";
+import { createItemSchema, type CreateItemInput } from "../schemas";
+import { useCreateItem } from "../hooks/useInventoryQueries";
 
 interface CreateItemDialogProps {
   open: boolean;
@@ -35,7 +36,7 @@ export function CreateItemDialog({
   onSuccess,
 }: CreateItemDialogProps) {
   const session = useSession();
-  const [loading, setLoading] = useState(false);
+  const createMutation = useCreateItem();
   const [formData, setFormData] = useState({
     sku: "",
     name: "",
@@ -46,18 +47,31 @@ export function CreateItemDialog({
     minStock: 0,
     status: "active",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validate = (): boolean => {
+    const result = createItemSchema.safeParse(formData);
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as string;
+        fieldErrors[field] = err.message;
+      });
+      setErrors(fieldErrors);
+      return false;
+    }
+    setErrors({});
+    return true;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    if (!validate()) return;
+
     try {
-      await apiRequest("/inventory/items", "POST", session, {
+      await createMutation.mutateAsync({
         ...formData,
         base_price: Number(formData.base_price),
-      });
-      toast({
-        title: "Item Created",
-        description: `${formData.name} has been added to the catalog.`,
       });
       onSuccess();
       onOpenChange(false);
@@ -71,14 +85,9 @@ export function CreateItemDialog({
         minStock: 0,
         status: "active",
       });
+      setErrors({});
     } catch (error: any) {
-      toast({
-        title: "Creation Failed",
-        description: error.message || "Failed to create inventory item.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      // Error is handled by the mutation's onError callback
     }
   };
 
@@ -106,12 +115,14 @@ export function CreateItemDialog({
                   <Tag className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <UIInput
                     required
+                    maxLength={50}
                     className="pl-12 h-12 rounded-2xl bg-muted dark:bg-muted border-none font-bold"
                     placeholder="e.g. ELE-MAC-001"
                     value={formData.sku}
                     onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                   />
                 </div>
+                {errors.sku && <p className="text-[10px] text-destructive font-bold ml-1">{errors.sku}</p>}
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Category</Label>
@@ -125,6 +136,7 @@ export function CreateItemDialog({
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                   />
                 </div>
+                {errors.category && <p className="text-[10px] text-destructive font-bold ml-1">{errors.category}</p>}
               </div>
             </div>
 
@@ -134,12 +146,14 @@ export function CreateItemDialog({
                 <Box className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <UIInput
                   required
+                  maxLength={200}
                   className="pl-12 h-12 rounded-2xl bg-muted dark:bg-muted border-none font-bold"
                   placeholder="e.g. Macbook Pro M3 14-inch"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
+              {errors.name && <p className="text-[10px] text-destructive font-bold ml-1">{errors.name}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-6">
@@ -150,11 +164,13 @@ export function CreateItemDialog({
                   <UIInput
                     type="number"
                     step="0.01"
+                    min="0"
                     className="pl-12 h-12 rounded-2xl bg-muted dark:bg-muted border-none font-bold"
                     value={formData.base_price}
-                    onChange={(e) => setFormData({ ...formData, base_price: parseFloat(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, base_price: parseFloat(e.target.value) || 0 })}
                   />
                 </div>
+                {errors.base_price && <p className="text-[10px] text-destructive font-bold ml-1">{errors.base_price}</p>}
               </div>
               <div className="space-y-2">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Unit of Measure</Label>
@@ -172,6 +188,7 @@ export function CreateItemDialog({
                     <UISelectItem value="box" className="font-bold">Boxes</UISelectItem>
                   </UISelectContent>
                 </UISelect>
+                {errors.uom && <p className="text-[10px] text-destructive font-bold ml-1">{errors.uom}</p>}
               </div>
             </div>
 
@@ -196,10 +213,10 @@ export function CreateItemDialog({
               </Button>
               <Button 
                 type="submit" 
-                disabled={loading}
+                disabled={createMutation.isPending}
                 className="rounded-xl h-12 px-10 font-black text-[10px] uppercase tracking-widest bg-muted text-white hover:bg-muted shadow-xl"
               >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+                {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
                 Execute Creation
               </Button>
             </DialogFooter>

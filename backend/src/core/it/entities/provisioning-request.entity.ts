@@ -8,7 +8,7 @@ export class ProvisioningRequest {
   priority: string;
   description?: string;
   reason: string;
-  status: "requested" | "provisioned" | "revoked";
+  status: "pending" | "requested" | "provisioned" | "revoked";
   requested_by: string;
   provisionedBy?: string;
   created_at: Date;

@@ -139,7 +139,7 @@ export const PostekLeftControls: React.FC<PostekLeftControlsProps> = ({
             variant="outline"
             size="sm"
             onClick={handleConnect}
-            className={`h-8 text-[10px] font-black uppercase tracking-widest ${isConnected ? "bg-success text-success border-emerald-200" : "bg-muted text-muted-foreground"}`}
+            className={`h-8 text-[10px] font-black uppercase tracking-widest ${isConnected ? "bg-success text-success border-success" : "bg-muted text-muted-foreground"}`}
           >
             {isConnected ? "SYNCED" : "CONNECT"}
           </Button>
@@ -220,7 +220,7 @@ export const PostekLeftControls: React.FC<PostekLeftControlsProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-200 border-dashed">
+            <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-border border-dashed">
               <div className="space-y-1">
                 <label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">
                   Cols
@@ -367,7 +367,7 @@ export const PostekLeftControls: React.FC<PostekLeftControlsProps> = ({
           {(Array.isArray(items) ? items : []).map((item) => (
             <div
               key={item.id}
-              className="flex items-center justify-between p-3 rounded-xl border border-slate-200/60 bg-white"
+              className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-white"
             >
               <div className="flex flex-col min-w-0 pr-4">
                 <span className="font-bold text-sm truncate">{item.name}</span>

@@ -27,7 +27,7 @@ export const LiveModuleActivity: React.FC<LiveModuleActivityProps> = ({ data = [
                <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Real-time throughput and latency per domain</p>
             </div>
          </div>
-         <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-success border border-emerald-500/20">
+         <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-success border border-success/20">
             <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
             <span className="text-[8px] font-black uppercase text-success tracking-widest">Global Integrity Optimal</span>
          </div>
@@ -35,7 +35,7 @@ export const LiveModuleActivity: React.FC<LiveModuleActivityProps> = ({ data = [
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {data.map((module, i) => (
-          <div key={i} className="group relative flex flex-col gap-6 rounded-[2rem] border border-slate-800 bg-muted p-6 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-500/10">
+          <div key={i} className="group relative flex flex-col gap-6 rounded-[2rem] border border-border bg-muted p-6 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-500/10">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground group-hover:text-white transition-colors">{module.name}</span>
               <div className={cn(

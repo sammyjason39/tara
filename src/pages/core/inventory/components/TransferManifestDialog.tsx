@@ -70,7 +70,7 @@ export function TransferManifestDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl bg-white dark:bg-muted max-h-[90vh] flex flex-col">
-        <DialogHeader className="p-8 bg-muted dark:bg-muted border-b border-slate-100 dark:border-slate-800">
+        <DialogHeader className="p-8 bg-muted dark:bg-muted border-b border-border dark:border-border">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-[0.3em]">
@@ -99,7 +99,7 @@ export function TransferManifestDialog({
             <>
               {/* Route Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-6 rounded-3xl bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800 space-y-3">
+                <div className="p-6 rounded-3xl bg-muted dark:bg-muted border border-border dark:border-border space-y-3">
                   <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                     <MapPin className="h-3 w-3" /> Origin Node
                   </div>
@@ -122,7 +122,7 @@ export function TransferManifestDialog({
                   <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Asset Inventory Line</h3>
                   <div className="text-[10px] font-black text-muted-foreground">{transfer.quantity} Units Total</div>
                 </div>
-                <div className="p-6 rounded-3xl border border-slate-100 dark:border-slate-800 flex items-center gap-6 group hover:border-primary/30 transition-all">
+                <div className="p-6 rounded-3xl border border-border dark:border-border flex items-center gap-6 group hover:border-primary/30 transition-all">
                   <div className="h-20 w-20 rounded-2xl bg-muted dark:bg-muted flex items-center justify-center overflow-hidden shrink-0">
                     {transfer.item_masters?.image_url ? (
                       <img src={transfer.item_masters.image_url} alt="" className="h-full w-full object-cover" />
@@ -142,25 +142,25 @@ export function TransferManifestDialog({
               <div className="space-y-4">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-2">Lifecycle Protocol</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="p-4 rounded-2xl bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800">
+                  <div className="p-4 rounded-2xl bg-muted dark:bg-muted border border-border dark:border-border">
                     <div className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Requested</div>
                     <div className="text-[11px] font-bold truncate">
                       {formatDate(transfer.requested_at || transfer.requestedAt || transfer.created_at || transfer.createdAt)}
                     </div>
                   </div>
-                  <div className="p-4 rounded-2xl bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800">
+                  <div className="p-4 rounded-2xl bg-muted dark:bg-muted border border-border dark:border-border">
                     <div className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Picked</div>
                     <div className="text-[11px] font-bold truncate">
                       {formatDate(transfer.picked_at || transfer.pickedAt)}
                     </div>
                   </div>
-                  <div className="p-4 rounded-2xl bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800">
+                  <div className="p-4 rounded-2xl bg-muted dark:bg-muted border border-border dark:border-border">
                     <div className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Shipped</div>
                     <div className="text-[11px] font-bold truncate">
                       {formatDate(transfer.shipped_at || transfer.shippedAt)}
                     </div>
                   </div>
-                  <div className="p-4 rounded-2xl bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800">
+                  <div className="p-4 rounded-2xl bg-muted dark:bg-muted border border-border dark:border-border">
                     <div className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Received</div>
                     <div className="text-[11px] font-bold truncate">
                       {formatDate(transfer.received_at || transfer.receivedAt)}
@@ -178,7 +178,7 @@ export function TransferManifestDialog({
         </div>
       </div>
 
-        <DialogFooter className="p-8 bg-muted border-t border-slate-800 flex flex-row items-center justify-between">
+        <DialogFooter className="p-8 bg-muted border-t border-border flex flex-row items-center justify-between">
           <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
             Zenvix Logistics Core v2.4
           </div>

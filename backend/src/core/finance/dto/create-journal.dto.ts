@@ -6,6 +6,7 @@ import {
   IsNumber,
   IsOptional,
   Min,
+  ArrayMinSize,
 } from "class-validator";
 import { Type, Transform } from "class-transformer";
 
@@ -39,6 +40,7 @@ export class CreateJournalDto {
   ref?: string;
 
   @IsArray()
+  @ArrayMinSize(2, { message: 'Journal entry must have at least 2 line items' })
   @ValidateNested({ each: true })
   @Type(() => JournalLineDto)
   lines: JournalLineDto[];

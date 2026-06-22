@@ -10,13 +10,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DeviceIcon, ConnIcon, connLabel, dsc } from "./DeviceControlUI";
 import type { ExtDevice } from "./DeviceControlTypes";
+import { apiRequest } from "@/core/api/apiClient";
+import { useSession } from "@/core/security/session";
+import { useToast } from "@/hooks/use-toast";
 
 interface DeviceModalProps {
   dev: ExtDevice | null;
   onClose: () => void;
 }
 
-const DeviceModal = ({ dev, onClose }: DeviceModalProps) => (
+const DeviceModal = ({ dev, onClose }: DeviceModalProps) => {
+  const session = useSession();
+  const { toast } = useToast();
+
+  return (
   <Dialog
     open={!!dev}
     onOpenChange={(v) => {
@@ -92,8 +99,13 @@ const DeviceModal = ({ dev, onClose }: DeviceModalProps) => (
             )}
             <div className="flex gap-2 pt-1">
               <Button 
-                onClick={() => {
-                  alert(`Configuring ${dev.name}. This will open the device parameter tuning interface.`);
+                onClick={async () => {
+                  try {
+                    await apiRequest("/kernel/iot/pair", "POST", session, { mac_address: dev.macAddress, type: dev.type });
+                    toast({ title: "Device Configured", description: `${dev.name} has been paired successfully.` });
+                  } catch (e) {
+                    toast({ title: "Configuration Failed", description: `Could not configure ${dev.name}.`, variant: "destructive" });
+                  }
                 }}
                 className="flex-1 h-10 rounded-xl bg-secondary text-foreground font-black italic uppercase text-[10px] tracking-widest gap-2"
               >
@@ -102,7 +114,7 @@ const DeviceModal = ({ dev, onClose }: DeviceModalProps) => (
               <Button
                 variant="outline"
                 onClick={onClose}
-                className="h-10 w-10 rounded-xl border-slate-100 text-muted-foreground flex items-center justify-center"
+                className="h-10 w-10 rounded-xl border-border text-muted-foreground flex items-center justify-center"
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -112,6 +124,7 @@ const DeviceModal = ({ dev, onClose }: DeviceModalProps) => (
       )}
     </DialogContent>
   </Dialog>
-);
+  );
+};
 
 export default DeviceModal;

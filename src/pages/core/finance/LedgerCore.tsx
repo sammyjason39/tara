@@ -25,11 +25,13 @@ import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { financeApiClient } from "@/core/services/finance/financeApiClient";
 import { logService } from "@/core/services/finance/logService";
+import { journalEntrySchema } from "@/core/finance/schemas";
 import type {
   FinanceInvoiceRow,
   FinanceJournalRow,
 } from "@/core/services/finance/financeService";
 import type { PayrollEntry, PayrollEstimate } from "@/core/types/finance/payrollTypes";
+import { formatNumber } from "@/lib/format";
 
 type LedgerTab = "journals" | "invoices" | "payroll";
 
@@ -179,6 +181,13 @@ export default function LedgerCore() {
   );
 
   const handleCreateJournal = async () => {
+    // Validate with Zod schema (double-entry accounting: debits = credits ±0.01, ≥ 2 lines)
+    const validation = journalEntrySchema.safeParse(entry);
+    if (!validation.success) {
+      const firstError = validation.error.errors[0]?.message || "Validation failed";
+      setErrorMessage(firstError);
+      return;
+    }
     if (!isBalanced) {
       setErrorMessage("Journal entry must be balanced (Debits = Credits).");
       return;
@@ -315,7 +324,7 @@ export default function LedgerCore() {
                       </td>
                       <td className="p-3">{journal.description}</td>
                       <td className="p-3 text-right font-mono">
-                        {journal.amount.toLocaleString()}
+                        {formatNumber(journal.amount)}
                       </td>
                       <td className="p-3 text-muted-foreground">
                         {journal.createdAt.slice(0, 10)}
@@ -357,7 +366,7 @@ export default function LedgerCore() {
                       <td className="p-3">{invoice.kind}</td>
                       <td className="p-3">{invoice.vendor}</td>
                       <td className="p-3 text-muted-foreground">
-                        {invoice.amount.toLocaleString()}
+                        {formatNumber(invoice.amount)}
                       </td>
                       <td className="p-3 text-muted-foreground">
                         {invoice.invoiceDate}
@@ -407,7 +416,7 @@ export default function LedgerCore() {
                       <td className="p-3">{entryRow.period}</td>
                       <td className="p-3">{entryRow.employeeId}</td>
                       <td className="p-3 text-muted-foreground">
-                        {entryRow.netSalary.toLocaleString()}
+                        {formatNumber(entryRow.netSalary)}
                       </td>
                       <td className="p-3 text-xs text-muted-foreground">
                         Standard Payroll Run
@@ -453,11 +462,11 @@ export default function LedgerCore() {
                   </div>
                   <div className="bg-background p-3 rounded-lg border shadow-sm flex justify-between items-center">
                     <span className="text-xs text-muted-foreground uppercase font-semibold">Total Debits</span>
-                    <span className="font-semibold text-sm">Rp {totalDebits.toLocaleString()}</span>
+                    <span className="font-semibold text-sm">Rp {formatNumber(totalDebits)}</span>
                   </div>
                   <div className="bg-background p-3 rounded-lg border shadow-sm flex justify-between items-center">
                     <span className="text-xs text-muted-foreground uppercase font-semibold">Total Credits</span>
-                    <span className="font-semibold text-sm">Rp {totalCredits.toLocaleString()}</span>
+                    <span className="font-semibold text-sm">Rp {formatNumber(totalCredits)}</span>
                   </div>
                 </div>
               </div>
@@ -638,8 +647,8 @@ export default function LedgerCore() {
                       <tr key={i} className="hover:bg-muted/50 transition-colors">
                         <td className="p-3 text-left font-medium">{est.department}</td>
                         <td className="p-3">{est.employeeCount}</td>
-                        <td className="p-3">${est.totalGross.toLocaleString()}</td>
-                        <td className="p-3">${est.totalNet.toLocaleString()}</td>
+                        <td className="p-3">${formatNumber(est.totalGross)}</td>
+                        <td className="p-3">${formatNumber(est.totalNet)}</td>
                       </tr>
                     ))}
                     {payrollEstimates.length === 0 && (
@@ -658,10 +667,10 @@ export default function LedgerCore() {
                           {payrollEstimates.reduce((sum, e) => sum + e.employeeCount, 0)}
                         </td>
                         <td className="p-3 border-t">
-                          ${payrollEstimates.reduce((sum, e) => sum + e.totalGross, 0).toLocaleString()}
+                          ${formatNumber(payrollEstimates.reduce((sum, e) => sum + e.totalGross, 0))}
                         </td>
                         <td className="p-3 border-t">
-                          ${payrollEstimates.reduce((sum, e) => sum + e.totalNet, 0).toLocaleString()}
+                          ${formatNumber(payrollEstimates.reduce((sum, e) => sum + e.totalNet, 0))}
                         </td>
                       </tr>
                     </tfoot>

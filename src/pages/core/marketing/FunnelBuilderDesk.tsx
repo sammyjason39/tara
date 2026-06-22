@@ -51,6 +51,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSession } from "@/core/security/session";
 import { marketingService } from "@/core/services/marketing/marketingService";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { cn } from "@/lib/utils";
 import { 
   Dialog, 
@@ -73,6 +74,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import FunnelTemplates from "./components/FunnelTemplates";
 import { toast } from "sonner";
+import { CreateFunnelModal } from "./modals/CreateFunnelModal";
+import { EditFunnelStepModal } from "./modals/EditFunnelStepModal";
 
 interface FunnelStep {
   id: string;
@@ -111,7 +114,7 @@ function SortableStep({ step, index, onRemove, onEdit }: { step: FunnelStep; ind
            {index + 1}
         </div>
         <Card className={cn(
-          "ml-6 rounded-[2rem] border-none shadow-2xl transition-all duration-500 cursor-default overflow-hidden bg-white/80 dark:bg-muted backdrop-blur-xl relative",
+          "ml-6 rounded-[2rem] border-none shadow-2xl transition-all duration-500 cursor-default overflow-hidden glass-card relative",
           step.isABTest ? "ring-2 ring-indigo-500/40" : "hover:ring-2 hover:ring-indigo-500/20"
         )}>
            {step.isABTest && (
@@ -140,7 +143,7 @@ function SortableStep({ step, index, onRemove, onEdit }: { step: FunnelStep; ind
                     </div>
                  </div>
                  
-                 <div className="flex items-center gap-12 w-full md:w-auto border-t md:border-t-0 md:border-l border-slate-100 dark:border-slate-800 pt-6 md:pt-0 md:pl-12">
+                 <div className="flex items-center gap-12 w-full md:w-auto border-t md:border-t-0 md:border-l border-border dark:border-border pt-6 md:pt-0 md:pl-12">
                     <div className="text-right space-y-1">
                        <p className="text-[10px] uppercase font-black text-muted-foreground tracking-[0.2em] italic">Conversion Yield</p>
                        <div className="flex items-center justify-end gap-2">
@@ -321,12 +324,12 @@ export default function FunnelBuilderDesk() {
                Orchestrator Online
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent text-left">Funnel Builder</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground text-left">Funnel Builder</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic text-left">"Architect multi-dimensional conversion pathways with elite precision."</p>
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-slate-800/20 shadow-2xl">
+          <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-border/20 shadow-2xl">
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="ghost" className="h-14 px-8 rounded-2xl font-black text-[10px] uppercase tracking-widest gap-3 transition-all hover:bg-white dark:hover:bg-muted">
@@ -368,11 +371,11 @@ export default function FunnelBuilderDesk() {
       <div className="grid grid-cols-12 gap-10 flex-1 min-h-0">
         {/* Left: Registry */}
         <div className="col-span-12 lg:col-span-3 flex flex-col gap-6 overflow-hidden">
-          <Card className="flex-1 rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden flex flex-col">
-            <CardHeader className="p-8 pb-4 border-b border-white/10 dark:border-slate-800/10">
+          <Card className="flex-1 rounded-[3rem] border-none shadow-2xl glass-card overflow-hidden flex flex-col">
+            <CardHeader className="p-8 pb-4 border-b border-white/10 dark:border-border/10">
                <div className="flex items-center justify-between">
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">Path Registry</p>
-                  <Badge variant="outline" className="rounded-full font-black text-[9px] px-2 py-0 h-5 border-slate-200 dark:border-slate-800 text-muted-foreground uppercase tracking-widest">{funnels.length} FLOWS</Badge>
+                  <Badge variant="outline" className="rounded-full font-black text-[9px] px-2 py-0 h-5 border-border dark:border-border text-muted-foreground uppercase tracking-widest">{funnels.length} FLOWS</Badge>
                </div>
             </CardHeader>
             <ScrollArea className="flex-1">
@@ -407,6 +410,13 @@ export default function FunnelBuilderDesk() {
                     <ChevronRight className={cn("h-4 w-4 transition-transform", selectedFunnel?.id === f.id ? "text-primary translate-x-1" : "text-muted-foreground")} />
                   </button>
                 ))}
+                {(Array.isArray(funnels) ? funnels : []).length === 0 && (
+                  <EmptyState
+                    title="No funnels yet"
+                    description="No conversion pathways exist in this tenant scope yet."
+                    icon={Layers}
+                  />
+                )}
               </div>
             </ScrollArea>
           </Card>
@@ -444,7 +454,7 @@ export default function FunnelBuilderDesk() {
                     </CardContent>
                  </Card>
 
-                 <Card className="flex-1 rounded-[4rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden relative">
+                 <Card className="flex-1 rounded-[4rem] border-none shadow-2xl glass-card overflow-hidden relative">
                     <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.07] pointer-events-none" 
                          style={{ backgroundImage: 'radial-gradient(#6366f1 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
                     <ScrollArea className="h-full">
@@ -468,7 +478,7 @@ export default function FunnelBuilderDesk() {
                                   <div className="pt-4 flex justify-center">
                                     <DropdownMenu>
                                        <DropdownMenuTrigger asChild>
-                                         <Button variant="outline" className="w-full h-40 rounded-[3rem] border-4 border-dashed border-slate-200 dark:border-slate-800 bg-transparent flex flex-col gap-4 hover:bg-white dark:hover:bg-muted hover:border-primary hover:text-primary transition-all group shadow-inner">
+                                         <Button variant="outline" className="w-full h-40 rounded-[3rem] border-4 border-dashed border-border dark:border-border bg-transparent flex flex-col gap-4 hover:bg-white dark:hover:bg-muted hover:border-primary hover:text-primary transition-all group shadow-inner">
                                             <div className="h-16 w-16 rounded-full bg-muted dark:bg-muted flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all shadow-md">
                                               <Plus className="h-8 w-8 group-hover:rotate-90 transition-transform duration-500" />
                                             </div>
@@ -493,7 +503,7 @@ export default function FunnelBuilderDesk() {
                  </Card>
               </div>
            ) : (
-              <div className="h-full flex flex-col items-center justify-center rounded-[4rem] border-2 border-dashed border-white/20 dark:border-slate-800/20 bg-white/10 dark:bg-muted grayscale opacity-30 space-y-10 animate-in zoom-in duration-1000">
+              <div className="h-full flex flex-col items-center justify-center rounded-[4rem] border-2 border-dashed border-white/20 dark:border-border/20 bg-white/10 dark:bg-muted grayscale opacity-30 space-y-10 animate-in zoom-in duration-1000">
                  <div className="relative">
                     <div className="absolute inset-0 bg-primary blur-3xl rounded-full scale-150 animate-pulse" />
                     <div className="relative h-40 w-40 bg-white dark:bg-muted rounded-[2.5rem] flex items-center justify-center shadow-2xl border border-white/10">
@@ -516,8 +526,8 @@ export default function FunnelBuilderDesk() {
 
         {/* Right: Insights & Analytics */}
         <div className="col-span-12 lg:col-span-3 flex flex-col gap-10 overflow-hidden">
-           <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden flex flex-col">
-              <CardHeader className="p-8 pb-4 border-b border-white/10 dark:border-slate-800/10">
+           <Card className="rounded-[3rem] border-none shadow-2xl glass-card overflow-hidden flex flex-col">
+              <CardHeader className="p-8 pb-4 border-b border-white/10 dark:border-border/10">
                  <div className="flex items-center justify-between">
                     <CardTitle className="text-xl font-black uppercase tracking-tight flex items-center gap-3">
                        <BarChart3 className="h-6 w-6 text-primary" />
@@ -587,96 +597,26 @@ export default function FunnelBuilderDesk() {
         </div>
       </div>
 
-      {/* Initialize Pathway Wizard */}
-      <Dialog open={newFunnelOpen} onOpenChange={setNewFunnelOpen}>
-        <DialogContent className="sm:max-w-[500px] rounded-[3rem] border-none bg-white dark:bg-muted p-0 overflow-hidden shadow-2xl">
-          <div className="h-2 bg-primary" />
-          <div className="p-12 space-y-10">
-            <DialogHeader>
-              <div className="flex items-center gap-3 mb-2">
-                 <Badge className="bg-primary text-white font-black text-[10px] uppercase tracking-widest">Protocol Delta</Badge>
-                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Pathway Initialization</p>
-              </div>
-              <DialogTitle className="text-4xl font-black tracking-tighter uppercase italic">Initialize Pipeline</DialogTitle>
-              <DialogDescription className="text-base font-medium italic italic">Define the strategic designation for your new conversion protocol.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="funnel-name" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Designation</Label>
-                <Input 
-                  id="funnel-name" 
-                  placeholder="E.G. Q4 ENTERPRISE GROWTH LINK" 
-                  value={newFunnelName}
-                  onChange={(e) => setNewFunnelName(e.target.value)}
-                  className="h-16 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-lg"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button 
-                 className="w-full h-16 rounded-2xl bg-primary hover:bg-primary font-black text-xs uppercase tracking-widest shadow-2xl shadow-indigo-500/30 gap-3"
-                 onClick={handleCreateFunnel}
-                 disabled={refreshing}
-              >
-                {refreshing ? <RefreshCw className="h-5 w-5 animate-spin" /> : <Box className="h-5 w-5" />}
-                EXECUTE INITIALIZATION
-              </Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Create Funnel Modal */}
+      <CreateFunnelModal
+        isOpen={newFunnelOpen}
+        onClose={() => setNewFunnelOpen(false)}
+        onSuccess={() => refresh(true)}
+      />
 
-      {/* Node Config Wizard */}
-      <Dialog open={editStepOpen} onOpenChange={setEditStepOpen}>
-        <DialogContent className="sm:max-w-[450px] rounded-[3rem] border-none bg-white dark:bg-muted p-0 overflow-hidden shadow-2xl">
-          <div className="h-2 bg-primary" />
-          <div className="p-10 space-y-8">
-            <DialogHeader>
-              <div className="flex items-center gap-3 mb-2">
-                 <Badge className="bg-primary text-white font-black text-[10px] uppercase tracking-widest">Configuration</Badge>
-                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Node Parameter Alignment</p>
-              </div>
-              <DialogTitle className="text-3xl font-black tracking-tighter">Node Settings</DialogTitle>
-              <DialogDescription className="text-sm font-medium italic italic">Modify the behavioral matrix for this strategic node.</DialogDescription>
-            </DialogHeader>
-            {editingStep && (
-              <div className="space-y-8 py-4">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Designation</Label>
-                  <Input 
-                    value={editingStep.name} 
-                    onChange={(e) => setEditingStep({...editingStep, name: e.target.value})}
-                    className="h-14 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-lg uppercase"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Simulation Yield (%)</Label>
-                  <Input 
-                    type="number"
-                    value={editingStep.conversionRate} 
-                    onChange={(e) => setEditingStep({...editingStep, conversionRate: parseInt(e.target.value)})}
-                    className="h-14 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-lg"
-                  />
-                </div>
-                <div className="flex items-center justify-between p-6 bg-primary dark:bg-primary rounded-[1.5rem] border border-primary">
-                  <div className="space-y-1">
-                    <Label className="font-black text-xs uppercase tracking-widest">A/B Matrix</Label>
-                    <p className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">Experimental Validation</p>
-                  </div>
-                  <Switch 
-                    checked={editingStep.isABTest} 
-                    onCheckedChange={(checked) => setEditingStep({...editingStep, isABTest: checked})} 
-                    className="data-[state=checked]:bg-primary"
-                  />
-                </div>
-              </div>
-            )}
-            <DialogFooter>
-              <Button className="w-full h-14 rounded-2xl bg-primary hover:bg-primary font-black text-[10px] uppercase tracking-widest shadow-xl" onClick={updateStep}>AUTHORIZE CONFIG</Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Edit Funnel Step Modal */}
+      <EditFunnelStepModal
+        isOpen={editStepOpen}
+        onClose={() => { setEditStepOpen(false); setEditingStep(null); }}
+        step={editingStep}
+        onSave={(data) => {
+          if (!selectedFunnel || !editingStep) return;
+          const newSteps = (Array.isArray(selectedFunnel.steps) ? selectedFunnel.steps : []).map(s =>
+            s.id === editingStep.id ? { ...s, ...data } : s
+          );
+          setSelectedFunnel({ ...selectedFunnel, steps: newSteps });
+        }}
+      />
     </div>
   );
 }

@@ -18,7 +18,8 @@ import {
   Home,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassCard } from "@/components/shared/GlassCard";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,7 @@ import { toast } from "@/hooks/use-toast";
 import { retailService } from "@/core/services/retail/retailService";
 import { useSession } from "@/core/security/session";
 import { useRetail } from "../context/RetailContext";
+import { formatCurrency } from "@/lib/format";
 import type { RetailProduct } from "@/core/types/retail/retail";
 
 interface CartItem {
@@ -196,7 +198,7 @@ const SelfServiceKiosk = () => {
         </div>
         <div className="flex flex-col gap-6 w-full max-w-md">
            <Button
-             className="h-28 bg-white text-primary-foreground hover:bg-secondary/10 font-black italic rounded-[2.5rem] text-2xl shadow-2xl transition-all uppercase tracking-widest active:scale-95"
+             className="h-28 bg-primary text-primary-foreground hover:bg-primary/90 font-black italic rounded-[2.5rem] text-2xl shadow-2xl transition-all uppercase tracking-widest active:scale-95"
              onClick={() => setStep("scanning")}
            >
              New Customer
@@ -249,12 +251,32 @@ const SelfServiceKiosk = () => {
               variant="ghost"
               size="icon"
               className="h-14 w-14 rounded-2xl bg-secondary/40 hover:bg-secondary/60 text-foreground border border-border transition-all"
-              onClick={() =>
-                toast({
-                  title: "Station Telemetry",
-                  description: `Node: KIOSK-SELF-${session.location_id}. Power: Nominal. Network: 2ms Latency.`,
-                })
-              }
+              onClick={async () => {
+                try {
+                  const telemetry = await (retailService as any).getKioskTelemetry?.(
+                    session.tenant_id,
+                    session,
+                    session.location_id,
+                  );
+                  if (telemetry) {
+                    toast({
+                      title: "Station Telemetry",
+                      description: `Node: ${telemetry.nodeId || `KIOSK-SELF-${session.location_id}`}. Power: ${telemetry.powerStatus || "Nominal"}. Network: ${telemetry.latencyMs ?? "N/A"}ms Latency.`,
+                    });
+                  } else {
+                    toast({
+                      title: "Station Telemetry",
+                      description: `Node: KIOSK-SELF-${session.location_id}. Telemetry endpoint not available.`,
+                    });
+                  }
+                } catch {
+                  toast({
+                    title: "Station Telemetry",
+                    description: `Node: KIOSK-SELF-${session.location_id}. Unable to fetch telemetry data.`,
+                    variant: "destructive",
+                  });
+                }
+              }}
             >
               <Info className="w-6 h-6" />
             </Button>
@@ -262,7 +284,7 @@ const SelfServiceKiosk = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="h-14 w-14 rounded-2xl bg-secondary/40 hover:bg-white/20 text-foreground border border-border transition-all"
+              className="h-14 w-14 rounded-2xl bg-secondary/40 hover:bg-accent text-foreground border border-border transition-all"
               onClick={() => navigate("/m/retail/operational/gateway")}
               title="Exit to Gateway"
             >
@@ -274,7 +296,7 @@ const SelfServiceKiosk = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 overflow-hidden">
           {/* LEFT: SCANNING & PRODUCT GRID */}
           <div className="lg:col-span-8 flex flex-col gap-8 overflow-hidden">
-            <Card className="bg-secondary/40 border-border backdrop-blur-3xl rounded-[3rem] overflow-hidden shadow-2xl shrink-0">
+            <GlassCard className="bg-secondary/40 border-border backdrop-blur-3xl rounded-[3rem] overflow-hidden shadow-2xl shrink-0">
               <CardContent className="p-10">
                 <form onSubmit={handleScan} className="relative group">
                   <Scan className="absolute left-10 top-1/2 -translate-y-1/2 w-10 h-10 text-primary group-focus-within:scale-110 transition-transform" />
@@ -302,17 +324,17 @@ const SelfServiceKiosk = () => {
                         {p.name}
                       </div>
                       <div className="text-[10px] font-black text-primary mt-2 italic tracking-widest">
-                        Rp {p.price.toLocaleString()}
+                        {formatCurrency(p.price, "IDR", "id-ID")}
                       </div>
                     </button>
                   ))}
                 </div>
               </CardContent>
-            </Card>
+            </GlassCard>
 
             {/* SELECTION VAULT / CART */}
-            <Card className="bg-secondary/40 border-border backdrop-blur-3xl rounded-[3rem] overflow-hidden shadow-2xl flex flex-col flex-1">
-              <CardHeader className="p-10 border-b border-white/5 bg-black/20">
+            <GlassCard className="bg-secondary/40 border-border backdrop-blur-3xl rounded-[3rem] overflow-hidden shadow-2xl flex flex-col flex-1">
+              <CardHeader className="p-10 border-b border-border/40 bg-background/40">
                 <CardTitle className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.4em] italic flex items-center gap-4">
                    <ShoppingBag className="w-5 h-5" /> Active Tray Consolidations
                 </CardTitle>
@@ -325,14 +347,14 @@ const SelfServiceKiosk = () => {
                       <p className="text-sm font-black italic uppercase tracking-[0.4em]">Tray Is Empty</p>
                     </div>
                   ) : (
-                    <div className="divide-y divide-white/5">
+                    <div className="divide-y divide-border/40">
                       {(Array.isArray(cart) ? cart : []).map((item) => (
                         <div
                           key={item.id}
-                          className="p-10 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
+                          className="p-10 flex items-center justify-between hover:bg-muted/10 transition-colors"
                         >
                           <div className="flex gap-8">
-                            <div className="w-24 h-24 bg-secondary/40 rounded-3xl flex items-center justify-center shadow-inner border border-white/5">
+                            <div className="w-24 h-24 bg-secondary/40 rounded-3xl flex items-center justify-center shadow-inner border border-border/40">
                               <ShoppingBag className="w-12 h-12 text-muted-foreground" />
                             </div>
                             <div className="flex flex-col justify-center">
@@ -345,7 +367,7 @@ const SelfServiceKiosk = () => {
                             </div>
                           </div>
                           <div className="flex items-center gap-16">
-                            <div className="flex items-center gap-6 bg-black/40 border-2 border-border p-3 rounded-[1.5rem] shadow-xl">
+                            <div className="flex items-center gap-6 bg-background/40 border-2 border-border p-3 rounded-[1.5rem] shadow-xl">
                               <Button
                                 variant="ghost"
                                 className="h-12 w-12 p-0 rounded-xl bg-secondary/40 hover:bg-secondary/60 text-foreground font-black"
@@ -382,7 +404,7 @@ const SelfServiceKiosk = () => {
                             </div>
                             <div className="text-right min-w-[160px]">
                               <div className="text-4xl font-black italic text-foreground tracking-tighter">
-                                Rp {(item.price * item.quantity).toLocaleString()}
+                                {formatCurrency(item.price * item.quantity, "IDR", "id-ID")}
                               </div>
                               <button
                                 onClick={() => removeFromCart(item.id)}
@@ -398,19 +420,19 @@ const SelfServiceKiosk = () => {
                   )}
                 </ScrollArea>
               </CardContent>
-            </Card>
+            </GlassCard>
           </div>
 
           {/* RIGHT: SETTLEMENT PANEL */}
           <div className="lg:col-span-4 flex flex-col gap-8 overflow-hidden">
-            <Card className="bg-secondary border-none shadow-3xl text-foreground rounded-[3.5rem] overflow-hidden flex flex-col shrink-0">
+            <GlassCard className="bg-secondary border-none shadow-3xl text-foreground rounded-[3.5rem] overflow-hidden flex flex-col shrink-0">
               <CardContent className="p-12 space-y-12">
                 <div className="space-y-6">
                   <div className="text-[10px] font-black text-primary uppercase tracking-[0.4em] italic">
                     Final Assessment Total
                   </div>
                   <div className="text-7xl font-black italic tracking-tighter text-foreground">
-                    Rp {total.toLocaleString()}
+                    {formatCurrency(total, "IDR", "id-ID")}
                   </div>
                   <div className="flex items-center gap-4 p-5 bg-secondary/40 rounded-3xl border border-border shadow-inner">
                     <ShieldCheck className="w-6 h-6 text-success" />
@@ -451,7 +473,7 @@ const SelfServiceKiosk = () => {
                   </div>
 
                   <Button
-                    className="w-full h-32 bg-white text-primary-foreground hover:bg-secondary/10 font-black italic rounded-[2.5rem] text-3xl shadow-2xl uppercase tracking-[0.2em] transition-all disabled:opacity-20 active:scale-[0.98]"
+                    className="w-full h-32 bg-primary text-primary-foreground hover:bg-primary/90 font-black italic rounded-[2.5rem] text-3xl shadow-2xl uppercase tracking-[0.2em] transition-all disabled:opacity-20 active:scale-[0.98]"
                     disabled={cart.length === 0 || !paymentMethod || isProcessing}
                     onClick={handleCheckout}
                   >
@@ -471,9 +493,9 @@ const SelfServiceKiosk = () => {
                    Receipt issued on successful vault clearance.
                 </p>
               </CardContent>
-            </Card>
+            </GlassCard>
 
-            <Card className="bg-secondary/40 border border-border backdrop-blur-3xl rounded-[2.5rem] shadow-2xl overflow-hidden shrink-0">
+            <GlassCard className="bg-secondary/40 border border-border backdrop-blur-3xl rounded-[2.5rem] shadow-2xl overflow-hidden shrink-0">
               <CardContent className="p-8 flex gap-6 items-center">
                 <div className="w-16 h-16 bg-secondary/40 rounded-3xl flex items-center justify-center border-2 border-border">
                   <Monitor className="w-8 h-8 text-primary" />
@@ -487,7 +509,7 @@ const SelfServiceKiosk = () => {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </GlassCard>
           </div>
         </div>
       </div>

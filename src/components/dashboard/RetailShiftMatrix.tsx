@@ -23,7 +23,7 @@ export const RetailShiftMatrix: React.FC<RetailShiftMatrixProps> = ({ data = [] 
 
   return (
     <div 
-      className="flex flex-col h-full rounded-[2.5rem] border border-slate-800 bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group cursor-pointer overflow-hidden relative"
+      className="flex flex-col h-full rounded-[2.5rem] border border-border bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group cursor-pointer overflow-hidden relative"
       onClick={() => navigate('/m/retail/management')}
     >
       <div className="flex items-center justify-between mb-8">
@@ -52,7 +52,7 @@ export const RetailShiftMatrix: React.FC<RetailShiftMatrixProps> = ({ data = [] 
               </div>
               <div className={cn(
                 "h-5 rounded-full px-2.5 flex items-center text-[8px] font-black uppercase tracking-widest border",
-                shift.status === 'OPEN' ? 'bg-success text-success border-emerald-500/20' : 'bg-muted text-muted-foreground border-white/5'
+                shift.status === 'OPEN' ? 'bg-success text-success border-success/20' : 'bg-muted text-muted-foreground border-white/5'
               )}>
                 {shift.status}
               </div>

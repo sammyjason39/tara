@@ -67,7 +67,7 @@ export const CredentialField = ({
           <Button
             variant="outline"
             size="icon"
-            className="border-slate-700 text-muted-foreground hover:text-foreground shrink-0"
+            className="border-border text-muted-foreground hover:text-foreground shrink-0"
             onClick={onCopy}
           >
             <Copy className="w-4 h-4" />
@@ -91,7 +91,7 @@ export const CopyPill = ({ label, value, onClick }: CopyPillProps) => (
   <Button
     size="sm"
     variant="outline"
-    className="h-8 rounded-full border-slate-200 text-[10px] font-black uppercase tracking-widest text-muted-foreground"
+    className="h-8 rounded-full border-border text-[10px] font-black uppercase tracking-widest text-muted-foreground"
     onClick={onClick}
     disabled={!value}
     type="button"

@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
+import { EmptyState } from "@/components/shared/AsyncState";
+import { formatDateTime, safeText } from "@/lib/format";
 import {
   Download,
   FileText,
@@ -56,50 +58,20 @@ const categories = [
   },
 ];
 
-const recentReports = [
-  {
-    id: "rep-1",
-    title: "Executive KPI Summary",
-    owner: "Finance Ops",
-    updated: "Today, 09:40",
-    status: "Ready",
-  },
-  {
-    id: "rep-2",
-    title: "Regional Operational Scorecard",
-    owner: "Ops Analytics",
-    updated: "Yesterday, 18:22",
-    status: "Ready",
-  },
-  {
-    id: "rep-3",
-    title: "Quarterly Access Review",
-    owner: "Security",
-    updated: "Jan 30, 2026",
-    status: "Draft",
-  },
-];
+interface RecentReport {
+  id: string;
+  title: string;
+  owner: string;
+  updated: string;
+  status: string;
+}
 
-const scheduledReports = [
-  {
-    id: "sch-1",
-    title: "Weekly Finance Digest",
-    cadence: "Every Monday 07:00",
-    recipients: "Finance Leadership",
-  },
-  {
-    id: "sch-2",
-    title: "Monthly Compliance Pack",
-    cadence: "1st of month 08:00",
-    recipients: "Risk & Compliance",
-  },
-  {
-    id: "sch-3",
-    title: "Daily Ops Pulse",
-    cadence: "Daily 06:00",
-    recipients: "Operations Command",
-  },
-];
+interface ScheduledReport {
+  id: string;
+  title: string;
+  cadence: string;
+  recipients: string;
+}
 
 const SECTIONS = [
   {
@@ -115,7 +87,10 @@ export default function CoreReports() {
   const session = useSession();
   const [activeJobs, setActiveJobs] = useState<ActiveJob[]>([]);
   const [loading, setLoading] = useState(false);
-  const [reports, setReports] = useState(recentReports); // Fallback to mock for UI baseline
+  // Real_Data: recent/scheduled reports are bound to the tenant scope. No
+  // Placeholder_Data — zero records render the Empty_State (Requirements 13.4, 13.5).
+  const [reports, setReports] = useState<RecentReport[]>([]);
+  const [scheduled, setScheduled] = useState<ScheduledReport[]>([]);
 
   // Poll for job status
   useEffect(() => {
@@ -174,6 +149,27 @@ export default function CoreReports() {
   const handleDownload = (jobId: string) => {
     reportingService.downloadReport(session, jobId);
   };
+
+  // Bind the "recent reports" view to Real_Data: completed generation jobs in
+  // this tenant scope. When none have completed, the view shows the Empty_State.
+  useEffect(() => {
+    const completed = (Array.isArray(activeJobs) ? activeJobs : [])
+      .filter((job) => job.status === "COMPLETED")
+      .map<RecentReport>((job) => ({
+        id: job.id,
+        title: job.report_type,
+        owner: safeText(session.role),
+        updated: formatDateTime(new Date()),
+        status: "Ready",
+      }));
+    if (completed.length > 0) {
+      setReports((prev) => {
+        const existing = new Set(prev.map((r) => r.id));
+        const merged = [...completed.filter((r) => !existing.has(r.id)), ...prev];
+        return merged;
+      });
+    }
+  }, [activeJobs, session.role]);
 
   const mainContent = (
     <div className="space-y-6 p-6">
@@ -276,19 +272,25 @@ export default function CoreReports() {
           description="Latest generated reports across teams."
         >
           <div className="space-y-4">
-            {(Array.isArray(reports) ? reports : []).map((report) => (
+            {reports.length === 0 ? (
+              <EmptyState
+                title="No reports generated yet"
+                description="Generated reports for this tenant will appear here. Queue one from a template above."
+              />
+            ) : (
+              (Array.isArray(reports) ? reports : []).map((report) => (
               <div
                 key={report.id}
                 className="flex items-center justify-between rounded-lg border p-4"
               >
                 <div>
-                  <p className="text-sm font-medium text-foreground">{report.title}</p>
+                  <p className="text-sm font-medium text-foreground">{safeText(report.title)}</p>
                   <p className="text-xs text-muted-foreground">
-                    {report.owner} • {report.updated}
+                    {safeText(report.owner)} • {safeText(report.updated)}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Badge variant="secondary">{report.status}</Badge>
+                  <Badge variant="secondary">{safeText(report.status)}</Badge>
                   <Button 
                     onClick={() => handleGenerate(report.title, 'PDF')} 
                     variant="outline" 
@@ -300,7 +302,8 @@ export default function CoreReports() {
                   </Button>
                 </div>
               </div>
-            ))}
+            ))
+            )}
           </div>
         </WorkspacePanel>
 
@@ -309,16 +312,22 @@ export default function CoreReports() {
           description="Automated delivery for recurring stakeholders."
         >
           <div className="space-y-4">
-            {(Array.isArray(scheduledReports) ? scheduledReports : []).map((schedule) => (
+            {scheduled.length === 0 ? (
+              <EmptyState
+                title="No scheduled deliveries"
+                description="Recurring report deliveries for this tenant will appear here once configured."
+              />
+            ) : (
+              (Array.isArray(scheduled) ? scheduled : []).map((schedule) => (
               <div key={schedule.id} className="rounded-lg border p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-medium text-foreground">
-                      {schedule.title}
+                      {safeText(schedule.title)}
                     </p>
-                    <p className="text-xs text-muted-foreground">{schedule.cadence}</p>
+                    <p className="text-xs text-muted-foreground">{safeText(schedule.cadence)}</p>
                     <p className="text-xs text-muted-foreground">
-                      Recipients: {schedule.recipients}
+                      Recipients: {safeText(schedule.recipients)}
                     </p>
                   </div>
                   <Button disabled title="Not available yet" size="sm" variant="outline">
@@ -326,7 +335,8 @@ export default function CoreReports() {
                   </Button>
                 </div>
               </div>
-            ))}
+            ))
+            )}
             <div className="flex items-center justify-between rounded-lg border border-dashed p-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <FileText className="h-4 w-4" />
@@ -358,13 +368,13 @@ export default function CoreReports() {
             disabled 
             title="Not available yet" 
             variant="outline"
-            className="rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest border-slate-200"
+            className="rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest"
           >
             Manage schedules
           </Button>
           <Button 
-            onClick={() => alert("Detailed View:\n\nMetadata: " + (typeof window !== "undefined" ? window.location.pathname : "N/A"))}
-            className="rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest bg-primary hover:bg-primary shadow-xl shadow-indigo-500/20"
+            onClick={() => handleGenerate("Executive KPI Summary", "PDF")}
+            className="rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest shadow-xl shadow-primary/20"
           >
             <Plus className="h-3 w-3 mr-2" /> New report
           </Button>

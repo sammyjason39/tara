@@ -44,11 +44,11 @@ export function WorkQueueSection({
       <WorkspacePanel
         title="Work Queue"
         description="Live finance operations inbox — routed approvals and pending activities"
-        className="rounded-3xl border-slate-100 bg-white shadow-sm"
+        className="rounded-3xl border-border bg-white shadow-sm"
       >
         <Tabs value={tab} onValueChange={(v) => onTabChange(v as typeof tab)}>
           <div className="flex flex-wrap items-center justify-between gap-3 mb-6 mt-2">
-            <TabsList className="h-12 bg-muted p-1 border border-slate-200/80 rounded-2xl w-fit">
+            <TabsList className="h-12 bg-muted p-1 border border-border/80 rounded-2xl w-fit">
               <TabsTrigger value="approvals" className="rounded-xl px-5 font-bold text-xs data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 Approvals
                 {approvals.length > 0 && (
@@ -105,7 +105,7 @@ export function WorkQueueSection({
                           Approve
                         </Button>
                         <Button size="sm"
-                          className="rounded-xl text-xs font-bold border border-rose-200 bg-destructive text-destructive hover:bg-destructive shadow-none"
+                          className="rounded-xl text-xs font-bold border border-destructive bg-destructive text-destructive hover:bg-destructive shadow-none"
                           onClick={() => onReject(flow.id)}>
                           Reject
                         </Button>
@@ -129,7 +129,7 @@ export function WorkQueueSection({
                     className="flex w-full cursor-pointer items-center justify-between rounded-2xl border bg-white p-5 shadow-sm transition-all hover:bg-muted hover:shadow-md hover:-translate-y-0.5 text-left"
                     onClick={() => onSelectAlert(alert)}>
                     <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-2xl bg-destructive flex items-center justify-center border border-rose-100">
+                      <div className="h-12 w-12 rounded-2xl bg-destructive flex items-center justify-center border border-destructive">
                         <AlertTriangle className="h-5 w-5 text-destructive" />
                       </div>
                       <div>
@@ -219,10 +219,10 @@ export function WorkQueueSection({
       <WorkspacePanel
         title="Payment Ledger"
         description="Full transactional history filtered by current search scope"
-        className="rounded-3xl border-slate-100 bg-white shadow-sm mt-5"
+        className="rounded-3xl border-border bg-white shadow-sm mt-5"
       >
         <DataTableShell total={payments.length} page={1} pageSize={10}>
-          <div className="rounded-2xl overflow-hidden border border-slate-100 mt-4">
+          <div className="rounded-2xl overflow-hidden border border-border mt-4">
             <table className="w-full text-sm">
               <thead className="bg-muted">
                 <tr>

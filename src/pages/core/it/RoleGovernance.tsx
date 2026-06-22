@@ -192,7 +192,7 @@ export default function RoleGovernance() {
         <WorkspacePanel 
           title="Capability Matrix" 
           description={`Fine-tuning permissions for ${selectedRole.name}.`}
-          className="rounded-[2.5rem] border-slate-200 dark:border-slate-800 shadow-xl"
+          className="rounded-[2.5rem] border-muted dark:border-muted shadow-xl"
         >
            <div className="space-y-8 pt-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

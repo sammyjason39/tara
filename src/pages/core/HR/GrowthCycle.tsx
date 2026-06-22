@@ -10,6 +10,8 @@ import { DataTableShell } from "@/core/tools/DataTableShell";
 import { FilterBar } from "@/core/tools/FilterBar";
 import { useSession } from "@/core/security/session";
 import { performanceService } from "@/core/services/hr/performanceService";
+import { EmptyState } from "@/components/shared/AsyncState";
+import { formatDate } from "@/lib/format";
 
 export default function GrowthCycle() {
   const session = useSession();
@@ -103,13 +105,24 @@ export default function GrowthCycle() {
               </tr>
             </thead>
             <tbody>
-              {(Array.isArray(filteredCycles) ? filteredCycles : []).map((cycle) => (
+              {filteredCycles.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="p-0">
+                    <EmptyState
+                      title="No review cycles"
+                      description="No review cycles match the current search. Create a review cycle to begin."
+                    />
+                  </td>
+                </tr>
+              ) : (
+                (Array.isArray(filteredCycles) ? filteredCycles : []).map((cycle) => (
                 <tr key={cycle.id} className="border-t">
                   <td className="p-3">{cycle.name}</td>
                   <td className="p-3 text-muted-foreground">{cycle.status}</td>
-                  <td className="p-3 text-muted-foreground">{cycle.dueDate}</td>
+                  <td className="p-3 text-muted-foreground">{formatDate(cycle.dueDate)}</td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
         </DataTableShell>

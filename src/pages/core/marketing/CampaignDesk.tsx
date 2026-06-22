@@ -54,9 +54,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSession } from "@/core/security/session";
 import { marketingService } from "@/core/services/marketing/marketingService";
+import { formatCurrency } from "@/lib/format";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { MarketingCampaign } from "@/core/types/marketing/marketing";
+import { CreateCampaignModal } from "./modals/CreateCampaignModal";
+import { UpdateCampaignStatusModal } from "./modals/UpdateCampaignStatusModal";
 
 const OBJECTIVES: MarketingCampaign["objective"][] = [
   "LEAD_GENERATION",
@@ -188,12 +192,12 @@ export default function CampaignDesk() {
                Campaign Cluster Active
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">Campaign Desk</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground">Campaign Desk</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic">"Strategic dominance is won through the coordination of elite channel execution."</p>
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-slate-800/20 shadow-2xl">
+          <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-border/20 shadow-2xl">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -267,7 +271,7 @@ export default function CampaignDesk() {
       </div>
 
       {/* Main Campaign Registry */}
-      <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden">
+      <Card className="rounded-[3rem] border-none shadow-2xl glass-card overflow-hidden">
         <Tabs defaultValue="all" className="w-full">
           <CardHeader className="p-10 pb-0">
              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
@@ -306,7 +310,7 @@ export default function CampaignDesk() {
                     <div className={cn("absolute top-0 right-0 h-24 w-24 rounded-full blur-3xl -mr-12 -mt-12 transition-all duration-700 opacity-20", campaign.status === 'ACTIVE' ? "bg-success" : "bg-muted")} />
                     <CardHeader className="p-8 pb-4">
                       <div className="flex justify-between items-start mb-4">
-                        <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-slate-200 dark:border-slate-800 text-muted-foreground">
+                        <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest border-border dark:border-border text-muted-foreground">
                           {campaign.objective.replace('_', ' ')}
                         </Badge>
                         <Badge className={cn(
@@ -323,7 +327,7 @@ export default function CampaignDesk() {
                       <div className="flex justify-between items-end">
                          <div className="space-y-1">
                             <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Yield Allocation</p>
-                            <p className="text-xl font-black text-primary">${campaign.budget.toLocaleString()} <span className="text-[10px] uppercase">{campaign.currency}</span></p>
+                            <p className="text-xl font-black text-primary">{formatCurrency(campaign.budget, campaign.currency)}</p>
                          </div>
                          <div className="text-right">
                             <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Burn Rate</p>
@@ -338,7 +342,7 @@ export default function CampaignDesk() {
                           <Badge key={ch} variant="secondary" className="rounded-full text-[8px] font-black px-2 py-0 h-4 border-none bg-muted dark:bg-muted text-muted-foreground">{ch}</Badge>
                         ))}
                       </div>
-                      <div className="flex items-center justify-between pt-6 border-t border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center justify-between pt-6 border-t border-border dark:border-border">
                          <div className="flex items-center gap-3">
                             <Avatar className="h-8 w-8 rounded-xl ring-2 ring-white dark:ring-slate-900">
                               <AvatarFallback className="text-[10px] font-black bg-primary text-white">
@@ -358,6 +362,13 @@ export default function CampaignDesk() {
                     </CardContent>
                   </Card>
                 ))}
+                {(Array.isArray(filtered) ? filtered : []).length === 0 && (
+                  <EmptyState
+                    className="col-span-full"
+                    title="No campaigns found"
+                    description="No strategic campaigns match the current search in this tenant scope."
+                  />
+                )}
               </div>
             ) : (
               <div className="px-10 pb-10 overflow-x-auto pt-0">
@@ -386,10 +397,10 @@ export default function CampaignDesk() {
                            </div>
                         </td>
                         <td className="px-6 py-8">
-                           <Badge variant="outline" className="rounded-full font-black text-[8px] px-3 py-1 border-slate-200 dark:border-slate-800 uppercase tracking-widest text-muted-foreground">{campaign.objective}</Badge>
+                           <Badge variant="outline" className="rounded-full font-black text-[8px] px-3 py-1 border-border dark:border-border uppercase tracking-widest text-muted-foreground">{campaign.objective}</Badge>
                         </td>
                         <td className="px-6 py-8">
-                           <p className="text-sm font-black text-primary">${campaign.budget.toLocaleString()} <span className="text-[10px] text-muted-foreground uppercase">{campaign.currency}</span></p>
+                           <p className="text-sm font-black text-primary">{formatCurrency(campaign.budget, campaign.currency)}</p>
                         </td>
                         <td className="px-6 py-8">
                            <div className="flex items-center gap-3 w-[150px]">
@@ -408,170 +419,31 @@ export default function CampaignDesk() {
                     ))}
                   </tbody>
                 </table>
+                {(Array.isArray(filtered) ? filtered : []).length === 0 && (
+                  <EmptyState
+                    title="No campaigns found"
+                    description="No strategic campaigns match the current search in this tenant scope."
+                  />
+                )}
               </div>
             )}
           </TabsContent>
         </Tabs>
       </Card>
 
-      {/* Creation Wizard */}
-      <Dialog open={isWizardOpen} onOpenChange={setIsWizardOpen}>
-        <DialogContent className="sm:max-w-[600px] border-none bg-white dark:bg-muted p-0 overflow-hidden shadow-2xl">
-          <div className="h-2 bg-primary" />
-          <div className="p-10 space-y-10">
-            <DialogHeader>
-              <div className="flex items-center gap-3 mb-2">
-                 <Badge className="bg-primary text-white font-black text-[10px] uppercase tracking-widest">Step {wizardStep} / 3</Badge>
-                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Campaign Injection Protocol</p>
-              </div>
-              <DialogTitle className="text-4xl font-black tracking-tighter">
-                {wizardStep === 1 ? "Strategic Context" : wizardStep === 2 ? "Audience & Channels" : "Budget & Horizon"}
-              </DialogTitle>
-              <DialogDescription className="text-base font-medium italic italic leading-relaxed italic">
-                 {wizardStep === 1 ? "Define the primary designation and tactical objective for the growth cluster." : 
-                  wizardStep === 2 ? "Coordinate the target audience and strategic channel mix for optimal yield." : 
-                  "Authorize the financial allocation and tactical timeline for execution."}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-8">
-              <div className="flex gap-2 mb-4">
-                {[1, 2, 3].map(s => (
-                  <div key={s} className={cn(
-                    "h-1.5 flex-1 rounded-full transition-all duration-500",
-                    s <= wizardStep ? "bg-primary shadow-[0_0_8px_rgba(79,70,229,0.5)]" : "bg-muted dark:bg-muted"
-                  )} />
-                ))}
-              </div>
-
-              {wizardStep === 1 && (
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Campaign Designation</label>
-                    <Input 
-                      className="h-14 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-lg"
-                      placeholder="e.g. Q4 ENTERPRISE EXPANSION" 
-                      value={name}
-                      onChange={e => setName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Tactical Objective</label>
-                    <Select value={objective} onValueChange={(v: any) => setObjective(v)}>
-                      <SelectTrigger className="h-14 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-lg">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-2xl border-none shadow-2xl">
-                        {(Array.isArray(OBJECTIVES) ? OBJECTIVES : []).map(obj => (
-                          <SelectItem key={obj} value={obj} className="font-bold text-sm uppercase">{obj.replace('_', ' ')}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              )}
-
-              {wizardStep === 2 && (
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Target Audience</label>
-                    <Input 
-                      className="h-14 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-lg"
-                      placeholder="e.g. SAAS DECISION MAKERS, HR LEADERS" 
-                      value={audience}
-                      onChange={e => setAudience(e.target.value)}
-                    />
-                  </div>
-                  <div className="p-6 bg-primary border border-primary rounded-3xl space-y-4">
-                     <p className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
-                       <Zap className="h-3.5 w-3.5" /> AI Recommended Channel Mix
-                     </p>
-                     <div className="flex flex-wrap gap-2">
-                        {(Array.isArray(CHANNEL_PRESETS[objective]) ? CHANNEL_PRESETS[objective] : []).map(ch => (
-                          <Badge key={ch} variant="secondary" className="rounded-full text-[10px] font-black px-4 py-1 bg-white dark:bg-muted text-primary shadow-sm border border-primary uppercase tracking-widest">{ch}</Badge>
-                        ))}
-                     </div>
-                  </div>
-                </div>
-              )}
-
-              {wizardStep === 3 && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Total Yield Allocation</label>
-                      <div className="relative">
-                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
-                        <Input 
-                          className="pl-12 h-14 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-lg" 
-                          type="number" 
-                          value={budget}
-                          onChange={e => setBudget(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Currency</label>
-                      <Select defaultValue="USD">
-                        <SelectTrigger className="h-14 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-lg">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-2xl border-none shadow-2xl">
-                          <SelectItem value="USD" className="font-bold">USD</SelectItem>
-                          <SelectItem value="EUR" className="font-bold">EUR</SelectItem>
-                          <SelectItem value="GBP" className="font-bold">GBP</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Tactical Start</label>
-                      <Input 
-                        type="date" 
-                        className="h-14 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-lg"
-                        value={startDate}
-                        onChange={e => setStartDate(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Tactical End</label>
-                      <Input 
-                        type="date" 
-                        className="h-14 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-lg"
-                        value={endDate}
-                        onChange={e => setEndDate(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <DialogFooter className="gap-4">
-              {wizardStep > 1 && (
-                <Button variant="ghost" className="h-14 rounded-2xl font-black text-[10px] uppercase tracking-widest px-8" onClick={() => setWizardStep(s => s - 1)}>BACK</Button>
-              )}
-              {wizardStep < 3 ? (
-                <Button className="h-14 rounded-2xl bg-primary hover:bg-primary font-black text-[10px] uppercase tracking-widest px-10 gap-2" onClick={() => setWizardStep(s => s + 1)}>
-                  CONTINUE <ArrowRight className="h-4 w-4" />
-                </Button>
-              ) : (
-                <Button className="h-14 rounded-2xl bg-primary hover:bg-primary font-black text-[10px] uppercase tracking-widest px-10 gap-2" onClick={handleCreateCampaign} disabled={refreshing}>
-                   {refreshing ? "INJECTING..." : "LAUNCH CAMPAIGN CLUSTER"}
-                </Button>
-              )}
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Create Campaign Modal */}
+      <CreateCampaignModal
+        isOpen={isWizardOpen}
+        onClose={() => setIsWizardOpen(false)}
+        onSuccess={() => refresh(true)}
+      />
 
       {/* Detail Overlay */}
       <Dialog open={!!selectedCampaign} onOpenChange={() => setSelectedCampaign(null)}>
         <DialogContent className="max-w-6xl border-none bg-white dark:bg-muted p-0 overflow-hidden shadow-2xl rounded-[3rem]">
            {selectedCampaign && (
              <div className="grid grid-cols-12 min-h-[600px]">
-                <div className="col-span-4 bg-muted dark:bg-muted p-10 flex flex-col justify-between border-r border-slate-100 dark:border-slate-800">
+                <div className="col-span-4 bg-muted dark:bg-muted p-10 flex flex-col justify-between border-r border-border dark:border-border">
                    <div className="space-y-8">
                       <div className="flex items-center gap-3">
                          <Badge className="bg-primary text-white font-black text-[9px] px-3 py-1 uppercase tracking-widest rounded-full">{selectedCampaign.status}</Badge>
@@ -606,14 +478,14 @@ export default function CampaignDesk() {
                             <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Channel Matrix</p>
                             <div className="flex gap-2 flex-wrap">
                                {(Array.isArray(selectedCampaign.channelMix) ? selectedCampaign.channelMix : []).map(ch => (
-                                 <Badge key={ch} variant="outline" className="text-[9px] font-black uppercase px-2 py-0 h-5 border-slate-200 dark:border-slate-800 text-muted-foreground">{ch}</Badge>
+                                 <Badge key={ch} variant="outline" className="text-[9px] font-black uppercase px-2 py-0 h-5 border-border dark:border-border text-muted-foreground">{ch}</Badge>
                                ))}
                             </div>
                          </div>
                       </div>
                    </div>
                    
-                   <div className="bg-white dark:bg-muted p-8 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-xl space-y-4">
+                   <div className="bg-white dark:bg-muted p-8 rounded-[2rem] border border-border dark:border-border shadow-xl space-y-4">
                       <div className="flex justify-between items-end">
                          <div>
                             <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Yield Multiple</p>
@@ -628,11 +500,11 @@ export default function CampaignDesk() {
                 </div>
                 
                 <div className="col-span-8 flex flex-col bg-white dark:bg-muted">
-                   <div className="p-10 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-white/50 dark:bg-muted backdrop-blur-md relative z-10">
+                   <div className="p-10 border-b border-border dark:border-border flex items-center justify-between bg-white/50 dark:bg-muted backdrop-blur-md relative z-10">
                       <div className="flex gap-12">
                          <div className="space-y-1">
                             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Global Budget</p>
-                            <p className="text-2xl font-black text-primary">${selectedCampaign.budget.toLocaleString()}</p>
+                            <p className="text-2xl font-black text-primary">{formatCurrency(selectedCampaign.budget, selectedCampaign.currency)}</p>
                          </div>
                          <div className="space-y-1">
                             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Current Spend</p>
@@ -711,7 +583,7 @@ export default function CampaignDesk() {
                       </div>
                    </ScrollArea>
                    
-                   <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-muted dark:bg-muted flex justify-end">
+                   <div className="p-8 border-t border-border dark:border-border bg-muted dark:bg-muted flex justify-end">
                       <Button variant="ghost" className="rounded-xl h-10 px-8 font-black text-[10px] uppercase tracking-widest text-muted-foreground" onClick={() => setSelectedCampaign(null)}>CLOSE PROTOCOL</Button>
                    </div>
                 </div>

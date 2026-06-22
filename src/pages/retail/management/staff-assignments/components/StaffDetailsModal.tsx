@@ -24,7 +24,7 @@ export const StaffDetailsModal: React.FC<StaffDetailsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-xl bg-secondary border-slate-800 p-8 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.4)] text-foreground">
+      <DialogContent className="max-w-xl bg-secondary border-border p-8 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.4)] text-foreground">
         <DialogHeader className="mb-6">
           <DialogTitle className="text-xl font-black italic tracking-tighter flex items-center gap-3">
             <div className="p-2.5 rounded-2xl bg-primary/20 text-primary">
@@ -79,10 +79,10 @@ export const StaffDetailsModal: React.FC<StaffDetailsModalProps> = ({
               Access Sub-Scopes
             </div>
             <div className="flex flex-wrap gap-2">
-              <Badge className="bg-secondary border border-slate-700 text-muted-foreground/60 font-black italic tracking-widest text-[9px] uppercase px-3 py-1">
+              <Badge className="bg-secondary border border-border text-muted-foreground/60 font-black italic tracking-widest text-[9px] uppercase px-3 py-1">
                 RETAIL_CORE
               </Badge>
-              <Badge className="bg-secondary border border-slate-700 text-muted-foreground/60 font-black italic tracking-widest text-[9px] uppercase px-3 py-1">
+              <Badge className="bg-secondary border border-border text-muted-foreground/60 font-black italic tracking-widest text-[9px] uppercase px-3 py-1">
                 POS_EXEC
               </Badge>
               {staff.roleTitle.includes("Head") ||

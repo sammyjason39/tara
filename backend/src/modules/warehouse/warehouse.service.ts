@@ -14,7 +14,7 @@ export class WarehouseService {
     private readonly warehouseRepo: IWarehouseRepository,
   ) {}
 
-  async getBins(ctx: TenantContext, locationId: string) {
+  async getBins(ctx: TenantContext, locationId: string, skip?: number, take?: number) {
     return (this.prisma as any).warehouse_bins.findMany({
       where: MultiTenancyUtil.getScope(ctx, { location_id: locationId }),
       include: {
@@ -24,6 +24,14 @@ export class WarehouseService {
           },
         },
       },
+      ...(skip !== undefined && { skip }),
+      ...(take !== undefined && { take }),
+    });
+  }
+
+  async countBins(ctx: TenantContext, locationId: string): Promise<number> {
+    return (this.prisma as any).warehouse_bins.count({
+      where: MultiTenancyUtil.getScope(ctx, { location_id: locationId }),
     });
   }
 
@@ -36,12 +44,20 @@ export class WarehouseService {
     });
   }
 
-  async getBinStock(ctx: TenantContext, binId: string) {
+  async getBinStock(ctx: TenantContext, binId: string, skip?: number, take?: number) {
     return (this.prisma as any).bin_assignments.findMany({
       where: MultiTenancyUtil.getScope(ctx, { bin_id: binId }),
       include: {
         item_masters: true,
       },
+      ...(skip !== undefined && { skip }),
+      ...(take !== undefined && { take }),
+    });
+  }
+
+  async countBinStock(ctx: TenantContext, binId: string): Promise<number> {
+    return (this.prisma as any).bin_assignments.count({
+      where: MultiTenancyUtil.getScope(ctx, { bin_id: binId }),
     });
   }
 

@@ -22,10 +22,10 @@ export const OperationalChecklist: React.FC = () => {
   const progress = (completedCount / items.length) * 100;
 
   return (
-    <div className="flex flex-col h-full rounded-[2.5rem] border border-slate-800 bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group overflow-hidden relative">
+    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group overflow-hidden relative">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success text-success border border-emerald-500/20">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success text-success border border-success/20">
             <ListTodo className="h-5 w-5" />
           </div>
           <div>
@@ -65,7 +65,7 @@ export const OperationalChecklist: React.FC = () => {
                 id={item.id} 
                 checked={item.completed} 
                 onCheckedChange={() => toggleItem(item.id)}
-                className="h-6 w-6 rounded-lg border-slate-700 bg-muted data-[state=checked]:bg-primary data-[state=checked]:border-primary transition-all"
+                className="h-6 w-6 rounded-lg border-border bg-muted data-[state=checked]:bg-primary data-[state=checked]:border-primary transition-all"
               />
             </div>
             <label 

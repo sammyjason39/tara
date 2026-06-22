@@ -201,8 +201,265 @@ export async function assertNoCrash(page: Page, label: string) {
   expect(crashCount, `[${label}] Runtime crash (ErrorBoundary) detected`).toBe(0);
 }
 
+// ─── Route-render & console/network capture harness ────────────────────────────
+
 /**
- * Attach console + pageerror listeners, navigate through `routes`,
+ * Console-error text fragments that signal a real runtime fault (vs. benign
+ * application-level `console.error` logging). A console error fails a Page only
+ * when its text contains one of these signatures. See design.md → "Console-error
+ * / network-error capture strategy".
+ */
+export const RUNTIME_ERROR_SIGNATURES: readonly string[] = [
+  "ReferenceError",
+  "TypeError",
+  "is not defined",
+  "Cannot read properties",
+  "Cannot read property",
+];
+
+/**
+ * Explicitly maintained allowlist of known-benign third-party / browser noise.
+ * Any captured pageerror or console error whose text contains one of these
+ * phrases is excluded from the failure set. Keep this list small and justified —
+ * every entry suppresses a real signal, so document why each one is safe.
+ */
+export const DEFAULT_IGNORE_PHRASES: readonly string[] = [
+  // Benign layout-thrash warning emitted by the ResizeObserver polyfill / browser;
+  // never indicates an application fault.
+  "ResizeObserver loop limit exceeded",
+  "ResizeObserver loop completed with undelivered notifications",
+];
+
+/**
+ * DOM selector for the React error-boundary crash surface. Boundaries expose
+ * `data-testid="error-boundary"`; the legacy ErrorBoundary renders an
+ * `h2` with the exact text "Runtime Exception".
+ */
+export const ERROR_BOUNDARY_SELECTOR =
+  "[data-testid='error-boundary'], h2:text-is('Runtime Exception')";
+
+/** A single backend response observed while a Page loaded. */
+export interface NetworkRecord {
+  url: string;
+  method: string;
+  status: number;
+  /** true for 2xx/3xx; false otherwise */
+  ok: boolean;
+}
+
+export interface PageCaptureOptions {
+  /** Substrings — captured errors containing any of these are excluded. */
+  ignorePhrases?: readonly string[];
+  /**
+   * URL substrings whose 5xx responses are tolerated (an endpoint explicitly
+   * allowed to be transiently unavailable). A 5xx on any other backend request
+   * is treated as unexpected and fails the Page.
+   */
+  allow5xxFor?: readonly string[];
+  /**
+   * URL substrings that identify a backend data request. Only responses whose
+   * URL contains one of these markers are evaluated for unexpected 5xx.
+   * Defaults to `["/api"]`.
+   */
+  apiPathMarkers?: readonly string[];
+}
+
+/**
+ * Live capture of everything that determines whether a Page rendered cleanly.
+ * Obtain one via {@link installPageCapture} BEFORE navigating, then evaluate it
+ * with {@link assertPageHealthy} / {@link evaluatePageHealth} after the Page settles.
+ */
+export interface PageCapture {
+  /** Uncaught exceptions surfaced via `page.on("pageerror")`. */
+  readonly pageErrors: string[];
+  /** Console errors matching a runtime-error signature (after ignore filtering). */
+  readonly consoleErrors: string[];
+  /** Every backend response observed (filtered to `apiPathMarkers`). */
+  readonly responses: NetworkRecord[];
+  /** Network requests that failed at the transport layer (recorded, not asserted). */
+  readonly requestFailures: string[];
+  /** Backend 5xx responses that are not covered by the `allow5xxFor` allowlist. */
+  unexpectedServerErrors(): NetworkRecord[];
+  /** Remove all installed listeners. */
+  dispose(): void;
+}
+
+function isIgnored(text: string, ignorePhrases: readonly string[]): boolean {
+  return ignorePhrases.some((p) => text.includes(p));
+}
+
+function matchesRuntimeSignature(text: string): boolean {
+  return RUNTIME_ERROR_SIGNATURES.some((sig) => text.includes(sig));
+}
+
+/**
+ * Install `pageerror`, `console`, `response`, and `requestfailed` listeners on
+ * `page`. MUST be called BEFORE navigation so no early errors or requests are
+ * missed. Returns a live {@link PageCapture} that accumulates as the Page loads.
+ */
+export function installPageCapture(
+  page: Page,
+  options: PageCaptureOptions = {}
+): PageCapture {
+  const ignorePhrases = options.ignorePhrases ?? DEFAULT_IGNORE_PHRASES;
+  const allow5xxFor = options.allow5xxFor ?? [];
+  const apiPathMarkers = options.apiPathMarkers ?? ["/api"];
+
+  const pageErrors: string[] = [];
+  const consoleErrors: string[] = [];
+  const responses: NetworkRecord[] = [];
+  const requestFailures: string[] = [];
+
+  const onConsole = (msg: import("@playwright/test").ConsoleMessage) => {
+    if (msg.type() !== "error") return;
+    const text = msg.text();
+    if (matchesRuntimeSignature(text) && !isIgnored(text, ignorePhrases)) {
+      consoleErrors.push(`[CONSOLE ERROR] ${text}`);
+    }
+  };
+
+  const onPageError = (err: Error) => {
+    if (!isIgnored(err.message, ignorePhrases)) {
+      pageErrors.push(`[PAGE ERROR] ${err.message}`);
+    }
+  };
+
+  const onResponse = (response: import("@playwright/test").Response) => {
+    const url = response.url();
+    if (!apiPathMarkers.some((m) => url.includes(m))) return;
+    const status = response.status();
+    responses.push({
+      url,
+      method: response.request().method(),
+      status,
+      ok: status >= 200 && status < 400,
+    });
+  };
+
+  const onRequestFailed = (request: import("@playwright/test").Request) => {
+    const url = request.url();
+    if (!apiPathMarkers.some((m) => url.includes(m))) return;
+    const failure = request.failure();
+    requestFailures.push(
+      `[REQUEST FAILED] ${request.method()} ${url} — ${failure?.errorText ?? "unknown"}`
+    );
+  };
+
+  page.on("console", onConsole);
+  page.on("pageerror", onPageError);
+  page.on("response", onResponse);
+  page.on("requestfailed", onRequestFailed);
+
+  return {
+    pageErrors,
+    consoleErrors,
+    responses,
+    requestFailures,
+    unexpectedServerErrors() {
+      return responses.filter(
+        (r) => r.status >= 500 && !allow5xxFor.some((a) => r.url.includes(a))
+      );
+    },
+    dispose() {
+      page.off("console", onConsole);
+      page.off("pageerror", onPageError);
+      page.off("response", onResponse);
+      page.off("requestfailed", onRequestFailed);
+    },
+  };
+}
+
+export interface PageHealthResult {
+  ok: boolean;
+  /** Human-readable failure reasons; empty when the Page passed. */
+  failures: string[];
+}
+
+/**
+ * Compute (without asserting) whether the currently-loaded Page is healthy.
+ * A Page is healthy ONLY when ALL of the following hold:
+ *   - no `pageerror` (uncaught exception),
+ *   - no console error matching a runtime-error signature,
+ *   - no unexpected 5xx on a backend data request,
+ *   - no error-boundary crash surface present in the DOM.
+ */
+export async function evaluatePageHealth(
+  page: Page,
+  capture: PageCapture,
+  label: string
+): Promise<PageHealthResult> {
+  const failures: string[] = [];
+
+  for (const e of capture.pageErrors) failures.push(`[${label}] ${e}`);
+  for (const e of capture.consoleErrors) failures.push(`[${label}] ${e}`);
+
+  for (const r of capture.unexpectedServerErrors()) {
+    failures.push(
+      `[${label}] [HTTP ${r.status}] unexpected server error on ${r.method} ${r.url}`
+    );
+  }
+
+  const boundaryCount = await page
+    .locator(ERROR_BOUNDARY_SELECTOR)
+    .count()
+    .catch(() => 0);
+  if (boundaryCount > 0) {
+    failures.push(`[${label}] error-boundary crash surface present in DOM`);
+  }
+
+  return { ok: failures.length === 0, failures };
+}
+
+/**
+ * Assert the currently-loaded Page is healthy per {@link evaluatePageHealth}.
+ * Fails with every collected reason when the Page is not healthy.
+ */
+export async function assertPageHealthy(
+  page: Page,
+  capture: PageCapture,
+  label: string
+): Promise<void> {
+  const { ok, failures } = await evaluatePageHealth(page, capture, label);
+  expect(
+    ok,
+    `[${label}] Page did not render cleanly:\n  ${failures.join("\n  ")}`
+  ).toBe(true);
+}
+
+/**
+ * End-to-end per-route harness: install the capture, navigate to `route`, let
+ * the Page settle, and assert it rendered cleanly. Use this from the parameterized
+ * route-render totality suite. Returns the capture for optional further inspection.
+ */
+export async function assertRouteRenders(
+  page: Page,
+  route: string,
+  label: string,
+  options: PageCaptureOptions & {
+    waitMs?: number;
+    waitStrategy?: "domcontentloaded" | "networkidle";
+  } = {}
+): Promise<PageCapture> {
+  const { waitMs = 1500, waitStrategy = "domcontentloaded", ...captureOpts } = options;
+  const capture = installPageCapture(page, captureOpts);
+  try {
+    await page.goto(route, { waitUntil: waitStrategy, timeout: 40000 });
+    if (waitMs > 0) await page.waitForTimeout(waitMs);
+    await assertPageHealthy(page, capture, label);
+    return capture;
+  } finally {
+    capture.dispose();
+  }
+}
+
+/**
+ * Attach console + pageerror listeners (plus response/requestfailed recording),
+ * navigate through `routes`, and return the collected JS error strings.
+ *
+ * Backward-compatible: returns only pageerror + matching console-error entries,
+ * exactly as before. For the full pass criteria (including unexpected 5xx and the
+ * error-boundary DOM surface) use {@link assertRouteRenders} / {@link assertPageHealthy}.
+ *
  * @param ignorePhrases  Array of substrings — errors containing any of these are excluded
  */
 export async function collectJSErrors(
@@ -211,35 +468,14 @@ export async function collectJSErrors(
   waitMsPerRoute = 1500,
   ignorePhrases: string[] = []
 ): Promise<string[]> {
-  const errors: string[] = [];
-
-  page.on("console", (msg) => {
-    if (msg.type() === "error") {
-      const text = msg.text();
-      if (
-        text.includes("ReferenceError") ||
-        text.includes("TypeError") ||
-        text.includes("is not defined") ||
-        text.includes("Cannot read properties") ||
-        text.includes("Cannot read property")
-      ) {
-        if (!ignorePhrases.some((p) => text.includes(p))) {
-          errors.push(`[CONSOLE ERROR] ${text}`);
-        }
-      }
+  const capture = installPageCapture(page, { ignorePhrases });
+  try {
+    for (const route of routes) {
+      await page.goto(route, { waitUntil: "domcontentloaded", timeout: 25000 });
+      await page.waitForTimeout(waitMsPerRoute);
     }
-  });
-
-  page.on("pageerror", (err) => {
-    if (!ignorePhrases.some((p) => err.message.includes(p))) {
-      errors.push(`[PAGE ERROR] ${err.message}`);
-    }
-  });
-
-  for (const route of routes) {
-    await page.goto(route, { waitUntil: "domcontentloaded", timeout: 25000 });
-    await page.waitForTimeout(waitMsPerRoute);
+    return [...capture.pageErrors, ...capture.consoleErrors];
+  } finally {
+    capture.dispose();
   }
-
-  return errors;
 }

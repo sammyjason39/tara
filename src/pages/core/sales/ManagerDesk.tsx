@@ -23,10 +23,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { GlassCard } from "@/components/shared/GlassCard";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSession } from "@/core/security/session";
 import { salesService } from "@/core/services/sales/salesService";
 import { cn } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
 import type { SalesAlert, SalesManagerMetrics, SalesOpportunity } from "@/core/types/sales/sales";
 
@@ -126,12 +129,12 @@ export default function ManagerDesk() {
                Managerial Console Active
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">Manager View</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground">Manager View</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic">"Leadership is the capacity to translate vision into reality through tactical oversight."</p>
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-slate-800/20 shadow-2xl">
+          <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-border/20 shadow-2xl">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -165,8 +168,8 @@ export default function ManagerDesk() {
       <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-6">
         {[
           { label: "Strategic Reps", value: metrics.totalReps, icon: Users, color: "slate" },
-          { label: "Open Pipeline", value: `$${metrics.openPipeline.toLocaleString()}`, icon: Layers, color: "indigo" },
-          { label: "Weighted Forecast", value: `$${metrics.weightedForecast.toLocaleString()}`, icon: Zap, color: "indigo" },
+          { label: "Open Pipeline", value: formatCurrency(metrics.openPipeline), icon: Layers, color: "indigo" },
+          { label: "Weighted Forecast", value: formatCurrency(metrics.weightedForecast), icon: Zap, color: "indigo" },
           { label: "Stalled Nodes", value: metrics.stalledDeals, icon: Timer, color: "amber" },
           { label: "SLA Breaches", value: metrics.slaBreaches, icon: AlertCircle, color: "rose" },
           { label: "Pending Approvals", value: metrics.approvalsPending, icon: FileCheck, color: "emerald" },
@@ -184,8 +187,8 @@ export default function ManagerDesk() {
       <div className="grid grid-cols-12 gap-8">
         {/* Deal Risk Watchlist */}
         <div className="col-span-12 lg:col-span-8">
-          <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden">
-            <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-slate-800/20">
+          <GlassCard className="rounded-[3rem] border-none shadow-2xl overflow-hidden">
+            <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-border/20">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
@@ -229,10 +232,10 @@ export default function ManagerDesk() {
                            </div>
                         </td>
                         <td className="px-10 py-8">
-                           <Badge variant="outline" className="rounded-full font-black text-[9px] px-3 py-1 border-slate-200 uppercase tracking-widest text-muted-foreground">{item.stage.replace('_', ' ')}</Badge>
+                           <Badge variant="outline" className="rounded-full font-black text-[9px] px-3 py-1 border-border uppercase tracking-widest text-muted-foreground">{item.stage.replace('_', ' ')}</Badge>
                         </td>
                         <td className="px-10 py-8 text-right font-black text-muted-foreground dark:text-muted-foreground">
-                           ${item.amount.toLocaleString()}
+                           {formatCurrency(item.amount)}
                         </td>
                         <td className="px-10 py-8 text-right">
                            <Badge 
@@ -252,14 +255,22 @@ export default function ManagerDesk() {
                   </tbody>
                 </table>
               </div>
+              {!loading && filteredOpportunities.length === 0 && (
+                <EmptyState
+                  title="No deals to watch"
+                  description="No opportunities match the current scope. The team watchlist is clear."
+                  icon={Target}
+                  className="m-10"
+                />
+              )}
             </CardContent>
-          </Card>
+          </GlassCard>
         </div>
 
         {/* Alert Queue */}
         <div className="col-span-12 lg:col-span-4 space-y-8">
-           <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden">
-              <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-slate-800/20">
+           <GlassCard className="rounded-[3rem] border-none shadow-2xl overflow-hidden">
+              <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-border/20">
                  <CardTitle className="text-xl font-black tracking-tight flex items-center gap-3">
                     <AlertCircle className="h-5 w-5 text-destructive" />
                     Critical Alert Queue
@@ -276,7 +287,7 @@ export default function ManagerDesk() {
                          </div>
                        ) : (
                          (Array.isArray(alerts) ? alerts : []).map((alert) => (
-                           <div key={alert.id} className="p-5 rounded-3xl bg-white dark:bg-muted border border-slate-100 dark:border-slate-700 space-y-3 group hover:shadow-lg transition-all">
+                           <div key={alert.id} className="p-5 rounded-3xl bg-white dark:bg-muted border border-border dark:border-border space-y-3 group hover:shadow-lg transition-all">
                               <div className="flex justify-between items-start">
                                  <Badge className={cn(
                                    "rounded-full font-black text-[8px] px-2 py-0.5 border-none shadow-sm uppercase tracking-widest",
@@ -304,7 +315,7 @@ export default function ManagerDesk() {
                                  <p className="text-[11px] font-medium text-muted-foreground leading-relaxed italic">"{alert.message}"</p>
                               </div>
                               <div className="pt-2 flex justify-between items-center text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">
-                                 <span>{new Date(alert.createdAt).toLocaleDateString()}</span>
+                                 <span>{formatDate(alert.createdAt)}</span>
                                  <span className="text-primary">Action Required</span>
                               </div>
                            </div>
@@ -313,7 +324,7 @@ export default function ManagerDesk() {
                     </div>
                  </ScrollArea>
               </CardContent>
-           </Card>
+           </GlassCard>
 
            {/* Efficiency Pulse */}
            <Card className="rounded-[3rem] border-none shadow-2xl bg-primary text-white p-10 space-y-6 shadow-indigo-600/20 group">

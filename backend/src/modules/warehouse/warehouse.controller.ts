@@ -16,6 +16,8 @@ import { TenantInterceptor } from "../../gateway/tenant.interceptor";
 import { ModuleStateGuard } from "../../core/auth/guards/module-state.guard";
 import { RolesGuard } from "../../shared/guards/roles.guard";
 import { RequiredModule } from "../../shared/decorators/required-module.decorator";
+import { PaginationPipe, PaginationParams } from "../../shared/pipes/pagination.pipe";
+import { CacheInterceptor, CacheTTL, CacheInvalidationHelper } from "../../shared/cache";
 
 interface RequestWithTenant extends Request {
   tenantContext: TenantContext;
@@ -26,16 +28,32 @@ interface RequestWithTenant extends Request {
 @UseInterceptors(TenantInterceptor)
 @RequiredModule("inventory")
 export class WarehouseController {
-  constructor(private readonly warehouseService: WarehouseService) {}
+  constructor(
+    private readonly warehouseService: WarehouseService,
+    private readonly cacheHelper: CacheInvalidationHelper,
+  ) {}
 
   @Get("bins")
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   async getBins(
     @Req() request: RequestWithTenant,
     @Query("locationId") locationId: string,
+    @Query(PaginationPipe) pagination: PaginationParams,
   ) {
     const ctx = request.tenantContext;
-    const bins = await this.warehouseService.getBins(ctx, locationId);
-    return { success: true, data: bins };
+    const skip = (pagination.page - 1) * pagination.pageSize;
+    const [data, totalCount] = await Promise.all([
+      this.warehouseService.getBins(ctx, locationId, skip, pagination.pageSize),
+      this.warehouseService.countBins(ctx, locationId),
+    ]);
+    return {
+      data,
+      totalCount,
+      currentPage: pagination.page,
+      pageSize: pagination.pageSize,
+      totalPages: Math.ceil(totalCount / pagination.pageSize),
+    };
   }
 
   @Post("bins")
@@ -46,17 +64,31 @@ export class WarehouseController {
   ) {
     const ctx = request.tenantContext;
     const bin = await this.warehouseService.createBin(ctx, locationId, data);
+    await this.cacheHelper.invalidateAll();
     return { success: true, data: bin };
   }
 
   @Get("bins/:binId/stock")
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   async getBinStock(
     @Req() request: RequestWithTenant,
     @Param("binId") binId: string,
+    @Query(PaginationPipe) pagination: PaginationParams,
   ) {
     const ctx = request.tenantContext;
-    const stock = await this.warehouseService.getBinStock(ctx, binId);
-    return { success: true, data: stock };
+    const skip = (pagination.page - 1) * pagination.pageSize;
+    const [data, totalCount] = await Promise.all([
+      this.warehouseService.getBinStock(ctx, binId, skip, pagination.pageSize),
+      this.warehouseService.countBinStock(ctx, binId),
+    ]);
+    return {
+      data,
+      totalCount,
+      currentPage: pagination.page,
+      pageSize: pagination.pageSize,
+      totalPages: Math.ceil(totalCount / pagination.pageSize),
+    };
   }
 
   @Post("bins/:binId/assign")
@@ -71,6 +103,7 @@ export class WarehouseController {
       binId,
       data,
     );
+    await this.cacheHelper.invalidateAll();
     return { success: true, data: assignment };
   }
 }

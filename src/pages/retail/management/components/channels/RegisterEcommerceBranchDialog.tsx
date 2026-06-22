@@ -150,12 +150,12 @@ export const RegisterEcommerceBranchDialog: React.FC<
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="rounded-2xl border-slate-200/50 bg-white shadow-2xl max-w-lg p-0 overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
+      <DialogContent className="rounded-2xl border-border/50 bg-white shadow-2xl max-w-lg p-0 overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-success via-primary to-chart-5" />
 
         <DialogHeader className="p-8 pb-4">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-600">
+            <div className="p-2 bg-success/10 rounded-xl text-success">
               <Globe className="w-5 h-5" />
             </div>
             <DialogTitle className="font-black italic text-2xl uppercase tracking-tighter text-muted-foreground">
@@ -178,7 +178,7 @@ export const RegisterEcommerceBranchDialog: React.FC<
               name="name"
               required
               autoFocus
-              className="flex h-12 w-full rounded-2xl border border-slate-200 bg-secondary/5 px-4 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              className="flex h-12 w-full rounded-2xl border border-border bg-secondary/5 px-4 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-success/20 focus:border-success transition-all"
               placeholder="e.g. Online Flagship Store"
             />
           </div>
@@ -191,7 +191,7 @@ export const RegisterEcommerceBranchDialog: React.FC<
               <select
                 name="platform"
                 defaultValue="shopify"
-                className="w-full h-12 rounded-2xl border border-slate-200 bg-secondary/5 px-4 font-bold italic text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all appearance-none cursor-pointer"
+                className="w-full h-12 rounded-2xl border border-border bg-secondary/5 px-4 font-bold italic text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-success/20 focus:border-success transition-all appearance-none cursor-pointer"
               >
                 {PLATFORMS.map((p) => (
                   <option key={p.value} value={p.value}>
@@ -207,7 +207,7 @@ export const RegisterEcommerceBranchDialog: React.FC<
               <input
                 type="text"
                 name="code"
-                className="flex h-12 w-full rounded-2xl border border-slate-200 bg-secondary/5 px-4 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                className="flex h-12 w-full rounded-2xl border border-border bg-secondary/5 px-4 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-success/20 focus:border-success transition-all"
                 placeholder="auto"
               />
             </div>
@@ -221,7 +221,7 @@ export const RegisterEcommerceBranchDialog: React.FC<
               type="text"
               name="domain"
               required
-              className="flex h-12 w-full rounded-2xl border border-slate-200 bg-secondary/5 px-4 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              className="flex h-12 w-full rounded-2xl border border-border bg-secondary/5 px-4 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-success/20 focus:border-success transition-all"
               placeholder="e.g. shop.example.com"
             />
           </div>
@@ -235,7 +235,7 @@ export const RegisterEcommerceBranchDialog: React.FC<
               required
               value={selectedLocationId}
               onChange={(e) => setSelectedLocationId(e.target.value)}
-              className="w-full h-12 rounded-2xl border border-slate-200 bg-secondary/5 px-4 font-bold italic text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all appearance-none cursor-pointer"
+              className="w-full h-12 rounded-2xl border border-border bg-secondary/5 px-4 font-bold italic text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-success/20 focus:border-success transition-all appearance-none cursor-pointer"
             >
               <option value="" disabled>
                 Select anchor location...
@@ -253,7 +253,7 @@ export const RegisterEcommerceBranchDialog: React.FC<
               type="checkbox"
               checked={bindChannel}
               onChange={(e) => setBindChannel(e.target.checked)}
-              className="w-4 h-4 rounded accent-emerald-600"
+              className="w-4 h-4 rounded accent-success"
             />
             <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
               <Link2 className="w-3.5 h-3.5" /> Bind a sales channel to this
@@ -267,14 +267,14 @@ export const RegisterEcommerceBranchDialog: React.FC<
                 type="button"
                 variant="outline"
                 onClick={() => setOpen(false)}
-                className="flex-1 h-13 rounded-2xl border-slate-200 font-black italic uppercase tracking-widest text-[10px] py-4"
+                className="flex-1 h-13 rounded-2xl border-border font-black italic uppercase tracking-widest text-[10px] py-4"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={isRegistering || isLoadingData}
-                className="flex-[2] h-13 bg-emerald-600 hover:bg-emerald-700 text-white font-black italic rounded-2xl uppercase tracking-[0.2em] text-[10px] py-4 group transition-all active:scale-95"
+                className="flex-[2] h-13 bg-success hover:bg-success/90 text-white font-black italic rounded-2xl uppercase tracking-[0.2em] text-[10px] py-4 group transition-all active:scale-95"
               >
                 {isRegistering ? (
                   <RefreshCw className="w-5 h-5 animate-spin" />

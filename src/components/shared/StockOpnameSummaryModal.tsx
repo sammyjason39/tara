@@ -177,11 +177,11 @@ export const StockOpnameSummaryModal = ({
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-success rounded-2xl border border-emerald-500/20">
+                  <div className="p-4 bg-success rounded-2xl border border-success/20">
                     <div className="text-[8px] font-black text-success uppercase tracking-widest mb-1">Units</div>
                     <div className="text-2xl font-black italic">{totalItemsCount}</div>
                   </div>
-                  <div className="p-4 bg-destructive rounded-2xl border border-rose-500/20">
+                  <div className="p-4 bg-destructive rounded-2xl border border-destructive/20">
                     <div className="text-[8px] font-black text-destructive uppercase tracking-widest mb-1">Variances</div>
                     <div className="text-2xl font-black italic">{variances}</div>
                   </div>
@@ -216,7 +216,7 @@ export const StockOpnameSummaryModal = ({
 
           {/* Right Panel: Item List */}
           <div className="flex-1 flex flex-col">
-            <div className="p-8 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-white/50 dark:bg-black/50 backdrop-blur-xl">
+            <div className="p-8 border-b border-border dark:border-border flex justify-between items-center bg-white/50 dark:bg-black/50 backdrop-blur-xl">
               <div className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground italic">
                 Final Audit Manifest
               </div>
@@ -239,10 +239,10 @@ export const StockOpnameSummaryModal = ({
                   {items.map((item, idx) => {
                     const variance = item.actualCount - (item.systemCount || 0);
                     return (
-                      <TableRow key={idx} className="border-slate-100 dark:border-slate-800 hover:bg-muted dark:hover:bg-muted transition-all group">
+                      <TableRow key={idx} className="border-border dark:border-border hover:bg-muted dark:hover:bg-muted transition-all group">
                         <TableCell className="py-6">
                           <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 rounded-2xl bg-white dark:bg-muted shadow-sm overflow-hidden flex items-center justify-center border border-slate-100 dark:border-slate-800">
+                            <div className="w-16 h-16 rounded-2xl bg-white dark:bg-muted shadow-sm overflow-hidden flex items-center justify-center border border-border dark:border-border">
                               {item.id && itemImages[item.id] ? (
                                 <img src={itemImages[item.id]} alt={item.name} className="w-full h-full object-cover" />
                               ) : (
@@ -282,7 +282,7 @@ export const StockOpnameSummaryModal = ({
               </Table>
             </ScrollArea>
             
-            <div className="p-8 bg-muted dark:bg-muted border-t border-slate-200 dark:border-slate-800">
+            <div className="p-8 bg-muted dark:bg-muted border-t border-border dark:border-border">
               <div className="flex items-center gap-4 text-muted-foreground">
                 <AlertCircle className="w-5 h-5 text-primary animate-pulse" />
                 <p className="text-[10px] font-bold italic uppercase tracking-tight">

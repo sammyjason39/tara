@@ -7,7 +7,7 @@ const envPath = path.resolve(process.cwd(), ".env");
 dotenv.config({ path: envPath });
 
 import { NestFactory } from "@nestjs/core";
-import { ValidationPipe, HttpException } from "@nestjs/common";
+import { VersioningType } from "@nestjs/common";
 import helmet from "helmet";
 import { AppModule } from "./app.module";
 
@@ -39,6 +39,14 @@ async function bootstrap() {
   
   // 1. Global Prefix (Disabled for frontend compatibility)
   // app.setGlobalPrefix("v1");
+
+  // Enable URI Versioning to resolve /v1/ route prefix mismatch
+  // This allows controllers to handle both /v1/inventory/... and /inventory/... routes
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: ['1', ''],
+    prefix: 'v',
+  });
 
   // 2. Enable Graceful Shutdown
   app.enableShutdownHooks();
@@ -122,30 +130,8 @@ async function bootstrap() {
 
 
 
-  // Global validation pipe
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: false,
-      exceptionFactory: (errors) => {
-        console.error("Validation Errors:", JSON.stringify(errors, null, 2));
-        return new HttpException(
-          {
-            message: "Validation failed",
-            errors: errors.map((err) => ({
-              property: err.property,
-              constraints: err.constraints,
-            })),
-          },
-          400,
-        );
-      },
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
-    }),
-  );
+  // Global validation pipe is registered via APP_PIPE in AppModule (GlobalValidationPipe)
+  // This allows it to participate in NestJS dependency injection
 
   // Start server
   const port = parseInt(process.env.PORT || "3001", 10);

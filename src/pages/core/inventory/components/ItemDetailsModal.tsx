@@ -233,9 +233,9 @@ export function ItemDetailsModal({
             <Badge 
               variant="outline" 
               className={`font-black tracking-[0.2em] rounded-xl px-4 py-1.5 uppercase ${
-                item.status === 'REJECT' ? 'border-rose-500 text-destructive bg-destructive' :
-                item.status === 'REPAIR' ? 'border-amber-500 text-warning bg-warning' :
-                item.status === 'DELETED' || item.status === 'deleted' ? 'border-slate-500 text-muted-foreground bg-muted' :
+                item.status === 'REJECT' ? 'border-destructive text-destructive bg-destructive' :
+                item.status === 'REPAIR' ? 'border-warning text-warning bg-warning' :
+                item.status === 'DELETED' || item.status === 'deleted' ? 'border-border text-muted-foreground bg-muted' :
                 'border-primary text-primary'
               }`}
             >
@@ -266,13 +266,13 @@ export function ItemDetailsModal({
         <ScrollArea className="max-h-[65vh]">
           <div className="p-8">
             {isEditing ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 bg-muted dark:bg-muted rounded-[2.5rem] border border-slate-100 dark:border-slate-800 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8 bg-muted dark:bg-muted rounded-[2.5rem] border border-border dark:border-border mb-8">
                 <div className="space-y-4">
                   <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Item Name</label>
                   <UIInput 
                     value={editData.name} 
                     onChange={e => setEditData({...editData, name: e.target.value})}
-                    className="h-12 bg-white dark:bg-muted border border-slate-200 dark:border-slate-800 rounded-xl px-4 font-bold focus:ring-2 focus:ring-indigo-500"
+                    className="h-12 bg-white dark:bg-muted border border-border dark:border-border rounded-xl px-4 font-bold focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 <div className="space-y-4">
@@ -280,7 +280,7 @@ export function ItemDetailsModal({
                   <UIInput 
                     value={editData.sku} 
                     onChange={e => setEditData({...editData, sku: e.target.value})}
-                    className="h-12 bg-white dark:bg-muted border border-slate-200 dark:border-slate-800 rounded-xl px-4 font-bold focus:ring-2 focus:ring-indigo-500"
+                    className="h-12 bg-white dark:bg-muted border border-border dark:border-border rounded-xl px-4 font-bold focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
                 <div className="md:col-span-2 space-y-4">
@@ -289,7 +289,7 @@ export function ItemDetailsModal({
                     value={editData.description} 
                     onChange={e => setEditData({...editData, description: e.target.value})}
                     rows={2}
-                    className="w-full bg-white dark:bg-muted border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 font-bold focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                    className="w-full bg-white dark:bg-muted border border-border dark:border-border rounded-xl px-4 py-3 font-bold focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
                   />
                 </div>
 
@@ -302,7 +302,7 @@ export function ItemDetailsModal({
                         type="number"
                         value={editData.base_price} 
                         onChange={e => setEditData({...editData, base_price: parseFloat(e.target.value) || 0})}
-                        className="h-10 bg-white dark:bg-muted border-slate-200 dark:border-slate-800 rounded-lg px-3 font-bold"
+                        className="h-10 bg-white dark:bg-muted border-border dark:border-border rounded-lg px-3 font-bold"
                       />
                     </div>
                     <div className="space-y-2">
@@ -311,7 +311,7 @@ export function ItemDetailsModal({
                         type="number"
                         value={editData.selling_price} 
                         onChange={e => setEditData({...editData, selling_price: parseFloat(e.target.value) || 0})}
-                        className="h-10 bg-white dark:bg-muted border-slate-200 dark:border-slate-800 rounded-lg px-3 font-bold"
+                        className="h-10 bg-white dark:bg-muted border-border dark:border-border rounded-lg px-3 font-bold"
                       />
                     </div>
                   </div>
@@ -326,7 +326,7 @@ export function ItemDetailsModal({
                         type="number"
                         value={editData.discount_rate} 
                         onChange={e => setEditData({...editData, discount_rate: parseFloat(e.target.value) || 0})}
-                        className="h-10 bg-white dark:bg-muted border-slate-200 dark:border-slate-800 rounded-lg px-3 font-bold"
+                        className="h-10 bg-white dark:bg-muted border-border dark:border-border rounded-lg px-3 font-bold"
                       />
                     </div>
                     <div className="space-y-2">
@@ -338,7 +338,7 @@ export function ItemDetailsModal({
                           ...editData, 
                           metadata: { ...editData.metadata, min_stock: parseInt(e.target.value) || 0 }
                         })}
-                        className="h-10 bg-white dark:bg-muted border-slate-200 dark:border-slate-800 rounded-lg px-3 font-bold"
+                        className="h-10 bg-white dark:bg-muted border-border dark:border-border rounded-lg px-3 font-bold"
                       />
                     </div>
                   </div>
@@ -350,10 +350,10 @@ export function ItemDetailsModal({
                     value={editData.status}
                     onValueChange={(val) => setEditData({ ...editData, status: val })}
                   >
-                    <UISelectTrigger className="h-12 rounded-xl bg-white dark:bg-muted border-slate-200 dark:border-slate-800 font-bold">
+                    <UISelectTrigger className="h-12 rounded-xl bg-white dark:bg-muted border-border dark:border-border font-bold">
                       <UISelectValue placeholder="Status" />
                     </UISelectTrigger>
-                    <UISelectContent className="rounded-xl bg-white dark:bg-muted border-slate-200 dark:border-slate-800">
+                    <UISelectContent className="rounded-xl bg-white dark:bg-muted border-border dark:border-border">
                       <UISelectItem value="active">ACTIVE</UISelectItem>
                       <UISelectItem value="REPAIR">REPAIR</UISelectItem>
                       <UISelectItem value="REJECT">REJECT</UISelectItem>
@@ -367,10 +367,10 @@ export function ItemDetailsModal({
                     value={editData.category_id || item.category_id} 
                     onValueChange={val => setEditData({...editData, category_id: val})}
                   >
-                    <UISelectTrigger className="w-full h-12 rounded-xl bg-white dark:bg-muted font-bold border-slate-200 dark:border-slate-800">
+                    <UISelectTrigger className="w-full h-12 rounded-xl bg-white dark:bg-muted font-bold border-border dark:border-border">
                       <UISelectValue placeholder="Assign Category" />
                     </UISelectTrigger>
-                    <UISelectContent className="rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-muted">
+                    <UISelectContent className="rounded-2xl border-border dark:border-border bg-white dark:bg-muted">
                       {categories.map(cat => (
                         <UISelectItem key={cat.id} value={cat.id} className="font-bold">{cat.name}</UISelectItem>
                       ))}
@@ -413,13 +413,13 @@ export function ItemDetailsModal({
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {images.length === 0 ? (
-                  <div className="col-span-full h-48 flex flex-col items-center justify-center bg-muted dark:bg-muted rounded-[2rem] border-2 border-dashed border-slate-200 dark:border-slate-800 opacity-50">
+                  <div className="col-span-full h-48 flex flex-col items-center justify-center bg-muted dark:bg-muted rounded-[2rem] border-2 border-dashed border-border dark:border-border opacity-50">
                     <ImageIcon className="h-8 w-8 text-muted-foreground mb-2" />
                     <p className="text-[10px] font-black uppercase tracking-widest">No Visual Assets Found</p>
                   </div>
                 ) : (
                   images.map((img) => (
-                    <div key={img.id} className="group relative aspect-square rounded-[1.5rem] overflow-hidden bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800">
+                    <div key={img.id} className="group relative aspect-square rounded-[1.5rem] overflow-hidden bg-muted dark:bg-muted border border-border dark:border-border">
                       <img 
                         src={img.url} 
                         alt="Product" 
@@ -467,19 +467,19 @@ export function ItemDetailsModal({
                   </p>
                   
                   <div className="pt-4 grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="p-3 rounded-xl bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800">
+                    <div className="p-3 rounded-xl bg-muted dark:bg-muted border border-border dark:border-border">
                       <p className="text-[8px] font-black uppercase text-muted-foreground mb-1">Base Price</p>
                       <p className="text-sm font-black text-muted-foreground">Rp {Number(item.base_price || 0).toLocaleString()}</p>
                     </div>
-                    <div className="p-3 rounded-xl bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800">
+                    <div className="p-3 rounded-xl bg-muted dark:bg-muted border border-border dark:border-border">
                       <p className="text-[8px] font-black uppercase text-muted-foreground mb-1">Selling Price</p>
                       <p className="text-sm font-black text-primary">Rp {Number(item.selling_price || 0).toLocaleString()}</p>
                     </div>
-                    <div className="p-3 rounded-xl bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800">
+                    <div className="p-3 rounded-xl bg-muted dark:bg-muted border border-border dark:border-border">
                       <p className="text-[8px] font-black uppercase text-muted-foreground mb-1">Discount</p>
                       <p className="text-sm font-black text-success">{item.discount_rate || 0}%</p>
                     </div>
-                    <div className="p-3 rounded-xl bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800">
+                    <div className="p-3 rounded-xl bg-muted dark:bg-muted border border-border dark:border-border">
                       <p className="text-[8px] font-black uppercase text-muted-foreground mb-1">Min. Threshold</p>
                       <p className="text-sm font-black text-destructive">{Number(item.metadata?.min_stock || 0).toLocaleString()} Units</p>
                     </div>
@@ -491,11 +491,11 @@ export function ItemDetailsModal({
                     <BarChart2 className="h-3 w-3" /> Quick Stats
                   </h4>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 rounded-2xl bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800">
+                    <div className="p-4 rounded-2xl bg-muted dark:bg-muted border border-border dark:border-border">
                       <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">In Transit</p>
                       <p className="text-xl font-black">0</p>
                     </div>
-                    <div className="p-4 rounded-2xl bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800">
+                    <div className="p-4 rounded-2xl bg-muted dark:bg-muted border border-border dark:border-border">
                       <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Reserved</p>
                       <p className="text-xl font-black">0</p>
                     </div>
@@ -506,7 +506,7 @@ export function ItemDetailsModal({
               <div className="flex gap-3 justify-end pt-6 border-t">
                   {isDecommissioning ? (
                     <div className="flex flex-col gap-2 w-full">
-                      <div className="p-4 rounded-2xl bg-destructive border border-rose-100 mb-2">
+                      <div className="p-4 rounded-2xl bg-destructive border border-destructive mb-2">
                         <p className="text-[10px] font-black uppercase text-destructive mb-1">⚠️ Critical Warning</p>
                         <p className="text-xs font-bold text-destructive leading-relaxed">
                           Decommissioning will archive this identity. It will no longer appear in active inventory cycles and requires audit clearance. 
@@ -543,7 +543,7 @@ export function ItemDetailsModal({
                           setIsEditing(!isEditing);
                         }}
                         variant="outline" 
-                        className="rounded-xl h-12 px-6 font-black text-[10px] uppercase tracking-widest border-slate-200"
+                        className="rounded-xl h-12 px-6 font-black text-[10px] uppercase tracking-widest border-border"
                       >
                         <Edit3 className="h-3 w-3 mr-2" /> {isEditing ? "Discard Changes" : "Edit Identity"}
                       </Button>
@@ -555,7 +555,7 @@ export function ItemDetailsModal({
                       <Button 
                         onClick={() => setIsDecommissioning(true)}
                         variant="outline" 
-                        className="rounded-xl h-12 px-6 font-black text-[10px] uppercase tracking-widest text-destructive border-rose-100 hover:bg-destructive"
+                        className="rounded-xl h-12 px-6 font-black text-[10px] uppercase tracking-widest text-destructive border-destructive hover:bg-destructive"
                       >
                         <Trash2 className="h-3 w-3 mr-2" /> Decommission
                       </Button>
@@ -565,17 +565,17 @@ export function ItemDetailsModal({
             </TabsContent>
 
             <TabsContent value="adjustment" className="space-y-8">
-              <div className="p-8 rounded-[2.5rem] bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800 space-y-6">
+              <div className="p-8 rounded-[2.5rem] bg-muted dark:bg-muted border border-border dark:border-border space-y-6">
                 <div className="space-y-4">
                   <h4 className="text-[10px] font-black uppercase tracking-widest text-primary dark:text-primary">Target Storage Node</h4>
                   <UISelect 
                     value={adjustmentData.location_id} 
                     onValueChange={val => setAdjustmentData({...adjustmentData, location_id: val})}
                   >
-                    <UISelectTrigger className="w-full h-12 rounded-xl bg-white dark:bg-muted font-bold border-slate-200 dark:border-slate-800">
+                    <UISelectTrigger className="w-full h-12 rounded-xl bg-white dark:bg-muted font-bold border-border dark:border-border">
                       <UISelectValue placeholder="Select Location" />
                     </UISelectTrigger>
-                    <UISelectContent className="rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-muted">
+                    <UISelectContent className="rounded-2xl border-border dark:border-border bg-white dark:bg-muted">
                       {adjustmentLocations.map((loc) => (
                         <UISelectItem key={loc.id} value={loc.id} className="font-bold">
                           {loc.name} (Current: {loc.current})
@@ -599,7 +599,7 @@ export function ItemDetailsModal({
                       type="number"
                       value={adjustmentData.requested_delta}
                       onChange={e => setAdjustmentData({...adjustmentData, requested_delta: parseInt(e.target.value) || 0})}
-                      className="h-12 text-center font-black text-xl bg-white dark:bg-muted rounded-xl border-slate-200 dark:border-slate-800"
+                      className="h-12 text-center font-black text-xl bg-white dark:bg-muted rounded-xl border-border dark:border-border"
                     />
                     <Button 
                       variant="outline" 
@@ -618,7 +618,7 @@ export function ItemDetailsModal({
                     value={adjustmentData.reason}
                     onChange={e => setAdjustmentData({...adjustmentData, reason: e.target.value})}
                     placeholder="e.g., Damaged during transit, Manual correction, etc."
-                    className="w-full bg-white dark:bg-muted border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none resize-none h-24"
+                    className="w-full bg-white dark:bg-muted border border-border dark:border-border rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none resize-none h-24"
                   />
                 </div>
 
@@ -645,7 +645,7 @@ export function ItemDetailsModal({
                 ) : (
                   <div className="space-y-3">
                     {movements.map((move, i) => (
-                      <div key={i} className="p-5 rounded-2xl bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                      <div key={i} className="p-5 rounded-2xl bg-muted dark:bg-muted border border-border dark:border-border flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <div className={`p-2 rounded-xl ${move.quantity > 0 ? 'bg-success text-success' : 'bg-destructive text-destructive'}`}>
                             {move.quantity > 0 ? <TrendingUp className="h-4 w-4" /> : <Activity className="h-4 w-4" />}
@@ -675,7 +675,7 @@ export function ItemDetailsModal({
                     {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full rounded-2xl" />)}
                   </div>
                 ) : aggregatedBalances.length === 0 ? (
-                  <div className="h-64 flex flex-col items-center justify-center bg-muted rounded-[2.5rem] border-2 border-dashed border-slate-200">
+                  <div className="h-64 flex flex-col items-center justify-center bg-muted rounded-[2.5rem] border-2 border-dashed border-border">
                     <Box className="h-12 w-12 text-muted-foreground mb-4" />
                     <p className="text-sm font-bold text-muted-foreground italic text-center px-8">No inventory records found in any storage node for this identity.</p>
                     <p className="text-[10px] text-muted-foreground mt-2 uppercase tracking-[0.2em] font-black">Add initial stock via adjustment tab</p>
@@ -683,7 +683,7 @@ export function ItemDetailsModal({
                 ) : (
                   <div className="space-y-3">
                     {aggregatedBalances.map((bal, i) => (
-                      <div key={i} className="p-5 rounded-2xl bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800 flex items-center justify-between group hover:border-primary transition-all">
+                      <div key={i} className="p-5 rounded-2xl bg-muted dark:bg-muted border border-border dark:border-border flex items-center justify-between group hover:border-primary transition-all">
                         <div className="flex items-center gap-4">
                           <div className="p-3 rounded-xl bg-primary text-primary group-hover:bg-primary group-hover:text-white transition-all">
                             <MapPin className="h-5 w-5" />

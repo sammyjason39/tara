@@ -6,44 +6,48 @@ import {
   Cpu, 
   ShieldCheck, 
   Activity, 
-  Users, 
-  Monitor, 
   Terminal, 
   Zap,
   Globe,
-  Database,
-  Lock
+  Plus
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useSession } from "@/core/security/session";
 import { itService, type SystemHealth } from "@/core/services/it/itService";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { QueryBoundary } from "@/components/shared/QueryBoundary";
+import { EmptyState } from "@/components/shared/AsyncState";
+import { safeText } from "@/lib/format";
+import { CreateTicketModal } from "./modals/CreateTicketModal";
 
 export default function ITDashboard() {
   const session = useSession();
   const [overview, setOverview] = useState<any>(null);
   const [health, setHealth] = useState<SystemHealth[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [ticketModalOpen, setTicketModalOpen] = useState(false);
 
-  useEffect(() => {
-    console.log("[ITDashboard] Initializing data fetch", {
-      tenant_id: session.tenant_id,
-      role: session.role
-    });
+  const loadData = useCallback(() => {
     setIsLoading(true);
+    setIsError(false);
     Promise.all([
       itService.getOverview(session.tenant_id, session),
       itService.getSystemHealth(session.tenant_id, session)
     ]).then(([overviewData, healthData]) => {
-      console.log("[ITDashboard] Data received successfully");
       setOverview(overviewData);
-      setHealth(healthData);
+      setHealth(Array.isArray(healthData) ? healthData : []);
     }).catch(err => {
       console.error("[ITDashboard] Fetch failure:", err);
+      setIsError(true);
     })
       .finally(() => setIsLoading(false));
-  }, [session.tenant_id, session]);
+  }, [session]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -51,18 +55,26 @@ export default function ITDashboard() {
         title="IT Intelligence Command"
         subtitle="Real-time infrastructure telemetry, identity security, and device lifecycle management."
         primaryAction={
-          <Button className="bg-primary hover:bg-primary/90 text-white rounded-xl font-black italic tracking-widest uppercase gap-3 shadow-lg shadow-primary/20 active:scale-95 transition-all">
-            <Terminal className="w-4 h-4" /> System Console
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setTicketModalOpen(true)}
+              className="bg-primary hover:bg-primary/90 text-white rounded-xl font-black italic tracking-widest uppercase gap-3 shadow-lg shadow-primary/20 active:scale-95 transition-all"
+            >
+              <Plus className="w-4 h-4" /> New Ticket
+            </Button>
+            <Button variant="outline" className="rounded-xl font-black italic tracking-widest uppercase gap-3 active:scale-95 transition-all">
+              <Terminal className="w-4 h-4" /> System Console
+            </Button>
+          </div>
         }
       />
 
       {/* Hero Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard title="Infrastructure Health" value={overview?.healthScore || "99.9%"} status="OPTIMAL" icon={Activity} />
-        <KPICard title="Active Nodes" value={overview?.activeNodes || "42"} status="SYNCED" icon={Zap} />
-        <KPICard title="Identity Guards" value="Active" status="SECURE" icon={ShieldCheck} />
-        <KPICard title="Pending Updates" value={overview?.pendingUpdates || "3"} status="ATTENTION" icon={Cpu} />
+        <KPICard title="Infrastructure Health" value={safeText(overview?.healthScore)} status="OPTIMAL" icon={Activity} />
+        <KPICard title="Active Nodes" value={safeText(overview?.activeNodes)} status="SYNCED" icon={Zap} />
+        <KPICard title="Identity Guards" value={safeText(overview?.identityGuards, "Active")} status="SECURE" icon={ShieldCheck} />
+        <KPICard title="Pending Updates" value={safeText(overview?.pendingUpdates)} status="ATTENTION" icon={Cpu} />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -72,26 +84,25 @@ export default function ITDashboard() {
           description="Global status of mission-critical services and databases."
           className="xl:col-span-2"
         >
-          <div className="grid gap-4 md:grid-cols-2">
-            {health.length > 0 ? (
-              (Array.isArray(health) ? health : []).map((h) => (
-                <ServiceStatus 
-                  key={h.id}
-                  name={h.component} 
-                  status={h.status} 
-                  icon={Globe} 
-                  latency={`${h.latencyMs}ms`} 
-                />
-              ))
-            ) : (
-              <>
-                <ServiceStatus name="Central API Cluster" status="Operational" icon={Globe} latency="12ms" />
-                <ServiceStatus name="Prisma Database Layer" status="Operational" icon={Database} latency="8ms" />
-                <ServiceStatus name="Auth & Identity Gate" status="Operational" icon={Lock} latency="15ms" />
-                <ServiceStatus name="Asset Storage (S3)" status="Operational" icon={Monitor} latency="45ms" />
-              </>
+          <QueryBoundary
+            query={{ isLoading, isError, data: health, refetch: loadData }}
+            loading={<div className="grid gap-4 md:grid-cols-2"><div className="h-20 rounded-xl bg-muted/40 animate-pulse" /><div className="h-20 rounded-xl bg-muted/40 animate-pulse" /></div>}
+            empty={<EmptyState title="No service telemetry" description="No infrastructure components are reporting health for this tenant yet." />}
+          >
+            {(items: SystemHealth[]) => (
+              <div className="grid gap-4 md:grid-cols-2">
+                {items.map((h) => (
+                  <ServiceStatus
+                    key={h.id}
+                    name={h.component}
+                    status={h.status}
+                    icon={Globe}
+                    latency={`${h.latencyMs}ms`}
+                  />
+                ))}
+              </div>
             )}
-          </div>
+          </QueryBoundary>
         </WorkspacePanel>
 
         {/* Security & Access Feed */}
@@ -121,13 +132,19 @@ export default function ITDashboard() {
           </div>
         </WorkspacePanel>
       </div>
+
+      <CreateTicketModal
+        isOpen={ticketModalOpen}
+        onClose={() => setTicketModalOpen(false)}
+        onSuccess={() => loadData()}
+      />
     </div>
   );
 }
 
 function KPICard({ title, value, status, icon: Icon }: any) {
   return (
-    <Card className="bg-white border-slate-100 shadow-sm rounded-2xl overflow-hidden group hover:shadow-md transition-all">
+    <Card className="bg-white border-muted shadow-sm rounded-2xl overflow-hidden group hover:shadow-md transition-all">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-[10px] font-black uppercase text-muted-foreground tracking-widest leading-none">
           {title}

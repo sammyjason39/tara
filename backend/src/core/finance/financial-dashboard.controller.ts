@@ -107,6 +107,33 @@ export class FinancialDashboardController {
     return this.dashboardService.getSystemHealth(tenant_id, company_id || tenant_id, 'LATEST');
   }
 
+  @Get('cfo-analytics')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  async getCfoAnalytics(@Req() req: any, @Query() query: any) {
+    const { tenant_id } = req.tenantContext;
+    const company_id = query.company_id || tenant_id;
+    this.validateCompanyAccess(req.user, company_id);
+    return this.dashboardService.getCfoAnalytics(tenant_id, company_id);
+  }
+
+  @Get('cto-analytics')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  async getCtoAnalytics(@Req() req: any, @Query() query: any) {
+    const { tenant_id } = req.tenantContext;
+    const company_id = query.company_id || tenant_id;
+    this.validateCompanyAccess(req.user, company_id);
+    return this.dashboardService.getCtoAnalytics(tenant_id, company_id);
+  }
+
+  @Get('operations-metrics')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  async getOperationsMetrics(@Req() req: any, @Query() query: any) {
+    const { tenant_id } = req.tenantContext;
+    const company_id = query.company_id || tenant_id;
+    this.validateCompanyAccess(req.user, company_id);
+    return this.dashboardService.getOperationsMetrics(tenant_id, company_id);
+  }
+
   @Post('repair-chain')
   async repairChain(@Req() req: any, @Body() body: { fromTimestamp?: string }) {
     const { tenant_id, user_id } = req.tenantContext;

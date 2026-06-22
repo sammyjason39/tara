@@ -8,7 +8,6 @@ export type PaymentTransactionType =
 
 export type PaymentExecutionStatus =
   | "REQUEST_CREATED"
-  | "APPROVAL_PENDING"
   | "APPROVED"
   | "PROVIDER_SELECTED"
   | "EXECUTING"

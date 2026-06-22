@@ -8,6 +8,7 @@ import { FilterBar } from "@/core/tools/FilterBar";
 import { useSession } from "@/core/security/session";
 import { analyticsService } from "@/core/services/hr/analyticsService";
 import { workflowService } from "@/core/services/hr/workflowService";
+import { EmptyState } from "@/components/shared/AsyncState";
 
 export default function InsightLayer() {
   const session = useSession();
@@ -21,6 +22,10 @@ export default function InsightLayer() {
     const flows = workflowService.listRequests(session.tenant_id);
     setApprovals((Array.isArray(flows) ? flows : []).filter((flow: any) => flow.status === "PENDING"));
   }, [session]);
+
+  const filteredMetrics = (Array.isArray(metrics) ? metrics : []).filter((metric) =>
+    search ? metric.label.toLowerCase().includes(search.toLowerCase()) : true,
+  );
 
   return (
     <div className="space-y-6">
@@ -76,15 +81,23 @@ export default function InsightLayer() {
                 </tr>
               </thead>
               <tbody>
-                {(Array.isArray(metrics) ? metrics : []).filter((metric) =>
-                    search ? metric.label.toLowerCase().includes(search.toLowerCase()) : true,
-                  )
-                  .map((metric) => (
+                {filteredMetrics.length === 0 ? (
+                  <tr>
+                    <td colSpan={2} className="p-0">
+                      <EmptyState
+                        title="No metrics"
+                        description="No intelligence metrics match the current search scope."
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  filteredMetrics.map((metric) => (
                     <tr key={metric.id} className="border-t">
                       <td className="p-3">{metric.label}</td>
                       <td className="p-3 text-muted-foreground">{metric.value}</td>
                     </tr>
-                  ))}
+                  ))
+                )}
               </tbody>
             </table>
           </DataTableShell>

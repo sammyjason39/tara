@@ -48,6 +48,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useSession } from "@/core/security/session";
 import { marketingService } from "@/core/services/marketing/marketingService";
+import { formatDate } from "@/lib/format";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -130,7 +132,7 @@ export default function Customer360Desk() {
                Customer 360 Matrix Active
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent italic leading-none">Customer 360</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground italic leading-none">Customer 360</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic">"Total relationship visibility authorizes absolute tactical dominance across every ingestion node."</p>
         </div>
         
@@ -158,8 +160,8 @@ export default function Customer360Desk() {
       <div className="grid grid-cols-12 gap-10 flex-1 min-h-0">
         {/* Left Sidebar: Entity Cluster */}
         <div className="col-span-12 lg:col-span-4 flex flex-col gap-6 overflow-hidden">
-          <Card className="flex-1 rounded-[4rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden flex flex-col group/registry">
-            <CardHeader className="p-10 pb-6 border-b border-white/10 dark:border-slate-800/10 shrink-0">
+          <Card className="flex-1 rounded-[4rem] border-none shadow-2xl glass-card overflow-hidden flex flex-col group/registry">
+            <CardHeader className="p-10 pb-6 border-b border-white/10 dark:border-border/10 shrink-0">
                <div className="flex items-center justify-between">
                   <div className="space-y-1">
                     <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground italic">Entity Cluster</p>
@@ -170,15 +172,11 @@ export default function Customer360Desk() {
             </CardHeader>
             <ScrollArea className="flex-1 bg-black/5 dark:bg-white/5">
               {filteredContacts.length === 0 ? (
-                <div className="text-center py-32 grayscale opacity-20 space-y-8 flex flex-col items-center">
-                   <div className="h-24 w-24 bg-white dark:bg-muted rounded-[3rem] flex items-center justify-center shadow-2xl border border-slate-100 dark:border-slate-700">
-                      <User className="h-12 w-12 text-muted-foreground" />
-                   </div>
-                   <div className="space-y-2">
-                      <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground">Cluster Empty</p>
-                      <p className="text-xs font-medium italic italic opacity-40">"No relationship nodes detected in the current ingestion segment."</p>
-                   </div>
-                </div>
+                <EmptyState
+                  title="Cluster empty"
+                  description="No relationship nodes detected in the current ingestion segment."
+                  icon={User}
+                />
               ) : (
                 <div className="p-6 space-y-4">
                   {(Array.isArray(filteredContacts) ? filteredContacts : []).map((customer) => (
@@ -202,7 +200,7 @@ export default function Customer360Desk() {
                           </AvatarFallback>
                         </Avatar>
                         <div className={cn(
-                          "absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-4 border-white dark:border-slate-800 shadow-lg transition-colors",
+                          "absolute -bottom-1 -right-1 h-5 w-5 rounded-full border-4 border-white dark:border-border shadow-lg transition-colors",
                           customer.status === 'ACTIVE' ? 'bg-success animate-pulse' : 'bg-muted'
                         )} />
                       </div>
@@ -226,7 +224,7 @@ export default function Customer360Desk() {
         {/* Right Section: Intelligence & Lifecycle */}
         <div className="col-span-12 lg:col-span-8 overflow-hidden flex flex-col gap-10">
           {loadingProfile ? (
-            <div className="h-full flex flex-col items-center justify-center rounded-[4rem] border-2 border-dashed border-white/20 dark:border-slate-800/20 bg-white/10 dark:bg-muted grayscale opacity-20 space-y-8 animate-in fade-in duration-1000">
+            <div className="h-full flex flex-col items-center justify-center rounded-[4rem] border-2 border-dashed border-white/20 dark:border-border/20 bg-white/10 dark:bg-muted grayscale opacity-20 space-y-8 animate-in fade-in duration-1000">
                <div className="relative">
                   <div className="h-24 w-24 rounded-[3rem] bg-primary flex items-center justify-center shadow-2xl animate-spin duration-[3000ms]">
                      <RefreshCw className="h-12 w-12 text-white" />
@@ -305,7 +303,7 @@ export default function Customer360Desk() {
               {/* Intelligence & Lifecycle Matrix */}
               <Tabs defaultValue="timeline" className="w-full flex-1 flex flex-col min-h-0">
                 <CardHeader className="p-0 shrink-0">
-                   <TabsList className="bg-white/40 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] shadow-inner border border-white/10 w-fit h-auto">
+                   <TabsList className="glass-card p-2 rounded-[2rem] shadow-inner border border-white/10 w-fit h-auto">
                       <TabsTrigger value="timeline" className="rounded-[1.5rem] px-10 py-3 font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-2xl h-12 border-none transition-all italic">Strategic Timeline</TabsTrigger>
                       <TabsTrigger value="insights" className="rounded-[1.5rem] px-10 py-3 font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-2xl h-12 border-none transition-all italic">ROI Intelligence</TabsTrigger>
                       <TabsTrigger value="history" className="rounded-[1.5rem] px-10 py-3 font-black text-[10px] uppercase tracking-widest data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-2xl h-12 border-none transition-all italic">Conversion Trail</TabsTrigger>
@@ -314,8 +312,8 @@ export default function Customer360Desk() {
                 
                 <div className="flex-1 min-h-0 mt-10 overflow-hidden">
                    <TabsContent value="timeline" className="h-full m-0 outline-none">
-                     <Card className="h-full rounded-[4rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden flex flex-col group/timeline">
-                       <CardHeader className="p-12 pb-6 border-b border-white/10 dark:border-slate-800/10 flex flex-row items-center justify-between shrink-0">
+                     <Card className="h-full rounded-[4rem] border-none shadow-2xl glass-card overflow-hidden flex flex-col group/timeline">
+                       <CardHeader className="p-12 pb-6 border-b border-white/10 dark:border-border/10 flex flex-row items-center justify-between shrink-0">
                           <div className="space-y-2">
                              <CardTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-4 italic leading-none">
                                 <Clock className="h-8 w-8 text-primary group-hover/timeline:rotate-12 transition-transform duration-500" />
@@ -329,7 +327,7 @@ export default function Customer360Desk() {
                          <div className="p-12 space-y-12">
                            {(!profile.timeline || profile.timeline.length === 0) ? (
                              <div className="text-center py-32 grayscale opacity-20 space-y-8 flex flex-col items-center">
-                               <div className="h-24 w-24 bg-white dark:bg-muted rounded-[3rem] flex items-center justify-center shadow-2xl border border-slate-100 dark:border-slate-700">
+                               <div className="h-24 w-24 bg-white dark:bg-muted rounded-[3rem] flex items-center justify-center shadow-2xl border border-border dark:border-border">
                                   <Layers className="h-12 w-12 text-muted-foreground" />
                                </div>
                                <div className="space-y-2">
@@ -361,14 +359,14 @@ export default function Customer360Desk() {
                                              <h4 className="font-black text-2xl uppercase tracking-tighter italic group-hover/item:text-primary transition-colors leading-none">{item.title || item.type.replace('_', ' ')}</h4>
                                           </div>
                                           <div className="text-right">
-                                             <p className="text-[10px] font-black uppercase tracking-widest text-primary italic leading-none">{new Date(item.timestamp).toLocaleDateString()}</p>
+                                             <p className="text-[10px] font-black uppercase tracking-widest text-primary italic leading-none">{formatDate(item.timestamp)}</p>
                                              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground italic opacity-60">{new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                           </div>
                                         </div>
                                         <p className="text-base font-medium text-muted-foreground dark:text-muted-foreground italic leading-relaxed italic max-w-3xl relative z-10">
                                           "{item.content || item.detail || item.notes || "Executing standard relationship protocol within the core ingestion matrix."}"
                                         </p>
-                                        <div className="flex items-center gap-4 mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 relative z-10">
+                                        <div className="flex items-center gap-4 mt-8 pt-6 border-t border-border dark:border-border relative z-10">
                                            <Badge className="rounded-full bg-primary text-primary font-black text-[9px] px-4 py-1.5 uppercase tracking-widest border-none shadow-inner italic">NODE: {item.id.slice(-8)}</Badge>
                                            <Badge className="rounded-full bg-success text-success font-black text-[9px] px-4 py-1.5 uppercase tracking-widest border-none shadow-inner italic">{item.status || "COMPLETED"}</Badge>
                                         </div>
@@ -444,7 +442,7 @@ export default function Customer360Desk() {
               </Tabs>
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center rounded-[5rem] border-2 border-dashed border-white/20 dark:border-slate-800/20 bg-white/5 dark:bg-muted grayscale opacity-20 space-y-10 animate-in fade-in duration-1000 relative overflow-hidden">
+            <div className="h-full flex flex-col items-center justify-center rounded-[5rem] border-2 border-dashed border-white/20 dark:border-border/20 bg-white/5 dark:bg-muted grayscale opacity-20 space-y-10 animate-in fade-in duration-1000 relative overflow-hidden">
                <div className="absolute inset-0 bg-primary blur-[120px] rounded-full scale-150 animate-pulse" />
                <div className="relative z-10">
                   <div className="h-48 w-48 rounded-[4rem] bg-white dark:bg-muted flex items-center justify-center shadow-[0_60px_100px_-20px_rgba(79,70,229,0.3)] relative z-10 border border-white/10 group">

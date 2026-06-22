@@ -653,6 +653,49 @@ export const inventoryService = {
     );
   },
 
+  /**
+   * Lists items with is_anomaly: true. Supports search and pagination.
+   * Used by the Anomaly Browser to show items awaiting completion.
+   * Requirements: 2.3, 2.5
+   */
+  async listAnomalyItems(
+    tenantId: string,
+    session: SessionContext,
+    options?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      locationId?: string;
+    },
+  ): Promise<InventoryItemMaster[]> {
+    const params = new URLSearchParams();
+    params.append("is_anomaly", "true");
+    if (options?.locationId) params.append("location_id", options.locationId);
+    if (options?.search) params.append("search", options.search);
+    if (options?.page) params.append("page", options.page.toString());
+    if (options?.limit) params.append("limit", options.limit.toString());
+
+    return apiRequest<InventoryItemMaster[]>(
+      `/v1/inventory/items?${params.toString()}`,
+      "GET",
+      session,
+    );
+  },
+
+  async completeAnomalyItem(
+    tenantId: string,
+    session: SessionContext,
+    itemId: string,
+    data: { name?: string; category_id?: string; base_price?: number; is_anomaly?: boolean },
+  ) {
+    return apiRequest<InventoryItemMaster>(
+      `/v1/inventory/items/${itemId}/complete`,
+      "PATCH",
+      session,
+      data,
+    );
+  },
+
   async getSalesHistory(
     tenantId: string,
     session: SessionContext,

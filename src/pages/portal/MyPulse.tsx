@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   User, 
   Clock, 
@@ -23,7 +23,8 @@ import {
   Receipt,
   HandCoins,
   FileCheck,
-  Activity
+  Activity,
+  Loader2
 } from 'lucide-react';
 import { useSession } from '@/core/security/session';
 import { useApp } from '@/contexts/AppContext';
@@ -49,7 +50,10 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { formatCurrency, formatDate, formatTime } from '@/lib/mock-data';
+import { formatCurrency, formatNumber, formatDateTime, safeText } from '@/lib/format';
+import { QueryBoundary } from '@/components/shared/QueryBoundary';
+import { ErrorState } from '@/components/shared/AsyncState';
+import { GlassCard } from '@/components/shared/GlassCard';
 import { cn } from '@/lib/utils';
 
 export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
@@ -58,11 +62,13 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [record, setRecord] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
   
   // Attendance State
   const [isClockingIn, setIsClockingIn] = useState(false);
   const [clockInReason, setClockInReason] = useState('');
   const [isLocationMismatch, setIsLocationMismatch] = useState(false);
+  const [isSubmittingClockIn, setIsSubmittingClockIn] = useState(false);
   const [currentCoords, setCurrentCoords] = useState<{lat: number, lng: number} | null>(null);
 
   // Loan State
@@ -101,36 +107,37 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
     };
   }, [record]);
 
-  const formatWithCurrency = (amount: number) => {
-    if (currencyData.code === 'IDR') {
-      return `Rp ${amount.toLocaleString('id-ID')}`;
-    }
-    return `${currencyData.symbol}${amount.toLocaleString()}`;
+  const formatWithCurrency = (amount: number | null | undefined) => {
+    return formatCurrency(amount, currencyData.code);
   };
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [pRecord, loans, snapshot] = await Promise.all([
-          peopleService.getEmployee360(session.tenant_id, session.user_id, session),
-          loanService.getMyLoans(session.tenant_id, session),
-          payrollService.getPerformanceSnapshot(session.tenant_id, session, session.user_id)
-        ]);
-        setRecord(pRecord);
-        setMyLoans(loans || []);
-        setPerfSnapshot(snapshot);
-      } catch (err) {
-        toast({
-          title: "Portal Sync Error",
-          description: "Unable to refresh your profile telemetry.",
-          variant: "destructive"
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
+  const loadData = useCallback(() => {
+    setIsLoading(true);
+    setIsError(false);
+    Promise.all([
+      peopleService.getEmployee360(session.tenant_id, session.user_id, session),
+      loanService.getMyLoans(session.tenant_id, session),
+      payrollService.getPerformanceSnapshot(session.tenant_id, session, session.user_id)
+    ]).then(([pRecord, loans, snapshot]) => {
+      setRecord(pRecord);
+      setMyLoans(loans || []);
+      setPerfSnapshot(snapshot);
+    }).catch((err) => {
+      console.error('[MyPulse] Portal sync failure:', err);
+      setIsError(true);
+      toast({
+        title: "Portal Sync Error",
+        description: "Unable to refresh your profile telemetry.",
+        variant: "destructive"
+      });
+    }).finally(() => {
+      setIsLoading(false);
+    });
   }, [session]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleClockIn = async () => {
     if (!navigator.geolocation) {
@@ -161,6 +168,7 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
       }
 
       try {
+        setIsSubmittingClockIn(true);
         await attendanceService.clockIn(session.tenant_id, session, {
           locationId: record?.employee?.locationId || 'HQ',
           deviceId: 'MY_PULSE_WEB',
@@ -176,19 +184,23 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
         
         setIsClockingIn(false);
         setClockInReason('');
-        // Refresh record...
+        setIsLocationMismatch(false);
+        loadData();
       } catch (err) {
         toast({
           title: "Clock-In Failed",
           description: "The attendance service is currently unreachable.",
           variant: "destructive"
         });
+      } finally {
+        setIsSubmittingClockIn(false);
       }
     });
   };
 
   const handleRequestLoan = async () => {
     try {
+      setIsSubmittingLoan(true);
       await loanService.requestLoan(session.tenant_id, session, {
         amount: Number(loanAmount),
         installments: Number(loanInstallments),
@@ -196,9 +208,13 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
       });
       toast({ title: "Loan Request Indexed", description: "Your request has been sent to HOD FlowGate." });
       setIsLoanOpen(false);
-      // Refresh...
+      setLoanAmount('');
+      setLoanReason('');
+      loadData();
     } catch (err) {
-      toast({ title: "Request Failed", variant: "destructive" });
+      toast({ title: "Request Failed", description: "Your loan request could not be submitted. Please try again.", variant: "destructive" });
+    } finally {
+      setIsSubmittingLoan(false);
     }
   };
 
@@ -209,15 +225,25 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
     return role.includes('cashier') || role.includes('sales') || role.includes('store manager');
   }, [record]);
 
-  if (isLoading) return (
-    <div className="min-h-screen bg-muted flex flex-col items-center justify-center gap-6">
-      <div className="w-24 h-24 rounded-[2rem] bg-primary border border-primary flex items-center justify-center animate-pulse shadow-[0_0_50px_-12px_rgba(79,70,229,0.5)]">
+  const portalLoader = (
+    <div className="min-h-[60vh] bg-muted flex flex-col items-center justify-center gap-6">
+      <div className="w-24 h-24 rounded-[2rem] bg-primary border border-primary flex items-center justify-center animate-pulse shadow-[0_0_50px_-12px_hsl(var(--primary)/0.5)]">
         <Activity className="w-10 h-10 text-primary" />
       </div>
       <div className="text-center space-y-2">
         <p className="text-lg font-black italic uppercase tracking-[0.3em] text-white animate-pulse">Synchronizing Portal</p>
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Establishing Secure Telemetry Node...</p>
       </div>
+    </div>
+  );
+
+  const portalError = (
+    <div className="min-h-[60vh] flex items-center justify-center p-6">
+      <ErrorState
+        title="Portal telemetry unavailable"
+        description="We couldn't load your portal data. Check your connection and try again."
+        onRetry={loadData}
+      />
     </div>
   );
 
@@ -234,9 +260,9 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                 <p className="text-[10px] font-black text-primary uppercase tracking-[0.4em] mb-2 flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-primary animate-pulse" /> OPERATIONAL_GATEWAY
                 </p>
-                <h1 className="text-6xl font-black text-white tracking-tighter uppercase italic leading-none">{record?.employee?.fullName}</h1>
+                <h1 className="text-6xl font-black text-white tracking-tighter uppercase italic leading-none">{safeText(record?.employee?.fullName)}</h1>
                 <p className="text-xs font-black text-muted-foreground uppercase tracking-[0.3em] flex items-center gap-3 mt-4">
-                   <Briefcase className="w-3.5 h-3.5 text-primary" /> {record?.employee?.roleTitle} <span className="text-muted-foreground">/</span> {record?.employee?.departmentId}
+                   <Briefcase className="w-3.5 h-3.5 text-primary" /> {safeText(record?.employee?.roleTitle)} <span className="text-muted-foreground">/</span> {safeText(record?.employee?.departmentId)}
                 </p>
               </div>
             </div>
@@ -316,7 +342,7 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                  <CardHeader className="p-8 bg-white/5 border-b border-white/5">
                     <div className="flex items-center justify-between">
                        <CardTitle className="text-xl font-black italic uppercase tracking-[0.2em] text-white">Payroll Track</CardTitle>
-                       <div className="w-10 h-10 rounded-xl bg-success flex items-center justify-center border border-emerald-500/20">
+                       <div className="w-10 h-10 rounded-xl bg-success flex items-center justify-center border border-success/20">
                         <Wallet className="w-5 h-5 text-success" />
                        </div>
                     </div>
@@ -326,10 +352,10 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                        <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">Next Net Payout (Est.)</p>
                        <p className="text-5xl font-black text-white italic tracking-tighter">
                          {formatWithCurrency(
-                           (record?.employee?.baseSalary || 4500) + 
-                           (perfSnapshot?.accruedBonus || 0) - 
-                           (perfSnapshot?.estimatedTax || 850) - 
-                           (activeLoan?.monthlyInstallment || 0)
+                           (record?.employee?.baseSalary ?? 0) + 
+                           (perfSnapshot?.accruedBonus ?? 0) - 
+                           (perfSnapshot?.estimatedTax ?? 0) - 
+                           (activeLoan?.monthlyInstallment ?? 0)
                          )}
                        </p>
                     </div>
@@ -339,11 +365,11 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                          <div className="grid grid-cols-2 gap-4">
                             <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
                                <p className="text-[9px] font-black text-primary uppercase tracking-widest mb-2">Items Sold</p>
-                               <p className="text-2xl font-black text-white">{perfSnapshot?.itemsSold || 142}</p>
+                               <p className="text-2xl font-black text-white">{formatNumber(perfSnapshot?.itemsSold, { maximumFractionDigits: 0 })}</p>
                             </div>
-                            <div className="p-4 bg-success rounded-2xl border border-emerald-500/10">
+                            <div className="p-4 bg-success rounded-2xl border border-success/10">
                                <p className="text-[9px] font-black text-success uppercase tracking-widest mb-2">Bonus</p>
-                               <p className="text-2xl font-black text-success">+{formatWithCurrency(perfSnapshot?.accruedBonus || 450)}</p>
+                               <p className="text-2xl font-black text-success">+{formatWithCurrency(perfSnapshot?.accruedBonus)}</p>
                             </div>
                          </div>
                        )}
@@ -354,11 +380,11 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                                 <AlertCircle className="w-4 h-4 text-muted-foreground" />
                                 <span className="text-[10px] font-black uppercase tracking-widest">Est. Tax & Social</span>
                              </div>
-                             <span className="text-xs font-black text-muted-foreground">-{formatWithCurrency(perfSnapshot?.estimatedTax || 850)}</span>
+                             <span className="text-xs font-black text-muted-foreground">-{formatWithCurrency(perfSnapshot?.estimatedTax)}</span>
                           </div>
 
                           {activeLoan && (
-                            <div className="flex items-center justify-between p-4 bg-warning rounded-2xl border border-amber-500/10">
+                            <div className="flex items-center justify-between p-4 bg-warning rounded-2xl border border-warning/10">
                                <div className="flex items-center gap-3 text-warning">
                                   <Receipt className="w-4 h-4" />
                                   <span className="text-[10px] font-black uppercase tracking-widest">Loan Installment</span>
@@ -423,7 +449,7 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                     {(record?.attendance || []).slice(0, 5).map((entry: any, i: number) => (
                       <div key={entry.id} className={cn("p-6 flex items-center justify-between group cursor-pointer hover:bg-white/5 transition-colors", i !== 4 && "border-b border-white/5")}>
                          <div className="flex items-center gap-4">
-                            <div className={cn("w-2.5 h-2.5 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)]", entry.status === 'on_time' ? 'bg-success shadow-emerald-500/40' : 'bg-warning shadow-amber-500/40')} />
+                            <div className={cn("w-2.5 h-2.5 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.5)]", entry.status === 'on_time' ? 'bg-success shadow-success/40' : 'bg-warning shadow-warning/40')} />
                             <div>
                                <p className="text-sm font-black text-white uppercase tracking-tighter italic">{entry.date}</p>
                                <p className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.2em] mt-0.5">{entry.status}</p>
@@ -472,13 +498,13 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
         </TabsContent>
 
         <TabsContent value="attendance">
-           <Card className="border-slate-200 shadow-sm">
+           <GlassCard className="border-border shadow-sm">
               <CardHeader>
                  <CardTitle className="text-xl font-black italic uppercase tracking-wider">Attendance Archetype</CardTitle>
                  <CardDescription className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Comprehensive verification history and operational telemetry.</CardDescription>
               </CardHeader>
               <CardContent>
-                 <div className="rounded-2xl border border-slate-100 overflow-hidden">
+                 <div className="rounded-2xl border border-border overflow-hidden">
                     <table className="w-full text-left">
                        <thead className="bg-muted text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
                           <tr>
@@ -490,12 +516,12 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                        </thead>
                        <tbody className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                           {(record?.attendance || []).map((entry: any) => (
-                            <tr key={entry.id} className="border-t border-slate-100 hover:bg-muted transition-colors">
+                            <tr key={entry.id} className="border-t border-border hover:bg-muted transition-colors">
                                <td className="p-6 flex items-center gap-3">
                                   <div className="w-2 h-2 rounded-full bg-primary" />
                                   {entry.date}
                                </td>
-                               <td className="p-6">{formatTime(entry.checkIn?.timestamp || entry.timestamp)}</td>
+                               <td className="p-6">{formatDateTime(entry.checkIn?.timestamp || entry.timestamp)}</td>
                                <td className="p-6">
                                   <Badge className={cn(
                                      "font-black text-[9px] uppercase tracking-widest",
@@ -511,17 +537,17 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                     </table>
                  </div>
               </CardContent>
-           </Card>
+           </GlassCard>
         </TabsContent>
 
         <TabsContent value="payroll">
-           <Card className="border-slate-200 shadow-sm">
+           <GlassCard className="border-border shadow-sm">
               <CardHeader>
                  <CardTitle className="text-xl font-black italic uppercase tracking-wider">Payroll Consolidation</CardTitle>
                  <CardDescription className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Historical compensation runs and disbursement telemetry.</CardDescription>
               </CardHeader>
               <CardContent>
-                 <div className="rounded-2xl border border-slate-100 overflow-hidden">
+                 <div className="rounded-2xl border border-border overflow-hidden">
                     <table className="w-full text-left">
                        <thead className="bg-muted text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
                           <tr>
@@ -534,7 +560,7 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                        </thead>
                        <tbody className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                           {(record?.payrollRuns || []).map((run: any) => (
-                            <tr key={run.id} className="border-t border-slate-100 hover:bg-muted transition-colors">
+                            <tr key={run.id} className="border-t border-border hover:bg-muted transition-colors">
                                <td className="p-6 italic font-black text-muted-foreground">{run.period}</td>
                                <td className="p-6">{formatWithCurrency(run.basePay)}</td>
                                <td className="p-6 text-success">+{formatWithCurrency(run.bonuses || 0)}</td>
@@ -550,11 +576,11 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                     </table>
                  </div>
               </CardContent>
-           </Card>
+           </GlassCard>
         </TabsContent>
 
         <TabsContent value="leave">
-           <Card className="border-slate-200 shadow-sm">
+           <GlassCard className="border-border shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between">
                  <div>
                     <CardTitle className="text-xl font-black italic uppercase tracking-wider">Leave Roster</CardTitle>
@@ -563,7 +589,7 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                  <Button className="h-10 px-6 rounded-xl font-black italic uppercase tracking-widest text-[9px] bg-muted">Request Time-Off</Button>
               </CardHeader>
               <CardContent>
-                 <div className="rounded-2xl border border-slate-100 overflow-hidden">
+                 <div className="rounded-2xl border border-border overflow-hidden">
                     <table className="w-full text-left">
                        <thead className="bg-muted text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
                           <tr>
@@ -575,7 +601,7 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                        </thead>
                        <tbody className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                           {(record?.leaves || []).map((req: any) => (
-                            <tr key={req.id} className="border-t border-slate-100 hover:bg-muted transition-colors">
+                            <tr key={req.id} className="border-t border-border hover:bg-muted transition-colors">
                                <td className="p-6">{req.startDate} — {req.endDate}</td>
                                <td className="p-6 italic text-muted-foreground">{req.type}</td>
                                <td className="p-6">
@@ -593,12 +619,12 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                     </table>
                  </div>
               </CardContent>
-           </Card>
+           </GlassCard>
         </TabsContent>
 
         <TabsContent value="performance">
            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="border-slate-200 shadow-sm col-span-2">
+              <GlassCard className="border-border shadow-sm col-span-2">
                  <CardHeader>
                     <CardTitle className="text-xl font-black italic uppercase tracking-wider">Operational Efficiency</CardTitle>
                     <CardDescription className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Real-time performance metrics and contribution signal.</CardDescription>
@@ -607,7 +633,7 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                     <div className="grid grid-cols-3 gap-6">
                        <div className="space-y-1">
                           <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Sales Throughput</p>
-                          <p className="text-2xl font-black text-muted-foreground">{perfSnapshot?.itemsSold || 142} <span className="text-xs text-muted-foreground">SKUs</span></p>
+                          <p className="text-2xl font-black text-muted-foreground">{formatNumber(perfSnapshot?.itemsSold, { maximumFractionDigits: 0 })} <span className="text-xs text-muted-foreground">SKUs</span></p>
                        </div>
                        <div className="space-y-1">
                           <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Quality Score</p>
@@ -615,28 +641,32 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                        </div>
                        <div className="space-y-1">
                           <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Bonuses Accrued</p>
-                          <p className="text-2xl font-black text-success">+{formatWithCurrency(perfSnapshot?.accruedBonus || 450)}</p>
+                          <p className="text-2xl font-black text-success">+{formatWithCurrency(perfSnapshot?.accruedBonus)}</p>
                        </div>
                     </div>
 
                     <div className="space-y-4">
                        <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Competency Radar</h4>
                        <div className="grid grid-cols-2 gap-6">
-                          {['Customer Focus', 'Inventory Integrity', 'Process Compliance', 'Team Synergy'].map(skill => (
-                             <div key={skill} className="space-y-2">
-                                <div className="flex justify-between text-[9px] font-black uppercase tracking-widest">
-                                   <span className="text-muted-foreground">{skill}</span>
-                                   <span className="text-muted-foreground">{Math.floor(Math.random() * 20) + 80}%</span>
+                          {['Customer Focus', 'Inventory Integrity', 'Process Compliance', 'Team Synergy'].map(skill => {
+                             const score = perfSnapshot?.competencies?.[skill];
+                             const hasScore = typeof score === 'number' && Number.isFinite(score);
+                             return (
+                                <div key={skill} className="space-y-2">
+                                   <div className="flex justify-between text-[9px] font-black uppercase tracking-widest">
+                                      <span className="text-muted-foreground">{skill}</span>
+                                      <span className="text-muted-foreground">{hasScore ? `${formatNumber(score, { maximumFractionDigits: 0 })}%` : safeText(score)}</span>
+                                   </div>
+                                   <Progress value={hasScore ? score : 0} className="h-1.5 bg-muted" />
                                 </div>
-                                <Progress value={Math.floor(Math.random() * 20) + 80} className="h-1.5 bg-muted" />
-                             </div>
-                          ))}
+                             );
+                          })}
                        </div>
                     </div>
                  </CardContent>
-              </Card>
+              </GlassCard>
 
-              <Card className="border-slate-200 shadow-sm bg-muted text-white">
+              <GlassCard className="border-border shadow-sm bg-muted text-white">
                  <CardHeader>
                     <CardTitle className="text-lg font-black italic uppercase tracking-wider text-primary">Target Pulse</CardTitle>
                  </CardHeader>
@@ -661,22 +691,33 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                        <p className="text-[9px] font-bold text-muted-foreground uppercase italic tracking-widest">Your performance contribution is directly linked to the quarterly dividend pool.</p>
                     </div>
                  </CardContent>
-              </Card>
+              </GlassCard>
            </div>
         </TabsContent>
       </Tabs>
     </div>
   );
 
-  if (noShell) return content;
+  const portalView = (
+    <QueryBoundary
+      query={{ isLoading, isError, data: record, refetch: loadData }}
+      isEmpty={() => false}
+      loading={portalLoader}
+      error={portalError}
+    >
+      {() => content}
+    </QueryBoundary>
+  );
+
+  if (noShell) return portalView;
 
   return (
     <div className="min-h-screen bg-muted p-4 md:p-8 selection:bg-primary">
-      {content}
+      {portalView}
 
       {/* Clock In Logic - Verification Sheet */}
       <Dialog open={isClockingIn} onOpenChange={setIsClockingIn}>
-        <DialogContent className="max-w-md bg-white border-slate-200 p-0 overflow-hidden">
+        <DialogContent className="max-w-md bg-white border-border p-0 overflow-hidden">
           <DialogHeader className="p-8 bg-muted text-white">
             <div className="flex items-center gap-3 mb-2">
                <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
@@ -691,7 +732,7 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
 
           <div className="p-8 space-y-6">
             {isLocationMismatch && (
-              <div className="p-4 bg-warning border border-amber-200 rounded-2xl flex gap-4">
+              <div className="p-4 bg-warning border border-warning/30 rounded-2xl flex gap-4">
                  <AlertCircle className="w-6 h-6 text-warning shrink-0" />
                  <div className="space-y-1">
                     <p className="text-xs font-black text-warning uppercase tracking-tight">Geofence Mismatch Detected</p>
@@ -706,7 +747,7 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
             <div className="space-y-4">
                <div className="space-y-2">
                   <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Assigned Duty Location</Label>
-                  <div className="h-12 px-4 bg-muted border border-slate-100 rounded-xl flex items-center text-sm font-black text-muted-foreground uppercase tracking-tighter italic">
+                  <div className="h-12 px-4 bg-muted border border-border rounded-xl flex items-center text-sm font-black text-muted-foreground uppercase tracking-tighter italic">
                      {record?.employee?.locationId || 'CENTRAL_HQ_ZONE_A'}
                   </div>
                </div>
@@ -715,7 +756,7 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                  <div className="space-y-2 animate-in zoom-in-95 duration-300">
                     <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Reason for Deviation</Label>
                     <Textarea 
-                       className="border-slate-200 rounded-xl font-bold text-xs" 
+                       className="border-border rounded-xl font-bold text-xs" 
                        placeholder="e.g. Field assignment, Offsite maintenance, Hardware sync error..."
                        value={clockInReason}
                        onChange={(e) => setClockInReason(e.target.value)}
@@ -728,13 +769,15 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                <Button 
                   className={cn(
                     "w-full h-14 rounded-2xl font-black italic uppercase tracking-widest transition-all",
-                    isLocationMismatch ? "bg-warning hover:bg-warning shadow-amber-600/20" : "bg-primary hover:bg-primary shadow-indigo-600/20"
+                    isLocationMismatch ? "bg-warning hover:bg-warning shadow-warning/20" : "bg-primary hover:bg-primary shadow-primary/20"
                   )}
                   onClick={handleClockIn}
+                  disabled={isSubmittingClockIn}
                >
-                  Authorize Check-In
+                  {isSubmittingClockIn && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isSubmittingClockIn ? 'Authorizing...' : 'Authorize Check-In'}
                </Button>
-               <Button variant="ghost" className="text-[10px] font-black text-muted-foreground uppercase tracking-widest h-10" onClick={() => { setIsClockingIn(false); setIsLocationMismatch(false); }}>
+               <Button variant="ghost" className="text-[10px] font-black text-muted-foreground uppercase tracking-widest h-10" onClick={() => { setIsClockingIn(false); setIsLocationMismatch(false); }} disabled={isSubmittingClockIn}>
                   Cancel Session
                </Button>
             </div>
@@ -744,7 +787,7 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
 
       {/* Loan Request Logic - Financial Sheet */}
       <Dialog open={isLoanOpen} onOpenChange={setIsLoanOpen}>
-        <DialogContent className="max-w-md bg-white border-slate-200 p-0 overflow-hidden">
+        <DialogContent className="max-w-md bg-white border-border p-0 overflow-hidden">
           <DialogHeader className="p-8 bg-muted text-white">
             <div className="flex items-center gap-3 mb-2">
                <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
@@ -767,7 +810,7 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                      })}
                      <Input 
                         type="number" 
-                        className="pl-9 h-12 border-slate-200 rounded-xl font-black italic text-lg" 
+                        className="pl-9 h-12 border-border rounded-xl font-black italic text-lg" 
                         placeholder="0.00"
                         value={loanAmount}
                         onChange={(e) => setLoanAmount(e.target.value)}
@@ -782,7 +825,7 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                   <div className="space-y-2">
                      <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Installments</Label>
                      <select 
-                        className="w-full h-12 px-4 bg-muted border border-slate-100 rounded-xl text-xs font-black uppercase"
+                        className="w-full h-12 px-4 bg-muted border border-border rounded-xl text-xs font-black uppercase"
                         value={loanInstallments}
                         onChange={(e) => setLoanInstallments(e.target.value)}
                      >
@@ -803,7 +846,7 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                <div className="space-y-2">
                   <Label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Loan Purpose</Label>
                   <Textarea 
-                     className="border-slate-200 rounded-xl font-bold text-xs" 
+                     className="border-border rounded-xl font-bold text-xs" 
                      placeholder="State the purpose for administrative review..."
                      value={loanReason}
                      onChange={(e) => setLoanReason(e.target.value)}
@@ -822,13 +865,14 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
 
             <div className="pt-2 flex flex-col gap-3">
                <Button 
-                  className="w-full h-14 rounded-2xl font-black italic uppercase tracking-widest bg-primary hover:bg-primary shadow-indigo-600/20"
+                  className="w-full h-14 rounded-2xl font-black italic uppercase tracking-widest bg-primary hover:bg-primary shadow-primary/20"
                   onClick={handleRequestLoan}
-                  disabled={!loanAmount || !loanReason}
+                  disabled={!loanAmount || !loanReason || isSubmittingLoan}
                >
-                  Transmit Request
+                  {isSubmittingLoan && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isSubmittingLoan ? 'Transmitting...' : 'Transmit Request'}
                </Button>
-               <Button variant="ghost" className="text-[10px] font-black text-muted-foreground uppercase tracking-widest h-10" onClick={() => setIsLoanOpen(false)}>
+               <Button variant="ghost" className="text-[10px] font-black text-muted-foreground uppercase tracking-widest h-10" onClick={() => setIsLoanOpen(false)} disabled={isSubmittingLoan}>
                   Cancel Session
                </Button>
             </div>
@@ -838,7 +882,7 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
 
       {/* Compliance Modal */}
       <Dialog open={isComplianceOpen} onOpenChange={setIsComplianceOpen}>
-        <DialogContent className="max-w-2xl bg-muted border-slate-800 text-white p-0 overflow-hidden rounded-3xl">
+        <DialogContent className="max-w-2xl bg-muted border-border text-white p-0 overflow-hidden rounded-3xl">
           <DialogHeader className="p-8 pb-4">
             <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center">
@@ -882,7 +926,7 @@ export default function MyPulse({ noShell = false }: { noShell?: boolean }) {
                             <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{item.date}</p>
                         </div>
                       </div>
-                      <Badge className="bg-success text-success border-emerald-500/20 text-[9px] font-black uppercase tracking-widest">
+                      <Badge className="bg-success text-success border-success/20 text-[9px] font-black uppercase tracking-widest">
                         {item.status}
                       </Badge>
                   </div>

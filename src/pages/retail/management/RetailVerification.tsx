@@ -14,6 +14,7 @@ import {
 import { PageHeader } from "@/core/ui/PageHeader";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { retailService } from "@/core/services/retail/retailService";
+import { apiRequest } from "@/core/api/apiClient";
 import { useSession } from "@/core/security/session";
 import { useToast } from "@/hooks/use-toast";
 
@@ -97,8 +98,13 @@ export default function RetailVerification() {
                 Verify Now
               </Button>
               <Button 
-                onClick={() => {
-                  toast({ title: "Scanner Active", description: "Optical sensors initialized. Please align code within frame." });
+                onClick={async () => {
+                  try {
+                    await apiRequest("/retail/verification/scan", "POST", session, { mode: "active" });
+                    toast({ title: "Scanner Active", description: "Optical sensors initialized. Please align code within frame." });
+                  } catch (e) {
+                    toast({ title: "Scanner Error", description: "Failed to activate scanner. Check device connection.", variant: "destructive" });
+                  }
                 }} 
                 variant="outline" 
                 className="h-12"

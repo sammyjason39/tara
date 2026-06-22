@@ -1,6 +1,10 @@
 // Mock Data for Local-First Business Operations Platform
 
 import { Organization, Role, Site, User } from "@/core/types";
+import {
+  formatCurrency as formatCurrencyCanonical,
+  formatDate as formatDateCanonical,
+} from "@/lib/format";
 
 export interface Staff {
   id: string;
@@ -685,24 +689,18 @@ export const mockDashboardStats: DashboardStats = {
 // Generate random ID
 export const generateId = () => Math.random().toString(36).substr(2, 9);
 
-// Format currency
-export const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
-};
+// Format currency — thin wrapper delegating to the canonical formatter.
+// Preserves the legacy USD/en-US defaults. Prefer importing from `@/lib/format`.
+export const formatCurrency = (amount: number): string =>
+  formatCurrencyCanonical(amount, "USD", "en-US");
 
-// Format date
-export const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-};
+// Format date — thin wrapper delegating to the canonical formatter.
+// The canonical "medium" date style matches the legacy MMM D, YYYY pattern.
+// Prefer importing from `@/lib/format`.
+export const formatDate = (dateString: string): string =>
+  formatDateCanonical(dateString, "medium");
 
-// Format time
+// Format time — no canonical equivalent (time-only); retained during migration.
 export const formatTime = (dateString: string): string => {
   return new Date(dateString).toLocaleTimeString("en-US", {
     hour: "2-digit",

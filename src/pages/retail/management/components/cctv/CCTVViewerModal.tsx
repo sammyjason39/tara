@@ -44,6 +44,7 @@ import type { CCTVCamera, CCTVProvider } from "@/core/types/retail/retail";
 import { useSession } from "@/core/security/session";
 import { Roles } from "@/core/security/roles";
 import { retailService } from "@/core/services/retail/retailService";
+import { apiRequest } from "@/core/api/apiClient";
 
 // ── Provider metadata ────────────────────────────────────────────
 interface ProviderInfo {
@@ -223,11 +224,11 @@ const PROVIDERS: Record<CCTVProvider, ProviderInfo> = {
 // ── Status helpers ────────────────────────────────────────────────
 const cctvStatusColor = (s: CCTVCamera["status"]) =>
   ({
-    live: "bg-success text-success border-emerald-100",
+    live: "bg-success text-success border-success",
     recording: "bg-primary/5 text-primary border-primary",
-    offline: "bg-destructive text-destructive border-red-100",
-    error: "bg-destructive text-destructive border-red-100",
-    maintenance: "bg-warning text-warning border-amber-100",
+    offline: "bg-destructive text-destructive border-destructive",
+    error: "bg-destructive text-destructive border-destructive",
+    maintenance: "bg-warning text-warning border-warning",
   })[s];
 
 const integStatusIcon = (s?: CCTVCamera["integrationStatus"]) => {
@@ -240,15 +241,8 @@ const integStatusIcon = (s?: CCTVCamera["integrationStatus"]) => {
   return <AlertTriangle className="w-3.5 h-3.5 text-muted-foreground" />;
 };
 
-// ── Mock timeline events ──────────────────────────────────────────
-const MOCK_EVENTS = [
-  { time: "09:14", label: "Motion detected", type: "motion" },
-  { time: "09:22", label: "Person entered frame", type: "person" },
-  { time: "11:05", label: "Motion detected", type: "motion" },
-  { time: "13:47", label: "Camera disconnected", type: "alert" },
-  { time: "13:52", label: "Camera reconnected", type: "ok" },
-  { time: "16:30", label: "Motion detected", type: "motion" },
-];
+// ── Timeline events fetched from backend ──────────────────────────
+// MOCK_EVENTS removed — events are fetched from /retail/cctv/:id/events
 
 // ── Integration Setup Panel ─────────────────────────────────────
 const IntegrationSetup: React.FC<{
@@ -355,7 +349,7 @@ const IntegrationSetup: React.FC<{
                 onChange={(e) =>
                   setForm((p) => ({ ...p, [field.key]: e.target.value }))
                 }
-                className="rounded-xl border-slate-200 text-sm font-mono pr-10"
+                className="rounded-xl border-border text-sm font-mono pr-10"
               />
               {field.secret && (
                 <button
@@ -540,6 +534,35 @@ const CCTVViewerModal: React.FC<Props> = ({
     () => new Date().toISOString().split("T")[0],
   );
 
+  // Timeline events fetched from backend
+  const [timelineEvents, setTimelineEvents] = useState<
+    { time: string; label: string; type: string }[]
+  >([]);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+
+  // Fetch camera events when camera or date changes
+  React.useEffect(() => {
+    if (!camera || !session?.tenant_id) return;
+    const fetchEvents = async () => {
+      setIsLoadingEvents(true);
+      try {
+        const data = await retailService.getCCTVEvents?.(
+          session.tenant_id!,
+          session,
+          camera.id,
+          selectedDate,
+        );
+        setTimelineEvents(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.warn("Failed to fetch CCTV events", err);
+        setTimelineEvents([]);
+      } finally {
+        setIsLoadingEvents(false);
+      }
+    };
+    fetchEvents();
+  }, [camera?.id, selectedDate, session?.tenant_id]);
+
   if (!camera) return null;
 
   const isNotConfigured =
@@ -577,7 +600,7 @@ const CCTVViewerModal: React.FC<Props> = ({
     >
       <DialogContent className="max-w-4xl w-full rounded-3xl border-none shadow-2xl bg-white p-0 overflow-hidden max-h-[92vh] flex flex-col">
         {/* Header */}
-        <DialogHeader className="px-6 pt-5 pb-4 border-b border-slate-100 shrink-0">
+        <DialogHeader className="px-6 pt-5 pb-4 border-b border-border shrink-0">
           <div className="flex items-center gap-4">
             <div
               className={`w-10 h-10 rounded-2xl ${info.color} flex items-center justify-center text-foreground font-black text-xs shrink-0`}
@@ -629,7 +652,7 @@ const CCTVViewerModal: React.FC<Props> = ({
         </DialogHeader>
 
         {/* Tab bar */}
-        <div className="flex items-center gap-1 px-6 py-3 border-b border-slate-50 shrink-0">
+        <div className="flex items-center gap-1 px-6 py-3 border-b border-border shrink-0">
           {(Array.isArray(TABS) ? TABS : []).map((t) => (
             <button
               key={t.id}
@@ -641,7 +664,7 @@ const CCTVViewerModal: React.FC<Props> = ({
             </button>
           ))}
           {isNotConfigured && viewTab !== "setup" && (
-            <div className="ml-auto flex items-center gap-1.5 text-[10px] text-warning bg-warning border border-amber-100 rounded-xl px-3 py-1.5 font-semibold">
+            <div className="ml-auto flex items-center gap-1.5 text-[10px] text-warning bg-warning border border-warning rounded-xl px-3 py-1.5 font-semibold">
               <AlertTriangle className="w-3.5 h-3.5" />
               {canManage
                 ? "Integration not set up — click Integration tab"
@@ -664,7 +687,7 @@ const CCTVViewerModal: React.FC<Props> = ({
                     togglePlay={() => setIsPlaying((p) => !p)}
                   />
                   {isNotConfigured && (
-                    <div className="mt-3 bg-warning border border-amber-200 rounded-2xl px-4 py-3 text-[11px] text-warning font-medium flex gap-2 items-start">
+                    <div className="mt-3 bg-warning border border-warning rounded-2xl px-4 py-3 text-[11px] text-warning font-medium flex gap-2 items-start">
                       <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                       Stream not connected.{" "}
                       {canManage
@@ -723,7 +746,7 @@ const CCTVViewerModal: React.FC<Props> = ({
                           (d, i) => (
                             <button
                               key={i}
-                              className="w-9 h-9 rounded-xl bg-white border border-slate-200 text-sm font-bold hover:bg-secondary hover:text-foreground transition-all flex items-center justify-center"
+                              className="w-9 h-9 rounded-xl bg-white border border-border text-sm font-bold hover:bg-secondary hover:text-foreground transition-all flex items-center justify-center"
                             >
                               {d}
                             </button>
@@ -737,7 +760,7 @@ const CCTVViewerModal: React.FC<Props> = ({
                     <Button
                       variant="outline"
                       onClick={() => setViewTab("setup")}
-                      className="w-full h-9 rounded-xl border-slate-200 font-black italic uppercase text-[9px] tracking-widest gap-1.5"
+                      className="w-full h-9 rounded-xl border-border font-black italic uppercase text-[9px] tracking-widest gap-1.5"
                     >
                       <Settings2 className="w-3.5 h-3.5" />{" "}
                       {isNotConfigured
@@ -785,8 +808,15 @@ const CCTVViewerModal: React.FC<Props> = ({
                       </div>
                     </div>
                     <Button 
-                      onClick={() => {
-                        toast({ title: "Footage Loading", description: "Requesting archive stream from Branch NVR..." });
+                      onClick={async () => {
+                        try {
+                          const from = `${selectedDate}T08:00:00`;
+                          const to = `${selectedDate}T18:00:00`;
+                          await apiRequest(`/retail/cctv/${camera.id}/footage`, "POST", session, { from, to });
+                          toast({ title: "Footage Loading", description: "Archive stream requested from Branch NVR." });
+                        } catch (e) {
+                          toast({ title: "Footage Error", description: "Failed to load archive footage.", variant: "destructive" });
+                        }
                       }}
                       size="sm"
                       className="h-10 rounded-xl bg-secondary text-foreground font-black italic uppercase text-[10px] tracking-widest gap-2"
@@ -807,42 +837,54 @@ const CCTVViewerModal: React.FC<Props> = ({
                   <div className="font-black uppercase text-muted-foreground tracking-widest text-[9px] px-1">
                     Event Timeline — {selectedDate}
                   </div>
-                  <div className="space-y-2">
-                    {(Array.isArray(MOCK_EVENTS) ? MOCK_EVENTS : []).map((ev, i) => (
-                      <button
-                        key={i}
-                        className="w-full text-left bg-secondary/5 hover:bg-white border border-transparent hover:border-slate-200 hover:shadow-sm rounded-2xl px-4 py-3 transition-all group"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className={`w-2 h-2 rounded-full shrink-0 ${ev.type === "alert" ? "bg-destructive" : ev.type === "ok" ? "bg-success" : "bg-warning"}`}
-                          />
-                          <div>
-                            <div className="text-[11px] font-black text-muted-foreground">
-                              {ev.label}
+                  {isLoadingEvents && (
+                    <div className="flex items-center justify-center py-6">
+                      <RefreshCw className="w-4 h-4 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                  {!isLoadingEvents && timelineEvents.length === 0 && (
+                    <div className="text-[11px] text-muted-foreground text-center py-4">
+                      No events recorded for this date.
+                    </div>
+                  )}
+                  {!isLoadingEvents && timelineEvents.length > 0 && (
+                    <div className="space-y-2">
+                      {timelineEvents.map((ev, i) => (
+                        <button
+                          key={i}
+                          className="w-full text-left bg-secondary/5 hover:bg-white border border-transparent hover:border-border hover:shadow-sm rounded-2xl px-4 py-3 transition-all group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-2 h-2 rounded-full shrink-0 ${ev.type === "alert" ? "bg-destructive" : ev.type === "ok" ? "bg-success" : "bg-warning"}`}
+                            />
+                            <div>
+                              <div className="text-[11px] font-black text-muted-foreground">
+                                {ev.label}
+                              </div>
+                              <div className="text-[9px] text-muted-foreground font-mono">
+                                {ev.time}
+                              </div>
                             </div>
-                            <div className="text-[9px] text-muted-foreground font-mono">
-                              {ev.time}
-                            </div>
+                            <Play className="w-3.5 h-3.5 text-muted-foreground/60 group-hover:text-muted-foreground ml-auto transition-colors" />
                           </div>
-                          <Play className="w-3.5 h-3.5 text-muted-foreground/60 group-hover:text-muted-foreground ml-auto transition-colors" />
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <Separator />
                   <div className="flex gap-1.5">
                     <Button disabled title="Not available yet"
                       variant="outline"
                       size="sm"
-                      className="flex-1 h-8 rounded-xl border-slate-200 font-black italic text-[9px] uppercase tracking-widest gap-1"
+                      className="flex-1 h-8 rounded-xl border-border font-black italic text-[9px] uppercase tracking-widest gap-1"
                     >
                       <ChevronLeft className="w-3 h-3" /> Prev Day
                     </Button>
                     <Button disabled title="Not available yet"
                       variant="outline"
                       size="sm"
-                      className="flex-1 h-8 rounded-xl border-slate-200 font-black italic text-[9px] uppercase tracking-widest gap-1"
+                      className="flex-1 h-8 rounded-xl border-border font-black italic text-[9px] uppercase tracking-widest gap-1"
                     >
                       Next Day <ChevronRight className="w-3 h-3" />
                     </Button>

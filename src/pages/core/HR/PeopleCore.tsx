@@ -40,6 +40,8 @@ import { retailService } from "@/core/services/retail/retailService";
 import { workflowService } from "@/core/services/hr/workflowService";
 import { ZenTooltip } from "@/core/ui/ZenTooltip";
 import { Check, ChevronRight, MapPin, Briefcase, CreditCard } from "lucide-react";
+import { EmptyState } from "@/components/shared/AsyncState";
+import { formatCurrency, formatDate, formatDateTime, safeText } from "@/lib/format";
 
 export default function PeopleCore() {
   const session = useSession();
@@ -220,7 +222,7 @@ export default function PeopleCore() {
         secondaryActions={
           <div className="flex gap-2">
              {isRetailStaff && (
-               <Badge className="bg-warning text-warning border-orange-200 flex items-center gap-1">
+               <Badge className="bg-warning text-warning border-warning flex items-center gap-1">
                  <Store className="h-3 w-3" /> Retail Workforce
                </Badge>
              )}
@@ -322,7 +324,7 @@ export default function PeopleCore() {
           <ZenTooltip content="Promote this professional to a new rank or roleTitle.">
             <Button
               variant="outline"
-              className="border-emerald-200 text-success hover:bg-success"
+              className="border-success text-success hover:bg-success"
               onClick={() => {
                 setNewRole(employee.roleTitle);
                 setNewSalary(employee.baseSalary);
@@ -337,7 +339,7 @@ export default function PeopleCore() {
           <ZenTooltip content="Place this record under temporary suspension for administrative reasons.">
             <Button
               variant="outline"
-              className="border-red-200 text-destructive hover:bg-destructive"
+              className="border-destructive text-destructive hover:bg-destructive"
               onClick={() => {
                 setActionType("SUSPEND");
                 setActionOpen(true);
@@ -350,7 +352,7 @@ export default function PeopleCore() {
           <ZenTooltip content="Remove active status from this professional's record.">
             <Button
               variant="outline"
-              className="border-amber-200 text-warning hover:bg-warning"
+              className="border-warning text-warning hover:bg-warning"
               onClick={() => {
                 setActionType("REMOVE");
                 setActionOpen(true);
@@ -431,16 +433,27 @@ export default function PeopleCore() {
                     </tr>
                   </thead>
                   <tbody>
-                    {(Array.isArray(retailShifts) ? retailShifts : []).map((shift) => (
-                      <tr key={shift.id} className="border-t">
-                        <td className="p-3 font-medium">{shift.storeId}</td>
-                        <td className="p-3 text-xs">{shift.openingTime}</td>
-                        <td className="p-3 text-xs">{shift.closingTime || "ACTIVE"}</td>
-                        <td className="p-3 text-right text-xs">
-                           {shift.openingCash} {"->"} {shift.closingCash || "--"}
+                    {(Array.isArray(retailShifts) ? retailShifts : []).length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="p-0">
+                          <EmptyState
+                            title="No retail shifts"
+                            description="No recorded retail shifts for this employee in the current tenant."
+                          />
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      (Array.isArray(retailShifts) ? retailShifts : []).map((shift) => (
+                      <tr key={shift.id} className="border-t">
+                        <td className="p-3 font-medium">{safeText(shift.storeId)}</td>
+                        <td className="p-3 text-xs">{formatDateTime(shift.openingTime)}</td>
+                        <td className="p-3 text-xs">{shift.closingTime ? formatDateTime(shift.closingTime) : "ACTIVE"}</td>
+                        <td className="p-3 text-right text-xs">
+                           {formatCurrency(shift.openingCash)} {"->"} {shift.closingCash != null ? formatCurrency(shift.closingCash) : "--"}
+                        </td>
+                      </tr>
+                    ))
+                    )}
                   </tbody>
                 </table>
               </DataTableShell>
@@ -452,25 +465,25 @@ export default function PeopleCore() {
               <div className="rounded-lg border p-4 text-sm">
                 <p className="font-semibold text-foreground">Employment</p>
                 <p className="text-muted-foreground">
-                  Employee code: {employee.employeeCode}
+                  Employee code: {safeText(employee.employeeCode)}
                 </p>
                 <p className="text-muted-foreground">
-                  Location: {employee.locationId}
+                  Location: {safeText(employee.locationId)}
                 </p>
                 <p className="text-muted-foreground">
-                  Hire date: {employee.hireDate}
+                  Hire date: {formatDate(employee.hireDate)}
                 </p>
               </div>
               <div className="rounded-lg border p-4 text-sm">
                 <p className="font-semibold text-foreground">Compensation</p>
                 <p className="text-muted-foreground">
-                  Base salary: {employee.baseSalary}
+                  Base salary: {formatCurrency(employee.baseSalary)}
                 </p>
                 <p className="text-muted-foreground">
-                  Hourly rate: {employee.hourlyRate}
+                  Hourly rate: {formatCurrency(employee.hourlyRate)}
                 </p>
                 <p className="text-muted-foreground">
-                  Status: {employee.status}
+                  Status: {safeText(employee.status)}
                 </p>
               </div>
             </div>
@@ -491,7 +504,17 @@ export default function PeopleCore() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(Array.isArray(filteredAttendance) ? filteredAttendance : []).map((entry) => (
+                  {filteredAttendance.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="p-0">
+                        <EmptyState
+                          title="No attendance records"
+                          description="No attendance entries match the current search for this employee."
+                        />
+                      </td>
+                    </tr>
+                  ) : (
+                    (Array.isArray(filteredAttendance) ? filteredAttendance : []).map((entry) => (
                     <tr
                       key={entry.id}
                       className="border-t cursor-pointer hover:bg-muted/50"
@@ -499,13 +522,14 @@ export default function PeopleCore() {
                         setSelectedDetail({ type: "Attendance", data: entry })
                       }
                     >
-                      <td className="p-3">{entry.date}</td>
-                      <td className="p-3">{entry.status}</td>
+                      <td className="p-3">{formatDate(entry.date)}</td>
+                      <td className="p-3">{safeText(entry.status)}</td>
                       <td className="p-3 text-muted-foreground">
                         {(entry as any).notes ?? "--"}
                       </td>
                     </tr>
-                  ))}
+                  ))
+                  )}
                 </tbody>
               </table>
             </DataTableShell>
@@ -525,7 +549,17 @@ export default function PeopleCore() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(Array.isArray(filteredPayroll) ? filteredPayroll : []).map((run) => (
+                  {filteredPayroll.length === 0 ? (
+                    <tr>
+                      <td colSpan={2} className="p-0">
+                        <EmptyState
+                          title="No payroll periods"
+                          description="No payroll periods match the current search for this employee."
+                        />
+                      </td>
+                    </tr>
+                  ) : (
+                    (Array.isArray(filteredPayroll) ? filteredPayroll : []).map((run) => (
                     <tr
                       key={run.id}
                       className="border-t cursor-pointer hover:bg-muted/50"
@@ -534,11 +568,12 @@ export default function PeopleCore() {
                       }
                     >
                       <td className="p-3">
-                        {run.periodStart} - {run.periodEnd}
+                        {formatDate(run.periodStart)} - {formatDate(run.periodEnd)}
                       </td>
-                      <td className="p-3">{run.status}</td>
+                      <td className="p-3">{safeText(run.status)}</td>
                     </tr>
-                  ))}
+                  ))
+                  )}
                 </tbody>
               </table>
             </DataTableShell>
@@ -558,7 +593,17 @@ export default function PeopleCore() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(Array.isArray(filteredContracts) ? filteredContracts : []).map((contract) => (
+                  {filteredContracts.length === 0 ? (
+                    <tr>
+                      <td colSpan={2} className="p-0">
+                        <EmptyState
+                          title="No contracts"
+                          description="No contracts match the current search for this employee."
+                        />
+                      </td>
+                    </tr>
+                  ) : (
+                    (Array.isArray(filteredContracts) ? filteredContracts : []).map((contract) => (
                     <tr
                       key={contract.id}
                       className="border-t cursor-pointer hover:bg-muted/50"
@@ -566,10 +611,11 @@ export default function PeopleCore() {
                         setSelectedDetail({ type: "Contract", data: contract })
                       }
                     >
-                      <td className="p-3">{contract.title}</td>
-                      <td className="p-3">{contract.status}</td>
+                      <td className="p-3">{safeText(contract.title)}</td>
+                      <td className="p-3">{safeText(contract.status)}</td>
                     </tr>
-                  ))}
+                  ))
+                  )}
                 </tbody>
               </table>
             </DataTableShell>
@@ -590,7 +636,17 @@ export default function PeopleCore() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(Array.isArray(filteredReviews) ? filteredReviews : []).map((review) => (
+                  {filteredReviews.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="p-0">
+                        <EmptyState
+                          title="No performance reviews"
+                          description="No performance reviews match the current search for this employee."
+                        />
+                      </td>
+                    </tr>
+                  ) : (
+                    (Array.isArray(filteredReviews) ? filteredReviews : []).map((review) => (
                     <tr
                       key={review.id}
                       className="border-t cursor-pointer hover:bg-muted/50"
@@ -605,7 +661,8 @@ export default function PeopleCore() {
                       <td className="p-3">{review.score ?? "-"}</td>
                       <td className="p-3">{review.status}</td>
                     </tr>
-                  ))}
+                  ))
+                  )}
                 </tbody>
               </table>
             </DataTableShell>
@@ -878,7 +935,7 @@ export default function PeopleCore() {
               {selectedDetail?.type === "Attendance" && (
                 <>
                   <span className="text-muted-foreground">Date:</span>
-                  <span>{selectedDetail?.data.date}</span>
+                  <span>{formatDate(selectedDetail?.data.date)}</span>
                 </>
               )}
             </div>
@@ -1033,14 +1090,14 @@ export default function PeopleCore() {
                           onChange={(e) => setNewSalary(Number(e.target.value))}
                         />
                       </div>
-                      <div className="rounded-lg border bg-warning p-4 border-amber-100">
+                      <div className="rounded-lg border bg-warning p-4 border-warning">
                          <div className="flex justify-between text-xs mb-1">
                             <span>Current Salary</span>
-                            <span className="font-mono">{employee.baseSalary}</span>
+                            <span className="font-mono">{formatCurrency(employee.baseSalary)}</span>
                          </div>
                          <div className="flex justify-between text-xs font-bold text-warning">
                             <span>Projected Increase</span>
-                            <span>{newSalary ? (newSalary - (employee.baseSalary || 0)).toFixed(2) : '--'}</span>
+                            <span>{newSalary !== undefined ? formatCurrency(newSalary - (employee.baseSalary || 0)) : '--'}</span>
                          </div>
                       </div>
                     </div>
@@ -1064,7 +1121,7 @@ export default function PeopleCore() {
                     {actionType === "PROMOTE" && (
                        <div className="bg-muted/50 p-3 rounded-lg text-xs space-y-1">
                           <p><strong>Role:</strong> {newRole}</p>
-                          <p><strong>Salary:</strong> {newSalary}</p>
+                          <p><strong>Salary:</strong> {formatCurrency(newSalary)}</p>
                        </div>
                     )}
                   </div>

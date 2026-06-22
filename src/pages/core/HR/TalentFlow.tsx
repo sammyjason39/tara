@@ -11,6 +11,7 @@ import { FilterBar } from "@/core/tools/FilterBar";
 import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { recruitmentService, type CandidateRecord } from "@/core/services/hr/recruitmentService";
+import { EmptyState } from "@/components/shared/AsyncState";
 
 export default function TalentFlow() {
   const session = useSession();
@@ -170,7 +171,7 @@ export default function TalentFlow() {
         <FilterBar searchValue={search} onSearchChange={setSearch} />
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           {(Array.isArray(stages) ? stages : []).map((stage) => (
-            <div key={stage} className={`rounded-lg border bg-card p-3 ${stage === "rejected" ? "border-red-100 bg-destructive" : ""}`}>
+            <div key={stage} className={`rounded-lg border bg-card p-3 ${stage === "rejected" ? "border-destructive/20 bg-destructive" : ""}`}>
               <p className={`text-sm font-semibold capitalize ${stage === "rejected" ? "text-destructive" : "text-foreground"}`}>{stage}</p>
               <div className="mt-3 space-y-2">
                 {(Array.isArray(filteredCandidates) ? filteredCandidates : []).filter((candidate) => candidate.stage === stage)
@@ -205,7 +206,17 @@ export default function TalentFlow() {
                 </tr>
               </thead>
               <tbody>
-                {filteredCandidates.slice(0, 5).map((candidate) => (
+                {filteredCandidates.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="p-0">
+                      <EmptyState
+                        title="No candidates"
+                        description="No candidates match the current search. Create a requisition to start sourcing."
+                      />
+                    </td>
+                  </tr>
+                ) : (
+                  filteredCandidates.slice(0, 5).map((candidate) => (
                   <tr 
                     key={candidate.id} 
                     className="border-t cursor-pointer hover:bg-muted/30"
@@ -218,7 +229,8 @@ export default function TalentFlow() {
                     <td className="p-3 text-muted-foreground">{candidate.role}</td>
                     <td className="p-3 text-muted-foreground capitalize">{candidate.stage}</td>
                   </tr>
-                ))}
+                ))
+                )}
               </tbody>
             </table>
           </DataTableShell>

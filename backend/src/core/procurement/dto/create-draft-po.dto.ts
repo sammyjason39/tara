@@ -1,5 +1,6 @@
 import { Type } from "class-transformer";
 import {
+  ArrayMinSize,
   IsArray,
   IsNotEmpty,
   IsNumber,
@@ -49,6 +50,7 @@ export class CreateDraftPoDto {
   contractType: "BLANKET" | "SPOT" | "SERVICE";
 
   @IsArray()
+  @ArrayMinSize(1, { message: 'Purchase order must have at least 1 line item' })
   @ValidateNested({ each: true })
   @Type(() => PoLineItemDto)
   lineItems: PoLineItemDto[];

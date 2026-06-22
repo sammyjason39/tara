@@ -22,7 +22,7 @@ export function WorkspacePanel({
   const variantClasses = {
     default: "bg-background",
     glass: "bg-white/80 backdrop-blur-xl border-white/20 shadow-xl",
-    dark: "bg-muted text-muted-foreground border-slate-800"
+    dark: "bg-muted text-muted-foreground border-border"
   };
 
   return (

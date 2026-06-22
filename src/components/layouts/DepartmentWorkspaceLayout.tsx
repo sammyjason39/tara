@@ -14,6 +14,8 @@ import { useSession } from "@/core/security/session";
 import { cn } from "@/lib/utils";
 import { 
   ChevronRight, 
+  Menu,
+  X,
   Monitor, 
   Target, 
   Settings,
@@ -57,6 +59,12 @@ export default function DepartmentWorkspaceLayout({
 }: DepartmentWorkspaceLayoutProps) {
   const session = useSession();
   const location = useLocation();
+  const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
+
+  // Close mobile nav on route change
+  React.useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
 
   React.useEffect(() => {
     console.log(`[DepartmentWorkspaceLayout:${engineName}] Mounted`, {
@@ -76,14 +84,14 @@ export default function DepartmentWorkspaceLayout({
 
   // Define accent color classes
   const colorMap: Record<string, string> = {
-    emerald: "text-success bg-success shadow-emerald-600/20 border-l-emerald-600 border-emerald-600/20 hover:text-success from-emerald-500/5",
-    rose: "text-destructive bg-destructive shadow-rose-600/20 border-l-rose-600 border-rose-600/20 hover:text-destructive from-rose-500/5",
-    amber: "text-warning bg-warning shadow-amber-600/20 border-l-amber-600 border-amber-600/20 hover:text-warning from-amber-500/5",
-    orange: "text-destructive bg-destructive shadow-orange-600/20 border-l-orange-600 border-orange-600/20 hover:text-warning from-orange-500/5",
+    emerald: "text-success bg-success shadow-emerald-600/20 border-l-emerald-600 border-success/20 hover:text-success from-emerald-500/5",
+    rose: "text-destructive bg-destructive shadow-rose-600/20 border-l-rose-600 border-destructive/20 hover:text-destructive from-rose-500/5",
+    amber: "text-warning bg-warning shadow-amber-600/20 border-l-amber-600 border-warning/20 hover:text-warning from-amber-500/5",
+    orange: "text-destructive bg-destructive shadow-orange-600/20 border-l-orange-600 border-warning/20 hover:text-warning from-orange-500/5",
     blue: "text-primary bg-primary shadow-blue-600/20 border-l-blue-600 border-primary hover:text-primary from-blue-500/5",
-    purple: "text-primary bg-primary shadow-purple-600/20 border-l-purple-600 border-purple-600/20 hover:text-primary from-purple-500/5",
+    purple: "text-primary bg-primary shadow-purple-600/20 border-l-purple-600 border-primary/20 hover:text-primary from-purple-500/5",
     indigo: "text-primary bg-primary shadow-indigo-600/20 border-l-indigo-600 border-primary hover:text-primary from-indigo-500/5",
-    slate: "text-muted-foreground bg-muted shadow-slate-600/20 border-l-slate-600 border-slate-600/20 hover:text-muted-foreground from-slate-500/5",
+    slate: "text-muted-foreground bg-muted shadow-slate-600/20 border-l-slate-600 border-border/20 hover:text-muted-foreground from-slate-500/5",
   };
 
   const c = colorMap[accentColor] || colorMap.indigo;
@@ -91,44 +99,123 @@ export default function DepartmentWorkspaceLayout({
 
   return (
     <div className="min-h-screen bg-muted dark:bg-muted font-sans overflow-hidden flex flex-col">
+      {/* Mobile nav overlay */}
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setMobileNavOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Mobile nav drawer */}
+      <div
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 w-72 lg:hidden transition-transform duration-300 ease-in-out",
+          mobileNavOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <div className="h-full flex flex-col bg-white/90 dark:bg-muted backdrop-blur-2xl border-r border-border/50 dark:border-white/5 relative overflow-hidden">
+          <div className={cn("absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b pointer-events-none opacity-20", fromC5)} />
+          <div className="flex items-center justify-between p-4 border-b border-border/50 dark:border-white/5 relative z-10">
+            <span className="text-sm font-black uppercase tracking-widest text-muted-foreground">{title}</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setMobileNavOpen(false)}
+              aria-label="Close navigation"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <ScrollArea className="flex-1 relative z-10">
+            <div className="p-4 space-y-8">
+              <SidebarIdentityCard />
+              {(Array.isArray(sections) ? sections : []).map((section) => (
+                <div key={section.title} className="space-y-4">
+                  <p className={cn("text-[9px] font-black uppercase tracking-[0.5em] text-muted-foreground pl-4 border-l-2", borderC20)}>
+                    {section.title}
+                  </p>
+                  <div className="space-y-1.5">
+                    {(Array.isArray(section.items) ? section.items : []).map((item) => {
+                      const Icon = item.icon;
+                      const isActive = location.pathname === item.to || (item.to === basePath && location.pathname === `${basePath}/`);
+                      return (
+                        <NavLink
+                          key={item.to}
+                          to={item.to}
+                          className={cn(
+                            "group flex items-center gap-4 rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative overflow-hidden",
+                            isActive
+                              ? cn("bg-white dark:bg-white/10 shadow-md translate-x-2 border-l-4", textC, shadowC, borderLC)
+                              : cn("text-muted-foreground hover:bg-white/50 dark:hover:bg-white/5 hover:translate-x-1", hoverTextC),
+                          )}
+                        >
+                          <Icon className="h-5 w-5" />
+                          <span className="flex-1 truncate tracking-[0.1em]">{item.label}</span>
+                          <ChevronRight className={cn("h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity", isActive ? "opacity-100" : "")} />
+                        </NavLink>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+      </div>
+
       <PageShell
         header={
           <div className="space-y-4 px-4 md:px-10 py-4 md:py-8 border-b border-white/5 bg-white/5 backdrop-blur-md">
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem>
-                  <BreadcrumbLink asChild>
-                    <Link to="/core" className={cn("text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground transition-all flex items-center gap-2", `hover:${textC}`)}>
-                       <Monitor className="h-3 w-3" /> CORE_SYSTEM
-                    </Link>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="text-muted-foreground" />
-                <BreadcrumbItem>
-                  <BreadcrumbLink asChild>
-                    <Link to={basePath} className={cn("text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground transition-all", `hover:${textC}`)}>{engineName}</Link>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                {(Array.isArray(breadcrumbs) ? breadcrumbs : []).map((item, index) => (
-                  <React.Fragment key={item.path}>
-                    <BreadcrumbSeparator className="text-muted-foreground" />
-                    <BreadcrumbItem>
-                      {index === breadcrumbs.length - 1 ? (
-                        <BreadcrumbPage className={cn("text-[9px] font-black uppercase tracking-[0.2em] italic", textC)}>{item.label}</BreadcrumbPage>
-                      ) : (
-                        <BreadcrumbLink asChild>
-                          <Link to={item.path} className={cn("text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground transition-all", `hover:${textC}`)}>
-                            {item.label}
-                          </Link>
-                        </BreadcrumbLink>
-                      )}
-                    </BreadcrumbItem>
-                  </React.Fragment>
-                ))}
-              </BreadcrumbList>
-            </Breadcrumb>
+            <div className="flex items-center gap-3">
+              {/* Mobile hamburger */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden h-9 w-9 shrink-0"
+                onClick={() => setMobileNavOpen(true)}
+                aria-label="Open navigation"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              <Breadcrumb>
+                <BreadcrumbList>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild>
+                      <Link to="/core" className={cn("text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground transition-all flex items-center gap-2", `hover:${textC}`)}>
+                         <Monitor className="h-3 w-3" /> CORE_SYSTEM
+                      </Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator className="text-muted-foreground" />
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild>
+                      <Link to={basePath} className={cn("text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground transition-all", `hover:${textC}`)}>{engineName}</Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  {(Array.isArray(breadcrumbs) ? breadcrumbs : []).map((item, index) => (
+                    <React.Fragment key={item.path}>
+                      <BreadcrumbSeparator className="text-muted-foreground" />
+                      <BreadcrumbItem>
+                        {index === breadcrumbs.length - 1 ? (
+                          <BreadcrumbPage className={cn("text-[9px] font-black uppercase tracking-[0.2em] italic", textC)}>{item.label}</BreadcrumbPage>
+                        ) : (
+                          <BreadcrumbLink asChild>
+                            <Link to={item.path} className={cn("text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground transition-all", `hover:${textC}`)}>
+                              {item.label}
+                            </Link>
+                          </BreadcrumbLink>
+                        )}
+                      </BreadcrumbItem>
+                    </React.Fragment>
+                  ))}
+                </BreadcrumbList>
+              </Breadcrumb>
+            </div>
             
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
                <div className="flex items-center gap-4 md:gap-8">
                   <div className={cn("h-12 w-12 md:h-20 md:w-20 rounded-2xl md:rounded-[2.5rem] flex items-center justify-center shadow-2xl group hover:rotate-12 transition-all duration-500 border border-white/10", bgC, shadowC)}>
                      <HeaderIcon className="h-6 w-6 md:h-10 md:w-10 text-white" />
@@ -143,7 +230,7 @@ export default function DepartmentWorkspaceLayout({
                
                <div className="flex items-center gap-2 md:gap-4">
                   {headerActions}
-                  <div className="hidden sm:flex items-center gap-3 bg-white dark:bg-muted px-4 py-2.5 rounded-2xl border border-slate-100 dark:border-white/5 shadow-sm">
+                  <div className="hidden sm:flex items-center gap-3 bg-white dark:bg-muted px-4 py-2.5 rounded-2xl border border-border dark:border-white/5 shadow-sm">
                      <span className={cn("h-1.5 w-1.5 rounded-full animate-pulse", bgC)} />
                      <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Telemetry Active</span>
                   </div>
@@ -155,7 +242,7 @@ export default function DepartmentWorkspaceLayout({
           </div>
         }
         left={
-          <div className="h-full flex flex-col bg-white/40 dark:bg-muted backdrop-blur-2xl border-r border-slate-200/50 dark:border-white/5 relative overflow-hidden w-64 md:w-80">
+          <div className="h-full flex flex-col bg-white/40 dark:bg-muted backdrop-blur-2xl border-r border-border/50 dark:border-white/5 relative overflow-hidden w-64 md:w-80">
             <div className={cn("absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b pointer-events-none opacity-20", fromC5)} />
             
             <ScrollArea className="flex-1 relative z-10">
@@ -195,8 +282,8 @@ export default function DepartmentWorkspaceLayout({
               </div>
             </ScrollArea>
             
-            <div className="p-6 border-t border-slate-200/50 dark:border-white/5 bg-white/20 dark:bg-muted backdrop-blur-3xl relative z-10">
-               <div className="flex items-center justify-between p-5 rounded-[1.5rem] bg-white dark:bg-white/5 shadow-xl border border-slate-100 dark:border-white/5 group hover:shadow-2xl transition-all duration-500 cursor-pointer">
+            <div className="p-6 border-t border-border/50 dark:border-white/5 bg-white/20 dark:bg-muted backdrop-blur-3xl relative z-10">
+               <div className="flex items-center justify-between p-5 rounded-[1.5rem] bg-white dark:bg-white/5 shadow-xl border border-border dark:border-white/5 group hover:shadow-2xl transition-all duration-500 cursor-pointer">
                   <div className="flex items-center gap-4">
                      <div className="relative">
                         <div className={cn("h-2.5 w-2.5 rounded-full animate-ping absolute inset-0 opacity-40", bgC)} />

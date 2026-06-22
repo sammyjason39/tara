@@ -10,13 +10,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SIcon, ssc } from "./DeviceControlUI";
 import type { BranchSensor } from "@/core/types/retail/retail";
+import { apiRequest } from "@/core/api/apiClient";
+import { useSession } from "@/core/security/session";
+import { useToast } from "@/hooks/use-toast";
 
 interface SensorModalProps {
   sensor: BranchSensor | null;
   onClose: () => void;
 }
 
-const SensorModal = ({ sensor, onClose }: SensorModalProps) => (
+const SensorModal = ({ sensor, onClose }: SensorModalProps) => {
+  const session = useSession();
+  const { toast } = useToast();
+
+  return (
   <Dialog
     open={!!sensor}
     onOpenChange={(v) => {
@@ -110,8 +117,14 @@ const SensorModal = ({ sensor, onClose }: SensorModalProps) => (
                 ))}
             </div>
             <Button 
-              onClick={() => {
-                alert("This will open a threshold configuration slider. (Simulated for demonstration)");
+              onClick={async () => {
+                try {
+                  const thresholds = { min: 0, max: 100 };
+                  await apiRequest("/kernel/iot/telemetry", "POST", session, { sensor_id: sensor.id, thresholds });
+                  toast({ title: "Threshold Configured", description: `Thresholds updated for ${sensor.name}.` });
+                } catch (e) {
+                  toast({ title: "Configuration Failed", description: "Could not update sensor thresholds.", variant: "destructive" });
+                }
               }}
               className="w-full h-10 rounded-xl bg-secondary text-foreground font-black italic uppercase text-[10px] tracking-widest gap-2"
             >
@@ -122,6 +135,7 @@ const SensorModal = ({ sensor, onClose }: SensorModalProps) => (
       )}
     </DialogContent>
   </Dialog>
-);
+  );
+};
 
 export default SensorModal;

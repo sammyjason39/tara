@@ -101,7 +101,7 @@ export default function FinancialOperationsDesk() {
           secondaryActions={
             <Button 
               variant="outline" 
-              className="rounded-[1.2rem] px-6 h-12 font-black text-xs uppercase tracking-widest border-slate-200 bg-white/50 backdrop-blur-sm hover:bg-white transition-all"
+              className="rounded-[1.2rem] px-6 h-12 font-black text-xs uppercase tracking-widest border-border bg-white/50 backdrop-blur-sm hover:bg-white transition-all"
               onClick={() => refresh(true)}
               disabled={refreshing}
             >
@@ -283,7 +283,7 @@ export default function FinancialOperationsDesk() {
                       </h4>
                       <div className="space-y-4">
                          {[1, 2].map(i => (
-                           <div key={i} className="p-5 bg-secondary/20 rounded-3xl border border-border/50 space-y-3 group hover:border-orange-500/50 transition-all">
+                           <div key={i} className="p-5 bg-secondary/20 rounded-3xl border border-border/50 space-y-3 group hover:border-warning/50 transition-all">
                               <div className="flex justify-between items-start">
                                  <div className="space-y-0.5">
                                     <p className="text-[10px] font-black italic uppercase">ACME CORP PROTOCOL</p>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { PageHeader } from "@/core/ui/PageHeader";
 import {
   FileText,
@@ -47,37 +47,41 @@ interface AuditLog {
 }
 
 const eventColors: Record<string, string> = {
-  FISCAL_VOID: "text-destructive bg-destructive/10 border-rose-500/20",
-  PERMISSION_CHANGE: "text-warning bg-warning border-amber-500/20",
+  FISCAL_VOID: "text-destructive bg-destructive/10 border-destructive/20",
+  PERMISSION_CHANGE: "text-warning bg-warning border-warning/20",
   MANUAL_ADJUST: "text-primary bg-primary/10 border-primary",
-  STORE_OPEN: "text-success bg-success/10 border-emerald-500/20",
-  STORE_CLOSE: "text-muted-foreground bg-muted/40 border-slate-400/20",
+  STORE_OPEN: "text-success bg-success/10 border-success/20",
+  STORE_CLOSE: "text-muted-foreground bg-muted/40 border-border/20",
   DISCOUNT_APPLIED: "text-primary bg-primary/10 border-primary",
-  REFUND_ISSUED: "text-destructive bg-destructive border-rose-400/20",
+  REFUND_ISSUED: "text-destructive bg-destructive border-destructive/20",
 };
 
 const ComplianceAuditLedger = ({ noShell = false }: { noShell?: boolean }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
   const session = useSession();
   const navigate = useNavigate();
 
+  const fetchLogs = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setIsError(false);
+      const data = await apiRequest<AuditLog[]>("/v1/audit/logs", "GET", session);
+      setLogs(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to fetch audit logs:", err);
+      setIsError(true);
+      toast.error("Compliance Stream Offline");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [session]);
+
   React.useEffect(() => {
-    const fetchLogs = async () => {
-      try {
-        setIsLoading(true);
-        const data = await apiRequest<AuditLog[]>("/v1/audit/logs", "GET", session);
-        setLogs(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error("Failed to fetch audit logs:", err);
-        toast.error("Compliance Stream Offline");
-      } finally {
-        setIsLoading(false);
-      }
-    };
     if (session.tenant_id) fetchLogs();
-  }, [session.tenant_id, session]);
+  }, [session.tenant_id, fetchLogs]);
 
 
   const handleExport = async (format: 'pdf' | 'csv') => {
@@ -173,7 +177,7 @@ const ComplianceAuditLedger = ({ noShell = false }: { noShell?: boolean }) => {
               </CardHeader>
               <CardContent className="p-8 space-y-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-success/10 text-success flex items-center justify-center border border-emerald-500/20">
+                  <div className="w-12 h-12 rounded-2xl bg-success/10 text-success flex items-center justify-center border border-success/20">
                     <CheckCircle2 className="w-6 h-6" />
                   </div>
                   <div>
@@ -214,7 +218,7 @@ const ComplianceAuditLedger = ({ noShell = false }: { noShell?: boolean }) => {
         <div className="relative flex-1">
           <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
-            className="pl-16 h-14 bg-black/20 border-none rounded-2xl text-sm font-bold italic text-foreground placeholder:text-muted-foreground focus-visible:ring-indigo-500 transition-all"
+            className="pl-16 h-14 bg-black/20 border-none rounded-2xl text-sm font-bold italic text-foreground placeholder:text-muted-foreground focus-visible:ring-primary transition-all"
             placeholder="Search Timestamp, Event Type, Actor ID, or Hash Signature..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -288,6 +292,25 @@ const ComplianceAuditLedger = ({ noShell = false }: { noShell?: boolean }) => {
                      <span className="text-[11px] font-black italic uppercase tracking-[0.25em] text-muted-foreground">Decrypting Ledger...</span>
                   </td>
                 </tr>
+              ) : isError ? (
+                <tr>
+                  <td colSpan={6} className="px-10 py-32 text-center">
+                    <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-6" />
+                    <div className="text-[11px] font-black italic uppercase tracking-[0.25em] text-foreground mb-2">
+                      Couldn't load audit stream
+                    </div>
+                    <p className="text-[10px] font-bold text-muted-foreground max-w-md mx-auto mb-6">
+                      The compliance ledger could not be reached for this tenant. Check your connection and try again.
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={fetchLogs}
+                      className="h-10 rounded-xl gap-2 font-black italic text-[10px] uppercase tracking-widest"
+                    >
+                      <RefreshCw className="w-4 h-4" /> Retry
+                    </Button>
+                  </td>
+                </tr>
               ) : filteredLogs.length === 0 ? (
                 <tr>
                   <td
@@ -328,7 +351,7 @@ const ComplianceAuditLedger = ({ noShell = false }: { noShell?: boolean }) => {
                       </div>
                     </td>
                     <td className="px-10 py-6 text-center">
-                      <div className="flex items-center justify-center gap-2 px-3 py-1.5 bg-success/10 border border-emerald-500/20 rounded-xl w-fit mx-auto">
+                      <div className="flex items-center justify-center gap-2 px-3 py-1.5 bg-success/10 border border-success/20 rounded-xl w-fit mx-auto">
                         <ShieldCheck className="w-3.5 h-3.5 text-success" />
                         <span className="text-[9px] font-black italic text-success uppercase tracking-widest">
                           Validated

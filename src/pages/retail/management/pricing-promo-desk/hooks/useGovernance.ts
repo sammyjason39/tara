@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type {
   GovernanceState,
   GovernancePhase,
@@ -25,6 +25,35 @@ export const useGovernance = (
   });
 
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
+  const [isLoadingAudit, setIsLoadingAudit] = useState(false);
+  const [auditError, setAuditError] = useState<string | null>(null);
+
+  // Fetch governance audit log from backend when promoId changes
+  useEffect(() => {
+    if (!promoId || !tenantId || !session?.tenant_id) return;
+
+    const fetchAuditLog = async () => {
+      setIsLoadingAudit(true);
+      setAuditError(null);
+      try {
+        if ((retailService as any).getGovernanceAuditLog) {
+          const data = await (retailService as any).getGovernanceAuditLog(
+            tenantId,
+            session,
+            promoId,
+          );
+          setAuditLog(Array.isArray(data) ? data : []);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch governance audit log from backend", err);
+        setAuditError("Failed to load audit trail");
+        // Keep any locally-generated entries rather than clearing
+      } finally {
+        setIsLoadingAudit(false);
+      }
+    };
+    fetchAuditLog();
+  }, [promoId, tenantId, session?.tenant_id]);
 
   const logAction = useCallback(
     async (
@@ -35,7 +64,7 @@ export const useGovernance = (
       const entry: AuditEntry = {
         id: crypto.randomUUID(),
         promoId,
-        version: 1, // Mocked version
+        version: 1,
         timestamp: new Date().toISOString(),
         actor: session.user_id || "Unknown Actor",
         role: role as DepartmentRole,
@@ -46,7 +75,6 @@ export const useGovernance = (
       setAuditLog((prev) => [entry, ...prev]);
 
       try {
-        // We'll call a dedicated method on retailService shortly
         if ((retailService as any).logGovernanceAction) {
           await (retailService as any).logGovernanceAction(
             tenantId,
@@ -172,6 +200,8 @@ export const useGovernance = (
   return {
     state,
     auditLog,
+    isLoadingAudit,
+    auditError,
     addSignature,
     toggleBypassMode,
     setBypassReason,

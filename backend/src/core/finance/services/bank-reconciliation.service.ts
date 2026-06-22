@@ -92,6 +92,68 @@ export class BankReconciliationService {
   }
 
   /**
+   * List all bank statements for a tenant
+   */
+  async getStatements(tenant_id: string) {
+    const statements = await this.prisma.finance_bank_statements.findMany({
+      where: { tenant_id },
+      orderBy: { statement_date: 'desc' },
+      take: 50,
+    });
+    return statements.map(s => ({
+      id: s.id,
+      bank: s.bank_account_id,
+      period: s.statement_date?.toISOString().slice(0, 10) ?? '',
+      status: s.status,
+      uploadedAt: (s as any).created_at?.toISOString() ?? new Date().toISOString(),
+    }));
+  }
+
+  /**
+   * Get statement details including bank transactions and unmatched ledger entries
+   */
+  async getStatementDetails(tenant_id: string, statementId: string) {
+    const statement = await this.prisma.finance_bank_statements.findFirst({
+      where: { id: statementId, tenant_id },
+      include: { finance_bank_transactions: true },
+    });
+    if (!statement) {
+      return { bankTransactions: [], unmatchedLedger: [] };
+    }
+
+    const bankTransactions = statement.finance_bank_transactions.map(tx => ({
+      id: tx.id,
+      date: tx.transaction_date?.toISOString().slice(0, 10) ?? '',
+      description: tx.description,
+      amount: Number(tx.amount),
+      matched: tx.status === 'MATCHED',
+    }));
+
+    // Fetch unmatched ledger entries for the same period
+    const unmatchedLedger = await this.prisma.finance_journal_entries.findMany({
+      where: {
+        tenant_id,
+        status: 'POSTED',
+        finance_recon_matches: { none: {} },
+      },
+      include: { finance_journal_lines: true },
+      take: 50,
+      orderBy: { posting_date: 'desc' },
+    });
+
+    return {
+      bankTransactions,
+      unmatchedLedger: unmatchedLedger.map(entry => ({
+        id: entry.id,
+        date: entry.posting_date?.toISOString().slice(0, 10) ?? '',
+        account: entry.finance_journal_lines?.[0]?.account_id ?? '',
+        amount: entry.finance_journal_lines?.reduce((sum, l) => sum + Number(l.debit || 0), 0) ?? 0,
+        reference: (entry as any).reference || entry.id,
+      })),
+    };
+  }
+
+  /**
    * Get ledger lines that could be matched
    */
   async getUnmatchedLedgerLines(tenant_id: string, glAccountId: string) {

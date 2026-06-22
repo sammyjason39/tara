@@ -44,7 +44,7 @@ export const ApprovalMatrix: React.FC<ApprovalMatrixProps> = ({
   const isQuorum = governanceState.quorumReached;
 
   return (
-    <Card className="p-8 bg-secondary border-slate-800 text-foreground rounded-2xl shadow-2xl">
+    <Card className="p-8 bg-secondary border-border text-foreground rounded-2xl shadow-2xl">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h3 className="text-xs font-black italic uppercase tracking-widest text-primary">
@@ -108,7 +108,7 @@ export const ApprovalMatrix: React.FC<ApprovalMatrixProps> = ({
           })}
         </div>
       ) : (
-        <div className="p-8 bg-destructive rounded-3xl border border-red-500/20 space-y-6 mb-8 mt-2 shadow-[inset_0_0_50px_rgba(239,68,68,0.05)]">
+        <div className="p-8 bg-destructive rounded-3xl border border-destructive/20 space-y-6 mb-8 mt-2 shadow-[inset_0_0_50px_rgba(239,68,68,0.05)]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4 text-destructive">
               <ShieldAlert className="w-8 h-8 animate-pulse" />
@@ -127,7 +127,7 @@ export const ApprovalMatrix: React.FC<ApprovalMatrixProps> = ({
           </div>
           <Input
             placeholder="MANDATORY: Enter Reason for Bypass Ledger..."
-            className="bg-secondary border-red-500/50 focus:border-red-500 focus-visible:ring-red-500/50 text-foreground placeholder:text-muted-foreground rounded-2xl font-bold italic h-14 pl-6"
+            className="bg-secondary border-destructive/50 focus:border-destructive focus-visible:ring-red-500/50 text-foreground placeholder:text-muted-foreground rounded-2xl font-bold italic h-14 pl-6"
             value={governanceState.bypassReason}
             onChange={(e) => onBypassReasonChange(e.target.value)}
           />
@@ -148,7 +148,7 @@ export const ApprovalMatrix: React.FC<ApprovalMatrixProps> = ({
         />
       </div>
 
-      <div className="flex justify-end pt-6 border-t border-slate-800/80">
+      <div className="flex justify-end pt-6 border-t border-border/80">
         <Button
           variant="ghost"
           onClick={onToggleBypass}

@@ -67,7 +67,7 @@ export const RetailGlobalAdminBar = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="start"
-              className="w-56 bg-white border-2 border-slate-900 shadow-2xl rounded-xl"
+              className="w-56 bg-white border-2 border-border shadow-2xl rounded-xl"
             >
               <DropdownMenuLabel className="text-[10px] uppercase font-black italic tracking-widest text-muted-foreground">
                 Physical Stores

@@ -54,8 +54,12 @@ import {
 import { Label } from "@/components/ui/label";
 import { marketingService } from "@/core/services/marketing/marketingService";
 import { useSession } from "@/core/security/session";
+import { formatDate } from "@/lib/format";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { UploadAssetModal } from "./modals/UploadAssetModal";
+import { EditAssetTagsModal } from "./modals/EditAssetTagsModal";
 
 export default function CreativeLibrary() {
   const session = useSession();
@@ -215,12 +219,12 @@ export default function CreativeLibrary() {
                Archive Stream Active
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">Creative Library</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground">Creative Library</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic">"A centralized high-performance repository for multi-channel campaign orchestration."</p>
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-slate-800/20 shadow-2xl">
+          <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-border/20 shadow-2xl">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -250,7 +254,7 @@ export default function CreativeLibrary() {
       </div>
 
       {/* Strategic Intelligence Toolbar */}
-      <div className="flex flex-col lg:flex-row gap-6 items-center bg-white/40 dark:bg-muted backdrop-blur-xl p-6 rounded-[2.5rem] border border-white/20 dark:border-slate-800/20 shadow-2xl">
+      <div className="flex flex-col lg:flex-row gap-6 items-center glass-card p-6 rounded-[2.5rem] border border-white/20 dark:border-border/20 shadow-2xl">
          <div className="flex items-center gap-4 w-full lg:w-auto">
             <DropdownMenu>
                <DropdownMenuTrigger asChild>
@@ -309,15 +313,11 @@ export default function CreativeLibrary() {
 
       {/* Asset Grid */}
       {filteredAssets.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32 space-y-6 grayscale opacity-30">
-          <div className="h-24 w-24 rounded-full bg-muted dark:bg-muted flex items-center justify-center">
-            <Search className="h-10 w-10 text-muted-foreground" />
-          </div>
-          <div className="text-center">
-            <h3 className="text-2xl font-black uppercase tracking-tight">Zero Matches in Archive</h3>
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-2">Adjust your parameters and attempt a new retrieval.</p>
-          </div>
-        </div>
+        <EmptyState
+          title="Zero matches in archive"
+          description="Adjust your parameters and attempt a new retrieval."
+          icon={Search}
+        />
       ) : (
         <div className={cn(
           "grid gap-10",
@@ -374,7 +374,7 @@ export default function CreativeLibrary() {
                 <div className="flex justify-between items-start w-full">
                   <div className="space-y-1 pr-4">
                     <h3 className="font-black text-xl leading-tight group-hover:text-primary transition-colors line-clamp-1 uppercase tracking-tight">{asset.name}</h3>
-                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest italic">Vault Archival • {asset.date || new Date().toLocaleDateString()}</p>
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest italic">Vault Archival • {asset.date ? formatDate(asset.date) : formatDate(new Date())}</p>
                   </div>
                   
                   <DropdownMenu>
@@ -416,7 +416,7 @@ export default function CreativeLibrary() {
           {/* Add New Card */}
           {view === "grid" && (
             <Card 
-              className="border-2 border-dashed border-slate-200 dark:border-slate-800 bg-transparent flex flex-col items-center justify-center min-h-[350px] gap-8 rounded-[2.5rem] hover:bg-primary dark:hover:bg-primary transition-all cursor-pointer group"
+              className="border-2 border-dashed border-border dark:border-border bg-transparent flex flex-col items-center justify-center min-h-[350px] gap-8 rounded-[2.5rem] hover:bg-primary dark:hover:bg-primary transition-all cursor-pointer group"
               onClick={() => setUploadOpen(true)}
             >
               <div className="h-24 w-24 rounded-full bg-muted dark:bg-muted flex items-center justify-center shadow-inner group-hover:scale-110 group-hover:bg-primary transition-all duration-500">
@@ -431,106 +431,22 @@ export default function CreativeLibrary() {
         </div>
       )}
 
-      {/* Asset Injection Wizard */}
-      <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
-        <DialogContent className="sm:max-w-[550px] rounded-[3rem] border-none shadow-2xl overflow-hidden p-0 bg-white dark:bg-muted">
-          <div className="h-2 bg-primary shadow-[0_0_15px_rgba(79,70,229,0.5)]" />
-          <div className="p-12 space-y-10">
-            <DialogHeader>
-              <div className="flex items-center gap-3 mb-2">
-                 <Badge className="bg-primary text-white font-black text-[10px] uppercase tracking-widest">Protocol SIGMA</Badge>
-                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Vault Injection Protocol</p>
-              </div>
-              <DialogTitle className="text-4xl font-black tracking-tighter">Secure Asset Injection</DialogTitle>
-              <DialogDescription className="text-base font-medium italic italic leading-relaxed italic">Synchronize new high-fidelity creative material with the global marketing matrix.</DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleUpload} className="space-y-8">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Asset Designation</Label>
-                <Input id="name" name="name" placeholder="E.G. Q4 ENTERPRISE HERO BANNER" required className="h-14 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-lg" />
-              </div>
-              
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Payload Source</Label>
-                <div className="relative group/drop">
-                  <input id="file" name="file" type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" required />
-                  <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-12 flex flex-col items-center justify-center gap-6 group-hover/drop:border-primary group-hover/drop:bg-primary dark:group-hover/drop:bg-primary transition-all">
-                    <div className="h-20 w-20 rounded-[2rem] bg-muted dark:bg-muted flex items-center justify-center shadow-inner group-hover/drop:scale-110 group-hover/drop:bg-primary group-hover/drop:text-white transition-all duration-500">
-                      <Upload className="h-10 w-10 text-muted-foreground group-hover/drop:text-white" />
-                    </div>
-                    <div className="text-center space-y-1">
-                      <p className="text-lg font-black uppercase tracking-tight">Vault Entry Point</p>
-                      <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">JPG, PNG, MP4, PDF • MAX 50MB</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <DialogFooter className="pt-6">
-                {uploading ? (
-                  <div className="w-full space-y-6">
-                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-primary">
-                      <span className="flex items-center gap-2">
-                        <Activity className="h-3 w-3 animate-pulse" />
-                        {uploadStage.replace(/_/g, ' ')}
-                      </span>
-                      <span>{uploadStage === "VERIFYING_INTEGRITY" ? "98%" : "64%"} COMPLETED</span>
-                    </div>
-                    <div className="h-2 w-full bg-muted dark:bg-muted rounded-full overflow-hidden shadow-inner">
-                       <div 
-                         className="h-full bg-primary transition-all duration-1000 ease-in-out" 
-                         style={{ 
-                           width: 
-                             uploadStage === "INITIALIZING_HANDSHAKE" ? "15%" :
-                             uploadStage === "ENCRYPTING_PAYLOAD" ? "45%" :
-                             uploadStage === "SYNCHRONIZING_NODES" ? "75%" : 
-                             uploadStage === "VERIFYING_INTEGRITY" ? "95%" : "0%"
-                         }} 
-                       />
-                    </div>
-                    <p className="text-[9px] text-center font-black uppercase tracking-widest text-muted-foreground italic">Do not terminate session during archival synchronization.</p>
-                  </div>
-                ) : (
-                  <Button type="submit" disabled={uploading} className="w-full h-16 rounded-[1.5rem] bg-primary hover:bg-primary font-black text-xs uppercase tracking-widest shadow-2xl shadow-indigo-500/30 gap-3 text-white">
-                    <Rocket className="h-5 w-5" /> INITIATE INJECTION
-                  </Button>
-                )}
-              </DialogFooter>
-            </form>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Upload Asset Modal */}
+      <UploadAssetModal
+        isOpen={uploadOpen}
+        onClose={() => setUploadOpen(false)}
+        onSuccess={() => refresh(true)}
+      />
 
-      {/* Semantic Matrix Wizard */}
-      <Dialog open={editTagsOpen} onOpenChange={setEditTagsOpen}>
-        <DialogContent className="sm:max-w-[450px] rounded-[3rem] border-none bg-white dark:bg-muted p-0 overflow-hidden shadow-2xl">
-          <div className="h-2 bg-primary" />
-          <div className="p-10 space-y-8">
-            <DialogHeader>
-              <div className="flex items-center gap-3 mb-2">
-                 <Badge className="bg-primary text-white font-black text-[10px] uppercase tracking-widest">Metadata</Badge>
-                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Semantic Alignment</p>
-              </div>
-              <DialogTitle className="text-3xl font-black tracking-tighter">Modify Tag Matrix</DialogTitle>
-              <DialogDescription className="text-sm font-medium italic italic">Update the semantic metadata layer for this tactical asset node.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-6 py-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Comma-separated Semantic Tags</Label>
-                <Input 
-                  value={newTags} 
-                  onChange={(e) => setNewTags(e.target.value)} 
-                  placeholder="MARKETING, PROMO, Q4..." 
-                  className="h-14 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-lg"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button className="w-full h-14 rounded-2xl bg-primary hover:bg-primary font-black text-[10px] uppercase tracking-widest shadow-xl" onClick={handleUpdateTags}>AUTHORIZE CHANGES</Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Edit Asset Tags Modal */}
+      <EditAssetTagsModal
+        isOpen={editTagsOpen}
+        onClose={() => { setEditTagsOpen(false); setSelectedAsset(null); }}
+        assetId={selectedAsset?.id ?? ""}
+        assetName={selectedAsset?.name ?? ""}
+        currentTags={selectedAsset?.tags?.join(", ") ?? ""}
+        onSuccess={() => refresh(true)}
+      />
     </div>
   );
 }

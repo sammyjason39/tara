@@ -16,7 +16,8 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassCard } from "@/components/shared/GlassCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -25,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { retailService } from "@/core/services/retail/retailService";
 import { useSession } from "@/core/security/session";
 import { useRetail } from "../context/RetailContext";
+import { formatCurrency } from "@/lib/format";
 import type { RetailShift } from "@/core/types/retail/retail";
 
 const ShiftCloseTerminal = () => {
@@ -159,7 +161,7 @@ const ShiftCloseTerminal = () => {
   if (isClosed) {
     return (
       <div className="h-[calc(100vh-64px)] flex items-center justify-center bg-background p-8">
-        <Card className="max-w-2xl w-full border-none bg-success/5 backdrop-blur-3xl shadow-2xl rounded-[3rem] overflow-hidden">
+        <GlassCard className="max-w-2xl w-full border-none bg-success/5 backdrop-blur-3xl shadow-2xl rounded-[3rem] overflow-hidden">
           <CardContent className="p-16 text-center space-y-10">
             <div className="w-32 h-32 bg-success rounded-[2.5rem] flex items-center justify-center mx-auto shadow-2xl shadow-success/30 transform rotate-12 transition-transform hover:rotate-0 duration-500">
               <ShieldCheck className="w-16 h-16 text-foreground" />
@@ -179,7 +181,7 @@ const ShiftCloseTerminal = () => {
                   Physical Tender
                 </div>
                 <div className="text-3xl font-black italic tracking-tighter text-foreground">
-                  Rp {parseAmountInput(actualCash).toLocaleString()}
+                  {formatCurrency(parseAmountInput(actualCash), "IDR", "id-ID")}
                 </div>
               </div>
               <div className="p-8 bg-secondary/40 rounded-[2rem] border border-success/20 shadow-inner">
@@ -187,7 +189,7 @@ const ShiftCloseTerminal = () => {
                   Ledger Variance
                 </div>
                 <div className={`text-3xl font-black italic tracking-tighter ${variance < 0 ? "text-destructive" : variance > 0 ? "text-warning" : "text-success"}`}>
-                  Rp {variance.toLocaleString()}
+                  {formatCurrency(variance, "IDR", "id-ID")}
                 </div>
               </div>
             </div>
@@ -201,7 +203,7 @@ const ShiftCloseTerminal = () => {
               <FileText className="w-7 h-7" /> Archive & Restart Node
             </Button>
           </CardContent>
-        </Card>
+        </GlassCard>
       </div>
     );
   }
@@ -241,7 +243,7 @@ const ShiftCloseTerminal = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card className="border-none bg-primary/10 backdrop-blur-3xl shadow-2xl rounded-[2.5rem] relative overflow-hidden group">
+            <GlassCard className="border-none bg-primary/10 backdrop-blur-3xl shadow-2xl rounded-[2.5rem] relative overflow-hidden group">
               <div className="absolute -right-8 -bottom-8 opacity-10 group-hover:scale-125 transition-transform">
                 <Banknote className="w-32 h-32 text-primary" />
               </div>
@@ -252,21 +254,21 @@ const ShiftCloseTerminal = () => {
               </CardHeader>
               <CardContent className="px-10 pb-10">
                 <div className="text-6xl font-black text-foreground tracking-tighter italic">
-                  Rp {expectedCash.toLocaleString()}
+                  {formatCurrency(expectedCash, "IDR", "id-ID")}
                 </div>
                 {netAdjustments !== 0 && (
                   <div className={`mt-3 text-[10px] font-black uppercase tracking-widest italic flex items-center gap-2 ${netAdjustments < 0 ? "text-destructive" : "text-success"}`}>
                     {netAdjustments < 0 ? <ArrowDownCircle className="w-3 h-3" /> : <ArrowUpCircle className="w-3 h-3" />}
-                    Petty Cash: {netAdjustments < 0 ? "-" : "+"}Rp {Math.abs(netAdjustments).toLocaleString()}
+                    Petty Cash: {netAdjustments < 0 ? "-" : "+"}{formatCurrency(Math.abs(netAdjustments), "IDR", "id-ID")}
                   </div>
                 )}
                 <p className="text-[10px] text-primary mt-4 uppercase font-black italic tracking-widest opacity-60">
                   Aggregated from Live Transaction Stream
                 </p>
               </CardContent>
-            </Card>
+            </GlassCard>
 
-            <Card className="border-none bg-secondary/40 backdrop-blur-3xl shadow-2xl rounded-[2.5rem] group overflow-hidden">
+            <GlassCard className="border-none bg-secondary/40 backdrop-blur-3xl shadow-2xl rounded-[2.5rem] group overflow-hidden">
               <CardHeader className="pb-4 p-10">
                 <CardTitle className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] leading-none flex items-center gap-3 italic">
                   <ChevronRight className="w-4 h-4 text-primary" /> Electronic Settlements
@@ -274,17 +276,17 @@ const ShiftCloseTerminal = () => {
               </CardHeader>
               <CardContent className="px-10 pb-10">
                 <div className="text-6xl font-black text-foreground tracking-tighter italic">
-                  Rp {expectedCard.toLocaleString()}
+                  {formatCurrency(expectedCard, "IDR", "id-ID")}
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-4 uppercase font-black italic tracking-widest opacity-60 text-right">
                   Verified PCI Gateway Consolidations
                 </p>
               </CardContent>
-            </Card>
+            </GlassCard>
           </div>
 
-          <Card className="shadow-2xl border-none bg-secondary/40 backdrop-blur-3xl overflow-hidden rounded-[3rem]">
-            <CardHeader className="bg-background text-foreground p-12 border-b border-white/5">
+          <GlassCard className="shadow-2xl border-none bg-secondary/40 backdrop-blur-3xl overflow-hidden rounded-[3rem]">
+            <CardHeader className="bg-background text-foreground p-12 border-b border-border/40">
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-3xl font-black italic tracking-tighter uppercase">
@@ -320,7 +322,7 @@ const ShiftCloseTerminal = () => {
                       }
                     }}
                   />
-                  <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-primary via-secondary to-primary rounded-full shadow-[0_0_20px_rgba(79,70,229,0.4)]" />
+                  <div className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-primary via-secondary to-primary rounded-full shadow-[0_0_20px_hsl(var(--primary)/0.4)]" />
                 </div>
               </div>
 
@@ -351,14 +353,14 @@ const ShiftCloseTerminal = () => {
               </div>
 
               {actualCash && (
-                <div className={`p-10 rounded-[2.5rem] border-2 flex flex-col justify-center transition-all animate-in slide-in-from-bottom-8 duration-700 ${needsExplanation ? "bg-destructive/10 border-destructive/30 shadow-[0_0_50px_rgba(244,63,94,0.1)]" : "bg-success/10 border-success/30 shadow-[0_0_50px_rgba(16,185,129,0.1)]"}`}>
+                <div className={`p-10 rounded-[2.5rem] border-2 flex flex-col justify-center transition-all animate-in slide-in-from-bottom-8 duration-700 ${needsExplanation ? "bg-destructive/10 border-destructive/30 shadow-[0_0_50px_hsl(var(--destructive)/0.1)]" : "bg-success/10 border-success/30 shadow-[0_0_50px_hsl(var(--success)/0.1)]"}`}>
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
                     <div>
                       <div className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground mb-2 italic">
                         Calculated Reconciliation Delta
                       </div>
                       <div className={`text-6xl font-black italic tracking-tighter ${variance < 0 ? "text-destructive" : variance > 0 ? "text-warning" : "text-success"}`}>
-                        Rp {variance.toLocaleString()}
+                        {formatCurrency(variance, "IDR", "id-ID")}
                       </div>
                     </div>
                     {needsExplanation && (
@@ -378,7 +380,7 @@ const ShiftCloseTerminal = () => {
                 </div>
               )}
             </CardContent>
-          </Card>
+          </GlassCard>
 
           <div className="flex flex-col items-center gap-8 pb-12">
             <Button

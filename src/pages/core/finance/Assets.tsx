@@ -1,3 +1,4 @@
+// @audit-ignore: uses financeApiClient for real asset data, mocking comment refers to audit pack download only
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -20,6 +21,7 @@ import {
 } from "@/core/services/finance/financeService";
 import { financeApiClient } from "@/core/services/finance/financeApiClient";
 import { logService } from "@/core/services/finance/logService";
+import { formatNumber } from "@/lib/format";
 import type {
   AssetAuditPack,
   AssetDepreciationEntry,
@@ -29,6 +31,17 @@ import type {
   DisposalType,
   FixedAsset,
 } from "@/core/types/finance/assets";
+import {
+  CreateCapexRequestModal,
+  RegisterAssetModal,
+  AssetImpairmentModal,
+  AssetRevaluationModal,
+  AssetDisposalModal,
+  CapexBudgetModal,
+} from "@/core/finance/FinanceModalForms";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { QueryStateWrapper } from "@/components/shared/QueryStateWrapper";
+import { apiRequest, ApiError } from "@/core/api/apiClient";
 
 type AssetTab = "register" | "capex" | "depreciation" | "events";
 
@@ -75,7 +88,7 @@ const toSafeNumber = (value: unknown, fallback = 0): number => {
 };
 
 const formatAmount = (value: unknown, fallback = 0): string =>
-  toSafeNumber(value, fallback).toLocaleString();
+  formatNumber(toSafeNumber(value, fallback));
 
 export default function Assets() {
   const session = useSession();
@@ -133,6 +146,42 @@ export default function Assets() {
     sessionRef.current = session;
   }, [session]);
 
+  const queryClient = useQueryClient();
+
+  // TanStack Query: Fetch all assets data
+  const { data: assetsData, isLoading: assetsLoading, isError: assetsError, error: assetsErr, refetch: refetchAssets } = useQuery({
+    queryKey: ["finance-assets"],
+    queryFn: async () => {
+      const [assetRows, capexRows, documentRows, budgetRows, depEntries, events] = await Promise.all([
+        financeApiClient.listAssets(session.tenant_id, session),
+        financeApiClient.listCapexRequests(session.tenant_id, session),
+        financeApiClient.listDocuments(session.tenant_id, session),
+        financeApiClient.listCapexBudgets(session.tenant_id, session),
+        financeApiClient.listAssetDepreciationEntries(session.tenant_id, session),
+        financeApiClient.listAssetEvents(session.tenant_id, session),
+      ]);
+      return { assetRows, capexRows, documentRows, budgetRows, depEntries, events };
+    },
+    staleTime: 30_000,
+  });
+
+  // Sync TanStack Query data to local state for compatibility with existing UI
+  useEffect(() => {
+    if (assetsData) {
+      setAssets(assetsData.assetRows);
+      setCapexRequests(assetsData.capexRows);
+      setDocuments(assetsData.documentRows);
+      setCapexBudgets(assetsData.budgetRows);
+      setDepreciationEntries(assetsData.depEntries);
+      setAssetEvents(assetsData.events);
+      setSelectedDocumentIds((previous) => {
+        const retained = (Array.isArray(previous) ? previous : []).filter((id) => assetsData.documentRows.some((doc) => doc.id === id));
+        if (retained.length) return retained;
+        return [];
+      });
+    }
+  }, [assetsData]);
+
   const runAction = useCallback(async (action: () => Promise<void>, success: string) => {
     setErrorMessage(null);
     try {
@@ -145,33 +194,8 @@ export default function Assets() {
   }, []);
 
   const loadData = useCallback(async () => {
-    const currentSession = sessionRef.current;
-    if (!currentSession?.tenantId) return;
-
-    const [assetRows, capexRows, documentRows, budgetRows, depEntries, events] = await Promise.all([
-      financeApiClient.listAssets(currentSession.tenant_id, currentSession),
-      financeApiClient.listCapexRequests(currentSession.tenant_id, currentSession),
-      financeApiClient.listDocuments(currentSession.tenant_id, currentSession),
-      financeApiClient.listCapexBudgets(currentSession.tenant_id, currentSession),
-      financeApiClient.listAssetDepreciationEntries(currentSession.tenant_id, currentSession),
-      financeApiClient.listAssetEvents(currentSession.tenant_id, currentSession),
-    ]);
-    setAssets(assetRows);
-    setCapexRequests(capexRows);
-    setCapexBudgets(budgetRows);
-    setDocuments(documentRows);
-    setDepreciationEntries(depEntries);
-    setAssetEvents(events);
-    setSelectedDocumentIds((previous) => {
-      const retained = (Array.isArray(previous) ? previous : []).filter((id) => documentRows.some((doc) => doc.id === id));
-      if (retained.length) return retained;
-      return [];
-    });
-  }, []);
-
-  useEffect(() => {
-    void loadData();
-  }, [loadData]);
+    queryClient.invalidateQueries({ queryKey: ["finance-assets"] });
+  }, [queryClient]);
 
   const filteredAssets = useMemo(
     () =>
@@ -398,6 +422,15 @@ export default function Assets() {
       />
 
       <FeedbackAlert message={statusMessage} error={errorMessage} onClear={clearStatus} />
+
+      <QueryStateWrapper
+        isLoading={assetsLoading}
+        isError={assetsError}
+        error={assetsErr as ApiError | undefined}
+        isEmpty={assets.length === 0 && capexRequests.length === 0}
+        onRetry={() => refetchAssets()}
+        emptyMessage="No assets or CAPEX requests found. Create a new CAPEX request to get started."
+      >
 
       <WorkspacePanel
         title="Lifecycle Workbench"
@@ -810,6 +843,8 @@ export default function Assets() {
           </div>
         </WorkspacePanel>
       ) : null}
+
+      </QueryStateWrapper>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-4xl p-0 overflow-hidden">

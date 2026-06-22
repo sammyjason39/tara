@@ -22,9 +22,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { GlassCard } from "@/components/shared/GlassCard";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { useSession } from "@/core/security/session";
 import { salesService } from "@/core/services/sales/salesService";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
 import type { SalesExecutiveForecast, SalesOpportunity } from "@/core/types/sales/sales";
 import { 
@@ -122,11 +125,11 @@ export default function ForecastDesk() {
                Live Analytical Engine
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">Executive Forecast</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground">Executive Forecast</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic">"Predicting the future is easy. Creating it requires accurate telemetry."</p>
         </div>
         
-        <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-slate-800/20 shadow-2xl">
+        <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-border/20 shadow-2xl">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -248,10 +251,10 @@ export default function ForecastDesk() {
       {/* KPI Command Bar */}
       <div className="grid gap-6 md:grid-cols-4 lg:grid-cols-7">
         {[
-          { label: "Pipeline", value: `$${forecast.openPipelineValue.toLocaleString()}`, color: "indigo", icon: Layers },
-          { label: "Weighted", value: `$${forecast.weightedForecastValue.toLocaleString()}`, color: "indigo", icon: Zap },
-          { label: "Won Vol", value: `$${forecast.wonThisPeriod.toLocaleString()}`, color: "emerald", icon: CheckCircle2 },
-          { label: "Lost Vol", value: `$${forecast.lostThisPeriod.toLocaleString()}`, color: "rose", icon: XCircle },
+          { label: "Pipeline", value: formatCurrency(forecast.openPipelineValue), color: "indigo", icon: Layers },
+          { label: "Weighted", value: formatCurrency(forecast.weightedForecastValue), color: "indigo", icon: Zap },
+          { label: "Won Vol", value: formatCurrency(forecast.wonThisPeriod), color: "emerald", icon: CheckCircle2 },
+          { label: "Lost Vol", value: formatCurrency(forecast.lostThisPeriod), color: "rose", icon: XCircle },
           { label: "Conv Rate", value: `${forecast.conversionRate}%`, color: "blue", icon: Target },
           { label: "Cycle", value: `${forecast.avgDealCycleDays}d`, color: "amber", icon: Clock },
           { label: "Rep Load", value: analytics?.topReps?.length || 0, color: "slate", icon: Users },
@@ -267,8 +270,8 @@ export default function ForecastDesk() {
       </div>
 
       {/* Detailed Forecast Table */}
-      <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden">
-        <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-slate-800/20">
+      <GlassCard className="rounded-[3rem] border-none shadow-2xl overflow-hidden">
+        <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-border/20">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
@@ -277,7 +280,7 @@ export default function ForecastDesk() {
               </CardTitle>
               <CardDescription className="text-sm font-medium">Granular visibility into deal-level probability impact on gross forecast.</CardDescription>
             </div>
-            <Button variant="outline" className="rounded-2xl h-12 font-black text-xs gap-2 border-slate-200">
+            <Button variant="outline" className="rounded-2xl h-12 font-black text-xs gap-2 border-border">
                <ArrowUpRight className="h-4 w-4" /> EXPORT TELMETRY
             </Button>
           </div>
@@ -316,10 +319,10 @@ export default function ForecastDesk() {
                        </div>
                     </td>
                     <td className="px-10 py-8">
-                       <Badge variant="outline" className="rounded-full font-black text-[9px] px-3 py-1 border-slate-200 uppercase tracking-widest text-muted-foreground">{item.stage.replace('_', ' ')}</Badge>
+                       <Badge variant="outline" className="rounded-full font-black text-[9px] px-3 py-1 border-border uppercase tracking-widest text-muted-foreground">{item.stage.replace('_', ' ')}</Badge>
                     </td>
                     <td className="px-10 py-8 text-right font-bold text-muted-foreground dark:text-muted-foreground">
-                       ${item.amount.toLocaleString()}
+                       {formatCurrency(item.amount)}
                     </td>
                     <td className="px-10 py-8">
                        <div className="flex items-center justify-center gap-3">
@@ -333,7 +336,7 @@ export default function ForecastDesk() {
                        </div>
                     </td>
                     <td className="px-10 py-8 text-right">
-                       <p className="text-sm font-black text-primary">${Math.round(item.amount * (item.probability / 100)).toLocaleString()}</p>
+                       <p className="text-sm font-black text-primary">{formatCurrency(Math.round(item.amount * (item.probability / 100)))}</p>
                        <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">Adjusted Value</p>
                     </td>
                   </tr>
@@ -342,15 +345,15 @@ export default function ForecastDesk() {
             </table>
           </div>
           {filtered.length === 0 && (
-             <div className="p-20 text-center space-y-4">
-                <div className="h-20 w-20 rounded-[2rem] bg-muted dark:bg-muted flex items-center justify-center mx-auto grayscale opacity-30">
-                   <Target className="h-10 w-10" />
-                </div>
-                <p className="text-sm font-bold text-muted-foreground italic">No active opportunities detected in the tactical horizon.</p>
-             </div>
+             <EmptyState
+                title="No active opportunities"
+                description="No active opportunities detected in the tactical horizon."
+                icon={Target}
+                className="m-10"
+             />
           )}
         </CardContent>
-      </Card>
+      </GlassCard>
     </div>
   );
 }

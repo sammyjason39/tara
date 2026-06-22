@@ -17,7 +17,7 @@ export function FeedbackAlert({ message, error, onClear }: FeedbackAlertProps) {
   return (
     <div className="mb-6 animate-in fade-in slide-in-from-top-4 duration-300">
       {message && (
-        <Alert className="border-emerald-500/50 bg-success text-success dark:border-emerald-500/50 dark:bg-success dark:text-success">
+        <Alert className="border-success/50 bg-success text-success dark:border-success/50 dark:bg-success dark:text-success">
           <CheckCircle2 className="h-4 w-4 !text-success dark:!text-success" />
           <AlertTitle>Success</AlertTitle>
           <AlertDescription className="flex items-center justify-between">

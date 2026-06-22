@@ -27,7 +27,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { GlassCard } from "@/components/shared/GlassCard";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { 
   Dialog, 
   DialogContent, 
@@ -48,8 +50,10 @@ import { Label } from "@/components/ui/label";
 import { useSession } from "@/core/security/session";
 import { salesService } from "@/core/services/sales/salesService";
 import { cn } from "@/lib/utils";
+import { formatCurrency, formatDate, safeText } from "@/lib/format";
 import { toast } from "sonner";
 import type { SalesLead } from "@/core/types/sales/sales";
+import { CreateLeadModal, ConvertLeadModal } from "./modals";
 
 export default function LeadDesk() {
   const navigate = useNavigate();
@@ -61,13 +65,9 @@ export default function LeadDesk() {
   
   // Create Lead State
   const [createOpen, setCreateOpen] = useState(false);
-  const [newLead, setNewLead] = useState({
-    companyName: "",
-    contactName: "",
-    contactEmail: "",
-    potentialValue: "0",
-    priority: "MEDIUM" as SalesLead["priority"]
-  });
+
+  // Convert Lead State
+  const [convertLead, setConvertLead] = useState<SalesLead | null>(null);
 
   // Filter State
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -114,29 +114,6 @@ export default function LeadDesk() {
     );
   }, [leads, search, statusFilter]);
 
-  const handleCreateLead = async () => {
-    if (!newLead.companyName || !newLead.contactName) {
-      toast.error("Company and Contact designation required.");
-      return;
-    }
-    try {
-      await salesService.createLead(session.tenant_id, session, {
-        companyName: newLead.companyName,
-        contactName: newLead.contactName,
-        contactEmail: newLead.contactEmail,
-        source: "DIRECT",
-        potentialValue: Number(newLead.potentialValue),
-        priority: newLead.priority,
-      });
-      toast.success("Lead injected into registry.");
-      setCreateOpen(false);
-      setNewLead({ companyName: "", contactName: "", contactEmail: "", potentialValue: "0", priority: "MEDIUM" });
-      refresh(true);
-    } catch (err) {
-      toast.error("Injection failure.");
-    }
-  };
-
   const handleUpdateStatus = async (leadId: string, status: any) => {
     try {
       await salesService.updateLeadStatus(session.tenant_id, session, leadId, status);
@@ -147,14 +124,8 @@ export default function LeadDesk() {
     }
   };
 
-  const handleConvert = async (leadId: string) => {
-    try {
-      await salesService.convertLeadToOpportunity(session.tenant_id, session, leadId);
-      toast.success("Lead converted to Strategic Opportunity.");
-      refresh(true);
-    } catch (err) {
-      toast.error("Conversion failure.");
-    }
+  const handleConvert = (lead: SalesLead) => {
+    setConvertLead(lead);
   };
 
   return (
@@ -169,13 +140,13 @@ export default function LeadDesk() {
                Lead Flow Active
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent italic">Lead Reception</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground italic">Lead Reception</h1>
 
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed">Systematic demand qualification and SLA-backed ownership orchestration.</p>
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-slate-800/20 shadow-2xl">
+          <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-border/20 shadow-2xl">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -195,92 +166,19 @@ export default function LeadDesk() {
             </Button>
           </div>
 
-          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-            <DialogTrigger asChild>
-              <Button className="h-[4.5rem] px-10 rounded-[2rem] bg-primary hover:bg-primary shadow-2xl shadow-indigo-500/30 font-black text-sm gap-3 group transition-all hover:scale-105 active:scale-95">
-                <Plus className="h-6 w-6 group-hover:rotate-90 transition-transform duration-500" /> 
-                INJECT NEW LEAD
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[550px] rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden bg-white dark:bg-muted">
-              <div className="h-2 bg-gradient-to-r from-emerald-500 via-indigo-500 to-purple-500" />
-              <div className="p-10 space-y-8">
-                <DialogHeader>
-                  <DialogTitle className="text-3xl font-black tracking-tight">Lead Injection Protocol</DialogTitle>
-                  <DialogDescription>Register a new qualified prospect into the sales ecosystem.</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Company</Label>
-                      <Input 
-                        placeholder="Global Dynamics Inc." 
-                        className="h-14 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner"
-                        value={newLead.companyName}
-                        onChange={(e) => setNewLead({...newLead, companyName: e.target.value})}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Contact</Label>
-                      <Input 
-                        placeholder="Sarah Connor" 
-                        className="h-14 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner"
-                        value={newLead.contactName}
-                        onChange={(e) => setNewLead({...newLead, contactName: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Email Address</Label>
-                    <Input 
-                      placeholder="sarah@global.example" 
-                      className="h-14 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner"
-                      value={newLead.contactEmail}
-                      onChange={(e) => setNewLead({...newLead, contactEmail: e.target.value})}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Potential Value</Label>
-                      <Input 
-                        type="number"
-                        placeholder="50000" 
-                        className="h-14 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner"
-                        value={newLead.potentialValue}
-                        onChange={(e) => setNewLead({...newLead, potentialValue: e.target.value})}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Priority</Label>
-                      <div className="flex gap-2 h-14 items-center bg-muted dark:bg-muted rounded-2xl px-4 border-none shadow-inner">
-                         {["LOW", "MEDIUM", "HIGH", "URGENT"].map((p) => (
-                           <button
-                             key={p}
-                             onClick={() => setNewLead({...newLead, priority: p as any})}
-                             className={cn(
-                               "flex-1 py-1.5 rounded-xl text-[8px] font-black tracking-widest transition-all",
-                               newLead.priority === p ? "bg-primary text-white shadow-lg" : "text-muted-foreground hover:text-muted-foreground"
-                             )}
-                           >
-                             {p}
-                           </button>
-                         ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <DialogFooter className="pt-4">
-                  <Button onClick={handleCreateLead} className="w-full h-16 rounded-[1.5rem] bg-primary hover:bg-primary font-black text-sm">INITIATE INTAKE</Button>
-                </DialogFooter>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button 
+            onClick={() => setCreateOpen(true)}
+            className="h-[4.5rem] px-10 rounded-[2rem] bg-primary hover:bg-primary shadow-2xl shadow-indigo-500/30 font-black text-sm gap-3 group transition-all hover:scale-105 active:scale-95"
+          >
+            <Plus className="h-6 w-6 group-hover:rotate-90 transition-transform duration-500" /> 
+            INJECT NEW LEAD
+          </Button>
         </div>
       </div>
 
       {/* Main Registry Area */}
-      <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden">
-        <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-slate-800/20">
+      <GlassCard className="rounded-[3rem] border-none shadow-2xl overflow-hidden">
+        <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-border/20">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
@@ -361,7 +259,7 @@ export default function LeadDesk() {
                     </td>
                     <td className="px-10 py-8">
                        <div className="space-y-1">
-                          <p className="text-sm font-black text-primary">${lead.potentialValue.toLocaleString()}</p>
+                          <p className="text-sm font-black text-primary">{formatCurrency(lead.potentialValue, lead.currency)}</p>
                           <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{lead.currency}</p>
                        </div>
                     </td>
@@ -397,7 +295,7 @@ export default function LeadDesk() {
                                <DropdownMenuItem className="gap-3 py-3 rounded-xl font-bold" onClick={() => handleUpdateStatus(lead.id, 'CONTACTED')} disabled={lead.status !== "NEW"}><MessageSquare className="h-4 w-4" /> Log Contact</DropdownMenuItem>
                                <DropdownMenuItem className="gap-3 py-3 rounded-xl font-bold" onClick={() => handleUpdateStatus(lead.id, 'QUALIFIED')} disabled={lead.status !== "CONTACTED"}><ShieldCheck className="h-4 w-4" /> Qualify Node</DropdownMenuItem>
                                <DropdownMenuSeparator />
-                               <DropdownMenuItem className="gap-3 py-3 rounded-xl font-black text-primary" onClick={() => handleConvert(lead.id)} disabled={lead.status !== "QUALIFIED"}><Zap className="h-4 w-4" /> CONVERT TO OPP</DropdownMenuItem>
+                               <DropdownMenuItem className="gap-3 py-3 rounded-xl font-black text-primary" onClick={() => handleConvert(lead)} disabled={lead.status !== "QUALIFIED"}><Zap className="h-4 w-4" /> CONVERT TO OPP</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                        </div>
@@ -407,19 +305,27 @@ export default function LeadDesk() {
               </tbody>
             </table>
           </div>
-          <div className="p-10 border-t border-white/20 dark:border-slate-800/20 flex justify-between items-center">
+          {!loading && filtered.length === 0 && (
+            <EmptyState
+              title="No leads yet"
+              description="No leads match the current filter. Inject a new lead to begin qualification."
+              icon={Target}
+              className="m-10"
+            />
+          )}
+          <div className="p-10 border-t border-white/20 dark:border-border/20 flex justify-between items-center">
              <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Showing {filtered.length} Active Records</p>
              <div className="flex gap-2">
                 <Button 
                   variant="outline" 
-                  className="rounded-xl font-black text-[10px] h-10 px-6 uppercase tracking-widest border-slate-200"
+                  className="rounded-xl font-black text-[10px] h-10 px-6 uppercase tracking-widest border-border"
                   onClick={() => navigate("/core/sales/intelligence")}
                 >
                   Export Registry
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="rounded-xl font-black text-[10px] h-10 px-6 uppercase tracking-widest border-slate-200"
+                  className="rounded-xl font-black text-[10px] h-10 px-6 uppercase tracking-widest border-border"
                   onClick={() => navigate("/core/sales/intelligence")}
                 >
                   Bulk Operations
@@ -427,7 +333,7 @@ export default function LeadDesk() {
              </div>
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
 
       {/* Lead Detail Modal */}
       <Dialog open={!!selectedLead} onOpenChange={() => setSelectedLead(null)}>
@@ -461,17 +367,17 @@ export default function LeadDesk() {
                   <div className="space-y-1">
                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Core Contact</p>
                      <p className="text-lg font-black">{selectedLead?.contactName}</p>
-                     <p className="text-xs font-bold text-primary">{selectedLead?.contactEmail}</p>
+                     <p className="text-xs font-bold text-primary">{safeText(selectedLead?.contactEmail)}</p>
                   </div>
                   <div className="space-y-1">
                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Financial Designation</p>
-                     <p className="text-lg font-black text-success">${selectedLead?.potentialValue.toLocaleString()}</p>
+                     <p className="text-lg font-black text-success">{formatCurrency(selectedLead?.potentialValue, selectedLead?.currency)}</p>
                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-tighter">{selectedLead?.currency} Potential</p>
                   </div>
                   <div className="space-y-1">
                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Operational Owner</p>
                      <div className="flex items-center gap-2 pt-1">
-                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-black text-muted-foreground border border-slate-200">
+                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-black text-muted-foreground border border-border">
                            {selectedLead?.ownerName.charAt(0)}
                         </div>
                         <span className="text-sm font-bold">{selectedLead?.ownerName}</span>
@@ -487,12 +393,12 @@ export default function LeadDesk() {
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                      <Clock className="h-3 w-3" /> LIFECYCLE CHRONOLOGY
                   </p>
-                  <div className="p-6 rounded-3xl bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800 space-y-4">
+                  <div className="p-6 rounded-3xl bg-muted dark:bg-muted border border-border dark:border-border space-y-4">
                      <div className="flex items-center gap-4">
                         <div className="h-2 w-2 rounded-full bg-primary" />
-                        <div className="flex-1 border-b border-slate-200 dark:border-slate-800 pb-2">
+                        <div className="flex-1 border-b border-border dark:border-border pb-2">
                            <p className="text-xs font-black">Node Initialized</p>
-                           <p className="text-[10px] font-bold text-muted-foreground italic">Created on {selectedLead?.createdAt?.slice(0, 10)}</p>
+                           <p className="text-[10px] font-bold text-muted-foreground italic">Created on {formatDate(selectedLead?.createdAt)}</p>
                         </div>
                      </div>
                      <div className="flex items-center gap-4">
@@ -511,7 +417,7 @@ export default function LeadDesk() {
                   >
                     Action Workspace
                   </Button>
-                  <Button variant="outline" className="h-14 w-14 rounded-2xl border-slate-200" onClick={() => setSelectedLead(null)}>
+                  <Button variant="outline" className="h-14 w-14 rounded-2xl border-border" onClick={() => setSelectedLead(null)}>
                      <ChevronRight className="h-5 w-5" />
                   </Button>
                </div>
@@ -519,6 +425,24 @@ export default function LeadDesk() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Zod-validated Create Lead Modal (via ModuleModal + TanStack Query) */}
+      <CreateLeadModal
+        isOpen={createOpen}
+        onClose={() => { setCreateOpen(false); refresh(true); }}
+      />
+
+      {/* Lead-to-Opportunity Conversion Modal */}
+      {convertLead && (
+        <ConvertLeadModal
+          isOpen={!!convertLead}
+          onClose={() => { setConvertLead(null); refresh(true); }}
+          leadId={convertLead.id}
+          leadCompany={convertLead.companyName}
+          leadContact={convertLead.contactName}
+          leadValue={convertLead.potentialValue}
+        />
+      )}
 
     </div>
   );

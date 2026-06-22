@@ -1,5 +1,7 @@
 import { TenantContext } from "../../gateway/tenant-context.interface";
-import { Injectable, BadRequestException } from "@nestjs/common";
+import { TenantScope } from "../../shared/scope/tenant-scope";
+import { Injectable } from "@nestjs/common";
+import { BadRequestException } from "../_shared";
 import { PaymentStateMachine } from "./utils/payment-state.machine";
 import { AttachDisputeEvidenceDto } from "./dto/attach-dispute-evidence.dto";
 import { CreateDisputeDto } from "./dto/create-dispute.dto";
@@ -17,6 +19,12 @@ import { XenditAdapter } from "./adapters/xendit.adapter";
 import { MidtransAdapter } from "./adapters/midtrans.adapter";
 import { PaymentAdapter } from "./adapters/payment.adapter.interface";
 import { IFinanceRepository } from "../finance/repositories/finance.repository.interface";
+import { OfflineContextResolver } from "./utils/offline-context.resolver";
+import { AtomicOperationService } from "../shared/atomic";
+import {
+  classifyPaymentMethod,
+  isMethodPermittedOffline,
+} from "./utils/offline-payment-matrix";
 
 @Injectable()
 export class PaymentService {
@@ -31,6 +39,8 @@ export class PaymentService {
     private readonly xenditAdapter: XenditAdapter,
     private readonly midtransAdapter: MidtransAdapter,
     private readonly financeRepository: IFinanceRepository,
+    private readonly offlineResolver: OfflineContextResolver,
+    private readonly atomic: AtomicOperationService,
   ) {}
 
   public getAdapter(provider: string): PaymentAdapter {
@@ -78,105 +88,241 @@ export class PaymentService {
     this.resetFailure(provider);
   }
 
-  async getDashboard(ctx: TenantContext) {
-    return this.repository.getDashboard(ctx);
+  /**
+   * Bridge a validated {@link TenantScope} (resolved by the controller from the
+   * verified `TenantContext`) onto the legacy `TenantContext`-typed scope
+   * parameter still used by the repository, payment adapters, the offline
+   * resolver and the Finance journal helper. A `TenantScope` carries exactly the
+   * tenant scoping fields (`tenant_id` / `branch_id` / `location_id`) those
+   * collaborators consume (see `MultiTenancyUtil.ScopeLike`), so this is a
+   * type-only adaptation with no behavioural change. Repository reads now consume
+   * the resolved `TenantScope` directly (task 10.5); this bridge remains only for
+   * the write paths and adapters/Finance helpers still typed against
+   * `TenantContext`.
+   */
+  private toContext(scope: TenantScope): TenantContext {
+    return {
+      tenant_id: scope.tenant_id,
+      company_id: scope.company_id as string,
+      branch_id: scope.branch_id,
+      location_id: scope.location_id,
+    };
   }
 
-  async getTransactions(ctx: TenantContext) {
-    return this.repository.getTransactions(ctx);
+  async getDashboard(scope: TenantScope) {
+    return this.repository.getDashboard(scope);
   }
 
-  async createTransaction(ctx: TenantContext,
+  async getTransactions(scope: TenantScope) {
+    return this.repository.getTransactions(scope);
+  }
+
+  async createTransaction(scope: TenantScope,
     dto: CreatePaymentTransactionDto,
     actor_id: string,
   ) {
-    // BUG-11 FIX: Check offline payment matrix
-    const isOffline = this.isOfflineMode(ctx);
-    const blockedPaymentTypes = ['CARD', 'QRIS', 'E_WALLET', 'LOYALTY_POINTS'];
-    
-    // Determine payment type from request
-    const paymentType = this.determinePaymentType(dto);
-    
-    if (isOffline && blockedPaymentTypes.includes(paymentType)) {
+    const ctx = this.toContext(scope);
+    // BUG-11: Enforce the Offline_Payment_Matrix against the resolved offline state
+    // of this specific payment context (device/branch connectivity), not a global flag.
+    const offlineContext = await this.offlineResolver.resolve(ctx, dto);
+    const methodClass = classifyPaymentMethod(dto);
+
+    if (offlineContext.isOffline && !isMethodPermittedOffline(methodClass)) {
       throw new BadRequestException({
         type: 'payment/offline-not-allowed',
         title: 'Payment Method Unavailable Offline',
-        detail: `Payment method ${paymentType} is not available in offline mode. Only CASH and VOUCHER payments are allowed.`,
+        detail: `Payment method ${methodClass} is not available while the payment context is offline (${offlineContext.reason}). Only CASH and VOUCHER payments are allowed offline.`,
         tenant_id: ctx.tenant_id,
       });
     }
-    
+
     return this.repository.createTransaction(ctx, dto, actor_id);
   }
-  
-  /**
-   * Determine payment type from request DTO
-   */
-  private determinePaymentType(dto: CreatePaymentTransactionDto): string {
-    // Map channel to payment type
-    if (dto.channel === 'card_online' || dto.channel === 'card_pos') return 'CARD';
-    if (dto.channel === 'wallet') return 'E_WALLET';
-    if (dto.channel === 'qr') return 'QRIS';
-    if (dto.method === 'EDC') return 'CARD';
-    if (dto.method === 'CASH') return 'CASH';
-    if (dto.method === 'GATEWAY') return dto.provider || 'GATEWAY';
-    return 'UNKNOWN';
-  }
-  
-  /**
-   * Check if system is in offline mode
-   * Uses OFFLINE_MODE environment variable for simple configuration
-   */
-  private isOfflineMode(ctx: TenantContext): boolean {
-    return process.env.OFFLINE_MODE === "true";
-  }
 
-  async approveTransaction(ctx: TenantContext,
+  async approveTransaction(scope: TenantScope,
     paymentId: string,
     actor_id: string,
   ) {
-    return this.repository.approveTransaction(ctx, paymentId, actor_id);
+    const ctx = this.toContext(scope);
+    // The transition, its payment_audit_events record (written on the same
+    // transaction client inside the repository) and the Integration_Log outbox
+    // event all commit or roll back together (Requirements 12.3, 4.1, 4.2, 6.5).
+    return this.atomic.run(async ({ tx, outbox }) => {
+      const result = await this.repository.approveTransaction(
+        ctx,
+        paymentId,
+        actor_id,
+        tx,
+      );
+      await outbox({
+        tenant_id: ctx.tenant_id,
+        type: "payment.transaction.approved.v1",
+        payload: { transaction_id: paymentId },
+        company_id: scope.company_id,
+      });
+      return result;
+    });
   }
 
-  async rejectTransaction(ctx: TenantContext,
+  async rejectTransaction(scope: TenantScope,
     paymentId: string,
     actor_id: string,
   ) {
-    return this.repository.rejectTransaction(ctx, paymentId, actor_id);
+    const ctx = this.toContext(scope);
+    return this.atomic.run(async ({ tx, outbox }) => {
+      const result = await this.repository.rejectTransaction(
+        ctx,
+        paymentId,
+        actor_id,
+        tx,
+      );
+      await outbox({
+        tenant_id: ctx.tenant_id,
+        type: "payment.transaction.rejected.v1",
+        payload: { transaction_id: paymentId },
+        company_id: scope.company_id,
+      });
+      return result;
+    });
   }
 
-  async routeTransaction(ctx: TenantContext,
+  async routeTransaction(scope: TenantScope,
     paymentId: string,
     dto: RoutePaymentDto,
     actor_id: string,
   ) {
-    return this.repository.routeTransaction(ctx, paymentId, dto, actor_id);
+    const ctx = this.toContext(scope);
+    return this.atomic.run(async ({ tx, outbox }) => {
+      const result = await this.repository.routeTransaction(
+        ctx,
+        paymentId,
+        dto,
+        actor_id,
+        tx,
+      );
+      await outbox({
+        tenant_id: ctx.tenant_id,
+        type: "payment.transaction.routed.v1",
+        payload: { transaction_id: paymentId },
+        company_id: scope.company_id,
+      });
+      return result;
+    });
   }
 
-  async executeTransaction(ctx: TenantContext,
+  async executeTransaction(scope: TenantScope,
     paymentId: string,
     dto: ExecutePaymentDto,
     actor_id: string,
   ) {
-    return this.repository.executeTransaction(
-      ctx,
-      paymentId,
-      dto,
-      actor_id,
-    );
+    const ctx = this.toContext(scope);
+    return this.atomic.run(async ({ tx, outbox }) => {
+      const result = await this.repository.executeTransaction(
+        ctx,
+        paymentId,
+        dto,
+        actor_id,
+        tx,
+      );
+      await outbox({
+        tenant_id: ctx.tenant_id,
+        type: "payment.transaction.executed.v1",
+        payload: { transaction_id: paymentId, status: result.status },
+        company_id: scope.company_id,
+      });
+      return result;
+    });
   }
 
-  async settleTransaction(ctx: TenantContext,
+  async settleTransaction(scope: TenantScope,
     paymentId: string,
     actor_id: string,
   ) {
-    return this.repository.settleTransaction(ctx, paymentId, actor_id);
+    const ctx = this.toContext(scope);
+    // On settle, the state transition (+ its settlement/evidence writes + audit),
+    // the corresponding Finance_Module settlement record, and the Integration_Log
+    // outbox event all enrol in the SAME Atomic_Operation, so they commit together
+    // or roll back together (Requirements 12.3, 12.11, 4.1, 4.2, 6.5). If the
+    // Finance settlement record fails, the whole operation rolls back — the
+    // transaction is left in its pre-settlement (SETTLEMENT_PENDING) state — and
+    // the error propagates as a server-error (5xx) response (Requirements 12.12,
+    // 11.11).
+    return this.atomic.run(async ({ tx, outbox }) => {
+      const result = await this.repository.settleTransaction(
+        ctx,
+        paymentId,
+        actor_id,
+        tx,
+      );
+
+      // Finance settlement record, threaded onto the same transaction client so
+      // it enrols in the current Atomic_Operation (Requirement 12.11). The
+      // balanced posting clears Accounts Receivable against the cash/bank deposit,
+      // recognising any gateway processing fee as an expense. A failure here
+      // throws and rolls the whole operation back (Requirement 12.12).
+      const totalAmount = Number(result.amount);
+      const gatewayFee = Number(result.gatewayFee ?? 0);
+      const settledAmount = totalAmount - gatewayFee;
+      const isCash = result.method === "CASH";
+      const depositAccount = isCash ? "1000" : "1001";
+      const depositDescription = isCash
+        ? "Cash dropped to Vault"
+        : "Settlement Deposit";
+
+      const lines: {
+        accountCode: string;
+        debit: number;
+        credit: number;
+        description: string;
+      }[] = [
+        {
+          accountCode: depositAccount,
+          debit: settledAmount,
+          credit: 0,
+          description: depositDescription,
+        },
+        {
+          accountCode: "1002",
+          debit: 0,
+          credit: totalAmount,
+          description: "Clear Accounts Receivable",
+        },
+      ];
+
+      if (result.method === "GATEWAY" && gatewayFee > 0) {
+        lines.push({
+          accountCode: "EXP-FEE",
+          debit: gatewayFee,
+          credit: 0,
+          description: "Gateway Processing Fee",
+        });
+      }
+
+      await this.financeRepository.createJournal(
+        ctx,
+        {
+          ref: `STL-${result.id.substring(0, 8)}`,
+          description: `${result.method ?? "PAYMENT"} Settlement for ${result.externalReference || result.id}`,
+          lines,
+        },
+        tx,
+      );
+
+      await outbox({
+        tenant_id: ctx.tenant_id,
+        type: "payment.transaction.settled.v1",
+        payload: { transaction_id: paymentId },
+        company_id: scope.company_id,
+      });
+      return result;
+    });
   }
 
-  async settleBatch(ctx: TenantContext,
+  async settleBatch(scope: TenantScope,
     dto: { transactionIds: string[] },
     actor_id: string,
   ) {
+    const ctx = this.toContext(scope);
     const transactions = await this.repository.getTransactions(ctx);
     const toSettle = transactions.filter(
       (t) =>
@@ -252,128 +398,191 @@ export class PaymentService {
     return { settledCount };
   }
 
-  async getProviders(ctx: TenantContext) {
-    return this.repository.getProviders(ctx);
+  async getProviders(scope: TenantScope) {
+    return this.repository.getProviders(scope);
   }
 
-  async updateProviderStatus(ctx: TenantContext,
+  async updateProviderStatus(scope: TenantScope,
     providerId: string,
     dto: UpdateProviderStatusDto,
     actor_id: string,
   ) {
     return this.repository.updateProviderStatus(
-      ctx,
+      this.toContext(scope),
       providerId,
       dto,
       actor_id,
     );
   }
 
-  async runProviderHealthSweep(ctx: TenantContext, actor_id: string) {
-    return this.repository.runProviderHealthSweep(ctx, actor_id);
+  async runProviderHealthSweep(scope: TenantScope, actor_id: string) {
+    return this.repository.runProviderHealthSweep(this.toContext(scope), actor_id);
   }
 
-  async getRoutingPolicies(ctx: TenantContext) {
-    return this.repository.getRoutingPolicies(ctx);
+  async getRoutingPolicies(scope: TenantScope) {
+    return this.repository.getRoutingPolicies(scope);
   }
 
-  async getDevices(ctx: TenantContext) {
-    return this.repository.getDevices(ctx);
+  async getDevices(scope: TenantScope) {
+    return this.repository.getDevices(scope);
   }
 
-  async getDevicePools(ctx: TenantContext) {
-    return this.repository.getDevicePools(ctx);
+  async getDevicePools(scope: TenantScope) {
+    return this.repository.getDevicePools(scope);
   }
 
-  async updateDeviceStatus(ctx: TenantContext,
+  async updateDeviceStatus(scope: TenantScope,
     device_id: string,
     dto: UpdateDeviceStatusDto,
     actor_id: string,
   ) {
-    return this.repository.updateDeviceStatus(ctx, device_id, dto, actor_id);
+    return this.repository.updateDeviceStatus(this.toContext(scope), device_id, dto, actor_id);
   }
 
-  async getRefunds(ctx: TenantContext) {
-    return this.repository.getRefunds(ctx);
+  async getRefunds(scope: TenantScope) {
+    return this.repository.getRefunds(scope);
   }
 
-  async createRefund(ctx: TenantContext, dto: CreateRefundDto, actor_id: string) {
-    return this.repository.createRefund(ctx, dto, actor_id);
+  async createRefund(scope: TenantScope, dto: CreateRefundDto, actor_id: string) {
+    return this.repository.createRefund(this.toContext(scope), dto, actor_id);
   }
 
-  async approveRefund(ctx: TenantContext, refundId: string, actor_id: string) {
-    return this.repository.approveRefund(ctx, refundId, actor_id);
+  async approveRefund(scope: TenantScope, refundId: string, actor_id: string) {
+    const ctx = this.toContext(scope);
+    return this.atomic.run(async ({ tx, outbox }) => {
+      const result = await this.repository.approveRefund(
+        ctx,
+        refundId,
+        actor_id,
+        tx,
+      );
+      await outbox({
+        tenant_id: ctx.tenant_id,
+        type: "payment.refund.approved.v1",
+        payload: { refund_id: refundId },
+        company_id: scope.company_id,
+      });
+      return result;
+    });
   }
 
-  async executeRefund(ctx: TenantContext, refundId: string, actor_id: string) {
-    return this.repository.executeRefund(ctx, refundId, actor_id);
+  async executeRefund(scope: TenantScope, refundId: string, actor_id: string) {
+    const ctx = this.toContext(scope);
+    return this.atomic.run(async ({ tx, outbox }) => {
+      const result = await this.repository.executeRefund(
+        ctx,
+        refundId,
+        actor_id,
+        tx,
+      );
+      await outbox({
+        tenant_id: ctx.tenant_id,
+        type: "payment.refund.executed.v1",
+        payload: { refund_id: refundId },
+        company_id: scope.company_id,
+      });
+      return result;
+    });
   }
 
-  async getDisputes(ctx: TenantContext) {
-    return this.repository.getDisputes(ctx);
+  async getDisputes(scope: TenantScope) {
+    return this.repository.getDisputes(scope);
   }
 
-  async createDispute(ctx: TenantContext,
+  async createDispute(scope: TenantScope,
     dto: CreateDisputeDto,
     actor_id: string,
   ) {
-    return this.repository.createDispute(ctx, dto, actor_id);
+    return this.repository.createDispute(this.toContext(scope), dto, actor_id);
   }
 
-  async attachDisputeEvidence(ctx: TenantContext,
+  async attachDisputeEvidence(scope: TenantScope,
     disputeId: string,
     dto: AttachDisputeEvidenceDto,
     actor_id: string,
   ) {
     return this.repository.attachDisputeEvidence(
-      ctx,
+      this.toContext(scope),
       disputeId,
       dto,
       actor_id,
     );
   }
 
-  async progressDispute(ctx: TenantContext,
+  async progressDispute(scope: TenantScope,
     disputeId: string,
     dto: ProgressDisputeDto,
     actor_id: string,
   ) {
-    return this.repository.progressDispute(ctx, disputeId, dto, actor_id);
+    const ctx = this.toContext(scope);
+    return this.atomic.run(async ({ tx, outbox }) => {
+      const result = await this.repository.progressDispute(
+        ctx,
+        disputeId,
+        dto,
+        actor_id,
+        tx,
+      );
+      await outbox({
+        tenant_id: ctx.tenant_id,
+        type: "payment.dispute.progressed.v1",
+        payload: { dispute_id: disputeId, status: dto.status },
+        company_id: scope.company_id,
+      });
+      return result;
+    });
   }
 
-  async resolveDispute(ctx: TenantContext,
+  async resolveDispute(scope: TenantScope,
     disputeId: string,
     dto: ResolveDisputeDto,
     actor_id: string,
   ) {
-    return this.repository.resolveDispute(ctx, disputeId, dto, actor_id);
+    const ctx = this.toContext(scope);
+    return this.atomic.run(async ({ tx, outbox }) => {
+      const result = await this.repository.resolveDispute(
+        ctx,
+        disputeId,
+        dto,
+        actor_id,
+        tx,
+      );
+      await outbox({
+        tenant_id: ctx.tenant_id,
+        type: "payment.dispute.resolved.v1",
+        payload: { dispute_id: disputeId, resolution: dto.resolution },
+        company_id: scope.company_id,
+      });
+      return result;
+    });
   }
 
-  async getChargebacks(ctx: TenantContext) {
-    return this.repository.getChargebacks(ctx);
+  async getChargebacks(scope: TenantScope) {
+    return this.repository.getChargebacks(scope);
   }
 
-  async getSettlements(ctx: TenantContext) {
-    return this.repository.getSettlements(ctx);
+  async getSettlements(scope: TenantScope) {
+    return this.repository.getSettlements(scope);
   }
 
-  async getEvidencePacks(ctx: TenantContext) {
-    return this.repository.getEvidencePacks(ctx);
+  async getEvidencePacks(scope: TenantScope) {
+    return this.repository.getEvidencePacks(scope);
   }
 
-  async getAuditEvents(ctx: TenantContext) {
-    return this.repository.getAuditEvents(ctx);
+  async getAuditEvents(scope: TenantScope) {
+    return this.repository.getAuditEvents(scope);
   }
 
-  async getPaymentSettings(ctx: TenantContext) {
-    return this.repository.getPaymentSettings(ctx);
+  async getPaymentSettings(scope: TenantScope) {
+    return this.repository.getPaymentSettings(scope);
   }
 
-  async updatePaymentSettings(ctx: TenantContext, data: any) {
-    return this.repository.updatePaymentSettings(ctx, data);
+  async updatePaymentSettings(scope: TenantScope, data: any) {
+    return this.repository.updatePaymentSettings(this.toContext(scope), data);
   }
 
-  async getPaymentStatus(ctx: TenantContext) {
+  async getPaymentStatus(scope: TenantScope) {
+    const ctx = this.toContext(scope);
     const configuredProviders: string[] = [];
     if (await this.stripeAdapter.isAvailable(ctx)) configuredProviders.push("STRIPE");
     if (await this.xenditAdapter.isAvailable(ctx)) configuredProviders.push("XENDIT");
@@ -397,10 +606,11 @@ export class PaymentService {
     };
   }
 
-  async processCash(ctx: TenantContext,
+  async processCash(scope: TenantScope,
     dto: CreatePaymentTransactionDto,
     actor_id: string,
   ) {
+    const ctx = this.toContext(scope);
     // BUG-11 FIX: Cash payments are allowed in offline mode
     const transaction = await this.repository.createTransaction(
       ctx,
@@ -423,10 +633,11 @@ export class PaymentService {
     );
   }
 
-  async confirmEDC(ctx: TenantContext,
+  async confirmEDC(scope: TenantScope,
     dto: CreatePaymentTransactionDto,
     actor_id: string,
   ) {
+    const ctx = this.toContext(scope);
     // BUG-11 FIX: EDC payments are allowed in offline mode
     const transaction = await this.repository.createTransaction(
       ctx,
@@ -450,17 +661,19 @@ export class PaymentService {
     );
   }
 
-  async createGatewayPayment(ctx: TenantContext,
+  async createGatewayPayment(scope: TenantScope,
     dto: CreatePaymentTransactionDto,
     actor_id: string,
   ) {
-    // BUG-11 FIX: Check offline payment matrix for gateway payments
-    const isOffline = this.isOfflineMode(ctx);
-    if (isOffline) {
+    const ctx = this.toContext(scope);
+    // BUG-11: Gateway payments (CARD, QRIS, E-Wallet) are gateway-backed and are
+    // blocked when the resolved payment context is offline.
+    const offlineContext = await this.offlineResolver.resolve(ctx, dto);
+    if (offlineContext.isOffline) {
       throw new BadRequestException({
         type: 'payment/offline-not-allowed',
         title: 'Gateway Payment Unavailable Offline',
-        detail: 'Gateway payments (CARD, QRIS, E-Wallet) are not available in offline mode.',
+        detail: `Gateway payments (CARD, QRIS, E-Wallet) are not available while the payment context is offline (${offlineContext.reason}).`,
         tenant_id: ctx.tenant_id,
       });
     }

@@ -15,6 +15,9 @@ import { useSession } from "@/core/security/session";
 import { financeApiClient } from "@/core/services/finance/financeApiClient";
 import { logService } from "@/core/services/finance/logService";
 import { useDepartmentalGovernance } from "@/core/hooks/useDepartmentalGovernance";
+import { formatNumber } from "@/lib/format";
+import { EmptyState } from "@/components/shared/AsyncState";
+import { CreatePolicyModal } from "@/core/finance/FinanceModalForms";
 
 type PolicyType = "APPROVAL_LIMIT" | "PAYMENT_RULE" | "EXPENSE_POLICY";
 
@@ -202,13 +205,19 @@ export default function PolicyManager() {
                 <tr key={budget.department} className="border-t">
                   <td className="p-3 font-medium">{budget.department}</td>
                   <td className="p-3 text-muted-foreground">{budget.accountCode}</td>
-                  <td className="p-3 text-muted-foreground">{budget.allocatedBudget?.toLocaleString() ?? "0"}</td>
-                  <td className="p-3 text-muted-foreground">{budget.committedBudget?.toLocaleString() ?? "0"}</td>
-                  <td className="p-3 text-muted-foreground">{budget.availableBudget?.toLocaleString() ?? "0"}</td>
+                  <td className="p-3 text-muted-foreground">{formatNumber(budget.allocatedBudget ?? 0)}</td>
+                  <td className="p-3 text-muted-foreground">{formatNumber(budget.committedBudget ?? 0)}</td>
+                  <td className="p-3 text-muted-foreground">{formatNumber(budget.availableBudget ?? 0)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          {(Array.isArray(capexBudgets) ? capexBudgets : []).length === 0 ? (
+            <EmptyState
+              title="No CAPEX budgets"
+              description="No department budgets are configured for this tenant scope yet."
+            />
+          ) : null}
         </DataTableShell>
       </WorkspacePanel>
 
@@ -235,7 +244,7 @@ export default function PolicyManager() {
                 >
                   <td className="p-3 font-medium">{policy.title}</td>
                   <td className="p-3 text-muted-foreground">{policy.type}</td>
-                  <td className="p-3 text-muted-foreground">{policy.threshold?.toLocaleString() ?? "0"}</td>
+                  <td className="p-3 text-muted-foreground">{formatNumber(policy.threshold ?? 0)}</td>
                   <td className="p-3 text-muted-foreground">{policy.description}</td>
                   <td className="p-3">
                     <ApprovalStatusBadge status={policy.active ? "ACTIVE" : "INACTIVE"} />
@@ -256,6 +265,12 @@ export default function PolicyManager() {
               ))}
             </tbody>
           </table>
+          {(Array.isArray(filteredPolicies) ? filteredPolicies : []).length === 0 ? (
+            <EmptyState
+              title="No policies"
+              description="No policies match this view in the current tenant scope."
+            />
+          ) : null}
         </DataTableShell>
       </WorkspacePanel>
 
@@ -363,7 +378,7 @@ export default function PolicyManager() {
               <span className="text-muted-foreground">Type:</span>
               <span>{selectedPolicy?.type}</span>
               <span className="text-muted-foreground">Threshold:</span>
-              <span className="font-bold">{selectedPolicy?.threshold?.toLocaleString() ?? "0"}</span>
+              <span className="font-bold">{formatNumber(selectedPolicy?.threshold ?? 0)}</span>
               <span className="text-muted-foreground">Status:</span>
               <span><ApprovalStatusBadge status={selectedPolicy?.active ? "ACTIVE" : "INACTIVE"} /></span>
             </div>
@@ -376,7 +391,7 @@ export default function PolicyManager() {
                   </div>
                   <div>
                     <p className="font-medium text-foreground">Policy Modified</p>
-                    <p className="text-muted-foreground">Threshold increased from 5k to {selectedPolicy?.threshold?.toLocaleString() ?? "0"} by Admin.</p>
+                    <p className="text-muted-foreground">Threshold increased from 5k to {formatNumber(selectedPolicy?.threshold ?? 0)} by Admin.</p>
                     <p className="mt-1 text-[10px] text-muted-foreground">2 days ago • IP: 192.168.1.10</p>
                   </div>
                 </div>

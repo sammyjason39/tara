@@ -14,10 +14,19 @@ import { MarketingAutomationEngine } from "./automation-engine.service";
 import { BookingService } from "./booking.service";
 import { EventsModule } from "../../shared/events/events.module";
 import { AuditModule } from "../../shared/audit/audit.module";
+import { ScopeModule } from "../../shared/scope/scope.module";
+import { AtomicOperationModule } from "../shared/atomic";
+import { AsyncRejectionModule } from "../shared/async";
 import { ConfigModule } from "@nestjs/config";
 
 @Module({
-  imports: [EventsModule, AuditModule],
+  imports: [
+    EventsModule,
+    AuditModule,
+    ScopeModule,
+    AtomicOperationModule,
+    AsyncRejectionModule,
+  ],
   controllers: [MarketingController],
   providers: [
     PrismaService,

@@ -13,11 +13,21 @@ import { MidtransAdapter } from "./adapters/midtrans.adapter";
 import { PaymentWebhookController } from "./payment.webhook.controller";
 import { PaymentReconciliationService } from "./payment.reconciliation.service";
 import { PaymentExpiryJob } from "./payment-expiry.job";
+import { OfflineContextResolver } from "./utils/offline-context.resolver";
+import { ScopeModule } from "../../shared/scope/scope.module";
+import { AtomicOperationModule } from "../shared/atomic";
+import { AsyncRejectionModule } from "../shared/async";
 
 import { FinanceModule } from "../finance/finance.module";
 
 @Module({
-  imports: [PersistenceModule, FinanceModule],
+  imports: [
+    PersistenceModule,
+    FinanceModule,
+    ScopeModule,
+    AtomicOperationModule,
+    AsyncRejectionModule,
+  ],
   controllers: [
     PaymentController,
     PaymentWebhookController,
@@ -27,6 +37,7 @@ import { FinanceModule } from "../finance/finance.module";
     PaymentService,
     PaymentReconciliationService,
     PaymentExpiryJob,
+    OfflineContextResolver,
     StripeAdapter,
     XenditAdapter,
     MidtransAdapter,

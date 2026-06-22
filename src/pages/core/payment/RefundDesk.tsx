@@ -14,6 +14,8 @@ import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { useSession } from "@/core/security/session";
 import { paymentService } from "@/core/services/payment/paymentService";
 import type { PaymentRefund, PaymentTransaction } from "@/core/types/payment/payment";
+import { formatNumber } from "@/lib/format";
+import { EmptyState } from "@/components/shared/AsyncState";
 
 const REFUND_TYPES: PaymentRefund["type"][] = ["FULL", "PARTIAL", "SCHEDULED"];
 
@@ -108,7 +110,7 @@ export default function RefundDesk() {
                 <td className="p-3 font-medium">{refund.id}</td>
                 <td className="p-3 text-muted-foreground">{refund.paymentId}</td>
                 <td className="p-3 text-muted-foreground">{refund.type}</td>
-                <td className="p-3 text-muted-foreground">{refund.amount.toLocaleString()}</td>
+                <td className="p-3 text-muted-foreground">{formatNumber(refund.amount)}</td>
                 <td className="p-3"><Badge variant="outline">{refund.status}</Badge></td>
                 <td className="p-3">
                   <div className="flex flex-wrap gap-2">
@@ -122,6 +124,16 @@ export default function RefundDesk() {
                 </td>
               </tr>
             ))}
+            {(Array.isArray(refunds) ? refunds : []).length === 0 ? (
+              <tr>
+                <td colSpan={6} className="p-0">
+                  <EmptyState
+                    title="No refunds yet"
+                    description="No refund requests exist for this tenant scope yet."
+                  />
+                </td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </WorkspacePanel>

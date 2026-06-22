@@ -47,6 +47,7 @@ const ShiftControl = () => {
   const [scheduledShifts, setScheduledShifts] = useState<ScheduledShift[]>([]);
   const [availableStaff, setAvailableStaff] = useState<AvailableStaff[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   // New states for Advanced Features
   const [viewMode, setViewMode] = useState<"daily" | "weekly" | "monthly">(
@@ -70,6 +71,7 @@ const ShiftControl = () => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
+        setFetchError(null);
         const [retailShifts, scheduled, staff] = await Promise.all([
           retailService.listShifts(session.tenant_id!, session, {
             store_id: session.location_id,
@@ -85,8 +87,9 @@ const ShiftControl = () => {
         setShifts(Array.isArray(retailShifts) ? retailShifts : []);
         setScheduledShifts(Array.isArray(scheduled) ? scheduled : []);
         setAvailableStaff(Array.isArray(staff) ? staff : []);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to fetch workforce data", error);
+        setFetchError(error?.message || "Failed to load shift data");
       } finally {
         setIsLoading(false);
       }
@@ -231,7 +234,62 @@ const ShiftControl = () => {
     );
   }
 
+  if (fetchError && shifts.length === 0) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-6 text-center">
+          <div className="p-4 rounded-2xl bg-destructive/10 text-destructive">
+            <ShieldAlert className="w-12 h-12" />
+          </div>
+          <p className="text-lg font-black italic text-foreground">Failed to Load Shift Data</p>
+          <p className="text-sm text-muted-foreground max-w-md">{fetchError}</p>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setFetchError(null);
+              setIsLoading(true);
+              Promise.all([
+                retailService.listShifts(session.tenant_id!, session, { store_id: session.location_id }),
+                schedulingService.getScheduledShifts(session),
+                schedulingService.getAvailableStaff(session, session.location_id ? { location_id: session.location_id } : undefined),
+              ])
+                .then(([retailShifts, scheduled, staff]) => {
+                  setShifts(Array.isArray(retailShifts) ? retailShifts : []);
+                  setScheduledShifts(Array.isArray(scheduled) ? scheduled : []);
+                  setAvailableStaff(Array.isArray(staff) ? staff : []);
+                })
+                .catch((err: any) => setFetchError(err?.message || "Failed to load shift data"))
+                .finally(() => setIsLoading(false));
+            }}
+            className="gap-2"
+          >
+            <Activity className="w-4 h-4" /> Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   const draftCount = (Array.isArray(scheduledShifts) ? scheduledShifts : []).filter((s) => s.status === "draft").length;
+
+  // Format shift time for display
+  const formatShiftTime = (dateStr: string | undefined | null) => {
+    if (!dateStr) return "—";
+    try {
+      return new Date(dateStr).toLocaleString(undefined, {
+        dateStyle: "short",
+        timeStyle: "short",
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  // Format currency for display
+  const formatCash = (amount: number | undefined | null) => {
+    if (amount == null) return "—";
+    return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(amount);
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-secondary selection:bg-primary selection:text-foreground relative overflow-hidden">
@@ -296,7 +354,7 @@ const ShiftControl = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <Card className="rounded-2xl p-6 bg-white/[0.03] border border-white/5 shadow-2xl backdrop-blur-3xl group">
               <div className="flex justify-between items-start mb-8">
-                <div className="p-4 rounded-2xl bg-success/10 text-success border border-emerald-500/20">
+                <div className="p-4 rounded-2xl bg-success/10 text-success border border-success/20">
                   <Users className="w-6 h-6" />
                 </div>
                 <Badge className="bg-success text-foreground font-black italic text-[8px] uppercase tracking-widest border-none px-3">
@@ -336,7 +394,7 @@ const ShiftControl = () => {
 
             <Card className="rounded-2xl p-6 bg-white/[0.03] border border-white/5 shadow-2xl backdrop-blur-3xl">
               <div className="flex justify-between items-start mb-8">
-                <div className="p-4 rounded-2xl bg-warning text-warning border border-amber-500/20">
+                <div className="p-4 rounded-2xl bg-warning text-warning border border-warning/20">
                   <Award className="w-6 h-6" />
                 </div>
                 <Badge className="bg-warning text-foreground font-black italic text-[8px] uppercase tracking-widest border-none px-3">
@@ -388,6 +446,68 @@ const ShiftControl = () => {
                       onViewModeChange={setViewMode}
                     />
                  </div>
+              </Card>
+            </div>
+
+            <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Shift Records Table — displays open time, close time, counted cash, operator name */}
+              <Card className="rounded-[2rem] bg-white/[0.03] border border-white/5 shadow-2xl p-6 space-y-6 md:col-span-2">
+                <div className="flex items-center justify-between">
+                  <div className="text-[10px] font-black italic uppercase tracking-[0.3em] text-muted-foreground">
+                    Shift Records
+                  </div>
+                  <Lock className="w-5 h-5 text-primary" />
+                </div>
+                {shifts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-sm text-muted-foreground italic">
+                      No shift records available.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-white/10">
+                          <th className="text-left text-[10px] font-black italic uppercase tracking-widest text-muted-foreground py-3 px-2">Operator</th>
+                          <th className="text-left text-[10px] font-black italic uppercase tracking-widest text-muted-foreground py-3 px-2">Open Time</th>
+                          <th className="text-left text-[10px] font-black italic uppercase tracking-widest text-muted-foreground py-3 px-2">Close Time</th>
+                          <th className="text-right text-[10px] font-black italic uppercase tracking-widest text-muted-foreground py-3 px-2">Counted Cash</th>
+                          <th className="text-center text-[10px] font-black italic uppercase tracking-widest text-muted-foreground py-3 px-2">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {(Array.isArray(shifts) ? shifts : []).map((shift) => (
+                          <tr key={shift.id} className="hover:bg-white/[0.02] transition-colors">
+                            <td className="py-3 px-2 font-bold text-foreground">
+                              {(shift as any).operator_name || (shift as any).operatorName || shift.userId || "Unknown"}
+                            </td>
+                            <td className="py-3 px-2 text-muted-foreground">
+                              {formatShiftTime((shift as any).open_time || (shift as any).openTime || shift.startTime)}
+                            </td>
+                            <td className="py-3 px-2 text-muted-foreground">
+                              {formatShiftTime((shift as any).close_time || (shift as any).closeTime || shift.endTime)}
+                            </td>
+                            <td className="py-3 px-2 text-right font-bold text-foreground">
+                              {formatCash((shift as any).counted_cash || (shift as any).countedCash || (shift as any).closingCash)}
+                            </td>
+                            <td className="py-3 px-2 text-center">
+                              <Badge className={`text-[8px] font-black italic uppercase ${
+                                shift.status === "active" || shift.status === "open"
+                                  ? "bg-success text-success"
+                                  : shift.status === "closed"
+                                    ? "bg-secondary text-muted-foreground"
+                                    : "bg-warning text-warning"
+                              }`}>
+                                {shift.status || "unknown"}
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </Card>
             </div>
 

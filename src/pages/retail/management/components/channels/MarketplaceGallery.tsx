@@ -28,7 +28,7 @@ export const MarketplaceGallery = ({ onSelect }: MarketplaceGalleryProps) => {
         </h3>
         <Badge
           variant="outline"
-          className="font-black italic text-[9px] border-slate-200 uppercase opacity-60"
+          className="font-black italic text-[9px] border-border uppercase opacity-60"
         >
           Regional Presets
         </Badge>
@@ -65,8 +65,8 @@ export const MarketplaceGallery = ({ onSelect }: MarketplaceGalleryProps) => {
           </Card>
         ))}
 
-        <Card className="rounded-2xl border-2 border-dashed border-slate-200 bg-secondary/5 flex flex-col justify-center items-center p-6 text-center space-y-4 hover:bg-white transition-all group">
-          <div className="w-16 h-16 rounded-3xl border-2 border-dashed border-slate-300 flex items-center justify-center group-hover:scale-110 transition-transform">
+        <Card className="rounded-2xl border-2 border-dashed border-border bg-secondary/5 flex flex-col justify-center items-center p-6 text-center space-y-4 hover:bg-white transition-all group">
+          <div className="w-16 h-16 rounded-3xl border-2 border-dashed border-border flex items-center justify-center group-hover:scale-110 transition-transform">
             <ShoppingBag className="w-8 h-8 text-muted-foreground/60" />
           </div>
           <div>

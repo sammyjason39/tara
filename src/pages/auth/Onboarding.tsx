@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { Loader2, ArrowRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { COUNTRIES, getCountry } from "@/lib/countries";
+import { GlassCard } from "@/components/shared/GlassCard";
+import { Button } from "@/components/ui/button";
+import { formatNumber } from "@/lib/format";
 
 interface NominatimResult {
   place_id: number;
@@ -130,7 +134,7 @@ export default function Onboarding() {
       </div>
 
       <div className="mt-12 sm:mx-auto sm:w-full sm:max-w-xl z-10 px-4">
-        <div className="glass-morphism rounded-[2.5rem] shadow-2xl border border-white/20 dark:border-white/5 overflow-hidden p-1 transition-all duration-500">
+        <GlassCard variant="morphism" className="rounded-[2.5rem] shadow-2xl border border-white/20 dark:border-white/5 overflow-hidden p-1 transition-all duration-500">
           <div className="bg-background/40 backdrop-blur-md rounded-[2.1rem] py-10 px-6 sm:px-12">
           {/* Progress Indicator */}
           <div className="mb-10">
@@ -170,11 +174,12 @@ export default function Onboarding() {
           {step === 1 && (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-8 duration-500">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-1">
+                <label htmlFor="onboarding-company-name" className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-1">
                   Company Name
                 </label>
                 <div className="relative">
                   <input
+                    id="onboarding-company-name"
                     type="text"
                     required
                     className="block w-full px-5 py-4 rounded-2xl border border-border bg-background/50 backdrop-blur-sm shadow-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-300 font-bold"
@@ -188,11 +193,12 @@ export default function Onboarding() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-1">
+                <label htmlFor="onboarding-address" className="text-[10px] font-black uppercase text-muted-foreground tracking-[0.2em] ml-1">
                   Office / HQ Address
                 </label>
                 <div className="relative">
                   <textarea
+                    id="onboarding-address"
                     required
                     rows={3}
                     className="block w-full px-5 py-4 rounded-2xl border border-border bg-background/50 backdrop-blur-sm shadow-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-300 font-bold resize-none"
@@ -414,17 +420,16 @@ export default function Onboarding() {
               </div>
 
               <div className="pt-6">
-                <button
+                <Button
                   type="button"
+                  size="lg"
                   disabled={!formData.name || !formData.address}
                   onClick={() => setStep(2)}
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-black italic uppercase tracking-[0.15em] py-5 rounded-2xl shadow-2xl shadow-primary/20 hover:shadow-primary/30 transition-all duration-300 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3"
+                  className="w-full py-5 rounded-2xl shadow-2xl shadow-primary/20 hover:shadow-primary/30 tracking-[0.15em]"
                 >
                   <span>Initialization Protocol</span>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                </button>
+                  <ArrowRight className="w-5 h-5" />
+                </Button>
               </div>
             </div>
           )}
@@ -470,7 +475,8 @@ export default function Onboarding() {
 
                   <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Geo Anchor</div>
                   <div className="col-span-2 font-black text-foreground uppercase tracking-tight truncate">
-                    {formData.latitude}, {formData.longitude}
+                    {formatNumber(formData.latitude, { maximumFractionDigits: 5 })},{" "}
+                    {formatNumber(formData.longitude, { maximumFractionDigits: 5 })}
                   </div>
 
                   <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Compliance</div>
@@ -485,42 +491,40 @@ export default function Onboarding() {
               </p>
 
               <div className="flex gap-4">
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="lg"
                   onClick={() => setStep(1)}
                   disabled={loading}
-                  className="w-1/3 py-5 rounded-2xl font-black italic uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all border border-border/50"
+                  className="w-1/3 py-5 rounded-2xl"
                 >
                   Modify
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  size="lg"
                   onClick={handleProvision}
                   disabled={loading}
-                  className="w-2/3 bg-primary hover:bg-primary/90 text-primary-foreground font-black italic uppercase tracking-[0.15em] py-5 rounded-2xl shadow-2xl shadow-primary/20 hover:shadow-primary/30 transition-all duration-300 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-3"
+                  className="w-2/3 py-5 rounded-2xl shadow-2xl shadow-primary/20 hover:shadow-primary/30 tracking-[0.15em]"
                 >
                   {loading ? (
                     <>
-                      <svg className="animate-spin h-5 w-5 text-primary-foreground" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
+                      <Loader2 className="h-5 w-5 animate-spin" />
                       <span>Deploying...</span>
                     </>
                   ) : (
                     <>
                       <span>Provision Cloud</span>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                      </svg>
+                      <ArrowRight className="w-5 h-5" />
                     </>
                   )}
-                </button>
+                </Button>
               </div>
             </div>
           )}
         </div>
-        </div>
+        </GlassCard>
       </div>
     </div>
   );

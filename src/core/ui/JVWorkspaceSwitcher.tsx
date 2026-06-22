@@ -54,7 +54,7 @@ export function JVWorkspaceSwitcher() {
           size="sm" 
           className={cn(
             "h-8 gap-2 border-dashed transition-all duration-300",
-            currentJV ? "bg-warning border-amber-500/50 text-warning hover:bg-warning" : "hover:bg-accent"
+            currentJV ? "bg-warning border-warning/50 text-warning hover:bg-warning" : "hover:bg-accent"
           )}
         >
           <Globe className={cn("w-4 h-4", currentJV && "animate-pulse")} />

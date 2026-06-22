@@ -1,4 +1,4 @@
-import { TenantContext } from "../../../gateway/tenant-context.interface";
+import { TenantScope } from "../../../shared/scope/tenant-scope";
 import { CloseOpportunityDto } from "../dto/close-opportunity.dto";
 import { CreateLeadDto } from "../dto/create-lead.dto";
 import { CreateOpportunityDto } from "../dto/create-opportunity.dto";
@@ -50,73 +50,80 @@ export type SalesExecutiveForecast = {
 };
 
 export abstract class ISalesRepository {
-  abstract getDashboard( ctx: TenantContext): Promise<SalesDashboard>;
-  abstract getManagerMetrics( ctx: TenantContext): Promise<SalesManagerMetrics>;
-  abstract getExecutiveForecast( ctx: TenantContext,
+  abstract getDashboard( ctx: TenantScope): Promise<SalesDashboard>;
+  abstract getManagerMetrics( ctx: TenantScope): Promise<SalesManagerMetrics>;
+  abstract getExecutiveForecast( ctx: TenantScope,
   ): Promise<SalesExecutiveForecast>;
-  abstract getNextBestActions( ctx: TenantContext): Promise<SalesNextAction[]>;
+  abstract getNextBestActions( ctx: TenantScope): Promise<SalesNextAction[]>;
 
-  abstract getSalesAnalytics( ctx: TenantContext, period?: string): Promise<any>;
-  abstract getForecast( ctx: TenantContext): Promise<any>;
-  abstract getPipelineVelocity( ctx: TenantContext): Promise<any>;
-  abstract getSLAPerformance( ctx: TenantContext): Promise<any>;
-  abstract getPipeline( ctx: TenantContext): Promise<any[]>;
+  abstract getSalesAnalytics( ctx: TenantScope, period?: string): Promise<any>;
+  abstract getForecast( ctx: TenantScope): Promise<any>;
+  abstract getPipelineVelocity( ctx: TenantScope): Promise<any>;
+  abstract getSLAPerformance( ctx: TenantScope): Promise<any>;
+  abstract getPipeline( ctx: TenantScope): Promise<any[]>;
 
-  abstract getLeads( ctx: TenantContext, status?: string): Promise<SalesLead[]>;
-  abstract createLead( ctx: TenantContext, dto: CreateLeadDto, tx?: any): Promise<SalesLead>;
-  abstract updateLeadStatus( ctx: TenantContext,
+  abstract getLeads( ctx: TenantScope, status?: string): Promise<SalesLead[]>;
+  abstract createLead( ctx: TenantScope, dto: CreateLeadDto, user_id?: string, tx?: any): Promise<SalesLead>;
+  abstract updateLeadStatus( ctx: TenantScope,
     lead_id: string,
     dto: UpdateLeadStatusDto,
   ): Promise<SalesLead>;
-  abstract convertLead( ctx: TenantContext,
+  abstract convertLead( ctx: TenantScope,
     lead_id: string,
     actor_id: string,
+    tx?: any,
   ): Promise<SalesOpportunity>;
 
-  abstract getOpportunities( ctx: TenantContext, stage?: string): Promise<SalesOpportunity[]>;
-  abstract createOpportunity( ctx: TenantContext,
+  abstract getOpportunities( ctx: TenantScope, stage?: string): Promise<SalesOpportunity[]>;
+  abstract createOpportunity( ctx: TenantScope,
     dto: CreateOpportunityDto,
+    user_id?: string,
     tx?: any
   ): Promise<SalesOpportunity>;
-  abstract moveOpportunityStage( ctx: TenantContext,
+  abstract moveOpportunityStage( ctx: TenantScope,
     opportunityId: string,
     dto: MoveOpportunityStageDto,
+    tx?: any,
   ): Promise<SalesOpportunity>;
-  abstract closeOpportunity( ctx: TenantContext,
+  abstract closeOpportunity( ctx: TenantScope,
     opportunityId: string,
     dto: CloseOpportunityDto,
+    tx?: any,
   ): Promise<SalesOpportunity | SalesOrder>;
 
-  abstract getQuotes( ctx: TenantContext, dealId?: string): Promise<SalesQuote[]>;
-  abstract createQuote( ctx: TenantContext,
+  abstract getQuotes( ctx: TenantScope, dealId?: string): Promise<SalesQuote[]>;
+  abstract createQuote( ctx: TenantScope,
     dto: CreateQuoteDto,
+    user_id?: string,
   ): Promise<SalesQuote>;
-  abstract submitQuote( ctx: TenantContext, quoteId: string): Promise<SalesQuote>;
-  abstract decideQuote( ctx: TenantContext,
+  abstract submitQuote( ctx: TenantScope, quoteId: string, tx?: any): Promise<SalesQuote>;
+  abstract decideQuote( ctx: TenantScope,
     quoteId: string,
     dto: QuoteDecisionDto,
+    tx?: any,
   ): Promise<SalesQuote>;
 
-  abstract getTimeline( ctx: TenantContext): Promise<SalesTimelineEvent[]>;
-  abstract createTimelineEvent( ctx: TenantContext,
+  abstract getTimeline( ctx: TenantScope): Promise<SalesTimelineEvent[]>;
+  abstract createTimelineEvent( ctx: TenantScope,
     dto: CreateTimelineEventDto,
+    user_id?: string,
   ): Promise<SalesTimelineEvent>;
 
-  abstract getTasks( ctx: TenantContext): Promise<SalesTask[]>;
-  abstract createTask( ctx: TenantContext, dto: CreateTaskDto): Promise<SalesTask>;
-  abstract completeTask( ctx: TenantContext, taskId: string): Promise<SalesTask>;
+  abstract getTasks( ctx: TenantScope): Promise<SalesTask[]>;
+  abstract createTask( ctx: TenantScope, dto: CreateTaskDto, user_id?: string): Promise<SalesTask>;
+  abstract completeTask( ctx: TenantScope, taskId: string): Promise<SalesTask>;
 
-  abstract getDeals( ctx: TenantContext, status?: string): Promise<any[]>;
-  abstract createDeal( ctx: TenantContext, dto: any, tx?: any): Promise<any>;
+  abstract getDeals( ctx: TenantScope, status?: string): Promise<any[]>;
+  abstract createDeal( ctx: TenantScope, dto: any, tx?: any): Promise<any>;
 
-  abstract getOrders( ctx: TenantContext): Promise<SalesOrder[]>;
+  abstract getOrders( ctx: TenantScope): Promise<SalesOrder[]>;
 
-  abstract getAlerts( ctx: TenantContext): Promise<SalesAlert[]>;
-  abstract runSlaSweep( ctx: TenantContext,
+  abstract getAlerts( ctx: TenantScope): Promise<SalesAlert[]>;
+  abstract runSlaSweep( ctx: TenantScope,
     actor_id: string,
   ): Promise<SalesAlert[]>;
 
-  abstract getAuditEvents( ctx: TenantContext): Promise<SalesAuditEvent[]>;
-  abstract recordConsolidatedSale(ctx: TenantContext, data: any): Promise<void>;
-  abstract getOverview(ctx: TenantContext): Promise<any>;
+  abstract getAuditEvents( ctx: TenantScope): Promise<SalesAuditEvent[]>;
+  abstract recordConsolidatedSale(ctx: TenantScope, data: any): Promise<void>;
+  abstract getOverview(ctx: TenantScope): Promise<any>;
 }

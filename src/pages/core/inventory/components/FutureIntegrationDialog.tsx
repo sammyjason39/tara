@@ -56,7 +56,7 @@ export function FutureIntegrationDialog({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 p-3 rounded-xl bg-warning border border-amber-500/20 text-warning text-[10px] font-black uppercase tracking-widest">
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-warning border border-warning/20 text-warning text-[10px] font-black uppercase tracking-widest">
             <AlertCircle className="h-3 w-3" /> Targeted Release: Q3 2026
           </div>
         </div>

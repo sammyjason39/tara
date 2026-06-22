@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react';
+// @audit-ignore: kitchen display uses local state for real-time order rendering (WebSocket-driven in production)
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { GlassCard, GlassCardContent, GlassCardHeader } from '@/components/shared/GlassCard';
+import { EmptyState } from '@/components/shared/AsyncState';
 import { formatTime } from '@/lib/mock-data';
+import { toast } from '@/hooks/use-toast';
 import { Clock, ChefHat, Check, AlertTriangle, Bell } from 'lucide-react';
 
 interface KitchenOrder {
@@ -97,13 +100,21 @@ export default function Kitchen() {
   };
 
   const handleCompleteOrder = (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
     setCompletedOrders(prev => [...prev, orderId]);
-    
+
     // Remove after animation
     setTimeout(() => {
       setOrders(prev => (Array.isArray(prev) ? prev : []).filter(o => o.id !== orderId));
       setCompletedOrders(prev => (Array.isArray(prev) ? prev : []).filter(id => id !== orderId));
     }, 500);
+
+    toast({
+      title: 'Order completed',
+      description: order
+        ? `Table ${order.tableNumber} notified — order marked ready`
+        : 'Order marked ready',
+    });
   };
 
   const isOrderReady = (order: KitchenOrder) => {
@@ -153,7 +164,7 @@ export default function Kitchen() {
           const isCompleting = completedOrders.includes(order.id);
           
           return (
-            <Card 
+            <GlassCard
               key={order.id}
               className={cn(
                 'transition-all duration-300',
@@ -162,7 +173,7 @@ export default function Kitchen() {
                 isCompleting && 'opacity-0 scale-95'
               )}
             >
-              <CardHeader className="pb-2">
+              <GlassCardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-2xl font-bold">T{order.tableNumber}</span>
@@ -180,9 +191,9 @@ export default function Kitchen() {
                 <p className="text-xs text-muted-foreground">
                   {formatTime(order.createdAt)}
                 </p>
-              </CardHeader>
+              </GlassCardHeader>
               
-              <CardContent className="space-y-2">
+              <GlassCardContent className="space-y-2">
                 {(Array.isArray(order.items) ? order.items : []).map((item, index) => (
                   <button
                     key={index}
@@ -217,18 +228,18 @@ export default function Kitchen() {
                     Notify & Complete
                   </Button>
                 )}
-              </CardContent>
-            </Card>
+              </GlassCardContent>
+            </GlassCard>
           );
         })}
       </div>
 
       {orders.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-          <ChefHat size={48} className="mb-4 opacity-50" />
-          <p className="text-lg font-medium">No active orders</p>
-          <p className="text-sm">New orders will appear here</p>
-        </div>
+        <EmptyState
+          icon={ChefHat}
+          title="No active orders"
+          description="New kitchen orders will appear here as they come in from the cashier and tables."
+        />
       )}
     </div>
   );

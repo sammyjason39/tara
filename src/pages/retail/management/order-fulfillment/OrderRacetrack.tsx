@@ -190,7 +190,7 @@ export const OrderRacetrack: React.FC<OrderRacetrackProps> = ({
               <TabsTrigger
                 key={tab.key}
                 value={tab.key}
-                className="group relative bg-transparent h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-slate-900 data-[state=active]:bg-transparent px-0 font-black italic uppercase tracking-widest text-[10px] flex items-center gap-1.5"
+                className="group relative bg-transparent h-12 rounded-none border-b-2 border-transparent data-[state=active]:border-border data-[state=active]:bg-transparent px-0 font-black italic uppercase tracking-widest text-[10px] flex items-center gap-1.5"
               >
                 {tab.label}
                 {tabCount[tab.key] > 0 && (
@@ -212,7 +212,7 @@ export const OrderRacetrack: React.FC<OrderRacetrackProps> = ({
           <div className="relative w-64 flex-shrink-0 ml-4">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              className="pl-12 h-11 bg-white border-slate-200 rounded-xl text-xs font-bold italic placeholder:text-muted-foreground/60"
+              className="pl-12 h-11 bg-white border-border rounded-xl text-xs font-bold italic placeholder:text-muted-foreground/60"
               placeholder="Search Order, Customer, or AWB..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -387,7 +387,7 @@ export const OrderRacetrack: React.FC<OrderRacetrackProps> = ({
                               >
                                 {/* Carrier selector from config */}
                                 <select
-                                  className="h-8 text-xs border border-slate-200 rounded-md bg-white font-bold italic px-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-slate-900"
+                                  className="h-8 text-xs border border-border rounded-md bg-white font-bold italic px-2 cursor-pointer focus:outline-none focus:ring-1 focus:ring-slate-900"
                                   value={tempInput.carrier}
                                   onChange={(e) =>
                                     setTempAwbInputs((prev) => ({
@@ -407,7 +407,7 @@ export const OrderRacetrack: React.FC<OrderRacetrackProps> = ({
                                 </select>
 
                                 <Input
-                                  className="h-8 w-32 text-xs font-bold italic px-3 py-0 border-slate-200 focus-visible:ring-slate-900"
+                                  className="h-8 w-32 text-xs font-bold italic px-3 py-0 border-border focus-visible:ring-slate-900"
                                   placeholder="AWB / Manifest #"
                                   value={tempInput.awb}
                                   onChange={(e) =>

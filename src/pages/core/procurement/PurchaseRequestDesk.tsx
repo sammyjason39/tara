@@ -27,6 +27,7 @@ import { ApprovalStatusBadge } from "@/core/tools/ApprovalStatusBadge";
 import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { procurementService } from "@/core/services/procurement/procurementService";
+import { formatCurrency } from "@/lib/format";
 import type {
   DraftPurchaseOrder,
   Requisition,
@@ -34,6 +35,15 @@ import type {
   SupplierBranch,
 } from "@/core/types/procurement/procurement";
 import { ClipboardList, FileText, Info, Building2, MapPin, Tag, Wallet, ShieldCheck, ArrowUpRight, Plus, ShoppingCart, User } from "lucide-react";
+import { requisitionSchema, draftPurchaseOrderSchema, validatePoTransition } from "@/modules/procurement/schemas";
+import {
+  useCreateRequisition,
+  useBuildDraftPo,
+  useApproveRequesterHod,
+  useApproveDraftPo,
+  useSetFinalApproval,
+  useRunRiskScan,
+} from "@/modules/procurement/hooks";
 
 export default function PurchaseRequestDesk({ noShell = false }: { noShell?: boolean }) {
   const session = useSession();
@@ -66,6 +76,16 @@ export default function PurchaseRequestDesk({ noShell = false }: { noShell?: boo
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [categoryList, setCategoryList] = useState<any[]>([]);
+  const [reqFieldErrors, setReqFieldErrors] = useState<Record<string, string>>({});
+  const [draftFieldErrors, setDraftFieldErrors] = useState<Record<string, string>>({});
+
+  // TanStack Query mutations with cache invalidation
+  const createRequisitionMutation = useCreateRequisition();
+  const buildDraftPoMutation = useBuildDraftPo();
+  const approveRequesterHodMutation = useApproveRequesterHod();
+  const approveDraftPoMutation = useApproveDraftPo();
+  const setFinalApprovalMutation = useSetFinalApproval();
+  const runRiskScanMutation = useRunRiskScan();
 
   const clearStatus = () => {
     setStatusMessage(null);
@@ -113,22 +133,34 @@ export default function PurchaseRequestDesk({ noShell = false }: { noShell?: boo
   );
 
   const createRequisition = async () => {
-    try {
-      await procurementService.createRequisition(session.tenant_id, session, {
-        title,
-        description,
-        category,
-        branchCode,
-        budgetClass,
-        amount: Number(amount || "0"),
-        contractRequired: contractRequired === "YES",
+    setReqFieldErrors({});
+    const result = requisitionSchema.safeParse({
+      title,
+      description,
+      category,
+      branchCode,
+      budgetClass,
+      amount: Number(amount || "0"),
+      contractRequired: contractRequired === "YES",
+    });
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        const field = issue.path[0] as string;
+        if (!errors[field]) errors[field] = issue.message;
       });
+      setReqFieldErrors(errors);
+      return;
+    }
+    try {
+      await createRequisitionMutation.mutateAsync(result.data);
       setStatusMessage(`Requisition "${title}" created and routed to HOD.`);
       setRequestDialogOpen(false);
       setTitle("");
       setDescription("");
       setCategory("Machinery");
       setAmount("0");
+      setReqFieldErrors({});
       refresh();
     } catch (err) {
       setErrorMessage(
@@ -139,11 +171,7 @@ export default function PurchaseRequestDesk({ noShell = false }: { noShell?: boo
 
   const approveRequesterHod = async (requisitionId: string) => {
     try {
-      await procurementService.approveRequesterHod(
-        session.tenant_id,
-        session,
-        requisitionId,
-      );
+      await approveRequesterHodMutation.mutateAsync(requisitionId);
       setStatusMessage("Requisition approved by Department HOD.");
       refresh();
     } catch (err) {
@@ -152,26 +180,33 @@ export default function PurchaseRequestDesk({ noShell = false }: { noShell?: boo
   };
 
   const buildDraftPo = async () => {
-    try {
-      await procurementService.buildDraftPurchaseOrder(
-        session.tenant_id,
-        session,
+    setDraftFieldErrors({});
+    const result = draftPurchaseOrderSchema.safeParse({
+      requisitionId: selectedRequisitionId,
+      supplierId,
+      supplierBranchId,
+      contractType: "SPOT",
+      lineItems: [
         {
-          requisitionId: selectedRequisitionId,
-          supplierId,
-          supplierBranchId,
-          contractType: "SPOT",
-          lineItems: [
-            {
-              productSku: lineSku || "GEN-ITEM",
-              description: lineDescription || "Procurement line item",
-              quantity: Number(lineQuantity || "1"),
-              uom: "EA",
-              unitPrice: Number(linePrice || "0"),
-            },
-          ],
+          productSku: lineSku || "GEN-ITEM",
+          description: lineDescription || "Procurement line item",
+          quantity: Number(lineQuantity || "1"),
+          uom: "EA",
+          unitPrice: Number(linePrice || "0"),
         },
-      );
+      ],
+    });
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        const path = issue.path.join(".");
+        if (!errors[path]) errors[path] = issue.message;
+      });
+      setDraftFieldErrors(errors);
+      return;
+    }
+    try {
+      await buildDraftPoMutation.mutateAsync(result.data);
       setStatusMessage("Draft Purchase Order built successfully.");
       setDraftDialogOpen(false);
       setSelectedRequisitionId("");
@@ -181,6 +216,7 @@ export default function PurchaseRequestDesk({ noShell = false }: { noShell?: boo
       setLineDescription("");
       setLineQuantity("1");
       setLinePrice("0");
+      setDraftFieldErrors({});
       refresh();
     } catch (err) {
       setErrorMessage(
@@ -191,11 +227,7 @@ export default function PurchaseRequestDesk({ noShell = false }: { noShell?: boo
 
   const approveDraft = async (draftId: string) => {
     try {
-      await procurementService.approveDraftByProcurementHod(
-        session.tenant_id,
-        session,
-        draftId,
-      );
+      await approveDraftPoMutation.mutateAsync(draftId);
       setStatusMessage("Draft PO approved at Procurement HOD gate.");
       refresh();
     } catch (err) {
@@ -208,12 +240,7 @@ export default function PurchaseRequestDesk({ noShell = false }: { noShell?: boo
     approver: "REQUESTER_HOD" | "PROCUREMENT_HOD" | "FINANCE_HOD",
   ) => {
     try {
-      await procurementService.setFinalApproval(
-        session.tenant_id,
-        session,
-        requisitionId,
-        approver,
-      );
+      await setFinalApprovalMutation.mutateAsync({ requisitionId, approver });
       setStatusMessage(`Final approval recorded for ${approver}.`);
       refresh();
     } catch (err) {
@@ -223,7 +250,7 @@ export default function PurchaseRequestDesk({ noShell = false }: { noShell?: boo
 
   const runRiskScan = async () => {
     try {
-      await procurementService.runRiskScan(session.tenant_id, session);
+      await runRiskScanMutation.mutateAsync();
       setStatusMessage(
         "Anti-fraud risk scan completed. No critical threats found.",
       );
@@ -311,7 +338,7 @@ export default function PurchaseRequestDesk({ noShell = false }: { noShell?: boo
                       {item.branchCode}
                     </td>
                     <td className="p-3 text-muted-foreground">
-                      {item.amount.toLocaleString()}
+                      {formatCurrency(item.amount, "IDR", "id-ID")}
                     </td>
                     <td className="p-3">
                       <ApprovalStatusBadge status={item.status} />
@@ -432,7 +459,7 @@ export default function PurchaseRequestDesk({ noShell = false }: { noShell?: boo
                       {draft.supplierId}
                     </td>
                     <td className="p-3 text-muted-foreground">
-                      {draft.quotedTotal.toLocaleString()}
+                      {formatCurrency(draft.quotedTotal, "IDR", "id-ID")}
                     </td>
                     <td className="p-3">
                       <ApprovalStatusBadge status={draft.status} />
@@ -521,12 +548,14 @@ export default function PurchaseRequestDesk({ noShell = false }: { noShell?: boo
                     onChange={(e) => setTitle(e.target.value)}
                     className="text-lg font-medium"
                   />
+                  {reqFieldErrors.title && <p className="text-xs text-destructive mt-1">{reqFieldErrors.title}</p>}
                   <Textarea
                     placeholder="Detailed justification and specifications..."
                     className="mt-3 min-h-[100px] resize-none"
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                   />
+                  {reqFieldErrors.description && <p className="text-xs text-destructive mt-1">{reqFieldErrors.description}</p>}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t">
@@ -569,6 +598,7 @@ export default function PurchaseRequestDesk({ noShell = false }: { noShell?: boo
                       <span className="absolute left-3 top-2.5 text-xs font-bold text-muted-foreground">IDR</span>
                       <Input type="number" className="pl-12" value={amount} onChange={e => setAmount(e.target.value)} />
                     </div>
+                    {reqFieldErrors.amount && <p className="text-xs text-destructive mt-1">{reqFieldErrors.amount}</p>}
                   </div>
                 </div>
 
@@ -721,7 +751,7 @@ export default function PurchaseRequestDesk({ noShell = false }: { noShell?: boo
                 <p className="text-sm text-muted-foreground mt-1 tracking-widest font-mono uppercase">REQ ID: {selectedRequisition?.id}</p>
               </div>
               <Badge variant="outline" className="px-3 py-1 font-bold border-primary/20 text-primary">
-                {selectedRequisition?.amount.toLocaleString()} IDR
+                {formatCurrency(selectedRequisition?.amount, "IDR", "id-ID")}
               </Badge>
             </div>
           </DialogHeader>

@@ -13,10 +13,19 @@ import {
   PackagePlus, 
   CheckSquare, 
   Square,
-  Barcode
+  Barcode,
+  Zap,
+  RefreshCw
 } from "lucide-react";
 import { ItemCreationTab } from "./ItemCreationTab";
 import { useSession } from "@/core/security/session";
+import { retailService } from "@/core/services/retail/retailService";
+import { useToast } from "@/hooks/use-toast";
+import {
+  ANOMALY_CATEGORY_NAME,
+  buildQuickRegisterPayload,
+  resolveQuickRegisterResponse,
+} from "@/lib/quick-register";
 
 interface UnresolvedBarcodesModalProps {
   isOpen: boolean;
@@ -36,8 +45,18 @@ export const UnresolvedBarcodesModal: React.FC<UnresolvedBarcodesModalProps> = (
   categoryOptions,
 }) => {
   const session = useSession();
+  const { toast } = useToast();
   const [selected, setSelected] = useState<string[]>([]);
   const [showItemCreation, setShowItemCreation] = useState(false);
+  const [isQuickRegistering, setIsQuickRegistering] = useState(false);
+
+  // Safety net: ensure page is always interactive when the modal fully closes
+  // or when transitioning between dialog views. This guards against Radix
+  // pointer-events race conditions in nested/transitioning dialogs.
+  const handleClose = React.useCallback(() => {
+    document.body.style.pointerEvents = "auto";
+    onClose();
+  }, [onClose]);
 
   // If the modal opens, pre-select all barcodes by default for convenience
   React.useEffect(() => {
@@ -64,13 +83,63 @@ export const UnresolvedBarcodesModal: React.FC<UnresolvedBarcodesModalProps> = (
 
   const handleFlagSelected = () => {
     if (selected.length === 0) return;
+    
     onFlagAnomalies(selected);
     // Remove flagged from selection
     setSelected([]);
-    
-    // If no more unresolved, close
-    if (selected.length === unresolvedBarcodes.length) {
-      onClose();
+  };
+
+  // Non-blocking path: create minimal stub items into the "Anomaly" category
+  // without forcing the operator to fill out the full product form. Items are
+  // created with status "incomplete" server-side, flagged as anomalies, and
+  // can be completed later with full details.
+  const handleQuickRegisterIncomplete = async () => {
+    if (selected.length === 0 || !session?.tenant_id) return;
+
+    setIsQuickRegistering(true);
+    try {
+      const payload = buildQuickRegisterPayload(selected);
+
+      const res = await retailService.batchCreateItemsJson(
+        session.tenant_id,
+        session,
+        payload,
+      );
+
+      if (res.success) {
+        // Guarantee each resolved item carries its barcode so the parent can
+        // reconcile against the scanned list regardless of backend shape.
+        const created = (Array.isArray(res.data) ? res.data : []) as Record<string, unknown>[];
+        const resolved = resolveQuickRegisterResponse(selected, created);
+
+        toast({
+          title: "Items Registered as Anomalies",
+          description: `${selected.length} item(s) created in the "${ANOMALY_CATEGORY_NAME}" category. These items are flagged for later completion.`,
+        });
+
+        onItemsRegistered(resolved);
+
+        if (selected.length === unresolvedBarcodes.length) {
+          handleClose();
+        } else {
+          setSelected([]);
+        }
+      } else {
+        toast({
+          title: "Registration Failed",
+          description: "Could not register items. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      console.error("Quick register failed", err);
+      toast({
+        title: "Registration Failed",
+        description: "An error occurred while registering items.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsQuickRegistering(false);
     }
   };
 
@@ -82,7 +151,12 @@ export const UnresolvedBarcodesModal: React.FC<UnresolvedBarcodesModalProps> = (
     }));
 
     return (
-      <Dialog open={true} onOpenChange={(open) => !open && setShowItemCreation(false)}>
+      <Dialog open={true} onOpenChange={(open) => {
+        if (!open) {
+          document.body.style.pointerEvents = "auto";
+          setShowItemCreation(false);
+        }
+      }}>
         <DialogContent className="max-w-[95vw] h-[90vh] rounded-[2rem] border-none shadow-2xl bg-muted dark:bg-muted p-0 overflow-y-auto">
           <div className="p-8">
             <ItemCreationTab 
@@ -93,9 +167,10 @@ export const UnresolvedBarcodesModal: React.FC<UnresolvedBarcodesModalProps> = (
               onSuccess={(createdItems) => {
                 // When items are registered successfully, we need to notify the parent
                 onItemsRegistered(createdItems);
+                document.body.style.pointerEvents = "auto";
                 setShowItemCreation(false);
                 if (selected.length === unresolvedBarcodes.length) {
-                  onClose();
+                  handleClose();
                 } else {
                   setSelected([]);
                 }
@@ -109,7 +184,9 @@ export const UnresolvedBarcodesModal: React.FC<UnresolvedBarcodesModalProps> = (
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) handleClose();
+    }}>
       <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden border-none rounded-[2rem] shadow-2xl">
         <div className="relative h-32 bg-muted flex items-center justify-center overflow-hidden">
           <div className="absolute inset-0 opacity-20">
@@ -133,8 +210,8 @@ export const UnresolvedBarcodesModal: React.FC<UnresolvedBarcodesModalProps> = (
             </p>
           </div>
 
-          <div className="border border-slate-200 rounded-2xl overflow-hidden">
-            <div className="bg-muted border-b border-slate-200 p-4 flex items-center gap-4">
+          <div className="border border-border rounded-2xl overflow-hidden">
+            <div className="bg-muted border-b border-border p-4 flex items-center gap-4">
               <button onClick={toggleSelectAll} className="text-muted-foreground hover:text-muted-foreground transition-colors">
                 {selected.length === unresolvedBarcodes.length ? (
                   <CheckSquare className="w-5 h-5" />
@@ -157,7 +234,7 @@ export const UnresolvedBarcodesModal: React.FC<UnresolvedBarcodesModalProps> = (
                     checked={selected.includes(barcode)} 
                     onCheckedChange={() => toggleSelect(barcode)} 
                   />
-                  <div className="font-mono font-bold text-muted-foreground bg-white border border-slate-200 px-3 py-1 rounded-lg">
+                  <div className="font-mono font-bold text-muted-foreground bg-white border border-border px-3 py-1 rounded-lg">
                     {barcode}
                   </div>
                 </div>
@@ -170,22 +247,47 @@ export const UnresolvedBarcodesModal: React.FC<UnresolvedBarcodesModalProps> = (
             </div>
           </div>
 
-          <div className="flex gap-4 pt-4">
-            <Button
-              variant="outline"
-              className="flex-1 h-14 rounded-xl border-amber-200 text-warning bg-warning hover:bg-warning hover:text-warning font-black italic uppercase tracking-widest text-xs"
-              disabled={selected.length === 0}
-              onClick={handleFlagSelected}
-            >
-              <AlertTriangle className="w-4 h-4 mr-2" /> Flag as Anomalies
-            </Button>
-            <Button
-              className="flex-1 h-14 rounded-xl bg-primary hover:bg-primary text-white font-black italic uppercase tracking-widest text-xs shadow-xl shadow-indigo-200"
-              disabled={selected.length === 0}
-              onClick={() => setShowItemCreation(true)}
-            >
-              <PackagePlus className="w-4 h-4 mr-2" /> Register Selected Items
-            </Button>
+          <div className="space-y-3 pt-4">
+            <p className="text-[11px] text-muted-foreground font-medium italic">
+              Tip: Use <span className="font-black text-primary not-italic">Quick Register</span> to create
+              stub items instantly (no details required) so the audit isn't blocked. They land in the
+              "{ANOMALY_CATEGORY_NAME}" category and can be completed later.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <Button
+                variant="outline"
+                className="flex-1 min-w-[180px] h-14 rounded-xl border-warning text-warning bg-warning hover:bg-warning hover:text-warning font-black italic uppercase tracking-widest text-xs"
+                disabled={selected.length === 0 || isQuickRegistering}
+                onClick={handleFlagSelected}
+              >
+                <AlertTriangle className="w-4 h-4 mr-2" /> Flag as Anomalies
+              </Button>
+              <Button
+                className="flex-1 min-w-[180px] h-14 rounded-xl bg-success hover:bg-success/90 text-white font-black italic uppercase tracking-widest text-xs shadow-xl relative"
+                disabled={selected.length === 0 || isQuickRegistering}
+                onClick={handleQuickRegisterIncomplete}
+              >
+                <span className="absolute top-2 right-2">
+                  <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-warning text-black">
+                    Anomaly
+                  </span>
+                </span>
+                {isQuickRegistering ? (
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Zap className="w-4 h-4 mr-2" />
+                )}
+                Quick Register (Anomaly)
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1 min-w-[180px] h-14 rounded-xl border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 font-black italic uppercase tracking-widest text-xs"
+                disabled={selected.length === 0 || isQuickRegistering}
+                onClick={() => setShowItemCreation(true)}
+              >
+                <PackagePlus className="w-4 h-4 mr-2" /> Register with Details
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>

@@ -125,7 +125,7 @@ export const OperationalLauncherOverlay: React.FC<{
         {(Array.isArray(APPS) ? APPS : []).map((app) => (
           <Card
             key={app.id}
-            className="group hover:scale-105 active:scale-95 transition-all cursor-pointer bg-secondary border-slate-800 hover:border-primary hover:shadow-[0_0_40px_rgba(59,130,246,0.2)] overflow-hidden h-40 flex items-center"
+            className="group hover:scale-105 active:scale-95 transition-all cursor-pointer bg-secondary border-border hover:border-primary hover:shadow-[0_0_40px_rgba(59,130,246,0.2)] overflow-hidden h-40 flex items-center"
             onClick={() => {
               navigate(app.route);
               onClose();

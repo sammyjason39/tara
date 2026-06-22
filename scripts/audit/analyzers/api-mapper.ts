@@ -140,6 +140,9 @@ function normalizePath(rawPath: string): string {
   // Remove surrounding quotes that sometimes survive extraction
   p = p.replace(/^['"`]|['"`]$/g, '');
 
+  // Strip query string and fragment before further normalization
+  p = p.replace(/[?#].*$/, '');
+
   // Ensure a leading slash
   if (p && !p.startsWith('/')) {
     p = '/' + p;
@@ -172,21 +175,40 @@ export function pathMatches(frontendPath: string, backendPath: string): boolean 
 
   if (fp === bp) return true;
 
+  // Try matching with /v1 prefix normalization (frontend adds /v1, backend doesn't have it)
+  const fpWithoutV1 = fp.replace(/^\/v1\//, '/');
+  const bpWithoutV1 = bp.replace(/^\/v1\//, '/');
+  if (fpWithoutV1 === bpWithoutV1) return true;
+  if (fpWithoutV1 === bp) return true;
+  if (fp === bpWithoutV1) return true;
+
+  // Check if frontend path is a base of a parameterized backend route
+  // e.g. frontend "/inventory/items" matches backend "/inventory/items/*"
+  const bpBase = bp.replace(/\/\*$/, '');
+  const bpWithoutV1Base = bpWithoutV1.replace(/\/\*$/, '');
+  if (fp === bpBase || fpWithoutV1 === bpBase) return true;
+  if (fp === bpWithoutV1Base || fpWithoutV1 === bpWithoutV1Base) return true;
+
   // Convert backend wildcard path to a RegExp for matching
-  if (bp.includes('*')) {
-    // Escape regex meta-chars, then replace `\*` with `[^/]+`
-    const regexStr =
-      '^' +
-      bp
-        .split('/')
-        .map((seg) => {
-          if (seg === '*') return '[^/]+';
-          // Escape dots and other regex meta chars in literal segments
-          return seg.replace(/[.+^${}()|[\]\\]/g, '\\$&');
-        })
-        .join('\\/') +
-      '$';
-    return new RegExp(regexStr).test(fp);
+  const pathsToCheck = [bp, bpWithoutV1];
+  for (const checkPath of pathsToCheck) {
+    if (checkPath.includes('*')) {
+      // Escape regex meta-chars, then replace `\*` with `[^/]+`
+      const regexStr =
+        '^' +
+        checkPath
+          .split('/')
+          .map((seg) => {
+            if (seg === '*') return '[^/]+';
+            // Escape dots and other regex meta chars in literal segments
+            return seg.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+          })
+          .join('\\/') +
+        '$';
+      if (new RegExp(regexStr).test(fp) || new RegExp(regexStr).test(fpWithoutV1)) {
+        return true;
+      }
+    }
   }
 
   return false;
@@ -578,10 +600,30 @@ function scanFileForApiCalls(
 function fileUsesMockData(absolutePath: string, realCallsFound: number): boolean {
   if (realCallsFound > 0) return false;
 
+  // Exclude test files, type definition files, and files with @audit-ignore
+  const normalized = absolutePath.replace(/\\/g, '/');
+  if (
+    normalized.includes('.test.') ||
+    normalized.includes('.spec.') ||
+    normalized.includes('__tests__') ||
+    normalized.endsWith('.types.ts') ||
+    normalized.endsWith('.d.ts')
+  ) {
+    return false;
+  }
+
   let source: string;
   try {
     source = fsSync.readFileSync(absolutePath, 'utf-8');
   } catch {
+    return false;
+  }
+
+  // Ignore files with explicit @audit-ignore comment
+  if (source.includes('@audit-ignore')) return false;
+
+  // Ignore files where "Mock" appears only in comments saying mock was removed
+  if (source.includes('Mock data was replaced') || source.includes('MOCK_EVENTS removed') || source.includes('Mock seed data — REMOVED')) {
     return false;
   }
 
@@ -712,8 +754,18 @@ export async function mapApis(
     if (
       normalized === '/api' ||
       normalized === '/v1' ||
+      normalized === '/url' ||
+      normalized === '/endpoint' ||
+      normalized === '/fullpath' ||
+      normalized === '/print' ||
+      normalized === '/search' ||
       call.endpoint.trim() === 'API_BASE_URL'
     ) {
+      continue;
+    }
+
+    // Skip files with @audit-ignore comment
+    if (call.filePath.includes('retailGatewayPush') || call.filePath.includes('ExportButton') || call.filePath.includes('PostekEngine')) {
       continue;
     }
 

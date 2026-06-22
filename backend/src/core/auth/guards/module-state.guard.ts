@@ -8,9 +8,19 @@ import {
 import { PrismaService } from "../../../persistence/prisma.service";
 import { Reflector } from "@nestjs/core";
 import { UserRole } from "../../../shared/roles";
-export const REQUIRE_MODULE = "requireModule";
+import { MODULE_KEY } from "../../../shared/decorators/required-module.decorator";
+
+/**
+ * @deprecated Use `@RequiredModule(...)` from
+ * `shared/decorators/required-module.decorator` instead. This guard now reads
+ * the shared `MODULE_KEY` metadata so it stays aligned with the decorator that
+ * every controller actually declares (and with `ModuleGuard`). These legacy
+ * exports remain only for backward compatibility and write the same
+ * `MODULE_KEY` metadata the guard consumes.
+ */
+export const REQUIRE_MODULE = MODULE_KEY;
 export const RequireModule = (moduleKey: string) =>
-  SetMetadata(REQUIRE_MODULE, moduleKey);
+  SetMetadata(MODULE_KEY, moduleKey);
 
 @Injectable()
 export class ModuleStateGuard implements CanActivate {
@@ -21,7 +31,7 @@ export class ModuleStateGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredModule = this.reflector.getAllAndOverride<string>(
-      REQUIRE_MODULE,
+      MODULE_KEY,
       [context.getHandler(), context.getClass()],
     );
 

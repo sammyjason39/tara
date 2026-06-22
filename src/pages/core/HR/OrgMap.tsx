@@ -12,6 +12,7 @@ import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { orgService } from "@/core/services/hr/orgService";
 import { useBackgroundRefresh } from "@/core/runtime/events/useBackgroundRefresh";
+import { EmptyState } from "@/components/shared/AsyncState";
 
 type OrgMapDept = {
   id: string;
@@ -115,7 +116,17 @@ export default function OrgMap() {
               </tr>
             </thead>
             <tbody>
-              {(Array.isArray(filteredData) ? filteredData : []).map((dept) => (
+              {filteredData.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-0">
+                    <EmptyState
+                      title="No departments"
+                      description="No departments match the current search. Create a department to populate the org map."
+                    />
+                  </td>
+                </tr>
+              ) : (
+                (Array.isArray(filteredData) ? filteredData : []).map((dept) => (
                 <tr
                   key={dept.id}
                   className="cursor-pointer border-t hover:bg-muted/50"
@@ -138,7 +149,8 @@ export default function OrgMap() {
                     </Button>
                   </td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
         </DataTableShell>

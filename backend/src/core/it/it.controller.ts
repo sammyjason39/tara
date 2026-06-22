@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   Post,
@@ -17,9 +18,12 @@ import { TenantInterceptor } from "../../gateway/tenant.interceptor";
 import { ModuleStateGuard } from "../auth/guards/module-state.guard";
 import { BranchGatingGuard } from "../auth/guards/branch-gating.guard";
 import { TenantGuard } from "../../shared/guards/tenant.guard";
+import { RolesGuard } from "../../shared/guards/roles.guard";
+import { Roles } from "../../shared/decorators/roles.decorator";
+import { UserRole } from "../../shared/roles";
 import { RequiredModule } from "../../shared/decorators/required-module.decorator";
-import { isModuleActive } from "../../shared/helpers/module-active.helper";
 import { PrismaService } from "../../persistence/prisma.service";
+import { TenantScopeResolver } from "../../shared/scope/tenant-scope.resolver";
 import { CreateProvisioningRequestDto } from "./dto/create-provisioning-request.dto";
 import { CreateDeviceDto, CreateDeviceEventDto } from "./dto/device.dto";
 import { ITService } from "./it.service";
@@ -28,130 +32,49 @@ interface RequestWithTenant extends Request {
   tenantContext: TenantContext;
 }
 
+/**
+ * IT Controller (Phase 1)
+ *
+ * Identity and scope are derived exclusively from the verified
+ * `request.tenantContext` (populated by `TenantInterceptor` after the
+ * JWT-bearing tenant middleware), never from client-supplied headers
+ * (Requirements 2.10). Each mutating request resolves a validated
+ * `TenantScope` via the shared `TenantScopeResolver` and passes the verified
+ * `tenant_id` into the IT service. `RolesGuard` plus a `@Roles(...)` gate on
+ * every mutating handler enforces role-based access control; `ModuleStateGuard`
+ * rejects requests when the IT module is inactive for the tenant
+ * (Requirements 3.1, 3.2, 3.5, 3.6).
+ */
 @Controller('it')
 @UseInterceptors(TenantInterceptor)
-@UseGuards(ModuleStateGuard, BranchGatingGuard, TenantGuard)
+@UseGuards(ModuleStateGuard, BranchGatingGuard, TenantGuard, RolesGuard)
 @RequiredModule("it")
 export class ITController {
   constructor(
     private readonly itService: ITService,
     private readonly prisma: PrismaService,
+    private readonly scopeResolver: TenantScopeResolver,
   ) {}
 
   // ==================== Overview (Module-Aware) ====================
 
   /**
    * GET /it/overview
-   * IT workspace overview — enriched with retail device data when retail is active.
+   * IT workspace overview — assembled from persisted, tenant-scoped data and
+   * enriched with Retail POS/ecommerce contributions only when the Retail
+   * Module_Activation_State is active for the tenant (Requirements 6.8, 6.9,
+   * 6.10, 8.10, 8.11). All scoping and module-activation gating is performed in
+   * the service/repository against persisted data.
    */
   @Get("overview")
   async getOverview(@Req() request: RequestWithTenant) {
-    const { tenant_id, location_id } = request.tenantContext;
-
-    // Core IT metrics
-    const pendingProvisioningCount = await this.itService
-      .getProvisioningRequests(tenant_id)
-      .then((r) => r.filter((p: any) => p.status === "PENDING").length);
-    const systemHealth = await this.itService.getSystemHealth(tenant_id);
-
-    const coreIT = {
-      pendingProvisioningRequests: pendingProvisioningCount,
-      systemHealthNodes: systemHealth.length,
-      healthyNodes: systemHealth.filter(
-        (n: any) => n.status === "HEALTHY" || n.status === "healthy",
-      ).length,
-    };
-
-    // ================================================================
-    // MODULE CONTRIBUTIONS — Retail
-    // ================================================================
-    let retailContribution: Record<string, any> | null = null;
-
-    const retailIsActive = await isModuleActive(
-      this.prisma,
-      tenant_id,
-      "retail",
-    );
-    if (retailIsActive) {
-      // POS Device stats - Now queried from the unified Device model
-      const posDeviceWhere = location_id
-        ? { tenant_id, location_id, type: "POS_TERMINAL" }
-        : { tenant_id, type: "POS_TERMINAL" };
-
-      const [totalPosDevices, onlinePosDevices, offlinePosDevices] =
-        await Promise.all([
-          this.prisma.it_devices.count({ where: posDeviceWhere }),
-          this.prisma.it_devices.count({
-            where: { ...posDeviceWhere, status: "ONLINE" },
-          }),
-          this.prisma.it_devices.count({
-            where: { ...posDeviceWhere, status: "OFFLINE" },
-          }),
-        ]);
-
-      // Ecommerce channel connectors
-      const ecomChannels = await this.prisma.ecommerce_connectors.findMany({
-        where: { tenant_id: tenant_id },
-        select: {
-          id: true,
-          name: true,
-          platform: true,
-          status: true,
-          updated_at: true,
-        },
-        take: 10,
-      });
-
-      const activeChannels = ecomChannels.filter(
-        (c: { status: string }) =>
-          c.status === "ACTIVE" || c.status === "active",
-      ).length;
-
-      retailContribution = {
-        moduleId: "retail",
-        moduleName: "Retail Operations",
-        posDevices: {
-          total: totalPosDevices,
-          online: onlinePosDevices,
-          offline: offlinePosDevices,
-        },
-        storeDevices: {
-          posTerminals: totalPosDevices,
-          total: totalPosDevices,
-        },
-        ecommerceChannels: {
-          total: ecomChannels.length,
-          active: activeChannels,
-          list: ecomChannels
-            .slice(0, 5)
-            .map(
-              (c: {
-                name: string;
-                platform: string;
-                status: string;
-                updated_at: Date | null;
-              }) => ({
-                name: c.name,
-                type: c.platform,
-                status: c.status,
-                lastSynced: c.updated_at,
-              }),
-            ),
-        },
-      };
-    }
-
-    const overview = await this.itService.getOverview(tenant_id);
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const data = await this.itService.getOverview(scope);
 
     return {
       success: true,
-      tenant_id,
-      data: {
-        ...overview,
-        moduleContributions: {
-          retail: retailContribution,
-        },
-      },
+      tenant_id: scope.tenant_id,
+      data,
     };
   }
 
@@ -159,33 +82,52 @@ export class ITController {
 
   @Get("devices")
   async getDevices(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
-    const data = await this.itService.getDevices(tenant_id);
-    return { success: true, tenant_id, count: data.length, data };
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const data = await this.itService.getDevices(scope);
+    return { success: true, tenant_id: scope.tenant_id, count: data.length, data };
+  }
+
+  @Get("devices/:id")
+  async getDevice(
+    @Req() request: RequestWithTenant,
+    @Param("id") device_id: string,
+  ) {
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const data = await this.itService.getDevice(scope, device_id);
+    return { success: true, tenant_id: scope.tenant_id, data };
   }
 
   @Post("devices")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   async createDevice(
     @Req() request: RequestWithTenant,
     @Body() dto: CreateDeviceDto,
   ) {
-    const { tenant_id, user_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const user_id = request.tenantContext.user_id;
     return {
       success: true,
-      data: await this.itService.createDevice(tenant_id, dto, user_id),
+      data: await this.itService.createDevice(scope, dto, user_id),
     };
   }
 
   @Put("devices/:id")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   async updateDevice(
     @Req() request: RequestWithTenant,
     @Param("id") device_id: string,
     @Body() dto: Partial<CreateDeviceDto>,
   ) {
-    const { tenant_id, user_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const user_id = request.tenantContext.user_id;
     return {
       success: true,
-      data: await this.itService.updateDevice(tenant_id, device_id, dto, user_id),
+      data: await this.itService.updateDevice(
+        scope,
+        device_id,
+        dto,
+        user_id,
+      ),
     };
   }
 
@@ -193,20 +135,21 @@ export class ITController {
 
   @Get("device-events")
   async getDeviceEvents(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
-    const data = await this.itService.getDeviceEvents(tenant_id);
-    return { success: true, tenant_id, count: data.length, data };
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const data = await this.itService.getDeviceEvents(scope);
+    return { success: true, tenant_id: scope.tenant_id, count: data.length, data };
   }
 
   @Post("device-events")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.MEMBER)
   async createDeviceEvent(
     @Req() request: RequestWithTenant,
     @Body() dto: CreateDeviceEventDto,
   ) {
-    const { tenant_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
     return {
       success: true,
-      data: await this.itService.createDeviceEvent(tenant_id, dto),
+      data: await this.itService.createDeviceEvent(scope, dto),
     };
   }
 
@@ -214,23 +157,25 @@ export class ITController {
 
   @Get("provisioning")
   async getProvisioningRequests(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
-    const data = await this.itService.getProvisioningRequests(tenant_id);
-    return { success: true, tenant_id, count: data.length, data };
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const data = await this.itService.getProvisioningRequests(scope);
+    return { success: true, tenant_id: scope.tenant_id, count: data.length, data };
   }
 
   @Post("provisioning")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.MEMBER)
   async createProvisioningRequest(
     @Req() request: RequestWithTenant,
     @Body() dto: CreateProvisioningRequestDto,
   ) {
-    const { tenant_id, user_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const user_id = request.tenantContext.user_id;
     return {
       success: true,
-      tenant_id,
+      tenant_id: scope.tenant_id,
       message: "Provisioning request created",
       data: await this.itService.createProvisioningRequest(
-        tenant_id,
+        scope,
         dto,
         user_id,
       ),
@@ -238,38 +183,48 @@ export class ITController {
   }
 
   @Put("provisioning/:id/provision")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   async markProvisioned(
     @Req() request: RequestWithTenant,
     @Param("id") request_id: string,
-    @Body() body: { provisionedBy: string },
   ) {
-    const { tenant_id, user_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    // Actor identity is the verified caller from the tenant context, never a
+    // client-supplied `provisionedBy` value (Requirement 2.10). A mutating
+    // request without a verified user identity is rejected (Requirement 2.3).
+    const user_id = request.tenantContext.user_id;
+    if (!user_id) {
+      throw new ForbiddenException(
+        "A verified user identity is required to provision a request.",
+      );
+    }
     return {
       success: true,
-      tenant_id,
+      tenant_id: scope.tenant_id,
       message: "Provisioning request marked as provisioned",
       data: await this.itService.markProvisioned(
-        tenant_id,
+        scope,
         request_id,
-        body.provisionedBy || "system",
         user_id,
       ),
     };
   }
 
   @Put("provisioning/:id")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   async updateProvisioningRequest(
     @Req() request: RequestWithTenant,
     @Param("id") request_id: string,
     @Body() dto: Partial<CreateProvisioningRequestDto>,
   ) {
-    const { tenant_id, user_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const user_id = request.tenantContext.user_id;
     return {
       success: true,
-      tenant_id,
+      tenant_id: scope.tenant_id,
       message: "Provisioning request updated",
       data: await this.itService.updateProvisioningRequest(
-        tenant_id,
+        scope,
         request_id,
         dto,
         user_id,
@@ -278,32 +233,38 @@ export class ITController {
   }
 
   @Delete("provisioning/:id")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   async deleteProvisioningRequest(
     @Req() request: RequestWithTenant,
     @Param("id") request_id: string,
   ) {
-    const { tenant_id, user_id } = request.tenantContext;
-    await this.itService.deleteProvisioningRequest(tenant_id, request_id, user_id);
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const user_id = request.tenantContext.user_id;
+    await this.itService.deleteProvisioningRequest(
+      scope,
+      request_id,
+      user_id,
+    );
     return {
       success: true,
-      tenant_id,
+      tenant_id: scope.tenant_id,
       message: "Provisioning request deleted",
     };
   }
 
   @Get("system-health")
   async getSystemHealth(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
-    const data = await this.itService.getSystemHealth(tenant_id);
-    return { success: true, tenant_id, count: data.length, data };
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const data = await this.itService.getSystemHealth(scope);
+    return { success: true, tenant_id: scope.tenant_id, count: data.length, data };
   }
 
   // ==================== Monitoring ====================
 
   @Get("monitoring/stats")
   async getMonitoringStats(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
-    const data = await this.itService.getMonitoringStats(tenant_id);
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const data = await this.itService.getMonitoringStats(scope);
     return { success: true, data };
   }
 
@@ -312,8 +273,8 @@ export class ITController {
     @Req() request: RequestWithTenant,
     @Query("request_id") request_id?: string
   ) {
-    const { tenant_id } = request.tenantContext;
-    const data = await this.itService.getAuditLogs(tenant_id, request_id);
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const data = await this.itService.getAuditLogs(scope, request_id);
     return { success: true, count: data.length, data };
   }
 }

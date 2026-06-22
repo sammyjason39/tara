@@ -1,9 +1,22 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { CreateProvisioningRequestDto } from "./dto/create-provisioning-request.dto";
 import { IITRepository } from "./repositories/it.repository.interface";
 import { AuditService } from "../../shared/audit/audit.service";
 import { EventBusService } from "../../shared/events/event-bus.service";
 import { CreateDeviceDto, CreateDeviceEventDto } from "./dto/device.dto";
+import { TenantScope } from "../../shared/scope/tenant-scope";
+import { AtomicOperationService, AtomicContext } from "../shared/atomic";
+import { AsyncRejectionService } from "../shared/async";
+
+/**
+ * Statuses from which a provisioning request may transition to PROVISIONED.
+ * A new request is created PENDING (Requirement 8.4); legacy/auto-created
+ * records may carry the equivalent REQUESTED status. Comparison is
+ * case-insensitive against the entity's lowercased status. Any other status
+ * (notably an already-PROVISIONED request) is not a valid source state and the
+ * transition is rejected, leaving the status unchanged (Requirement 8.9).
+ */
+const PROVISIONABLE_STATES = new Set(["PENDING", "REQUESTED"]);
 
 @Injectable()
 export class ITService {
@@ -11,180 +24,374 @@ export class ITService {
     private readonly repository: IITRepository,
     private readonly auditService: AuditService,
     private readonly eventBus: EventBusService,
+    private readonly atomic: AtomicOperationService,
+    private readonly asyncRejection: AsyncRejectionService,
   ) {}
 
-  async getProvisioningRequests(tenant_id: string) {
-    return this.repository.getProvisioningRequests(tenant_id);
+  async getProvisioningRequests(scope: TenantScope) {
+    return this.repository.getProvisioningRequests(scope);
   }
 
   async createProvisioningRequest(
-    tenant_id: string,
+    scope: TenantScope,
     dto: CreateProvisioningRequestDto,
     user_id?: string,
   ) {
-    const request = await this.repository.createProvisioningRequest(
-      tenant_id,
-      dto,
-    );
-    if (user_id) {
-      await this.auditService.log({
-        tenant_id,
+    return this.atomic.run(async (ctx) => {
+      const request = await this.repository.createProvisioningRequest(
+        scope.tenant_id,
+        dto,
+        ctx.tx,
+      );
+      await this.recordPrivilegedAction(ctx, {
+        scope,
         user_id,
-        module: "it",
         action: "CREATE",
         entity_type: "PROVISIONING_REQUEST",
         entity_id: request.id,
+        event_type: "it.provisioning.created.v1",
         metadata: { ...dto },
+        after_state: { status: request.status },
       });
-    }
-    return request;
+      return request;
+    });
   }
 
+  /**
+   * Mark a PENDING provisioning request as PROVISIONED within a single
+   * Atomic_Operation (Requirements 8.5, 4.1, 4.4).
+   *
+   * The request is read by composite key inside the transaction so a request
+   * outside the caller's Tenant_Scope surfaces as a 404 (Requirement 8.8). The
+   * transition is validated before any write: a request whose current status is
+   * not a provisionable state (e.g. an already-PROVISIONED request) is rejected
+   * with a 400 that names the current and target state, and — because the throw
+   * happens inside the Atomic_Operation before the update — the status is left
+   * unchanged (Requirement 8.9). The actor is the verified `user_id` from the
+   * Tenant_Context, recorded on the request and in the Audit_Trail entry, which
+   * commits or rolls back together with the transition (Requirements 8.5, 4.4).
+   */
   async markProvisioned(
-    tenant_id: string,
+    scope: TenantScope,
     request_id: string,
-    provisionedBy: string,
-    user_id?: string,
+    user_id: string,
   ) {
-    const request = await this.repository.markProvisioned(
-      tenant_id,
-      request_id,
-      provisionedBy,
-    );
-    if (user_id) {
-      await this.auditService.log({
-        tenant_id,
+    return this.atomic.run(async ({ tx, audit, outbox }) => {
+      const current = await this.repository.getProvisioningRequest(
+        scope,
+        request_id,
+        tx,
+      );
+
+      const status = (current.status || "").toUpperCase();
+      if (!PROVISIONABLE_STATES.has(status)) {
+        throw new BadRequestException(
+          `Cannot provision provisioning request '${request_id}': ` +
+            `invalid transition from '${status}' to 'PROVISIONED'.`,
+        );
+      }
+
+      const updated = await this.repository.markProvisioned(
+        scope.tenant_id,
+        request_id,
+        user_id,
+        tx,
+      );
+
+      await audit({
+        tenant_id: scope.tenant_id,
         user_id,
         module: "it",
         action: "PROVISION",
         entity_type: "PROVISIONING_REQUEST",
         entity_id: request_id,
-        metadata: { provisionedBy },
+        metadata: {
+          provisionedBy: user_id,
+          tenant_scope: this.toTenantScopePayload(scope),
+        },
+        before_state: { status: current.status },
+        after_state: { status: "provisioned" },
       });
-    }
-    return request;
+
+      // Integration_Log event recorded inside the same Atomic_Operation, so the
+      // cross-module domain event commits before the transition reports success
+      // and rolls back with it on failure (Requirements 6.5, 6.6).
+      await outbox({
+        tenant_id: scope.tenant_id,
+        type: "it.provisioning.provisioned.v1",
+        payload: {
+          entity_type: "PROVISIONING_REQUEST",
+          entity_id: request_id,
+          action: "PROVISION",
+          actor_user_id: user_id,
+          tenant_scope: this.toTenantScopePayload(scope),
+        },
+        company_id: scope.company_id,
+      });
+
+      return updated;
+    });
   }
 
   async updateProvisioningRequest(
-    tenant_id: string,
+    scope: TenantScope,
     request_id: string,
     dto: Partial<CreateProvisioningRequestDto>,
     user_id?: string,
   ) {
-    const request = await this.repository.updateProvisioningRequest(
-      tenant_id,
-      request_id,
-      dto,
-    );
-    if (user_id) {
-      await this.auditService.log({
-        tenant_id,
+    return this.atomic.run(async (ctx) => {
+      const request = await this.repository.updateProvisioningRequest(
+        scope.tenant_id,
+        request_id,
+        dto,
+        ctx.tx,
+      );
+      await this.recordPrivilegedAction(ctx, {
+        scope,
         user_id,
-        module: "it",
         action: "UPDATE",
         entity_type: "PROVISIONING_REQUEST",
         entity_id: request_id,
+        event_type: "it.provisioning.updated.v1",
         metadata: { ...dto },
       });
-    }
-    return request;
+      return request;
+    });
   }
 
   async deleteProvisioningRequest(
-    tenant_id: string,
+    scope: TenantScope,
     request_id: string,
     user_id?: string,
   ) {
-    await this.repository.deleteProvisioningRequest(tenant_id, request_id);
-    if (user_id) {
-      await this.auditService.log({
-        tenant_id,
+    return this.atomic.run(async (ctx) => {
+      await this.repository.deleteProvisioningRequest(
+        scope.tenant_id,
+        request_id,
+        ctx.tx,
+      );
+      await this.recordPrivilegedAction(ctx, {
+        scope,
         user_id,
-        module: "it",
         action: "DELETE",
         entity_type: "PROVISIONING_REQUEST",
         entity_id: request_id,
+        event_type: "it.provisioning.deleted.v1",
       });
-    }
+    });
   }
 
   // Devices (NEW)
-  async getDevices(tenant_id: string) {
-    return this.repository.getDevices(tenant_id);
+  async getDevices(scope: TenantScope) {
+    return this.repository.getDevices(scope);
   }
 
-  async createDevice(tenant_id: string, dto: CreateDeviceDto, user_id?: string) {
-    const device = await this.repository.createDevice(tenant_id, dto);
-    if (user_id) {
-      await this.auditService.log({
-        tenant_id,
+  async createDevice(scope: TenantScope, dto: CreateDeviceDto, user_id?: string) {
+    return this.atomic.run(async (ctx) => {
+      const device = await this.repository.createDevice(
+        scope.tenant_id,
+        dto,
+        ctx.tx,
+      );
+      await this.recordPrivilegedAction(ctx, {
+        scope,
         user_id,
-        module: "it",
         action: "CREATE",
         entity_type: "DEVICE",
         entity_id: device.id,
+        event_type: "it.device.created.v1",
         metadata: { ...dto },
       });
-    }
-    return device;
+      return device;
+    });
   }
 
   async updateDevice(
-    tenant_id: string,
+    scope: TenantScope,
     device_id: string,
     dto: Partial<CreateDeviceDto>,
     user_id?: string,
   ) {
-    const device = await this.repository.updateDevice(tenant_id, device_id, dto);
-    if (user_id) {
-      await this.auditService.log({
-        tenant_id,
+    return this.atomic.run(async (ctx) => {
+      const device = await this.repository.updateDevice(
+        scope.tenant_id,
+        device_id,
+        dto,
+        ctx.tx,
+      );
+      await this.recordPrivilegedAction(ctx, {
+        scope,
         user_id,
-        module: "it",
         action: "UPDATE",
         entity_type: "DEVICE",
         entity_id: device_id,
+        event_type: "it.device.updated.v1",
         metadata: { ...dto },
       });
-    }
-    return device;
+      return device;
+    });
+  }
+
+  /**
+   * Composite-key read of a single device within the caller's Tenant_Scope.
+   * A device owned by another tenant surfaces as a 404 (Requirements 8.8, 1.4).
+   */
+  async getDevice(scope: TenantScope, device_id: string) {
+    return this.repository.getDevice(scope, device_id);
   }
 
   // Device Events (NEW)
-  async getDeviceEvents(tenant_id: string) {
-    return this.repository.getDeviceEvents(tenant_id);
+  async getDeviceEvents(scope: TenantScope) {
+    return this.repository.getDeviceEvents(scope);
   }
 
-  async createDeviceEvent(tenant_id: string, dto: CreateDeviceEventDto) {
-    const event = await this.repository.createDeviceEvent(tenant_id, dto);
+  async createDeviceEvent(scope: TenantScope, dto: CreateDeviceEventDto) {
+    // Reject an event referencing a device that does not exist within the
+    // resolved Tenant_Scope WITHOUT recording it (Requirement 8.13). The scoped
+    // composite-key read surfaces a foreign-scope device as a 404, so no event
+    // row is ever written for it.
+    await this.repository.getDevice(scope, dto.device_id);
 
-    // Publish to EventBus for Inventory/Retail to consume
-    await this.eventBus.publish({
-      event_type: "DEVICE_EVENT_CREATED",
-      tenant_id: event.tenant_id,
-      entity_id: event.id,
-      entity_type: "DEVICE_EVENT",
-      source_module: "it",
-      payload: event.payload,
-    });
+    // Record the event against the corresponding device within that device's
+    // Tenant_Scope (Requirement 8.12).
+    const event = await this.repository.createDeviceEvent(scope.tenant_id, dto);
+
+    // Publish to the EventBus for Inventory/Retail to consume. The publish is
+    // asynchronous work whose rejection handler is attached BEFORE it executes
+    // via the async-rejection helper (BUG-13), so a downstream delivery failure
+    // is captured and recorded in the Integration_Log and can never surface as
+    // an unhandled rejection or crash the process (Requirements 7.1, 7.2). The
+    // event has already been durably recorded, so ingestion succeeds regardless
+    // of downstream delivery.
+    void this.asyncRejection.fireAndForget(
+      {
+        module: "IT",
+        operation: "it.device-event.publish",
+        tenant_id: scope.tenant_id,
+        metadata: {
+          device_event_id: event.id,
+          device_id: event.device_id,
+          event_type: event.event_type,
+        },
+      },
+      () =>
+        this.eventBus.publish({
+          event_type: "DEVICE_EVENT_CREATED",
+          tenant_id: event.tenant_id,
+          entity_id: event.id,
+          entity_type: "DEVICE_EVENT",
+          source_module: "it",
+          payload: event.payload,
+        }),
+    );
 
     return event;
   }
 
   // Misc
-  async getSystemHealth(tenant_id: string) {
-    return this.repository.getSystemHealth(tenant_id);
+  async getSystemHealth(scope: TenantScope) {
+    return this.repository.getSystemHealth(scope);
   }
 
-  async getMonitoringStats(tenant_id: string) {
-    return this.repository.getProvisioningStats(tenant_id);
+  async getMonitoringStats(scope: TenantScope) {
+    return this.repository.getProvisioningStats(scope);
   }
 
-  async getAuditLogs(tenant_id: string, request_id?: string) {
-    return this.repository.getAuditLogs(tenant_id, request_id);
+  async getAuditLogs(scope: TenantScope, request_id?: string) {
+    return this.repository.getAuditLogs(scope, request_id);
   }
 
-  async getOverview(tenant_id: string) {
-    return this.repository.getOverview(tenant_id);
+  /**
+   * Assemble the IT workspace overview from persisted, tenant-scoped data only
+   * — no placeholder, mock, or hardcoded values (Requirements 6.10, 8.1).
+   *
+   * POS device and ecommerce-connector statistics are contributed under
+   * `moduleContributions.retail` ONLY when the Retail Module_Activation_State is
+   * active for the tenant (Requirements 6.8, 8.10); when Retail is inactive the
+   * overview is returned with `moduleContributions.retail = null` — successfully
+   * and without error (Requirements 6.9, 8.11). All contributed data is scoped
+   * to the caller's Tenant_Scope.
+   */
+  async getOverview(scope: TenantScope) {
+    const [overview, retailContribution] = await Promise.all([
+      this.repository.getOverview(scope),
+      this.repository.getRetailContributions(scope),
+    ]);
+
+    return {
+      ...overview,
+      moduleContributions: {
+        retail: retailContribution,
+      },
+    };
+  }
+
+  /**
+   * Project a {@link TenantScope} to a plain payload recorded in Audit_Trail
+   * entries and Integration_Log events so every privileged action captures the
+   * caller's Tenant_Scope (Requirement 6.7).
+   */
+  private toTenantScopePayload(scope: TenantScope): Record<string, string> {
+    const payload: Record<string, string> = { tenant_id: scope.tenant_id };
+    if (scope.company_id) payload.company_id = scope.company_id;
+    if (scope.location_id) payload.location_id = scope.location_id;
+    if (scope.branch_id) payload.branch_id = scope.branch_id;
+    return payload;
+  }
+
+  /**
+   * Record the Audit_Trail entry and the Integration_Log (outbox) event for a
+   * privileged IT create/update/delete action inside the current
+   * Atomic_Operation.
+   *
+   * The Audit_Trail entry captures the actor `user_id`, the action, the affected
+   * resource identifier, and the caller's Tenant_Scope (Requirement 6.7). The
+   * Integration_Log event records the cross-module domain event with the
+   * originating Tenant_Scope and — because it is written on the same transaction
+   * client — is committed before the operation reports success and rolls back
+   * with the write on failure (Requirements 6.5, 6.6).
+   */
+  private async recordPrivilegedAction(
+    ctx: Pick<AtomicContext, "audit" | "outbox">,
+    params: {
+      scope: TenantScope;
+      user_id?: string;
+      action: string;
+      entity_type: string;
+      entity_id: string;
+      event_type: string;
+      metadata?: Record<string, unknown>;
+      before_state?: Record<string, unknown>;
+      after_state?: Record<string, unknown>;
+    },
+  ): Promise<void> {
+    const tenant_scope = this.toTenantScopePayload(params.scope);
+
+    if (params.user_id) {
+      await ctx.audit({
+        tenant_id: params.scope.tenant_id,
+        user_id: params.user_id,
+        module: "it",
+        action: params.action,
+        entity_type: params.entity_type,
+        entity_id: params.entity_id,
+        metadata: { ...(params.metadata ?? {}), tenant_scope },
+        before_state: params.before_state,
+        after_state: params.after_state,
+      });
+    }
+
+    await ctx.outbox({
+      tenant_id: params.scope.tenant_id,
+      type: params.event_type,
+      payload: {
+        entity_type: params.entity_type,
+        entity_id: params.entity_id,
+        action: params.action,
+        actor_user_id: params.user_id ?? null,
+        tenant_scope,
+      },
+      company_id: params.scope.company_id,
+    });
   }
 }

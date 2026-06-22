@@ -37,7 +37,7 @@ export const RetailModeSwitchControl = ({ variant = "default" }: { variant?: "de
       "flex items-center p-1 rounded-xl transition-all",
       isTactical 
         ? "bg-secondary/40 border border-border backdrop-blur-xl shadow-2xl" 
-        : "bg-secondary/10 border border-slate-200 shadow-inner"
+        : "bg-secondary/10 border border-border shadow-inner"
     )}>
       <Button
         variant="ghost"

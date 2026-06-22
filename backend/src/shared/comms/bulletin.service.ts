@@ -86,6 +86,63 @@ export class BulletinService {
     return { data: enrichedData, total, page, limit };
   }
 
+  async getPostsPaginated(tenant_id: string, pagination: { page: number; pageSize: number }, filters: { category?: string; authorId?: string } = {}) {
+    const skip = (pagination.page - 1) * pagination.pageSize;
+
+    const where: any = {
+      tenant_id: tenant_id,
+      deleted_at: null,
+      status: 'published',
+    };
+
+    if (filters.category) where.category = filters.category;
+    if (filters.authorId) where.author_id = filters.authorId;
+
+    const [data, totalCount] = await Promise.all([
+      this.prisma.bulletin_posts.findMany({
+        where,
+        orderBy: [
+          { is_pinned: 'desc' },
+          { created_at: 'desc' },
+        ],
+        include: {
+          _count: {
+            select: {
+              bulletin_reactions: true,
+              bulletin_comments: true,
+              bulletin_reads: true
+            }
+          },
+          bulletin_reactions: {
+            select: { type: true, user_id: true }
+          }
+        },
+        skip,
+        take: pagination.pageSize,
+      }),
+      this.prisma.bulletin_posts.count({ where }),
+    ]);
+
+    const enrichedData = (data as any[]).map(post => {
+      const likes = post.bulletin_reactions.filter((r: any) => r.type === 'LIKE').length;
+      const dislikes = post.bulletin_reactions.filter((r: any) => r.type === 'DISLIKE').length;
+      return {
+        ...post,
+        likesCount: likes,
+        dislikesCount: dislikes,
+        commentsCount: post._count.bulletin_comments,
+      };
+    });
+
+    return {
+      data: enrichedData,
+      totalCount,
+      currentPage: pagination.page,
+      pageSize: pagination.pageSize,
+      totalPages: Math.ceil(totalCount / pagination.pageSize),
+    };
+  }
+
   async getPostById(tenant_id: string, id: string) {
     const post = await this.prisma.bulletin_posts.findFirst({
       where: { id, tenant_id: tenant_id, deleted_at: null },

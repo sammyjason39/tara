@@ -32,7 +32,7 @@ import {
   MarketingChannelPerformance,
   MarketingDashboard,
 } from "./marketing.repository.interface";
-import { TenantContext } from "../../../gateway/tenant-context.interface";
+import { TenantScope } from "../../../shared/scope/tenant-scope";
 
 type TenantMarketingStore = {
   campaigns: MarketingCampaign[];
@@ -257,7 +257,7 @@ export class MarketingMockRepository extends IMarketingRepository {
     return account;
   }
 
-  async getDashboard(ctx: TenantContext): Promise<MarketingDashboard> {
+  async getDashboard(ctx: TenantScope): Promise<MarketingDashboard> {
     const store = this.getStore(ctx.tenant_id);
     const now = this.now();
     const spendToDate = store.executions.reduce(
@@ -298,7 +298,7 @@ export class MarketingMockRepository extends IMarketingRepository {
   }
 
   async getChannelPerformance(
-    ctx: TenantContext,
+    ctx: TenantScope,
   ): Promise<MarketingChannelPerformance[]> {
     const store = this.getStore(ctx.tenant_id);
     const channels: MarketingExecution["channel"][] = [
@@ -323,12 +323,12 @@ export class MarketingMockRepository extends IMarketingRepository {
     });
   }
 
-  async getCampaigns(ctx: TenantContext): Promise<MarketingCampaign[]> {
+  async getCampaigns(ctx: TenantScope): Promise<MarketingCampaign[]> {
     return this.getStore(ctx.tenant_id).campaigns;
   }
 
   async createCampaign(
-    ctx: TenantContext,
+    ctx: TenantScope,
     dto: CreateCampaignDto,
     actor_id: string,
   ): Promise<MarketingCampaign> {
@@ -366,7 +366,7 @@ export class MarketingMockRepository extends IMarketingRepository {
   }
 
   async updateCampaignStatus(
-    ctx: TenantContext,
+    ctx: TenantScope,
     campaignId: string,
     dto: UpdateCampaignStatusDto,
     actor_id: string,
@@ -385,12 +385,12 @@ export class MarketingMockRepository extends IMarketingRepository {
     return campaign;
   }
 
-  async getExecutions(ctx: TenantContext): Promise<MarketingExecution[]> {
+  async getExecutions(ctx: TenantScope): Promise<MarketingExecution[]> {
     return this.getStore(ctx.tenant_id).executions;
   }
 
   async scheduleExecution(
-    ctx: TenantContext,
+    ctx: TenantScope,
     dto: ScheduleExecutionDto,
     actor_id: string,
   ): Promise<MarketingExecution> {
@@ -422,7 +422,7 @@ export class MarketingMockRepository extends IMarketingRepository {
   }
 
   async runExecution(
-    ctx: TenantContext,
+    ctx: TenantScope,
     executionId: string,
     dto: RunExecutionDto,
     actor_id: string,
@@ -457,12 +457,12 @@ export class MarketingMockRepository extends IMarketingRepository {
     return execution;
   }
 
-  async getLeads(ctx: TenantContext): Promise<MarketingLead[]> {
+  async getLeads(ctx: TenantScope): Promise<MarketingLead[]> {
     return this.getStore(ctx.tenant_id).leads;
   }
 
   async captureLead(
-    ctx: TenantContext,
+    ctx: TenantScope,
     dto: CaptureLeadDto,
     actor_id: string,
   ): Promise<MarketingLead> {
@@ -522,7 +522,7 @@ export class MarketingMockRepository extends IMarketingRepository {
   }
 
   async markLeadHandoffReady(
-    ctx: TenantContext,
+    ctx: TenantScope,
     lead_id: string,
     actor_id: string,
   ): Promise<MarketingLead> {
@@ -544,14 +544,14 @@ export class MarketingMockRepository extends IMarketingRepository {
   }
 
   async handoffLeadToSales(
-    ctx: TenantContext,
+    ctx: TenantScope,
     lead_id: string,
     actor_id: string,
   ): Promise<MarketingLead> {
     const store = this.getStore(ctx.tenant_id);
     const lead = this.findLead(ctx.tenant_id, lead_id);
-    if (!["qualified", "handoff_ready"].includes(lead.status)) {
-      throw new BadRequestException("Lead is not qualified for Sales handoff.");
+    if (!["handoff_ready"].includes(lead.status)) {
+      throw new BadRequestException("Lead is not handoff-ready for Sales.");
     }
     lead.status = "handoff_sent";
     lead.salesHandoffId = this.id("sales-lead");
@@ -598,12 +598,12 @@ export class MarketingMockRepository extends IMarketingRepository {
     return lead;
   }
 
-  async getWorkflows(ctx: TenantContext): Promise<MarketingWorkflow[]> {
+  async getWorkflows(ctx: TenantScope): Promise<MarketingWorkflow[]> {
     return this.getStore(ctx.tenant_id).workflows;
   }
 
   async createWorkflow(
-    ctx: TenantContext,
+    ctx: TenantScope,
     dto: CreateWorkflowDto,
     actor_id: string,
   ): Promise<MarketingWorkflow> {
@@ -633,7 +633,7 @@ export class MarketingMockRepository extends IMarketingRepository {
   }
 
   async updateWorkflowStatus(
-    ctx: TenantContext,
+    ctx: TenantScope,
     workflowId: string,
     dto: UpdateWorkflowStatusDto,
     actor_id: string,
@@ -653,13 +653,13 @@ export class MarketingMockRepository extends IMarketingRepository {
   }
 
   async getConnectedAccounts(
-    ctx: TenantContext,
+    ctx: TenantScope,
   ): Promise<MarketingConnectedAccount[]> {
     return this.getStore(ctx.tenant_id).accounts;
   }
 
   async connectAccount(
-    ctx: TenantContext,
+    ctx: TenantScope,
     dto: ConnectAccountDto,
     actor_id: string,
   ): Promise<MarketingConnectedAccount> {
@@ -689,7 +689,7 @@ export class MarketingMockRepository extends IMarketingRepository {
   }
 
   async updateAccountStatus(
-    ctx: TenantContext,
+    ctx: TenantScope,
     accountId: string,
     dto: UpdateAccountStatusDto,
     actor_id: string,
@@ -709,7 +709,7 @@ export class MarketingMockRepository extends IMarketingRepository {
   }
 
   async updateAccountSettings(
-    ctx: TenantContext,
+    ctx: TenantScope,
     accountId: string,
     dto: UpdateAccountSettingsDto,
     actor_id: string,
@@ -730,7 +730,7 @@ export class MarketingMockRepository extends IMarketingRepository {
     return account;
   }
 
-  async deleteAccount(ctx: TenantContext, accountId: string): Promise<boolean> {
+  async deleteAccount(ctx: TenantScope, accountId: string): Promise<boolean> {
     const store = this.getStore(ctx.tenant_id);
     const index = store.accounts.findIndex((item) => item.id === accountId);
     if (index === -1) throw new NotFoundException("Account not found");
@@ -738,15 +738,15 @@ export class MarketingMockRepository extends IMarketingRepository {
     return true;
   }
 
-  async getAttribution(ctx: TenantContext): Promise<MarketingAttribution[]> {
+  async getAttribution(ctx: TenantScope): Promise<MarketingAttribution[]> {
     return this.getStore(ctx.tenant_id).attribution;
   }
 
-  async getAlerts(ctx: TenantContext): Promise<MarketingAlert[]> {
+  async getAlerts(ctx: TenantScope): Promise<MarketingAlert[]> {
     return this.getStore(ctx.tenant_id).alerts;
   }
 
-  async acknowledgeAlert(ctx: TenantContext, alertId: string): Promise<MarketingAlert> {
+  async acknowledgeAlert(ctx: TenantScope, alertId: string): Promise<MarketingAlert> {
     const store = this.getStore(ctx.tenant_id);
     const alert = store.alerts.find((item) => item.id === alertId);
     if (!alert) throw new NotFoundException("Alert not found");
@@ -756,7 +756,7 @@ export class MarketingMockRepository extends IMarketingRepository {
   }
 
   async runHealthSweep(
-    ctx: TenantContext,
+    ctx: TenantScope,
     actor_id: string,
   ): Promise<MarketingAlert[]> {
     const store = this.getStore(ctx.tenant_id);
@@ -785,23 +785,23 @@ export class MarketingMockRepository extends IMarketingRepository {
     return store.alerts;
   }
 
-  async getAuditEvents(ctx: TenantContext): Promise<MarketingAuditEvent[]> {
+  async getAuditEvents(ctx: TenantScope): Promise<MarketingAuditEvent[]> {
     return this.getStore(ctx.tenant_id).audit;
   }
 
   // --- Growth Engine Mock Extensions ---
 
-  async getContacts(ctx: TenantContext): Promise<MarketingContact[]> {
+  async getContacts(ctx: TenantScope): Promise<MarketingContact[]> {
     return this.getStore(ctx.tenant_id).contacts;
   }
 
-  async getContactById(ctx: TenantContext, id: string): Promise<MarketingContact> {
+  async getContactById(ctx: TenantScope, id: string): Promise<MarketingContact> {
     const contact = this.getStore(ctx.tenant_id).contacts.find(c => c.id === id);
     if (!contact) throw new NotFoundException("Contact not found");
     return contact;
   }
 
-  async createContact(ctx: TenantContext, data: Partial<MarketingContact>): Promise<MarketingContact> {
+  async createContact(ctx: TenantScope, data: Partial<MarketingContact>): Promise<MarketingContact> {
     const store = this.getStore(ctx.tenant_id);
     const created: MarketingContact = {
       id: this.id("mkt-contact"),
@@ -822,11 +822,11 @@ export class MarketingMockRepository extends IMarketingRepository {
     return created;
   }
 
-  async getFunnels(ctx: TenantContext): Promise<MarketingFunnel[]> {
+  async getFunnels(ctx: TenantScope): Promise<MarketingFunnel[]> {
     return this.getStore(ctx.tenant_id).funnels;
   }
 
-  async createFunnel(ctx: TenantContext, data: Partial<MarketingFunnel>): Promise<MarketingFunnel> {
+  async createFunnel(ctx: TenantScope, data: Partial<MarketingFunnel>): Promise<MarketingFunnel> {
     const store = this.getStore(ctx.tenant_id);
     const created: MarketingFunnel = {
       id: this.id("mkt-funnel"),
@@ -843,7 +843,7 @@ export class MarketingMockRepository extends IMarketingRepository {
     return created;
   }
 
-  async updateFunnel(ctx: TenantContext, id: string, data: Partial<MarketingFunnel>): Promise<MarketingFunnel> {
+  async updateFunnel(ctx: TenantScope, id: string, data: Partial<MarketingFunnel>): Promise<MarketingFunnel> {
     const store = this.getStore(ctx.tenant_id);
     const idx = store.funnels.findIndex(f => f.id === id);
     if (idx === -1) throw new NotFoundException("Funnel not found");
@@ -851,11 +851,11 @@ export class MarketingMockRepository extends IMarketingRepository {
     return store.funnels[idx];
   }
 
-  async getAppointments(ctx: TenantContext): Promise<MarketingAppointment[]> {
+  async getAppointments(ctx: TenantScope): Promise<MarketingAppointment[]> {
     return this.getStore(ctx.tenant_id).appointments;
   }
 
-  async createAppointment(ctx: TenantContext, data: Partial<MarketingAppointment>): Promise<MarketingAppointment> {
+  async createAppointment(ctx: TenantScope, data: Partial<MarketingAppointment>): Promise<MarketingAppointment> {
     const store = this.getStore(ctx.tenant_id);
     const created: MarketingAppointment = {
       id: this.id("mkt-appt"),
@@ -873,11 +873,11 @@ export class MarketingMockRepository extends IMarketingRepository {
     return created;
   }
 
-  async getAutomationRules(ctx: TenantContext): Promise<MarketingAutomationRule[]> {
+  async getAutomationRules(ctx: TenantScope): Promise<MarketingAutomationRule[]> {
     return this.getStore(ctx.tenant_id).automation;
   }
 
-  async createAutomationRule(ctx: TenantContext, data: Partial<MarketingAutomationRule>): Promise<MarketingAutomationRule> {
+  async createAutomationRule(ctx: TenantScope, data: Partial<MarketingAutomationRule>): Promise<MarketingAutomationRule> {
     const store = this.getStore(ctx.tenant_id);
     const created: MarketingAutomationRule = {
       id: this.id("mkt-auto"),
@@ -894,13 +894,13 @@ export class MarketingMockRepository extends IMarketingRepository {
     return created;
   }
 
-  async getMessages(ctx: TenantContext, contactId?: string): Promise<MarketingOmnichannelMessage[]> {
+  async getMessages(ctx: TenantScope, contactId?: string): Promise<MarketingOmnichannelMessage[]> {
     const store = this.getStore(ctx.tenant_id);
     if (contactId) return store.messages.filter(m => m.contact_id === contactId);
     return store.messages;
   }
 
-  async sendMessage(ctx: TenantContext, data: Partial<MarketingOmnichannelMessage>): Promise<MarketingOmnichannelMessage> {
+  async sendMessage(ctx: TenantScope, data: Partial<MarketingOmnichannelMessage>): Promise<MarketingOmnichannelMessage> {
     const store = this.getStore(ctx.tenant_id);
     const created: MarketingOmnichannelMessage = {
       id: this.id("mkt-msg"),
@@ -918,11 +918,11 @@ export class MarketingMockRepository extends IMarketingRepository {
     return created;
   }
 
-  async getCreativeAssets(ctx: TenantContext): Promise<MarketingCreativeAsset[]> {
+  async getCreativeAssets(ctx: TenantScope): Promise<MarketingCreativeAsset[]> {
     return this.getStore(ctx.tenant_id).assets;
   }
 
-  async createCreativeAsset(ctx: TenantContext, data: Partial<MarketingCreativeAsset>): Promise<MarketingCreativeAsset> {
+  async createCreativeAsset(ctx: TenantScope, data: Partial<MarketingCreativeAsset>, _tx?: any): Promise<MarketingCreativeAsset> {
     const store = this.getStore(ctx.tenant_id);
     const created: MarketingCreativeAsset = {
       id: this.id("mkt-asset"),
@@ -940,7 +940,7 @@ export class MarketingMockRepository extends IMarketingRepository {
     return created;
   }
 
-  async updateCreativeAsset(ctx: TenantContext, id: string, data: Partial<MarketingCreativeAsset>): Promise<MarketingCreativeAsset> {
+  async updateCreativeAsset(ctx: TenantScope, id: string, data: Partial<MarketingCreativeAsset>): Promise<MarketingCreativeAsset> {
     const store = this.getStore(ctx.tenant_id);
     const idx = store.assets.findIndex(a => a.id === id);
     if (idx === -1) throw new NotFoundException("Creative asset not found");
@@ -948,7 +948,7 @@ export class MarketingMockRepository extends IMarketingRepository {
     return store.assets[idx];
   }
 
-  async calculateAdvancedAttribution(ctx: TenantContext, model: "FIRST_CLICK" | "LINEAR" | "LAST_CLICK"): Promise<any> {
+  async calculateAdvancedAttribution(ctx: TenantScope, model: "FIRST_CLICK" | "LINEAR" | "LAST_CLICK"): Promise<any> {
     const store = this.getStore(ctx.tenant_id);
     const leads = store.leads;
     return leads.map(lead => ({

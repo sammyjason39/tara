@@ -4,6 +4,7 @@ import {
   Get, 
   Param, 
   Body, 
+  Query,
   Req, 
   Res, 
   StreamableFile, 
@@ -23,6 +24,8 @@ import { UserRole } from '../roles';
 import { Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
+import { PaginationPipe, PaginationParams } from '../pipes/pagination.pipe';
+import { CacheInterceptor, CacheTTL, CacheInvalidationHelper } from '../cache';
 
 interface RequestWithTenant extends Request {
   tenantContext: TenantContext;
@@ -36,7 +39,10 @@ interface RequestWithTenant extends Request {
 @UseInterceptors(TenantInterceptor)
 @UseGuards(RolesGuard)
 export class ReportingController {
-  constructor(private readonly jobService: ReportJobService) {}
+  constructor(
+    private readonly jobService: ReportJobService,
+    private readonly cacheHelper: CacheInvalidationHelper,
+  ) {}
 
   @Post('generate')
   @Roles(UserRole.ADMIN, UserRole.OWNER)
@@ -57,6 +63,8 @@ export class ReportingController {
       body.payload
     );
 
+    await this.cacheHelper.invalidateAll();
+
     return { 
       success: true, 
       job_id: job.id, 
@@ -66,6 +74,8 @@ export class ReportingController {
   }
 
   @Get(':id/status')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   async getStatus(
     @Req() request: RequestWithTenant,
     @Param('id') id: string
@@ -86,6 +96,8 @@ export class ReportingController {
   }
 
   @Get(':id/download')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   async downloadReport(
     @Req() request: RequestWithTenant,
     @Param('id') id: string,
@@ -124,6 +136,8 @@ export class ReportingController {
     const { tenant_id, user_id } = request.tenantContext;
     const job = await this.jobService.retryJob(id, tenant_id, user_id || 'system');
     if (!job) throw new NotFoundException('Report job not found or access denied.');
+
+    await this.cacheHelper.invalidateAll();
 
     return { 
       success: true, 

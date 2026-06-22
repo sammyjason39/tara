@@ -12,6 +12,7 @@ import { useSession } from "@/core/security/session";
 import { documentService } from "@/core/services/hr/documentService";
 import { legalService } from "@/core/services/hr/legalService";
 import { workflowService } from "@/core/services/hr/workflowService";
+import { EmptyState } from "@/components/shared/AsyncState";
 
 export default function VaultSpace() {
   const session = useSession();
@@ -112,13 +113,24 @@ export default function VaultSpace() {
               </tr>
             </thead>
             <tbody>
-              {(Array.isArray(documents) ? documents : []).map((doc) => (
+              {documents.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="p-0">
+                    <EmptyState
+                      title="No documents"
+                      description="The document vault has no records for the current search scope."
+                    />
+                  </td>
+                </tr>
+              ) : (
+                (Array.isArray(documents) ? documents : []).map((doc) => (
                 <tr key={doc.id} className="border-t">
                   <td className="p-3 font-medium text-foreground">{doc.title}</td>
                   <td className="p-3 text-muted-foreground">{doc.type}</td>
                   <td className="p-3 text-muted-foreground">{doc.status}</td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
         </DataTableShell>

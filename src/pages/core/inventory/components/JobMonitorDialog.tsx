@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { apiRequest } from "@/core/api/apiClient";
 import { useSession } from "@/core/security/session";
+import { useDeleteImportJob } from "../hooks/useInventoryQueries";
 import { format } from "date-fns";
 
 interface Job {
@@ -51,6 +52,7 @@ export function JobMonitorDialog({ open, onOpenChange }: JobMonitorDialogProps) 
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const session = useSession();
+  const deleteJobMutation = useDeleteImportJob();
 
   const fetchJobs = async () => {
     try {
@@ -71,31 +73,23 @@ export function JobMonitorDialog({ open, onOpenChange }: JobMonitorDialogProps) 
 
   const handleAbort = async (jobId: string) => {
     try {
-      await apiRequest(`/inventory/import/jobs/${jobId}`, "DELETE", session);
-      toast({
-        title: "Job Aborted",
-        description: "The background task has been signaled to stop.",
-      });
+      await deleteJobMutation.mutateAsync(jobId);
       fetchJobs();
     } catch (error) {
-      toast({
-        title: "Abort Failed",
-        description: "Could not abort the background job.",
-        variant: "destructive",
-      });
+      // Error handled by mutation onError
     }
   };
 
   const getStatusBadge = (status: Job['status']) => {
     switch (status) {
       case 'COMPLETED':
-        return <Badge className="bg-success text-success border-emerald-500/20"><CheckCircle2 className="w-3 h-3 mr-1" /> Completed</Badge>;
+        return <Badge className="bg-success text-success border-success/20"><CheckCircle2 className="w-3 h-3 mr-1" /> Completed</Badge>;
       case 'PROCESSING':
         return <Badge className="bg-primary text-primary border-primary"><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Processing</Badge>;
       case 'FAILED':
-        return <Badge className="bg-destructive text-destructive border-red-500/20"><XCircle className="w-3 h-3 mr-1" /> Failed</Badge>;
+        return <Badge className="bg-destructive text-destructive border-destructive/20"><XCircle className="w-3 h-3 mr-1" /> Failed</Badge>;
       case 'ABORTED':
-        return <Badge className="bg-warning text-warning border-amber-500/20"><StopCircle className="w-3 h-3 mr-1" /> Aborted</Badge>;
+        return <Badge className="bg-warning text-warning border-warning/20"><StopCircle className="w-3 h-3 mr-1" /> Aborted</Badge>;
       default:
         return <Badge variant="outline" className="text-muted-foreground"><Clock className="w-3 h-3 mr-1" /> Pending</Badge>;
     }
@@ -103,8 +97,8 @@ export function JobMonitorDialog({ open, onOpenChange }: JobMonitorDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 overflow-hidden bg-muted border-slate-800">
-        <DialogHeader className="p-6 border-b border-slate-800">
+      <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col p-0 overflow-hidden bg-muted border-border">
+        <DialogHeader className="p-6 border-b border-border">
           <DialogTitle className="text-xl font-bold flex items-center gap-2 text-white">
             <Activity className="w-5 h-5 text-primary" />
             Background Task Monitor
@@ -120,7 +114,7 @@ export function JobMonitorDialog({ open, onOpenChange }: JobMonitorDialogProps) 
               </div>
             ) : (
               jobs.map((job) => (
-                <div key={job.id} className="p-4 rounded-xl bg-muted border border-slate-800 space-y-4">
+                <div key={job.id} className="p-4 rounded-xl bg-muted border border-border space-y-4">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -176,15 +170,15 @@ export function JobMonitorDialog({ open, onOpenChange }: JobMonitorDialogProps) 
 
                   {(job.status === 'COMPLETED' || job.status === 'FAILED' || job.status === 'ABORTED') && (
                     <div className="grid grid-cols-3 gap-2 py-1">
-                      <div className="px-2 py-1.5 rounded-lg bg-muted border border-slate-700/50">
+                      <div className="px-2 py-1.5 rounded-lg bg-muted border border-border/50">
                         <div className="text-[9px] text-muted-foreground uppercase tracking-wider">Total</div>
                         <div className="text-sm font-semibold text-white">{job.total_items}</div>
                       </div>
-                      <div className="px-2 py-1.5 rounded-lg bg-muted border border-slate-700/50">
+                      <div className="px-2 py-1.5 rounded-lg bg-muted border border-border/50">
                         <div className="text-[9px] text-muted-foreground uppercase tracking-wider">Success</div>
                         <div className="text-sm font-semibold text-success">{job.processed_items}</div>
                       </div>
-                      <div className="px-2 py-1.5 rounded-lg bg-muted border border-slate-700/50">
+                      <div className="px-2 py-1.5 rounded-lg bg-muted border border-border/50">
                         <div className="text-[9px] text-muted-foreground uppercase tracking-wider">Errors</div>
                         <div className="text-sm font-semibold text-destructive">{job.error_count}</div>
                       </div>
@@ -192,7 +186,7 @@ export function JobMonitorDialog({ open, onOpenChange }: JobMonitorDialogProps) 
                   )}
 
                   {job.errors && job.errors.length > 0 && (
-                    <div className="p-3 rounded-lg bg-destructive border border-red-500/10 space-y-2">
+                    <div className="p-3 rounded-lg bg-destructive border border-destructive/10 space-y-2">
                       <div className="flex items-center gap-2 text-[10px] font-semibold text-destructive">
                         <AlertCircle className="w-3 h-3" />
                         LATEST ERRORS

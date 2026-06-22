@@ -30,6 +30,7 @@ import { buildModuleRoutes } from "@/core/runtime/moduleRoutes";
 import { IdentityProvider } from "@/core/identity/context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
+import { RootErrorBoundary } from "@/components/shared/PageErrorBoundary";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -147,7 +148,9 @@ export default function App() {
             <NotificationProvider>
               <BarcodeScannerProvider>
                 <BrowserRouter>
-                  <AppRoutes />
+                  <RootErrorBoundary>
+                    <AppRoutes />
+                  </RootErrorBoundary>
                   <HeartbeatManager />
                   <Toaster />
                 </BrowserRouter>

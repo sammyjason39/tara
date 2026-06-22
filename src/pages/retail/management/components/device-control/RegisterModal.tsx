@@ -80,7 +80,7 @@ const RegisterModal = ({ open, tab, onClose, onSave }: RegisterModalProps) => {
                 placeholder={`e.g. "Cashier PC #1"`}
                 value={f.name}
                 onChange={(e) => set("name")(e.target.value)}
-                className="rounded-xl border-slate-200 text-sm"
+                className="rounded-xl border-border text-sm"
               />
             </div>
             <div className="space-y-1.5">
@@ -88,7 +88,7 @@ const RegisterModal = ({ open, tab, onClose, onSave }: RegisterModalProps) => {
                 {typeLabel} *
               </Label>
               <Select value={f.subType} onValueChange={set("subType")}>
-                <SelectTrigger className="rounded-xl border-slate-200 text-sm">
+                <SelectTrigger className="rounded-xl border-border text-sm">
                   <SelectValue placeholder={`Select…`} />
                 </SelectTrigger>
                 <SelectContent>
@@ -108,7 +108,7 @@ const RegisterModal = ({ open, tab, onClose, onSave }: RegisterModalProps) => {
                 placeholder="e.g. Postek C168"
                 value={f.model}
                 onChange={(e) => set("model")(e.target.value)}
-                className="rounded-xl border-slate-200 text-sm"
+                className="rounded-xl border-border text-sm"
               />
             </div>
             <div className="space-y-1.5">
@@ -119,7 +119,7 @@ const RegisterModal = ({ open, tab, onClose, onSave }: RegisterModalProps) => {
                 placeholder="SN-XXXX"
                 value={f.serial}
                 onChange={(e) => set("serial")(e.target.value)}
-                className="rounded-xl border-slate-200 text-sm"
+                className="rounded-xl border-border text-sm"
               />
             </div>
             {showConn && (
@@ -132,7 +132,7 @@ const RegisterModal = ({ open, tab, onClose, onSave }: RegisterModalProps) => {
                     value={f.connType}
                     onValueChange={(v) => set("connType")(v as ConnType)}
                   >
-                    <SelectTrigger className="rounded-xl border-slate-200 text-sm">
+                    <SelectTrigger className="rounded-xl border-border text-sm">
                       <SelectValue placeholder="Select…" />
                     </SelectTrigger>
                     <SelectContent>
@@ -153,7 +153,7 @@ const RegisterModal = ({ open, tab, onClose, onSave }: RegisterModalProps) => {
                       placeholder="192.168.1.x"
                       value={f.ip}
                       onChange={(e) => set("ip")(e.target.value)}
-                      className="rounded-xl border-slate-200 text-sm font-mono"
+                      className="rounded-xl border-border text-sm font-mono"
                     />
                   </div>
                 )}
@@ -166,7 +166,7 @@ const RegisterModal = ({ open, tab, onClose, onSave }: RegisterModalProps) => {
                       placeholder="e.g. COM3"
                       value={f.comPort}
                       onChange={(e) => set("comPort")(e.target.value)}
-                      className="rounded-xl border-slate-200 text-sm font-mono"
+                      className="rounded-xl border-border text-sm font-mono"
                     />
                   </div>
                 )}
@@ -179,7 +179,7 @@ const RegisterModal = ({ open, tab, onClose, onSave }: RegisterModalProps) => {
                       placeholder="e.g. USB-A Port 3"
                       value={f.usbPort}
                       onChange={(e) => set("usbPort")(e.target.value)}
-                      className="rounded-xl border-slate-200 text-sm font-mono"
+                      className="rounded-xl border-border text-sm font-mono"
                     />
                   </div>
                 )}
@@ -191,7 +191,7 @@ const RegisterModal = ({ open, tab, onClose, onSave }: RegisterModalProps) => {
                     placeholder="AA:BB:CC:DD:EE:FF"
                     value={f.mac}
                     onChange={(e) => set("mac")(e.target.value)}
-                    className="rounded-xl border-slate-200 text-sm font-mono"
+                    className="rounded-xl border-border text-sm font-mono"
                   />
                 </div>
               </>
@@ -204,7 +204,7 @@ const RegisterModal = ({ open, tab, onClose, onSave }: RegisterModalProps) => {
                 placeholder="e.g. Cashier Counter"
                 value={f.placement}
                 onChange={(e) => set("placement")(e.target.value)}
-                className="rounded-xl border-slate-200 text-sm"
+                className="rounded-xl border-border text-sm"
               />
             </div>
             <div className="col-span-2 space-y-1.5">
@@ -215,7 +215,7 @@ const RegisterModal = ({ open, tab, onClose, onSave }: RegisterModalProps) => {
                 placeholder="Usage context, setup notes…"
                 value={f.notes}
                 onChange={(e) => set("notes")(e.target.value)}
-                className="rounded-xl border-slate-200 text-sm resize-none h-16"
+                className="rounded-xl border-border text-sm resize-none h-16"
               />
             </div>
           </div>
@@ -228,7 +228,7 @@ const RegisterModal = ({ open, tab, onClose, onSave }: RegisterModalProps) => {
                 onClose();
                 onSave(null); // Trigger scan parent-side
               }}
-              className="rounded-xl border-slate-200 text-muted-foreground font-bold text-xs gap-2"
+              className="rounded-xl border-border text-muted-foreground font-bold text-xs gap-2"
             >
               <RefreshCw className="w-3.5 h-3.5" /> Auto-Scan LAN
             </Button>

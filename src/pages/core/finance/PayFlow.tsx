@@ -27,6 +27,7 @@ import { useSession } from "@/core/security/session";
 import { financeApiClient } from "@/core/services/finance/financeApiClient";
 import { logService } from "@/core/services/finance/logService";
 import { useTreasury } from "@/hooks/finance/useTreasury";
+import { formatNumber } from "@/lib/format";
 
 type PaymentStatus =
   | "PENDING"
@@ -211,7 +212,7 @@ export default function PayFlow() {
               <td className="p-3">{p.destination}</td>
               <td className="p-3 text-muted-foreground">{p.method}</td>
               <td className="p-3 text-muted-foreground">
-                {p.amount.toLocaleString()}
+                {formatNumber(p.amount)}
               </td>
               <td className="p-3">{p.purpose}</td>
               <td className="p-3">
@@ -550,7 +551,7 @@ export default function PayFlow() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Authorized Amount</p>
-                    <p className="font-bold text-xl">{selectedItem?.amount.toLocaleString()}</p>
+                    <p className="font-bold text-xl">{formatNumber(selectedItem?.amount ?? null)}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>

@@ -270,9 +270,9 @@ export const CreateChannelDialog: React.FC<Props> = ({
                 className={cn(
                   "flex-1 py-3 text-center text-[9px] font-black uppercase tracking-[0.2em] transition-colors border-b-2",
                   step === s
-                    ? "bg-white text-foreground border-slate-900"
+                    ? "bg-white text-foreground border-border"
                     : step > s
-                      ? "bg-white text-success border-emerald-400"
+                      ? "bg-white text-success border-success"
                       : "bg-secondary/5 text-muted-foreground border-transparent",
                 )}
               >
@@ -280,10 +280,10 @@ export const CreateChannelDialog: React.FC<Props> = ({
                   className={cn(
                     "inline-flex items-center justify-center w-4 h-4 rounded-full text-[8px] font-black mr-1.5 border",
                     step === s
-                      ? "bg-secondary text-foreground border-slate-900"
+                      ? "bg-secondary text-foreground border-border"
                       : step > s
-                        ? "bg-success/10 text-success border-emerald-300"
-                        : "bg-secondary/10 text-muted-foreground border-slate-200",
+                        ? "bg-success/10 text-success border-success"
+                        : "bg-secondary/10 text-muted-foreground border-border",
                   )}
                 >
                   {step > s ? "✓" : s}
@@ -314,8 +314,8 @@ export const CreateChannelDialog: React.FC<Props> = ({
                     className={cn(
                       "w-full text-left flex items-start gap-4 p-5 rounded-2xl border-2 transition-all",
                       selectedType === t.id
-                        ? "border-slate-900 bg-secondary/5 shadow-sm"
-                        : "border-slate-100 hover:border-slate-300 bg-white hover:bg-secondary/5",
+                        ? "border-border bg-secondary/5 shadow-sm"
+                        : "border-border hover:border-border bg-white hover:bg-secondary/5",
                     )}
                   >
                     <div
@@ -470,7 +470,7 @@ export const CreateChannelDialog: React.FC<Props> = ({
 
                 {/* Webhook type notice */}
                 {selectedType === "WEBHOOK" && (
-                  <div className="flex items-start gap-2 p-3 rounded-xl bg-success border border-emerald-100">
+                  <div className="flex items-start gap-2 p-3 rounded-xl bg-success border border-success">
                     <Info className="w-4 h-4 text-success shrink-0 mt-0.5" />
                     <p className="text-[11px] font-bold text-success leading-relaxed">
                       After creation, go to <strong>Settings → Webhooks</strong>{" "}
@@ -532,7 +532,7 @@ export const CreateChannelDialog: React.FC<Props> = ({
                       {item.label}
                     </Label>
                     <div className="flex items-center gap-2">
-                      <code className="flex-1 text-xs font-mono bg-secondary/5 border border-slate-200 rounded-xl px-4 py-3 truncate text-muted-foreground">
+                      <code className="flex-1 text-xs font-mono bg-secondary/5 border border-border rounded-xl px-4 py-3 truncate text-muted-foreground">
                         {item.value}
                       </code>
                       <Button
@@ -554,7 +554,7 @@ export const CreateChannelDialog: React.FC<Props> = ({
                 <Button
                   variant="outline"
                   onClick={copyAll}
-                  className="w-full h-10 rounded-xl font-black italic text-xs uppercase tracking-widest gap-2 border-slate-200"
+                  className="w-full h-10 rounded-xl font-black italic text-xs uppercase tracking-widest gap-2 border-border"
                 >
                   {copiedField === "all" ? (
                     <>
@@ -568,7 +568,7 @@ export const CreateChannelDialog: React.FC<Props> = ({
                   )}
                 </Button>
 
-                <div className="bg-warning border border-amber-200 rounded-xl p-4 text-[11px] font-bold italic text-warning leading-relaxed">
+                <div className="bg-warning border border-warning rounded-xl p-4 text-[11px] font-bold italic text-warning leading-relaxed">
                   ⚠ Store these credentials securely (e.g. in your .env file).
                   They cannot be retrieved after closing this dialog. You can
                   rotate them later in <strong>Danger Zone</strong>.

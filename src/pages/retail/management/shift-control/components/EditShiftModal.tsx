@@ -77,7 +77,7 @@ export const EditShiftModal: React.FC<EditShiftModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md bg-white rounded-2xl p-8 border border-slate-100 shadow-2xl">
+      <DialogContent className="max-w-md bg-white rounded-2xl p-8 border border-border shadow-2xl">
         <DialogHeader className="mb-6">
           <DialogTitle className="text-xl font-black italic tracking-tighter flex items-center gap-3 text-foreground">
             <div className="p-2.5 rounded-2xl bg-primary/5 text-primary">
@@ -118,10 +118,10 @@ export const EditShiftModal: React.FC<EditShiftModalProps> = ({
               }
               onValueChange={handleEmployeeChange}
             >
-              <SelectTrigger className="w-full h-12 bg-secondary/5 border-slate-200 text-foreground font-bold italic rounded-xl">
+              <SelectTrigger className="w-full h-12 bg-secondary/5 border-border text-foreground font-bold italic rounded-xl">
                 <SelectValue placeholder="Select Employee..." />
               </SelectTrigger>
-              <SelectContent className="bg-white border-slate-200 rounded-xl">
+              <SelectContent className="bg-white border-border rounded-xl">
                 <SelectItem
                   value="UNASSIGNED"
                   className="font-bold italic text-muted-foreground"
@@ -155,7 +155,7 @@ export const EditShiftModal: React.FC<EditShiftModalProps> = ({
                 onChange={(e) =>
                   setFormData({ ...formData, startTime: e.target.value })
                 }
-                className="h-12 bg-secondary/5 border-slate-200 rounded-xl font-bold italic"
+                className="h-12 bg-secondary/5 border-border rounded-xl font-bold italic"
               />
             </div>
             <div className="space-y-2">
@@ -168,7 +168,7 @@ export const EditShiftModal: React.FC<EditShiftModalProps> = ({
                 onChange={(e) =>
                   setFormData({ ...formData, endTime: e.target.value })
                 }
-                className="h-12 bg-secondary/5 border-slate-200 rounded-xl font-bold italic"
+                className="h-12 bg-secondary/5 border-border rounded-xl font-bold italic"
               />
             </div>
           </div>
@@ -182,7 +182,7 @@ export const EditShiftModal: React.FC<EditShiftModalProps> = ({
               onChange={(e) =>
                 setFormData({ ...formData, role: e.target.value })
               }
-              className="h-12 bg-secondary/5 border-slate-200 rounded-xl font-bold italic text-foreground"
+              className="h-12 bg-secondary/5 border-border rounded-xl font-bold italic text-foreground"
             />
           </div>
         </div>
@@ -199,7 +199,7 @@ export const EditShiftModal: React.FC<EditShiftModalProps> = ({
             <Button
               variant="outline"
               onClick={onClose}
-              className="text-[10px] font-black italic uppercase tracking-widest rounded-xl h-11 border-slate-200"
+              className="text-[10px] font-black italic uppercase tracking-widest rounded-xl h-11 border-border"
             >
               Cancel
             </Button>

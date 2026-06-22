@@ -34,6 +34,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSession } from "@/core/security/session";
 import { marketingService } from "@/core/services/marketing/marketingService";
+import { formatCurrency } from "@/lib/format";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { MarketingCampaign, ChannelPerformance, AttributionRecord } from "@/core/types/marketing/marketing";
@@ -110,7 +112,7 @@ export default function MarketingAnalytics() {
                Attribution Matrix Active
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent text-left italic">Analytics Engine</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground text-left italic">Analytics Engine</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic text-left">"Deep-field measurement authorizes total control and high-fidelity tactical improvement."</p>
         </div>
         
@@ -138,7 +140,7 @@ export default function MarketingAnalytics() {
       {/* Channel Breakdown Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         {(Array.isArray(channelPerformance) ? channelPerformance : []).map((item, i) => (
-          <Card key={item.channel} className="rounded-[3rem] border-none shadow-2xl bg-white/60 dark:bg-muted backdrop-blur-xl p-10 space-y-8 group hover:shadow-[0_40px_80px_-20px_rgba(79,70,229,0.2)] transition-all duration-500 overflow-hidden relative">
+          <Card key={item.channel} className="rounded-[3rem] border-none shadow-2xl glass-card p-10 space-y-8 group hover:shadow-[0_40px_80px_-20px_rgba(79,70,229,0.2)] transition-all duration-500 overflow-hidden relative">
             <div className="absolute top-0 right-0 h-40 w-40 bg-primary rounded-full blur-3xl -mr-20 -mt-20 group-hover:scale-150 transition-transform duration-1000" />
             <div className="flex items-center justify-between relative z-10">
                <div className="h-14 w-14 rounded-2xl bg-primary text-primary flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform duration-500">
@@ -150,14 +152,14 @@ export default function MarketingAnalytics() {
                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground italic">{item.channel}</p>
                <h4 className="text-4xl font-black tracking-tighter italic">{item.leads} <span className="text-sm font-bold text-muted-foreground uppercase">LEADS</span></h4>
                
-               <div className="grid grid-cols-2 gap-6 pt-8 mt-4 border-t border-slate-100 dark:border-slate-800">
+               <div className="grid grid-cols-2 gap-6 pt-8 mt-4 border-t border-border dark:border-border">
                   <div className="space-y-1">
                      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground italic">Allocation</p>
-                     <p className="text-xl font-black text-primary italic">${item.spend.toLocaleString()}</p>
+                     <p className="text-xl font-black text-primary italic">{formatCurrency(item.spend)}</p>
                   </div>
                   <div className="text-right space-y-1">
                      <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground italic">CPL Yield</p>
-                     <p className="text-xl font-black text-success italic">${item.cpl.toLocaleString()}</p>
+                     <p className="text-xl font-black text-success italic">{formatCurrency(item.cpl)}</p>
                   </div>
                </div>
             </div>
@@ -166,12 +168,19 @@ export default function MarketingAnalytics() {
             </div>
           </Card>
         ))}
+        {(Array.isArray(channelPerformance) ? channelPerformance : []).length === 0 && (
+          <EmptyState
+            className="md:col-span-2 lg:col-span-4"
+            title="No channel performance"
+            description="No channel performance telemetry is available for this tenant scope yet."
+          />
+        )}
       </div>
 
       {/* Attribution Intelligence Matrix */}
-      <Card className="rounded-[4rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden flex flex-col">
+      <Card className="rounded-[4rem] border-none shadow-2xl glass-card overflow-hidden flex flex-col">
         <Tabs defaultValue="campaigns" className="w-full flex flex-col h-full">
-           <CardHeader className="p-12 pb-6 border-b border-white/10 dark:border-slate-800/10 shrink-0">
+           <CardHeader className="p-12 pb-6 border-b border-white/10 dark:border-border/10 shrink-0">
               <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 mb-4">
                  <div className="space-y-2">
                     <CardTitle className="text-3xl font-black tracking-tighter flex items-center gap-4 uppercase italic">
@@ -220,7 +229,7 @@ export default function MarketingAnalytics() {
                              </td>
                              <td className="px-12 py-10">
                                 <div className="space-y-1">
-                                   <p className="text-xl font-black text-primary italic">${item.budget.toLocaleString()} <span className="text-[10px] uppercase opacity-40">{item.currency}</span></p>
+                                   <p className="text-xl font-black text-primary italic">{formatCurrency(item.budget, item.currency)}</p>
                                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground italic">Allocated Node</p>
                                 </div>
                              </td>
@@ -244,6 +253,12 @@ export default function MarketingAnalytics() {
                        ))}
                     </tbody>
                  </table>
+                 {(Array.isArray(filteredCampaigns) ? filteredCampaigns : []).length === 0 && (
+                   <EmptyState
+                     title="No campaigns found"
+                     description="No strategic campaigns match the current search in this tenant scope."
+                   />
+                 )}
               </ScrollArea>
            </TabsContent>
 
@@ -276,11 +291,11 @@ export default function MarketingAnalytics() {
                                 </div>
                              </td>
                              <td className="px-12 py-10 text-right">
-                                <p className="text-xl font-black text-success italic tracking-tighter">${item.revenueAttributed.toLocaleString()}</p>
+                                <p className="text-xl font-black text-success italic tracking-tighter">{formatCurrency(item.revenueAttributed)}</p>
                                 <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground italic">Net Attribution</p>
                              </td>
                              <td className="px-12 py-10 text-right">
-                                <p className="text-xl font-black text-primary italic tracking-tighter">${item.spend.toLocaleString()}</p>
+                                <p className="text-xl font-black text-primary italic tracking-tighter">{formatCurrency(item.spend)}</p>
                                 <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground italic">Channel Burn</p>
                              </td>
                              <td className="px-12 py-10 text-right">
@@ -298,6 +313,12 @@ export default function MarketingAnalytics() {
                        ))}
                     </tbody>
                  </table>
+                 {(Array.isArray(attribution) ? attribution : []).length === 0 && (
+                   <EmptyState
+                     title="No attribution records"
+                     description="No multi-touch attribution records exist for this tenant scope yet."
+                   />
+                 )}
               </ScrollArea>
            </TabsContent>
         </Tabs>

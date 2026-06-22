@@ -28,19 +28,19 @@ export const SecurityProtocolCard: React.FC = () => {
               <div className="flex flex-wrap gap-4 pt-2 justify-center lg:justify-start">
                 <Badge
                   variant="outline"
-                  className="border-slate-800 text-muted-foreground rounded-xl font-black italic uppercase text-[11px] px-4 py-1"
+                  className="border-border text-muted-foreground rounded-xl font-black italic uppercase text-[11px] px-4 py-1"
                 >
                   ISO-27001 ISOLATED
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="border-slate-800 text-muted-foreground rounded-xl font-black italic uppercase text-[11px] px-4 py-1"
+                  className="border-border text-muted-foreground rounded-xl font-black italic uppercase text-[11px] px-4 py-1"
                 >
                   REAL-TIME TELEMETRY
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="border-slate-800 text-muted-foreground rounded-xl font-black italic uppercase text-[11px] px-4 py-1"
+                  className="border-border text-muted-foreground rounded-xl font-black italic uppercase text-[11px] px-4 py-1"
                 >
                   ENCRYPTED EXPORT
                 </Badge>

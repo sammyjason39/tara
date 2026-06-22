@@ -26,6 +26,7 @@ import { useSession } from "@/core/security/session";
 import { itSettingsService, type ITDevice } from "@/core/services/it/itSettingsService";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
+import { ErrorState, EmptyState } from "@/components/shared/AsyncState";
 import {
   Sheet,
   SheetContent,
@@ -50,23 +51,28 @@ export default function TopologyMap() {
   const session = useSession();
   const [devices, setDevices] = useState<ITDevice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [selectedNode, setSelectedNode] = useState<ITDevice | null>(null);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
 
+  const load = async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const data = await itSettingsService.getDevices(session.tenant_id, session);
+      setDevices(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error("Failed to load topology", e);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const data = await itSettingsService.getDevices(session.tenant_id, session);
-        setDevices(data);
-      } catch (e) {
-        console.error("Failed to load topology", e);
-      } finally {
-        setLoading(false);
-      }
-    };
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
   // Layout logic: Simple radial or grid for now
@@ -129,6 +135,18 @@ export default function TopologyMap() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <ErrorState
+          title="Couldn't load the topology"
+          description="The infrastructure device map failed to load. Check your connection and try again."
+          onRetry={load}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       <div className="flex items-end justify-between border-b border-border pb-8">
@@ -155,6 +173,14 @@ export default function TopologyMap() {
       </div>
 
       <div className="relative w-full h-[700px] bg-muted rounded-[3rem] border border-border overflow-hidden shadow-inner cursor-grab active:cursor-grabbing">
+        {devices.length === 0 ? (
+          <div className="absolute inset-0 flex items-center justify-center p-8">
+            <EmptyState
+              title="No devices on the network"
+              description="No infrastructure devices are registered for this tenant yet. Provision a node to populate the topology."
+            />
+          </div>
+        ) : null}
         {/* SVG Canvas */}
         <svg 
           viewBox="0 0 800 700" 
@@ -257,7 +283,7 @@ export default function TopologyMap() {
                 <text 
                   y="45" 
                   textAnchor="middle" 
-                  className="text-[10px] font-black uppercase tracking-widest fill-slate-400 pointer-events-none"
+                  className="text-[10px] font-black uppercase tracking-widest fill-muted pointer-events-none"
                 >
                   {node.device.deviceName}
                 </text>

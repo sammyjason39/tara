@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { type Table, formatCurrency } from '@/lib/mock-data';
+import { type Table } from '@/lib/mock-data';
+import { formatCurrency } from '@/lib/format';
 import { CreditCard, Banknote, Smartphone, Receipt, Check, SplitSquareVertical } from 'lucide-react';
 
 interface TableBillingProps {

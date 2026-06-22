@@ -44,12 +44,12 @@ const NodeRow: React.FC<NodeStatusProps> = ({
         className={cn(
           "w-14 h-14 rounded-2xl flex items-center justify-center border transition-all duration-500 group-hover:scale-110",
           status === "ONLINE" || status === "ACTIVE"
-            ? "bg-success/10 border-emerald-500/20 text-success"
+            ? "bg-success/10 border-success/20 text-success"
             : status === "LOAD" || status === "STANDBY"
-              ? "bg-warning border-amber-500/20 text-warning"
+              ? "bg-warning border-warning/20 text-warning"
               : status === "SYNCING"
                 ? "bg-primary/10 border-primary text-primary"
-                : "bg-destructive/10 border-rose-500/20 text-destructive",
+                : "bg-destructive/10 border-destructive/20 text-destructive",
         )}
       >
         {type === "BRANCH" ? (

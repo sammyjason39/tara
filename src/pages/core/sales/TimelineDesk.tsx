@@ -27,7 +27,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { GlassCard } from "@/components/shared/GlassCard";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { 
   Dialog, 
   DialogContent, 
@@ -48,6 +50,7 @@ import { Label } from "@/components/ui/label";
 import { useSession } from "@/core/security/session";
 import { salesService } from "@/core/services/sales/salesService";
 import { cn } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 import { toast } from "sonner";
 import type { SalesTimelineEvent, SalesOpportunity } from "@/core/types/sales/sales";
 
@@ -155,13 +158,13 @@ export default function TimelineDesk() {
                Activity Pulse Active
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent italic">Neural Timeline</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground italic">Neural Timeline</h1>
 
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic">"Every interaction is a node in the strategic architecture of the deal."</p>
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-slate-800/20 shadow-2xl">
+          <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-border/20 shadow-2xl">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -281,19 +284,18 @@ export default function TimelineDesk() {
             <div className="absolute left-8 top-10 bottom-10 w-0.5 bg-gradient-to-b from-indigo-500 via-indigo-500/20 to-transparent hidden md:block" />
             
             {filtered.length === 0 ? (
-               <Card className="rounded-[3rem] border-none shadow-xl bg-white/40 dark:bg-muted backdrop-blur-xl p-20 text-center space-y-6">
-                  <div className="h-20 w-20 rounded-[2.5rem] bg-muted dark:bg-muted flex items-center justify-center mx-auto opacity-30 grayscale">
-                     <History className="h-10 w-10" />
-                  </div>
-                  <p className="text-sm font-bold text-muted-foreground italic">The neural stream is silent. Initialize interaction protocol.</p>
-               </Card>
+               <EmptyState
+                  title="No activity yet"
+                  description="The neural stream is silent. Log an interaction to populate the timeline."
+                  icon={History}
+               />
             ) : (
                (Array.isArray(filtered) ? filtered : []).map((item, i) => {
                   const channel = CHANNELS[item.channel] || CHANNELS.NOTE;
                   const Icon = channel.icon;
                   return (
                     <div key={item.id} className="relative pl-0 md:pl-20 animate-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${i * 100}ms` }}>
-                       <div className="absolute left-6 top-6 h-4 w-4 rounded-full border-4 border-white dark:border-slate-950 bg-primary shadow-[0_0_15px_rgba(79,70,229,0.5)] z-10 hidden md:block" />
+                       <div className="absolute left-6 top-6 h-4 w-4 rounded-full border-4 border-white dark:border-border bg-primary shadow-[0_0_15px_rgba(79,70,229,0.5)] z-10 hidden md:block" />
                        <Card className="rounded-[2.5rem] border-none shadow-xl bg-white dark:bg-muted overflow-hidden group hover:shadow-2xl hover:-translate-y-1 transition-all duration-500">
                           <CardContent className="p-8">
                              <div className="flex flex-col md:flex-row justify-between items-start gap-6">
@@ -304,7 +306,7 @@ export default function TimelineDesk() {
                                    <div className="space-y-2">
                                       <div className="flex items-center gap-3">
                                          <p className="font-black text-lg tracking-tight leading-none">{item.summary}</p>
-                                         <Badge variant="outline" className="rounded-full text-[8px] font-black px-2 py-0 h-4 border-slate-200 uppercase tracking-widest">{item.channel}</Badge>
+                                         <Badge variant="outline" className="rounded-full text-[8px] font-black px-2 py-0 h-4 border-border uppercase tracking-widest">{item.channel}</Badge>
                                       </div>
                                       <p className="text-xs font-medium text-muted-foreground dark:text-muted-foreground leading-relaxed max-w-xl italic">"{item.detail || "Strategic node update with no supplementary context."}"</p>
                                       <div className="flex items-center gap-4 pt-2">
@@ -320,7 +322,7 @@ export default function TimelineDesk() {
                                 
                                 <div className="flex flex-col items-end gap-3 shrink-0">
                                    <div className="text-right">
-                                      <p className="text-xs font-black tracking-tighter text-muted-foreground dark:text-white uppercase">{new Date(item.createdAt).toLocaleDateString()}</p>
+                                      <p className="text-xs font-black tracking-tighter text-muted-foreground dark:text-white uppercase">{formatDate(item.createdAt)}</p>
                                       <p className="text-[10px] font-bold text-muted-foreground">{new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                    </div>
                                    <Badge className={cn(
@@ -379,7 +381,7 @@ export default function TimelineDesk() {
                </div>
             </Card>
 
-            <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl p-10 space-y-8">
+            <GlassCard className="rounded-[3rem] border-none shadow-2xl p-10 space-y-8">
                <CardTitle className="text-xl font-black tracking-tight flex items-center gap-3">
                   <Filter className="h-5 w-5 text-primary" />
                   Stream Filter
@@ -415,7 +417,7 @@ export default function TimelineDesk() {
                     </button>
                   ))}
                </div>
-            </Card>
+            </GlassCard>
          </div>
       </div>
     </div>

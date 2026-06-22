@@ -14,8 +14,11 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
+import { EmptyState } from "@/components/shared/AsyncState";
+import { formatDate, safeText } from "@/lib/format";
 import { useSession } from "@/core/security/session";
 import { orgSettingsService, OrgProfile, TenantPreferences } from "@/core/services/orgSettingsService";
+import { adminService } from "@/core/services/adminService";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -96,6 +99,8 @@ export default function CoreSettings() {
   const [profile, setProfile] = useState<OrgProfile | null>(null);
   const [preferences, setPreferences] = useState<TenantPreferences | null>(null);
   const [childCompanies, setChildCompanies] = useState<OrgProfile[]>([]);
+  // Real_Data: roles bound to the tenant security registry (no Placeholder_Data).
+  const [securityRoles, setSecurityRoles] = useState<Array<{ role: string; description: string; users: number; lastUpdated: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isAddingChild, setIsAddingChild] = useState(false);
@@ -122,14 +127,16 @@ export default function CoreSettings() {
   const init = async () => {
     setLoading(true);
     try {
-      const [p, pref, children] = await Promise.all([
+      const [p, pref, children, rolesRes] = await Promise.all([
         orgSettingsService.getProfile(session),
         orgSettingsService.getPreferences(session),
-        orgSettingsService.getChildCompanies(session)
+        orgSettingsService.getChildCompanies(session),
+        adminService.getSecurityRoles(session),
       ]);
       setProfile(p);
       setPreferences(pref);
       setChildCompanies(children);
+      setSecurityRoles(Array.isArray(rolesRes?.roles) ? rolesRes.roles : []);
     } catch (err) {
       console.error("Failed to load settings:", err);
       toast({ title: "Sync Failure", description: "Telemetry link to registry timed out.", variant: "destructive" });
@@ -249,7 +256,7 @@ export default function CoreSettings() {
                 <div className="space-y-3">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Business Name</Label>
                   <Input 
-                    className="h-12 rounded-xl border-slate-100 bg-muted focus:bg-white transition-all font-bold"
+                    className="h-12 rounded-xl border-border bg-muted focus:bg-white transition-all font-bold"
                     value={profile?.name || ''} 
                     onChange={(e) => setProfile(p => p ? { ...p, name: e.target.value } : null)}
                   />
@@ -258,7 +265,7 @@ export default function CoreSettings() {
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Industry Sector</Label>
                     <Select value={profile?.industry || 'retail'}>
-                      <SelectTrigger className="h-12 rounded-xl border-slate-100 bg-muted font-bold">
+                      <SelectTrigger className="h-12 rounded-xl border-border bg-muted font-bold">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl border-none shadow-2xl">
@@ -274,7 +281,7 @@ export default function CoreSettings() {
                       value={profile?.currency?.toLowerCase() || 'usd'}
                       onValueChange={(val) => setProfile(p => p ? { ...p, currency: val?.toUpperCase() } : null)}
                     >
-                      <SelectTrigger className="h-12 rounded-xl border-slate-100 bg-muted font-bold">
+                      <SelectTrigger className="h-12 rounded-xl border-border bg-muted font-bold">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl border-none shadow-2xl">
@@ -311,7 +318,7 @@ export default function CoreSettings() {
                  <div className="space-y-3 opacity-60 grayscale cursor-not-allowed">
                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Registered Address (Immutable)</Label>
                    <Textarea 
-                      className="rounded-2xl border-slate-100 bg-muted font-medium text-sm min-h-[100px]"
+                      className="rounded-2xl border-border bg-muted font-medium text-sm min-h-[100px]"
                       value="88 Enterprise Plaza, Cyber Sector 7, Neo-Jakarta, 12110"
                       readOnly
                     />
@@ -333,7 +340,7 @@ export default function CoreSettings() {
           >
             <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3 pt-4">
               {childCompanies.length === 0 ? (
-                <div className="col-span-full py-20 flex flex-col items-center justify-center rounded-[3rem] border border-dashed border-slate-200 bg-muted">
+                <div className="col-span-full py-20 flex flex-col items-center justify-center rounded-[3rem] border border-dashed border-border bg-muted">
                    <Globe className="h-12 w-12 text-muted-foreground mb-4" />
                    <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">No Satellite Nodes Detected</p>
                 </div>
@@ -351,7 +358,7 @@ export default function CoreSettings() {
                          </div>
                          <Badge variant={child.status === 'active' ? 'outline' : 'secondary'} className={cn(
                            "rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest",
-                           child.status === 'active' ? "border-emerald-200 text-success bg-success" : ""
+                           child.status === 'active' ? "border-success text-success bg-success" : ""
                          )}>
                            {child.status}
                          </Badge>
@@ -385,7 +392,7 @@ export default function CoreSettings() {
               >
                 <div className="grid gap-6 md:grid-cols-2 pt-4">
                    {(Array.isArray(group.items) ? group.items : []).map((item) => (
-                     <div key={item.id} className="p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-muted hover:shadow-2xl transition-all duration-500 group flex flex-col justify-between h-full">
+                     <div key={item.id} className="p-8 rounded-[2.5rem] border border-border dark:border-border bg-white dark:bg-muted hover:shadow-2xl transition-all duration-500 group flex flex-col justify-between h-full">
                         <div className="space-y-6">
                           <div className="flex justify-between items-start">
                             <div className="h-14 w-14 rounded-2xl bg-muted dark:bg-muted flex items-center justify-center text-muted-foreground group-hover:bg-primary group-hover:text-white transition-all duration-500 shadow-inner">
@@ -393,9 +400,9 @@ export default function CoreSettings() {
                             </div>
                             <Badge variant="outline" className={cn(
                               "rounded-full px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em]",
-                              item.status === 'Connected' ? "bg-success text-success border-emerald-100" :
-                              item.status === 'Error' ? "bg-destructive text-destructive border-rose-100 animate-pulse" :
-                              "bg-muted text-muted-foreground border-slate-100"
+                              item.status === 'Connected' ? "bg-success text-success border-success" :
+                              item.status === 'Error' ? "bg-destructive text-destructive border-destructive animate-pulse" :
+                              "bg-muted text-muted-foreground border-border"
                             )}>
                               {item.status}
                             </Badge>
@@ -433,13 +440,13 @@ export default function CoreSettings() {
             title="Organizational Roles"
             description="Define permission clusters and access levels across the organization."
             action={
-              <Button variant="outline" className="rounded-xl h-10 gap-2 font-black text-[10px] uppercase tracking-widest border-slate-200">
+              <Button variant="outline" className="rounded-xl h-10 gap-2 font-black text-[10px] uppercase tracking-widest border-border">
                 <Plus className="h-3.5 w-3.5" /> ADD ROLE
               </Button>
             }
           >
             <div className="pt-4 overflow-hidden">
-               <div className="rounded-[2rem] border border-slate-100 overflow-hidden">
+               <div className="rounded-[2rem] border border-border overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted border-none hover:bg-muted">
@@ -451,35 +458,41 @@ export default function CoreSettings() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {[
-                        { id: 1, name: "Super Administrator", desc: "Unrestricted platform-wide access and governance.", users: 3, updated: "2h ago", status: "Active" },
-                        { id: 2, name: "Branch Manager", desc: "Full operational control over specific location clusters.", users: 12, updated: "1d ago", status: "Active" },
-                        { id: 3, name: "Compliance Officer", desc: "Audit trail decryption and fiscal reporting access.", users: 5, updated: "4d ago", status: "Active" },
-                        { id: 4, name: "Standard Operator", desc: "Restricted access to daily transactional workflows.", users: 154, updated: "1h ago", status: "Active" },
-                      ].map((role) => (
-                        <TableRow key={role.id} className="group border-slate-50 hover:bg-muted transition-colors">
+                      {securityRoles.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="p-0">
+                            <EmptyState
+                              title="No roles defined"
+                              description="Permission clusters for this organization will appear here once roles are provisioned."
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                      (Array.isArray(securityRoles) ? securityRoles : []).map((role) => (
+                        <TableRow key={role.role} className="group border-border hover:bg-muted transition-colors">
                           <TableCell className="py-6 px-8">
                             <div className="flex items-center gap-4">
                                <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground group-hover:bg-primary group-hover:text-primary transition-all">
                                   <Users className="h-5 w-5" />
                                </div>
-                               <span className="font-black text-xs uppercase tracking-tighter italic">{role.name}</span>
+                               <span className="font-black text-xs uppercase tracking-tighter italic">{safeText(role.role)}</span>
                             </div>
                           </TableCell>
                           <TableCell className="py-6 px-8">
-                            <span className="text-[11px] font-medium text-muted-foreground leading-relaxed max-w-xs block">{role.desc}</span>
+                            <span className="text-[11px] font-medium text-muted-foreground leading-relaxed max-w-xs block">{safeText(role.description)}</span>
                           </TableCell>
                           <TableCell className="py-6 px-8">
-                            <Badge variant="secondary" className="rounded-full px-3 py-0.5 text-[10px] font-black">{role.users}</Badge>
+                            <Badge variant="secondary" className="rounded-full px-3 py-0.5 text-[10px] font-black">{role.users ?? 0}</Badge>
                           </TableCell>
-                          <TableCell className="py-6 px-8 text-[10px] font-bold text-muted-foreground uppercase">{role.updated}</TableCell>
+                          <TableCell className="py-6 px-8 text-[10px] font-bold text-muted-foreground uppercase">{formatDate(role.lastUpdated)}</TableCell>
                           <TableCell className="py-6 px-8 text-right">
                              <Button variant="ghost" size="sm" className="rounded-lg h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <ChevronRight className="h-4 w-4" />
                              </Button>
                           </TableCell>
                         </TableRow>
-                      ))}
+                      ))
+                      )}
                     </TableBody>
                   </Table>
                </div>
@@ -493,12 +506,12 @@ export default function CoreSettings() {
             description="Fiscal protocols, tax logic, and financial reporting parameters."
           >
             <div className="grid gap-8 md:grid-cols-2 pt-4">
-               <div className="space-y-4 p-8 rounded-[2.5rem] border border-slate-100 bg-muted">
+               <div className="space-y-4 p-8 rounded-[2.5rem] border border-border bg-muted">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Default Consumption Tax (%)</Label>
                   <Input type="number" defaultValue={10} className="h-14 rounded-2xl font-black text-2xl border-none shadow-inner" />
                   <p className="text-[10px] font-bold text-muted-foreground italic">"Global fallback rate for non-geocoded transactions."</p>
                </div>
-               <div className="space-y-4 p-8 rounded-[2.5rem] border border-slate-100 bg-muted">
+               <div className="space-y-4 p-8 rounded-[2.5rem] border border-border bg-muted">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Rounding Protocol</Label>
                   <Select defaultValue="nearest">
                      <SelectTrigger className="h-14 rounded-2xl font-black text-lg border-none shadow-inner">
@@ -529,7 +542,7 @@ export default function CoreSettings() {
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Node Identity (Name)</Label>
               <Input
                 placeholder="Enterprise Satellite Name"
-                className="h-12 rounded-xl border-slate-100 bg-muted focus:bg-white transition-all font-bold"
+                className="h-12 rounded-xl border-border bg-muted focus:bg-white transition-all font-bold"
                 value={newChild.name}
                 onChange={(e) => setNewChild({ ...newChild, name: e.target.value })}
               />
@@ -538,7 +551,7 @@ export default function CoreSettings() {
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">HQ Physical Address</Label>
               <Textarea
                 placeholder="Enter full physical address for this node"
-                className="rounded-xl border-slate-100 bg-muted focus:bg-white transition-all font-bold min-h-[80px]"
+                className="rounded-xl border-border bg-muted focus:bg-white transition-all font-bold min-h-[80px]"
                 value={newChild.address || ""}
                 onChange={(e) => setNewChild({ ...newChild, address: e.target.value })}
               />
@@ -599,7 +612,7 @@ export default function CoreSettings() {
               <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Industry Vector</Label>
                 <Select value={newChild.industry} onValueChange={(val) => setNewChild({ ...newChild, industry: val })}>
-                  <SelectTrigger className="h-12 rounded-xl border-slate-100 bg-muted font-bold">
+                  <SelectTrigger className="h-12 rounded-xl border-border bg-muted font-bold">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-none shadow-2xl">
@@ -612,7 +625,7 @@ export default function CoreSettings() {
               <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Jurisdiction</Label>
                 <Select value={newChild.country} onValueChange={(val) => setNewChild({ ...newChild, country: val })}>
-                  <SelectTrigger className="h-12 rounded-xl border-slate-100 bg-muted font-bold">
+                  <SelectTrigger className="h-12 rounded-xl border-border bg-muted font-bold">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-none shadow-2xl">
@@ -672,7 +685,7 @@ export default function CoreSettings() {
                        { label: "Daily Trans", value: "892" },
                        { label: "Sync Status", value: "100%" },
                      ].map((stat, i) => (
-                       <div key={i} className="p-6 rounded-3xl bg-muted dark:bg-muted border border-slate-100 dark:border-slate-700 text-center space-y-1">
+                       <div key={i} className="p-6 rounded-3xl bg-muted dark:bg-muted border border-border dark:border-border text-center space-y-1">
                           <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{stat.label}</p>
                           <p className="text-xl font-black italic">{stat.value}</p>
                        </div>
@@ -680,7 +693,7 @@ export default function CoreSettings() {
                   </div>
                </div>
                <div className="flex gap-4">
-                  <Button variant="outline" className="flex-1 rounded-2xl h-14 font-black text-xs uppercase tracking-widest border-slate-200">
+                  <Button variant="outline" className="flex-1 rounded-2xl h-14 font-black text-xs uppercase tracking-widest border-border">
                     SATELLITE LOGS
                   </Button>
                   <Button className="flex-1 rounded-2xl h-14 font-black text-xs uppercase tracking-widest bg-primary hover:bg-primary text-white shadow-xl shadow-indigo-500/20">

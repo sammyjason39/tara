@@ -9,8 +9,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { AlertCircle, Plus, Trash2 } from "lucide-react";
-import { inventoryService } from "@/core/services/inventory/inventoryService";
 import { useSession } from "@/core/security/session";
+import { useBatchIntake } from "../hooks/useInventoryQueries";
 
 interface BatchIntakeDialogProps {
   open: boolean;
@@ -33,8 +33,8 @@ export function BatchIntakeDialog({
   onSuccess,
 }: BatchIntakeDialogProps) {
   const session = useSession();
+  const batchMutation = useBatchIntake();
   const [items, setItems] = useState([emptyRow()]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const addItem = () => setItems((prev) => [...prev, emptyRow()]);
@@ -58,17 +58,14 @@ export function BatchIntakeDialog({
       setError("Add at least one row with a Product ID and quantity > 0.");
       return;
     }
-    setLoading(true);
     setError(null);
     try {
-      await inventoryService.batchRecordIntake(session.tenant_id, session, valid);
+      await batchMutation.mutateAsync(valid);
       onSuccess();
       onOpenChange(false);
       reset();
     } catch (err: any) {
       setError(err?.message || "Batch intake failed. Please check all rows.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -183,12 +180,12 @@ export function BatchIntakeDialog({
               reset();
               onOpenChange(false);
             }}
-            disabled={loading}
+            disabled={batchMutation.isPending}
           >
             Cancel
           </Button>
-          <Button onClick={handleBatchIntake} disabled={loading}>
-            {loading ? "Processing..." : "Confirm Batch Intake"}
+          <Button onClick={handleBatchIntake} disabled={batchMutation.isPending}>
+            {batchMutation.isPending ? "Processing..." : "Confirm Batch Intake"}
           </Button>
         </DialogFooter>
       </DialogContent>

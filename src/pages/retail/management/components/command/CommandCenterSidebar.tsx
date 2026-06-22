@@ -32,25 +32,25 @@ export const CommandCenterSidebar = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="p-8 space-y-6">
-          <div className="flex justify-between items-center p-5 rounded-2xl bg-destructive/10 border border-rose-500/20 shadow-xl group/critical hover:scale-[1.02] transition-transform">
+          <div className="flex justify-between items-center p-5 rounded-2xl bg-destructive/10 border border-destructive/20 shadow-xl group/critical hover:scale-[1.02] transition-transform">
             <div className="flex items-center gap-4">
               <AlertCircle className="w-5 h-5 text-destructive" />
               <span className="text-[10px] font-black italic text-destructive uppercase tracking-widest italic">
                 Critical Depletion
               </span>
             </div>
-            <Badge className="bg-destructive/20 text-destructive border border-rose-500/30 font-black italic text-[11px] px-3 h-6 rounded-lg">
+            <Badge className="bg-destructive/20 text-destructive border border-destructive/30 font-black italic text-[11px] px-3 h-6 rounded-lg">
               {inventoryStats?.outOfStockCount || 0}
             </Badge>
           </div>
-          <div className="flex justify-between items-center p-5 rounded-2xl bg-warning border border-amber-500/20 shadow-xl group/low hover:scale-[1.02] transition-transform">
+          <div className="flex justify-between items-center p-5 rounded-2xl bg-warning border border-warning/20 shadow-xl group/low hover:scale-[1.02] transition-transform">
             <div className="flex items-center gap-4">
               <AlertCircle className="w-5 h-5 text-warning" />
               <span className="text-[10px] font-black italic text-warning uppercase tracking-widest italic">
                 Low Stock Threshold
               </span>
             </div>
-            <Badge className="bg-warning text-warning border border-amber-500/30 font-black italic text-[11px] px-3 h-6 rounded-lg">
+            <Badge className="bg-warning text-warning border border-warning/30 font-black italic text-[11px] px-3 h-6 rounded-lg">
               {inventoryStats?.lowStockCount || 0}
             </Badge>
           </div>

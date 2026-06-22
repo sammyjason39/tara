@@ -322,4 +322,22 @@ export const ecommerceHubService = {
       { categories },
     );
   },
+
+  async getChannelDeliveryLogs(
+    session: SessionContext,
+    channelId: string,
+  ): Promise<Array<{
+    id: string;
+    timestamp: string;
+    event: string;
+    statusCode: number;
+    latencyMs: number;
+    success: boolean;
+  }>> {
+    return apiRequest(
+      `/retail/ecommerce-hub/channels/${channelId}/delivery-logs`,
+      "GET",
+      session,
+    );
+  },
 };

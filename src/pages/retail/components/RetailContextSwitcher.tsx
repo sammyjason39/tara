@@ -78,7 +78,7 @@ export const RetailContextSwitcher = () => {
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
-          className="h-12 border-2 border-slate-200 rounded-2xl flex items-center gap-3 px-4 hover:bg-secondary/5 hover:border-primary transition-all shadow-sm"
+          className="h-12 border-2 border-border rounded-2xl flex items-center gap-3 px-4 hover:bg-secondary/5 hover:border-primary transition-all shadow-sm"
         >
           <div
             className={`w-8 h-8 rounded-lg flex items-center justify-center ${isChannel ? "bg-primary/10 text-primary" : "bg-primary text-primary"}`}
@@ -101,7 +101,7 @@ export const RetailContextSwitcher = () => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className="w-64 rounded-2xl p-2 shadow-2xl border-2 border-slate-100"
+        className="w-64 rounded-2xl p-2 shadow-2xl border-2 border-border"
         align="start"
       >
         <DropdownMenuLabel className="px-3 py-2">

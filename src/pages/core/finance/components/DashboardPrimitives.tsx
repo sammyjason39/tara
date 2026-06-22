@@ -23,9 +23,9 @@ export function NavWidget({
     <button
       onClick={() => navigate(href)}
       className={cn(
-        "group relative w-full text-left overflow-hidden rounded-3xl border border-slate-100 bg-white",
+        "group relative w-full text-left overflow-hidden rounded-3xl border border-border bg-white",
         "p-7 shadow-sm transition-all duration-300",
-        "hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-200/60 hover:border-slate-200",
+        "hover:-translate-y-1.5 hover:shadow-xl hover:shadow-slate-200/60 hover:border-border",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30",
       )}
     >
@@ -158,7 +158,7 @@ export function EmptyState({
   desc: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center py-14 text-center border-2 border-dashed border-slate-100 rounded-3xl bg-muted">
+    <div className="flex flex-col items-center justify-center py-14 text-center border-2 border-dashed border-border rounded-3xl bg-muted">
       <div
         className={cn(
           "h-16 w-16 rounded-2xl flex items-center justify-center mb-4 border border-white shadow-sm",

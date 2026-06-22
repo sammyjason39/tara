@@ -15,6 +15,9 @@ import { useSession } from "@/core/security/session";
 import { financeApiClient } from "@/core/services/finance/financeApiClient";
 import type { FinanceReceivableRow } from "@/core/services/finance/financeService";
 import { logService } from "@/core/services/finance/logService";
+import { formatNumber } from "@/lib/format";
+import { EmptyState } from "@/components/shared/AsyncState";
+import { CreateReceivableModal } from "@/core/finance/FinanceModalForms";
 
 type ReceivableTab = "PENDING" | "APPROVED" | "OVERDUE";
 
@@ -139,7 +142,7 @@ export default function ReceivableDesk() {
             >
               <td className="p-3">{receivable.customerName}</td>
               <td className="p-3">{receivable.invoiceNumber}</td>
-              <td className="p-3 text-muted-foreground">{receivable.amount.toLocaleString()}</td>
+              <td className="p-3 text-muted-foreground">{formatNumber(receivable.amount)}</td>
               <td className="p-3">{receivable.dueDate}</td>
               <td className="p-3">
                 <ApprovalStatusBadge status={receivable.status} />
@@ -162,6 +165,12 @@ export default function ReceivableDesk() {
           ))}
         </tbody>
       </table>
+      {(Array.isArray(items) ? items : []).length === 0 ? (
+        <EmptyState
+          title="No receivables"
+          description="No receivables exist for this view in the current tenant scope."
+        />
+      ) : null}
     </DataTableShell>
   );
 
@@ -355,7 +364,7 @@ export default function ReceivableDesk() {
                 <p className="text-sm text-muted-foreground uppercase font-semibold tracking-wider mb-1">Financials</p>
                 <div className="bg-primary/5 p-4 rounded-xl border border-primary/10">
                   <p className="text-sm font-medium mb-1">Total Outstanding</p>
-                  <p className="text-3xl font-bold tracking-tight">Rp {selectedItem?.amount.toLocaleString()}</p>
+                  <p className="text-3xl font-bold tracking-tight">Rp {formatNumber(selectedItem?.amount ?? null)}</p>
                 </div>
               </div>
               <div className="border-t pt-4">

@@ -29,12 +29,14 @@ import { useSession } from "@/core/security/session";
 import { financeService } from "@/core/services/finance/financeService";
 import { logService } from "@/core/services/finance/logService";
 import { Landmark, TrendingUp, TrendingDown, ArrowRightLeft, AlertTriangle } from "lucide-react";
+import { formatNumber } from "@/lib/format";
 import type { FinanceAlert } from "@/core/types/finance/assets";
 import type {
   PaymentMethod,
   FinancePaymentRow,
 } from "@/core/types/finance/payments";
 import type { WorkflowRequest } from "@/core/tools/workflows/workflowTypes";
+import { CreatePaymentModal } from "@/core/finance/FinanceModalForms";
 
 const PAYMENT_METHODS: PaymentMethod[] = [
   "BANK_TRANSFER",
@@ -287,10 +289,10 @@ export default function MoneyDesk() {
 
       <div className="grid gap-4 md:grid-cols-3">
         {(Array.isArray(moneySources) ? moneySources : []).slice(0, 3).map((source) => (
-          <div key={source.id} className="bg-white p-4 rounded-xl border border-primary/10 shadow-sm flex items-center justify-between">
+          <div key={source.id} className="bg-card p-4 rounded-xl border border-primary/10 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{source.name}</p>
-              <p className="text-xl font-black text-primary">{source.currency} {(source as any).balance?.toLocaleString() || "0"}</p>
+              <p className="text-xl font-black text-primary">{source.currency} {formatNumber((source as any).balance ?? 0)}</p>
             </div>
             <div className="p-2 bg-primary/5 rounded-lg">
               <Landmark className="w-5 h-5 text-primary" />
@@ -304,12 +306,12 @@ export default function MoneyDesk() {
         description="Active payment requests and treasury alerts requiring immediate action."
       >
         {statusMessage ? (
-          <div className="mb-4 rounded-lg border border-emerald-200 bg-success px-3 py-2 text-sm text-success">
+          <div className="mb-4 rounded-lg border border-success/30 bg-success px-3 py-2 text-sm text-success">
             {statusMessage}
           </div>
         ) : null}
         {errorMessage ? (
-          <div className="mb-4 rounded-lg border border-red-200 bg-destructive px-3 py-2 text-sm text-destructive">
+          <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive px-3 py-2 text-sm text-destructive">
             {errorMessage}
           </div>
         ) : null}
@@ -433,7 +435,7 @@ export default function MoneyDesk() {
                         {p.beneficiary}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {p.currency} {p.amount.toLocaleString()} •{" "}
+                        {p.currency} {formatNumber(p.amount)} •{" "}
                         {new Date(p.scheduledDate || "").toLocaleDateString()}
                       </p>
                     </div>
@@ -454,11 +456,11 @@ export default function MoneyDesk() {
           <TabsContent value="sources" className="mt-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {(Array.isArray(moneySources) ? moneySources : []).map((source: any) => (
-                <div key={source.id} className="bg-white p-4 rounded-xl border border-primary/10 shadow-sm">
+                <div key={source.id} className="bg-card p-4 rounded-xl border border-primary/10 shadow-sm">
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{source.name}</p>
-                      <p className="text-lg font-black text-primary">{source.currency} {source.balance?.toLocaleString() || "0"}</p>
+                      <p className="text-lg font-black text-primary">{source.currency} {formatNumber(source.balance ?? 0)}</p>
                     </div>
                     <Button 
                       variant="ghost" 
@@ -473,22 +475,22 @@ export default function MoneyDesk() {
                       <ArrowRightLeft className="w-4 h-4 rotate-90" />
                     </Button>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-50">
+                  <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-border">
                     <div>
                       <p className="text-[8px] font-black uppercase text-muted-foreground mb-0.5">Min Limit</p>
                       <p className={`text-xs font-bold ${source.balance < (source.minLimit || 0) ? "text-destructive" : "text-muted-foreground"}`}>
-                        {source.minLimit ? `${source.currency} ${source.minLimit.toLocaleString()}` : "Not Set"}
+                        {source.minLimit ? `${source.currency} ${formatNumber(source.minLimit)}` : "Not Set"}
                       </p>
                     </div>
                     <div>
                       <p className="text-[8px] font-black uppercase text-muted-foreground mb-0.5">Max Limit</p>
                       <p className={`text-xs font-bold ${source.balance > (source.maxLimit || 999999999) ? "text-destructive" : "text-muted-foreground"}`}>
-                        {source.maxLimit ? `${source.currency} ${source.maxLimit.toLocaleString()}` : "Not Set"}
+                        {source.maxLimit ? `${source.currency} ${formatNumber(source.maxLimit)}` : "Not Set"}
                       </p>
                     </div>
                   </div>
                   {(source.balance < (source.minLimit || 0) || source.balance > (source.maxLimit || 999999999)) && (
-                    <div className="mt-3 flex items-center gap-2 text-destructive bg-destructive p-2 rounded-lg border border-rose-100 animate-pulse">
+                    <div className="mt-3 flex items-center gap-2 text-destructive bg-destructive p-2 rounded-lg border border-destructive/30 animate-pulse">
                       <AlertTriangle className="w-3.5 h-3.5" />
                       <span className="text-[9px] font-black uppercase tracking-tighter">THRESHOLD VIOLATION</span>
                     </div>
@@ -522,7 +524,7 @@ export default function MoneyDesk() {
                   <tr key={p.id} className="border-t hover:bg-muted/50">
                     <td className="p-3 font-medium">{p.beneficiary}</td>
                     <td className="p-3 text-muted-foreground">
-                      {p.currency} {p.amount.toLocaleString()}
+                      {p.currency} {formatNumber(p.amount)}
                     </td>
                     <td className="p-3">
                       <Badge variant="outline">{p.method}</Badge>
@@ -792,7 +794,7 @@ export default function MoneyDesk() {
             <DialogTitle>Operational Alert</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2">
-            <div className="rounded-lg bg-destructive border border-rose-100 p-3 text-destructive">
+            <div className="rounded-lg bg-destructive border border-destructive/30 p-3 text-destructive">
               <p className="font-bold">{selectedAlert?.title}</p>
               <p className="text-sm">{selectedAlert?.description}</p>
             </div>
@@ -851,7 +853,7 @@ export default function MoneyDesk() {
               </div>
             </div>
 
-            <div className="bg-warning border border-amber-100 p-3 rounded-lg text-[10px] text-warning font-bold uppercase tracking-widest leading-relaxed">
+            <div className="bg-warning border border-warning/30 p-3 rounded-lg text-[10px] text-warning font-bold uppercase tracking-widest leading-relaxed">
               <Info className="w-3.5 h-3.5 inline mr-1 -mt-0.5" />
               Violations will trigger real-time alerts in the Money Desk and notify the treasury team.
             </div>

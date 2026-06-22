@@ -42,7 +42,9 @@ export class ITEventHandler implements OnModuleInit {
     const employee_id = event.entity_id;
 
     try {
-      await this.itService.createProvisioningRequest(event.tenant_id, {
+      await this.itService.createProvisioningRequest(
+        { tenant_id: event.tenant_id },
+        {
         employee_id: employee_id,
         type: 'ACCOUNT_CREATION',
         scope: 'full_portal' as any,
@@ -84,7 +86,9 @@ export class ITEventHandler implements OnModuleInit {
     const employee_id = event.entity_id;
 
     try {
-      await this.itService.createProvisioningRequest(event.tenant_id, {
+      await this.itService.createProvisioningRequest(
+        { tenant_id: event.tenant_id },
+        {
         employee_id: employee_id,
         type: 'ACCESS_REVOCATION',
         scope: 'full_portal' as any,
@@ -124,7 +128,9 @@ export class ITEventHandler implements OnModuleInit {
     const employee_id = event.entity_id;
 
     try {
-      await this.itService.createProvisioningRequest(event.tenant_id, {
+      await this.itService.createProvisioningRequest(
+        { tenant_id: event.tenant_id },
+        {
         employee_id: employee_id,
         type: 'ACCESS_REVOCATION',
         scope: 'full_portal' as any,

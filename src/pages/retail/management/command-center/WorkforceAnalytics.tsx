@@ -57,7 +57,7 @@ export const WorkforceAnalytics: React.FC<WorkforceAnalyticsProps> = ({
                       <span className="text-xl font-black text-foreground italic block leading-none mb-2 tracking-tighter">
                         Rp {(staff.sales / 1000000).toFixed(1)}M
                       </span>
-                      <div className="flex items-center justify-end gap-2 px-3 py-1 rounded-xl bg-success/10 border border-emerald-500/20 shadow-lg">
+                      <div className="flex items-center justify-end gap-2 px-3 py-1 rounded-xl bg-success/10 border border-success/20 shadow-lg">
                         <Award className="w-3 h-3 text-success" />
                         <span className="text-[8px] font-black text-success uppercase tracking-widest leading-none italic">
                           TOP PERFORMANCE
@@ -115,7 +115,7 @@ export const WorkforceAnalytics: React.FC<WorkforceAnalyticsProps> = ({
                 CRIT
               </span>
             </div>
-            <div className="mt-6 flex items-center gap-3 relative z-10 px-4 py-1.5 rounded-xl bg-success/10 border border-emerald-500/20 w-fit shadow-lg">
+            <div className="mt-6 flex items-center gap-3 relative z-10 px-4 py-1.5 rounded-xl bg-success/10 border border-success/20 w-fit shadow-lg">
               <div className="w-2 h-2 rounded-full bg-success animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
               <span className="text-[9px] font-black text-success uppercase tracking-widest italic">
                 Nominal

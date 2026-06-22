@@ -29,6 +29,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { formatDateTime, safeText } from "@/lib/format";
 import DepartmentWorkspaceLayout from "@/components/layouts/DepartmentWorkspaceLayout";
 
 const SECTIONS = [
@@ -142,7 +143,7 @@ export default function ChatHub() {
     <div className="flex gap-2">
       <Button
         variant="outline"
-        className="rounded-xl border-slate-200 bg-white shadow-sm hover:bg-muted font-bold text-[10px] uppercase tracking-widest h-9"
+        className="rounded-xl bg-card shadow-sm hover:bg-muted font-bold text-[10px] uppercase tracking-widest h-9"
       >
         <Plus className="h-3 w-3 mr-2" /> New Group
       </Button>
@@ -150,9 +151,9 @@ export default function ChatHub() {
   );
 
   const mainContent = (
-    <div className="flex h-[calc(100vh-140px)] overflow-hidden bg-muted dark:bg-muted rounded-[2.5rem] border border-slate-200/50 dark:border-slate-800/50 m-6">
+    <div className="flex h-[calc(100vh-140px)] overflow-hidden bg-muted dark:bg-muted rounded-[2.5rem] border border-border/50 dark:border-border/50 m-6">
       {/* Sidebar - Channels */}
-      <div className="w-80 border-r border-slate-200/50 dark:border-slate-800/50 flex flex-col bg-white dark:bg-muted backdrop-blur-xl">
+      <div className="w-80 border-r border-border/50 dark:border-border/50 flex flex-col bg-white dark:bg-muted backdrop-blur-xl">
         <div className="p-6 space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -183,9 +184,9 @@ export default function ChatHub() {
                   <div
                     key={channel.id}
                     onClick={() => setActiveChannel(channel)}
-                    className={`p-4 rounded-2xl cursor-pointer transition-all flex items-center gap-4 group ${activeChannel?.id === channel.id ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'hover:bg-muted dark:hover:bg-muted'}`}
+                    className={`p-4 rounded-2xl cursor-pointer transition-all flex items-center gap-4 group ${activeChannel?.id === channel.id ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'hover:bg-muted dark:hover:bg-muted'}`}
                   >
-                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${activeChannel?.id === channel.id ? 'bg-white/20' : 'bg-primary/10 text-primary'}`}>
+                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${activeChannel?.id === channel.id ? 'bg-background/20' : 'bg-primary/10 text-primary'}`}>
                       {channel.type === "PRIVATE" ? <Lock className="h-4 w-4" /> : <Users className="h-4 w-4" />}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -221,7 +222,7 @@ export default function ChatHub() {
         ) : (
           <>
             {/* Chat Header */}
-            <div className="p-6 border-b border-slate-200/50 dark:border-slate-800/50 flex justify-between items-center bg-white/50 dark:bg-muted backdrop-blur-md sticky top-0 z-10">
+            <div className="p-6 border-b border-border/50 dark:border-border/50 flex justify-between items-center bg-white/50 dark:bg-muted backdrop-blur-md sticky top-0 z-10">
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
                   {activeChannel.type === "PRIVATE" ? <Lock className="h-5 w-5" /> : <Users className="h-5 w-5" />}
@@ -229,7 +230,7 @@ export default function ChatHub() {
                 <div>
                   <h2 className="text-sm font-black uppercase tracking-widest leading-tight">{activeChannel.name}</h2>
                   <div className="flex items-center gap-2 mt-1">
-                    <Circle className="h-2 w-2 fill-emerald-500 text-success" />
+                    <Circle className="h-2 w-2 fill-success text-success" />
                     <span className="text-[9px] font-black text-success uppercase tracking-tighter">Transmission Stable</span>
                   </div>
                 </div>
@@ -256,16 +257,16 @@ export default function ChatHub() {
                     const isMe = msg.senderId === session?.user?.id;
                     return (
                       <div key={msg.id} className={`flex gap-4 group ${isMe ? 'flex-row-reverse' : 'flex-row'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
-                        <div className={`h-10 w-10 rounded-xl shrink-0 flex items-center justify-center font-black text-xs ${isMe ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
-                          {msg.senderId[0].toUpperCase()}
+                        <div className={`h-10 w-10 rounded-xl shrink-0 flex items-center justify-center font-black text-xs ${isMe ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+                          {safeText(msg.senderId?.[0]?.toUpperCase())}
                         </div>
                         <div className={`max-w-[70%] space-y-2 ${isMe ? 'items-end' : 'items-start'}`}>
                           <div className={`flex items-center gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
-                            <span className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">@{msg.senderId.split("-")[0]}</span>
-                            <span className="text-[9px] font-bold text-muted-foreground">{new Date(msg.createdAt).toLocaleTimeString()}</span>
+                            <span className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">@{safeText(msg.senderId?.split("-")[0])}</span>
+                            <span className="text-[9px] font-bold text-muted-foreground">{formatDateTime(msg.createdAt)}</span>
                           </div>
-                          <div className={`p-4 rounded-2xl text-sm font-medium leading-relaxed shadow-sm ${isMe ? 'bg-primary text-white rounded-tr-none' : 'bg-white dark:bg-muted border border-slate-100 dark:border-slate-800 rounded-tl-none'}`}>
-                            {msg.body}
+                          <div className={`p-4 rounded-2xl text-sm font-medium leading-relaxed shadow-sm ${isMe ? 'bg-primary text-primary-foreground rounded-tr-none' : 'bg-card border border-border rounded-tl-none'}`}>
+                            {safeText(msg.body)}
                           </div>
                         </div>
                       </div>
@@ -277,7 +278,7 @@ export default function ChatHub() {
             </ScrollArea>
 
             {/* Input */}
-            <div className="p-8 border-t border-slate-200/50 dark:border-slate-800/50 bg-white/50 dark:bg-muted backdrop-blur-md">
+            <div className="p-8 border-t border-border/50 dark:border-border/50 bg-white/50 dark:bg-muted backdrop-blur-md">
               <div className="max-w-4xl mx-auto flex gap-4">
                 <div className="relative flex-1 group">
                   <Input
@@ -300,7 +301,7 @@ export default function ChatHub() {
                             <Send className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent className="bg-muted text-white border-none font-black text-[9px] uppercase tracking-widest px-3 py-1.5 rounded-lg shadow-2xl">Execute Transmission</TooltipContent>
+                        <TooltipContent className="bg-popover text-popover-foreground border-none font-black text-[9px] uppercase tracking-widest px-3 py-1.5 rounded-lg shadow-2xl">Execute Transmission</TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   </div>

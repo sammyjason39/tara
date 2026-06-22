@@ -14,7 +14,7 @@ interface GlobalSyncHealthPanelProps {
 
 export const GlobalSyncHealthPanel: React.FC<GlobalSyncHealthPanelProps> = ({ data }) => {
   return (
-    <div className="flex flex-col h-full rounded-[2.5rem] border border-slate-800 bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 overflow-hidden group">
+    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 overflow-hidden group">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h4 className="text-xl font-black italic uppercase tracking-tighter text-white">Global Sync Fabric</h4>
@@ -22,7 +22,7 @@ export const GlobalSyncHealthPanel: React.FC<GlobalSyncHealthPanelProps> = ({ da
         </div>
         <div className={cn(
           "h-12 w-12 rounded-2xl flex items-center justify-center border transition-all duration-700",
-          data.isHealthy ? "bg-success border-emerald-500/20 text-success" : "bg-destructive border-rose-500/20 text-destructive"
+          data.isHealthy ? "bg-success border-success/20 text-success" : "bg-destructive border-destructive/20 text-destructive"
         )}>
           <Cloud className="h-6 w-6" />
         </div>
@@ -32,7 +32,7 @@ export const GlobalSyncHealthPanel: React.FC<GlobalSyncHealthPanelProps> = ({ da
         <div className="relative flex flex-col items-center gap-4">
           <div className={cn(
             "flex h-32 w-32 items-center justify-center rounded-full border-[12px] transition-all duration-1000 shadow-[0_0_30px_-5px]",
-            data.isHealthy ? "border-emerald-500/10 text-success shadow-emerald-500/20" : "border-rose-500/10 text-destructive shadow-rose-500/20"
+            data.isHealthy ? "border-success/10 text-success shadow-emerald-500/20" : "border-destructive/10 text-destructive shadow-rose-500/20"
           )}>
             <Zap className={cn("h-10 w-10", data.isHealthy ? "animate-pulse" : "")} />
           </div>
@@ -58,7 +58,7 @@ export const GlobalSyncHealthPanel: React.FC<GlobalSyncHealthPanelProps> = ({ da
 
           <div className={cn(
             "space-y-3 rounded-3xl p-6 border transition-all",
-            data.failed > 0 ? "bg-destructive border-rose-500/20" : "bg-white/5 border-white/5"
+            data.failed > 0 ? "bg-destructive border-destructive/20" : "bg-white/5 border-white/5"
           )}>
             <div className="flex items-center justify-between text-muted-foreground">
               <span className="text-[10px] font-black uppercase tracking-widest">Failed</span>

@@ -10,8 +10,8 @@ import {
 import { Input as UIInput } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertCircle } from "lucide-react";
-import { inventoryService } from "@/core/services/inventory/inventoryService";
 import { useSession } from "@/core/security/session";
+import { useRecordTransfer } from "../hooks/useInventoryQueries";
 import type {
   InventoryStockBalance,
   InventoryItemMaster,
@@ -34,11 +34,11 @@ export function TransferDialog({
   onSuccess,
 }: TransferDialogProps) {
   const session = useSession();
+  const transferMutation = useRecordTransfer();
   const [quantity, setQuantity] = useState(1);
   const [toLocation, setToLocation] = useState("");
   const [toDepartment, setToDepartment] = useState("");
   const [reason, setReason] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const reset = () => {
@@ -59,10 +59,9 @@ export function TransferDialog({
       setError("Quantity must be greater than 0.");
       return;
     }
-    setLoading(true);
     setError(null);
     try {
-      await inventoryService.recordTransfer(session.tenant_id, session, {
+      await transferMutation.mutateAsync({
         item_id: selectedBalance.item.id,
         from_location_id: selectedBalance.balance.location_id,
         from_department_id: selectedBalance.balance.department_id,
@@ -76,8 +75,6 @@ export function TransferDialog({
       reset();
     } catch (err: any) {
       setError(err?.message || "Transfer failed. Please try again.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -171,12 +168,12 @@ export function TransferDialog({
               reset();
               onOpenChange(false);
             }}
-            disabled={loading}
+            disabled={transferMutation.isPending}
           >
             Cancel
           </Button>
-          <Button onClick={handleTransfer} disabled={loading}>
-            {loading ? "Processing..." : "Execute Transfer"}
+          <Button onClick={handleTransfer} disabled={transferMutation.isPending}>
+            {transferMutation.isPending ? "Processing..." : "Execute Transfer"}
           </Button>
         </DialogFooter>
       </DialogContent>

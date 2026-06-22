@@ -138,7 +138,7 @@ export const ReportFilterDialog: React.FC<ReportFilterDialogProps> = ({
                   onValueChange={setBranchId}
                   disabled={!isAdmin}
                 >
-                  <SelectTrigger className="h-16 rounded-xl font-black italic border-slate-100 bg-white shadow-sm px-6 hover:bg-secondary/5 transition-all">
+                  <SelectTrigger className="h-16 rounded-xl font-black italic border-border bg-white shadow-sm px-6 hover:bg-secondary/5 transition-all">
                     <SelectValue placeholder="Select Location" />
                   </SelectTrigger>
                   <SelectContent className="rounded-[2rem] border-none shadow-2xl p-3 font-black italic bg-white/95 backdrop-blur-md">
@@ -173,13 +173,13 @@ export const ReportFilterDialog: React.FC<ReportFilterDialogProps> = ({
                     type="date"
                     value={dateFrom}
                     onChange={(e) => setDateFrom(e.target.value)}
-                    className="h-16 rounded-xl border-slate-100 bg-white shadow-sm px-6 font-bold focus:ring-indigo-500 transition-all text-sm"
+                    className="h-16 rounded-xl border-border bg-white shadow-sm px-6 font-bold focus:ring-indigo-500 transition-all text-sm"
                   />
                   <Input
                     type="date"
                     value={dateTo}
                     onChange={(e) => setDateTo(e.target.value)}
-                    className="h-16 rounded-xl border-slate-100 bg-white shadow-sm px-6 font-bold focus:ring-indigo-500 transition-all text-sm"
+                    className="h-16 rounded-xl border-border bg-white shadow-sm px-6 font-bold focus:ring-indigo-500 transition-all text-sm"
                   />
                 </div>
               </div>
@@ -205,7 +205,7 @@ export const ReportFilterDialog: React.FC<ReportFilterDialogProps> = ({
                       "flex flex-col items-center justify-center p-8 rounded-2xl cursor-pointer transition-all border-2 text-center space-y-4",
                       toggles[toggle.key as keyof typeof toggles]
                         ? "bg-primary/5 border-primary shadow-xl shadow-indigo-100/50"
-                        : "bg-white border-slate-100 text-muted-foreground hover:border-slate-200",
+                        : "bg-white border-border text-muted-foreground hover:border-border",
                     )}
                   >
                     <toggle.icon
@@ -253,7 +253,7 @@ export const ReportFilterDialog: React.FC<ReportFilterDialogProps> = ({
                   variant="outline"
                   onClick={() => handleExport("EXCEL")}
                   disabled={isGenerating}
-                  className="w-20 h-20 rounded-2xl p-0 border-2 border-slate-100 hover:bg-secondary/5 hover:border-slate-200 transition-all"
+                  className="w-20 h-20 rounded-2xl p-0 border-2 border-border hover:bg-secondary/5 hover:border-border transition-all"
                   title="Export .XLSX"
                 >
                   <Layers className="w-6 h-6 text-foreground" />
@@ -262,7 +262,7 @@ export const ReportFilterDialog: React.FC<ReportFilterDialogProps> = ({
                   variant="outline"
                   onClick={() => handleExport("PDF")}
                   disabled={isGenerating}
-                  className="w-20 h-20 rounded-2xl p-0 border-2 border-slate-100 hover:bg-secondary/5 hover:border-slate-200 transition-all"
+                  className="w-20 h-20 rounded-2xl p-0 border-2 border-border hover:bg-secondary/5 hover:border-border transition-all"
                   title="Export .PDF"
                 >
                   <FileText className="w-6 h-6 text-foreground" />

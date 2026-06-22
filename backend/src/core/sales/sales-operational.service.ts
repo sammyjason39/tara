@@ -22,7 +22,7 @@ export class SalesOperationalService {
   async createLead(ctx: TenantContext, data: any, user_id?: string): Promise<Lead> {
     const event_reference_id = `EVT-SALES-LEAD-NEW-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      const lead = await this.salesRepository.createLead(ctx, data, tx);
+      const lead = await this.salesRepository.createLead(ctx, data, user_id, tx);
       await this.auditService.log({
         tenant_id: ctx.tenant_id, user_id: user_id || "SYSTEM", module: "SALES", action: "CREATE", entity_type: "LEAD", entity_id: lead.id, after_state: lead, event_reference_id,
       }, tx);
@@ -40,7 +40,7 @@ export class SalesOperationalService {
   async createOpportunity(ctx: TenantContext, data: any, user_id?: string): Promise<Opportunity> {
     const event_reference_id = `EVT-SALES-OPP-NEW-${Date.now()}`;
     return this.prisma.$transaction(async (tx: any) => {
-      const opportunity = await this.salesRepository.createOpportunity(ctx, data, tx);
+      const opportunity = await this.salesRepository.createOpportunity(ctx, data, user_id, tx);
       await this.auditService.log({
         tenant_id: ctx.tenant_id, user_id: user_id || "SYSTEM", module: "SALES", action: "CREATE", entity_type: "OPPORTUNITY", entity_id: opportunity.id, after_state: opportunity, event_reference_id,
       }, tx);
@@ -68,6 +68,6 @@ export class SalesOperationalService {
   }
 
   async createQuote(ctx: TenantContext, data: any, user_id?: string): Promise<SalesQuote> {
-    return this.salesRepository.createQuote(ctx, data);
+    return this.salesRepository.createQuote(ctx, data, user_id);
   }
 }

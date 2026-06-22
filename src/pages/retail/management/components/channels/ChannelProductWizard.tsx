@@ -199,7 +199,7 @@ export const ChannelProductWizard: React.FC<Props> = ({
                 key={cat.id} 
                 className={cn(
                   "cursor-pointer transition-all rounded-[2rem] border-2 flex items-center p-6 gap-4",
-                  selectedCats.includes(cat.id) ? "border-slate-900 bg-secondary/5" : "border-slate-100 hover:border-slate-200"
+                  selectedCats.includes(cat.id) ? "border-border bg-secondary/5" : "border-border hover:border-border"
                 )}
                 onClick={() => toggleStep1(cat.id)}
               >
@@ -234,7 +234,7 @@ export const ChannelProductWizard: React.FC<Props> = ({
 
             <div className="space-y-3">
               {(Array.isArray(filteredProducts) ? filteredProducts : []).map((p) => (
-                <Card key={p.id} className="rounded-2xl border-slate-100 p-4 hover:bg-secondary/5 transition-colors group">
+                <Card key={p.id} className="rounded-2xl border-border p-4 hover:bg-secondary/5 transition-colors group">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center shrink-0">
                       <Package className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -327,7 +327,7 @@ export const ChannelProductWizard: React.FC<Props> = ({
           {step > 1 && (
             <Button 
               variant="outline" 
-              className="h-14 px-10 rounded-2xl font-black italic uppercase text-xs border-2 border-slate-200"
+              className="h-14 px-10 rounded-2xl font-black italic uppercase text-xs border-2 border-border"
               onClick={() => setStep(step - 1)}
             >
               Previous Node

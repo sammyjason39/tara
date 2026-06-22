@@ -50,8 +50,8 @@ export const StoreIdentityModule: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Core Identity */}
-        <div className="space-y-6 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
+        <div className="space-y-6 bg-white p-6 rounded-2xl border border-border shadow-sm">
+          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-border pb-3">
             <Building2 className="w-4 h-4 text-muted-foreground" /> Core Identity
           </h3>
 
@@ -64,7 +64,7 @@ export const StoreIdentityModule: React.FC = () => {
                 value={selectedStore.name || ""}
                 onChange={(e) => updateLocalConfig({ name: e.target.value })}
                 disabled={!canEditStore}
-                className="font-bold border-slate-200 bg-secondary/5"
+                className="font-bold border-border bg-secondary/5"
               />
             </div>
 
@@ -90,7 +90,7 @@ export const StoreIdentityModule: React.FC = () => {
                   updateLocalConfig({ type: value })
                 }
               >
-                <SelectTrigger className="border-slate-200 bg-secondary/5">
+                <SelectTrigger className="border-border bg-secondary/5">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -118,7 +118,7 @@ export const StoreIdentityModule: React.FC = () => {
                   updateLocalConfig({ status: value })
                 }
               >
-                <SelectTrigger className="border-slate-200 bg-secondary/5">
+                <SelectTrigger className="border-border bg-secondary/5">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -153,8 +153,8 @@ export const StoreIdentityModule: React.FC = () => {
         </div>
 
         {/* Regional Parameters */}
-        <div className="space-y-6 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
+        <div className="space-y-6 bg-white p-6 rounded-2xl border border-border shadow-sm">
+          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-border pb-3">
             <MapPin className="w-4 h-4 text-muted-foreground" /> Regional Parameters
           </h3>
 
@@ -169,7 +169,7 @@ export const StoreIdentityModule: React.FC = () => {
                 onChange={(e) =>
                   updateLocalConfig({ locationId: e.target.value })
                 }
-                className="font-mono border-slate-200"
+                className="font-mono border-border"
                 placeholder="Linked via Branch Creation"
               />
             </div>
@@ -185,7 +185,7 @@ export const StoreIdentityModule: React.FC = () => {
                   updateLocalConfig({ timezone: value })
                 }
               >
-                <SelectTrigger className="border-slate-200 bg-secondary/5">
+                <SelectTrigger className="border-border bg-secondary/5">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -215,7 +215,7 @@ export const StoreIdentityModule: React.FC = () => {
                   updateLocalConfig({ currency: value })
                 }
               >
-                <SelectTrigger className="border-slate-200 bg-secondary/5">
+                <SelectTrigger className="border-border bg-secondary/5">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -240,7 +240,7 @@ export const StoreIdentityModule: React.FC = () => {
                 value={selectedStore.taxZone || "STANDARD"}
                 onChange={(e) => updateLocalConfig({ taxZone: e.target.value })}
                 disabled={!canEditStore}
-                className="font-mono border-slate-200 bg-secondary/5 uppercase"
+                className="font-mono border-border bg-secondary/5 uppercase"
               />
             </div>
           </div>

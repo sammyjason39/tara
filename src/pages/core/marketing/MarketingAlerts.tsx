@@ -32,6 +32,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useSession } from "@/core/security/session";
 import { marketingService } from "@/core/services/marketing/marketingService";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { MarketingAlert } from "@/core/types/marketing/marketing";
@@ -126,7 +127,7 @@ export default function MarketingAlerts() {
                Vigilance Matrix Active
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent italic leading-none">Marketing Alerts</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground italic leading-none">Marketing Alerts</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic">"Operational dominance is maintained through the total coordination of tactical signals."</p>
         </div>
         
@@ -161,7 +162,7 @@ export default function MarketingAlerts() {
 
       {/* Alert Intelligence Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-         <Card className="rounded-[3rem] border-none shadow-2xl bg-white/60 dark:bg-muted backdrop-blur-xl p-10 flex items-center gap-8 group hover:shadow-rose-500/10 transition-all duration-500 overflow-hidden relative">
+         <Card className="rounded-[3rem] border-none shadow-2xl glass-card p-10 flex items-center gap-8 group hover:shadow-rose-500/10 transition-all duration-500 overflow-hidden relative">
             <div className="absolute top-0 right-0 h-40 w-40 bg-destructive rounded-full blur-3xl -mr-20 -mt-20 group-hover:scale-150 transition-transform duration-1000" />
             <div className="h-20 w-20 rounded-[1.5rem] bg-destructive flex items-center justify-center group-hover:scale-110 transition-transform duration-500 relative z-10 shadow-inner">
                <ShieldAlert className="h-10 w-10 text-destructive" />
@@ -172,7 +173,7 @@ export default function MarketingAlerts() {
                <p className="text-[9px] font-black uppercase tracking-widest text-destructive italic leading-none">Action Required</p>
             </div>
          </Card>
-         <Card className="rounded-[3rem] border-none shadow-2xl bg-white/60 dark:bg-muted backdrop-blur-xl p-10 flex items-center gap-8 group hover:shadow-indigo-500/10 transition-all duration-500 overflow-hidden relative">
+         <Card className="rounded-[3rem] border-none shadow-2xl glass-card p-10 flex items-center gap-8 group hover:shadow-indigo-500/10 transition-all duration-500 overflow-hidden relative">
             <div className="absolute top-0 right-0 h-40 w-40 bg-primary rounded-full blur-3xl -mr-20 -mt-20 group-hover:scale-150 transition-transform duration-1000" />
             <div className="h-20 w-20 rounded-[1.5rem] bg-primary flex items-center justify-center group-hover:scale-110 transition-transform duration-500 relative z-10 shadow-inner">
                <ActivitySquare className="h-10 w-10 text-primary" />
@@ -197,8 +198,8 @@ export default function MarketingAlerts() {
       </div>
 
       {/* Alert Registry */}
-      <Card className="rounded-[4rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden flex flex-col group/registry">
-        <CardHeader className="p-12 pb-6 border-b border-white/10 dark:border-slate-800/10 flex flex-row items-center justify-between shrink-0">
+      <Card className="rounded-[4rem] border-none shadow-2xl glass-card overflow-hidden flex flex-col group/registry">
+        <CardHeader className="p-12 pb-6 border-b border-white/10 dark:border-border/10 flex flex-row items-center justify-between shrink-0">
           <div className="space-y-2">
             <CardTitle className="text-3xl font-black tracking-tighter flex items-center gap-4 uppercase italic">
               <Bell className="h-8 w-8 text-primary group-hover/registry:rotate-12 transition-transform duration-500" />
@@ -269,7 +270,7 @@ export default function MarketingAlerts() {
                     <td className="px-12 py-10 text-right">
                        {item.acknowledged ? (
                           <div className="flex justify-end">
-                             <Badge className="rounded-full bg-success text-success font-black text-[9px] px-4 py-1.5 uppercase tracking-widest border border-emerald-500/10 shadow-inner italic">ARCHIVED</Badge>
+                             <Badge className="rounded-full bg-success text-success font-black text-[9px] px-4 py-1.5 uppercase tracking-widest border border-success/10 shadow-inner italic">ARCHIVED</Badge>
                           </div>
                        ) : (
                           <Button
@@ -286,15 +287,11 @@ export default function MarketingAlerts() {
             </table>
           </div>
           {filtered.length === 0 && (
-             <div className="p-32 text-center grayscale opacity-20 space-y-8 flex flex-col items-center">
-                <div className="h-24 w-24 bg-white dark:bg-muted rounded-[3rem] flex items-center justify-center shadow-2xl border border-slate-100 dark:border-slate-700">
-                   <ShieldCheck className="h-12 w-12 text-muted-foreground" />
-                </div>
-                <div className="space-y-2">
-                   <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground">Tactical Pulse Clear</p>
-                   <p className="text-sm font-medium italic italic opacity-40">"No strategic alert protocols currently pending in the ingestion matrix."</p>
-                </div>
-             </div>
+             <EmptyState
+               title="Tactical pulse clear"
+               description="No strategic alert protocols currently pending in the ingestion matrix."
+               icon={ShieldCheck}
+             />
           )}
         </CardContent>
       </Card>

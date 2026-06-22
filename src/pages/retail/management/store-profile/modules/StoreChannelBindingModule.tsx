@@ -58,8 +58,8 @@ export const StoreChannelBindingModule: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Marketplace Connectors */}
-        <div className="space-y-6 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
+        <div className="space-y-6 bg-white p-6 rounded-2xl border border-border shadow-sm">
+          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-border pb-3">
             <ShoppingCart className="w-4 h-4 text-muted-foreground" /> Omnichannel
             Connectors
           </h3>
@@ -76,7 +76,7 @@ export const StoreChannelBindingModule: React.FC = () => {
                   handleUpdate({ linked_ecommerce_store_id: e.target.value })
                 }
                 placeholder="ECOM-HQ-01"
-                className="font-mono border-slate-200"
+                className="font-mono border-border"
               />
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
                 Link this physical node to an online counterpart for BOPIS
@@ -99,15 +99,15 @@ export const StoreChannelBindingModule: React.FC = () => {
                   })
                 }
                 placeholder="Tokopedia, Shopee, Lazada"
-                className="font-mono border-slate-200"
+                className="font-mono border-border"
               />
             </div>
           </div>
         </div>
 
         {/* Sync & Routing */}
-        <div className="space-y-6 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
+        <div className="space-y-6 bg-white p-6 rounded-2xl border border-border shadow-sm">
+          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-border pb-3">
             <Repeat2 className="w-4 h-4 text-muted-foreground" /> Order & Sync Routing
           </h3>
 
@@ -127,7 +127,7 @@ export const StoreChannelBindingModule: React.FC = () => {
                   })
                 }
                 placeholder="B2B, Physical POS, VIP Marketplace, Standard Ecom"
-                className="font-mono border-slate-200"
+                className="font-mono border-border"
               />
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
                 Stock reservation priority for competing channels during
@@ -146,7 +146,7 @@ export const StoreChannelBindingModule: React.FC = () => {
                   handleUpdate({ order_routing_logic: value })
                 }
               >
-                <SelectTrigger className="border-slate-200">
+                <SelectTrigger className="border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -177,7 +177,7 @@ export const StoreChannelBindingModule: React.FC = () => {
                   handleUpdate({ online_to_offline_sync_policy: value })
                 }
               >
-                <SelectTrigger className="border-slate-200">
+                <SelectTrigger className="border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

@@ -1,16 +1,21 @@
 import {
+  ArrayMinSize,
   IsArray,
   IsIn,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
+  MaxLength,
   Min,
+  MinLength,
 } from "class-validator";
 
 export class CreateCampaignDto {
   @IsString()
   @IsNotEmpty()
+  @MinLength(3, { message: 'name must be at least 3 characters' })
+  @MaxLength(100, { message: 'name must be at most 100 characters' })
   name: string;
 
   @IsString()
@@ -47,6 +52,12 @@ export class CreateCampaignDto {
   @IsString()
   @IsNotEmpty()
   audience: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1, { message: 'At least 1 audience segment is required' })
+  @IsString({ each: true })
+  audienceSegments?: string[];
 
   @IsString()
   @IsOptional()

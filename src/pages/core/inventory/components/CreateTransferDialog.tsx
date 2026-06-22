@@ -33,6 +33,7 @@ import {
 import { inventoryService } from "@/core/services/inventory/inventoryService";
 import { useSession } from "@/core/security/session";
 import { toast } from "@/hooks/use-toast";
+import { useCreateTransfer } from "../hooks/useInventoryQueries";
 import type { InventoryItemMaster, InventoryStockBalance } from "@/core/types/inventory/inventory";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -58,6 +59,7 @@ export function CreateTransferDialog({
 }: CreateTransferDialogProps) {
   const session = useSession();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const createTransferMutation = useCreateTransfer();
   
   // Dependency Data
   const [allItems, setAllItems] = useState<InventoryItemMaster[]>([]);
@@ -250,7 +252,7 @@ export function CreateTransferDialog({
     setError(null);
     try {
       await Promise.all(selectedItems.map(item => 
-        inventoryService.createStockTransfer(session.tenant_id, session, {
+        createTransferMutation.mutateAsync({
           item_id: item.item.id,
           from_location_id: fromLocation,
           to_location_id: toLocation,
@@ -289,8 +291,8 @@ export function CreateTransferDialog({
         onOpenChange(o);
       }}
     >
-      <DialogContent className="max-w-3xl max-h-[90vh] bg-muted border-slate-800 rounded-[2.5rem] p-0 overflow-hidden shadow-2xl flex flex-col">
-        <DialogHeader className="shrink-0 h-28 bg-gradient-to-r from-indigo-600/20 to-violet-600/20 border-b border-slate-800/50 p-8 flex flex-row items-end justify-between m-0 space-y-0">
+      <DialogContent className="max-w-3xl max-h-[90vh] bg-muted border-border rounded-[2.5rem] p-0 overflow-hidden shadow-2xl flex flex-col">
+        <DialogHeader className="shrink-0 h-28 bg-gradient-to-r from-indigo-600/20 to-violet-600/20 border-b border-border/50 p-8 flex flex-row items-end justify-between m-0 space-y-0">
           <div>
             <DialogTitle className="text-3xl font-black italic uppercase tracking-tighter text-white leading-none">
               Logistics Protocol
@@ -299,23 +301,23 @@ export function CreateTransferDialog({
               <Activity className="h-3 w-3" /> New Asset Transfer
             </p>
           </div>
-          <Badge variant="outline" className="bg-muted border-slate-800 text-[10px] font-black uppercase tracking-widest text-muted-foreground h-8 px-4 rounded-xl">
+          <Badge variant="outline" className="bg-muted border-border text-[10px] font-black uppercase tracking-widest text-muted-foreground h-8 px-4 rounded-xl">
             {totalItems} Items | {totalPcs} PCS
           </Badge>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
           {/* Origin/Dest Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted p-6 rounded-[2rem] border border-slate-800/50">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted p-6 rounded-[2rem] border border-border/50">
             <div className="space-y-3">
               <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
                 <MapPin className="h-3 w-3" /> Origin Node
               </Label>
               <Select value={fromLocation} onValueChange={setFromLocation}>
-                <SelectTrigger className="h-14 bg-muted border-slate-800 rounded-2xl font-black italic tracking-tight text-lg shadow-inner">
+                <SelectTrigger className="h-14 bg-muted border-border rounded-2xl font-black italic tracking-tight text-lg shadow-inner">
                   <SelectValue placeholder="Select Origin..." />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border-slate-800 bg-muted backdrop-blur-xl">
+                <SelectContent className="rounded-2xl border-border bg-muted backdrop-blur-xl">
                   {locations.map(loc => (
                     <SelectItem key={loc.id} value={loc.id} className="font-bold text-base">
                       {loc.name}
@@ -330,10 +332,10 @@ export function CreateTransferDialog({
                 <ArrowRight className="h-3 w-3" /> Destination Node
               </Label>
               <Select value={toLocation} onValueChange={setToLocation}>
-                <SelectTrigger className="h-14 bg-muted border-slate-800 rounded-2xl font-black italic tracking-tight text-lg shadow-inner">
+                <SelectTrigger className="h-14 bg-muted border-border rounded-2xl font-black italic tracking-tight text-lg shadow-inner">
                   <SelectValue placeholder="Select Destination..." />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border-slate-800 bg-muted backdrop-blur-xl">
+                <SelectContent className="rounded-2xl border-border bg-muted backdrop-blur-xl">
                   {locations.map(loc => (
                     <SelectItem key={loc.id} value={loc.id} className="font-bold text-base">
                       {loc.name}
@@ -354,7 +356,7 @@ export function CreateTransferDialog({
                 <UIInput
                   ref={searchInputRef}
                   placeholder="Scan barcode or type SKU / Name..."
-                  className="h-16 pl-16 pr-6 bg-muted border-slate-800 rounded-3xl font-bold text-lg shadow-2xl focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:italic placeholder:font-normal placeholder:opacity-30"
+                  className="h-16 pl-16 pr-6 bg-muted border-border rounded-3xl font-bold text-lg shadow-2xl focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder:italic placeholder:font-normal placeholder:opacity-30"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   disabled={!fromLocation}
@@ -376,7 +378,7 @@ export function CreateTransferDialog({
             
             <div className="space-y-2">
               {selectedItems.length === 0 ? (
-                <div className="h-60 flex flex-col items-center justify-center text-muted-foreground bg-muted rounded-3xl border border-dashed border-slate-800">
+                <div className="h-60 flex flex-col items-center justify-center text-muted-foreground bg-muted rounded-3xl border border-dashed border-border">
                   <ShoppingBag className="h-12 w-12 mb-4 opacity-20" />
                   <p className="text-sm font-black uppercase tracking-[0.2em] italic">Manifest Empty</p>
                 </div>
@@ -384,13 +386,13 @@ export function CreateTransferDialog({
                 selectedItems.map((item, index) => (
                   <div 
                     key={item.id} 
-                    className="group flex items-center gap-4 bg-muted hover:bg-muted border border-slate-800 p-3 rounded-2xl transition-all shadow-sm"
+                    className="group flex items-center gap-4 bg-muted hover:bg-muted border border-border p-3 rounded-2xl transition-all shadow-sm"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-[10px] font-black text-muted-foreground border border-slate-800">
+                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-[10px] font-black text-muted-foreground border border-border">
                       {String(index + 1).padStart(2, '0')}
                     </div>
                     
-                    <div className="w-14 h-14 rounded-xl bg-muted border border-slate-800 overflow-hidden flex items-center justify-center shrink-0">
+                    <div className="w-14 h-14 rounded-xl bg-muted border border-border overflow-hidden flex items-center justify-center shrink-0">
                        {(item.item as any).image_url ? (
                          <img 
                            src={(item.item as any).image_url} 
@@ -411,7 +413,7 @@ export function CreateTransferDialog({
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-3 bg-muted p-1.5 rounded-xl border border-slate-800">
+                    <div className="flex items-center gap-3 bg-muted p-1.5 rounded-xl border border-border">
                       <Button 
                         variant="ghost" 
                         size="icon" 
@@ -450,18 +452,18 @@ export function CreateTransferDialog({
         </div>
 
         {error && (
-          <div className="mx-8 mb-4 flex items-center gap-2 rounded-xl border border-rose-500/30 bg-destructive px-4 py-3 text-sm text-destructive font-bold shrink-0">
+          <div className="mx-8 mb-4 flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive px-4 py-3 text-sm text-destructive font-bold shrink-0">
             <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
           </div>
         )}
 
-        <DialogFooter className="shrink-0 p-8 bg-muted border-t border-slate-800 gap-4 flex flex-row items-center">
+        <DialogFooter className="shrink-0 p-8 bg-muted border-t border-border gap-4 flex flex-row items-center">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={loading}
-            className="h-14 px-8 rounded-2xl border-slate-800 font-black uppercase tracking-[0.2em] text-[10px] hover:bg-muted transition-all m-0"
+            className="h-14 px-8 rounded-2xl border-border font-black uppercase tracking-[0.2em] text-[10px] hover:bg-muted transition-all m-0"
           >
             Abort
           </Button>

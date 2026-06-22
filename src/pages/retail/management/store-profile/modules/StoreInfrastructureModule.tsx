@@ -51,8 +51,8 @@ export const StoreInfrastructureModule: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Hardware Topologies */}
-        <div className="space-y-6 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
+        <div className="space-y-6 bg-white p-6 rounded-2xl border border-border shadow-sm">
+          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-border pb-3">
             <HardDrive className="w-4 h-4 text-muted-foreground" /> Computing Arrays
           </h3>
 
@@ -68,7 +68,7 @@ export const StoreInfrastructureModule: React.FC = () => {
                   handleUpdate({ local_server_binding: e.target.value })
                 }
                 placeholder="SRV-EDGE-01"
-                className="font-mono border-slate-200"
+                className="font-mono border-border"
               />
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
                 ID of the physical gateway node located at this branch
@@ -90,7 +90,7 @@ export const StoreInfrastructureModule: React.FC = () => {
                   })
                 }
                 placeholder="CLUSTER-A, CLUSTER-B"
-                className="font-mono border-slate-200"
+                className="font-mono border-border"
               />
             </div>
 
@@ -109,15 +109,15 @@ export const StoreInfrastructureModule: React.FC = () => {
                   })
                 }
                 placeholder="POOL-HANDHELD-1, POOL-RF-2"
-                className="font-mono border-slate-200"
+                className="font-mono border-border"
               />
             </div>
           </div>
         </div>
 
         {/* Resilience & Continuity */}
-        <div className="space-y-6 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
+        <div className="space-y-6 bg-white p-6 rounded-2xl border border-border shadow-sm">
+          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-border pb-3">
             <WifiOff className="w-4 h-4 text-muted-foreground" /> Continuity &
             Resilience
           </h3>
@@ -134,7 +134,7 @@ export const StoreInfrastructureModule: React.FC = () => {
                 onChange={(e) =>
                   handleUpdate({ sync_interval: parseInt(e.target.value) || 0 })
                 }
-                className="font-mono border-slate-200"
+                className="font-mono border-border"
               />
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
                 Frequency for edge-to-cloud telemetry sync
@@ -154,14 +154,14 @@ export const StoreInfrastructureModule: React.FC = () => {
                     offline_tolerance_threshold: parseInt(e.target.value) || 0,
                   })
                 }
-                className="font-mono border-slate-200"
+                className="font-mono border-border"
               />
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
                 Max offline transaction cache before forced lockout
               </p>
             </div>
 
-            <div className="bg-warning p-4 rounded-xl border border-amber-100">
+            <div className="bg-warning p-4 rounded-xl border border-warning">
               <p className="text-xs text-warning font-medium">
                 Note: Device registration, diagnostics, and real-time fleet
                 health are managed in the <strong>Device Control Center</strong>{" "}

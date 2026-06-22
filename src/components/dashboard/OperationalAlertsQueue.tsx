@@ -23,18 +23,18 @@ export const OperationalAlertsQueue: React.FC<OperationalAlertsQueueProps> = ({ 
 
   const getSeverityStyle = (severity: string) => {
     switch (severity) {
-      case 'CRITICAL': return { icon: AlertCircle, color: 'text-destructive', glow: 'shadow-rose-500/20', bg: 'bg-destructive', border: 'border-rose-500/20' };
-      case 'HIGH': return { icon: AlertTriangle, color: 'text-warning', glow: 'shadow-amber-500/20', bg: 'bg-warning', border: 'border-amber-500/20' };
+      case 'CRITICAL': return { icon: AlertCircle, color: 'text-destructive', glow: 'shadow-rose-500/20', bg: 'bg-destructive', border: 'border-destructive/20' };
+      case 'HIGH': return { icon: AlertTriangle, color: 'text-warning', glow: 'shadow-amber-500/20', bg: 'bg-warning', border: 'border-warning/20' };
       case 'MEDIUM': return { icon: Info, color: 'text-primary', glow: 'shadow-blue-500/20', bg: 'bg-primary', border: 'border-primary' };
       default: return { icon: Info, color: 'text-muted-foreground', glow: 'shadow-slate-500/10', bg: 'bg-white/5', border: 'border-white/10' };
     }
   };
 
   return (
-    <div className="flex flex-col h-full rounded-[2.5rem] border border-slate-800 bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10">
+    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-destructive text-destructive border border-rose-500/20">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-destructive text-destructive border border-destructive/20">
             <ShieldAlert className="h-5 w-5" />
           </div>
           <div>
@@ -79,7 +79,7 @@ export const OperationalAlertsQueue: React.FC<OperationalAlertsQueueProps> = ({ 
             })
           ) : (
             <div className="flex flex-col items-center justify-center h-[260px] gap-4 opacity-40">
-               <div className="h-16 w-16 rounded-3xl bg-success flex items-center justify-center border border-emerald-500/10">
+               <div className="h-16 w-16 rounded-3xl bg-success flex items-center justify-center border border-success/10">
                   <Info className="h-8 w-8 text-success" />
                </div>
                <div className="text-center">

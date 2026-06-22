@@ -100,28 +100,28 @@ export const connLabel: Record<ConnType, string> = {
 // ── Color Helpers ─────────────────────────────────────────────────
 export const dsc = (s: BranchDevice["status"]) =>
   ({
-    online: "bg-success text-success border-emerald-100",
-    offline: "bg-destructive text-destructive border-red-100",
-    maintenance: "bg-warning text-warning border-amber-100",
-    unknown: "bg-secondary/10 text-muted-foreground border-slate-100",
+    online: "bg-success text-success border-success",
+    offline: "bg-destructive text-destructive border-destructive",
+    maintenance: "bg-warning text-warning border-warning",
+    unknown: "bg-secondary/10 text-muted-foreground border-border",
   })[s];
 
 export const csc = (s: CCTVCamera["status"]) =>
   ({
-    live: "bg-success text-success border-emerald-100",
+    live: "bg-success text-success border-success",
     recording: "bg-primary/5 text-primary border-primary",
-    offline: "bg-destructive text-destructive border-red-100",
-    error: "bg-destructive text-destructive border-red-100",
-    maintenance: "bg-warning text-warning border-amber-100",
+    offline: "bg-destructive text-destructive border-destructive",
+    error: "bg-destructive text-destructive border-destructive",
+    maintenance: "bg-warning text-warning border-warning",
   })[s];
 
 export const ssc = (s: BranchSensor["status"]) =>
   ({
-    normal: "bg-success text-success border-emerald-100",
-    warning: "bg-warning text-warning border-amber-100",
-    critical: "bg-destructive text-destructive border-red-100",
-    offline: "bg-secondary/10 text-muted-foreground border-slate-100",
-    unknown: "bg-secondary/10 text-muted-foreground border-slate-100",
+    normal: "bg-success text-success border-success",
+    warning: "bg-warning text-warning border-warning",
+    critical: "bg-destructive text-destructive border-destructive",
+    offline: "bg-secondary/10 text-muted-foreground border-border",
+    unknown: "bg-secondary/10 text-muted-foreground border-border",
   })[s];
 
 // ── Empty State ──────────────────────────────────────────────────
@@ -143,7 +143,7 @@ export const Empty = ({
       <Button
         variant="outline"
         onClick={onAdd}
-        className="rounded-xl border-slate-200 font-black italic uppercase text-[10px] tracking-widest gap-2"
+        className="rounded-xl border-border font-black italic uppercase text-[10px] tracking-widest gap-2"
       >
         <PlusCircle className="w-4 h-4" /> Register
       </Button>
@@ -151,7 +151,7 @@ export const Empty = ({
         <Button
           variant="outline"
           onClick={onScan}
-          className="rounded-xl border-slate-200 font-black italic uppercase text-[10px] tracking-widest gap-2"
+          className="rounded-xl border-border font-black italic uppercase text-[10px] tracking-widest gap-2"
         >
           <RefreshCw className="w-4 h-4" /> Scan Network
         </Button>

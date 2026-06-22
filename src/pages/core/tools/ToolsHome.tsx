@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
+import { Card } from "@/components/ui/card";
 import { useSession } from "@/core/security/session";
 import { listTools } from "@/core/tools/toolRegistry";
 import DepartmentWorkspaceLayout from "@/components/layouts/DepartmentWorkspaceLayout";
@@ -32,9 +33,9 @@ export default function ToolsHome() {
     <div className="space-y-6 p-6">
       <WorkspacePanel title="Available Tools" description="Platform-wide productivity suite.">
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="p-6 hover:shadow-lg transition-all border-slate-100 group">
+          <Card className="p-6 hover:shadow-lg transition-all border-border group">
             <div className="flex items-center gap-4 mb-4">
-              <div className="p-3 rounded-2xl bg-primary text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+              <div className="p-3 rounded-2xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                 <FolderOpen className="h-6 w-6" />
               </div>
               <div>
@@ -65,9 +66,9 @@ export default function ToolsHome() {
                          tool.category === "calculators" ? Calculator : Download;
 
             return (
-              <Card key={tool.id} className="p-6 hover:shadow-lg transition-all border-slate-100 group">
+              <Card key={tool.id} className="p-6 hover:shadow-lg transition-all border-border group">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="p-3 rounded-2xl bg-primary text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                  <div className="p-3 rounded-2xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                     <Icon className="h-6 w-6" />
                   </div>
                   <div>
@@ -103,5 +104,3 @@ export default function ToolsHome() {
     </DepartmentWorkspaceLayout>
   );
 }
-
-import { Card } from "@/components/ui/card";

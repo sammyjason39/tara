@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from "@/lib/format";
 
 interface CartItem {
   id: string;
@@ -65,9 +66,9 @@ export const CartPanel: React.FC<CartPanelProps> = ({
   const selectedItem = cart.find((item) => item.id === selectedItemId);
 
   return (
-    <div className="h-full flex flex-col glass-morphism overflow-hidden shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] rounded-[2.5rem] relative">
+    <div className="h-full flex flex-col glass-morphism overflow-hidden shadow-[0_40px_80px_-20px_hsl(var(--foreground)/0.1)] rounded-[2.5rem] relative">
       {/* Gloss Effect overlay */}
-      <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-tr from-foreground/5 to-transparent pointer-events-none" />
 
       {/* Header */}
       <div className="p-4 border-b border-border/40 bg-background/20 shrink-0 flex items-center justify-between relative z-10">
@@ -135,7 +136,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({
                           isActive ? "text-primary-foreground" : "text-muted-foreground"
                         }`}
                       >
-                        UNIT: Rp {item.price.toLocaleString()}
+                        UNIT: {formatCurrency(item.price, "IDR", "id-ID")}
                       </div>
                     </div>
                     {isActive && (
@@ -167,7 +168,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({
                   {item.discount && item.discount > 0 && (
                     <div className="flex items-center gap-2 -mt-2 mb-1">
                       <Badge variant="outline" className={`text-[9px] font-black italic tracking-tight py-0 px-2 rounded-lg border-success/30 ${isActive ? 'bg-primary-foreground text-success' : 'bg-success/10 text-success'}`}>
-                        PROMO APPLIED: - Rp {item.discount.toLocaleString()}
+                        PROMO APPLIED: - {formatCurrency(item.discount, "IDR", "id-ID")}
                       </Badge>
                     </div>
                   )}
@@ -233,7 +234,11 @@ export const CartPanel: React.FC<CartPanelProps> = ({
                         <span className="text-[10px] not-italic opacity-40 mr-0.5">
                           RP
                         </span>
-                        {(item.price * item.quantity - (item.discount || 0)).toLocaleString()}
+                        {formatCurrency(
+                          item.price * item.quantity - (item.discount || 0),
+                          "IDR",
+                          "id-ID",
+                        ).replace(/^Rp\s?/, "")}
                       </div>
                     </div>
                   </div>
@@ -256,13 +261,13 @@ export const CartPanel: React.FC<CartPanelProps> = ({
           <div className="space-y-2 mb-4 relative z-10">
             <div className="flex justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               <span>Subtotal</span>
-              <span>Rp {totals.subtotal.toLocaleString()}</span>
+              <span>{formatCurrency(totals.subtotal, "IDR", "id-ID")}</span>
             </div>
 
             {(totals.totalItemDiscount > 0 || totals.cartDiscount > 0) && (
               <div className="flex justify-between text-xs font-semibold text-success uppercase tracking-wider">
                 <span>Discount</span>
-                <span>- Rp {(totals.totalItemDiscount + totals.cartDiscount).toLocaleString()}</span>
+                <span>- {formatCurrency(totals.totalItemDiscount + totals.cartDiscount, "IDR", "id-ID")}</span>
               </div>
             )}
 
@@ -273,7 +278,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({
                   <Settings2 className="w-3 h-3" />
                 </button>
               </span>
-              <span>Rp {totals.tax.toLocaleString()}</span>
+              <span>{formatCurrency(totals.tax, "IDR", "id-ID")}</span>
             </div>
 
             <Separator className="bg-border/20 my-1" />
@@ -286,7 +291,7 @@ export const CartPanel: React.FC<CartPanelProps> = ({
 
               <div className="text-right">
                 <div className="text-3xl font-black tracking-tight text-foreground leading-none">
-                  Rp {totals.grandTotal.toLocaleString()}
+                  {formatCurrency(totals.grandTotal, "IDR", "id-ID")}
                 </div>
               </div>
             </div>

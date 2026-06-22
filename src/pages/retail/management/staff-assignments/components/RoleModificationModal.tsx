@@ -54,7 +54,7 @@ export const RoleModificationModal: React.FC<RoleModificationModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md bg-secondary border-slate-800 p-8 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.4)] text-foreground">
+      <DialogContent className="max-w-md bg-secondary border-border p-8 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.4)] text-foreground">
         <DialogHeader className="mb-6">
           <DialogTitle className="text-xl font-black italic tracking-tighter flex items-center gap-3">
             <div className="p-2.5 rounded-2xl bg-warning text-warning">
@@ -68,7 +68,7 @@ export const RoleModificationModal: React.FC<RoleModificationModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          <div className="p-4 rounded-3xl bg-warning border border-amber-500/20 flex gap-4">
+          <div className="p-4 rounded-3xl bg-warning border border-warning/20 flex gap-4">
             <AlertTriangle className="w-6 h-6 text-warning shrink-0" />
             <div className="text-[10px] font-bold italic text-warning uppercase leading-relaxed">
               Warning: Elevating access scope requires an audit trail entry.
@@ -91,10 +91,10 @@ export const RoleModificationModal: React.FC<RoleModificationModalProps> = ({
                 New Assignable Role
               </label>
               <Select value={newRole} onValueChange={setNewRole}>
-                <SelectTrigger className="w-full h-12 bg-secondary/60 border-slate-700 text-foreground font-bold italic rounded-xl">
+                <SelectTrigger className="w-full h-12 bg-secondary/60 border-border text-foreground font-bold italic rounded-xl">
                   <SelectValue placeholder="Select Governance Role..." />
                 </SelectTrigger>
-                <SelectContent className="bg-secondary/60 border-slate-700 text-foreground rounded-xl">
+                <SelectContent className="bg-secondary/60 border-border text-foreground rounded-xl">
                   {(Array.isArray(AVAILABLE_ROLES) ? AVAILABLE_ROLES : []).map((role) => (
                     <SelectItem
                       key={role}
@@ -113,7 +113,7 @@ export const RoleModificationModal: React.FC<RoleModificationModalProps> = ({
                 Required: Justification
               </label>
               <textarea
-                className="w-full h-24 bg-secondary/60 border-slate-700 text-foreground rounded-xl p-4 font-bold italic text-sm placeholder:text-muted-foreground focus:border-amber-500 outline-none resize-none transition-colors"
+                className="w-full h-24 bg-secondary/60 border-border text-foreground rounded-xl p-4 font-bold italic text-sm placeholder:text-muted-foreground focus:border-warning outline-none resize-none transition-colors"
                 placeholder="Enter cryptographic audit reason..."
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}

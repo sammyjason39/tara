@@ -75,7 +75,7 @@ const HeatmapItem = ({
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="w-8 h-8 rounded-full bg-secondary border-2 border-slate-950 flex items-center justify-center overflow-hidden shadow-2xl transition-transform hover:scale-110 hover:z-20"
+            className="w-8 h-8 rounded-full bg-secondary border-2 border-border flex items-center justify-center overflow-hidden shadow-2xl transition-transform hover:scale-110 hover:z-20"
           >
             <div className="w-full h-full bg-primary/20 flex items-center justify-center text-[10px] font-black text-primary italic">
               U{i}

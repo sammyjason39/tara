@@ -284,6 +284,45 @@ export class AuditService implements OnModuleDestroy {
     return { data, total, page, limit };
   }
 
+  /**
+   * Query audit logs with standard paginated response envelope.
+   */
+  async queryPaginated(tenant_id: string, pagination: { page: number; pageSize: number }, filters: Omit<AuditQueryDto, 'page' | 'limit'> = {}) {
+    const skip = (pagination.page - 1) * pagination.pageSize;
+
+    const where: any = { tenant_id };
+    if (filters.module) where.module = filters.module;
+    if (filters.action) where.action = filters.action;
+    if (filters.user_id) where.user_id = filters.user_id;
+    if (filters.entity_type) where.entity_type = filters.entity_type;
+    if (filters.entity_id) where.entity_id = filters.entity_id;
+    if (filters.severity) where.severity = filters.severity;
+
+    if (filters.start_date || filters.end_date) {
+      where.created_at = {};
+      if (filters.start_date) where.created_at.gte = new Date(filters.start_date);
+      if (filters.end_date) where.created_at.lte = new Date(filters.end_date);
+    }
+
+    const [data, totalCount] = await Promise.all([
+      this.prisma.audit_logs.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: pagination.pageSize,
+      }),
+      this.prisma.audit_logs.count({ where }),
+    ]);
+
+    return {
+      data,
+      totalCount,
+      currentPage: pagination.page,
+      pageSize: pagination.pageSize,
+      totalPages: Math.ceil(totalCount / pagination.pageSize),
+    };
+  }
+
   async getLogDetail(tenant_id: string, log_id: string) {
     const log = await this.prisma.audit_logs.findFirst({
       where: { id: log_id, tenant_id },
@@ -390,6 +429,36 @@ export class AuditService implements OnModuleDestroy {
         record_count: true,
       },
     });
+  }
+
+  /**
+   * Get public anchors with standard paginated response envelope.
+   */
+  async getPublicAnchorsPaginated(pagination: { page: number; pageSize: number }) {
+    const skip = (pagination.page - 1) * pagination.pageSize;
+
+    const [data, totalCount] = await Promise.all([
+      this.prisma.audit_hash_anchors.findMany({
+        orderBy: { anchored_at: 'desc' },
+        skip,
+        take: pagination.pageSize,
+        select: {
+          tenant_id: true,
+          anchor_hash: true,
+          anchored_at: true,
+          record_count: true,
+        },
+      }),
+      this.prisma.audit_hash_anchors.count(),
+    ]);
+
+    return {
+      data,
+      totalCount,
+      currentPage: pagination.page,
+      pageSize: pagination.pageSize,
+      totalPages: Math.ceil(totalCount / pagination.pageSize),
+    };
   }
 
   /**

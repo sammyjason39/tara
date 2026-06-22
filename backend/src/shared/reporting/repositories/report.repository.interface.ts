@@ -1,4 +1,5 @@
 import { sys_report_jobs } from '@prisma/client';
+import { PaginationParams } from '../../pipes/pagination.pipe';
 
 export abstract class IReportRepository {
   abstract createJob(data: {
@@ -16,6 +17,6 @@ export abstract class IReportRepository {
 
   abstract getJob(id: string): Promise<sys_report_jobs | null>;
 
-  abstract getPendingJobs(): Promise<sys_report_jobs[]>;
-  abstract getStaleJobs(ageInMinutes: number): Promise<sys_report_jobs[]>;
+  abstract getPendingJobs(pagination?: PaginationParams): Promise<sys_report_jobs[]>;
+  abstract getStaleJobs(ageInMinutes: number, pagination?: PaginationParams): Promise<sys_report_jobs[]>;
 }

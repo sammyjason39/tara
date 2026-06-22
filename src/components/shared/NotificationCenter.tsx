@@ -29,7 +29,7 @@ export function NotificationCenter() {
         <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-xl hover:bg-muted dark:hover:bg-muted transition-colors">
           <Bell className="h-5 w-5 text-muted-foreground dark:text-muted-foreground" />
           {unreadCounts.notifications > 0 && (
-            <span className="absolute top-1 right-1 h-4 w-4 bg-destructive text-[10px] font-black text-white rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center animate-in zoom-in">
+            <span className="absolute top-1 right-1 h-4 w-4 bg-destructive text-[10px] font-black text-white rounded-full border-2 border-white dark:border-border flex items-center justify-center animate-in zoom-in">
               {unreadCounts.notifications > 9 ? '9+' : unreadCounts.notifications}
             </span>
           )}
@@ -46,7 +46,7 @@ export function NotificationCenter() {
           <p className="text-xl font-black tracking-tighter uppercase italic">Global Alerts</p>
         </div>
 
-        <div className="bg-white dark:bg-muted border-b dark:border-slate-800 flex px-6 py-3 justify-between items-center">
+        <div className="bg-white dark:bg-muted border-b dark:border-border flex px-6 py-3 justify-between items-center">
             <div className="flex gap-4">
                 <div className="flex flex-col items-center">
                     <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Mail</span>
@@ -97,7 +97,7 @@ export function NotificationCenter() {
                       
                       {notif.link && (
                           <div className="mt-3 flex gap-2">
-                              <Button variant="outline" size="sm" className="h-7 rounded-lg text-[9px] font-black uppercase tracking-widest px-3 border-slate-100 dark:border-slate-800 hover:bg-muted dark:hover:bg-muted">
+                              <Button variant="outline" size="sm" className="h-7 rounded-lg text-[9px] font-black uppercase tracking-widest px-3 border-border dark:border-border hover:bg-muted dark:hover:bg-muted">
                                   Access Payload <ExternalLink className="ml-2 h-3 w-3" />
                               </Button>
                           </div>
@@ -120,7 +120,7 @@ export function NotificationCenter() {
           )}
         </ScrollArea>
         
-        <div className="p-4 border-t dark:border-slate-800 bg-muted dark:bg-muted">
+        <div className="p-4 border-t dark:border-border bg-muted dark:bg-muted">
             <Button variant="ghost" className="w-full h-10 rounded-xl text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-muted-foreground dark:hover:text-white transition-colors">
                 Archive Log
             </Button>

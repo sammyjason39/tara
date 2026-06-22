@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/sheet";
 import { Search, Info, Loader2, AlertCircle, CheckCircle2, Activity, Terminal, Shield } from "lucide-react";
 import { adminService } from "@/core/services/adminService";
+import { formatDateTime, safeText } from "@/lib/format";
 import DepartmentWorkspaceLayout from "@/components/layouts/DepartmentWorkspaceLayout";
 
 const SECTIONS = [
@@ -178,7 +179,7 @@ export default function LogHub({ noShell = false }: { noShell?: boolean }) {
           description="Blockchain-sealed audit log verification."
         >
           {integrityStatus ? (
-            <div className={`p-4 rounded-lg flex items-center gap-4 ${integrityStatus.status === 'HEALTHY' ? 'bg-success border border-emerald-500/20' : 'bg-destructive border border-rose-500/20'}`}>
+            <div className={`p-4 rounded-lg flex items-center gap-4 ${integrityStatus.status === 'HEALTHY' ? 'bg-success/10 border border-success/20' : 'bg-destructive/10 border border-destructive/20'}`}>
               {integrityStatus.status === 'HEALTHY' ? (
                 <CheckCircle2 className="h-8 w-8 text-success" />
               ) : (
@@ -186,13 +187,13 @@ export default function LogHub({ noShell = false }: { noShell?: boolean }) {
               )}
               <div>
                 <p className="font-semibold text-sm">
-                  Audit Chain Status: {integrityStatus.status}
+                  Audit Chain Status: {safeText(integrityStatus.status)}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {integrityStatus.details}
+                  {safeText(integrityStatus.details)}
                 </p>
                 <p className="text-[10px] mt-1 opacity-70">
-                  Last Verified: {new Date(integrityStatus.verified_at).toLocaleTimeString()}
+                  Last Verified: {formatDateTime(integrityStatus.verified_at)}
                 </p>
               </div>
             </div>
@@ -328,9 +329,9 @@ export default function LogHub({ noShell = false }: { noShell?: boolean }) {
                         {formatLogDate(log)}
                       </TableCell>
                       <TableCell>{getLevelBadge(log.level)}</TableCell>
-                      <TableCell className="capitalize text-xs font-medium">{log.module}</TableCell>
-                      <TableCell className="text-xs truncate max-w-[120px]">{log.event}</TableCell>
-                      <TableCell className="text-xs truncate max-w-[200px]">{log.message}</TableCell>
+                      <TableCell className="capitalize text-xs font-medium">{safeText(log.module)}</TableCell>
+                      <TableCell className="text-xs truncate max-w-[120px]">{safeText(log.event)}</TableCell>
+                      <TableCell className="text-xs truncate max-w-[200px]">{safeText(log.message)}</TableCell>
                       <TableCell className="text-right font-mono text-xs">
                         {log.durationMs || log.duration_ms || "-"}
                       </TableCell>
@@ -427,7 +428,7 @@ export default function LogHub({ noShell = false }: { noShell?: boolean }) {
               {(selectedLog.errorStack || selectedLog.error_stack) && (
                 <div className="space-y-2">
                   <label className="text-xs text-muted-foreground block">Error Stack</label>
-                  <div className="bg-destructive border border-red-500/20 text-destructive p-3 rounded-md text-[10px] font-mono whitespace-pre overflow-x-auto leading-tight">
+                  <div className="bg-destructive/10 border border-destructive/20 text-destructive p-3 rounded-md text-[10px] font-mono whitespace-pre overflow-x-auto leading-tight">
                     {selectedLog.errorStack || selectedLog.error_stack}
                   </div>
                 </div>

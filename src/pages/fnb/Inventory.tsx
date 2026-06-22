@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard, GlassCardContent } from '@/components/shared/GlassCard';
+import { EmptyState } from '@/components/shared/AsyncState';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -36,7 +37,8 @@ import {
   Package,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { mockCafeProducts, Product, formatCurrency, generateId } from '@/lib/mock-data';
+import { mockCafeProducts, Product, generateId } from '@/lib/mock-data';
+import { formatCurrency } from '@/lib/format';
 import { toast } from '@/hooks/use-toast';
 
 interface InventoryItem extends Product {
@@ -241,8 +243,8 @@ export default function CafeInventory() {
     <div className="p-4 space-y-4 h-full flex flex-col">
       {/* Stats Row */}
       <div className="grid grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
+        <GlassCard>
+          <GlassCardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
                 <Coffee className="h-5 w-5 text-primary" />
@@ -252,10 +254,10 @@ export default function CafeInventory() {
                 <p className="text-xl font-bold">{inventory.length}</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
+          </GlassCardContent>
+        </GlassCard>
+        <GlassCard>
+          <GlassCardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-success/10">
                 <Package className="h-5 w-5 text-success" />
@@ -265,10 +267,10 @@ export default function CafeInventory() {
                 <p className="text-xl font-bold">{formatCurrency(totalValue)}</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
+          </GlassCardContent>
+        </GlassCard>
+        <GlassCard>
+          <GlassCardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-warning/10">
                 <AlertTriangle className="h-5 w-5 text-warning" />
@@ -278,10 +280,10 @@ export default function CafeInventory() {
                 <p className="text-xl font-bold">{lowStockItems.length}</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
+          </GlassCardContent>
+        </GlassCard>
+        <GlassCard>
+          <GlassCardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-destructive/10">
                 <TrendingDown className="h-5 w-5 text-destructive" />
@@ -291,8 +293,8 @@ export default function CafeInventory() {
                 <p className="text-xl font-bold">{outOfStockItems.length}</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </GlassCardContent>
+        </GlassCard>
       </div>
 
       {/* Controls */}
@@ -346,10 +348,17 @@ export default function CafeInventory() {
       </div>
 
       {/* Inventory List */}
-      <Card className="flex-1">
+      <GlassCard className="flex-1">
         <ScrollArea className="h-[calc(100vh-20rem)]">
-          <div className="divide-y">
-            {(Array.isArray(filteredInventory) ? filteredInventory : []).map((item) => {
+          {filteredInventory.length === 0 ? (
+            <EmptyState
+              icon={Package}
+              title="No inventory items"
+              description="No items match the current search, category, or status filters. Adjust filters or add a new item to get started."
+            />
+          ) : (
+            <div className="divide-y">
+              {(Array.isArray(filteredInventory) ? filteredInventory : []).map((item) => {
               const status = getStockStatus(item);
               const stockPercent = getStockPercent(item);
 
@@ -410,9 +419,10 @@ export default function CafeInventory() {
                 </div>
               );
             })}
-          </div>
+            </div>
+          )}
         </ScrollArea>
-      </Card>
+      </GlassCard>
 
       {/* Add Item Dialog */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>

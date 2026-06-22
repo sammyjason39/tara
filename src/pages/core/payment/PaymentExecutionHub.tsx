@@ -17,6 +17,9 @@ import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { paymentService } from "@/core/services/payment/paymentService";
 import type { PaymentTransaction, PaymentProvider } from "@/core/types/payment/payment";
+import { canApprovePayment, statusLabel } from "@/lib/contract/statusLabel";
+import { formatCurrency, safeText } from "@/lib/format";
+import { EmptyState } from "@/components/shared/AsyncState";
 
 const TYPES: PaymentTransaction["type"][] = [
   "VENDOR_PAYOUT",
@@ -164,7 +167,7 @@ export default function PaymentExecutionHub() {
                 <td className="p-3 font-medium">{item.id}</td>
                 <td className="p-3 text-muted-foreground">{item.type}</td>
                 <td className="p-3 text-muted-foreground">{item.destination}</td>
-                <td className="p-3 text-muted-foreground">{item.amount.toLocaleString()}</td>
+                <td className="p-3 text-muted-foreground">{formatCurrency(item.amount, item.currency)}</td>
                 <td className="p-3">
                   {item.providerId ?? (
                     <Select value={providerId} onValueChange={(value) => setProviderId(value as typeof providerId)}>
@@ -179,7 +182,7 @@ export default function PaymentExecutionHub() {
                     </Select>
                   )}
                 </td>
-                <td className="p-3"><Badge variant="outline">{item.status}</Badge></td>
+                <td className="p-3"><Badge variant="outline">{statusLabel(item.status, "payment")}</Badge></td>
                 <td className="p-3">
                   <div className="flex flex-wrap gap-2">
                     <Button
@@ -195,7 +198,7 @@ export default function PaymentExecutionHub() {
                           setErrorMessage("Approval failed.");
                         }
                       }}
-                      disabled={item.status !== "APPROVAL_PENDING"}
+                      disabled={!canApprovePayment(item.status)}
                     >
                       Approve
                     </Button>
@@ -271,6 +274,16 @@ export default function PaymentExecutionHub() {
                 </td>
               </tr>
             ))}
+            {(Array.isArray(filtered) ? filtered : []).length === 0 ? (
+              <tr>
+                <td colSpan={7} className="p-0">
+                  <EmptyState
+                    title="No execution requests"
+                    description="No payment requests match the current view in this tenant scope."
+                  />
+                </td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </WorkspacePanel>
@@ -308,11 +321,11 @@ export default function PaymentExecutionHub() {
                   <span className="text-muted-foreground">Destination:</span>
                   <span className="font-semibold">{selectedTransaction?.destination}</span>
                   <span className="text-muted-foreground">Amount:</span>
-                  <span className="font-bold">{selectedTransaction?.amount.toLocaleString()} {selectedTransaction?.currency}</span>
+                  <span className="font-bold">{formatCurrency(selectedTransaction?.amount ?? null, selectedTransaction?.currency)}</span>
                   <span className="text-muted-foreground">Channel:</span>
                   <span>{selectedTransaction?.channel}</span>
                   <span className="text-muted-foreground">Status:</span>
-                  <span><Badge variant="outline">{selectedTransaction?.status}</Badge></span>
+                  <span><Badge variant="outline">{statusLabel(selectedTransaction?.status, "payment")}</Badge></span>
                   <span className="text-muted-foreground">Provider:</span>
                   <span>{selectedTransaction?.providerId || "Not assigned"}</span>
                 </div>

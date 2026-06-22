@@ -104,7 +104,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
           <div className="p-8 space-y-8 bg-white min-h-[400px]">
             {/* Customer & Logistics Logic Block */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-secondary/5 rounded-[2rem] p-6 flex items-center gap-4 border border-slate-100">
+              <div className="bg-secondary/5 rounded-[2rem] p-6 flex items-center gap-4 border border-border">
                 <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center">
                   <User className="w-5 h-5 text-primary" />
                 </div>
@@ -118,7 +118,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                 </div>
               </div>
 
-              <div className="bg-secondary/5 rounded-[2rem] p-6 flex items-center gap-4 border border-slate-100">
+              <div className="bg-secondary/5 rounded-[2rem] p-6 flex items-center gap-4 border border-border">
                 <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center">
                   <MapPin className="w-5 h-5 text-success" />
                 </div>
@@ -154,7 +154,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                   return (
                     <div
                       key={idx}
-                      className="flex flex-col p-5 bg-white border border-slate-100 rounded-xl hover:border-primary transition-all group"
+                      className="flex flex-col p-5 bg-white border border-border rounded-xl hover:border-primary transition-all group"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
@@ -176,7 +176,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                       </div>
 
                       {/* Stock Integrity Telemetry */}
-                      <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
+                      <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
                         <div className="flex gap-6 text-[9px] font-black italic uppercase tracking-widest">
                           <p className="text-muted-foreground">
                             SOH: <span className="text-foreground">{soh}</span>
@@ -234,7 +234,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
               <Button
                 variant="outline"
                 onClick={onClose}
-                className="h-14 flex-1 rounded-2xl border-slate-200 font-black italic uppercase text-[10px] tracking-widest hover:bg-secondary/5"
+                className="h-14 flex-1 rounded-2xl border-border font-black italic uppercase text-[10px] tracking-widest hover:bg-secondary/5"
               >
                 Cancel View
               </Button>
@@ -284,7 +284,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                 <Button
                   variant="ghost"
                   onClick={() => onVoid(order.id)}
-                  className="h-14 w-14 rounded-2xl border border-red-100 text-destructive hover:bg-destructive"
+                  className="h-14 w-14 rounded-2xl border border-destructive text-destructive hover:bg-destructive"
                   title="Void Order"
                 >
                   <XCircle className="w-5 h-5" />
@@ -295,7 +295,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({
                 <Button
                   variant="ghost"
                   onClick={() => onRefund(order.id, (Array.isArray(order.items) ? order.items : []).map(i => i.product_id))}
-                  className="h-14 w-14 rounded-2xl border border-orange-100 text-warning hover:bg-warning"
+                  className="h-14 w-14 rounded-2xl border border-warning text-warning hover:bg-warning"
                   title="Initiate Refund"
                 >
                   <CheckCircle2 className="w-5 h-5" />

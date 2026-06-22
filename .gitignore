@@ -44,6 +44,8 @@ frontend/dist/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+# Per-run synthetic-org storage state + fixture records (contain live tokens) — never commit
+/tests/playwright/.auth/
 graphify-out/
 
 # Audit tooling — generated output

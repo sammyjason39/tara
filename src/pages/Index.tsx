@@ -3,7 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  GlassCard,
+  GlassCardContent,
+  GlassCardDescription,
+  GlassCardHeader,
+  GlassCardTitle,
+} from '@/components/shared/GlassCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useApp } from '@/contexts/AppContext';
 import { toast } from '@/hooks/use-toast';
@@ -161,7 +167,7 @@ export default function Index() {
                 </div>
               </div>
               <div className="flex items-start gap-3 p-4 rounded-lg bg-card border">
-                <div className="p-2 rounded-lg bg-warning">
+                <div className="p-2 rounded-lg bg-warning/10">
                   <ShoppingBag className="h-5 w-5 text-warning" />
                 </div>
                 <div>
@@ -170,7 +176,7 @@ export default function Index() {
                 </div>
               </div>
               <div className="flex items-start gap-3 p-4 rounded-lg bg-card border">
-                <div className="p-2 rounded-lg bg-warning">
+                <div className="p-2 rounded-lg bg-warning/10">
                   <Coffee className="h-5 w-5 text-warning" />
                 </div>
                 <div>
@@ -179,7 +185,7 @@ export default function Index() {
                 </div>
               </div>
               <div className="flex items-start gap-3 p-4 rounded-lg bg-card border">
-                <div className="p-2 rounded-lg bg-success">
+                <div className="p-2 rounded-lg bg-success/10">
                   <Shield className="h-5 w-5 text-success" />
                 </div>
                 <div>
@@ -192,20 +198,20 @@ export default function Index() {
 
           {/* Right Side - Auth Forms */}
           <div className="w-full max-w-md mx-auto">
-            <Card className="border-2">
-              <CardHeader className="text-center pb-2">
+            <GlassCard className="border-2">
+              <GlassCardHeader className="text-center pb-2">
                 <div className="lg:hidden flex items-center justify-center gap-2 mb-4">
                   <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
                     <Layers className="h-6 w-6 text-primary-foreground" />
                   </div>
                   <span className="text-xl font-bold">OpsCore</span>
                 </div>
-                <CardTitle className="text-2xl">Welcome</CardTitle>
-                <CardDescription>
+                <GlassCardTitle className="text-2xl">Welcome</GlassCardTitle>
+                <GlassCardDescription>
                   Sign in to access your dashboard
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+                </GlassCardDescription>
+              </GlassCardHeader>
+              <GlassCardContent>
                 <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'register')}>
                   <TabsList className="grid w-full grid-cols-2 mb-6">
                     <TabsTrigger value="login">Login</TabsTrigger>
@@ -329,8 +335,8 @@ export default function Index() {
                     </form>
                   </TabsContent>
                 </Tabs>
-              </CardContent>
-            </Card>
+              </GlassCardContent>
+            </GlassCard>
 
             {/* Footer */}
             <p className="text-center text-sm text-muted-foreground mt-6">

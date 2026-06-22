@@ -29,7 +29,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Product, formatCurrency } from '@/lib/mock-data';
+import { formatCurrency } from '@/lib/format';
 import { useApp } from '@/contexts/AppContext';
 import { toast } from '@/hooks/use-toast';
 import { retailService } from '@/core/services/retail/retailService';

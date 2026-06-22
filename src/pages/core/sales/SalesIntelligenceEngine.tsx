@@ -25,6 +25,7 @@ import {
   MousePointer2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -102,7 +103,7 @@ export default function SalesIntelligenceEngine() {
           secondaryActions={
             <Button 
               variant="outline" 
-              className="rounded-[1.2rem] px-6 h-12 font-black text-xs uppercase tracking-widest border-slate-200 bg-white/50 backdrop-blur-sm hover:bg-white transition-all"
+              className="rounded-[1.2rem] px-6 h-12 font-black text-xs uppercase tracking-widest border-border bg-white/50 backdrop-blur-sm hover:bg-white transition-all"
               onClick={() => refresh(true)}
               disabled={refreshing}
             >
@@ -249,6 +250,14 @@ export default function SalesIntelligenceEngine() {
                          </tbody>
                       </table>
                    </div>
+                   {!loading && filteredLeads.length === 0 && (
+                      <EmptyState
+                         title="No leads to score"
+                         description="No leads match the current search. Captured leads will be scored here."
+                         icon={Target}
+                         className="m-8"
+                      />
+                   )}
                 </Card>
              </div>
 

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,6 +8,9 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Truck, MapPin, Clock, CheckCircle2, Package } from "lucide-react";
+import { useSession } from "@/core/security/session";
+import { apiRequest } from "@/core/api/apiClient";
+import { LoadingSpinner, QueryErrorState, QueryEmptyState } from "@/components/shared/QueryStateWrapper";
 
 interface TransferTrackingModalProps {
   transferId: string;
@@ -15,29 +18,86 @@ interface TransferTrackingModalProps {
   onClose: () => void;
 }
 
+interface TransferData {
+  id: string;
+  from: string;
+  to: string;
+  status: string;
+  eta: string;
+  items: number;
+}
+
+interface TimelineEvent {
+  time: string;
+  status: string;
+  desc: string;
+  completed: boolean;
+}
+
 export const TransferTrackingModal: React.FC<TransferTrackingModalProps> = ({
   transferId,
   isOpen,
   onClose,
 }) => {
-  // Mock tracking data
-  const transfer = {
-    id: transferId,
-    from: "Surabaya DC",
-    to: "Jakarta Store",
-    status: "IN_TRANSIT",
-    eta: "2 Hours",
-    items: 42,
-  };
+  const session = useSession();
+  const [transfer, setTransfer] = useState<TransferData | null>(null);
+  const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const timeline = [
-    { time: "2026-02-16 08:00", status: "CREATED", desc: "Transfer request created", completed: true },
-    { time: "2026-02-16 09:30", status: "PICKED", desc: "Items picked from warehouse", completed: true },
-    { time: "2026-02-16 10:15", status: "DISPATCHED", desc: "Shipment dispatched", completed: true },
-    { time: "2026-02-16 11:45", status: "IN_TRANSIT", desc: "En route to destination", completed: true },
-    { time: "2026-02-16 13:30", status: "ARRIVED", desc: "Arrived at destination", completed: false },
-    { time: "2026-02-16 14:00", status: "RECEIVED", desc: "Items received and verified", completed: false },
-  ];
+  useEffect(() => {
+    if (!isOpen || !transferId || !session?.tenant_id) return;
+
+    const fetchTransferTracking = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await apiRequest<{
+          transfer: TransferData;
+          timeline: TimelineEvent[];
+        }>(`/inventory/transfers/${transferId}/tracking`, "GET", session);
+
+        if (data) {
+          setTransfer(data.transfer || {
+            id: transferId,
+            from: "Unknown",
+            to: "Unknown",
+            status: "UNKNOWN",
+            eta: "N/A",
+            items: 0,
+          });
+          setTimeline(Array.isArray(data.timeline) ? data.timeline : []);
+        }
+      } catch (err: any) {
+        console.error("Failed to fetch transfer tracking", err);
+        setError(err?.message || "Failed to load transfer tracking data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTransferTracking();
+  }, [isOpen, transferId, session?.tenant_id]);
+
+  const handleRetry = () => {
+    if (!isOpen || !transferId) return;
+    setError(null);
+    setIsLoading(true);
+    apiRequest<{
+      transfer: TransferData;
+      timeline: TimelineEvent[];
+    }>(`/inventory/transfers/${transferId}/tracking`, "GET", session)
+      .then((data) => {
+        if (data) {
+          setTransfer(data.transfer || null);
+          setTimeline(Array.isArray(data.timeline) ? data.timeline : []);
+        }
+      })
+      .catch((err: any) => {
+        setError(err?.message || "Failed to load transfer tracking data");
+      })
+      .finally(() => setIsLoading(false));
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -51,89 +111,107 @@ export const TransferTrackingModal: React.FC<TransferTrackingModalProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* Transfer Summary */}
-          <div className="bg-secondary/5 rounded-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <MapPin className="w-5 h-5 text-primary" />
+        {isLoading && <LoadingSpinner label="Loading transfer tracking…" />}
+
+        {!isLoading && error && (
+          <QueryErrorState message={error} onRetry={handleRetry} />
+        )}
+
+        {!isLoading && !error && !transfer && (
+          <QueryEmptyState message="No tracking data available for this transfer." />
+        )}
+
+        {!isLoading && !error && transfer && (
+          <div className="space-y-6 py-4">
+            {/* Transfer Summary */}
+            <div className="bg-secondary/5 rounded-2xl p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <MapPin className="w-5 h-5 text-primary" />
+                  <div>
+                    <div className="text-xs text-muted-foreground font-bold">Origin</div>
+                    <div className="font-black italic">{transfer.from}</div>
+                  </div>
+                </div>
+                <Truck className="w-6 h-6 text-muted-foreground" />
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <div className="text-xs text-muted-foreground font-bold">Destination</div>
+                    <div className="font-black italic">{transfer.to}</div>
+                  </div>
+                  <MapPin className="w-5 h-5 text-success" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
                 <div>
-                  <div className="text-xs text-muted-foreground font-bold">Origin</div>
-                  <div className="font-black italic">{transfer.from}</div>
+                  <div className="text-xs text-muted-foreground font-bold">Status</div>
+                  <Badge className="bg-primary text-primary font-black italic mt-1">
+                    {transfer.status}
+                  </Badge>
                 </div>
-              </div>
-              <Truck className="w-6 h-6 text-muted-foreground" />
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <div className="text-xs text-muted-foreground font-bold">Destination</div>
-                  <div className="font-black italic">{transfer.to}</div>
-                </div>
-                <MapPin className="w-5 h-5 text-success" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-slate-200">
-              <div>
-                <div className="text-xs text-muted-foreground font-bold">Status</div>
-                <Badge className="bg-primary text-primary font-black italic mt-1">
-                  {transfer.status}
-                </Badge>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground font-bold">ETA</div>
-                <div className="font-black italic flex items-center gap-1 mt-1">
-                  <Clock className="w-4 h-4" />
-                  {transfer.eta}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground font-bold">Items</div>
-                <div className="font-black italic flex items-center gap-1 mt-1">
-                  <Package className="w-4 h-4" />
-                  {transfer.items} Units
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Timeline */}
-          <div>
-            <div className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-4">Shipment Timeline</div>
-            <div className="space-y-4">
-              {(Array.isArray(timeline) ? timeline : []).map((event, idx) => (
-                <div key={idx} className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      event.completed ? 'bg-success/10' : 'bg-secondary/10'
-                    }`}>
-                      {event.completed ? (
-                        <CheckCircle2 className="w-5 h-5 text-success" />
-                      ) : (
-                        <div className="w-3 h-3 rounded-full bg-muted/30" />
-                      )}
-                    </div>
-                    {idx < timeline.length - 1 && (
-                      <div className={`w-0.5 h-12 ${event.completed ? 'bg-success/20' : 'bg-muted/20'}`} />
-                    )}
+                <div>
+                  <div className="text-xs text-muted-foreground font-bold">ETA</div>
+                  <div className="font-black italic flex items-center gap-1 mt-1">
+                    <Clock className="w-4 h-4" />
+                    {transfer.eta}
                   </div>
-                  <div className="flex-1 pb-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className={`font-black italic ${event.completed ? 'text-foreground' : 'text-muted-foreground'}`}>
-                        {event.desc}
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground font-bold">Items</div>
+                  <div className="font-black italic flex items-center gap-1 mt-1">
+                    <Package className="w-4 h-4" />
+                    {transfer.items} Units
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Timeline */}
+            {timeline.length > 0 && (
+              <div>
+                <div className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-4">Shipment Timeline</div>
+                <div className="space-y-4">
+                  {timeline.map((event, idx) => (
+                    <div key={idx} className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          event.completed ? 'bg-success/10' : 'bg-secondary/10'
+                        }`}>
+                          {event.completed ? (
+                            <CheckCircle2 className="w-5 h-5 text-success" />
+                          ) : (
+                            <div className="w-3 h-3 rounded-full bg-muted/30" />
+                          )}
+                        </div>
+                        {idx < timeline.length - 1 && (
+                          <div className={`w-0.5 h-12 ${event.completed ? 'bg-success/20' : 'bg-muted/20'}`} />
+                        )}
                       </div>
-                      <div className="text-xs text-muted-foreground font-bold">{event.time}</div>
+                      <div className="flex-1 pb-4">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className={`font-black italic ${event.completed ? 'text-foreground' : 'text-muted-foreground'}`}>
+                            {event.desc}
+                          </div>
+                          <div className="text-xs text-muted-foreground font-bold">{event.time}</div>
+                        </div>
+                        <Badge className={`text-xs font-black italic ${
+                          event.completed ? 'bg-success text-success' : 'bg-secondary/10 text-muted-foreground'
+                        }`}>
+                          {event.status}
+                        </Badge>
+                      </div>
                     </div>
-                    <Badge className={`text-xs font-black italic ${
-                      event.completed ? 'bg-success text-success' : 'bg-secondary/10 text-muted-foreground'
-                    }`}>
-                      {event.status}
-                    </Badge>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+
+            {timeline.length === 0 && (
+              <QueryEmptyState message="No timeline events available for this transfer." />
+            )}
           </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );

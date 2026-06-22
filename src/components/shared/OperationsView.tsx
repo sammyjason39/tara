@@ -69,10 +69,10 @@ export function OperationsView() {
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-1000 pb-20">
       {/* Tactical Header Actions */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-10 rounded-[3rem] bg-muted border border-slate-800 shadow-3xl relative overflow-hidden group">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-10 rounded-[3rem] bg-muted border border-border shadow-3xl relative overflow-hidden group">
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
         <div className="relative z-10 flex items-center gap-6">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-warning text-white shadow-2xl shadow-amber-500/40 border border-amber-400/50 animate-pulse-slow">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-warning text-white shadow-2xl shadow-amber-500/40 border border-warning/50 animate-pulse-slow">
             <Zap className="h-8 w-8" />
           </div>
           <div>

@@ -11,8 +11,15 @@ import { ApprovalStatusBadge } from "@/core/tools/ApprovalStatusBadge";
 import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { procurementService } from "@/core/services/procurement/procurementService";
+import { formatNumber } from "@/lib/format";
 import type { DraftPurchaseOrder, FinalPurchaseOrder, Requisition } from "@/core/types/procurement/procurement";
 import { FileText, ClipboardList, Info, Building2, ShoppingCart, CheckCircle2, DollarSign, Tag, ArrowRight } from "lucide-react";
+import { supplierQuoteSchema, goodsReceiptSchema, validatePoTransition } from "@/modules/procurement/schemas";
+import {
+  useConfirmSupplierQuote,
+  useReleasePurchaseOrder,
+  useRecordReceipt,
+} from "@/modules/procurement/hooks";
 
 export default function PoReleaseDesk() {
   const session = useSession();
@@ -27,6 +34,12 @@ export default function PoReleaseDesk() {
   const [loading, setLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [quoteFieldErrors, setQuoteFieldErrors] = useState<Record<string, string>>({});
+
+  // TanStack Query mutations
+  const confirmQuoteMutation = useConfirmSupplierQuote();
+  const releasePoMutation = useReleasePurchaseOrder();
+  const recordReceiptMutation = useRecordReceipt();
 
   const clearStatus = () => {
     setStatusMessage(null);
@@ -86,18 +99,29 @@ export default function PoReleaseDesk() {
   );
 
   const confirmQuote = async () => {
-    if (!selectedDraftId) return;
-    try {
-      await procurementService.confirmSupplierQuote(session.tenant_id, session, {
-        draftPoId: selectedDraftId,
-        quoteReference: quoteReference || `Q-${Date.now()}`,
-        quoteNotes,
+    setQuoteFieldErrors({});
+    const result = supplierQuoteSchema.safeParse({
+      draftPoId: selectedDraftId,
+      quoteReference: quoteReference || `Q-${Date.now()}`,
+      quoteNotes: quoteNotes || undefined,
+    });
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        const field = issue.path[0] as string;
+        if (!errors[field]) errors[field] = issue.message;
       });
+      setQuoteFieldErrors(errors);
+      return;
+    }
+    try {
+      await confirmQuoteMutation.mutateAsync(result.data);
       setStatusMessage("Supplier quote confirmed.");
       setQuoteDialogOpen(false);
       setSelectedDraftId("");
       setQuoteReference("");
       setQuoteNotes("");
+      setQuoteFieldErrors({});
       refresh();
     } catch (err) {
       setErrorMessage("Quote confirmation failed.");
@@ -105,8 +129,14 @@ export default function PoReleaseDesk() {
   };
 
   const releasePo = async (requisitionId: string) => {
+    // Validate the PO state transition (conceptually: approved → released/received)
+    const transition = validatePoTransition("approved", "received");
+    if (!transition.valid) {
+      setErrorMessage(transition.error || "Invalid PO state transition.");
+      return;
+    }
     try {
-      await procurementService.releasePurchaseOrder(session.tenant_id, session, requisitionId);
+      await releasePoMutation.mutateAsync(requisitionId);
       setStatusMessage("Purchase Order released and synchronized with Payable/Receipt systems.");
       refresh();
     } catch (err) {
@@ -115,15 +145,21 @@ export default function PoReleaseDesk() {
   };
 
   const recordReceipt = async (finalPoId: string) => {
+    const receiptData = {
+      finalPoId,
+      deliveryOnTime: true,
+      quantityAccuracy: 96,
+      qualityScore: 92,
+      issueCount: 0,
+      invoiceMismatch: false,
+    };
+    const result = goodsReceiptSchema.safeParse(receiptData);
+    if (!result.success) {
+      setErrorMessage("Receipt data validation failed: " + result.error.issues.map(i => i.message).join(", "));
+      return;
+    }
     try {
-      await procurementService.recordReceipt(session.tenant_id, session, {
-        finalPoId,
-        deliveryOnTime: true,
-        quantityAccuracy: 96,
-        qualityScore: 92,
-        issueCount: 0,
-        invoiceMismatch: false,
-      });
+      await recordReceiptMutation.mutateAsync(result.data);
       setStatusMessage("Receipt record posted and rating engine updated.");
       refresh();
     } catch (err) {
@@ -170,7 +206,7 @@ export default function PoReleaseDesk() {
                   <tr key={draft.id} className="border-t">
                     <td className="p-3 font-medium">{draft.id}</td>
                     <td className="p-3 text-muted-foreground">{draft.requisitionId}</td>
-                    <td className="p-3 text-muted-foreground">{draft.quotedTotal.toLocaleString()}</td>
+                    <td className="p-3 text-muted-foreground">{formatNumber(draft.quotedTotal)}</td>
                     <td className="p-3">
                       <ApprovalStatusBadge status={draft.status} />
                     </td>
@@ -218,7 +254,7 @@ export default function PoReleaseDesk() {
                   <tr key={request.id} className="border-t">
                     <td className="p-3 font-medium">{request.id}</td>
                     <td className="p-3 text-muted-foreground">{request.branchCode}</td>
-                    <td className="p-3 text-muted-foreground">{request.amount.toLocaleString()}</td>
+                    <td className="p-3 text-muted-foreground">{formatNumber(request.amount)}</td>
                     <td className="p-3">
                       <ApprovalStatusBadge status={request.status} />
                     </td>
@@ -259,7 +295,7 @@ export default function PoReleaseDesk() {
                   <tr key={po.id} className="border-t">
                     <td className="p-3 font-medium">{po.id}</td>
                     <td className="p-3 text-muted-foreground">{po.requisitionId}</td>
-                    <td className="p-3 text-muted-foreground">{po.totalAmount.toLocaleString()}</td>
+                    <td className="p-3 text-muted-foreground">{formatNumber(po.totalAmount)}</td>
                     <td className="p-3">
                       <ApprovalStatusBadge status={po.status} />
                     </td>
@@ -336,6 +372,7 @@ export default function PoReleaseDesk() {
                       className="pl-10 h-10 font-medium"
                     />
                   </div>
+                  {quoteFieldErrors.quoteReference && <p className="text-xs text-destructive mt-1">{quoteFieldErrors.quoteReference}</p>}
                   <p className="text-[10px] text-muted-foreground mt-1.5 italic">Official reference from the supplier's quotation document.</p>
                 </div>
 
@@ -350,7 +387,7 @@ export default function PoReleaseDesk() {
                 </div>
 
                 <div className="pt-4 border-t">
-                  <div className="p-4 rounded-lg bg-warning border border-amber-500/10">
+                  <div className="p-4 rounded-lg bg-warning border border-warning/10">
                     <p className="text-[10px] font-bold uppercase text-warning tracking-widest mb-1 flex items-center gap-1.5">
                       <DollarSign className="w-3 h-3" /> Integrity Check
                     </p>

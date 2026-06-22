@@ -165,7 +165,7 @@ export default function ModuleHub() {
   const mainContent = (
     <div className="flex h-full">
       {/* Categories Sidebar */}
-      <div className="w-64 p-6 border-r border-slate-100 space-y-8 bg-muted">
+      <div className="w-64 p-6 border-r border-border space-y-8 bg-muted">
           <div className="space-y-1">
             <div className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground italic">Categories</div>
             <p className="text-xs font-bold text-muted-foreground">Filter your workspace</p>
@@ -215,8 +215,8 @@ export default function ModuleHub() {
                     className={cn(
                       "p-8 rounded-[2.5rem] border transition-all duration-500 group flex flex-col justify-between h-full",
                       module.isCore 
-                        ? "bg-muted border-slate-100 grayscale-[0.5] hover:grayscale-0" 
-                        : "bg-white border-slate-100 hover:shadow-2xl hover:-translate-y-1"
+                        ? "bg-muted border-border grayscale-[0.5] hover:grayscale-0" 
+                        : "bg-white border-border hover:shadow-2xl hover:-translate-y-1"
                     )}
                   >
                     <div className="space-y-6">
@@ -229,9 +229,9 @@ export default function ModuleHub() {
                         </div>
                         <Badge variant="outline" className={cn(
                           "rounded-full px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em]",
-                          module.isCore ? "bg-muted text-muted-foreground border-slate-200" :
-                          module.isEnabled ? "bg-success text-success border-emerald-100" :
-                          "bg-muted text-muted-foreground border-slate-100"
+                          module.isCore ? "bg-muted text-muted-foreground border-border" :
+                          module.isEnabled ? "bg-success text-success border-success" :
+                          "bg-muted text-muted-foreground border-border"
                         )}>
                           {module.isCore ? "Core System" : module.isEnabled ? "Active" : "Disabled"}
                         </Badge>
@@ -280,7 +280,7 @@ export default function ModuleHub() {
                 ))}
                 
                 {filteredModules.length === 0 && (
-                   <div className="col-span-full py-20 flex flex-col items-center justify-center rounded-[3rem] border border-dashed border-slate-200 bg-muted">
+                   <div className="col-span-full py-20 flex flex-col items-center justify-center rounded-[3rem] border border-dashed border-border bg-muted">
                       <Search className="h-12 w-12 text-muted-foreground mb-4" />
                       <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">No matching modules detected</p>
                    </div>
@@ -311,7 +311,7 @@ export default function ModuleHub() {
                     { label: "Uptime Sync", value: "99.9%" },
                     { label: "License Type", value: "Enterprise" },
                   ].map((stat, i) => (
-                    <div key={i} className="p-8 bg-muted rounded-[2rem] border border-slate-700/50 min-w-[160px] space-y-1">
+                    <div key={i} className="p-8 bg-muted rounded-[2rem] border border-border/50 min-w-[160px] space-y-1">
                       <div className="text-3xl font-black italic text-white tracking-tighter">{stat.value}</div>
                       <div className="text-[10px] font-black text-primary uppercase tracking-widest">{stat.label}</div>
                     </div>
@@ -342,7 +342,7 @@ export default function ModuleHub() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
             placeholder="Search modules..." 
-            className="pl-10 h-11 rounded-xl bg-white border-slate-200 shadow-sm text-xs font-bold"
+            className="pl-10 h-11 rounded-xl bg-card shadow-sm text-xs font-bold"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />

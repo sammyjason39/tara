@@ -3,7 +3,8 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { TenantContext } from "../../../gateway/tenant-context.interface";
+import { Prisma } from "@prisma/client";
+import { TenantScope } from "../../../shared/scope/tenant-scope";
 import { CreateRequisitionDto } from "../dto/create-requisition.dto";
 import { CreateSupplierDto } from "../dto/create-supplier.dto";
 import { CreateSupplierBranchDto } from "../dto/create-supplier-branch.dto";
@@ -79,11 +80,11 @@ export class ProcurementMockRepository extends IProcurementRepository {
     });
   }
 
-  async getSuppliers(ctx: TenantContext): Promise<Supplier[]> {
+  async getSuppliers(ctx: TenantScope): Promise<Supplier[]> {
     return this.suppliers.filter((item) => item.tenant_id === ctx.tenant_id);
   }
 
-  async createSupplier(ctx: TenantContext, data: CreateSupplierDto): Promise<Supplier> {
+  async createSupplier(ctx: TenantScope, data: CreateSupplierDto): Promise<Supplier> {
     const created: Supplier = {
       id: `${ctx.tenant_id}-sup-${this.suppliers.length + 1}`,
       tenant_id: ctx.tenant_id,
@@ -100,23 +101,23 @@ export class ProcurementMockRepository extends IProcurementRepository {
     return created;
   }
 
-  async getSupplierBranches(ctx: TenantContext): Promise<any[]> {
+  async getSupplierBranches(ctx: TenantScope): Promise<any[]> {
     return [];
   }
 
-  async createSupplierBranch(ctx: TenantContext, data: CreateSupplierBranchDto): Promise<any> {
+  async createSupplierBranch(ctx: TenantScope, data: CreateSupplierBranchDto): Promise<any> {
     return { id: "mock-branch-id", ...data, localRating: 70, riskTier: "medium", created_at: new Date() };
   }
 
-  async getSupplierProducts(ctx: TenantContext): Promise<any[]> {
+  async getSupplierProducts(ctx: TenantScope): Promise<any[]> {
     return [];
   }
 
-  async upsertSupplierProduct(ctx: TenantContext, data: UpsertSupplierProductDto): Promise<any> {
+  async upsertSupplierProduct(ctx: TenantScope, data: UpsertSupplierProductDto): Promise<any> {
     return { id: data.id || "mock-product-id", ...data, created_at: new Date() };
   }
 
-  async getSupplierRecommendations(ctx: TenantContext, params: any): Promise<any[]> {
+  async getSupplierRecommendations(ctx: TenantScope, params: any): Promise<any[]> {
     const recommendations = [];
     const filtered = this.suppliers.filter(
       (s) => s.tenant_id === ctx.tenant_id && s.category === params.category,
@@ -132,11 +133,11 @@ export class ProcurementMockRepository extends IProcurementRepository {
     return recommendations;
   }
 
-  async getRequisitions(ctx: TenantContext): Promise<Requisition[]> {
+  async getRequisitions(ctx: TenantScope): Promise<Requisition[]> {
     return this.requisitions.filter((item) => item.tenant_id === ctx.tenant_id);
   }
 
-  async createRequisition(ctx: TenantContext, data: CreateRequisitionDto): Promise<Requisition> {
+  async createRequisition(ctx: TenantScope, data: CreateRequisitionDto): Promise<Requisition> {
     const created: Requisition = {
       id: `${ctx.tenant_id}-req-${this.requisitions.length + 1}`,
       tenant_id: ctx.tenant_id,
@@ -159,43 +160,56 @@ export class ProcurementMockRepository extends IProcurementRepository {
     return created;
   }
 
-  async approveRequesterHod(ctx: TenantContext, requisitionId: string): Promise<Requisition> {
+  async approveRequesterHod(ctx: TenantScope, requisitionId: string, _tx?: Prisma.TransactionClient): Promise<Requisition> {
     const requisition = this.requisitions.find(
       (item) => item.tenant_id === ctx.tenant_id && item.id === requisitionId,
     );
     if (!requisition) throw new NotFoundException("Requisition not found");
+    if (requisition.status !== "PENDING_REQUESTER_HOD") {
+      throw new BadRequestException(
+        `Invalid Procurement_Workflow transition for requisition '${requisitionId}': ` +
+          `cannot transition from '${requisition.status}' to 'APPROVED_REQUESTER_HOD'.`,
+      );
+    }
     requisition.status = "APPROVED_REQUESTER_HOD";
     requisition.updated_at = new Date();
     return requisition;
   }
 
-  async approveFinal(ctx: TenantContext, requisitionId: string, data: ApproveFinalDto): Promise<Requisition> {
+  async approveFinal(ctx: TenantScope, requisitionId: string, data: ApproveFinalDto, _tx?: Prisma.TransactionClient): Promise<Requisition> {
     const requisition = this.requisitions.find(
       (item) => item.tenant_id === ctx.tenant_id && item.id === requisitionId,
     );
     if (!requisition) throw new NotFoundException("Requisition not found");
-    requisition.status = "FINAL_APPROVED";
+    const target = data.approver === "FINANCE_HOD" ? "FINAL_APPROVED" : "FINAL_APPROVAL_PENDING";
+    if (!["APPROVED_REQUESTER_HOD", "FINAL_APPROVAL_PENDING"].includes(requisition.status as string)) {
+      throw new BadRequestException(
+        `Invalid Procurement_Workflow transition for requisition '${requisitionId}': ` +
+          `cannot transition from '${requisition.status}' to '${target}'.`,
+      );
+    }
+    requisition.status = target as Requisition["status"];
     requisition.updated_at = new Date();
     return requisition;
   }
 
-  async getDraftPurchaseOrders(ctx: TenantContext): Promise<any[]> {
+  async getDraftPurchaseOrders(ctx: TenantScope): Promise<any[]> {
     return [];
   }
 
-  async createDraftPurchaseOrder(ctx: TenantContext, data: CreateDraftPoDto, createdBy: string): Promise<any> {
+  async createDraftPurchaseOrder(ctx: TenantScope, data: CreateDraftPoDto, createdBy: string): Promise<any> {
     return { id: "mock-draft-id", ...data, status: "DRAFT", created_at: new Date() };
   }
 
-  async approveDraftByProcurementHod(ctx: TenantContext, draftPoId: string): Promise<any> {
+  async approveDraftByProcurementHod(ctx: TenantScope, draftPoId: string, _tx?: Prisma.TransactionClient): Promise<any> {
     return { id: draftPoId, status: "PROCUREMENT_HOD_APPROVED", updated_at: new Date() };
   }
 
-  async confirmSupplierQuote(ctx: TenantContext, draftPoId: string, data: ConfirmQuoteDto): Promise<any> {
+  async confirmSupplierQuote(ctx: TenantScope, draftPoId: string, data: ConfirmQuoteDto, _tx?: Prisma.TransactionClient): Promise<any> {
     return { id: draftPoId, status: "SUPPLIER_CONFIRMED", ...data, updated_at: new Date() };
   }
 
-  async releasePurchaseOrder(ctx: TenantContext, data: ReleasePoDto): Promise<PurchaseOrder> {
+  async releasePurchaseOrder(ctx: TenantScope, data: ReleasePoDto, _tx?: Prisma.TransactionClient): Promise<PurchaseOrder> {
     const po: PurchaseOrder = {
       id: `${ctx.tenant_id}-po-${this.purchaseOrders.length + 1}`,
       tenant_id: ctx.tenant_id,
@@ -212,39 +226,39 @@ export class ProcurementMockRepository extends IProcurementRepository {
     return po;
   }
 
-  async getPurchaseOrders(ctx: TenantContext): Promise<PurchaseOrder[]> {
+  async getPurchaseOrders(ctx: TenantScope): Promise<PurchaseOrder[]> {
     return this.purchaseOrders.filter((item) => item.tenant_id === ctx.tenant_id);
   }
 
-  async createReceipt(ctx: TenantContext, data: CreateReceiptDto, createdBy: string): Promise<any> {
+  async createReceipt(ctx: TenantScope, data: CreateReceiptDto, createdBy: string, _tx?: any): Promise<any> {
     return { id: "mock-receipt-id", ...data, created_at: new Date() };
   }
 
-  async getContracts(ctx: TenantContext): Promise<any[]> {
+  async getContracts(ctx: TenantScope): Promise<any[]> {
     return [];
   }
 
-  async createContract(ctx: TenantContext, data: CreateContractDto, createdBy: string): Promise<any> {
+  async createContract(ctx: TenantScope, data: CreateContractDto, createdBy: string): Promise<any> {
     return { id: "mock-contract-id", ...data, status: "LEGAL_REVIEW", version: 1, created_at: new Date() };
   }
 
-  async approveLegalContract(ctx: TenantContext, contractId: string): Promise<any> {
+  async approveLegalContract(ctx: TenantScope, contractId: string, _tx?: any): Promise<any> {
     return { id: contractId, status: "LEGAL_APPROVED", updated_at: new Date() };
   }
 
-  async signContract(ctx: TenantContext, contractId: string, data: SignContractDto): Promise<any> {
+  async signContract(ctx: TenantScope, contractId: string, data: SignContractDto, _tx?: any): Promise<any> {
     return { id: contractId, status: "SIGNED", party: data.party, updated_at: new Date() };
   }
 
-  async getRiskSignals(ctx: TenantContext): Promise<ProcurementRisk[]> {
+  async getRiskSignals(ctx: TenantScope): Promise<ProcurementRisk[]> {
     return this.risks.filter((item) => item.tenant_id === ctx.tenant_id);
   }
 
-  async runRiskScan(ctx: TenantContext): Promise<ProcurementRisk[]> {
+  async runRiskScan(ctx: TenantScope): Promise<ProcurementRisk[]> {
     return this.getRiskSignals(ctx);
   }
 
-  async createRiskSignal(ctx: TenantContext, data: CreateRiskSignalDto): Promise<any> {
+  async createRiskSignal(ctx: TenantScope, data: CreateRiskSignalDto): Promise<any> {
     const risk: ProcurementRisk = {
       id: `${ctx.tenant_id}-risk-${this.risks.length + 1}`,
       tenant_id: ctx.tenant_id,
@@ -260,36 +274,36 @@ export class ProcurementMockRepository extends IProcurementRepository {
     return risk;
   }
 
-  async updateRiskSignalStatus(ctx: TenantContext, riskSignalId: string, status: string): Promise<any> {
+  async updateRiskSignalStatus(ctx: TenantScope, riskSignalId: string, status: string): Promise<any> {
     return { id: riskSignalId, status, updated_at: new Date() };
   }
 
-  async getPortalMessages(ctx: TenantContext): Promise<any[]> {
+  async getPortalMessages(ctx: TenantScope): Promise<any[]> {
     return [];
   }
 
-  async createPortalMessage(ctx: TenantContext, data: CreatePortalMessageDto, createdBy: string): Promise<any> {
+  async createPortalMessage(ctx: TenantScope, data: CreatePortalMessageDto, createdBy: string): Promise<any> {
     return { id: "mock-portal-msg-id", ...data, created_at: new Date() };
   }
 
-  async getAuditEvents(ctx: TenantContext): Promise<any[]> {
+  async getAuditEvents(ctx: TenantScope): Promise<any[]> {
     return [];
   }
 
-  async createAuditEvent(ctx: TenantContext, actor_id: string, action: string, entity_type: string, entity_id: string, detail?: string): Promise<any> {
+  async createAuditEvent(ctx: TenantScope, actor_id: string, action: string, entity_type: string, entity_id: string, detail?: string, _tx?: Prisma.TransactionClient): Promise<any> {
     return { id: "mock-audit-id", tenant_id: ctx.tenant_id, actor_id, action, entity_type, entity_id, detail, created_at: new Date() };
   }
 
-  async getSpendInsights(ctx: TenantContext): Promise<any[]> {
+  async getSpendInsights(ctx: TenantScope): Promise<any[]> {
     return [];
   }
 
-  async getCategories(ctx: TenantContext): Promise<any[]> {
+  async getCategories(ctx: TenantScope): Promise<any[]> {
     return this.categories.filter((c) => c.tenant_id === ctx.tenant_id && c.active);
   }
 
   async upsertCategory(
-    ctx: TenantContext,
+    ctx: TenantScope,
     data: CreateProcurementCategoryDto | UpdateProcurementCategoryDto,
   ): Promise<any> {
     if ("id" in data && data.id) {
@@ -309,7 +323,7 @@ export class ProcurementMockRepository extends IProcurementRepository {
     return created;
   }
 
-  async deleteCategory(ctx: TenantContext, id: string): Promise<any> {
+  async deleteCategory(ctx: TenantScope, id: string): Promise<any> {
     const idx = this.categories.findIndex((c) => c.id === id);
     if (idx !== -1) {
       this.categories[idx].active = false;

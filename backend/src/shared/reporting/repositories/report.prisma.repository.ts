@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../persistence/prisma.service';
 import { IReportRepository } from './report.repository.interface';
 import { sys_report_jobs } from '@prisma/client';
+import { PaginationParams } from '../../pipes/pagination.pipe';
 
 @Injectable()
 export class ReportPrismaRepository extends IReportRepository {
@@ -48,20 +49,32 @@ export class ReportPrismaRepository extends IReportRepository {
     });
   }
 
-  async getPendingJobs(): Promise<sys_report_jobs[]> {
+  async getPendingJobs(pagination?: PaginationParams): Promise<sys_report_jobs[]> {
+    const page = pagination?.page ?? 1;
+    const pageSize = pagination?.pageSize ?? 50;
+    const skip = (page - 1) * pageSize;
+
     return this.prisma.sys_report_jobs.findMany({
       where: { status: 'PENDING' },
       orderBy: { created_at: 'asc' },
+      skip,
+      take: pageSize,
     });
   }
 
-  async getStaleJobs(ageInMinutes: number): Promise<sys_report_jobs[]> {
+  async getStaleJobs(ageInMinutes: number, pagination?: PaginationParams): Promise<sys_report_jobs[]> {
+    const page = pagination?.page ?? 1;
+    const pageSize = pagination?.pageSize ?? 50;
+    const skip = (page - 1) * pageSize;
     const cutoff = new Date(Date.now() - ageInMinutes * 60000);
+
     return this.prisma.sys_report_jobs.findMany({
       where: {
         status: 'PROCESSING',
         last_progress_at: { lt: cutoff },
       },
+      skip,
+      take: pageSize,
     });
   }
 }

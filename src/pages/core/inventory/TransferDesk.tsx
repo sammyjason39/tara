@@ -49,7 +49,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { inventoryService } from "@/core/services/inventory/inventoryService";
 import { TransferManifestDialog } from "./components/TransferManifestDialog";
-import { FutureIntegrationDialog } from "./components/FutureIntegrationDialog";
+import { CourierDispatchDialog } from "./components/CourierDispatchDialog";
 import { Zap } from "lucide-react";
 
 interface TransferRecord {
@@ -169,7 +169,7 @@ export default function InventoryTransferDesk() {
   const mainContent = (
     <div className="p-6 space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-muted rounded-[2.5rem] overflow-hidden">
+        <Card className="border-none shadow-xl shadow-muted/50 dark:shadow-none bg-white dark:bg-muted rounded-[2.5rem] overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">In Transit</CardTitle>
             <Truck className="h-4 w-4 text-primary opacity-50" />
@@ -182,7 +182,7 @@ export default function InventoryTransferDesk() {
           </CardContent>
         </Card>
         
-        <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-muted rounded-[2.5rem] overflow-hidden">
+        <Card className="border-none shadow-xl shadow-muted/50 dark:shadow-none bg-white dark:bg-muted rounded-[2.5rem] overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Pending Approval</CardTitle>
             <AlertCircle className="h-4 w-4 text-warning opacity-50" />
@@ -195,7 +195,7 @@ export default function InventoryTransferDesk() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-muted rounded-[2.5rem] overflow-hidden">
+        <Card className="border-none shadow-xl shadow-muted/50 dark:shadow-none bg-white dark:bg-muted rounded-[2.5rem] overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Completed (MTD)</CardTitle>
             <History className="h-4 w-4 text-success opacity-50" />
@@ -209,7 +209,7 @@ export default function InventoryTransferDesk() {
         </Card>
       </div>
 
-      <Card className="border-none shadow-2xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-muted rounded-[3rem] overflow-hidden">
+      <Card className="border-none shadow-2xl shadow-muted/50 dark:shadow-none bg-white dark:bg-muted rounded-[3rem] overflow-hidden">
         <div className="p-8 border-b flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="relative flex-1 w-full max-w-md">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -223,7 +223,7 @@ export default function InventoryTransferDesk() {
           <div className="flex items-center gap-3 w-full md:w-auto">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="h-14 px-6 rounded-2xl border-slate-200 text-xs font-black uppercase tracking-widest hover:bg-muted">
+                <Button variant="outline" className="h-14 px-6 rounded-2xl border-muted text-xs font-black uppercase tracking-widest hover:bg-muted">
                   <Filter className="h-4 w-4 mr-2" /> {statusFilter === 'ALL' ? 'Filter' : `Status: ${statusFilter}`}
                 </Button>
               </DropdownMenuTrigger>
@@ -259,7 +259,7 @@ export default function InventoryTransferDesk() {
               <TableBody>
                 {loading ? (
                   Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i} className="border-slate-100 dark:border-slate-800">
+                    <TableRow key={i} className="border-muted dark:border-muted">
                       <TableCell colSpan={5} className="py-6 px-8">
                         <Skeleton className="h-12 w-full rounded-xl" />
                       </TableCell>
@@ -278,7 +278,7 @@ export default function InventoryTransferDesk() {
                   filteredTransfers.map((t) => (
                     <TableRow 
                       key={t.id} 
-                      className="border-slate-100 dark:border-slate-800 group hover:bg-primary/[0.02] transition-all"
+                      className="border-muted dark:border-muted group hover:bg-primary/[0.02] transition-all"
                     >
                       <TableCell className="pl-8 py-6">
                         <span className="text-xs font-mono font-black text-muted-foreground group-hover:text-primary transition-colors">{t.transferNo}</span>
@@ -317,7 +317,7 @@ export default function InventoryTransferDesk() {
                               )}
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-56 rounded-2xl border-slate-200 dark:border-slate-800 bg-white dark:bg-muted p-2 shadow-2xl">
+                          <DropdownMenuContent align="end" className="w-56 rounded-2xl border-muted dark:border-muted bg-white dark:bg-muted p-2 shadow-2xl">
                             <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest opacity-40 px-4 py-3">Protocol Actions</DropdownMenuLabel>
                             
                             {t.status === 'REQUESTED' && (
@@ -382,7 +382,7 @@ export default function InventoryTransferDesk() {
   return (
     <div className="min-h-full p-8 space-y-10 bg-muted dark:bg-muted">
       {/* Tactical Header */}
-      <div className="flex items-end justify-between border-b border-slate-200 dark:border-slate-800 pb-8">
+      <div className="flex items-end justify-between border-b border-muted dark:border-muted pb-8">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-[0.3em]">
             <Layers className="h-3 w-3" /> LOGISTICS_ENGINE
@@ -409,9 +409,11 @@ export default function InventoryTransferDesk() {
         transferId={selectedTransferId} 
       />
 
-      <FutureIntegrationDialog 
+      <CourierDispatchDialog 
         open={futureIntegrationOpen} 
-        onOpenChange={setFutureIntegrationOpen} 
+        onOpenChange={setFutureIntegrationOpen}
+        transferId={selectedTransferId || ""}
+        onSuccess={fetchData}
       />
     </div>
   );

@@ -52,7 +52,7 @@ export default function PulseDesk() {
   return (
     <div className="min-h-full p-8 space-y-10 bg-muted dark:bg-muted">
       {/* Tactical Header */}
-      <div className="flex items-end justify-between border-b border-slate-200 dark:border-slate-800 pb-8">
+      <div className="flex items-end justify-between border-b border-border dark:border-border pb-8">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-destructive font-black text-[10px] uppercase tracking-[0.3em]">
             <BrainCircuit className="h-3 w-3" /> Human Capital Intelligence Node
@@ -69,7 +69,7 @@ export default function PulseDesk() {
               placeholder="Query Culture Data..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 bg-white dark:bg-muted border-slate-200 dark:border-slate-800 w-64 rounded-xl focus:ring-rose-500/20"
+              className="pl-10 bg-white dark:bg-muted border-border dark:border-border w-64 rounded-xl focus:ring-rose-500/20"
             />
           </div>
           <Button 
@@ -86,7 +86,7 @@ export default function PulseDesk() {
         {(Array.isArray(stats) ? stats : []).map((stat, i) => {
           const Icon = stat.icon;
           return (
-            <div key={i} className="group relative p-8 rounded-[2.5rem] bg-white dark:bg-muted border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden">
+            <div key={i} className="group relative p-8 rounded-[2.5rem] bg-white dark:bg-muted border border-border dark:border-border shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 overflow-hidden">
               <div className="absolute top-0 right-0 h-32 w-32 bg-muted dark:bg-muted rounded-full -mr-16 -mt-16 transition-transform duration-700 group-hover:scale-150" />
               <div className="relative z-10 space-y-6">
                 <div className={cn(
@@ -128,7 +128,7 @@ export default function PulseDesk() {
 
           <div className="grid gap-6 sm:grid-cols-2">
             {(Array.isArray(workforceHealth) ? workforceHealth : []).map((item, i) => (
-              <div key={i} className="group p-8 rounded-[2rem] bg-white dark:bg-muted border border-slate-100 dark:border-slate-800 hover:shadow-xl transition-all duration-500">
+              <div key={i} className="group p-8 rounded-[2rem] bg-white dark:bg-muted border border-border dark:border-border hover:shadow-xl transition-all duration-500">
                 <div className="flex items-center justify-between mb-6">
                   <div className="space-y-1">
                     <p className="text-sm font-black text-muted-foreground dark:text-white uppercase tracking-tight italic">{item.label}</p>
@@ -202,7 +202,7 @@ export default function PulseDesk() {
            </div>
 
            {/* Alerts */}
-           <div className="p-8 rounded-[2.5rem] bg-warning border border-amber-500/20 space-y-4">
+           <div className="p-8 rounded-[2.5rem] bg-warning border border-warning/20 space-y-4">
               <div className="flex items-center gap-3 text-warning">
                  <AlertCircle className="h-6 w-6" />
                  <span className="text-xs font-black uppercase tracking-widest italic">Node Alert: Performance Gap</span>

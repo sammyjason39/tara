@@ -43,7 +43,7 @@ export const FinancialTrajectoryChart: React.FC<FinancialTrajectoryChartProps> =
   }));
 
   return (
-    <div className="flex flex-col h-full rounded-[2.5rem] glass-card p-8 card-premium">
+    <div className="flex flex-col h-full rounded-[2.5rem] bg-card border border-border p-8 shadow-2xl card-premium">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h4 className="text-xl font-black italic uppercase tracking-tighter text-foreground">Financial Trajectory</h4>
@@ -69,7 +69,7 @@ export const FinancialTrajectoryChart: React.FC<FinancialTrajectoryChartProps> =
         </div>
       </div>
 
-      <div className="h-[320px] w-full">
+      <div className="h-[400px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={formattedData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <defs>

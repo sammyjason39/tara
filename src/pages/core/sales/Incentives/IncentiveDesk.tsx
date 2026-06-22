@@ -27,6 +27,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { GlassCard } from "@/components/shared/GlassCard";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Sheet, 
@@ -40,6 +42,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSession } from "@/core/security/session";
 import { incentivesService } from "@/core/services/sales/incentivesService";
 import { cn } from "@/lib/utils";
+import { formatCurrency, formatDate, formatDateTime } from "@/lib/format";
 import { toast } from "sonner";
 import type { IncentivePlan, SalesAttribution, IncentiveAuditLog } from "@/core/types/sales/incentives";
 
@@ -169,12 +172,12 @@ export default function IncentiveDesk() {
                Yield Stream Live
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">Incentive Desk</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground">Incentive Desk</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic">"Reward excellence, and excellence becomes the standard."</p>
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-slate-800/20 shadow-2xl">
+          <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-border/20 shadow-2xl">
             <Button
               variant="secondary"
               className="h-14 w-14 rounded-[1.5rem] bg-primary text-white hover:bg-primary transition-all shadow-xl shadow-indigo-500/20"
@@ -212,7 +215,7 @@ export default function IncentiveDesk() {
             </div>
             <div>
                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">ACCRUED INCENTIVES</p>
-               <h4 className="text-3xl font-black text-success">${pendingAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</h4>
+               <h4 className="text-3xl font-black text-success">{formatCurrency(pendingAmount)}</h4>
                <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1 italic">Pending Handoff</p>
             </div>
          </Card>
@@ -231,7 +234,7 @@ export default function IncentiveDesk() {
       {/* Analytics Section */}
       {analytics && (
         <div className="grid gap-10 md:grid-cols-2">
-            <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden">
+            <GlassCard className="rounded-[3rem] border-none shadow-2xl overflow-hidden">
                <CardHeader className="p-10 pb-4">
                   <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-3 text-muted-foreground dark:text-white">
                      <Target className="h-6 w-6 text-primary" />
@@ -251,13 +254,13 @@ export default function IncentiveDesk() {
                              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">ID: {earner.employee_id}</p>
                           </div>
                        </div>
-                       <p className="text-lg font-black text-success">${earner.amount.toFixed(2)}</p>
+                       <p className="text-lg font-black text-success">{formatCurrency(earner.amount)}</p>
                     </div>
                   ))}
                </CardContent>
-            </Card>
+            </GlassCard>
 
-            <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden p-10 space-y-8">
+            <GlassCard className="rounded-[3rem] border-none shadow-2xl overflow-hidden p-10 space-y-8">
                <div className="space-y-2">
                   <h3 className="text-2xl font-black tracking-tight flex items-center gap-3">
                      <PieChart className="h-6 w-6 text-primary" />
@@ -283,20 +286,20 @@ export default function IncentiveDesk() {
                   <div className="grid grid-cols-2 gap-8">
                      <div className="p-6 rounded-[2rem] bg-primary border border-primary space-y-1">
                         <p className="text-[9px] font-black uppercase tracking-widest text-primary opacity-60">Total Accruals</p>
-                        <h4 className="text-2xl font-black">${analytics.totalIncentive?.toLocaleString()}</h4>
+                        <h4 className="text-2xl font-black">{formatCurrency(analytics.totalIncentive)}</h4>
                      </div>
-                     <div className="p-6 rounded-[2rem] bg-success border border-emerald-500/10 space-y-1">
+                     <div className="p-6 rounded-[2rem] bg-success border border-success/10 space-y-1">
                         <p className="text-[9px] font-black uppercase tracking-widest text-success opacity-60">Revenue Impact</p>
-                        <h4 className="text-2xl font-black">${analytics.totalRevenue?.toLocaleString()}</h4>
+                        <h4 className="text-2xl font-black">{formatCurrency(analytics.totalRevenue)}</h4>
                      </div>
                   </div>
                </div>
-            </Card>
+            </GlassCard>
         </div>
       )}
 
       {/* Main Configuration Desk */}
-      <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden">
+      <GlassCard className="rounded-[3rem] border-none shadow-2xl overflow-hidden">
         <Tabs defaultValue="plans" className="w-full">
           <CardHeader className="p-10 pb-0">
              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
@@ -346,7 +349,7 @@ export default function IncentiveDesk() {
                     <tr key={plan.id} className="group hover:bg-white/60 dark:hover:bg-muted transition-all cursor-default">
                       <td className="px-10 py-8">
                         <div className="flex items-center gap-5">
-                           <div className="h-12 w-12 rounded-2xl bg-white dark:bg-muted flex items-center justify-center font-black text-sm shadow-xl group-hover:bg-primary group-hover:text-white transition-colors border border-slate-100 dark:border-slate-800">
+                           <div className="h-12 w-12 rounded-2xl bg-white dark:bg-muted flex items-center justify-center font-black text-sm shadow-xl group-hover:bg-primary group-hover:text-white transition-colors border border-border dark:border-border">
                               <Layers className="h-6 w-6" />
                            </div>
                            <div>
@@ -370,7 +373,7 @@ export default function IncentiveDesk() {
                       <td className="px-10 py-8">
                         <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-tighter">
                            <Calendar className="h-3 w-3 text-primary" />
-                           {new Date(plan.start_date).toLocaleDateString()} — {plan.end_date ? new Date(plan.end_date).toLocaleDateString() : "ONGOING"}
+                           {formatDate(plan.start_date)} — {plan.end_date ? formatDate(plan.end_date) : "ONGOING"}
                         </div>
                       </td>
                       <td className="px-10 py-8 text-right">
@@ -386,6 +389,14 @@ export default function IncentiveDesk() {
                 </tbody>
               </table>
             </div>
+            {!loading && plans.length === 0 && (
+              <EmptyState
+                title="No incentive plans"
+                description="No incentive plans are configured yet. Create a plan to start rewarding performance."
+                icon={Settings2}
+                className="m-10"
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="attributions" className="mt-0 outline-none">
@@ -421,7 +432,7 @@ export default function IncentiveDesk() {
                         <p className="text-xs font-black text-muted-foreground uppercase tracking-tighter italic">TXID: {attr.entity_id.slice(-12)}</p>
                       </td>
                       <td className="px-10 py-8 text-right font-black text-base text-success">
-                        ${Number(attr.incentive_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        {formatCurrency(Number(attr.incentive_amount))}
                       </td>
                       <td className="px-10 py-8 text-right">
                         <Badge variant="outline" className={cn(
@@ -436,9 +447,17 @@ export default function IncentiveDesk() {
                 </tbody>
               </table>
             </div>
+            {!loading && attributions.length === 0 && (
+              <EmptyState
+                title="No attributions yet"
+                description="No incentive attributions have been recorded. Process deals to populate this view."
+                icon={Activity}
+                className="m-10"
+              />
+            )}
           </TabsContent>
         </Tabs>
-      </Card>
+      </GlassCard>
 
       {/* Slide-out Sheets */}
       <Sheet open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
@@ -462,13 +481,13 @@ export default function IncentiveDesk() {
                      </div>
                    ) : (
                      (Array.isArray(auditLogs) ? auditLogs : []).map((log) => (
-                       <div key={log.id} className="relative pl-8 pb-8 border-l-2 border-slate-100 dark:border-slate-800 last:pb-0">
+                       <div key={log.id} className="relative pl-8 pb-8 border-l-2 border-border dark:border-border last:pb-0">
                          <div className="absolute -left-[9px] top-0 h-4 w-4 bg-white dark:bg-muted border-4 border-primary rounded-full shadow-lg shadow-indigo-500/30" />
                          <Card className="rounded-[1.5rem] border-none bg-muted dark:bg-muted p-5 space-y-3">
                             <div className="flex items-center justify-between">
                                <Badge className="rounded-full bg-primary text-white font-black text-[8px] uppercase tracking-widest">{log.action}</Badge>
                                <span className="text-[9px] font-bold text-muted-foreground uppercase flex items-center gap-1.5">
-                                 <Calendar className="h-3 w-3" /> {new Date(log.timestamp).toLocaleString()}
+                                 <Calendar className="h-3 w-3" /> {formatDateTime(log.timestamp)}
                                </span>
                             </div>
                             <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-tighter">
@@ -522,7 +541,7 @@ export default function IncentiveDesk() {
                         onChange={(e) => setRecalcDates(prev => ({ ...prev, end: e.target.value }))}
                     />
                 </div>
-                <div className="p-6 bg-warning border border-orange-500/10 rounded-3xl space-y-3">
+                <div className="p-6 bg-warning border border-warning rounded-3xl space-y-3">
                    <p className="text-[10px] font-black uppercase text-warning flex items-center gap-2">
                       <Zap className="h-3 w-3" /> Idempotent Guard Active
                    </p>

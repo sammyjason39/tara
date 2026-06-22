@@ -227,7 +227,7 @@ export function ImportDialog({
 
               {isCompleted && (
                 <div className="w-full space-y-4 py-4">
-                  <div className="h-20 w-20 rounded-full bg-success flex items-center justify-center mx-auto border-4 border-green-100">
+                  <div className="h-20 w-20 rounded-full bg-success flex items-center justify-center mx-auto border-4 border-success">
                     <CheckCircle2 className="h-12 w-12 text-success" />
                   </div>
                   <div className="space-y-1">
@@ -241,7 +241,7 @@ export function ImportDialog({
 
               {isFailed && (
                 <div className="w-full space-y-4 py-4">
-                  <div className="h-20 w-20 rounded-full bg-destructive flex items-center justify-center mx-auto border-4 border-red-100">
+                  <div className="h-20 w-20 rounded-full bg-destructive flex items-center justify-center mx-auto border-4 border-destructive">
                     <AlertCircle className="h-12 w-12 text-destructive" />
                   </div>
                   <div className="space-y-1">
@@ -255,7 +255,7 @@ export function ImportDialog({
 
               {isAborted && (
                 <div className="w-full space-y-4 py-4">
-                  <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center mx-auto border-4 border-slate-100">
+                  <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center mx-auto border-4 border-border">
                     <XCircle className="h-12 w-12 text-muted-foreground" />
                   </div>
                   <div className="space-y-1">
@@ -278,7 +278,7 @@ export function ImportDialog({
                 <ScrollArea className="h-40 pr-4">
                   <div className="space-y-2">
                     {status.errors.map((err: any, i: number) => (
-                      <div key={i} className="text-[10px] bg-white/80 p-3 rounded-xl border border-red-100 shadow-sm text-destructive font-bold leading-tight">
+                      <div key={i} className="text-[10px] bg-white/80 p-3 rounded-xl border border-destructive shadow-sm text-destructive font-bold leading-tight">
                         <span className="text-muted-foreground uppercase tracking-tighter mr-2">[{err.identifier || "ITEM"}]</span>
                         {err.message || JSON.stringify(err)}
                       </div>
@@ -336,7 +336,7 @@ export function ImportDialog({
                 Payload Source
               </Label>
               <div 
-                className="group border-2 border-dashed border-slate-200 rounded-[2rem] p-10 flex flex-col items-center justify-center gap-4 hover:border-primary hover:bg-muted transition-all cursor-pointer relative"
+                className="group border-2 border-dashed border-border rounded-[2rem] p-10 flex flex-col items-center justify-center gap-4 hover:border-primary hover:bg-muted transition-all cursor-pointer relative"
                 onClick={() => document.getElementById('file-upload')?.click()}
               >
                 <div className="h-20 w-20 rounded-3xl bg-muted group-hover:bg-primary/10 flex items-center justify-center transition-colors">
@@ -381,7 +381,7 @@ export function ImportDialog({
                   Destination Location (Optional)
                 </Label>
                 <Select value={locationId} onValueChange={setLocationId}>
-                  <SelectTrigger className="rounded-xl h-12 bg-muted border-slate-200">
+                  <SelectTrigger className="rounded-xl h-12 bg-muted border-border">
                     <SelectValue placeholder="Default to CSV location or Headquarters" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl">
@@ -481,7 +481,7 @@ function ActiveJobsList({
             return (
               <div 
                 key={job.id} 
-                className={`group relative bg-muted hover:bg-primary/5 border border-slate-100 hover:border-primary/20 rounded-2xl p-4 transition-all duration-300 cursor-pointer overflow-hidden ${isActive ? 'ring-1 ring-primary/20' : ''}`}
+                className={`group relative bg-muted hover:bg-primary/5 border border-border hover:border-primary/20 rounded-2xl p-4 transition-all duration-300 cursor-pointer overflow-hidden ${isActive ? 'ring-1 ring-primary/20' : ''}`}
               >
                 <div className="flex items-start justify-between relative z-10" onClick={() => onSelectJob(job.id)}>
                   <div className="flex items-center space-x-3">

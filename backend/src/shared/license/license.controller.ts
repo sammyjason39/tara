@@ -1,13 +1,23 @@
-import { Controller, Get, Post, Body, Param, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common';
 import { LicenseService } from './license.service';
+import { PaginationPipe, PaginationParams } from '../pipes/pagination.pipe';
+import { CacheInterceptor, CacheTTL, CacheInvalidationHelper } from '../cache';
 
 @Controller('license')
 export class LicenseController {
-  constructor(private readonly licenseService: LicenseService) {}
+  constructor(
+    private readonly licenseService: LicenseService,
+    private readonly cacheHelper: CacheInvalidationHelper,
+  ) {}
 
   @Get('my-modules')
-  async getMyModules(@Req() req: any) {
-    return this.licenseService.getTenantLicenses(req.tenant_id);
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(300)
+  async getMyModules(
+    @Req() req: any,
+    @Query(PaginationPipe) pagination: PaginationParams,
+  ) {
+    return this.licenseService.getTenantLicensesPaginated(req.tenant_id, pagination);
   }
 
   @Get('check/:moduleCode')
@@ -21,11 +31,13 @@ export class LicenseController {
     @Param('moduleCode') moduleCode: string,
     @Body('enabled') enabled: boolean,
   ) {
-    return this.licenseService.toggleModule(
+    const result = await this.licenseService.toggleModule(
       req.tenant_id,
       moduleCode,
       enabled,
       req.user.user_id,
     );
+    await this.cacheHelper.invalidateAll();
+    return result;
   }
 }

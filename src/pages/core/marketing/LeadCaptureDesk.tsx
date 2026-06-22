@@ -61,9 +61,11 @@ import {
 import { useSession } from "@/core/security/session";
 import { marketingService } from "@/core/services/marketing/marketingService";
 import type { MarketingLead, MarketingCampaign } from "@/core/types/marketing/marketing";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { CaptureLeadModal } from "./modals/CaptureLeadModal";
 
 const SOURCES: MarketingLead["source"][] = [
   "LANDING_PAGE",
@@ -205,7 +207,7 @@ export default function LeadCaptureDesk() {
                Scoring Matrix Active
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent text-left italic">Lead Capture</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground text-left italic">Lead Capture</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic text-left">"Intelligent ingestion engine authorizing high-intent entities for strategic conversion."</p>
         </div>
         
@@ -245,7 +247,7 @@ export default function LeadCaptureDesk() {
           { label: 'Qualified Rate', val: '35%', icon: Target, color: 'text-success' },
           { label: 'Handoff Ready', val: '8', icon: Rocket, color: 'text-primary' },
         ].map((stat, i) => (
-          <Card key={i} className="rounded-[2.5rem] border-none shadow-xl bg-white/40 dark:bg-muted backdrop-blur-md group hover:shadow-2xl transition-all">
+          <Card key={i} className="rounded-[2.5rem] border-none shadow-xl glass-card group hover:shadow-2xl transition-all">
             <CardContent className="p-8 flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground italic leading-none">{stat.label}</p>
@@ -262,8 +264,8 @@ export default function LeadCaptureDesk() {
       <div className="grid grid-cols-12 gap-10 flex-1 min-h-0">
         {/* Left: Intelligence Feed */}
         <div className="col-span-12 lg:col-span-8 flex flex-col gap-6">
-           <Card className="flex-1 rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden flex flex-col">
-              <CardHeader className="p-10 pb-6 border-b border-white/10 dark:border-slate-800/10 flex flex-row items-center justify-between">
+           <Card className="flex-1 rounded-[3rem] border-none shadow-2xl glass-card overflow-hidden flex flex-col">
+              <CardHeader className="p-10 pb-6 border-b border-white/10 dark:border-border/10 flex flex-row items-center justify-between">
                  <div className="space-y-1">
                     <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-3 uppercase italic">
                        <Layers className="h-6 w-6 text-primary" />
@@ -271,7 +273,7 @@ export default function LeadCaptureDesk() {
                     </CardTitle>
                     <CardDescription className="text-xs font-medium italic italic">Real-time queue of incoming entities and their strategic scores.</CardDescription>
                  </div>
-                 <Badge variant="outline" className="rounded-full font-black text-[9px] px-3 py-1 border-slate-200 dark:border-slate-800 uppercase tracking-widest text-muted-foreground flex gap-2">
+                 <Badge variant="outline" className="rounded-full font-black text-[9px] px-3 py-1 border-border dark:border-border uppercase tracking-widest text-muted-foreground flex gap-2">
                    <Clock className="h-3 w-3 animate-pulse" /> LIVE SYNCING
                  </Badge>
               </CardHeader>
@@ -289,7 +291,7 @@ export default function LeadCaptureDesk() {
                        </thead>
                        <tbody>
                           {(Array.isArray(filtered) ? filtered : []).map((lead) => (
-                            <tr key={lead.id} className="border-t border-white/10 dark:border-slate-800/10 group hover:bg-primary transition-all">
+                            <tr key={lead.id} className="border-t border-white/10 dark:border-border/10 group hover:bg-primary transition-all">
                                <td className="p-8">
                                   <div className="flex items-center gap-4">
                                      <Avatar className="h-14 w-14 rounded-2xl shadow-xl ring-2 ring-white/10 transition-transform duration-500 group-hover:scale-110">
@@ -371,6 +373,13 @@ export default function LeadCaptureDesk() {
                           ))}
                        </tbody>
                     </table>
+                    {(Array.isArray(filtered) ? filtered : []).length === 0 && (
+                      <EmptyState
+                        title="No leads captured"
+                        description="No leads match the current search in this tenant scope yet."
+                        icon={Users}
+                      />
+                    )}
                  </div>
               </ScrollArea>
            </Card>
@@ -446,89 +455,13 @@ export default function LeadCaptureDesk() {
         </div>
       </div>
 
-      {/* Initialize Entry Wizard */}
-      <Dialog open={captureOpen} onOpenChange={setCaptureOpen}>
-        <DialogContent className="sm:max-w-[550px] rounded-[3rem] border-none bg-white dark:bg-muted p-0 overflow-hidden shadow-2xl">
-          <div className="h-2 bg-primary" />
-          <div className="p-12 space-y-10">
-            <DialogHeader>
-              <div className="flex items-center gap-3 mb-2">
-                 <Badge className="bg-primary text-white font-black text-[10px] uppercase tracking-widest">Protocol Entry</Badge>
-                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Manual Ingestion</p>
-              </div>
-              <DialogTitle className="text-4xl font-black tracking-tighter uppercase italic">Manual Capture</DialogTitle>
-              <DialogDescription className="text-base font-medium italic italic">Authorize a new entity node for strategic scoring and nurturing.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-8">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Entity Company</Label>
-                  <Input 
-                    placeholder="ACME INC." 
-                    value={companyName} 
-                    onChange={e => setCompanyName(e.target.value)} 
-                    className="h-16 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-lg uppercase"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Principal Contact</Label>
-                  <Input 
-                    placeholder="JOHN DOE" 
-                    value={contactName} 
-                    onChange={e => setContactName(e.target.value)} 
-                    className="h-16 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-lg uppercase"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Secure Email</Label>
-                <Input 
-                   placeholder="JOHN@EXAMPLE.COM" 
-                   value={email} 
-                   onChange={e => setEmail(e.target.value)} 
-                   className="h-16 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-lg text-primary"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Ingestion Source</Label>
-                  <Select value={source} onValueChange={(v: any) => setSource(v)}>
-                    <SelectTrigger className="h-16 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-xs uppercase tracking-widest">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl border-none shadow-2xl p-2">
-                      {(Array.isArray(SOURCES) ? SOURCES : []).map(s => <SelectItem key={s} value={s} className="rounded-xl py-3 font-bold uppercase tracking-widest text-[10px]">{s.replace('_', ' ')}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground pl-1">Sector Industry</Label>
-                  <Select value={industry} onValueChange={setIndustry}>
-                    <SelectTrigger className="h-16 rounded-2xl bg-muted dark:bg-muted border-none shadow-inner font-bold text-xs uppercase tracking-widest">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-2xl border-none shadow-2xl p-2">
-                      <SelectItem value="Retail" className="rounded-xl py-3 font-bold uppercase tracking-widest text-[10px]">RETAIL</SelectItem>
-                      <SelectItem value="Technology" className="rounded-xl py-3 font-bold uppercase tracking-widest text-[10px]">TECHNOLOGY</SelectItem>
-                      <SelectItem value="Manufacturing" className="rounded-xl py-3 font-bold uppercase tracking-widest text-[10px]">MANUFACTURING</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button 
-                 className="w-full h-16 rounded-2xl bg-primary hover:bg-primary font-black text-xs uppercase tracking-widest shadow-2xl shadow-indigo-500/30 gap-3"
-                 onClick={handleCapture}
-                 disabled={refreshing}
-              >
-                {refreshing ? <RefreshCw className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
-                CAPTURE & SCORE ENTITY
-              </Button>
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Capture Lead Modal */}
+      <CaptureLeadModal
+        isOpen={captureOpen}
+        onClose={() => setCaptureOpen(false)}
+        campaigns={campaigns.map(c => ({ id: c.id, name: c.name }))}
+        onSuccess={() => refresh(true)}
+      />
     </div>
   );
 }
@@ -539,15 +472,4 @@ function Label({ className, children, ...props }: any) {
       {children}
     </label>
   );
-}
-
-function Hash({ className }: any) {
-   return (
-      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-         <line x1="4" y1="9" x2="20" y2="9" />
-         <line x1="4" y1="15" x2="20" y2="15" />
-         <line x1="10" y1="3" x2="8" y2="21" />
-         <line x1="16" y1="3" x2="14" y2="21" />
-      </svg>
-   );
 }

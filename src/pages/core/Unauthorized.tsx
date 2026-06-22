@@ -18,7 +18,7 @@ export default function UnauthorizedPage() {
       routeLabels={{}}
       basePath="/core/unauthorized"
       headerActions={
-        <Button asChild className="rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest bg-muted text-white">
+        <Button asChild className="rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90">
           <Link to="/core">
             <ArrowLeft className="h-3 w-3 mr-2" /> Return to dashboard
           </Link>
@@ -27,8 +27,8 @@ export default function UnauthorizedPage() {
     >
       <div className="p-6">
         <WorkspacePanel>
-          <div className="flex flex-col items-center justify-center gap-6 rounded-[2rem] border border-dashed p-20 text-center bg-destructive border-rose-500/20">
-            <div className="h-16 w-16 rounded-full bg-destructive flex items-center justify-center shadow-inner shadow-rose-500/10">
+          <div className="flex flex-col items-center justify-center gap-6 rounded-[2rem] border border-dashed border-destructive/30 p-20 text-center bg-destructive/5">
+            <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center shadow-inner shadow-destructive/10">
               <ShieldAlert className="h-8 w-8 text-destructive" />
             </div>
             <div className="space-y-2">
@@ -40,7 +40,7 @@ export default function UnauthorizedPage() {
               </p>
             </div>
             <div className="pt-4">
-              <Button asChild variant="outline" className="rounded-xl h-11 px-8 font-black text-[10px] uppercase tracking-widest border-rose-200 text-destructive hover:bg-destructive">
+              <Button asChild variant="outline" className="rounded-xl h-11 px-8 font-black text-[10px] uppercase tracking-widest border-destructive/30 text-destructive hover:bg-destructive/10">
                 <Link to="/core">Acknowledge & Exit</Link>
               </Button>
             </div>

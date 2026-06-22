@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { PrismaService } from "../../persistence/prisma.service";
 import { TenantContext } from "../../gateway/tenant-context.interface";
 import { MultiTenancyUtil } from "../../shared/utils/multi-tenancy.util";
+import { NotFoundException } from "../_shared";
 import { v4 as uuidv4 } from "uuid";
 
 @Injectable()
@@ -11,23 +12,48 @@ export class Customer360Service {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Get unified customer profile with full interaction timeline
+   * Get unified customer profile with full interaction timeline.
+   *
+   * The profile is assembled ONLY from records within the caller's Tenant_Scope
+   * (Req 11.9). The root contact is read with a tenant-scoped `findFirst`, and
+   * every included relation is additionally constrained to the same `tenant_id`
+   * so a contact that somehow linked a foreign-tenant record can never leak it
+   * into the 360 view. A contact outside the caller's scope surfaces as a 404
+   * via the typed error surface — never as cross-tenant leakage.
    */
   async getUnifiedProfile(ctx: TenantContext, contactId: string) {
+    const tenant_id = ctx.tenant_id;
     const contact = await this.prisma.marketing_contacts.findFirst({
       where: { id: contactId, ...MultiTenancyUtil.getScope(ctx) },
       include: {
-        messages: { orderBy: { sent_at: "desc" }, take: 20 },
-        appointments: { orderBy: { scheduled_at: "desc" }, take: 10 },
-        marketing_leads: true,
-        retail_customers: {
-          include: { retail_orders: { orderBy: { created_at: "desc" }, take: 5 } }
+        messages: {
+          where: { tenant_id },
+          orderBy: { sent_at: "desc" },
+          take: 20,
         },
-        sales_leads: true,
+        appointments: {
+          where: { tenant_id },
+          orderBy: { scheduled_at: "desc" },
+          take: 10,
+        },
+        marketing_leads: { where: { tenant_id } },
+        retail_customers: {
+          where: { tenant_id },
+          include: {
+            retail_orders: {
+              where: { tenant_id },
+              orderBy: { created_at: "desc" },
+              take: 5,
+            },
+          },
+        },
+        sales_leads: { where: { tenant_id } },
       },
     });
 
-    if (!contact) return null;
+    if (!contact) {
+      throw new NotFoundException(`Customer profile '${contactId}' was not found.`);
+    }
 
     // Build timeline
     const timeline = this.buildTimeline(contact);

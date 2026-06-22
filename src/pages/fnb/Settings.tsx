@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard, GlassCardContent, GlassCardDescription, GlassCardHeader, GlassCardTitle } from '@/components/shared/GlassCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { useApp } from '@/contexts/AppContext';
+import { toast } from '@/hooks/use-toast';
 import { 
   Printer, 
   Bell, 
@@ -32,20 +34,36 @@ export default function CafeSettings() {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
+  const handleToggle = (key: keyof typeof settings, label: string, value: boolean) => {
+    handleSettingChange(key, value);
+    toast({
+      title: 'Setting updated',
+      description: `${label} ${value ? 'enabled' : 'disabled'}`,
+    });
+  };
+
+  const handleTestPrint = () => {
+    window.print();
+    toast({
+      title: 'Test print sent',
+      description: 'A test receipt was sent to the receipt printer',
+    });
+  };
+
   return (
     <div className="p-4 space-y-4 max-w-2xl mx-auto">
       <h1 className="text-xl font-semibold">Cafe Settings</h1>
 
       {/* Kitchen Display Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <GlassCard>
+        <GlassCardHeader>
+          <GlassCardTitle className="flex items-center gap-2">
             <ChefHat size={20} />
             Kitchen Display
-          </CardTitle>
-          <CardDescription>Configure kitchen display system behavior</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </GlassCardTitle>
+          <GlassCardDescription>Configure kitchen display system behavior</GlassCardDescription>
+        </GlassCardHeader>
+        <GlassCardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>Kitchen Alerts</Label>
@@ -53,7 +71,7 @@ export default function CafeSettings() {
             </div>
             <Switch
               checked={settings.kitchenAlerts}
-              onCheckedChange={(checked) => handleSettingChange('kitchenAlerts', checked)}
+              onCheckedChange={(checked) => handleToggle('kitchenAlerts', 'Kitchen Alerts', checked)}
             />
           </div>
           
@@ -66,7 +84,7 @@ export default function CafeSettings() {
             </div>
             <Switch
               checked={settings.orderSounds}
-              onCheckedChange={(checked) => handleSettingChange('orderSounds', checked)}
+              onCheckedChange={(checked) => handleToggle('orderSounds', 'Order Sounds', checked)}
             />
           </div>
           
@@ -88,19 +106,19 @@ export default function CafeSettings() {
               Orders exceeding this time will be marked as delayed
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </GlassCardContent>
+      </GlassCard>
 
       {/* Table Management */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <GlassCard>
+        <GlassCardHeader>
+          <GlassCardTitle className="flex items-center gap-2">
             <Clock size={20} />
             Table Management
-          </CardTitle>
-          <CardDescription>Configure table behavior</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </GlassCardTitle>
+          <GlassCardDescription>Configure table behavior</GlassCardDescription>
+        </GlassCardHeader>
+        <GlassCardContent className="space-y-4">
           <div className="space-y-2">
             <Label>Table Cleaning Time (minutes)</Label>
             <Input
@@ -114,19 +132,19 @@ export default function CafeSettings() {
               Time before tables automatically become available after payment
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </GlassCardContent>
+      </GlassCard>
 
       {/* Billing Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <GlassCard>
+        <GlassCardHeader>
+          <GlassCardTitle className="flex items-center gap-2">
             <DollarSign size={20} />
             Billing
-          </CardTitle>
-          <CardDescription>Configure billing and tax settings</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </GlassCardTitle>
+          <GlassCardDescription>Configure billing and tax settings</GlassCardDescription>
+        </GlassCardHeader>
+        <GlassCardContent className="space-y-4">
           <div className="space-y-2">
             <Label>Default Tax Rate (%)</Label>
             <Input
@@ -147,22 +165,22 @@ export default function CafeSettings() {
             </div>
             <Switch
               checked={settings.autoPrintReceipts}
-              onCheckedChange={(checked) => handleSettingChange('autoPrintReceipts', checked)}
+              onCheckedChange={(checked) => handleToggle('autoPrintReceipts', 'Auto-Print Receipts', checked)}
             />
           </div>
-        </CardContent>
-      </Card>
+        </GlassCardContent>
+      </GlassCard>
 
       {/* Appearance */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <GlassCard>
+        <GlassCardHeader>
+          <GlassCardTitle className="flex items-center gap-2">
             <Palette size={20} />
             Appearance
-          </CardTitle>
-          <CardDescription>Customize the display</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </GlassCardTitle>
+          <GlassCardDescription>Customize the display</GlassCardDescription>
+        </GlassCardHeader>
+        <GlassCardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>Dark Mode</Label>
@@ -173,19 +191,19 @@ export default function CafeSettings() {
               onCheckedChange={toggleTheme}
             />
           </div>
-        </CardContent>
-      </Card>
+        </GlassCardContent>
+      </GlassCard>
 
       {/* Hardware */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+      <GlassCard>
+        <GlassCardHeader>
+          <GlassCardTitle className="flex items-center gap-2">
             <Printer size={20} />
             Hardware
-          </CardTitle>
-          <CardDescription>Connected devices</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </GlassCardTitle>
+          <GlassCardDescription>Connected devices</GlassCardDescription>
+        </GlassCardHeader>
+        <GlassCardContent className="space-y-4">
           <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
             <div className="flex items-center gap-3">
               <Receipt size={20} className="text-muted-foreground" />
@@ -208,21 +226,12 @@ export default function CafeSettings() {
             <Badge variant="success">Connected</Badge>
           </div>
 
-          <Button onClick={(e) => { e.preventDefault(); window.print(); }} variant="outline" className="w-full">
+          <Button onClick={(e) => { e.preventDefault(); handleTestPrint(); }} variant="outline" className="w-full">
             Test Print
           </Button>
-        </CardContent>
-      </Card>
+        </GlassCardContent>
+      </GlassCard>
     </div>
   );
 }
 
-// Badge variant helper
-function Badge({ variant, children, className }: { variant: 'success' | 'outline'; children: React.ReactNode; className?: string }) {
-  const baseClass = 'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium';
-  const variantClass = variant === 'success' 
-    ? 'bg-success/20 text-success' 
-    : 'border border-border text-muted-foreground';
-  
-  return <span className={`${baseClass} ${variantClass} ${className || ''}`}>{children}</span>;
-}

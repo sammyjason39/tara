@@ -80,6 +80,27 @@ export class ReconciliationController {
   }
 
   /**
+   * List all bank statements for the tenant
+   */
+  @Get('statements')
+  @Roles(UserRole.ADMIN, UserRole.OWNER, UserRole.MANAGER)
+  async getStatements(@TenantCtx() ctx: TenantContext) {
+    return this.reconService.getStatements(ctx.tenant_id);
+  }
+
+  /**
+   * Get details for a specific statement (bank transactions + unmatched ledger entries)
+   */
+  @Get('statements/:id/details')
+  @Roles(UserRole.ADMIN, UserRole.OWNER, UserRole.MANAGER)
+  async getStatementDetails(
+    @TenantCtx() ctx: TenantContext,
+    @Param('id') statementId: string
+  ) {
+    return this.reconService.getStatementDetails(ctx.tenant_id, statementId);
+  }
+
+  /**
    * Get ledger entries for manual matching
    */
   @Get('unmatched-ledger')

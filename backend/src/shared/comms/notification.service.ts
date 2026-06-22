@@ -73,6 +73,33 @@ export class NotificationService {
     return { data, total, page, limit };
   }
 
+  /**
+   * Get paginated notifications using standard pagination envelope.
+   */
+  async getNotificationsPaginated(tenant_id: string, user_id: string, pagination: { page: number; pageSize: number }) {
+    const skip = (pagination.page - 1) * pagination.pageSize;
+
+    const [data, totalCount] = await Promise.all([
+      this.prisma.notifications.findMany({
+        where: { tenant_id, user_id },
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: pagination.pageSize,
+      }),
+      this.prisma.notifications.count({
+        where: { tenant_id, user_id },
+      }),
+    ]);
+
+    return {
+      data,
+      totalCount,
+      currentPage: pagination.page,
+      pageSize: pagination.pageSize,
+      totalPages: Math.ceil(totalCount / pagination.pageSize),
+    };
+  }
+
   async markAsRead(tenant_id: string, id: string) {
     return this.prisma.notifications.update({
       where: { id, tenant_id: tenant_id },

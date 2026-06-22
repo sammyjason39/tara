@@ -19,6 +19,7 @@ import { retailService } from "@/core/services/retail/retailService";
 import { useToast } from "@/hooks/use-toast";
 import { InventoryFilterHub } from "@/components/shared/InventoryFilterHub";
 import { inventoryService } from "@/core/services/inventory/inventoryService";
+import { apiRequest } from "@/core/api/apiClient";
 
 export default function RetailInventory() {
   const navigate = useNavigate();
@@ -31,6 +32,7 @@ export default function RetailInventory() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [sortBy, setSortBy] = useState("name");
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
   const fetchInventory = async () => {
     setLoading(true);
@@ -93,14 +95,21 @@ export default function RetailInventory() {
               <Button 
                 variant="outline" 
                 className="h-14 px-6 rounded-2xl bg-muted border-white/10 text-white font-black italic uppercase text-[10px] tracking-widest gap-2"
-                onClick={() => {}}
+                onClick={() => setImportModalOpen(true)}
               >
                 <Plus className="w-4 h-4" />
                 New Category
               </Button>
               <Button 
                 className="h-14 px-8 rounded-2xl bg-primary text-primary-foreground font-black italic uppercase text-xs tracking-widest gap-3 shadow-xl"
-                onClick={() => {}}
+                onClick={async () => {
+                  try {
+                    await apiRequest("/retail/inventory/export", "POST", session, { format: "csv" });
+                    toast({ title: "Export Started", description: "Inventory export is being generated. You'll be notified when ready." });
+                  } catch (e) {
+                    toast({ title: "Export Failed", description: "Could not trigger inventory export.", variant: "destructive" });
+                  }
+                }}
               >
                 <Package className="w-5 h-5" />
                 Register Item

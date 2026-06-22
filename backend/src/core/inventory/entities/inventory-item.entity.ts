@@ -27,6 +27,7 @@ export class InventoryItem {
   currentStock?: number;
   min_stock?: number;
   minStock?: number;
+  is_anomaly?: boolean;
   created_at: Date;
   updated_at: Date;
 }

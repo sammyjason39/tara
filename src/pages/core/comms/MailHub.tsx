@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useNotifications } from "@/contexts/NotificationContext";
+import { formatDate, formatDateTime, safeText } from "@/lib/format";
 import {
   Dialog,
   DialogContent,
@@ -205,7 +206,7 @@ export default function MailHub() {
     <TooltipProvider delayDuration={400}>
       <div className="flex flex-col h-full gap-6 p-6 overflow-hidden">
         {/* Top Action Bar */}
-        <div className="flex justify-between items-center bg-white dark:bg-muted p-4 rounded-3xl shadow-sm border border-slate-100 dark:border-white/5">
+        <div className="flex justify-between items-center bg-white dark:bg-muted p-4 rounded-3xl shadow-sm border border-border dark:border-white/5">
           <div className="flex items-center gap-4 flex-1">
              <div className="relative w-full max-w-md">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -226,7 +227,7 @@ export default function MailHub() {
                    {userAccount.address}
                 </Badge>
              )}
-             <Button onClick={() => { setComposeData({to:"", subject:"", body:"", status: "sent"}); setIsComposeOpen(true); }} className="h-11 px-8 bg-muted dark:bg-primary hover:bg-black dark:hover:bg-primary text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg">
+             <Button onClick={() => { setComposeData({to:"", subject:"", body:"", status: "sent"}); setIsComposeOpen(true); }} className="h-11 px-8 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg">
                 <Plus className="h-4 w-4 mr-2" /> Compose
              </Button>
           </div>
@@ -255,9 +256,9 @@ export default function MailHub() {
           </div>
 
           {/* Master-Detail Container */}
-          <div className="flex-1 flex bg-white dark:bg-muted rounded-[2.5rem] border border-slate-100 dark:border-white/5 overflow-hidden shadow-2xl relative min-h-0">
+          <div className="flex-1 flex bg-white dark:bg-muted rounded-[2.5rem] border border-border dark:border-white/5 overflow-hidden shadow-2xl relative min-h-0">
             {/* List Column */}
-            <div className={`flex flex-col border-r border-slate-100 dark:border-white/5 bg-muted transition-all duration-500 ${selectedMail ? 'w-[380px] shrink-0 opacity-100' : 'w-full'}`}>
+            <div className={`flex flex-col border-r border-border dark:border-white/5 bg-muted transition-all duration-500 ${selectedMail ? 'w-[380px] shrink-0 opacity-100' : 'w-full'}`}>
               <div className="flex-1 overflow-y-auto scrollbar-hide py-2">
                 {loading ? (
                   Array.from({ length: 12 }).map((_, i) => (
@@ -280,7 +281,7 @@ export default function MailHub() {
                     <div 
                       key={msg.id} 
                       onClick={() => handleSelectMail(msg)}
-                      className={`flex items-start gap-4 p-5 border-b border-slate-50 dark:border-white/5 cursor-pointer transition-all hover:bg-muted dark:hover:bg-white/5 relative group ${selectedMail?.id === msg.id ? 'bg-primary dark:bg-primary ring-1 ring-inset ring-indigo-500/20' : ''} ${!msg.isRead ? 'before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-primary shadow-sm' : ''}`}
+                      className={`flex items-start gap-4 p-5 border-b border-border dark:border-white/5 cursor-pointer transition-all hover:bg-muted dark:hover:bg-white/5 relative group ${selectedMail?.id === msg.id ? 'bg-primary dark:bg-primary ring-1 ring-inset ring-indigo-500/20' : ''} ${!msg.isRead ? 'before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-primary shadow-sm' : ''}`}
                     >
                       <div className="flex flex-col items-center gap-2">
                         <div className={`h-10 w-10 rounded-xl flex items-center justify-center font-black text-xs ${!msg.isRead ? 'bg-primary text-white' : 'bg-muted dark:bg-muted text-muted-foreground'}`}>
@@ -301,11 +302,11 @@ export default function MailHub() {
                             {activeFolder === 'sent' ? `To: ${msg.toAddresses?.[0] || 'Unknown'}` : (msg.fromAddress || 'System Correspondence')}
                           </span>
                           <span className="text-[9px] font-bold text-muted-foreground shrink-0 whitespace-nowrap ml-2">
-                             {new Date(msg.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                             {formatDate(msg.createdAt, "short")}
                           </span>
                         </div>
-                        <h4 className={`text-sm truncate mb-0.5 ${!msg.isRead ? 'font-black text-muted-foreground dark:text-white' : 'font-bold text-muted-foreground dark:text-muted-foreground'}`}>{msg.subject}</h4>
-                        <p className="text-[11px] text-muted-foreground line-clamp-1 font-medium">{msg.bodyText}</p>
+                        <h4 className={`text-sm truncate mb-0.5 ${!msg.isRead ? 'font-black text-muted-foreground dark:text-white' : 'font-bold text-muted-foreground dark:text-muted-foreground'}`}>{safeText(msg.subject)}</h4>
+                        <p className="text-[11px] text-muted-foreground line-clamp-1 font-medium">{safeText(msg.bodyText)}</p>
                       </div>
                     </div>
                   ))
@@ -317,7 +318,7 @@ export default function MailHub() {
             <div className={`flex-1 flex flex-col bg-white dark:bg-muted transition-all duration-300 relative ${!selectedMail ? 'hidden md:flex' : 'flex'}`}>
                {selectedMail ? (
                  <div className="flex-1 flex flex-col animate-in fade-in slide-in-from-right-4 duration-500 overflow-hidden">
-                   <div className="p-6 border-b border-slate-100 dark:border-white/5 flex justify-between items-center bg-white/80 dark:bg-muted backdrop-blur-md sticky top-0 z-10">
+                   <div className="p-6 border-b border-border dark:border-white/5 flex justify-between items-center bg-white/80 dark:bg-muted backdrop-blur-md sticky top-0 z-10">
                       <div className="flex items-center gap-3">
                          <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl" onClick={() => setSelectedMail(null)}>
                             <ChevronRight className="h-5 w-5 rotate-180" />
@@ -347,15 +348,15 @@ export default function MailHub() {
 
                    <div className="flex-1 overflow-y-auto p-10 space-y-8">
                       <div className="space-y-6">
-                         <h2 className="text-4xl font-black tracking-tighter leading-none text-muted-foreground dark:text-white uppercase italic">{selectedMail.subject}</h2>
-                         <div className="flex items-center gap-4 py-4 border-y border-slate-50 dark:border-white/5">
-                            <div className="h-12 w-12 rounded-[1.25rem] bg-primary flex items-center justify-center text-white font-black text-xl shadow-lg shadow-indigo-500/20">
+                         <h2 className="text-4xl font-black tracking-tighter leading-none text-muted-foreground dark:text-white uppercase italic">{safeText(selectedMail.subject)}</h2>
+                         <div className="flex items-center gap-4 py-4 border-y border-border dark:border-white/5">
+                            <div className="h-12 w-12 rounded-[1.25rem] bg-primary flex items-center justify-center text-primary-foreground font-black text-xl shadow-lg shadow-primary/20">
                                {selectedMail.fromAddress?.[0]?.toUpperCase()}
                             </div>
                             <div className="flex-1">
                                <div className="flex justify-between items-center">
-                                  <span className="font-black text-sm uppercase tracking-widest text-muted-foreground dark:text-white">{selectedMail.fromAddress}</span>
-                                  <span className="text-[10px] font-black text-muted-foreground">{new Date(selectedMail.createdAt).toLocaleString()}</span>
+                                  <span className="font-black text-sm uppercase tracking-widest text-muted-foreground dark:text-white">{safeText(selectedMail.fromAddress)}</span>
+                                  <span className="text-[10px] font-black text-muted-foreground">{formatDateTime(selectedMail.createdAt)}</span>
                                </div>
                                <div className="text-[10px] font-bold text-muted-foreground mt-0.5">
                                   to {selectedMail.toAddresses?.join(', ')}
@@ -365,10 +366,10 @@ export default function MailHub() {
                       </div>
 
                       <div className="text-base text-muted-foreground dark:text-muted-foreground leading-relaxed font-medium whitespace-pre-wrap tracking-tight min-h-[300px]">
-                         {selectedMail.bodyText}
+                         {safeText(selectedMail.bodyText)}
                       </div>
 
-                      <div className="pt-10 border-t border-slate-50 dark:border-white/5 flex gap-4 pb-12">
+                      <div className="pt-10 border-t border-border dark:border-white/5 flex gap-4 pb-12">
                          <Button onClick={() => {
                             setComposeData({ to: selectedMail.fromAddress, subject: `RE: ${selectedMail.subject}`, body: `\n\n--- Original Message ---\n${selectedMail.bodyText}`, status: "sent" });
                             setIsComposeOpen(true);
@@ -386,7 +387,7 @@ export default function MailHub() {
                  </div>
                ) : (
                  <div className="flex-1 flex flex-col items-center justify-center p-20 text-center bg-muted animate-in fade-in zoom-in-95 duration-1000">
-                    <div className="h-24 w-24 rounded-[2.5rem] bg-white dark:bg-muted shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-center mb-8 opacity-40 border border-slate-100 dark:border-white/5">
+                    <div className="h-24 w-24 rounded-[2.5rem] bg-white dark:bg-muted shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-center mb-8 opacity-40 border border-border dark:border-white/5">
                        <Inbox className="h-10 w-10 text-muted-foreground" />
                     </div>
                     <h2 className="text-xl font-black uppercase tracking-widest text-muted-foreground">Message Intelligence</h2>
@@ -412,7 +413,7 @@ export default function MailHub() {
             
             <div className="p-10 space-y-8">
                <div className="space-y-4">
-                  <div className="flex items-center gap-6 border-b pb-4 border-slate-50 dark:border-white/5">
+                  <div className="flex items-center gap-6 border-b pb-4 border-border dark:border-white/5">
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] w-20 text-muted-foreground">Recipient</span>
                     <Input 
                       placeholder="address@zenvix.io" 
@@ -421,7 +422,7 @@ export default function MailHub() {
                       onChange={e => setComposeData({...composeData, to: e.target.value})}
                     />
                   </div>
-                  <div className="flex items-center gap-6 border-b pb-4 border-slate-50 dark:border-white/5">
+                  <div className="flex items-center gap-6 border-b pb-4 border-border dark:border-white/5">
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] w-20 text-muted-foreground">Subject</span>
                     <Input 
                       placeholder="Subject of transmission" 
@@ -442,7 +443,7 @@ export default function MailHub() {
                <div className="flex justify-between items-center">
                   <Button variant="ghost" className="h-14 px-8 font-black uppercase tracking-widest text-[10px] text-destructive hover:bg-destructive dark:hover:bg-destructive" onClick={() => setIsComposeOpen(false)}>Discard</Button>
                   <Button 
-                    className="h-14 px-12 rounded-[1.5rem] bg-muted dark:bg-primary hover:bg-black dark:hover:bg-primary text-white shadow-2xl shadow-slate-900/40 font-black uppercase tracking-[0.2em] transition-all active:scale-95 disabled:opacity-50"
+                    className="h-14 px-12 rounded-[1.5rem] bg-primary hover:bg-primary/90 text-primary-foreground shadow-2xl shadow-primary/40 font-black uppercase tracking-[0.2em] transition-all active:scale-95 disabled:opacity-50"
                     onClick={() => handleSendMail('sent')}
                     disabled={isSending}
                   >

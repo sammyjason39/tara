@@ -13,8 +13,16 @@ import { ApprovalStatusBadge } from "@/core/tools/ApprovalStatusBadge";
 import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { procurementService } from "@/core/services/procurement/procurementService";
+import { formatCurrency } from "@/lib/format";
 import type { SupplierBranch, SupplierMaster, SupplierRecommendation } from "@/core/types/procurement/procurement";
 import { Building2, Globe, User, Mail, Phone, MapPin, Tag, Info, ArrowUpRight, Plus, Trash2 } from "lucide-react";
+import { supplierMasterSchema, supplierBranchSchema, categorySchema } from "@/modules/procurement/schemas";
+import {
+  useCreateSupplierMaster,
+  useCreateSupplierBranch,
+  useUpsertCategory,
+  useDeleteCategory,
+} from "@/modules/procurement/hooks";
 
 export default function SupplierDesk() {
   const session = useSession();
@@ -54,6 +62,17 @@ export default function SupplierDesk() {
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [newCatDesc, setNewCatDesc] = useState("");
+
+  // Validation error states
+  const [masterFieldErrors, setMasterFieldErrors] = useState<Record<string, string>>({});
+  const [branchFieldErrors, setBranchFieldErrors] = useState<Record<string, string>>({});
+  const [categoryFieldErrors, setCategoryFieldErrors] = useState<Record<string, string>>({});
+
+  // TanStack Query mutations
+  const createSupplierMasterMutation = useCreateSupplierMaster();
+  const createSupplierBranchMutation = useCreateSupplierBranch();
+  const upsertCategoryMutation = useUpsertCategory();
+  const deleteCategoryMutation = useDeleteCategory();
 
   const clearStatus = () => {
     setStatusMessage(null);
@@ -111,23 +130,32 @@ export default function SupplierDesk() {
   );
 
   const createMaster = async () => {
-    if (!name.trim()) return;
-    try {
-      await procurementService.createSupplierMaster(session.tenant_id, session, {
-        name,
-        taxId,
-        categories: categories.split(",").map((item) => item.trim()).filter(Boolean),
-        branchCode: "HQ",
-        website,
-        contactPerson,
-        contactEmail,
-        contactPhone,
-        address,
-        fullAddress: address, // Default for primary branch
+    setMasterFieldErrors({});
+    const result = supplierMasterSchema.safeParse({
+      name,
+      taxId,
+      categories,
+      website: website || undefined,
+      contactPerson: contactPerson || undefined,
+      contactEmail: contactEmail || undefined,
+      contactPhone: contactPhone || undefined,
+      address: address || undefined,
+    });
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        const field = issue.path[0] as string;
+        if (!errors[field]) errors[field] = issue.message;
       });
+      setMasterFieldErrors(errors);
+      return;
+    }
+    try {
+      await createSupplierMasterMutation.mutateAsync(result.data);
       setStatusMessage(`Supplier Master "${name}" created and routed for compliance vetting.`);
       setMasterDialogOpen(false);
       resetMasterForm();
+      setMasterFieldErrors({});
       refresh();
     } catch (err) {
       setErrorMessage("Failed to create supplier master.");
@@ -146,22 +174,33 @@ export default function SupplierDesk() {
   };
 
   const createBranch = async () => {
-    if (!supplierId) return;
-    try {
-      await procurementService.createSupplierBranch(session.tenant_id, session, {
-        supplierId,
-        branchCode,
-        branchName: branchName || `${branchCode} Branch`,
-        location,
-        leadTimeDays: Number(leadTimeDays || "0"),
-        fullAddress,
-        contactPerson,
-        contactEmail,
-        contactPhone,
+    setBranchFieldErrors({});
+    const result = supplierBranchSchema.safeParse({
+      supplierId,
+      branchCode,
+      branchName: branchName || undefined,
+      location,
+      leadTimeDays: Number(leadTimeDays || "0"),
+      fullAddress: fullAddress || undefined,
+      contactPerson: contactPerson || undefined,
+      contactEmail: contactEmail || undefined,
+      contactPhone: contactPhone || undefined,
+    });
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        const field = issue.path[0] as string;
+        if (!errors[field]) errors[field] = issue.message;
       });
+      setBranchFieldErrors(errors);
+      return;
+    }
+    try {
+      await createSupplierBranchMutation.mutateAsync(result.data);
       setStatusMessage(`Supplier branch "${branchName || branchCode}" added successfully.`);
       setBranchDialogOpen(false);
       resetBranchForm();
+      setBranchFieldErrors({});
       refresh();
     } catch (err) {
       setErrorMessage("Failed to add supplier branch.");
@@ -178,14 +217,22 @@ export default function SupplierDesk() {
   };
 
   const handleCreateCategory = async () => {
-    if (!newCatName) return;
-    try {
-      await procurementService.upsertCategory(session.tenant_id, session, {
-        name: newCatName,
-        description: newCatDesc,
+    setCategoryFieldErrors({});
+    const result = categorySchema.safeParse({ name: newCatName, description: newCatDesc || undefined });
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        const field = issue.path[0] as string;
+        if (!errors[field]) errors[field] = issue.message;
       });
+      setCategoryFieldErrors(errors);
+      return;
+    }
+    try {
+      await upsertCategoryMutation.mutateAsync(result.data);
       setNewCatName("");
       setNewCatDesc("");
+      setCategoryFieldErrors({});
       refresh();
     } catch (err) {
       setErrorMessage("Failed to create category.");
@@ -194,7 +241,7 @@ export default function SupplierDesk() {
 
   const handleDeleteCategory = async (id: string) => {
     try {
-      await procurementService.deleteCategory(session.tenant_id, session, id);
+      await deleteCategoryMutation.mutateAsync(id);
       refresh();
     } catch (err) {
       setErrorMessage("Failed to deactivate category.");
@@ -353,7 +400,7 @@ export default function SupplierDesk() {
                     <td className="p-3 text-muted-foreground">{item.branchName}</td>
                     <td className="p-3 text-muted-foreground">{item.score}</td>
                     <td className="p-3 text-muted-foreground">{item.riskTier}</td>
-                    <td className="p-3 text-muted-foreground">{item.unitPrice?.toLocaleString() ?? "-"}</td>
+                    <td className="p-3 text-muted-foreground">{formatCurrency(item.unitPrice, "IDR", "id-ID")}</td>
                     <td className="p-3 text-muted-foreground">{item.leadTimeDays} days</td>
                   </tr>
                 ))
@@ -494,6 +541,13 @@ export default function SupplierDesk() {
                   <Button variant="outline" onClick={() => { setMasterDialogOpen(false); resetMasterForm(); }}>Cancel</Button>
                   <Button onClick={createMaster}>Create and Route</Button>
                 </div>
+                {Object.keys(masterFieldErrors).length > 0 && (
+                  <div className="space-y-1 pt-2">
+                    {Object.entries(masterFieldErrors).map(([field, msg]) => (
+                      <p key={field} className="text-xs text-destructive">{msg}</p>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -584,6 +638,13 @@ export default function SupplierDesk() {
                   <Button variant="outline" onClick={() => { setBranchDialogOpen(false); resetBranchForm(); }}>Cancel</Button>
                   <Button onClick={createBranch}>Confirm Addition</Button>
                 </div>
+                {Object.keys(branchFieldErrors).length > 0 && (
+                  <div className="space-y-1 pt-2">
+                    {Object.entries(branchFieldErrors).map(([field, msg]) => (
+                      <p key={field} className="text-xs text-destructive">{msg}</p>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -604,6 +665,7 @@ export default function SupplierDesk() {
               <p className="text-xs font-bold uppercase tracking-widest text-primary mb-3">Add New Category</p>
               <div className="grid gap-3">
                 <Input placeholder="Category Name (e.g. Raw Materials)" value={newCatName} onChange={e => setNewCatName(e.target.value)} />
+                {categoryFieldErrors.name && <p className="text-xs text-destructive">{categoryFieldErrors.name}</p>}
                 <Input placeholder="Description (Optional)" value={newCatDesc} onChange={e => setNewCatDesc(e.target.value)} />
                 <Button onClick={handleCreateCategory} className="w-full">
                   <Plus className="w-4 h-4 mr-2" /> Create Category

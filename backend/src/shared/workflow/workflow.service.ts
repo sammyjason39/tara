@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../persistence/prisma.service';
 import { EventBusService } from '../events/event-bus.service';
+import { PaginationParams } from '../pipes/pagination.pipe';
 
 export type WorkflowStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'RETURNED' | 'MODIFIED';
 
@@ -140,24 +141,53 @@ export class WorkflowService {
     return updated;
   }
 
-  async listInbox(tenant_id: string, dept: string) {
-    return this.prisma.workflow_requests.findMany({
-      where: {
-        tenant_id: tenant_id,
-        destination_dept: dept,
-        status: 'PENDING',
-      },
-      orderBy: { created_at: 'desc' },
-    });
+  async listInbox(tenant_id: string, dept: string, pagination: PaginationParams) {
+    const skip = (pagination.page - 1) * pagination.pageSize;
+    const where = {
+      tenant_id: tenant_id,
+      destination_dept: dept,
+      status: 'PENDING' as const,
+    };
+
+    const [data, totalCount] = await Promise.all([
+      this.prisma.workflow_requests.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: pagination.pageSize,
+      }),
+      this.prisma.workflow_requests.count({ where }),
+    ]);
+
+    return {
+      data,
+      totalCount,
+      currentPage: pagination.page,
+      pageSize: pagination.pageSize,
+      totalPages: Math.ceil(totalCount / pagination.pageSize),
+    };
   }
 
-  async listAll(tenant_id: string) {
-    return this.prisma.workflow_requests.findMany({
-      where: {
-        tenant_id: tenant_id,
-      },
-      orderBy: { created_at: 'desc' },
-      take: 50,
-    });
+  async listAll(tenant_id: string, pagination: PaginationParams) {
+    const skip = (pagination.page - 1) * pagination.pageSize;
+    const where = { tenant_id: tenant_id };
+
+    const [data, totalCount] = await Promise.all([
+      this.prisma.workflow_requests.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        skip,
+        take: pagination.pageSize,
+      }),
+      this.prisma.workflow_requests.count({ where }),
+    ]);
+
+    return {
+      data,
+      totalCount,
+      currentPage: pagination.page,
+      pageSize: pagination.pageSize,
+      totalPages: Math.ceil(totalCount / pagination.pageSize),
+    };
   }
 }

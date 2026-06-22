@@ -5,6 +5,8 @@ import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { useSession } from "@/core/security/session";
 import { paymentService } from "@/core/services/payment/paymentService";
 import type { PaymentAuditEvent, EvidencePack } from "@/core/types/payment/payment";
+import { formatDateTime } from "@/lib/format";
+import { EmptyState } from "@/components/shared/AsyncState";
 
 export default function PaymentAuditVault() {
   const session = useSession();
@@ -55,6 +57,16 @@ export default function PaymentAuditVault() {
                 <td className="p-3 text-muted-foreground">{item.approvalSignatures.join(", ")}</td>
               </tr>
             ))}
+            {(Array.isArray(evidence) ? evidence : []).length === 0 ? (
+              <tr>
+                <td colSpan={5} className="p-0">
+                  <EmptyState
+                    title="No evidence packs"
+                    description="No evidence packs exist for this tenant scope yet."
+                  />
+                </td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </WorkspacePanel>
@@ -73,13 +85,23 @@ export default function PaymentAuditVault() {
           <tbody>
             {(Array.isArray(events) ? events : []).map((event) => (
               <tr key={event.id} className="border-t">
-                <td className="p-3 text-muted-foreground">{new Date(event.createdAt).toLocaleString()}</td>
+                <td className="p-3 text-muted-foreground">{formatDateTime(event.createdAt)}</td>
                 <td className="p-3"><Badge variant="outline">{event.action}</Badge></td>
                 <td className="p-3 text-muted-foreground">{event.entityType}/{event.entityId}</td>
                 <td className="p-3 text-muted-foreground">{event.actorId}</td>
                 <td className="p-3 text-muted-foreground">{event.detail}</td>
               </tr>
             ))}
+            {(Array.isArray(events) ? events : []).length === 0 ? (
+              <tr>
+                <td colSpan={5} className="p-0">
+                  <EmptyState
+                    title="No audit events"
+                    description="No payment audit events exist for this tenant scope yet."
+                  />
+                </td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </WorkspacePanel>

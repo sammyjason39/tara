@@ -1,22 +1,22 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { useState, useMemo } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Search,
   Receipt,
@@ -25,113 +25,176 @@ import {
   CreditCard,
   Banknote,
   Smartphone,
-  Eye,
   RotateCcw,
   Package,
   User,
-} from 'lucide-react';
-import { formatCurrency, formatDate, formatTime } from '@/lib/mock-data';
-import { cn } from '@/lib/utils';
-import { useEffect } from 'react';
-import { retailService } from '@/core/services/retail/retailService';
-import { useSession } from '@/core/security/session';
-import { useApp } from '@/contexts/AppContext';
-import { Loader2 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { formatCurrency, formatDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { useModuleList } from "@/hooks/useModuleQuery";
+import { QueryStateWrapper } from "@/components/shared/QueryStateWrapper";
+import { useApp } from "@/contexts/AppContext";
 
-interface Transaction {
-  id: string;
-  items: { name: string; quantity: number; price: number }[];
-  subtotal: number;
-  tax: number;
-  total: number;
-  paymentMethod: 'cash' | 'card' | 'mobile';
-  staffId: string;
-  staffName: string;
-  createdAt: string;
-  status: 'completed' | 'refunded' | 'voided';
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface TransactionItem {
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
 }
 
-// Transaction history is loaded live from retailService.listOrders (see fetchOrders).
+interface TransactionRecord {
+  id: string;
+  items: TransactionItem[];
+  subtotal: number;
+  tax: number;
+  totalAmount: number;
+  paymentMethod: "cash" | "card" | "qr" | "store_credit";
+  cashierId: string;
+  customerName?: string;
+  createdAt: string;
+  updatedAt: string;
+  status: string;
+}
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const PAGE_SIZE = 50;
 
 const paymentIcons = {
   cash: Banknote,
   card: CreditCard,
+  qr: Smartphone,
+  store_credit: CreditCard,
   mobile: Smartphone,
 };
 
-const statusConfig = {
-  completed: { label: 'Completed', variant: 'default' as const },
-  refunded: { label: 'Refunded', variant: 'secondary' as const },
-  voided: { label: 'Voided', variant: 'destructive' as const },
+const paymentLabels: Record<string, string> = {
+  cash: "Cash",
+  card: "Card",
+  qr: "Mobile",
+  store_credit: "Store Credit",
+  mobile: "Mobile",
 };
 
-export default function RetailHistory() {
-  const session = useSession();
-  const { state } = useApp();
-  const [isLoading, setIsLoading] = useState(true);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [paymentFilter, setPaymentFilter] = useState<string>('all');
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" }> = {
+  completed: { label: "Completed", variant: "default" },
+  complete: { label: "Completed", variant: "default" },
+  paid: { label: "Paid", variant: "default" },
+  refunded: { label: "Refunded", variant: "secondary" },
+  voided: { label: "Voided", variant: "destructive" },
+  cancelled: { label: "Cancelled", variant: "destructive" },
+  pending: { label: "Pending", variant: "secondary" },
+  processing: { label: "Processing", variant: "secondary" },
+};
 
-  const fetchOrders = async () => {
-    setIsLoading(true);
-    try {
-      const data = await retailService.listOrders(session.tenant_id!, session, {
-        store_id: state.settings.defaultLocationId || undefined
-      });
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
-      const mapped: Transaction[] = (data || []).map(o => ({
-        id: o.id,
-        items: (o.items || []).map(i => ({
-          name: i.name || 'Unknown Product',
-          quantity: i.quantity,
-          price: i.unit_price,
-        })),
-        subtotal: o.grand_total / 1.1, // Approx
-        tax: o.grand_total * 0.1,
-        total: o.grand_total,
-        paymentMethod: (o.payment_method?.toLowerCase() === 'card' ? 'card' : o.payment_method?.toLowerCase() === 'qr' ? 'mobile' : 'cash') as any,
-        staffId: o.employee_id || 'Unknown',
-        staffName: (o as any).employee_name || 'Staff Member',
-        createdAt: o.created_at,
-        status: o.status === 'completed' ? 'completed' : o.status === 'voided' ? 'voided' : 'refunded',
-      }));
-
-      setTransactions(mapped);
-    } catch (e) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch order history.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (session.tenant_id) {
-      fetchOrders();
-    }
-  }, [session.tenant_id, state.settings.defaultLocationId]);
-
-  // Calculate stats
-  const todayTotal = (Array.isArray(transactions) ? transactions : []).filter((t) => t.status === 'completed')
-    .reduce((sum, t) => sum + t.total, 0);
-  const transactionCount = transactions.length;
-  const refundCount = (Array.isArray(transactions) ? transactions : []).filter((t) => t.status === 'refunded').length;
-
-  // Filter transactions
-  const filteredTransactions = (Array.isArray(transactions) ? transactions : []).filter((t) => {
-    const matchesSearch = t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.items.some((item) => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
-    const matchesPayment = paymentFilter === 'all' || t.paymentMethod === paymentFilter;
-    return matchesSearch && matchesStatus && matchesPayment;
+function formatTime(dateString: string): string {
+  return new Date(dateString).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
   });
+}
+
+function normalizePaymentMethod(method: string | undefined): string {
+  if (!method) return "cash";
+  const lower = method.toLowerCase();
+  if (lower === "qr" || lower === "mobile") return "mobile";
+  if (lower === "card") return "card";
+  if (lower === "store_credit") return "store_credit";
+  return "cash";
+}
+
+function getStatusConfig(status: string) {
+  return statusConfig[status] ?? { label: status, variant: "secondary" as const };
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export default function RetailHistory() {
+  const { state } = useApp();
+  const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [paymentFilter, setPaymentFilter] = useState<string>("all");
+  const [selectedTransaction, setSelectedTransaction] = useState<TransactionRecord | null>(null);
+
+  // Fetch transactions from backend using shared TanStack Query hook
+  const {
+    data: transactionsData,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useModuleList<TransactionRecord>("/v1/retail/orders", {
+    page,
+    pageSize: PAGE_SIZE,
+    filters: {
+      store_id: state.settings.defaultLocationId || undefined,
+    },
+  });
+
+  // Extract records from paginated response (handle both paginated envelope and raw array)
+  const transactions: TransactionRecord[] = useMemo(() => {
+    const rawData = transactionsData?.data ?? (Array.isArray(transactionsData) ? (transactionsData as unknown as TransactionRecord[]) : []);
+    // Sort by date descending (most recent first)
+    return [...rawData].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [transactionsData]);
+
+  // Pagination metadata
+  const totalCount = transactionsData?.totalCount ?? transactions.length;
+  const totalPages = transactionsData?.totalPages ?? Math.ceil(totalCount / PAGE_SIZE);
+  const currentPage = transactionsData?.currentPage ?? page;
+
+  // Client-side filters (applied on top of the fetched page)
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((t) => {
+      const matchesSearch =
+        searchTerm === "" ||
+        t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (t.items || []).some((item) =>
+          item.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      const matchesStatus =
+        statusFilter === "all" || t.status === statusFilter;
+      const normalizedPm = normalizePaymentMethod(t.paymentMethod);
+      const matchesPayment =
+        paymentFilter === "all" || normalizedPm === paymentFilter;
+      return matchesSearch && matchesStatus && matchesPayment;
+    });
+  }, [transactions, searchTerm, statusFilter, paymentFilter]);
+
+  // Calculate stats from current page data
+  const todayTotal = useMemo(
+    () =>
+      transactions
+        .filter((t) => t.status === "completed" || t.status === "complete" || t.status === "paid")
+        .reduce((sum, t) => sum + (t.totalAmount || 0), 0),
+    [transactions]
+  );
+  const transactionCount = transactions.length;
+  const refundCount = useMemo(
+    () => transactions.filter((t) => t.status === "refunded").length,
+    [transactions]
+  );
+
+  // Pagination handlers
+  const goToPreviousPage = () => setPage((p) => Math.max(1, p - 1));
+  const goToNextPage = () => setPage((p) => Math.min(totalPages || 1, p + 1));
 
   return (
     <div className="p-4 space-y-4 h-full flex flex-col">
@@ -144,7 +207,7 @@ export default function RetailHistory() {
                 <Receipt className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Today's Sales</p>
+                <p className="text-sm text-muted-foreground">Total Sales</p>
                 <p className="text-xl font-bold">{formatCurrency(todayTotal)}</p>
               </div>
             </div>
@@ -213,70 +276,121 @@ export default function RetailHistory() {
         </Select>
       </div>
 
-      {/* Transaction List */}
-      <Card className="flex-1">
+      {/* Transaction List with QueryStateWrapper */}
+      <Card className="flex-1 flex flex-col">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Transaction History</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
-          <ScrollArea className="h-[calc(100vh-22rem)]">
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                <Loader2 className="h-8 w-8 animate-spin mb-4" />
-                <p>Retrieving transaction logs...</p>
-              </div>
-            ) : (
+        <CardContent className="p-0 flex-1 flex flex-col">
+          <QueryStateWrapper
+            isLoading={isLoading}
+            isError={isError}
+            error={error ?? undefined}
+            isEmpty={filteredTransactions.length === 0 && !isLoading}
+            onRetry={refetch}
+            emptyMessage="No transactions found. Sales will appear here once transactions are processed."
+          >
+            <ScrollArea className="h-[calc(100vh-26rem)]">
               <div className="divide-y">
-              {(Array.isArray(filteredTransactions) ? filteredTransactions : []).map((transaction) => {
-                const PaymentIcon = paymentIcons[transaction.paymentMethod];
-                const status = statusConfig[transaction.status];
-                
-                return (
-                  <div
-                    key={transaction.id}
-                    className="flex items-center justify-between p-4 hover:bg-muted/50 cursor-pointer transition-colors"
-                    onClick={() => setSelectedTransaction(transaction)}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 rounded-lg bg-muted">
-                        <Receipt className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{transaction.id}</span>
-                          <Badge variant={status.variant}>{status.label}</Badge>
+                {filteredTransactions.map((transaction) => {
+                  const pmKey = normalizePaymentMethod(transaction.paymentMethod);
+                  const PaymentIcon = paymentIcons[pmKey as keyof typeof paymentIcons] ?? CreditCard;
+                  const status = getStatusConfig(transaction.status);
+
+                  return (
+                    <div
+                      key={transaction.id}
+                      className="flex items-center justify-between p-4 hover:bg-muted/50 cursor-pointer transition-colors"
+                      onClick={() => setSelectedTransaction(transaction)}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 rounded-lg bg-muted">
+                          <Receipt className="h-5 w-5 text-muted-foreground" />
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {transaction.items.length} item{transaction.items.length !== 1 ? 's' : ''} • {transaction.staffName}
-                        </p>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm">
+                              {transaction.id.slice(0, 8)}...
+                            </span>
+                            <Badge variant={status.variant}>{status.label}</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {(transaction.items || []).length} item
+                            {(transaction.items || []).length !== 1 ? "s" : ""} •{" "}
+                            {(transaction.items || [])
+                              .slice(0, 2)
+                              .map((i) => i.name)
+                              .join(", ")}
+                            {(transaction.items || []).length > 2 ? "…" : ""}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            <User className="h-3 w-3 inline mr-1" />
+                            {transaction.cashierId || "Staff"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p
+                            className={cn(
+                              "font-semibold",
+                              transaction.status === "refunded" &&
+                                "text-destructive line-through"
+                            )}
+                          >
+                            {formatCurrency(transaction.totalAmount)}
+                          </p>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Calendar className="h-3 w-3" />
+                            {formatDate(transaction.createdAt)}
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            {formatTime(transaction.createdAt)}
+                          </div>
+                        </div>
+                        <div className="p-2 rounded-lg bg-muted" title={paymentLabels[pmKey] ?? pmKey}>
+                          <PaymentIcon className="h-4 w-4 text-muted-foreground" />
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className={cn(
-                          "font-semibold",
-                          transaction.status === 'refunded' && 'text-destructive line-through'
-                        )}>
-                          {formatCurrency(transaction.total)}
-                        </p>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {formatTime(transaction.createdAt)}
-                        </div>
-                      </div>
-                      <div className="p-2 rounded-lg bg-muted">
-                        <PaymentIcon className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <Button disabled title="Not available yet" variant="ghost" size="icon">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
               </div>
-            )}
-          </ScrollArea>
+            </ScrollArea>
+          </QueryStateWrapper>
+
+          {/* Pagination Controls */}
+          {!isLoading && !isError && filteredTransactions.length > 0 && (
+            <div className="flex items-center justify-between border-t px-4 py-3">
+              <p className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages || 1} ({totalCount} total)
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToPreviousPage}
+                  disabled={currentPage <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+                <span className="text-sm font-medium px-2">
+                  {currentPage}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToNextPage}
+                  disabled={currentPage >= (totalPages || 1)}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -286,7 +400,7 @@ export default function RetailHistory() {
           <DialogHeader>
             <DialogTitle>Transaction Details</DialogTitle>
           </DialogHeader>
-          
+
           {selectedTransaction && (
             <div className="space-y-4">
               <div className="flex justify-between items-start">
@@ -299,32 +413,34 @@ export default function RetailHistory() {
                     {formatTime(selectedTransaction.createdAt)}
                   </div>
                 </div>
-                <Badge variant={statusConfig[selectedTransaction.status].variant}>
-                  {statusConfig[selectedTransaction.status].label}
+                <Badge variant={getStatusConfig(selectedTransaction.status).variant}>
+                  {getStatusConfig(selectedTransaction.status).label}
                 </Badge>
               </div>
 
               <div className="flex items-center gap-2 text-sm">
                 <User className="h-4 w-4 text-muted-foreground" />
-                <span>Processed by {selectedTransaction.staffName}</span>
+                <span>Cashier: {selectedTransaction.cashierId || "Staff"}</span>
               </div>
 
+              {/* Line items with quantities and line totals */}
               <div className="border rounded-lg divide-y">
-                {(Array.isArray(selectedTransaction.items) ? selectedTransaction.items : []).map((item, idx) => (
+                {(selectedTransaction.items || []).map((item, idx) => (
                   <div key={idx} className="flex justify-between p-3">
                     <div>
                       <p className="font-medium">{item.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        Qty: {item.quantity} × {formatCurrency(item.price)}
+                        Qty: {item.quantity} × {formatCurrency(item.unitPrice)}
                       </p>
                     </div>
                     <p className="font-medium">
-                      {formatCurrency(item.quantity * item.price)}
+                      {formatCurrency(item.totalPrice || item.quantity * item.unitPrice)}
                     </p>
                   </div>
                 ))}
               </div>
 
+              {/* Grand total */}
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
@@ -335,25 +451,30 @@ export default function RetailHistory() {
                   <span>{formatCurrency(selectedTransaction.tax)}</span>
                 </div>
                 <div className="flex justify-between text-lg font-semibold pt-2 border-t">
-                  <span>Total</span>
-                  <span className="text-primary">{formatCurrency(selectedTransaction.total)}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <span className="text-sm">Payment Method</span>
-                <div className="flex items-center gap-2">
-                  {(() => {
-                    const Icon = paymentIcons[selectedTransaction.paymentMethod];
-                    return <Icon className="h-4 w-4" />;
-                  })()}
-                  <span className="capitalize font-medium">
-                    {selectedTransaction.paymentMethod}
+                  <span>Grand Total</span>
+                  <span className="text-primary">
+                    {formatCurrency(selectedTransaction.totalAmount)}
                   </span>
                 </div>
               </div>
 
-              {selectedTransaction.status === 'completed' && (
+              {/* Payment method */}
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <span className="text-sm">Payment Method</span>
+                <div className="flex items-center gap-2">
+                  {(() => {
+                    const pmKey = normalizePaymentMethod(selectedTransaction.paymentMethod);
+                    const Icon = paymentIcons[pmKey as keyof typeof paymentIcons] ?? CreditCard;
+                    return <Icon className="h-4 w-4" />;
+                  })()}
+                  <span className="capitalize font-medium">
+                    {paymentLabels[normalizePaymentMethod(selectedTransaction.paymentMethod)] ??
+                      selectedTransaction.paymentMethod}
+                  </span>
+                </div>
+              </div>
+
+              {selectedTransaction.status === "completed" && (
                 <Button disabled title="Not available yet" variant="outline" className="w-full">
                   <RotateCcw className="mr-2 h-4 w-4" />
                   Issue Refund

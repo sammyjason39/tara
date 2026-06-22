@@ -128,7 +128,7 @@ export default function ReceiptStudio() {
                          )}
 
                          {comp.type === 'transaction_info' && (
-                            <div className="py-2 border-y border-dashed border-slate-300 space-y-0.5 text-[9px]">
+                            <div className="py-2 border-y border-dashed border-border space-y-0.5 text-[9px]">
                                <div className="flex justify-between"><span>ORDER:</span><span>#ZEN-88291</span></div>
                                <div className="flex justify-between"><span>DATE:</span><span>28/04/2026 22:30</span></div>
                                <div className="flex justify-between"><span>CASHIER:</span><span>ALEX_STERLING</span></div>
@@ -137,7 +137,7 @@ export default function ReceiptStudio() {
 
                          {comp.type === 'item_list' && (
                             <div className="py-4 space-y-2">
-                               <div className="flex justify-between border-b border-dashed border-slate-200 pb-1 font-bold">
+                               <div className="flex justify-between border-b border-dashed border-border pb-1 font-bold">
                                   <span>ITEM</span><span>QTY</span><span>TOTAL</span>
                                </div>
                                {[
@@ -156,7 +156,7 @@ export default function ReceiptStudio() {
                          )}
 
                          {comp.type === 'totals_ledger' && (
-                            <div className="py-2 border-t border-dashed border-slate-300 space-y-1">
+                            <div className="py-2 border-t border-dashed border-border space-y-1">
                                <div className="flex justify-between"><span>SUBTOTAL</span><span>2,050.00</span></div>
                                <div className="flex justify-between"><span>TAX (11%)</span><span>225.50</span></div>
                                <div className="flex justify-between font-bold text-sm"><span>TOTAL</span><span>2,275.50</span></div>

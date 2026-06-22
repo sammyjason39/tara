@@ -18,7 +18,7 @@ export const BranchLeaderboard: React.FC<BranchLeaderboardProps> = ({ data }) =>
   })).sort((a, b) => b.revenue - a.revenue);
 
   return (
-    <div className="flex flex-col h-full rounded-[2.5rem] border border-slate-800 bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10">
+    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h4 className="text-xl font-black italic uppercase tracking-tighter text-white">Regional Performance</h4>
@@ -84,7 +84,7 @@ export const BranchLeaderboard: React.FC<BranchLeaderboardProps> = ({ data }) =>
           </ResponsiveContainer>
         ) : (
           <div className="flex flex-col items-center justify-center h-full gap-4 opacity-40">
-             <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center border border-slate-700">
+             <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center border border-border">
                 <TrendingUp className="h-8 w-8 text-muted-foreground" />
              </div>
              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Awaiting Regional Telemetry</p>
@@ -97,9 +97,9 @@ export const BranchLeaderboard: React.FC<BranchLeaderboardProps> = ({ data }) =>
           <div key={i} className="group flex flex-col items-center text-center transition-all hover:-translate-y-1">
             <div className={cn(
               "mb-2 flex h-8 w-8 items-center justify-center rounded-xl font-black text-xs border transition-all",
-              i === 0 ? "bg-warning border-amber-500/20 text-warning" :
-              i === 1 ? "bg-muted border-slate-300/20 text-muted-foreground" :
-              i === 2 ? "bg-warning border-orange-500/20 text-warning" :
+              i === 0 ? "bg-warning border-warning/20 text-warning" :
+              i === 1 ? "bg-muted border-border/20 text-muted-foreground" :
+              i === 2 ? "bg-warning border-warning/20 text-warning" :
               "bg-white/5 border-white/10 text-muted-foreground"
             )}>
               {i + 1}

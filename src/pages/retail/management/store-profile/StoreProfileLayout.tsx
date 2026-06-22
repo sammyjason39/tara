@@ -237,10 +237,10 @@ export const StoreProfileLayout: React.FC<{ children: React.ReactNode }> = ({
               onValueChange={setSelectedStoreId}
               disabled={isStoreManager}
             >
-              <SelectTrigger className="w-[280px] h-10 rounded-xl border-slate-200 bg-secondary/5 font-black italic text-[11px] shadow-sm hover:bg-white transition-all">
+              <SelectTrigger className="w-[280px] h-10 rounded-xl border-border bg-secondary/5 font-black italic text-[11px] shadow-sm hover:bg-white transition-all">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="rounded-xl border-slate-200 shadow-2xl p-1.5">
+              <SelectContent className="rounded-xl border-border shadow-2xl p-1.5">
                 {(session.role?.toLowerCase() === "superadmin" ||
                   session.role?.toLowerCase() === "owner") && (
                   <>
@@ -275,7 +275,7 @@ export const StoreProfileLayout: React.FC<{ children: React.ReactNode }> = ({
                         className={cn(
                           "ml-auto text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded",
                           isVirtualBranch(s)
-                            ? "bg-emerald-500/10 text-emerald-600"
+                            ? "bg-success/10 text-success"
                             : "bg-secondary/10 text-muted-foreground",
                         )}
                       >

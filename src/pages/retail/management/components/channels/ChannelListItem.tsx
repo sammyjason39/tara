@@ -74,7 +74,7 @@ export const ChannelListItem = ({
   return (
     <div
       key={channel.id}
-      className="group hover:bg-secondary/5 transition-all border-b border-slate-100 last:border-none"
+      className="group hover:bg-secondary/5 transition-all border-b border-border last:border-none"
     >
       <div className="flex flex-col lg:flex-row lg:items-center gap-6 p-8">
         <div className="flex items-center gap-6 flex-1">
@@ -167,7 +167,7 @@ export const ChannelListItem = ({
               e.stopPropagation();
               copyCredential(cred.value as string, cred.label);
             }}
-            className="h-10 px-4 bg-white border border-slate-100 rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex items-center gap-3 group/cred"
+            className="h-10 px-4 bg-white border border-border rounded-xl hover:border-primary hover:bg-primary/5 transition-all flex items-center gap-3 group/cred"
           >
             <cred.icon className="w-3.5 h-3.5 text-muted-foreground group-hover/cred:text-primary transition-colors" />
             <div className="flex flex-col items-start leading-none text-left">

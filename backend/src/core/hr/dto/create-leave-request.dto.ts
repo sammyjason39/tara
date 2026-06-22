@@ -10,6 +10,7 @@ import {
 export enum LeaveType {
   ANNUAL = "annual",
   SICK = "sick",
+  PERSONAL = "personal",
   UNPAID = "unpaid",
   MATERNITY = "maternity",
   PATERNITY = "paternity",

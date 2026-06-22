@@ -12,6 +12,8 @@ import { payrollService } from "@/core/services/hr/payrollService";
 import { workflowService } from "@/core/services/hr/workflowService";
 import { useBackgroundRefresh } from "@/core/runtime/events/useBackgroundRefresh";
 import { Roles } from "@/core/security/roles";
+import { EmptyState } from "@/components/shared/AsyncState";
+import { formatDate } from "@/lib/format";
 
 export default function PayCycleStudio() {
   const session = useSession();
@@ -104,7 +106,17 @@ export default function PayCycleStudio() {
               </tr>
             </thead>
             <tbody>
-              {(Array.isArray(filteredRuns) ? filteredRuns : []).map((run) => {
+              {filteredRuns.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="p-0">
+                    <EmptyState
+                      title="No payroll runs"
+                      description="No payroll runs match the current filters. Create a payroll run to get started."
+                    />
+                  </td>
+                </tr>
+              ) : (
+                (Array.isArray(filteredRuns) ? filteredRuns : []).map((run) => {
                 const canSubmit = run.status === "DRAFT" || run.status === "draft";
                 const canApprove = (run.status === "DRAFT" || run.status === "draft" || run.status === "calculated") && financeAllowed;
                 const canExport = run.status === "APPROVED";
@@ -113,7 +125,7 @@ export default function PayCycleStudio() {
                 return (
                   <tr key={run.id} className="border-t">
                     <td className="p-3">
-                      {run.periodStart} - {run.periodEnd}
+                      {formatDate(run.periodStart)} - {formatDate(run.periodEnd)}
                     </td>
                     <td className="p-3 text-muted-foreground">{run.status}</td>
                     <td className="p-3">
@@ -173,7 +185,8 @@ export default function PayCycleStudio() {
                     </td>
                   </tr>
                 );
-              })}
+              })
+              )}
             </tbody>
           </table>
         </DataTableShell>

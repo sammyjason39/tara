@@ -140,7 +140,7 @@ export const ChannelDetailDialog = ({
 
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar controls */}
-          <div className="w-72 border-r border-slate-100 bg-secondary/5 p-8 space-y-8 flex flex-col justify-between">
+          <div className="w-72 border-r border-border bg-secondary/5 p-8 space-y-8 flex flex-col justify-between">
             <div className="space-y-6">
               <div className="text-[9px] font-black uppercase tracking-widest text-muted-foreground italic">
                 Security Actions
@@ -154,7 +154,7 @@ export const ChannelDetailDialog = ({
                     })
                   }
                   disabled={!canEdit || !!rotationLoading}
-                  className="w-full h-12 justify-start rounded-xl px-4 gap-3 font-black italic uppercase text-[9px] tracking-widest text-muted-foreground hover:bg-white hover:text-primary transition-all border border-transparent hover:border-slate-200"
+                  className="w-full h-12 justify-start rounded-xl px-4 gap-3 font-black italic uppercase text-[9px] tracking-widest text-muted-foreground hover:bg-white hover:text-primary transition-all border border-transparent hover:border-border"
                 >
                   <RefreshCw
                     className={`w-3.5 h-3.5 ${rotationLoading === selectedChannel.id ? "animate-spin" : ""}`}
@@ -165,7 +165,7 @@ export const ChannelDetailDialog = ({
                   variant="ghost"
                   onClick={() => handleRevokeChannel(selectedChannel.id)}
                   disabled={!canEdit || !!revocationLoading}
-                  className="w-full h-12 justify-start rounded-xl px-4 gap-3 font-black italic uppercase text-[9px] tracking-widest text-muted-foreground hover:bg-white hover:text-destructive transition-all border border-transparent hover:border-slate-200"
+                  className="w-full h-12 justify-start rounded-xl px-4 gap-3 font-black italic uppercase text-[9px] tracking-widest text-muted-foreground hover:bg-white hover:text-destructive transition-all border border-transparent hover:border-border"
                 >
                   <ShieldOff className="w-3.5 h-3.5" />
                   Revoke Access
@@ -184,7 +184,7 @@ export const ChannelDetailDialog = ({
             </div>
 
             {!canEdit && (
-              <div className="p-6 rounded-2xl bg-warning border border-amber-100 space-y-4">
+              <div className="p-6 rounded-2xl bg-warning border border-warning space-y-4">
                 <div className="flex items-center gap-2 text-warning">
                   <AlertCircle className="w-4 h-4" />
                   <span className="text-[9px] font-black uppercase tracking-widest italic">
@@ -276,7 +276,7 @@ export const ChannelDetailDialog = ({
                         copyable={!!detailClientSecret}
                         isMasked
                       />
-                      <div className="p-6 rounded-[2rem] bg-secondary/5 border border-slate-100 mt-6">
+                      <div className="p-6 rounded-[2rem] bg-secondary/5 border border-border mt-6">
                         <p className="text-[9px] font-black text-muted-foreground uppercase leading-relaxed italic uppercase italic tracking-widest">
                           Keys are rotate-only. Previous secrets are immediately
                           invalidated upon rotation.
@@ -320,7 +320,7 @@ export const ChannelDetailDialog = ({
                     ].map((rule) => (
                       <div
                         key={rule.id}
-                        className="p-8 rounded-[2rem] bg-secondary/5 border border-slate-100 flex items-center justify-between group hover:bg-white transition-all"
+                        className="p-8 rounded-[2rem] bg-secondary/5 border border-border flex items-center justify-between group hover:bg-white transition-all"
                       >
                         <div>
                           <div className="text-sm font-black italic text-foreground uppercase italic tracking-tighter">
@@ -400,7 +400,7 @@ export const ChannelDetailDialog = ({
           </div>
         </div>
 
-        <DialogFooter className="p-8 bg-secondary/5 border-t border-slate-100 flex flex-row items-center justify-end gap-6 shrink-0">
+        <DialogFooter className="p-8 bg-secondary/5 border-t border-border flex flex-row items-center justify-end gap-6 shrink-0">
           <Button
             variant="ghost"
             onClick={() => onOpenChange(false)}

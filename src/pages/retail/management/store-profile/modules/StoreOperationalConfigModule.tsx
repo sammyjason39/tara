@@ -59,8 +59,8 @@ export const StoreOperationalConfigModule: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Core Execution Rules */}
-        <div className="space-y-6 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
+        <div className="space-y-6 bg-white p-6 rounded-2xl border border-border shadow-sm">
+          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-border pb-3">
             <Clock className="w-4 h-4 text-muted-foreground" /> Boundary Conditions
           </h3>
 
@@ -76,7 +76,7 @@ export const StoreOperationalConfigModule: React.FC = () => {
                   handleUpdate({ business_hours_template: value })
                 }
               >
-                <SelectTrigger className="border-slate-200">
+                <SelectTrigger className="border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -102,7 +102,7 @@ export const StoreOperationalConfigModule: React.FC = () => {
                   handleUpdate({ default_shift_model: value })
                 }
               >
-                <SelectTrigger className="border-slate-200">
+                <SelectTrigger className="border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -119,7 +119,7 @@ export const StoreOperationalConfigModule: React.FC = () => {
               </Select>
             </div>
 
-            <div className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-secondary/5">
+            <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/5">
               <div className="space-y-0.5">
                 <Label className="text-sm font-bold text-muted-foreground">
                   Auto-Close Orphaned Shifts
@@ -140,8 +140,8 @@ export const StoreOperationalConfigModule: React.FC = () => {
         </div>
 
         {/* Sales & POS Policies */}
-        <div className="space-y-6 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
+        <div className="space-y-6 bg-white p-6 rounded-2xl border border-border shadow-sm">
+          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-border pb-3">
             <MonitorSmartphone className="w-4 h-4 text-muted-foreground" /> Sales &
             Execution Policies
           </h3>
@@ -160,7 +160,7 @@ export const StoreOperationalConfigModule: React.FC = () => {
                     pos_device_limit: parseInt(e.target.value) || 0,
                   })
                 }
-                className="font-mono border-slate-200"
+                className="font-mono border-border"
               />
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
                 Max concurrent active terminal sessions
@@ -179,7 +179,7 @@ export const StoreOperationalConfigModule: React.FC = () => {
                   handleUpdate({ refund_policy_mode: value })
                 }
               >
-                <SelectTrigger className="border-slate-200">
+                <SelectTrigger className="border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -196,7 +196,7 @@ export const StoreOperationalConfigModule: React.FC = () => {
               </Select>
             </div>
 
-            <div className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-secondary/5">
+            <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/5">
               <div className="space-y-0.5">
                 <Label className="text-sm font-bold text-muted-foreground">
                   Enable Self-Checkout Engine
@@ -217,8 +217,8 @@ export const StoreOperationalConfigModule: React.FC = () => {
         </div>
 
         {/* Taxation & Fiscal Policy */}
-        <div className="space-y-6 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm md:col-span-2">
-          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
+        <div className="space-y-6 bg-white p-6 rounded-2xl border border-border shadow-sm md:col-span-2">
+          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-border pb-3">
             <ShieldAlert className="w-4 h-4 text-destructive" /> Taxation & Fiscal Policy
           </h3>
 
@@ -238,7 +238,7 @@ export const StoreOperationalConfigModule: React.FC = () => {
                       tax_rate: parseFloat(e.target.value) || 0,
                     })
                   }
-                  className="font-mono border-slate-200 pr-10"
+                  className="font-mono border-border pr-10"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">%</span>
               </div>
@@ -247,7 +247,7 @@ export const StoreOperationalConfigModule: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-secondary/5">
+            <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-secondary/5">
               <div className="space-y-0.5">
                 <Label className="text-sm font-bold text-muted-foreground">
                   Tax Inclusive Pricing

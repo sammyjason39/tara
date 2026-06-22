@@ -13,7 +13,8 @@ import {
   ShieldCheck,
   Search,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassCard } from "@/components/shared/GlassCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +36,8 @@ import {
 import type { RetailShift, RetailProduct } from "@/core/types/retail/retail";
 import { useAuth } from "@/contexts/AuthContext";
 import { StockOpnameSummaryModal } from "@/components/shared/StockOpnameSummaryModal";
+import { UnresolvedBarcodesModal } from "@/components/shared/UnresolvedBarcodesModal";
+import { saveOpnameSession, loadOpnameSession, clearOpnameSession } from "@/core/services/opname/sessionPersistence";
 
 interface ScanEntry {
   id?: string;
@@ -56,6 +59,9 @@ const StockOpnameScanner = ({ noShell = false }: { noShell?: boolean }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const [unresolvedBarcodes, setUnresolvedBarcodes] = useState<string[]>([]);
+  const [isUnresolvedOpen, setIsUnresolvedOpen] = useState(false);
+  const [cycleId, setCycleId] = useState<string | null>(null);
   const navigate = React.useMemo(() => (path: string) => window.location.href = path, []);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -89,8 +95,33 @@ const StockOpnameScanner = ({ noShell = false }: { noShell?: boolean }) => {
       return;
     }
 
-    if (session.tenant_id) fetchData();
+    if (session.tenant_id && activeStore?.id) {
+      // Load existing session if available
+      const savedSession = loadOpnameSession(session.tenant_id);
+      if (savedSession) {
+        setHistory(savedSession.entries);
+        setUnresolvedBarcodes(savedSession.unresolvedBarcodes);
+        setCycleId(savedSession.cycleId);
+      }
+      fetchData();
+    }
   }, [session.tenant_id, session, isContextLoading, activeShift, activeStore?.id]);
+
+  // Save session state whenever history or unresolved barcodes change
+  useEffect(() => {
+    if (session.tenant_id && activeStore?.id && cycleId) {
+      saveOpnameSession({
+        cycleId,
+        locationId: activeStore.id,
+        entries: [...history],
+        unresolvedBarcodes: [...unresolvedBarcodes],
+        anomalies: [],
+        newItems: [],
+        createdAt: Date.now(),
+        lastUpdated: Date.now(),
+      }, session.tenant_id);
+    }
+  }, [history, unresolvedBarcodes, session.tenant_id, activeStore?.id, cycleId]);
 
   const handleScan = (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,11 +205,20 @@ const StockOpnameScanner = ({ noShell = false }: { noShell?: boolean }) => {
         });
         toast({ title: "Item Scanned", description: `Scanned: ${product.name}` });
       } else {
-        toast({
-          title: "Invalid SKU",
-          description: `Unrecognized SKU: ${scanInput}`,
-          variant: "destructive",
-        });
+        // Add unregistered barcode to unresolved list instead of showing error toast
+        if (!unresolvedBarcodes.includes(scanInput)) {
+          setUnresolvedBarcodes(prev => [...prev, scanInput]);
+          toast({
+            title: "Unregistered Barcode Added",
+            description: `Barcode: ${scanInput} added to unresolved list.`,
+          });
+        } else {
+          toast({
+            title: "Duplicate Unregistered",
+            description: `Barcode: ${scanInput} already in unresolved list.`,
+            variant: "warning",
+          });
+        }
       }
     }
     setScanInput("");
@@ -191,7 +231,12 @@ const StockOpnameScanner = ({ noShell = false }: { noShell?: boolean }) => {
 
   const handleSubmit = async () => {
     if (history.length === 0) return;
-    setIsSummaryOpen(true);
+    
+    if (unresolvedBarcodes.length > 0) {
+      setIsUnresolvedOpen(true);
+    } else {
+      setIsSummaryOpen(true);
+    }
   };
 
   const handleFinalConfirm = async () => {
@@ -203,10 +248,11 @@ const StockOpnameScanner = ({ noShell = false }: { noShell?: boolean }) => {
           return h.serials.map(s => ({ 
             sku: h.sku, 
             actualCount: 1,
-            serial_number: s 
-          }));
+            serial_number: s,
+            product_id: h.id
+          } as const));
         }
-        return [{ product_id: h.id, sku: h.sku, actualCount: h.actualCount }];
+        return [{ product_id: h.id, sku: h.sku, actualCount: h.actualCount } as const];
       });
 
       await retailService.submitOpname(
@@ -217,7 +263,13 @@ const StockOpnameScanner = ({ noShell = false }: { noShell?: boolean }) => {
         activeShift?.id,
       );
       setHistory([]);
+      setUnresolvedBarcodes([]);
       setSerializationMode(false);
+      
+      // Clear session after successful commit
+      if (session.tenant_id && activeStore?.id) {
+        clearOpnameSession(session.tenant_id);
+      }
     } catch (error: unknown) {
       console.error(error);
       throw error;
@@ -226,11 +278,82 @@ const StockOpnameScanner = ({ noShell = false }: { noShell?: boolean }) => {
     }
   };
 
+  const handleFlagAnomalies = (barcodes: string[]) => {
+    setUnresolvedBarcodes(prev => prev.filter(b => !barcodes.includes(b)));
+    toast({ title: "Anomalies Flagged", description: `${barcodes.length} barcodes flagged for review.` });
+    
+    // Save session state after flagging anomalies
+    if (session.tenant_id && activeStore?.id && cycleId) {
+      saveOpnameSession({
+        cycleId,
+        locationId: activeStore.id,
+        entries: [...history],
+        unresolvedBarcodes: unresolvedBarcodes.filter(b => !barcodes.includes(b)),
+        anomalies: [...barcodes],
+        newItems: [],
+        createdAt: Date.now(),
+        lastUpdated: Date.now(),
+      });
+    }
+    
+    if (unresolvedBarcodes.length - barcodes.length === 0) {
+      setIsUnresolvedOpen(false);
+      setIsSummaryOpen(true);
+    }
+  };
+
+  const handleItemsRegistered = (createdItems: any[]) => {
+    const barcodes = createdItems.map(item => item.barcode);
+    setUnresolvedBarcodes(prev => prev.filter(b => !barcodes.includes(b)));
+    
+    // Save session state after registering items
+    if (session.tenant_id && activeStore?.id && cycleId) {
+      saveOpnameSession({
+        cycleId,
+        locationId: activeStore.id,
+        entries: [...history],
+        unresolvedBarcodes: unresolvedBarcodes.filter(b => !barcodes.includes(b)),
+        anomalies: [...barcodes],
+        newItems: [...createdItems],
+        createdAt: Date.now(),
+        lastUpdated: Date.now(),
+      });
+    }
+    
+    if (unresolvedBarcodes.length - barcodes.length === 0) {
+      setIsUnresolvedOpen(false);
+      setIsSummaryOpen(true);
+    }
+  };
+
+  // Save session state when removing from history
+  const handleRemoveEntry = (index: number) => {
+    setHistory(prev => {
+      const newHistory = prev.filter((_, i) => i !== index);
+      
+      // Save session state after removal
+      if (session.tenant_id && activeStore?.id && cycleId) {
+        saveOpnameSession({
+          cycleId,
+          locationId: activeStore.id,
+          entries: newHistory,
+          unresolvedBarcodes: [...unresolvedBarcodes],
+          anomalies: [],
+          newItems: [],
+          createdAt: Date.now(),
+          lastUpdated: Date.now(),
+        });
+      }
+      
+      return newHistory;
+    });
+  };
+
   const content = (
     <div className="flex-1 flex flex-col gap-8 overflow-hidden">
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 flex-1 overflow-hidden">
         <div className="lg:col-span-3 flex flex-col gap-8 overflow-hidden">
-          <Card className="bg-card/40 backdrop-blur-2xl border-border rounded-[3rem] overflow-hidden shadow-2xl relative">
+          <GlassCard className="bg-card/40 backdrop-blur-2xl border-border rounded-[3rem] overflow-hidden shadow-2xl relative">
             <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
               <Layers className="w-64 h-64 text-primary" />
             </div>
@@ -309,10 +432,10 @@ const StockOpnameScanner = ({ noShell = false }: { noShell?: boolean }) => {
                 </div>
               </form>
             </CardContent>
-          </Card>
+          </GlassCard>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 flex-1 overflow-hidden">
-            <Card className="bg-card/40 backdrop-blur-2xl border-border rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col">
+            <GlassCard className="bg-card/40 backdrop-blur-2xl border-border rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col">
               <CardHeader className="p-8 border-b border-border bg-background/20">
                 <CardTitle className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.3em] flex items-center justify-between italic">
                   Live Session Stream
@@ -339,8 +462,8 @@ const StockOpnameScanner = ({ noShell = false }: { noShell?: boolean }) => {
                         const hasVariance = scan.actualCount !== scan.systemCount;
                         return (
                           <div
-                            key={i}
-                            className={`p-5 rounded-[2rem] border transition-all flex items-center justify-between ${
+                            key={`${scan.sku}-${i}`}
+                            className={`p-5 rounded-[2rem] border transition-all flex items-center justify-between group hover:shadow-lg ${
                               hasVariance
                                 ? "bg-warning/10 border-warning/30"
                                 : "bg-secondary/40 border-border"
@@ -364,11 +487,21 @@ const StockOpnameScanner = ({ noShell = false }: { noShell?: boolean }) => {
                                 </div>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div className="text-2xl font-black text-foreground italic tracking-tighter">x{scan.actualCount}</div>
-                              <div className={`text-[9px] font-black uppercase tracking-widest mt-1 ${hasVariance ? "text-warning" : "text-success"}`}>
-                                {hasVariance ? "DISCREPANCY" : "IN-SYNC"}
+                            <div className="flex items-center gap-4">
+                              <div className="text-right">
+                                <div className="text-2xl font-black text-foreground italic tracking-tighter">x{scan.actualCount}</div>
+                                <div className={`text-[9px] font-black uppercase tracking-widest mt-1 ${hasVariance ? "text-warning" : "text-success"}`}>
+                                  {hasVariance ? "DISCREPANCY" : "IN-SYNC"}
+                                </div>
                               </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 rounded-xl hover:bg-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-all"
+                                onClick={() => handleRemoveEntry(i)}
+                              >
+                                <History className="w-4 h-4" />
+                              </Button>
                             </div>
                           </div>
                         );
@@ -377,9 +510,9 @@ const StockOpnameScanner = ({ noShell = false }: { noShell?: boolean }) => {
                   )}
                 </ScrollArea>
               </CardContent>
-            </Card>
+            </GlassCard>
 
-            <Card className="bg-card/40 backdrop-blur-2xl border-border rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col">
+            <GlassCard className="bg-card/40 backdrop-blur-2xl border-border rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col">
               <CardHeader className="p-8 border-b border-border bg-background/20">
                 <CardTitle className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.3em] italic">
                   Operational Metrics
@@ -418,7 +551,13 @@ const StockOpnameScanner = ({ noShell = false }: { noShell?: boolean }) => {
                   <Button
                     variant="outline"
                     className="flex-1 h-20 bg-secondary/50 border-border text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-2xl font-black italic uppercase tracking-widest text-[10px]"
-                    onClick={() => setHistory([])}
+                    onClick={() => {
+                      setHistory([]);
+                      setUnresolvedBarcodes([]);
+                      if (session.tenant_id && activeStore?.id) {
+                        clearOpnameSession(session.tenant_id);
+                      }
+                    }}
                     disabled={history.length === 0 || isSubmitting}
                   >
                     Abort Audit
@@ -432,12 +571,12 @@ const StockOpnameScanner = ({ noShell = false }: { noShell?: boolean }) => {
                   </Button>
                 </div>
               </CardContent>
-            </Card>
+            </GlassCard>
           </div>
         </div>
 
         <div className="flex flex-col gap-8">
-          <Card className="bg-card border-none shadow-3xl rounded-[3rem] overflow-hidden relative">
+          <GlassCard className="bg-card border-none shadow-3xl rounded-[3rem] overflow-hidden relative">
              <div className="absolute -right-8 -bottom-8 opacity-10 pointer-events-none rotate-12">
                 <Box className="w-48 h-48 text-primary" />
              </div>
@@ -457,9 +596,9 @@ const StockOpnameScanner = ({ noShell = false }: { noShell?: boolean }) => {
                    Audit stream is end-to-end encrypted and queued for **Zenvix Global Reconciliation**.
                 </p>
              </CardContent>
-          </Card>
+          </GlassCard>
 
-          <Card className="bg-warning/5 border-warning/20 border-2 rounded-[2.5rem]">
+          <GlassCard className="bg-warning/5 border-warning/20 border-2 rounded-[2.5rem]">
              <CardContent className="p-8 flex gap-6">
                 <AlertCircle className="w-8 h-8 text-warning shrink-0" />
                 <div>
@@ -469,7 +608,7 @@ const StockOpnameScanner = ({ noShell = false }: { noShell?: boolean }) => {
                    </p>
                 </div>
              </CardContent>
-          </Card>
+          </GlassCard>
         </div>
       </div>
 
@@ -486,6 +625,15 @@ const StockOpnameScanner = ({ noShell = false }: { noShell?: boolean }) => {
         }))}
         locationName={activeStore?.name || "Retail Store"}
         auditorName={user ? `${user.first_name} ${user.last_name}` : "Retail Auditor"}
+      />
+
+      <UnresolvedBarcodesModal
+        isOpen={isUnresolvedOpen}
+        onClose={() => setIsUnresolvedOpen(false)}
+        unresolvedBarcodes={unresolvedBarcodes}
+        onFlagAnomalies={handleFlagAnomalies}
+        onItemsRegistered={handleItemsRegistered}
+        categoryOptions={[]}
       />
     </div>
   );

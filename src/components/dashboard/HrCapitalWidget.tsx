@@ -12,7 +12,7 @@ export const HrCapitalWidget: React.FC<HrCapitalWidgetProps> = ({ distribution }
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col h-full rounded-[3rem] border border-slate-800 bg-muted p-10 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group overflow-hidden relative">
+    <div className="flex flex-col h-full rounded-[3rem] border border-border bg-muted p-10 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group overflow-hidden relative">
       <div className="flex items-center justify-between mb-8 relative z-10">
         <div>
           <h4 className="text-xl font-black italic uppercase tracking-tighter text-white">Workforce Capital</h4>
@@ -61,10 +61,10 @@ export const HrCapitalWidget: React.FC<HrCapitalWidgetProps> = ({ distribution }
           </div>
 
           <div 
-            className="flex items-center gap-4 rounded-3xl bg-white/2 p-5 border border-white/5 transition-all hover:bg-white/5 hover:border-emerald-500/20 cursor-pointer" 
+            className="flex items-center gap-4 rounded-3xl bg-white/2 p-5 border border-white/5 transition-all hover:bg-white/5 hover:border-success/20 cursor-pointer" 
             onClick={() => navigate('/core/hr/talent')}
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success text-success border border-emerald-500/20">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success text-success border border-success/20">
               <UserPlus className="h-5 w-5" />
             </div>
             <div>

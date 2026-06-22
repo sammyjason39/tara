@@ -53,6 +53,7 @@ export abstract class IInventoryRepository {
     search?: string,
     category_id?: string,
     status?: string,
+    is_anomaly?: boolean,
     sortBy?: "name" | "quantity" | "created_at",
     sortOrder?: "asc" | "desc",
   ): Promise<InventoryItem[]>;
@@ -61,6 +62,7 @@ export abstract class IInventoryRepository {
     location_id?: string,
     search?: string,
     category_id?: string,
+    is_anomaly?: boolean,
   ): Promise<number>;
   abstract createItem(
     ctx: TenantContext,
@@ -87,7 +89,13 @@ export abstract class IInventoryRepository {
   abstract getMovements(
     ctx: TenantContext,
     item_id?: string,
+    page?: number,
+    limit?: number,
   ): Promise<StockMovement[]>;
+  abstract countMovements(
+    ctx: TenantContext,
+    item_id?: string,
+  ): Promise<number>;
 
   abstract intakeStock(
     ctx: TenantContext,
@@ -257,8 +265,58 @@ export abstract class IInventoryRepository {
   abstract deleteProductCategory(ctx: TenantContext, id: string): Promise<void>;
   abstract updateItemCategory(ctx: TenantContext, itemId: string, categoryId: string): Promise<any>;
   abstract updateItem(ctx: TenantContext, itemId: string, data: any): Promise<any>;
+  abstract getItemById(ctx: TenantContext, itemId: string): Promise<any>;
+  abstract getCategoryById(ctx: TenantContext, categoryId: string): Promise<any>;
   abstract getSalesHistory(ctx: TenantContext, itemId: string): Promise<any[]>;
   abstract getProcurementHistory(ctx: TenantContext, itemId: string): Promise<any[]>;
 
   // --- Audit Anomaly Methods ---
+  // --- Void Request & Approval Workflow ---
+  abstract createVoidRequest(
+    ctx: TenantContext,
+    data: {
+      entity_type: string;
+      entity_id: string;
+      reason: string;
+      requested_by: string;
+      company_id?: string;
+      status?: "PENDING" | "APPROVED" | "REJECTED";
+      approved_by?: string;
+      approved_at?: Date;
+    },
+    tx?: any
+  ): Promise<any>;
+
+  abstract approveVoidRequest(
+    ctx: TenantContext,
+    voidRequest_id: string,
+    approver_id: string,
+    tx?: any
+  ): Promise<any>;
+
+  abstract rejectVoidRequest(
+    ctx: TenantContext,
+    voidRequest_id: string,
+    rejector_id: string,
+    tx?: any
+  ): Promise<any>;
+
+  abstract getVoidRequestById(
+    ctx: TenantContext,
+    voidRequest_id: string
+  ): Promise<any | null>;
+
+  abstract getVoidRequestsByEntity(
+    ctx: TenantContext,
+    entity_type: string,
+    entity_id: string
+  ): Promise<any[]>;
+
+  abstract listVoidRequests(
+    ctx: TenantContext,
+    filters?: {
+      status?: string;
+      entity_type?: string;
+    }
+  ): Promise<any[]>;
 }

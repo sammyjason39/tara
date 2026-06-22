@@ -35,7 +35,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     if (!email) return;
     setIsLoading(true);
     try {
-      const response = await apiRequest<any>("/v1/auth/verify-email", "POST", null, { email });
+      const response = await apiRequest<{ exists?: boolean }>("/v1/auth/verify-email", "POST", null, { email });
       if (response.exists) {
         setStep("RESET");
       } else {
@@ -76,7 +76,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
 
     setIsLoading(true);
     try {
-      await apiRequest<any>("/v1/auth/reset-password-direct", "POST", null, {
+      await apiRequest<unknown>("/v1/auth/reset-password-direct", "POST", null, {
         email,
         newPassword,
       });

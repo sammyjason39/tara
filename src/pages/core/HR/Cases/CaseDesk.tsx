@@ -12,6 +12,7 @@ import { FilterBar } from "@/core/tools/FilterBar";
 import { useSession } from "@/core/security/session";
 import { caseService } from "@/core/services/hr/caseService";
 import { useBackgroundRefresh } from "@/core/runtime/events/useBackgroundRefresh";
+import { EmptyState } from "@/components/shared/AsyncState";
 
 export default function CaseDesk() {
   const session = useSession();
@@ -107,7 +108,17 @@ export default function CaseDesk() {
               </tr>
             </thead>
             <tbody>
-              {(Array.isArray(filtered) ? filtered : []).map((item) => (
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="p-0">
+                    <EmptyState
+                      title="No cases"
+                      description="No HR cases match the current search. Create a case to start tracking."
+                    />
+                  </td>
+                </tr>
+              ) : (
+                (Array.isArray(filtered) ? filtered : []).map((item) => (
                 <tr
                   key={item.id}
                   className="border-t cursor-pointer hover:bg-muted/30"
@@ -118,7 +129,8 @@ export default function CaseDesk() {
                   <td className="p-3 text-muted-foreground">{item.status}</td>
                   <td className="p-3 text-muted-foreground">{item.priority}</td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
         </DataTableShell>

@@ -12,6 +12,7 @@ import {
 } from "@/core/types/inventory/inventory";
 import { Boxes, Plus, Search, Warehouse, LayoutGrid, List, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ErrorState } from "@/components/shared/AsyncState";
 
 export default function WarehouseManagement() {
   const session = useSession();
@@ -19,20 +20,24 @@ export default function WarehouseManagement() {
   const [selectedBin, setSelectedBin] = useState<WarehouseBin | null>(null);
   const [binStock, setBinStock] = useState<BinAssignment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [locationId, setLocationId] = useState(session.location_id || "MAIN");
   const [viewMode, setViewMode] = useState<"list" | "map">("map");
   const [search, setSearch] = useState("");
+  const [createBinOpen, setCreateBinOpen] = useState(false);
 
   const loadBins = useCallback(async () => {
     try {
       setLoading(true);
+      setError(false);
       const data = await inventoryService.getWarehouseBins(session.tenant_id, session, locationId);
-      setBins(data);
+      setBins(Array.isArray(data) ? data : []);
       if (data.length > 0 && !selectedBin) {
         setSelectedBin(data[0]);
       }
     } catch (error) {
       console.error("Failed to load bins:", error);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -85,7 +90,7 @@ export default function WarehouseManagement() {
         subtitle="Tactical spatial visualization of storage hierarchy and bin occupancy."
         primaryAction={
           <div className="flex items-center gap-3">
-             <div className="flex bg-muted dark:bg-muted p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+             <div className="flex bg-muted dark:bg-muted p-1 rounded-xl border border-muted dark:border-muted">
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -109,7 +114,7 @@ export default function WarehouseManagement() {
                   <List className="h-3 w-3" /> List
                 </Button>
              </div>
-             <Button onClick={() => {}} className="rounded-xl bg-primary hover:bg-primary text-white gap-2 text-[10px] font-black uppercase tracking-widest px-6 h-10 shadow-lg shadow-blue-600/20">
+             <Button onClick={() => { setCreateBinOpen?.(true); }} className="rounded-xl bg-primary hover:bg-primary text-white gap-2 text-[10px] font-black uppercase tracking-widest px-6 h-10 shadow-lg shadow-primary/20">
                 <Plus className="h-3 w-3" /> Create Bin
              </Button>
           </div>
@@ -119,7 +124,7 @@ export default function WarehouseManagement() {
       <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
         <div className="space-y-6">
            {/* Search & Stats */}
-           <div className="flex items-center justify-between p-6 bg-white dark:bg-muted border border-slate-200 dark:border-slate-800 rounded-[2rem] shadow-sm">
+           <div className="flex items-center justify-between p-6 bg-white dark:bg-muted border border-muted dark:border-muted rounded-[2rem] shadow-sm">
               <div className="relative flex-1 max-w-md">
                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                  <UIInput 
@@ -142,7 +147,13 @@ export default function WarehouseManagement() {
               </div>
            </div>
 
-           {viewMode === "list" ? (
+           {error ? (
+             <ErrorState
+               title="Couldn't load warehouse bins"
+               description="The storage bin layout failed to load for this location. Check your connection and try again."
+               onRetry={loadBins}
+             />
+           ) : viewMode === "list" ? (
              <WorkspacePanel title="Bin List" description={`Storage nodes in ${locationId}`}>
                 <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                   {loading ? (
@@ -150,7 +161,7 @@ export default function WarehouseManagement() {
                        {[1,2,3,4].map(i => <div key={i} className="h-16 rounded-xl bg-muted dark:bg-muted animate-pulse" />)}
                     </div>
                   ) : filteredBins.length === 0 ? (
-                    <div className="p-12 text-center border-2 border-dashed rounded-[2rem] border-slate-200 dark:border-slate-800">
+                    <div className="p-12 text-center border-2 border-dashed rounded-[2rem] border-muted dark:border-muted">
                        <Warehouse className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">No storage bins found.</p>
                     </div>
@@ -162,8 +173,8 @@ export default function WarehouseManagement() {
                         className={cn(
                           "group flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 cursor-pointer",
                           selectedBin?.id === bin.id 
-                            ? "border-primary bg-primary shadow-lg shadow-blue-500/5 ring-1 ring-blue-500" 
-                            : "border-slate-100 dark:border-slate-800 hover:border-primary bg-white dark:bg-muted"
+                            ? "border-primary bg-primary shadow-lg shadow-primary/5 ring-1 ring-primary" 
+                            : "border-muted dark:border-muted hover:border-primary bg-white dark:bg-muted"
                         )}
                       >
                         <div className="flex items-center gap-4">
@@ -213,7 +224,7 @@ export default function WarehouseManagement() {
                                   <span className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground">Aisle {aisle}</span>
                                   <span className="text-[8px] font-bold text-muted-foreground uppercase">{aisleBins.length} Nodes</span>
                                </div>
-                               <div className="p-4 rounded-[2rem] bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2">
+                               <div className="p-4 rounded-[2rem] bg-muted dark:bg-muted border border-muted dark:border-muted grid grid-cols-2 gap-2">
                                   {aisleBins.map(bin => (
                                     <button
                                       key={bin.id}
@@ -221,8 +232,8 @@ export default function WarehouseManagement() {
                                       className={cn(
                                         "aspect-square rounded-xl border flex flex-col items-center justify-center gap-1 transition-all duration-300 relative overflow-hidden group",
                                         selectedBin?.id === bin.id 
-                                          ? "bg-primary border-primary text-white shadow-xl shadow-blue-600/20 scale-105 z-10" 
-                                          : "bg-white dark:bg-muted border-slate-100 dark:border-slate-800 hover:border-primary"
+                                          ? "bg-primary border-primary text-white shadow-xl shadow-primary/20 scale-105 z-10" 
+                                          : "bg-white dark:bg-muted border-muted dark:border-muted hover:border-primary"
                                       )}
                                     >
                                        {/* Occupancy Indicator */}
@@ -259,7 +270,7 @@ export default function WarehouseManagement() {
              description={selectedBin ? `Real-time occupancy for bin sequence ${selectedBin.id.slice(0,8)}` : "Select a tactical node to view telemetry."}
            >
              {!selectedBin ? (
-               <div className="p-12 text-center border-2 border-dashed rounded-[2.5rem] border-slate-100 dark:border-slate-800">
+               <div className="p-12 text-center border-2 border-dashed rounded-[2.5rem] border-muted dark:border-muted">
                   <MapPin className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Satellite lock pending. Select bin.</p>
                </div>
@@ -267,19 +278,19 @@ export default function WarehouseManagement() {
                <div className="space-y-8">
                  {/* Bin Telemetry Grid */}
                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-4 rounded-2xl bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800">
+                    <div className="p-4 rounded-2xl bg-muted dark:bg-muted border border-muted dark:border-muted">
                        <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1">Zone / Aisle</p>
                        <p className="text-xs font-black italic">{selectedBin.zone || "N/A"} / {selectedBin.aisle || "N/A"}</p>
                     </div>
-                    <div className="p-4 rounded-2xl bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800">
+                    <div className="p-4 rounded-2xl bg-muted dark:bg-muted border border-muted dark:border-muted">
                        <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1">Rack / Level</p>
                        <p className="text-xs font-black italic">{selectedBin.rack || "N/A"} / {selectedBin.level || "N/A"}</p>
                     </div>
-                    <div className="p-4 rounded-2xl bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800">
+                    <div className="p-4 rounded-2xl bg-muted dark:bg-muted border border-muted dark:border-muted">
                        <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1">Max Capacity</p>
                        <p className="text-xs font-black italic">{selectedBin.capacity} Units</p>
                     </div>
-                    <div className="p-4 rounded-2xl bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800">
+                    <div className="p-4 rounded-2xl bg-muted dark:bg-muted border border-muted dark:border-muted">
                        <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1">Current Stock</p>
                        <p className="text-xs font-black italic text-primary">{binStock.length} SKUs</p>
                     </div>
@@ -288,13 +299,13 @@ export default function WarehouseManagement() {
                  {/* Content Table */}
                  <div className="space-y-3">
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Active Stock Assignments</p>
-                    <div className="rounded-[1.5rem] border border-slate-100 dark:border-slate-800 overflow-hidden bg-white dark:bg-muted">
+                    <div className="rounded-[1.5rem] border border-muted dark:border-muted overflow-hidden bg-white dark:bg-muted">
                        {binStock.length === 0 ? (
                          <div className="p-10 text-center italic text-[10px] text-muted-foreground uppercase tracking-widest">
                            Bin is clinically empty.
                          </div>
                        ) : (
-                         <div className="divide-y divide-slate-50 dark:divide-slate-800">
+                         <div className="divide-y divide-muted dark:divide-muted">
                            {binStock.map((stock) => (
                              <div key={stock.id} className="p-4 flex items-center justify-between hover:bg-muted dark:hover:bg-muted transition-colors group">
                                 <div>
@@ -314,7 +325,7 @@ export default function WarehouseManagement() {
 
                  {/* Quick Actions */}
                  <div className="grid grid-cols-2 gap-3">
-                    <Button variant="outline" className="rounded-xl border-slate-200 dark:border-slate-800 text-[9px] font-black uppercase tracking-widest py-6 h-auto">
+                    <Button variant="outline" className="rounded-xl border-muted dark:border-muted text-[9px] font-black uppercase tracking-widest py-6 h-auto">
                        Print Bin Label
                     </Button>
                     <Button className="rounded-xl bg-muted dark:bg-white text-white dark:text-muted-foreground text-[9px] font-black uppercase tracking-widest py-6 h-auto">

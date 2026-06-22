@@ -21,7 +21,7 @@ import { FileInterceptor, FilesInterceptor } from "@nestjs/platform-express";
 import { diskStorage } from "multer";
 import * as path from "path";
 import * as fs from "fs";
-import { NotFoundException } from "@nestjs/common";
+import { NotFoundException, BadRequestException, PayloadTooLargeException } from "@nestjs/common";
 import { TenantContext } from "../../gateway/tenant-context.interface";
 import { TenantInterceptor } from "../../gateway/tenant.interceptor";
 import { TenantGuard } from "../../shared/guards/tenant.guard";
@@ -35,6 +35,9 @@ import {
 import { RequiredModule } from "../../shared/decorators/required-module.decorator";
 import { CreateAdjustmentDto } from "./dto/create-adjustment.dto";
 import { CreateItemDto } from "./dto/create-item.dto";
+import { UpdateItemDto } from "./dto/update-item.dto";
+import { CreateMovementDto } from "./dto/create-movement.dto";
+import { StockAdjustmentDto } from "./dto/stock-adjustment.dto";
 import { StockIntakeDto } from "./dto/stock-intake.dto";
 import { TransferStockDto } from "./dto/transfer-stock.dto";
 import { ImportItemDto } from "./dto/import-item.dto";
@@ -50,6 +53,8 @@ import { ItemImageService } from "./item-image.service";
 import { v4 as uuidv4 } from "uuid";
 import { PrismaService } from "../../persistence/prisma.service";
 import { isModuleActive } from "../../shared/helpers/module-active.helper";
+import { PaginationPipe, PaginationParams } from "../../shared/pipes/pagination.pipe";
+import { CacheInterceptor, CacheTTL, CacheInvalidationHelper } from "../../shared/cache";
 
 interface RequestWithTenant extends Request {
   tenantContext: TenantContext;
@@ -73,9 +78,12 @@ export class InventoryController {
     private readonly auditService: AuditService,
     private readonly prisma: PrismaService,
     private readonly itemImageService: ItemImageService,
+    private readonly cacheHelper: CacheInvalidationHelper,
   ) {}
 
   @Get("dashboard")
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   async getDashboard(
     @Req() request: RequestWithTenant,
     @Query("location_id") location_id?: string
@@ -124,6 +132,8 @@ export class InventoryController {
   }
 
   @Get("items")
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   async getItems(
     @Req() request: RequestWithTenant,
     @Query("location_id") location_id?: string,
@@ -132,6 +142,7 @@ export class InventoryController {
     @Query("search") search?: string,
     @Query("category_id") category_id?: string,
     @Query("status") status?: string,
+    @Query("is_anomaly") is_anomaly?: string,
     @Query("sortBy") sortBy?: "name" | "quantity" | "created_at",
     @Query("sortOrder") sortOrder?: "asc" | "desc",
   ) {
@@ -144,14 +155,17 @@ export class InventoryController {
       search,
       category_id,
       status,
+      is_anomaly === "true",
       sortBy,
       sortOrder
     );
-    const total = await this.inventoryService.countItems(request.tenantContext, location_id, search, category_id);
+    const total = await this.inventoryService.countItems(request.tenantContext, location_id, search, category_id, is_anomaly === "true");
     return { success: true, tenant_id, count: data.length, meta: { total }, data };
   }
 
   @Get("items/lookup")
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   async lookupItem(@Req() request: RequestWithTenant, @Query("barcode") barcode: string) {
     const { tenant_id: tenant_id } = request.tenantContext;
     const data = await this.inventoryService.lookupByBarcode(request.tenantContext, barcode);
@@ -160,18 +174,35 @@ export class InventoryController {
 
   @Post("items/:id/images")
   @RequireInventoryRole(InventoryRole.MANAGER)
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("file", {
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
+  }))
   async uploadImage(
     @Req() request: RequestWithTenant,
     @Param("id") itemId: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.itemImageService.uploadImage(
+    if (!file) {
+      throw new BadRequestException("No file uploaded");
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      throw new PayloadTooLargeException("File exceeds maximum size of 10MB");
+    }
+    const image = await this.itemImageService.uploadImage(
       request.tenantContext.tenant_id,
       itemId,
       file,
       request.tenantContext.user_id || "system",
     );
+    await this.cacheHelper.invalidate(request);
+    return {
+      success: true,
+      data: {
+        imageId: image.id,
+        url: image.url,
+        primary: image.is_primary,
+      },
+    };
   }
 
   @Delete("items/:id/images/:imageId")
@@ -196,23 +227,50 @@ export class InventoryController {
     @Param("id") itemId: string,
     @Param("imageId") imageId: string,
   ) {
-    return this.itemImageService.setPrimaryImage(
+    const updated = await this.itemImageService.setPrimaryImage(
       request.tenantContext.tenant_id,
       itemId,
       imageId,
       request.tenantContext.user_id || "system",
     );
+    await this.cacheHelper.invalidate(request);
+    return {
+      success: true,
+      message: "Primary image updated",
+      data: {
+        imageId: updated.id,
+        url: updated.url,
+        primary: updated.is_primary,
+      },
+    };
   }
 
   @Get("items/:id/images")
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   async listImages(
     @Req() request: RequestWithTenant,
     @Param("id") itemId: string,
   ) {
-    return this.itemImageService.listImages(
+    // Verify item exists
+    const item = await this.prisma.item_masters.findFirst({
+      where: { id: itemId, tenant_id: request.tenantContext.tenant_id },
+    });
+    if (!item) {
+      throw new NotFoundException(`Item ${itemId} not found`);
+    }
+    const images = await this.itemImageService.listImages(
       request.tenantContext.tenant_id,
       itemId,
     );
+    return {
+      success: true,
+      data: images.map((img: any) => ({
+        imageId: img.id,
+        url: img.url,
+        primary: img.is_primary,
+      })),
+    };
   }
 
   @Get("images/*path")
@@ -277,7 +335,8 @@ export class InventoryController {
     @Param("id") item_id: string,
   ) {
     const { tenant_id: tenant_id, user_id } = request.tenantContext;
-    await this.inventoryService.deleteItem(request.tenantContext, item_id, user_id);
+    await this.inventoryService.softDeleteItem(request.tenantContext, item_id, user_id);
+    await this.cacheHelper.invalidateAll();
     return {
       success: true,
       tenant_id,
@@ -385,6 +444,8 @@ export class InventoryController {
   }
 
   @Get("import/status/:jobId")
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   @RequireInventoryRole(InventoryRole.CLERK)
   async getImportStatus(@Param("jobId") jobId: string, @Req() request: RequestWithTenant) {
     const { tenant_id } = request.tenantContext;
@@ -396,6 +457,8 @@ export class InventoryController {
   }
 
   @Get("import/jobs/active")
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   async getActiveImportJobs(@Req() request: RequestWithTenant) {
     return this.prisma.inventory_import_jobs.findMany({
       where: {
@@ -407,6 +470,8 @@ export class InventoryController {
   }
 
   @Get("import/jobs")
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   async getAllImportJobs(@Req() request: RequestWithTenant) {
     return this.prisma.inventory_import_jobs.findMany({
       where: {
@@ -419,8 +484,9 @@ export class InventoryController {
 
   @Delete("import/jobs/:id")
   async abortImportJob(@Param("id") id: string, @Req() request: RequestWithTenant) {
-    await this.inventoryService.abortImportJob(id, request.tenantContext);
-    return { success: true, message: "Import job aborted" };
+    await this.inventoryService.cancelImportJob(id, request.tenantContext);
+    await this.cacheHelper.invalidateAll();
+    return { success: true, message: "Import job cancelled" };
   }
 
 
@@ -551,39 +617,68 @@ export class InventoryController {
   }
 
   @Get("balances")
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   async getBalances(
     @Req() request: RequestWithTenant,
     @Query("location_id") location_id?: string,
     @Query("department_id") department_id?: string,
-    @Query("page") page: string = "1",
-    @Query("limit") limit: string = "30",
     @Query("search") search?: string,
     @Query("category_id") category_id?: string,
     @Query("item_id") item_id?: string,
+    @Query(PaginationPipe) pagination?: PaginationParams,
   ) {
-    const { tenant_id: tenant_id } = request.tenantContext;
-    const data = await this.inventoryService.getBalances(
-      request.tenantContext,
-      location_id,
-      department_id,
-      parseInt(page),
-      parseInt(limit),
-      search,
-      category_id,
-      item_id
-    );
-    const total = await this.inventoryService.countBalances(request.tenantContext, location_id, department_id, search, category_id, item_id);
-    return { success: true, tenant_id, count: data.length, meta: { total }, data };
+    const { tenant_id } = request.tenantContext;
+    const page = pagination?.page ?? 1;
+    const pageSize = pagination?.pageSize ?? 50;
+
+    const [data, totalCount] = await Promise.all([
+      this.inventoryService.getBalances(
+        request.tenantContext,
+        location_id,
+        department_id,
+        page,
+        pageSize,
+        search,
+        category_id,
+        item_id,
+      ),
+      this.inventoryService.countBalances(request.tenantContext, location_id, department_id, search, category_id, item_id),
+    ]);
+
+    return {
+      data,
+      totalCount,
+      currentPage: page,
+      pageSize,
+      totalPages: Math.ceil(totalCount / pageSize),
+    };
   }
 
   @Get("movements")
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   async getMovements(
     @Req() request: RequestWithTenant,
-    @Query("item_id") item_id?: string,
+    @Query('item_id') item_id?: string,
+    @Query(PaginationPipe) pagination?: PaginationParams,
   ) {
-    const { tenant_id: tenant_id } = request.tenantContext;
-    const data = await this.inventoryService.getMovements(request.tenantContext, item_id);
-    return { success: true, tenant_id, count: data.length, data };
+    const { tenant_id } = request.tenantContext;
+    const page = pagination?.page ?? 1;
+    const pageSize = pagination?.pageSize ?? 50;
+
+    const [data, totalCount] = await Promise.all([
+      this.inventoryService.getMovements(request.tenantContext, item_id, page, pageSize),
+      this.inventoryService.countMovements(request.tenantContext, item_id),
+    ]);
+
+    return {
+      data,
+      totalCount,
+      currentPage: page,
+      pageSize,
+      totalPages: Math.ceil(totalCount / pageSize),
+    };
   }
 
   @Post("intake")
@@ -709,6 +804,8 @@ export class InventoryController {
   // --- Stock Transfer Lifecycle (Grading to Production) ---
 
   @Get("stock-transfers")
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   async getTransfers(@Req() request: RequestWithTenant) {
     const { tenant_id: tenant_id } = request.tenantContext;
     const data = await this.inventoryService.getAllTransfers(request.tenantContext);
@@ -716,6 +813,8 @@ export class InventoryController {
   }
 
   @Get("stock-transfers/:id")
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   @RequireInventoryRole(InventoryRole.CLERK)
   async getStockTransfer(
     @Req() request: RequestWithTenant,
@@ -784,6 +883,8 @@ export class InventoryController {
 
 
   @Get("generate-sku")
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   async generateSku(
     @Req() request: RequestWithTenant,
     @Query("category") category: string,
@@ -1289,11 +1390,68 @@ export class InventoryController {
   async updateItem(
     @Req() request: RequestWithTenant,
     @Param("id") itemId: string,
-    @Body() dto: any,
+    @Body() dto: UpdateItemDto,
   ) {
     const { tenant_id, user_id } = request.tenantContext;
     const data = await this.inventoryService.updateItem(request.tenantContext, itemId, dto, user_id);
+    await this.cacheHelper.invalidateAll();
     return { success: true, tenant_id, data };
+  }
+
+  @Patch("items/:id/complete")
+  @RequireInventoryRole(InventoryRole.MANAGER)
+  async completeAnomalyItem(
+    @Req() request: RequestWithTenant,
+    @Param("id") itemId: string,
+    @Body() dto: { name?: string; category_id?: string; base_price?: number; is_anomaly?: boolean },
+  ) {
+    const { tenant_id, user_id } = request.tenantContext;
+    
+    // If category is being changed and was Anomaly, clear is_anomaly flag
+    if (dto.category_id) {
+      const currentItem = await this.inventoryService.getItemById(request.tenantContext, itemId);
+      const category = await this.inventoryService.getCategoryById(request.tenantContext, currentItem?.category_id);
+      
+      // If current category is Anomaly and we're changing it, clear is_anomaly flag
+      if (currentItem?.is_anomaly && category?.name === "Anomaly" && dto.category_id !== currentItem.category_id) {
+        dto.is_anomaly = false;
+      }
+    }
+    
+    const data = await this.inventoryService.updateItem(request.tenantContext, itemId, dto, user_id);
+    return { success: true, tenant_id, data };
+  }
+
+  @Post("items/anomaly-category")
+  @RequireInventoryRole(InventoryRole.MANAGER)
+  async getOrCreateAnomalyCategory(@Req() request: RequestWithTenant) {
+    const { tenant_id } = request.tenantContext;
+    const category = await this.inventoryService.getOrCreateAnomalyCategory(request.tenantContext);
+    return { success: true, tenant_id, data: category };
+  }
+
+  @Post("items/batch-incomplete")
+  @RequireInventoryRole(InventoryRole.MANAGER)
+  async batchCreateIncompleteItems(
+    @Req() request: RequestWithTenant,
+    @Body() body: { items: { barcode: string; name: string }[] }
+  ) {
+    const { tenant_id, user_id } = request.tenantContext;
+    const result = await this.inventoryService.batchCreateIncompleteItems(
+      request.tenantContext,
+      body.items,
+      user_id
+    );
+    return {
+      success: result.success,
+      tenant_id,
+      message: `${result.created.length} incomplete items created`,
+      data: result.created,
+      ...(result.failed.length > 0 && {
+        failed: result.failed,
+        partial: true,
+      }),
+    };
   }
 
   @Get("items/:id/sales-history")
@@ -1316,6 +1474,186 @@ export class InventoryController {
     const { tenant_id } = request.tenantContext;
     const data = await this.inventoryService.getProcurementHistory(request.tenantContext, itemId);
     return { success: true, tenant_id, data };
+  }
+
+  @Post("items/mark-anomalies")
+  @RequireInventoryRole(InventoryRole.MANAGER)
+  async markItemsAsAnomalies(
+    @Req() request: RequestWithTenant,
+    @Body() body: { item_ids: string[]; reason: string },
+  ) {
+    const { tenant_id: tenant_id, user_id } = request.tenantContext;
+    const count = await this.inventoryService.markItemsAsAnomalies(
+      request.tenantContext,
+      body.item_ids,
+      body.reason,
+      user_id
+    );
+    return { success: true, tenant_id, count };
+  }
+
+  @Post("items/void-request")
+  async createVoidRequest(
+    @Req() request: RequestWithTenant,
+    @Body() body: {
+      item_id: string;
+      reason: string;
+      requested_by: string;
+    }
+  ) {
+    const { tenant_id, user_id } = request.tenantContext;
+    
+    // For incomplete items, entity_type is "incomplete_item"
+    const voidRequest = await this.inventoryService.createVoidRequest(
+      request.tenantContext,
+      "incomplete_item",
+      body.item_id,
+      body.reason,
+      body.requested_by || user_id
+    );
+    
+    return {
+      success: true,
+      tenant_id,
+      approval_request_id: voidRequest.id,
+      status: voidRequest.status,
+    };
+  }
+
+  @Get("void-requests")
+  @RequireInventoryRole(InventoryRole.MANAGER)
+  async listVoidRequests(
+    @Req() request: RequestWithTenant,
+    @Query("status") status?: string,
+    @Query("entity_type") entity_type?: string,
+  ) {
+    const { tenant_id } = request.tenantContext;
+    const filters: { status?: string; entity_type?: string } = {};
+    if (status) filters.status = status;
+    if (entity_type) filters.entity_type = entity_type;
+
+    const voidRequests = await this.inventoryService.listVoidRequests(
+      request.tenantContext,
+      filters
+    );
+    return { success: true, tenant_id, data: voidRequests };
+  }
+
+  @Get("void-requests/:id")
+  @RequireInventoryRole(InventoryRole.MANAGER)
+  async getVoidRequest(
+    @Req() request: RequestWithTenant,
+    @Param("id") id: string,
+  ) {
+    const { tenant_id } = request.tenantContext;
+    const voidRequest = await this.inventoryService.getVoidRequestById(
+      request.tenantContext,
+      id
+    );
+    if (!voidRequest) {
+      throw new NotFoundException("Void request not found");
+    }
+    return { success: true, tenant_id, data: voidRequest };
+  }
+
+  @Post("void-requests/:id/approve")
+  @RequireInventoryRole(InventoryRole.MANAGER)
+  async approveVoidRequest(
+    @Req() request: RequestWithTenant,
+    @Param("id") id: string,
+  ) {
+    const { tenant_id, user_id } = request.tenantContext;
+    const approvedRequest = await this.inventoryService.approveVoidRequest(
+      request.tenantContext,
+      id,
+      user_id
+    );
+    return {
+      success: true,
+      tenant_id,
+      data: approvedRequest,
+    };
+  }
+
+  @Post("void-requests/:id/reject")
+  @RequireInventoryRole(InventoryRole.MANAGER)
+  async rejectVoidRequest(
+    @Req() request: RequestWithTenant,
+    @Param("id") id: string,
+    @Body() body: { reason?: string },
+  ) {
+    const { tenant_id, user_id } = request.tenantContext;
+    const rejectedRequest = await this.inventoryService.rejectVoidRequest(
+      request.tenantContext,
+      id,
+      user_id,
+      body.reason
+    );
+    return {
+      success: true,
+      tenant_id,
+      data: rejectedRequest,
+    };
+  }
+
+  // ─── Abandoned Audit Cycle Resolution ────────────────────────────────
+
+  @Get("audit-cycles/abandoned")
+  @RequireInventoryRole(InventoryRole.MANAGER)
+  async getAbandonedAuditCycles(
+    @Req() request: RequestWithTenant,
+    @Query("threshold_hours") thresholdHours?: string,
+  ) {
+    const { tenant_id } = request.tenantContext;
+    const threshold = thresholdHours ? parseInt(thresholdHours, 10) : 24;
+    const abandonedCycles = await this.inventoryService.getAbandonedAuditCycles(
+      request.tenantContext,
+      threshold,
+    );
+    return { success: true, tenant_id, count: abandonedCycles.length, data: abandonedCycles };
+  }
+
+  @Post("audit-cycles/:id/flag-abandoned")
+  @RequireInventoryRole(InventoryRole.MANAGER)
+  async flagAbandonedCycle(
+    @Req() request: RequestWithTenant,
+    @Param("id") id: string,
+  ) {
+    const { tenant_id, user_id } = request.tenantContext;
+    const flaggedCycle = await this.inventoryService.flagAbandonedCycle(
+      request.tenantContext,
+      id,
+      user_id,
+    );
+    return { success: true, tenant_id, message: "Audit cycle flagged as abandoned", data: flaggedCycle };
+  }
+
+  @Post("audit-cycles/:id/void")
+  @RequireInventoryRole(InventoryRole.MANAGER)
+  async voidAbandonedCycle(
+    @Req() request: RequestWithTenant,
+    @Param("id") id: string,
+    @Body() body: { reason: string },
+  ) {
+    const { tenant_id, user_id } = request.tenantContext;
+
+    if (!body.reason || body.reason.trim().length === 0) {
+      throw new BadRequestException("A reason is required to void an abandoned audit cycle");
+    }
+
+    const voidRequest = await this.inventoryService.voidAbandonedCycle(
+      request.tenantContext,
+      id,
+      body.reason,
+      user_id,
+    );
+
+    return {
+      success: true,
+      tenant_id,
+      approval_request_id: voidRequest.id,
+      status: voidRequest.status,
+    };
   }
 }
 

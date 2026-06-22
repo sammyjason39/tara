@@ -117,7 +117,7 @@ export const PostekPreviewPane: React.FC<PostekPreviewPaneProps> = ({
             Direction 1
           </span>
           <div className="h-[1px] w-12 bg-muted" />
-          <div className="w-2 h-2 rounded-full border border-slate-400 bg-white" />
+          <div className="w-2 h-2 rounded-full border border-border bg-white" />
         </div>
 
         <DndContext onDragEnd={handleDragEnd}>
@@ -125,7 +125,7 @@ export const PostekPreviewPane: React.FC<PostekPreviewPaneProps> = ({
             {/* Vertical Gap Feed */}
             {gap > 0 && (
               <div
-                className="bg-muted border border-slate-300 flex items-center justify-center"
+                className="bg-muted border border-border flex items-center justify-center"
                 style={{
                   height: `${gap * PREVIEW_SCALE}px`,
                   width: `${paperWidth * PREVIEW_SCALE}px`,
@@ -158,7 +158,7 @@ export const PostekPreviewPane: React.FC<PostekPreviewPaneProps> = ({
                   <React.Fragment key={columnIndex}>
                     {/* Physical Sticker Box */}
                     <div
-                      className="relative bg-white border-2 border-slate-500 shadow-md"
+                      className="relative bg-white border-2 border-border shadow-md"
                       style={{
                         width: `${stickerWidth * PREVIEW_SCALE}px`,
                         height: `${paperHeight * PREVIEW_SCALE}px`,
@@ -200,7 +200,7 @@ export const PostekPreviewPane: React.FC<PostekPreviewPaneProps> = ({
                     {/* Horizontal Gap Between Stickers */}
                     {columnIndex < columns - 1 && horizontalGap > 0 && (
                       <div
-                        className="bg-muted border-y border-slate-200 flex items-center justify-center"
+                        className="bg-muted border-y border-border flex items-center justify-center"
                         style={{
                           width: `${horizontalGap * PREVIEW_SCALE}px`,
                           height: `${paperHeight * PREVIEW_SCALE}px`,

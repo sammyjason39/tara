@@ -49,6 +49,33 @@ export class LicenseService {
   }
 
   /**
+   * Get active licenses for a tenant with pagination.
+   */
+  async getTenantLicensesPaginated(tenant_id: string, pagination: { page: number; pageSize: number }) {
+    const skip = (pagination.page - 1) * pagination.pageSize;
+
+    const [data, totalCount] = await Promise.all([
+      this.prisma.module_licenses.findMany({
+        where: { tenant_id: tenant_id, status: 'active' },
+        include: { module_definitions: true },
+        skip,
+        take: pagination.pageSize,
+      }),
+      this.prisma.module_licenses.count({
+        where: { tenant_id: tenant_id, status: 'active' },
+      }),
+    ]);
+
+    return {
+      data,
+      totalCount,
+      currentPage: pagination.page,
+      pageSize: pagination.pageSize,
+      totalPages: Math.ceil(totalCount / pagination.pageSize),
+    };
+  }
+
+  /**
    * Get license details for a specific module.
    */
   async getLicense(tenant_id: string, moduleCode: string) {

@@ -22,15 +22,15 @@ export const WorkflowPipeline: React.FC<WorkflowPipelineProps> = ({ data = [] })
 
   const getStatusStyle = (status: string) => {
     switch (status) {
-      case 'PENDING': return 'text-warning bg-warning border-amber-500/20';
+      case 'PENDING': return 'text-warning bg-warning border-warning/20';
       case 'IN_PROGRESS': return 'text-primary bg-primary border-primary';
-      case 'COMPLETED': return 'text-success bg-success border-emerald-500/20';
-      default: return 'text-destructive bg-destructive border-rose-500/20';
+      case 'COMPLETED': return 'text-success bg-success border-success/20';
+      default: return 'text-destructive bg-destructive border-destructive/20';
     }
   };
 
   return (
-    <div className="flex flex-col h-full rounded-[2.5rem] border border-slate-800 bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10">
+    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-muted-foreground border border-white/10 group-hover:text-white transition-colors">

@@ -33,7 +33,7 @@ export const TerminalNetworkHealth: React.FC<TerminalNetworkHealthProps> = ({
                   "aspect-square rounded-xl flex items-center justify-center transition-all",
                   d.isActive
                     ? "bg-primary/20 border border-primary text-primary"
-                    : "bg-destructive border border-red-500/30 text-destructive",
+                    : "bg-destructive border border-destructive/30 text-destructive",
                 )}
               >
                 <Smartphone className="w-4 h-4" />

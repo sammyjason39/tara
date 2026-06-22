@@ -8,6 +8,8 @@ import { DataTableShell } from "@/core/tools/DataTableShell";
 import { FilterBar } from "@/core/tools/FilterBar";
 import { useSession } from "@/core/security/session";
 import { inventoryService } from "@/core/services/inventory/inventoryService";
+import { LoadingSkeleton, ErrorState } from "@/components/shared/AsyncState";
+import { formatCurrency } from "@/lib/format";
 import type {
   InventoryStockBalance,
   InventoryMovement,
@@ -82,7 +84,7 @@ export default function InventoryInsights() {
         id: "inv-ins-2",
         label: "Total valuation",
         category: "FINANCE",
-        value: `Rp ${(dashboard.total_valuation || 0).toLocaleString()}`,
+        value: formatCurrency(dashboard.total_valuation || 0, "IDR", "id-ID"),
       },
       {
         id: "inv-ins-3",
@@ -139,24 +141,20 @@ export default function InventoryInsights() {
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">Loading insights...</p>
+      <div className="space-y-6">
+        <LoadingSkeleton variant="cards" count={6} label="Loading inventory insights" />
       </div>
     );
   }
 
   if (error || !dashboard) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center space-y-4">
-        <p className="text-destructive font-medium">
-          {error || "Insights data unavailable."}
-        </p>
-        <button
-          onClick={() => refresh()}
-          className="text-sm text-primary hover:underline"
-        >
-          Retry
-        </button>
+      <div className="space-y-6">
+        <ErrorState
+          title="Insights data unavailable"
+          description={error || "The inventory insights failed to load. Please try again."}
+          onRetry={refresh}
+        />
       </div>
     );
   }

@@ -109,7 +109,7 @@ export default function RetailManagement() {
         </div>
 
         <Card className="max-w-md w-full rounded-[2rem] border border-white/5 shadow-2xl bg-white/[0.03] backdrop-blur-3xl p-8 text-center space-y-10 relative overflow-hidden">
-          <div className="mx-auto w-28 h-28 rounded-2xl bg-destructive/10 flex items-center justify-center border border-rose-500/20 shadow-[0_0_50px_rgba(244,63,94,0.2)] group hover:scale-110 transition-transform duration-500">
+          <div className="mx-auto w-28 h-28 rounded-2xl bg-destructive/10 flex items-center justify-center border border-destructive/20 shadow-[0_0_50px_rgba(244,63,94,0.2)] group hover:scale-110 transition-transform duration-500">
             <Lock className="w-12 h-12 text-destructive group-hover:rotate-12 transition-transform" />
           </div>
           <div className="space-y-4">
@@ -321,7 +321,7 @@ export default function RetailManagement() {
             </span>
             <span 
               onClick={() => navigate("/m/retail/management/infrastructure-map")}
-              className="hover:text-destructive cursor-pointer transition-colors border-b border-transparent hover:border-rose-400"
+              className="hover:text-destructive cursor-pointer transition-colors border-b border-transparent hover:border-destructive"
             >
               Access Logs
             </span>

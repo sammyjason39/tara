@@ -7,6 +7,7 @@ import { DataTableShell } from "@/core/tools/DataTableShell";
 import { FilterBar } from "@/core/tools/FilterBar";
 import { useSession } from "@/core/security/session";
 import { inventoryService } from "@/core/services/inventory/inventoryService";
+import { LoadingSkeleton, ErrorState, EmptyState } from "@/components/shared/AsyncState";
 import type {
   InventoryAuditCycle,
   InventoryIntegrationEvent,
@@ -17,6 +18,7 @@ export default function InventoryAuditLog() {
   const session = useSession();
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [movements, setMovements] = useState<InventoryMovement[]>([]);
   const [cycles, setCycles] = useState<InventoryAuditCycle[]>([]);
   const [integrations, setIntegrations] = useState<InventoryIntegrationEvent[]>(
@@ -25,20 +27,23 @@ export default function InventoryAuditLog() {
 
   const refresh = useCallback(async () => {
     try {
+      setLoading(true);
+      setError(false);
       const [m, c, i] = await Promise.all([
         inventoryService.listMovements(session.tenant_id, session),
         inventoryService.listAuditCycles(session.tenant_id, session),
         inventoryService.listIntegrationEvents(session.tenant_id, session),
       ]);
-      setMovements(m);
-      setCycles(c);
-      setIntegrations(i);
+      setMovements(Array.isArray(m) ? m : []);
+      setCycles(Array.isArray(c) ? c : []);
+      setIntegrations(Array.isArray(i) ? i : []);
     } catch (err) {
       console.error("Failed to fetch inventory audit log data:", err);
+      setError(true);
     } finally {
       setLoading(false);
     }
-  }, [session.tenant_id]);
+  }, [session]);
 
   useEffect(() => {
     refresh();
@@ -58,8 +63,20 @@ export default function InventoryAuditLog() {
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <p className="text-muted-foreground">Loading audit logs...</p>
+      <div className="space-y-6">
+        <LoadingSkeleton variant="rows" count={6} label="Loading audit logs" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <ErrorState
+          title="Couldn't load the audit log"
+          description="The stock movement, audit cycle, and integration trail failed to load. Try again."
+          onRetry={refresh}
+        />
       </div>
     );
   }
@@ -101,6 +118,12 @@ export default function InventoryAuditLog() {
         description="Every stock movement is traceable with actor and reason."
       >
         <FilterBar searchValue={search} onSearchChange={setSearch} />
+        {filteredMovements.length === 0 ? (
+          <EmptyState
+            title="No stock movements"
+            description="No movement records match this view in the current tenant scope."
+          />
+        ) : (
         <DataTableShell total={filteredMovements.length} page={1} pageSize={10}>
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase text-muted-foreground">
@@ -131,6 +154,7 @@ export default function InventoryAuditLog() {
             </tbody>
           </table>
         </DataTableShell>
+        )}
       </WorkspacePanel>
 
       <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">

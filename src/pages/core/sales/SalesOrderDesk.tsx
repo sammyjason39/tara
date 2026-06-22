@@ -24,6 +24,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { GlassCard } from "@/components/shared/GlassCard";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { 
   Dialog, 
   DialogContent, 
@@ -43,6 +45,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSession } from "@/core/security/session";
 import { salesService } from "@/core/services/sales/salesService";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import type { SalesOrder, SalesOpportunity } from "@/core/types/sales/sales";
@@ -128,13 +131,13 @@ export default function SalesOrderDesk() {
                Fulfillment Pipeline Live
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent italic">Order Fulfillment</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground italic">Order Fulfillment</h1>
 
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic">"A sale is not finished until the customer is delighted."</p>
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-slate-800/20 shadow-2xl">
+          <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-border/20 shadow-2xl">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -179,7 +182,7 @@ export default function SalesOrderDesk() {
                       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Syncing strategic nodes...</p>
                     </div>
                   ) : opps.length === 0 ? (
-                    <div className="text-center py-12 p-8 rounded-3xl bg-muted dark:bg-muted border-2 border-dashed border-slate-200 dark:border-slate-800">
+                    <div className="text-center py-12 p-8 rounded-3xl bg-muted dark:bg-muted border-2 border-dashed border-border dark:border-border">
                       <p className="text-sm font-medium text-muted-foreground italic">No available conversion targets detected in the active pipeline.</p>
                     </div>
                   ) : (
@@ -188,16 +191,16 @@ export default function SalesOrderDesk() {
                         {(Array.isArray(opps) ? opps : []).map((opp) => (
                           <div 
                             key={opp.id} 
-                            className="group flex items-center justify-between p-6 rounded-3xl bg-muted dark:bg-muted border border-slate-100 dark:border-slate-800 hover:border-emerald-500/50 hover:bg-white dark:hover:bg-muted transition-all cursor-pointer shadow-sm hover:shadow-xl"
+                            className="group flex items-center justify-between p-6 rounded-3xl bg-muted dark:bg-muted border border-border dark:border-border hover:border-success/50 hover:bg-white dark:hover:bg-muted transition-all cursor-pointer shadow-sm hover:shadow-xl"
                             onClick={() => handleCreateFromOpp(opp.id)}
                           >
                             <div className="flex items-center gap-5">
-                               <div className="h-12 w-12 rounded-2xl bg-white dark:bg-muted flex items-center justify-center border border-slate-100 dark:border-slate-700 font-black text-sm group-hover:bg-success group-hover:text-white transition-colors">
+                               <div className="h-12 w-12 rounded-2xl bg-white dark:bg-muted flex items-center justify-center border border-border dark:border-border font-black text-sm group-hover:bg-success group-hover:text-white transition-colors">
                                   {opp.accountName.charAt(0)}
                                </div>
                                <div>
                                   <p className="font-black text-base">{opp.accountName}</p>
-                                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter italic">Value: ${opp.amount.toLocaleString()} {opp.currency}</p>
+                                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter italic">Value: {formatCurrency(opp.amount)} {opp.currency}</p>
                                </div>
                             </div>
                             <Button size="sm" variant="secondary" className="rounded-xl font-black text-[10px] uppercase tracking-widest h-9 px-4 bg-success text-success hover:bg-success hover:text-white border-none shadow-none">SELECT NODE</Button>
@@ -218,8 +221,8 @@ export default function SalesOrderDesk() {
       </div>
 
       {/* Main Order Registry */}
-      <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden">
-        <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-slate-800/20">
+      <GlassCard className="rounded-[3rem] border-none shadow-2xl overflow-hidden">
+        <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-border/20">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
@@ -255,12 +258,12 @@ export default function SalesOrderDesk() {
                   <tr key={order.id} className="group hover:bg-success dark:hover:bg-success transition-all cursor-default">
                     <td className="px-10 py-8">
                       <div className="flex items-center gap-5">
-                        <div className="h-12 w-12 rounded-2xl bg-white dark:bg-muted flex items-center justify-center font-black text-sm shadow-xl transition-all group-hover:scale-110 group-hover:bg-success group-hover:text-white border border-slate-100 dark:border-slate-800">
+                        <div className="h-12 w-12 rounded-2xl bg-white dark:bg-muted flex items-center justify-center font-black text-sm shadow-xl transition-all group-hover:scale-110 group-hover:bg-success group-hover:text-white border border-border dark:border-border">
                           <Package className="h-6 w-6" />
                         </div>
                         <div>
                           <p className="font-black text-base italic">{order.id.slice(-8)}</p>
-                          <Badge variant="outline" className="text-[9px] font-black px-2 py-0 h-4 border-slate-200 uppercase tracking-widest mt-1">LIFECYCLE ACTIVE</Badge>
+                          <Badge variant="outline" className="text-[9px] font-black px-2 py-0 h-4 border-border uppercase tracking-widest mt-1">LIFECYCLE ACTIVE</Badge>
                         </div>
                       </div>
                     </td>
@@ -269,7 +272,7 @@ export default function SalesOrderDesk() {
                        <p className="text-[10px] font-bold text-muted-foreground uppercase">Strategic Account</p>
                     </td>
                     <td className="px-10 py-8 text-success font-black text-base">
-                       ${order.amount.toLocaleString()}
+                       {formatCurrency(order.amount)}
                     </td>
                     <td className="px-10 py-8">
                        <Badge 
@@ -309,49 +312,80 @@ export default function SalesOrderDesk() {
               </tbody>
             </table>
           </div>
+          {!loading && filtered.length === 0 && (
+            <EmptyState
+              title="No orders yet"
+              description="No fulfillment orders match the current scope. Convert a won opportunity to create one."
+              icon={ShoppingBag}
+              className="m-10"
+            />
+          )}
         </CardContent>
+      </GlassCard>
+
+      {/* Fulfillment Metrics Overlay — computed from live order data */}
+      <FulfillmentMetrics orders={orders} />
+
+    </div>
+  );
+}
+
+/**
+ * Functional fulfillment metrics component — replaces hardcoded stub values
+ * with computed metrics from live order data.
+ */
+function FulfillmentMetrics({ orders }: { orders: SalesOrder[] }) {
+  const safeOrders = Array.isArray(orders) ? orders : [];
+  const total = safeOrders.length || 1;
+
+  const invoiced = safeOrders.filter((o) => !!o.financeInvoiceId).length;
+  const invoicingRate = total > 0 ? ((invoiced / total) * 100).toFixed(1) : "0";
+
+  const available = safeOrders.filter((o) => o.inventoryCheck === "AVAILABLE").length;
+  const logisticsReady = total > 0 ? ((available / total) * 100).toFixed(1) : "0";
+
+  const stockOuts = safeOrders.filter((o) => o.inventoryCheck === "UNAVAILABLE").length;
+
+  const totalValue = safeOrders.reduce((acc, o) => acc + o.amount, 0);
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <GlassCard className="rounded-[2.5rem] border-none shadow-xl p-8 space-y-4">
+        <div className="h-14 w-14 rounded-2xl bg-primary flex items-center justify-center">
+          <FileCheck className="h-7 w-7 text-primary" />
+        </div>
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">INVOICING RATE</p>
+          <h4 className="text-3xl font-black">{invoicingRate}%</h4>
+        </div>
+      </GlassCard>
+      <GlassCard className="rounded-[2.5rem] border-none shadow-xl p-8 space-y-4">
+        <div className="h-14 w-14 rounded-2xl bg-success flex items-center justify-center">
+          <Truck className="h-7 w-7 text-success" />
+        </div>
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">LOGISTICS READY</p>
+          <h4 className="text-3xl font-black text-success">{logisticsReady}%</h4>
+        </div>
+      </GlassCard>
+      <GlassCard className="rounded-[2.5rem] border-none shadow-xl p-8 space-y-4">
+        <div className="h-14 w-14 rounded-2xl bg-destructive flex items-center justify-center">
+          <AlertCircle className="h-7 w-7 text-destructive" />
+        </div>
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">STOCK OUTS</p>
+          <h4 className="text-3xl font-black text-destructive">{stockOuts}</h4>
+        </div>
+      </GlassCard>
+      <Card className="rounded-[2.5rem] border-none shadow-xl bg-primary text-white p-8 space-y-4 shadow-indigo-600/20">
+        <div className="h-14 w-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20">
+          <DollarSign className="h-7 w-7" />
+        </div>
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-widest opacity-60">FULFILLMENT VALUE</p>
+          <h4 className="text-3xl font-black">{formatCurrency(totalValue)}</h4>
+        </div>
       </Card>
-
-      {/* Fulfillment Metrics Overlay */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-         <Card className="rounded-[2.5rem] border-none shadow-xl bg-white/40 dark:bg-muted backdrop-blur-xl p-8 space-y-4">
-            <div className="h-14 w-14 rounded-2xl bg-primary flex items-center justify-center">
-               <FileCheck className="h-7 w-7 text-primary" />
-            </div>
-            <div>
-               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">INVOICING RATE</p>
-               <h4 className="text-3xl font-black">94.2%</h4>
-            </div>
-         </Card>
-         <Card className="rounded-[2.5rem] border-none shadow-xl bg-white/40 dark:bg-muted backdrop-blur-xl p-8 space-y-4">
-            <div className="h-14 w-14 rounded-2xl bg-success flex items-center justify-center">
-               <Truck className="h-7 w-7 text-success" />
-            </div>
-            <div>
-               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">LOGISTICS READY</p>
-               <h4 className="text-3xl font-black text-success">88.1%</h4>
-            </div>
-         </Card>
-         <Card className="rounded-[2.5rem] border-none shadow-xl bg-white/40 dark:bg-muted backdrop-blur-xl p-8 space-y-4">
-            <div className="h-14 w-14 rounded-2xl bg-destructive flex items-center justify-center">
-               <AlertCircle className="h-7 w-7 text-destructive" />
-            </div>
-            <div>
-               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">STOCK OUTS</p>
-               <h4 className="text-3xl font-black text-destructive">2</h4>
-            </div>
-         </Card>
-         <Card className="rounded-[2.5rem] border-none shadow-xl bg-primary text-white p-8 space-y-4 shadow-indigo-600/20">
-            <div className="h-14 w-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20">
-               <DollarSign className="h-7 w-7" />
-            </div>
-            <div>
-               <p className="text-[10px] font-black uppercase tracking-widest opacity-60">FULFILLMENT VALUE</p>
-               <h4 className="text-3xl font-black">${orders.reduce((acc, o) => acc + o.amount, 0).toLocaleString()}</h4>
-            </div>
-         </Card>
-      </div>
-
     </div>
   );
 }

@@ -36,9 +36,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { GlassCard } from "@/components/shared/GlassCard";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSession } from "@/core/security/session";
 import { marketingService } from "@/core/services/marketing/marketingService";
+import { formatCurrency, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type {
@@ -146,7 +149,7 @@ export default function MarketingDashboard() {
                Lead Velocity Stable
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent text-left italic">Intelligence Matrix</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground text-left italic">Intelligence Matrix</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic text-left">"Growth is the result of total tactical orchestration and deep-field intelligence."</p>
         </div>
         
@@ -186,12 +189,12 @@ export default function MarketingDashboard() {
           { label: "Lead Ingestion", value: metrics.leadsToday, icon: Users, color: "text-primary", sub: "Velocity: +12% Delta" },
           { label: "Strategic IQ", value: metrics.qualifiedLeads, icon: Target, color: "text-success", sub: "Qualification Rate: 35%" },
           { label: "Handoff Ready", value: metrics.handoffReady, icon: Zap, color: "text-warning", sub: "SLA Compliant: 99.9%" },
-          { label: "Strategic Spend", value: `$${metrics.spendToDate.toLocaleString()}`, icon: DollarSign, color: "text-muted-foreground", sub: "Budget Yield: Optimal" },
-          { label: "Attributed Rev", value: `$${metrics.attributedRevenue.toLocaleString()}`, icon: TrendingUp, color: "text-primary", sub: "Growth Index: High" },
+          { label: "Strategic Spend", value: formatCurrency(metrics.spendToDate), icon: DollarSign, color: "text-muted-foreground", sub: "Budget Yield: Optimal" },
+          { label: "Attributed Rev", value: formatCurrency(metrics.attributedRevenue), icon: TrendingUp, color: "text-primary", sub: "Growth Index: High" },
           { label: "Blended ROI", value: `${metrics.blendedRoiPercent}%`, icon: PieChart, color: "text-success", sub: "Tactical Multiplier" },
           { label: "Cloud Links", value: metrics.connectedAccountsHealthy, icon: ShieldCheck, color: "text-primary", sub: "All Gateways Secure" },
         ].map((stat, i) => (
-          <Card key={i} className="rounded-[3rem] border-none shadow-xl bg-white/40 dark:bg-muted backdrop-blur-md group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+          <GlassCard key={i} className="rounded-[3rem] border-none shadow-xl group hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
             <CardContent className="p-8 flex flex-col items-center text-center space-y-4">
               <div className={cn("h-16 w-16 rounded-[1.5rem] flex items-center justify-center shadow-lg group-hover:rotate-12 transition-all duration-500", stat.color.replace('text', 'bg').replace('600', '100').replace('500', '100'))}>
                 <stat.icon className={cn("h-8 w-8", stat.color)} />
@@ -203,7 +206,7 @@ export default function MarketingDashboard() {
               <div className="h-[2px] w-12 bg-muted dark:bg-muted rounded-full" />
               <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground opacity-60 italic">{stat.sub}</p>
             </CardContent>
-          </Card>
+          </GlassCard>
         ))}
       </div>
 
@@ -225,14 +228,14 @@ export default function MarketingDashboard() {
                    <div className="h-20 w-20 bg-white/5 rounded-3xl flex items-center justify-center mx-auto shadow-2xl border border-white/10 group-hover:bg-primary transition-colors">
                       <Users className="h-10 w-10 text-white" />
                    </div>
-                   <h4 className="text-4xl font-black italic">{metrics.moduleContributions.retail.walkInCustomers.toLocaleString()}</h4>
+                   <h4 className="text-4xl font-black italic">{formatNumber(metrics.moduleContributions.retail.walkInCustomers)}</h4>
                    <p className="text-[10px] font-black uppercase tracking-widest text-primary italic opacity-60">Store Walk-ins</p>
                 </div>
                 <div className="text-center space-y-2">
                    <div className="h-20 w-20 bg-white/5 rounded-3xl flex items-center justify-center mx-auto shadow-2xl border border-white/10 group-hover:bg-success transition-colors">
                       <ActivitySquare className="h-10 w-10 text-white" />
                    </div>
-                   <h4 className="text-4xl font-black italic">{metrics.moduleContributions.retail.loyaltyActive.toLocaleString()}</h4>
+                   <h4 className="text-4xl font-black italic">{formatNumber(metrics.moduleContributions.retail.loyaltyActive)}</h4>
                    <p className="text-[10px] font-black uppercase tracking-widest text-primary italic opacity-60">Loyalty Active</p>
                 </div>
              </div>
@@ -243,8 +246,8 @@ export default function MarketingDashboard() {
       <div className="grid grid-cols-12 gap-10">
         {/* Campaign Cluster Matrix */}
         <div className="col-span-12 lg:col-span-8 flex flex-col gap-8">
-           <Card className="flex-1 rounded-[4rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden flex flex-col group">
-              <CardHeader className="p-12 pb-6 border-b border-white/10 dark:border-slate-800/10 flex flex-row items-center justify-between">
+           <Card className="flex-1 rounded-[4rem] border-none shadow-2xl glass-card overflow-hidden flex flex-col group">
+              <CardHeader className="p-12 pb-6 border-b border-white/10 dark:border-border/10 flex flex-row items-center justify-between">
                 <div className="space-y-1">
                   <CardTitle className="text-3xl font-black tracking-tighter flex items-center gap-4 uppercase italic">
                     <Rocket className="h-8 w-8 text-primary group-hover:translate-x-2 transition-transform duration-500" />
@@ -260,7 +263,7 @@ export default function MarketingDashboard() {
                  <div className="p-12 pt-8">
                     <div className="grid gap-8 md:grid-cols-2">
                       {(Array.isArray(campaigns) ? campaigns : []).map((item) => (
-                        <div key={item.id} className="p-8 rounded-[3rem] bg-white dark:bg-muted border border-slate-100 dark:border-slate-700 shadow-xl hover:shadow-[0_40px_80px_-20px_rgba(79,70,229,0.2)] transition-all duration-500 group/card relative overflow-hidden" onClick={() => navigate("/core/marketing/automation")}>
+                        <div key={item.id} className="p-8 rounded-[3rem] bg-white dark:bg-muted border border-border dark:border-border shadow-xl hover:shadow-[0_40px_80px_-20px_rgba(79,70,229,0.2)] transition-all duration-500 group/card relative overflow-hidden" onClick={() => navigate("/core/marketing/automation")}>
                            <div className="absolute top-0 right-0 h-32 w-32 bg-primary rounded-full blur-3xl -mr-16 -mt-16 group-hover/card:scale-150 transition-transform duration-1000" />
                            <div className="flex justify-between items-start mb-6 relative z-10">
                               <div className="h-14 w-14 rounded-2xl bg-primary text-primary flex items-center justify-center shadow-inner group-hover/card:scale-110 group-hover/card:bg-primary group-hover/card:text-white transition-all duration-500">
@@ -276,10 +279,10 @@ export default function MarketingDashboard() {
                            <h4 className="text-2xl font-black uppercase tracking-tighter italic mb-2 group-hover/card:text-primary transition-colors leading-none">{item.name}</h4>
                            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-8 italic opacity-60 leading-relaxed italic">{item.audience}</p>
                            
-                           <div className="grid grid-cols-2 gap-6 pt-6 border-t border-slate-100 dark:border-slate-700 relative z-10">
+                           <div className="grid grid-cols-2 gap-6 pt-6 border-t border-border dark:border-border relative z-10">
                               <div className="space-y-1">
                                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground italic">Strategic Budget</p>
-                                 <p className="text-xl font-black text-primary italic">${item.budget.toLocaleString()} <span className="text-[10px] opacity-60 uppercase">{item.currency}</span></p>
+                                 <p className="text-xl font-black text-primary italic">{formatCurrency(item.budget, item.currency)}</p>
                               </div>
                               <div className="space-y-1 text-right">
                                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground italic">Protocol</p>
@@ -289,6 +292,13 @@ export default function MarketingDashboard() {
                         </div>
                       ))}
                     </div>
+                    {(Array.isArray(campaigns) ? campaigns : []).length === 0 && (
+                      <EmptyState
+                        title="No active campaigns"
+                        description="No strategic campaigns exist in the current tenant scope yet."
+                        icon={Rocket}
+                      />
+                    )}
                  </div>
               </ScrollArea>
            </Card>
@@ -296,8 +306,8 @@ export default function MarketingDashboard() {
 
         {/* Tactical Alerts Feed */}
         <div className="col-span-12 lg:col-span-4 flex flex-col gap-8">
-           <Card className="flex-1 rounded-[4rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden flex flex-col group/alerts">
-              <CardHeader className="p-12 pb-6 border-b border-white/10 dark:border-slate-800/10">
+           <Card className="flex-1 rounded-[4rem] border-none shadow-2xl glass-card overflow-hidden flex flex-col group/alerts">
+              <CardHeader className="p-12 pb-6 border-b border-white/10 dark:border-border/10">
                 <div className="flex items-center gap-4">
                   <div className="h-12 w-12 bg-primary rounded-2xl flex items-center justify-center shadow-2xl group-hover/alerts:scale-110 transition-transform">
                      <Bell className="h-6 w-6 text-white" />
@@ -311,7 +321,7 @@ export default function MarketingDashboard() {
               <ScrollArea className="flex-1 bg-black/5 dark:bg-white/5">
                  <div className="p-8 space-y-6">
                     {(Array.isArray(filteredAlerts) ? filteredAlerts : []).map((item) => (
-                      <div key={item.id} className="p-8 rounded-[3rem] bg-white dark:bg-muted border border-slate-100 dark:border-slate-800 space-y-6 group/item hover:shadow-2xl transition-all duration-500 hover:-translate-x-2" onClick={() => navigate("/core/marketing/automation")}>
+                      <div key={item.id} className="p-8 rounded-[3rem] bg-white dark:bg-muted border border-border dark:border-border space-y-6 group/item hover:shadow-2xl transition-all duration-500 hover:-translate-x-2" onClick={() => navigate("/core/marketing/automation")}>
                          <div className="flex justify-between items-start">
                             <Badge className={cn(
                               "rounded-full font-black text-[9px] px-4 py-1.5 border-none shadow-lg uppercase tracking-widest",
@@ -329,7 +339,7 @@ export default function MarketingDashboard() {
                                  <CheckCircle2 className="h-6 w-6" />
                               </Button>
                             ) : (
-                              <div className="h-12 w-12 rounded-2xl bg-success flex items-center justify-center text-success border border-emerald-500/20 shadow-inner">
+                              <div className="h-12 w-12 rounded-2xl bg-success flex items-center justify-center text-success border border-success/20 shadow-inner">
                                  <CheckCircle2 className="h-6 w-6" />
                               </div>
                             )}
@@ -338,7 +348,7 @@ export default function MarketingDashboard() {
                             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary opacity-60 italic leading-none">{item.type.replace('_', ' ')}</p>
                             <p className="text-base font-medium text-muted-foreground dark:text-muted-foreground leading-relaxed italic italic">"{item.message}"</p>
                          </div>
-                         <div className="flex justify-between items-center pt-4 border-t border-slate-100 dark:border-slate-800 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                         <div className="flex justify-between items-center pt-4 border-t border-border dark:border-border text-[9px] font-black uppercase tracking-widest text-muted-foreground">
                             <span className="flex items-center gap-2 italic"><ActivitySquare className="h-3.5 w-3.5 text-primary" /> Real-time Telemetry</span>
                             <span className="text-primary italic">ACTION PENDING</span>
                          </div>

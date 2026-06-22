@@ -4,15 +4,12 @@ import {
   Search, 
   Filter, 
   Info, 
-  CheckCircle2, 
-  AlertCircle, 
   Truck, 
   Layers,
   Monitor,
   Smartphone,
   Printer,
   ChevronRight,
-  Loader2,
   Package
 } from "lucide-react";
 import { PageHeader } from "@/core/ui/PageHeader";
@@ -20,27 +17,14 @@ import { WorkspacePanel } from "@/core/ui/WorkspacePanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
-import { useSession } from "@/core/security/session";
-import { ZENVIX_HARDWARE, itProcurementBridge, ITCatalogItem } from "@/core/services/it/itProcurementBridge";
+import { ZENVIX_HARDWARE, ITCatalogItem } from "@/core/services/it/itProcurementBridge";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { toast } from "sonner";
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+import { HardwareRequestModal } from "./modals/HardwareRequestModal";
 
 export default function TechShop() {
-  const session = useSession();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
-  const [isRequesting, setIsRequesting] = useState<string | null>(null);
-  const [requestNotes, setRequestNotes] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeItem, setActiveItem] = useState<ITCatalogItem | null>(null);
 
@@ -51,39 +35,6 @@ export default function TechShop() {
     const matchesCategory = selectedCategory === "ALL" || item.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
-
-  const handleRequest = async () => {
-    if (!activeItem || !session.tenant_id) return;
-
-    setIsRequesting(activeItem.id);
-    try {
-      const result = await itProcurementBridge.processCatalogRequest(
-        session.tenant_id,
-        session,
-        activeItem,
-        "MAIN_WH", // Default to Main Warehouse for now, can be dynamic
-        requestNotes
-      );
-
-      if (result.status === "FULFILLED") {
-        toast.success("Request Fulfilled", {
-          description: result.detail
-        });
-      } else {
-        toast.info("Procurement Triggered", {
-          description: result.detail
-        });
-      }
-      setIsDialogOpen(false);
-      setRequestNotes("");
-    } catch (error) {
-      toast.error("Request Failed", {
-        description: "An error occurred during orchestration."
-      });
-    } finally {
-      setIsRequesting(null);
-    }
-  };
 
   return (
     <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-700">
@@ -115,6 +66,15 @@ export default function TechShop() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+        {filteredItems.length === 0 ? (
+          <div className="md:col-span-2 xl:col-span-3">
+            <EmptyState
+              icon={Package}
+              title="No hardware matches"
+              description="No catalog items match your search or category filter. Try a different term or category."
+            />
+          </div>
+        ) : null}
         {(Array.isArray(filteredItems) ? filteredItems : []).map((item) => (
           <div 
             key={item.id} 
@@ -161,74 +121,15 @@ export default function TechShop() {
                    </p>
                 </div>
                 
-                <Dialog open={isDialogOpen && activeItem?.id === item.id} onOpenChange={(open) => {
-                  setIsDialogOpen(open);
-                  if (open) setActiveItem(item);
-                }}>
-                  <DialogTrigger asChild>
-                    <Button className="rounded-2xl bg-foreground dark:bg-primary text-background font-black text-[10px] uppercase tracking-widest px-6 h-12 group-hover:scale-105 transition-all">
-                       Request Gear <ChevronRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="rounded-[2.5rem] border-none shadow-2xl bg-card p-8 max-w-md">
-                    <DialogHeader className="space-y-4">
-                      <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
-                         <Package className="h-6 w-6" />
-                      </div>
-                      <DialogTitle className="text-2xl font-black tracking-tighter uppercase italic">Confirm Request</DialogTitle>
-                      <DialogDescription className="font-medium">
-                        Requesting <span className="text-primary font-black">{item.name}</span> for branch orchestration. This will trigger inventory check and potential procurement.
-                      </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="py-6 space-y-4">
-                       <div className="space-y-2">
-                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Request Notes</label>
-                          <Textarea 
-                            placeholder="Add specific deployment instructions or search tags..."
-                            className="rounded-2xl border-border min-h-[100px] font-medium text-sm"
-                            value={requestNotes}
-                            onChange={(e) => setRequestNotes(e.target.value)}
-                          />
-                       </div>
-
-                       <div className="grid grid-cols-2 gap-4">
-                          <div className="p-4 rounded-2xl bg-muted border border-border">
-                             <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1">Stock Check</p>
-                             <div className="flex items-center gap-2 text-success">
-                                <CheckCircle2 className="h-3 w-3" />
-                                <span className="text-[10px] font-black uppercase">Automated</span>
-                             </div>
-                          </div>
-                          <div className="p-4 rounded-2xl bg-muted border border-border">
-                             <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1">Fiscal Impact</p>
-                             <div className="flex items-center gap-2 text-warning">
-                                <AlertCircle className="h-3 w-3" />
-                                <span className="text-[10px] font-black uppercase tracking-tighter">CAPEX Gate</span>
-                             </div>
-                          </div>
-                       </div>
-                    </div>
-
-                    <DialogFooter className="gap-3 sm:justify-between">
-                       <Button variant="ghost" className="rounded-2xl font-black text-[10px] uppercase tracking-widest h-12 px-6" onClick={() => setIsDialogOpen(false)}>
-                          Cancel
-                       </Button>
-                       <Button 
-                         onClick={handleRequest}
-                         disabled={isRequesting === item.id}
-                       className="rounded-2xl bg-primary text-white font-black text-[10px] uppercase tracking-widest px-8 h-12 shadow-xl shadow-primary/20 min-w-[140px]"
-                       >
-                          {isRequesting === item.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          ) : (
-                            <Truck className="h-4 w-4 mr-2" />
-                          )}
-                          Commit Request
-                       </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                <Button
+                  className="rounded-2xl bg-foreground dark:bg-primary text-background font-black text-[10px] uppercase tracking-widest px-6 h-12 group-hover:scale-105 transition-all"
+                  onClick={() => {
+                    setActiveItem(item);
+                    setIsDialogOpen(true);
+                  }}
+                >
+                  Request Gear <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
              </div>
           </div>
         ))}
@@ -274,6 +175,24 @@ export default function TechShop() {
             </div>
          </div>
       </WorkspacePanel>
+
+      {activeItem && (
+        <HardwareRequestModal
+          isOpen={isDialogOpen}
+          onClose={() => {
+            setIsDialogOpen(false);
+            setActiveItem(null);
+          }}
+          catalogItemId={activeItem.id}
+          itemName={activeItem.name}
+          defaultLocationId="MAIN_WH"
+          onSuccess={() => {
+            toast.success("Hardware Request Submitted", {
+              description: `Request for "${activeItem.name}" has been submitted.`,
+            });
+          }}
+        />
+      )}
     </div>
   );
 }

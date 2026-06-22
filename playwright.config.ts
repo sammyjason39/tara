@@ -23,7 +23,9 @@ export default defineConfig({
   /* 1 worker — remote server can't handle multiple concurrent Playwright sessions */
   workers: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
+  reporter: process.env.CI
+    ? [['html', { open: 'never' }], ['json', { outputFile: process.env.PLAYWRIGHT_JSON_OUTPUT_NAME || 'playwright-results.json' }]]
+    : 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
@@ -37,17 +39,27 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
-    // Setup project
+    // Setup project — provisions a fresh Synthetic_Organization for the phase under test
+    // (PHASE env var, default phase1-auth) via provisionSyntheticOrg and writes per-run storage
+    // state to tests/playwright/.auth/user.json. Runs `cleanup` as its teardown.
     {
       name: 'setup',
       testMatch: /.*\.setup\.ts/,
+      teardown: 'cleanup',
+    },
+
+    // Teardown project — best-effort deactivation / labeled-record cleanup of the synthetic
+    // tenant(s). Keeps data isolated to the synthetic tenant (Requirement 11.8).
+    {
+      name: 'cleanup',
+      testMatch: /.*\.teardown\.ts/,
     },
 
     {
       name: 'chromium',
       use: { 
         ...devices['Desktop Chrome'],
-        // Use prepared auth state.
+        // Use the per-run synthetic-owner auth state written by the setup project.
         storageState: 'tests/playwright/.auth/user.json',
       },
       dependencies: ['setup'],

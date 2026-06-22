@@ -17,6 +17,12 @@ import { useSession } from "@/core/security/session";
 import { procurementService } from "@/core/services/procurement/procurementService";
 import type { ContractRecord, Requisition, SupplierMaster } from "@/core/types/procurement/procurement";
 import { FileText, ShieldCheck, Signature, ClipboardList, Info, Building2, User } from "lucide-react";
+import { contractPacketSchema } from "@/modules/procurement/schemas";
+import {
+  useUpsertContract,
+  useApproveLegalContract,
+  useSignContract,
+} from "@/modules/procurement/hooks";
 
 export default function ContractDesk() {
   const navigate = useNavigate();
@@ -32,6 +38,12 @@ export default function ContractDesk() {
   const [loading, setLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [contractFieldErrors, setContractFieldErrors] = useState<Record<string, string>>({});
+
+  // TanStack Query mutations
+  const upsertContractMutation = useUpsertContract();
+  const approveLegalMutation = useApproveLegalContract();
+  const signContractMutation = useSignContract();
 
   const clearStatus = () => {
     setStatusMessage(null);
@@ -73,19 +85,30 @@ export default function ContractDesk() {
   );
 
   const upsertContract = async () => {
-    if (!requisitionId || !supplierId) return;
-    try {
-      await procurementService.upsertContractForRequisition(session.tenant_id, session, {
-        requisitionId,
-        supplierId,
-        notes,
-        attachmentIds: [],
+    setContractFieldErrors({});
+    const result = contractPacketSchema.safeParse({
+      requisitionId,
+      supplierId,
+      notes: notes || undefined,
+      attachmentIds: [],
+    });
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        const field = issue.path[0] as string;
+        if (!errors[field]) errors[field] = issue.message;
       });
+      setContractFieldErrors(errors);
+      return;
+    }
+    try {
+      await upsertContractMutation.mutateAsync(result.data);
       setStatusMessage("Contract packet created or updated successfully.");
       setDialogOpen(false);
       setRequisitionId("");
       setSupplierId("");
       setNotes("");
+      setContractFieldErrors({});
       refresh();
     } catch (err) {
       setErrorMessage("Failed to save contract packet.");
@@ -94,7 +117,7 @@ export default function ContractDesk() {
 
   const approveLegal = async (contractId: string) => {
     try {
-      await procurementService.approveLegalContract(session.tenant_id, session, contractId);
+      await approveLegalMutation.mutateAsync(contractId);
       setStatusMessage("Legal approval recorded.");
       refresh();
     } catch (err) {
@@ -104,7 +127,7 @@ export default function ContractDesk() {
 
   const sign = async (contractId: string, party: "SUPPLIER" | "PROCUREMENT_HOD" | "FINANCE_HOD") => {
     try {
-      await procurementService.signContractParty(session.tenant_id, session, contractId, party);
+      await signContractMutation.mutateAsync({ contractId, party });
       setStatusMessage(`Contract signed by ${party}.`);
       refresh();
     } catch (err) {
@@ -314,11 +337,17 @@ export default function ContractDesk() {
 
                 <div className="flex justify-end gap-3 pt-6 border-t mt-4">
                   <Button variant="outline" onClick={() => setDialogOpen(false)} className="hover:bg-muted">Cancel</Button>
-                  <Button onClick={upsertContract} disabled={!requisitionId || !supplierId} className="shadow-sm">
+                  <Button onClick={upsertContract} className="shadow-sm">
                     <Signature className="w-4 h-4 mr-2" />
                     {contracts.some(c => c.requisitionId === requisitionId) ? 'Update Packet' : 'Initialize Packet'}
                   </Button>
                 </div>
+                {(contractFieldErrors.requisitionId || contractFieldErrors.supplierId) && (
+                  <div className="space-y-1 pt-2">
+                    {contractFieldErrors.requisitionId && <p className="text-xs text-destructive">{contractFieldErrors.requisitionId}</p>}
+                    {contractFieldErrors.supplierId && <p className="text-xs text-destructive">{contractFieldErrors.supplierId}</p>}
+                  </div>
+                )}
               </div>
             </div>
           </div>

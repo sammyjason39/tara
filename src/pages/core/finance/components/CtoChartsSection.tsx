@@ -9,6 +9,10 @@ import {
 import { SimpleKpi, SectionLabel } from "./DashboardPrimitives";
 import { CHART_COLORS, CHART_COLORS_DARK, CHART_NEUTRAL, CHART_NEUTRAL_DARK } from "@/lib/chart-colors";
 import { useTheme } from "next-themes";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/core/api/apiClient";
+import { useSession } from "@/core/security/session";
+import { QueryStateWrapper } from "@/components/shared/QueryStateWrapper";
 
 interface CtoProps {
   pendingApprovals: number;
@@ -19,10 +23,26 @@ const fmtM = (v: number | string) => [`Rp ${v}M`];
 
 export function CtoChartsSection({ pendingApprovals, processedPayments }: CtoProps) {
   const { theme } = useTheme();
+  const session = useSession();
   const colors = theme === 'dark' ? CHART_COLORS_DARK : CHART_COLORS;
   const neutral = theme === 'dark' ? CHART_NEUTRAL_DARK : CHART_NEUTRAL;
   const gridStroke = theme === 'dark' ? '#1e293b' : '#f1f5f9';
   const tickFill = theme === 'dark' ? '#94a3b8' : '#64748b';
+
+  // Fetch CTO analytics data from backend, falling back to static data
+  const { data: ctoData, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["finance-cto-analytics"],
+    queryFn: () => apiRequest<{
+      opexBurn?: typeof CTO_OPEX_BURN;
+      budgetVsActual?: typeof BUDGET_VS_ACTUAL;
+      workflowVelocity?: typeof WORKFLOW_VELOCITY_DATA;
+    }>("/finance/dashboard/cto-analytics", "GET", session),
+    staleTime: 30_000,
+  });
+
+  const opexBurnData = ctoData?.opexBurn ?? CTO_OPEX_BURN;
+  const budgetVsActualData = ctoData?.budgetVsActual ?? BUDGET_VS_ACTUAL;
+  const workflowVelocityData = ctoData?.workflowVelocity ?? WORKFLOW_VELOCITY_DATA;
 
   return (
     <section>
@@ -30,15 +50,22 @@ export function CtoChartsSection({ pendingApprovals, processedPayments }: CtoPro
         label="CTO & Executive Analytics"
         sub="Technology spend, budget burn & workflow efficiency"
       />
+      <QueryStateWrapper
+        isLoading={isLoading}
+        isError={isError}
+        error={error ?? undefined}
+        isEmpty={false}
+        onRetry={() => refetch()}
+      >
       <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr_1fr]">
 
         {/* ── OPEX Burn ──────────────────────────────────────────── */}
         <WorkspacePanel
           title="OPEX Budget Burn (Technology)"
           description="IT / SaaS budget vs actual spend & forecast (Rp M)"
-          className="rounded-3xl border-slate-100 bg-white shadow-sm"
+          className="rounded-3xl border-border bg-white shadow-sm"
         >
-          <div className="flex items-center justify-between p-4 bg-muted rounded-2xl border border-slate-100 my-5">
+          <div className="flex items-center justify-between p-4 bg-muted rounded-2xl border border-border my-5">
             <SimpleKpi label="Budget (Apr)"  value="Rp 220M" color="text-muted-foreground"    />
             <div className="h-8 w-px bg-muted" />
             <SimpleKpi label="Actual (Apr)"  value="Rp 205M" color="text-success"  />
@@ -47,7 +74,7 @@ export function CtoChartsSection({ pendingApprovals, processedPayments }: CtoPro
           </div>
           <div className="h-[240px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={CTO_OPEX_BURN}>
+              <ComposedChart data={opexBurnData}>
                 <defs>
                   <linearGradient id="gBudget" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%"   stopColor={colors[1]} stopOpacity={0.12} />
@@ -76,11 +103,11 @@ export function CtoChartsSection({ pendingApprovals, processedPayments }: CtoPro
         <WorkspacePanel
           title="Budget vs. Actual by Dept"
           description="Over-run detection — red bar = budget exceeded"
-          className="rounded-3xl border-slate-100 bg-white shadow-sm"
+          className="rounded-3xl border-border bg-white shadow-sm"
         >
           <div className="h-[320px] w-full mt-3">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={BUDGET_VS_ACTUAL} layout="vertical" margin={{ left: 10, right: 30 }}>
+              <BarChart data={budgetVsActualData} layout="vertical" margin={{ left: 10, right: 30 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={gridStroke} />
                 <XAxis type="number" hide />
                 <YAxis dataKey="dept" type="category" axisLine={false} tickLine={false}
@@ -89,7 +116,7 @@ export function CtoChartsSection({ pendingApprovals, processedPayments }: CtoPro
                 <Legend iconType="circle" wrapperStyle={{ fontSize: "11px", fontWeight: 700, paddingTop: "8px" }} />
                 <Bar dataKey="budget" name="Budget" fill={neutral} barSize={18} />
                 <Bar dataKey="actual" name="Actual" barSize={18} radius={[0,4,4,0]}>
-                  {(Array.isArray(BUDGET_VS_ACTUAL) ? BUDGET_VS_ACTUAL : []).map((e, i) => (
+                  {(Array.isArray(budgetVsActualData) ? budgetVsActualData : []).map((e, i) => (
                     <Cell key={i} fill={e.actual > e.budget ? (theme === 'dark' ? '#f87171' : '#f43f5e') : colors[2]} />
                   ))}
                 </Bar>
@@ -102,21 +129,21 @@ export function CtoChartsSection({ pendingApprovals, processedPayments }: CtoPro
         <WorkspacePanel
           title="Workflow Request Velocity"
           description="7-day approval throughput and task pipeline — live"
-          className="rounded-3xl border-slate-100 bg-white shadow-sm"
+          className="rounded-3xl border-border bg-white shadow-sm"
         >
           <div className="grid grid-cols-2 gap-3 mt-4 mb-4">
             <div className="rounded-2xl bg-primary/5 border border-primary/10 p-3 text-center">
               <p className="text-2xl font-black text-primary">{pendingApprovals}</p>
               <p className="text-[10px] font-black text-primary/60 uppercase tracking-widest mt-0.5">Pending</p>
             </div>
-            <div className="rounded-2xl bg-success border border-emerald-100 p-3 text-center">
+            <div className="rounded-2xl bg-success border border-success p-3 text-center">
               <p className="text-2xl font-black text-success">{processedPayments}</p>
               <p className="text-[10px] font-black text-success uppercase tracking-widest mt-0.5">Processed</p>
             </div>
           </div>
           <div className="h-[240px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={WORKFLOW_VELOCITY_DATA}>
+              <AreaChart data={workflowVelocityData}>
                 <defs>
                   <linearGradient id="gApprove" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%"   stopColor={colors[1]} stopOpacity={0.2} />
@@ -143,6 +170,7 @@ export function CtoChartsSection({ pendingApprovals, processedPayments }: CtoPro
         </WorkspacePanel>
 
       </div>
+      </QueryStateWrapper>
     </section>
   );
 }

@@ -13,8 +13,11 @@ import { FilterBar } from "@/core/tools/FilterBar";
 import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { procurementService } from "@/core/services/procurement/procurementService";
+import { formatDateTime } from "@/lib/format";
 import type { SupplierPortalMessage, SupplierMaster, SupplierBranch } from "@/core/types/procurement/procurement";
 import { MessageSquare, Send, Paperclip, Building2, Info, ArrowUpRight, ArrowDownLeft, ShieldCheck, Mail } from "lucide-react";
+import { portalMessageSchema } from "@/modules/procurement/schemas";
+import { useCreatePortalMessage } from "@/modules/procurement/hooks";
 
 export default function SupplierPortalDesk() {
   const session = useSession();
@@ -32,6 +35,10 @@ export default function SupplierPortalDesk() {
   const [loading, setLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [portalFieldErrors, setPortalFieldErrors] = useState<Record<string, string>>({});
+
+  // TanStack Query mutation
+  const createPortalMessageMutation = useCreatePortalMessage();
 
   const clearStatus = () => {
     setStatusMessage(null);
@@ -71,20 +78,31 @@ export default function SupplierPortalDesk() {
   );
 
   const createMessage = async () => {
-    if (!supplierId || !supplierBranchId || !content.trim()) return;
-    try {
-      await procurementService.createPortalMessage(session.tenant_id, session, {
-        supplierId,
-        supplierBranchId,
-        direction,
-        type,
-        content,
-        attachmentName: attachmentName || undefined,
+    setPortalFieldErrors({});
+    const result = portalMessageSchema.safeParse({
+      supplierId,
+      supplierBranchId,
+      direction,
+      type,
+      content,
+      attachmentName: attachmentName || undefined,
+    });
+    if (!result.success) {
+      const errors: Record<string, string> = {};
+      result.error.issues.forEach((issue) => {
+        const field = issue.path[0] as string;
+        if (!errors[field]) errors[field] = issue.message;
       });
+      setPortalFieldErrors(errors);
+      return;
+    }
+    try {
+      await createPortalMessageMutation.mutateAsync(result.data);
       setStatusMessage("Portal message sent to supplier.");
       setDialogOpen(false);
       setContent("");
       setAttachmentName("");
+      setPortalFieldErrors({});
       refresh();
     } catch (err) {
       setErrorMessage("Failed to send portal message.");
@@ -132,7 +150,7 @@ export default function SupplierPortalDesk() {
               ) : (
                 (Array.isArray(filtered) ? filtered : []).map((message) => (
                   <tr key={message.id} className="border-t">
-                    <td className="p-3 text-muted-foreground">{message.createdAt.slice(0, 16).replace("T", " ")}</td>
+                    <td className="p-3 text-muted-foreground">{formatDateTime(message.createdAt)}</td>
                     <td className="p-3 text-muted-foreground">{message.supplierId}</td>
                     <td className="p-3 text-muted-foreground">{message.supplierBranchId}</td>
                     <td className="p-3 text-muted-foreground">{message.direction}</td>
@@ -276,11 +294,18 @@ export default function SupplierPortalDesk() {
 
                 <div className="flex justify-end gap-3 pt-6 border-t mt-4">
                   <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-                  <Button onClick={createMessage} disabled={!supplierId || !supplierBranchId || !content.trim()}>
+                  <Button onClick={createMessage}>
                     <Send className="w-4 h-4 mr-2" />
                     Dispatch Message
                   </Button>
                 </div>
+                {Object.keys(portalFieldErrors).length > 0 && (
+                  <div className="space-y-1 pt-2">
+                    {Object.entries(portalFieldErrors).map(([field, msg]) => (
+                      <p key={field} className="text-xs text-destructive">{msg}</p>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

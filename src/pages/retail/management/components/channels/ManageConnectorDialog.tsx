@@ -176,7 +176,7 @@ export const ManageConnectorDialog = ({
         <div className="p-6 space-y-12 flex-1 overflow-y-auto bg-white">
           {step === "SUCCESS" && generatedCreds ? (
             <div className="space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
-              <div className="bg-success border-2 border-emerald-100 rounded-[2rem] p-8 flex items-center gap-6">
+              <div className="bg-success border-2 border-success rounded-[2rem] p-8 flex items-center gap-6">
                 <div className="w-16 h-16 bg-success rounded-3xl flex items-center justify-center shadow-lg shadow-emerald-900/10">
                   <CheckCircle2 className="w-8 h-8 text-foreground" />
                 </div>
@@ -262,7 +262,7 @@ export const ManageConnectorDialog = ({
               <div className="grid grid-cols-2 gap-8">
                 <div
                   onClick={() => setChannelType("OWNED")}
-                  className={`p-8 rounded-2xl border-2 transition-all cursor-pointer group ${channelType === "OWNED" ? "border-primary bg-primary/5" : "border-slate-100 hover:border-slate-200"}`}
+                  className={`p-8 rounded-2xl border-2 transition-all cursor-pointer group ${channelType === "OWNED" ? "border-primary bg-primary/5" : "border-border hover:border-border"}`}
                 >
                   <Globe
                     className={`w-10 h-10 mb-6 transition-transform ${channelType === "OWNED" ? "text-primary scale-110" : "text-muted-foreground/60"}`}
@@ -278,7 +278,7 @@ export const ManageConnectorDialog = ({
                 </div>
                 <div
                   onClick={() => setChannelType("MARKETPLACE")}
-                  className={`p-8 rounded-2xl border-2 transition-all cursor-pointer group ${channelType === "MARKETPLACE" ? "border-emerald-600 bg-success" : "border-slate-100 hover:border-slate-200"}`}
+                  className={`p-8 rounded-2xl border-2 transition-all cursor-pointer group ${channelType === "MARKETPLACE" ? "border-success bg-success" : "border-border hover:border-border"}`}
                 >
                   <ShoppingBag
                     className={`w-10 h-10 mb-6 transition-transform ${channelType === "MARKETPLACE" ? "text-success scale-110" : "text-muted-foreground/60"}`}
@@ -338,7 +338,7 @@ export const ManageConnectorDialog = ({
 
                 {channelType === "MARKETPLACE" && (
                   <div className="space-y-6 animate-in fade-in slide-in-from-top-2">
-                    <div className="flex items-center gap-4 p-6 bg-warning rounded-2xl border border-amber-100">
+                    <div className="flex items-center gap-4 p-6 bg-warning rounded-2xl border border-warning">
                       <ShieldCheck className="w-6 h-6 text-warning" />
                       <p className="text-[10px] font-bold text-warning uppercase italic tracking-tighter">
                         External authorization required. Provide your platform

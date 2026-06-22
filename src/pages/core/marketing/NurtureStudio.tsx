@@ -62,8 +62,10 @@ import {
 import { useSession } from "@/core/security/session";
 import { marketingService } from "@/core/services/marketing/marketingService";
 import type { NurtureWorkflow } from "@/core/types/marketing/marketing";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { CreateWorkflowModal } from "./modals/CreateWorkflowModal";
 
 const TRIGGERS: NurtureWorkflow["trigger"][] = [
   "NEW_LEAD",
@@ -78,6 +80,7 @@ export default function NurtureStudio() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [workflows, setWorkflows] = useState<NurtureWorkflow[]>([]);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const refresh = useCallback(async (isManual = false) => {
     try {
@@ -139,7 +142,7 @@ export default function NurtureStudio() {
                Engine V4.2.0 Online
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent text-left italic">Nurture Studio</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground text-left italic">Nurture Studio</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic text-left">"Orchestrate event-driven growth workflows with total operational command."</p>
         </div>
         
@@ -154,7 +157,7 @@ export default function NurtureStudio() {
           </Button>
           <Button 
             className="h-[4.5rem] px-10 rounded-[2rem] bg-primary hover:bg-primary shadow-2xl shadow-indigo-500/30 font-black text-sm gap-3 group transition-all hover:scale-105 active:scale-95"
-            onClick={() => navigate("/core/marketing/automation")}
+            onClick={() => setCreateOpen(true)}
           >
             <Plus className="h-6 w-6 group-hover:rotate-90 transition-transform duration-500" /> 
             INITIALIZE RULE
@@ -165,15 +168,15 @@ export default function NurtureStudio() {
       <div className="grid grid-cols-12 gap-10 flex-1 min-h-0">
         {/* Left: Automation Registry */}
         <div className="col-span-12 lg:col-span-4 flex flex-col gap-6 overflow-hidden">
-           <Card className="flex-1 rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden flex flex-col">
-              <CardHeader className="p-8 pb-4 border-b border-white/10 dark:border-slate-800/10 flex flex-row items-center justify-between">
+           <Card className="flex-1 rounded-[3rem] border-none shadow-2xl glass-card overflow-hidden flex flex-col">
+              <CardHeader className="p-8 pb-4 border-b border-white/10 dark:border-border/10 flex flex-row items-center justify-between">
                  <div className="space-y-1">
                     <CardTitle className="text-xl font-black tracking-tight flex items-center gap-3 uppercase italic">
                        <Layers className="h-5 w-5 text-primary" />
                        Active Protocols
                     </CardTitle>
                  </div>
-                 <Badge variant="outline" className="rounded-full font-black text-[9px] px-2 py-0 h-5 border-slate-200 dark:border-slate-800 text-muted-foreground uppercase tracking-widest">{workflows.length} RULES</Badge>
+                 <Badge variant="outline" className="rounded-full font-black text-[9px] px-2 py-0 h-5 border-border dark:border-border text-muted-foreground uppercase tracking-widest">{workflows.length} RULES</Badge>
               </CardHeader>
               <ScrollArea className="flex-1">
                  <div className="p-3 space-y-2">
@@ -211,6 +214,13 @@ export default function NurtureStudio() {
                          <ChevronRight className={cn("h-4 w-4 transition-transform", selectedWorkflow?.id === wf.id ? "text-primary translate-x-1" : "text-muted-foreground")} />
                       </button>
                     ))}
+                    {(Array.isArray(workflows) ? workflows : []).length === 0 && (
+                      <EmptyState
+                        title="No automation protocols"
+                        description="No nurture workflows exist for this tenant scope yet."
+                        icon={Workflow}
+                      />
+                    )}
                  </div>
               </ScrollArea>
            </Card>
@@ -283,7 +293,7 @@ export default function NurtureStudio() {
                    </CardContent>
                 </Card>
 
-                <Card className="flex-1 rounded-[4rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden relative">
+                <Card className="flex-1 rounded-[4rem] border-none shadow-2xl glass-card overflow-hidden relative">
                    <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.07] pointer-events-none" 
                         style={{ backgroundImage: 'radial-gradient(#6366f1 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
                    <ScrollArea className="h-full">
@@ -317,7 +327,7 @@ export default function NurtureStudio() {
                                               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest italic">Node Step {idx + 1}</p>
                                               <p className="text-xl font-black uppercase italic tracking-tight group-hover:text-primary transition-colors truncate pr-4">{step.messageTemplate}</p>
                                            </div>
-                                           <Badge variant="outline" className="rounded-full font-black text-[9px] px-3 py-1 border-slate-200 dark:border-slate-700 uppercase tracking-widest text-muted-foreground flex gap-2">
+                                           <Badge variant="outline" className="rounded-full font-black text-[9px] px-3 py-1 border-border dark:border-border uppercase tracking-widest text-muted-foreground flex gap-2">
                                               <Clock className="h-3 w-3" /> {step.waitHours}H LATENCY
                                            </Badge>
                                         </div>
@@ -344,7 +354,7 @@ export default function NurtureStudio() {
                          <div className="flex flex-col items-center">
                             <Button 
                               variant="outline" 
-                              className="h-20 w-20 rounded-[2rem] border-4 border-dashed border-slate-200 dark:border-slate-800 bg-transparent flex flex-col gap-4 hover:bg-white dark:hover:bg-muted hover:border-primary hover:text-primary transition-all group shadow-inner"
+                              className="h-20 w-20 rounded-[2rem] border-4 border-dashed border-border dark:border-border bg-transparent flex flex-col gap-4 hover:bg-white dark:hover:bg-muted hover:border-primary hover:text-primary transition-all group shadow-inner"
                               onClick={() => navigate("/core/marketing/automation")}
                             >
                                <Plus className="h-8 w-8 group-hover:rotate-90 transition-transform duration-500" />
@@ -370,7 +380,7 @@ export default function NurtureStudio() {
                 </Card>
              </div>
            ) : (
-             <div className="h-full flex flex-col items-center justify-center rounded-[4rem] border-2 border-dashed border-white/20 dark:border-slate-800/20 bg-white/10 dark:bg-muted grayscale opacity-30 space-y-12 animate-in zoom-in duration-1000">
+             <div className="h-full flex flex-col items-center justify-center rounded-[4rem] border-2 border-dashed border-white/20 dark:border-border/20 bg-white/10 dark:bg-muted grayscale opacity-30 space-y-12 animate-in zoom-in duration-1000">
                 <div className="relative">
                    <div className="absolute inset-0 bg-primary blur-[100px] rounded-full scale-[3] animate-pulse" />
                    <div className="h-48 w-48 rounded-[4rem] bg-white dark:bg-muted flex items-center justify-center shadow-[0_50px_100px_-20px_rgba(79,70,229,0.3)] relative z-10 border border-white/20">
@@ -393,6 +403,12 @@ export default function NurtureStudio() {
         </div>
       </div>
       
+      {/* Create Workflow Modal */}
+      <CreateWorkflowModal
+        isOpen={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onSuccess={() => refresh(true)}
+      />
     </div>
   );
 }

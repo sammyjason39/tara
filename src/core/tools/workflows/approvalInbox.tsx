@@ -139,7 +139,7 @@ export function ApprovalInbox({ tenantId, session }: ApprovalInboxProps) {
             placeholder="Search approvals matrix..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            className="pl-11 h-12 rounded-xl border-slate-100 bg-muted focus:bg-white transition-all font-medium"
+            className="pl-11 h-12 rounded-xl border-border bg-muted focus:bg-white transition-all font-medium"
           />
         </div>
         <div className="flex items-center gap-3">
@@ -178,7 +178,7 @@ export function ApprovalInbox({ tenantId, session }: ApprovalInboxProps) {
         </TabsList>
 
         {loading && workflows.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-80 rounded-[3rem] border border-dashed border-slate-200 bg-muted">
+          <div className="flex flex-col items-center justify-center h-80 rounded-[3rem] border border-dashed border-border bg-muted">
             <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
             <p className="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground">Syncing Approval Matrix</p>
           </div>
@@ -234,7 +234,7 @@ export function ApprovalInbox({ tenantId, session }: ApprovalInboxProps) {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="rounded-xl font-black text-[10px] h-9 border-slate-200"
+                            className="rounded-xl font-black text-[10px] h-9 border-border"
                             onClick={() => setSelectedId(flow.id)}
                           >
                             OPEN TRACE
@@ -292,7 +292,7 @@ export function ApprovalInbox({ tenantId, session }: ApprovalInboxProps) {
 
                 <div className="space-y-3">
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Contextual Notes</p>
-                  <div className="p-6 rounded-3xl bg-muted border border-slate-100 italic text-muted-foreground text-sm">
+                  <div className="p-6 rounded-3xl bg-muted border border-border italic text-muted-foreground text-sm">
                     {selected.notes || "No additional context provided by the maker."}
                   </div>
                 </div>
@@ -303,7 +303,7 @@ export function ApprovalInbox({ tenantId, session }: ApprovalInboxProps) {
                     placeholder="Enter disposition notes..."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    className="min-h-[120px] rounded-3xl border-slate-200 focus:ring-indigo-600/20"
+                    className="min-h-[120px] rounded-3xl border-border focus:ring-indigo-600/20"
                   />
                   <div className="grid grid-cols-2 gap-4">
                     <Button
@@ -330,7 +330,7 @@ export function ApprovalInbox({ tenantId, session }: ApprovalInboxProps) {
                        <History className="h-3 w-3" />
                        Audit History
                     </p>
-                    <div className="space-y-4 border-l-2 border-slate-100 ml-2 pl-6">
+                    <div className="space-y-4 border-l-2 border-border ml-2 pl-6">
                       {(Array.isArray(auditTrail) ? auditTrail : []).map((log: any, i: number) => (
                         <div key={i} className="relative">
                           <div className="absolute -left-[1.85rem] top-1 h-3 w-3 rounded-full bg-muted border-2 border-white" />

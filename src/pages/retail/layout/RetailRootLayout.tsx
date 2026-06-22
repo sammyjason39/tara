@@ -4,6 +4,7 @@ import { RetailProvider, useRetail } from "../context/RetailContext";
 import { RetailManagementShell } from "./RetailManagementShell";
 import { RetailOperationalShell } from "./RetailOperationalShell";
 import { RetailGlobalAdminBar } from "../components/RetailGlobalAdminBar";
+import { PageErrorBoundary } from "@/components/shared/PageErrorBoundary";
 import { useSession } from "@/core/security/session";
 import { Roles } from "@/core/security/roles";
 
@@ -54,11 +55,15 @@ const RootLayoutContent = () => {
 
       {mode === "operational" ? (
         <RetailOperationalShell>
-          <Outlet />
+          <PageErrorBoundary key={location.pathname} routeLabel="Retail Operations">
+            <Outlet />
+          </PageErrorBoundary>
         </RetailOperationalShell>
       ) : (
         <RetailManagementShell>
-          <Outlet />
+          <PageErrorBoundary key={location.pathname} routeLabel="Retail Management">
+            <Outlet />
+          </PageErrorBoundary>
         </RetailManagementShell>
       )}
     </div>

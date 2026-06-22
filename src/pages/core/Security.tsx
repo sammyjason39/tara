@@ -30,6 +30,7 @@ import { reportingService } from "@/core/services/reportingService";
 import { auditService, type AuditLog, type VerificationResult } from "@/core/services/auditService";
 import { itService, type SystemHealth } from "@/core/services/it/itService";
 import { useEffect, useCallback } from "react";
+import { formatDateTime, safeText } from "@/lib/format";
 import DepartmentWorkspaceLayout from "@/components/layouts/DepartmentWorkspaceLayout";
 
 interface RoleRow {
@@ -223,14 +224,14 @@ export default function CoreSecurity() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-foreground">{log.action}</p>
+                        <p className="text-sm font-medium text-foreground">{safeText(log.action)}</p>
                         {log.severity === 'CRITICAL' && <Badge variant="destructive" className="scale-75 origin-left">Critical</Badge>}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {log.entity_type}: {log.entity_id}
+                        {safeText(log.entity_type)}: {safeText(log.entity_id)}
                       </p>
                       <p className="mt-2 text-xs text-muted-foreground">
-                        Actor: {log.user_id}
+                        Actor: {safeText(log.user_id)}
                       </p>
                     </div>
                     <div className="text-right">
@@ -239,7 +240,7 @@ export default function CoreSecurity() {
                       </Badge>
                       <div className="mt-2 flex items-center justify-end gap-2 text-xs text-muted-foreground">
                         <Clock className="h-3.5 w-3.5" />
-                        {new Date(log.created_at).toLocaleString()}
+                        {formatDateTime(log.created_at)}
                       </div>
                     </div>
                   </div>
@@ -323,7 +324,7 @@ export default function CoreSecurity() {
                   </div>
                   <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
                     <Clock className="h-3 w-3" />
-                    {new Date(alert.checkedAt).toLocaleTimeString()}
+                    {formatDateTime(alert.checkedAt)}
                   </div>
                 </div>
               ))}
@@ -361,13 +362,13 @@ export default function CoreSecurity() {
             variant="outline" 
             onClick={handleVerifyIntegrity} 
             disabled={integrityStatus === 'scanning'}
-            className="rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest border-slate-200"
+            className="rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest"
           >
             {integrityStatus === 'scanning' ? "Scanning..." : "Verify Integrity"}
           </Button>
           <Button 
             onClick={() => setIsModalOpen(true)}
-            className="rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest bg-muted hover:bg-black text-white"
+            className="rounded-xl h-10 px-6 font-black text-[10px] uppercase tracking-widest"
           >
             <UserCog className="mr-2 h-3.5 w-3.5" /> Manage Roles
           </Button>

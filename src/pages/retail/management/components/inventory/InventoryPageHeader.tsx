@@ -44,7 +44,7 @@ export const InventoryPageHeader: React.FC<Props> = ({
       />
       <div className="flex items-center gap-3">
         <Select value={selectedStoreId} onValueChange={onStoreChange}>
-          <SelectTrigger className="w-52 h-10 rounded-xl font-black italic text-sm border-slate-200">
+          <SelectTrigger className="w-52 h-10 rounded-xl font-black italic text-sm border-border">
             <SelectValue placeholder="Select Store" />
           </SelectTrigger>
           <SelectContent className="rounded-xl">
@@ -59,7 +59,7 @@ export const InventoryPageHeader: React.FC<Props> = ({
           variant="outline"
           onClick={onSync}
           disabled={isLoading}
-          className="h-10 rounded-xl gap-2 font-black italic text-xs uppercase tracking-widest border-slate-200"
+          className="h-10 rounded-xl gap-2 font-black italic text-xs uppercase tracking-widest border-border"
         >
           <RefreshCw
             className={cn("w-3.5 h-3.5", isLoading && "animate-spin")}
@@ -67,7 +67,7 @@ export const InventoryPageHeader: React.FC<Props> = ({
           Sync Core
         </Button>
         {!canWrite && (
-          <Badge className="bg-warning text-warning border-amber-200 font-black italic text-[10px] uppercase px-3 py-1 gap-1 flex items-center">
+          <Badge className="bg-warning text-warning border-warning font-black italic text-[10px] uppercase px-3 py-1 gap-1 flex items-center">
             <Lock className="w-3 h-3" /> View + Request Only
           </Badge>
         )}

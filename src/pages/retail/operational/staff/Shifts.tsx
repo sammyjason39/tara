@@ -35,7 +35,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useApp } from '@/contexts/AppContext';
-import { formatCurrency, formatDate, formatTime } from '@/lib/mock-data';
+import { formatCurrency, formatDate } from '@/lib/format';
+import { formatTime } from '@/lib/mock-data';
 import { toast } from '@/hooks/use-toast';
 import { attendanceService } from '@/core/services/hr/attendanceService';
 import { useSession } from '@/core/security/session';
@@ -373,7 +374,7 @@ export default function RetailShifts() {
 
       {/* Current Shift Card */}
       {currentShift && (
-        <Card className="border-green-500/50 bg-success">
+        <Card className="border-success/50 bg-success">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -647,9 +648,15 @@ export default function RetailShifts() {
                     <span className="font-bold">{formatCurrency(calculatedTotal)}</span>
                   </div>
                   <Separator />
-                  <div className={cn(
-                    "flex justify-between p-3 rounded-lg",
-                      {calculatedTotal - (currentShift.openingCash + (currentShift.cashSales || 0)) >= 0 ? '+' : ''}
+                  <div className="flex justify-between p-3 rounded-lg">
+                    <span className="text-muted-foreground">Variance</span>
+                    <span className={cn(
+                      "font-bold",
+                      calculatedTotal - (currentShift.openingCash + (currentShift.cashSales || 0)) >= 0
+                        ? "text-success"
+                        : "text-destructive",
+                    )}>
+                      {calculatedTotal - (currentShift.openingCash + (currentShift.cashSales || 0)) >= 0 ? "+" : ""}
                       {formatCurrency(calculatedTotal - (currentShift.openingCash + (currentShift.cashSales || 0)))}
                     </span>
                   </div>

@@ -14,6 +14,7 @@ import { workflowService } from "@/core/services/hr/workflowService";
 import { useBackgroundRefresh } from "@/core/runtime/events/useBackgroundRefresh";
 import { ZenTooltip } from "@/core/ui/ZenTooltip";
 import { PlusCircle, Search, FileText, CheckCircle2, XCircle, RefreshCcw } from "lucide-react";
+import { formatDate } from "@/lib/format";
 
 export default function FlowGate() {
   const session = useSession();
@@ -226,7 +227,7 @@ export default function FlowGate() {
                   <td className="p-3">{entry.action}</td>
                   <td className="p-3 text-muted-foreground">{entry.actorRole}</td>
                   <td className="p-3 text-muted-foreground">{entry.cycle}</td>
-                  <td className="p-3 text-muted-foreground">{entry.createdAt.slice(0, 10)}</td>
+                  <td className="p-3 text-muted-foreground">{formatDate(entry.createdAt)}</td>
                 </tr>
               ))}
             </tbody>
@@ -344,7 +345,7 @@ export default function FlowGate() {
               </div>
               <div className="space-y-1 text-right">
                 <span className="text-muted-foreground block text-xs uppercase tracking-wider">Created</span>
-                <span className="font-mono text-xs">{selected?.requestedAt}</span>
+                <span className="font-mono text-xs">{formatDate(selected?.requestedAt)}</span>
               </div>
             </div>
 
@@ -388,7 +389,7 @@ export default function FlowGate() {
               <span className="text-muted-foreground">Cycle:</span>
               <span>Cycle {selectedAuditEntry?.cycle}</span>
               <span className="text-muted-foreground">Timestamp:</span>
-              <span>{selectedAuditEntry?.createdAt}</span>
+              <span>{formatDate(selectedAuditEntry?.createdAt)}</span>
             </div>
             <div className="border-t pt-2 text-xs text-muted-foreground">
               <p>This is an immutable record of the workflow transition. Any modifications to the route itself are logged in the kernel system audit.</p>

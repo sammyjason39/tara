@@ -13,6 +13,7 @@ import { ApprovalStatusBadge } from "@/core/tools/ApprovalStatusBadge";
 import { useSession } from "@/core/security/session";
 import { financeService, type FinanceInvoiceRow } from "@/core/services/finance/financeService";
 import { logService } from "@/core/services/finance/logService";
+import { InvoiceCaptureModal } from "@/core/finance/FinanceModalForms";
 
 type InvoiceKind = "PAYABLE" | "RECEIVABLE";
 

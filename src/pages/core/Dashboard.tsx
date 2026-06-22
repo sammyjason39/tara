@@ -97,7 +97,7 @@ export default function CoreDashboard() {
         <div className="flex flex-col items-center gap-8">
           <div className="relative h-24 w-24">
              <div className="absolute inset-0 bg-primary/20 rounded-[2.5rem] blur-2xl animate-pulse" />
-             <div className="relative h-full w-full bg-primary rounded-[2.5rem] flex items-center justify-center shadow-2xl shadow-primary/40 border border-white/10">
+             <div className="relative h-full w-full bg-primary rounded-[2.5rem] flex items-center justify-center shadow-2xl shadow-primary/40 border border-border">
                 <LayoutDashboard className="h-12 w-12 text-primary-foreground" />
              </div>
           </div>
@@ -127,7 +127,7 @@ export default function CoreDashboard() {
              <div className="flex flex-col items-end">
                 <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">Governance Tier</span>
                 <div className="flex items-center gap-2 mt-0.5">
-                   <div className="h-1.5 w-1.5 rounded-full bg-success shadow-emerald-500/50 shadow-lg" />
+                   <div className="h-1.5 w-1.5 rounded-full bg-success shadow-success/50 shadow-lg" />
                    <span className="text-[11px] font-black text-foreground italic tracking-tighter">L4 COMMANDER</span>
                 </div>
              </div>
@@ -143,9 +143,9 @@ export default function CoreDashboard() {
           {/* Tier 0: Executive KPI Matrix */}
           <ExecutiveKpiRow kpis={dashboardData.kpis} />
 
-          {/* Tier 1: Financial Trajectory & Critical Actions */}
-          <div className="grid gap-8 lg:grid-cols-3">
-            <div className="lg:col-span-2">
+          {/* Tier 1: Financial Trajectory (full width) & Critical Actions */}
+          <div className="grid gap-8 lg:grid-cols-4">
+            <div className="lg:col-span-3">
               <FinancialTrajectoryChart 
                 data={dashboardData.timeseries.financialOverview} 
                 period={period}
@@ -173,25 +173,25 @@ export default function CoreDashboard() {
           </div>
 
           {/* Tier 4: Supply Chain & Operational Stability */}
-          <div className="grid gap-8 lg:grid-cols-3">
+          <div className="grid gap-8 lg:grid-cols-2 xl:grid-cols-3">
              <InventoryHealthWidget />
              <ProcurementPipelineWidget />
-             <div className="grid gap-8">
+             <div className="grid gap-8 lg:col-span-2 xl:col-span-1 lg:grid-cols-2 xl:grid-cols-1">
                 <PayrollBurnTrendChart />
                 <AttendanceGauge />
              </div>
           </div>
 
           {/* Tier 5: Risk & Governance Matrix */}
-          <div className="grid gap-8 lg:grid-cols-3">
+          <div className="grid gap-8 lg:grid-cols-2 xl:grid-cols-3">
              <AlertsRiskMatrix data={dashboardData.timeseries.alertsByModule as any} />
              <SystemHealthDonut data={dashboardData.timeseries.moduleHealth} />
              <ComplianceHeatmap />
           </div>
 
           {/* Tier 6: Market Intelligence & Event Feed */}
-          <div className="grid gap-8 lg:grid-cols-3">
-             <div className="lg:col-span-2">
+          <div className="grid gap-8 lg:grid-cols-4">
+             <div className="lg:col-span-3">
                 <GlobalEventFeed activities={dashboardData.activities} />
              </div>
              <div className="space-y-8">
@@ -238,7 +238,7 @@ export default function CoreDashboard() {
         <div className="flex items-center gap-2 md:gap-4">
           <Button 
             variant="outline" 
-            className="h-10 w-10 md:h-12 md:w-12 rounded-xl border-slate-200 bg-white/50 backdrop-blur-sm hover:bg-white transition-all p-0"
+            className="h-10 w-10 md:h-12 md:w-12 rounded-xl bg-card/50 backdrop-blur-sm hover:bg-card transition-all p-0"
             onClick={() => refresh(true)}
             disabled={refreshing}
           >

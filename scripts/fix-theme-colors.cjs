@@ -4,11 +4,30 @@
  * This script automatically fixes hardcoded colors in component files
  * by replacing them with theme-aware alternatives.
  * 
- * Usage: node scripts/fix-theme-colors.cjs
+ * Usage:
+ *   node scripts/fix-theme-colors.cjs            Fix the curated FILES_TO_PROCESS list.
+ *   node scripts/fix-theme-colors.cjs --all      Recursively fix every .ts/.tsx file under src/.
+ *   node scripts/fix-theme-colors.cjs --check     Report Hardcoded_Color usage without writing
+ *                                                 (exit code 1 if any are found — CI-friendly).
+ *   node scripts/fix-theme-colors.cjs --all --check   Report across the whole src/ tree.
+ *
+ * The explicit COLOR_MAPPINGS below are applied first (curated, high-confidence replacements),
+ * then a generic palette-class pass driven by the shared patterns in
+ * `scripts/theme-color-patterns.cjs` (which mirror `isHardcodedColor()`/`convertToThemeColor()`
+ * in `src/lib/theme-colors.ts`) catches remaining mappable palette classes such as
+ * `bg-emerald-100`. Raw hex/rgb/hsl literals are reported in --check mode but never auto-rewritten
+ * (there is no safe automatic Theme_Token for an arbitrary literal).
  */
 
 const fs = require('fs');
 const path = require('path');
+const patterns = require('./theme-color-patterns.cjs');
+
+const SRC_DIR = path.resolve(__dirname, '..', 'src');
+const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx']);
+// Files excluded from scanning: the enforcement infrastructure itself and generated output.
+const EXCLUDED_FILES = new Set([path.resolve(SRC_DIR, 'lib', 'theme-colors.ts')]);
+const EXCLUDED_DIRS = new Set(['node_modules', 'dist', '.git']);
 
 // Color replacement mappings
 const COLOR_MAPPINGS = [
@@ -162,17 +181,16 @@ const FILES_TO_PROCESS = [
 
 function fixColorsInFile(filePath) {
   const fullPath = path.resolve(__dirname, '..', filePath);
-  
+
   if (!fs.existsSync(fullPath)) {
     console.log(`❌ File not found: ${fullPath}`);
-    return false;
+    return 0;
   }
-  
+
   let content = fs.readFileSync(fullPath, 'utf8');
-  let originalContent = content;
   let changes = 0;
-  
-  // Apply all color mappings
+
+  // Pass 1: curated, high-confidence explicit mappings.
   for (const mapping of COLOR_MAPPINGS) {
     const matches = content.match(mapping.pattern);
     if (matches) {
@@ -180,36 +198,125 @@ function fixColorsInFile(filePath) {
       changes += matches.length;
     }
   }
-  
-  // Write back if changes were made
+
+  // Pass 2: generic palette-class mapping for anything the curated list missed
+  // (e.g. `bg-emerald-100`). Only classes with a canonical Theme_Token are rewritten.
+  content = content.replace(patterns.paletteClassRegex(), (cls) => {
+    const mapped = patterns.mapPaletteClass(cls);
+    if (mapped && mapped !== cls) {
+      changes += 1;
+      return mapped;
+    }
+    return cls;
+  });
+
   if (changes > 0) {
     fs.writeFileSync(fullPath, content, 'utf8');
     console.log(`✅ Fixed ${changes} colors in: ${filePath}`);
-    return true;
   } else {
     console.log(`⏭️  No changes needed for: ${filePath}`);
-    return false;
   }
+  return changes;
+}
+
+/** Report (without modifying) every Hardcoded_Color found in a file. Returns finding count. */
+function checkFile(filePath) {
+  const fullPath = path.resolve(__dirname, '..', filePath);
+  if (!fs.existsSync(fullPath)) {
+    console.log(`❌ File not found: ${fullPath}`);
+    return 0;
+  }
+
+  const content = fs.readFileSync(fullPath, 'utf8');
+  const lines = content.split(/\r?\n/);
+  let findings = 0;
+
+  lines.forEach((line, index) => {
+    const issues = [];
+
+    const classMatches = line.match(patterns.paletteClassRegex());
+    if (classMatches) {
+      for (const cls of [...new Set(classMatches)]) {
+        const mapped = patterns.mapPaletteClass(cls);
+        issues.push(mapped ? `${cls} → ${mapped}` : `${cls} (no auto-mapping)`);
+      }
+    }
+    if (patterns.hexColorRegex().test(line)) issues.push('hex literal');
+    if (patterns.rgbColorRegex().test(line)) issues.push('rgb()/rgba() literal');
+    if (patterns.hslColorRegex().test(line)) issues.push('hsl()/hsla() literal');
+
+    if (issues.length > 0) {
+      findings += issues.length;
+      console.log(`  ${filePath}:${index + 1}  ${issues.join(', ')}`);
+    }
+  });
+
+  return findings;
+}
+
+/** Recursively collect .ts/.tsx files under a directory, skipping excluded paths. */
+function collectSourceFiles(dir) {
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const abs = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (!EXCLUDED_DIRS.has(entry.name)) out.push(...collectSourceFiles(abs));
+    } else if (SOURCE_EXTENSIONS.has(path.extname(entry.name)) && !EXCLUDED_FILES.has(abs)) {
+      out.push(path.relative(path.resolve(__dirname, '..'), abs).split(path.sep).join('/'));
+    }
+  }
+  return out;
 }
 
 function main() {
+  const args = process.argv.slice(2);
+  const checkOnly = args.includes('--check');
+  const scanAll = args.includes('--all');
+
+  const files = scanAll ? collectSourceFiles(SRC_DIR) : FILES_TO_PROCESS;
+
+  if (checkOnly) {
+    console.log('🔍 Checking for Hardcoded_Color usage (no files will be modified)...\n');
+    let totalFindings = 0;
+    let filesWithFindings = 0;
+    for (const filePath of files) {
+      const findings = checkFile(filePath);
+      if (findings > 0) {
+        filesWithFindings++;
+        totalFindings += findings;
+      }
+    }
+    console.log('\n' + '='.repeat(60));
+    console.log('📊 Summary (check mode):');
+    console.log(`   Files scanned: ${files.length}`);
+    console.log(`   Files with Hardcoded_Color: ${filesWithFindings}`);
+    console.log(`   Total findings: ${totalFindings}`);
+    console.log('='.repeat(60));
+    if (totalFindings > 0) {
+      console.log('\n❌ Hardcoded colors found. Run without --check to auto-fix mappable classes.');
+      process.exitCode = 1;
+    } else {
+      console.log('\n✅ No Hardcoded_Color usage found.');
+    }
+    return;
+  }
+
   console.log('🔍 Starting theme color fix script...\n');
-  
-  let totalFiles = 0;
+
   let totalChanges = 0;
   let filesChanged = 0;
-  
-  for (const filePath of FILES_TO_PROCESS) {
-    totalFiles++;
-    const changed = fixColorsInFile(filePath);
-    if (changed) {
+
+  for (const filePath of files) {
+    const changes = fixColorsInFile(filePath);
+    if (changes > 0) {
       filesChanged++;
+      totalChanges += changes;
     }
   }
-  
+
   console.log('\n' + '='.repeat(60));
   console.log(`📊 Summary:`);
-  console.log(`   Total files checked: ${totalFiles}`);
+  console.log(`   Total files checked: ${files.length}`);
   console.log(`   Files changed: ${filesChanged}`);
   console.log(`   Total replacements: ${totalChanges}`);
   console.log('='.repeat(60));

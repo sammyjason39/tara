@@ -41,7 +41,7 @@ export const RevenueAnalytics: React.FC<RevenueAnalyticsProps> = ({ data }) => {
               </p>
             </div>
           </div>
-          <div className="bg-success/10 backdrop-blur-3xl px-8 py-4 rounded-2xl border border-emerald-500/20 text-right group/growth shadow-xl">
+          <div className="bg-success/10 backdrop-blur-3xl px-8 py-4 rounded-2xl border border-success/20 text-right group/growth shadow-xl">
             <p className="text-[10px] font-black uppercase tracking-widest text-success mb-1 italic">
               Velocity Uptick
             </p>

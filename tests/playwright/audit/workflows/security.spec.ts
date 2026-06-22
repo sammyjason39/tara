@@ -71,7 +71,8 @@ test.describe('Security Workflow', () => {
     await recordStep(results, WORKFLOW, 6, 'Resolve incident and verify RBAC enforcement', async () => {
       await navigateTo(page, '/core/security');
       await expect(page.locator('body')).toBeVisible({ timeout: 15_000 });
-      await expect(page.locator('main, [role="main"]')).toBeVisible({ timeout: 10_000 });
+      // Use .first() to handle multiple main/section elements from nested layouts
+      await expect(page.locator('main, [role="main"], section').first()).toBeVisible({ timeout: 10_000 });
     });
   });
 });

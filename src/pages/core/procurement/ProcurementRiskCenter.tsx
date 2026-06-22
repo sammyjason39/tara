@@ -10,6 +10,7 @@ import { ApprovalStatusBadge } from "@/core/tools/ApprovalStatusBadge";
 import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { procurementService } from "@/core/services/procurement/procurementService";
+import { formatDateTime } from "@/lib/format";
 import type {
   GoodsReceiptSyncRecord,
   LegalContractHandoff,
@@ -17,6 +18,7 @@ import type {
   RiskSignal,
   SupplierAccessProvisioning,
 } from "@/core/types/procurement/procurement";
+import { useRunRiskScan, useSetRiskSignalStatus } from "@/modules/procurement/hooks";
 
 const hoursSince = (timestamp: string) =>
   Math.max(0, (Date.now() - new Date(timestamp).getTime()) / (1000 * 60 * 60));
@@ -47,6 +49,10 @@ export default function ProcurementRiskCenter() {
   const [loading, setLoading] = useState(true);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // TanStack Query mutations
+  const runRiskScanMutation = useRunRiskScan();
+  const setRiskSignalStatusMutation = useSetRiskSignalStatus();
 
   const clearStatus = () => {
     setStatusMessage(null);
@@ -146,7 +152,7 @@ export default function ProcurementRiskCenter() {
 
   const runScan = async () => {
     try {
-      await procurementService.runRiskScan(session.tenant_id, session);
+      await runRiskScanMutation.mutateAsync();
       setStatusMessage("Anti-fraud risk scan completed.");
       refresh();
     } catch (err) {
@@ -156,7 +162,7 @@ export default function ProcurementRiskCenter() {
 
   const setStatus = async (riskSignalId: string, status: RiskSignal["status"]) => {
     try {
-      await procurementService.setRiskSignalStatus(session.tenant_id, session, riskSignalId, status);
+      await setRiskSignalStatusMutation.mutateAsync({ riskSignalId, status });
       setStatusMessage(`Risk signal status updated to ${status}.`);
       refresh();
     } catch (err) {
@@ -311,7 +317,7 @@ export default function ProcurementRiskCenter() {
               ) : (
                 (Array.isArray(auditEvents) ? auditEvents : []).map((event) => (
                   <tr key={event.id} className="border-t">
-                    <td className="p-3 text-muted-foreground">{(event.createdAt ?? "").slice(0, 16).replace("T", " ")}</td>
+                    <td className="p-3 text-muted-foreground">{formatDateTime(event.createdAt)}</td>
                     <td className="p-3 font-medium">{event.action}</td>
                     <td className="p-3 text-muted-foreground">
                       {event.entityType} / {event.entityId}

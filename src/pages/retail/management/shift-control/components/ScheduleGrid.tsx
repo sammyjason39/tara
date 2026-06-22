@@ -409,7 +409,7 @@ export const ScheduleGrid: React.FC<ScheduleGridProps> = ({
                           className={cn(
                             "absolute rounded-2xl shadow-sm border transition-all z-20 overflow-hidden group/shift backdrop-blur-sm",
                             shift.status === "draft"
-                              ? "bg-warning border-amber-500/20 text-warning hover:border-amber-400"
+                              ? "bg-warning border-warning/20 text-warning hover:border-warning"
                               : "bg-primary/10 border-primary text-primary hover:border-primary",
                             isInteracting && "opacity-50 scale-95",
                           )}

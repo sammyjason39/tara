@@ -16,8 +16,8 @@ export const GlobalEventFeed: React.FC<GlobalEventFeedProps> = ({ activities = [
 
   const getSeverityStyles = (severity?: string) => {
     switch (severity) {
-      case 'critical': return 'text-destructive bg-destructive border-rose-500/20';
-      case 'warning': return 'text-warning bg-warning border-amber-500/20';
+      case 'critical': return 'text-destructive bg-destructive border-destructive/20';
+      case 'warning': return 'text-warning bg-warning border-warning/20';
       default: return 'text-primary bg-primary border-primary';
     }
   };
@@ -34,7 +34,7 @@ export const GlobalEventFeed: React.FC<GlobalEventFeedProps> = ({ activities = [
   };
 
   return (
-    <div className="flex flex-col h-full rounded-[3rem] border border-slate-800 bg-muted p-10 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group overflow-hidden relative">
+    <div className="flex flex-col h-full rounded-[3rem] border border-border bg-muted p-10 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group overflow-hidden relative">
       <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:opacity-10 transition-opacity">
          <Globe className="h-40 w-40 text-white" />
       </div>

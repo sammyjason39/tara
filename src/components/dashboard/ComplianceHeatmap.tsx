@@ -19,21 +19,21 @@ const data: ComplianceItem[] = [
 
 export const ComplianceHeatmap: React.FC = () => {
   const getCellColor = (value: number) => {
-    if (value >= 95) return 'bg-success text-success border-emerald-500/20 shadow-[0_0_15px_-5px_rgba(16,185,129,0.3)]';
-    if (value >= 90) return 'bg-success text-success border-emerald-400/10';
-    if (value >= 85) return 'bg-warning text-warning border-amber-400/10';
-    return 'bg-destructive text-destructive border-rose-400/20 shadow-[0_0_15px_-5px_rgba(244,63,94,0.3)]';
+    if (value >= 95) return 'bg-success text-success border-success/20 shadow-[0_0_15px_-5px_rgba(16,185,129,0.3)]';
+    if (value >= 90) return 'bg-success text-success border-success/10';
+    if (value >= 85) return 'bg-warning text-warning border-warning/10';
+    return 'bg-destructive text-destructive border-destructive/20 shadow-[0_0_15px_-5px_rgba(244,63,94,0.3)]';
   };
 
   return (
-    <div className="flex flex-col h-full rounded-[2.5rem] border border-slate-800 bg-muted p-10 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group overflow-hidden relative">
+    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-card p-10 shadow-2xl transition-all duration-500 group overflow-hidden relative">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary border border-primary">
             <Gavel className="h-6 w-6" />
           </div>
           <div>
-            <h4 className="text-xl font-black italic uppercase tracking-tighter text-white">Compliance Heatmap</h4>
+            <h4 className="text-xl font-black italic uppercase tracking-tighter text-foreground">Compliance Heatmap</h4>
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Governance adherence by region</p>
           </div>
         </div>
@@ -58,7 +58,7 @@ export const ComplianceHeatmap: React.FC = () => {
             {data.map((row, i) => (
               <tr key={i} className="group/row">
                 <td className="p-2">
-                  <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground group-hover/row:text-white transition-colors">{row.region}</span>
+                  <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground group-hover/row:text-foreground transition-colors">{row.region}</span>
                 </td>
                 {[row.tax, row.labor, row.data, row.audit].map((val, j) => (
                   <td key={j} className="p-0">

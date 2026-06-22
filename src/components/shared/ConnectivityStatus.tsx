@@ -54,8 +54,8 @@ export const ConnectivityStatus: React.FC = () => {
       className={cn(
         "flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium transition-all duration-300",
         status === "synced"
-          ? "bg-success text-success border border-emerald-500/20"
-          : "bg-warning text-warning border border-amber-500/20 animate-pulse"
+          ? "bg-success text-success border border-success/20"
+          : "bg-warning text-warning border border-warning/20 animate-pulse"
       )}
     >
       {isSyncing ? (

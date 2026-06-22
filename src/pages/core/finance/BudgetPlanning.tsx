@@ -25,7 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { useSession } from "@/core/security/session";
-import { formatCurrency } from "@/lib/utils/currency";
+import { formatCurrency } from "@/lib/format";
 import { useModuleActivation } from "@/hooks/useModuleActivation";
 import { useCFO } from "@/core/finance/CFOContext";
 import { GlobalFinancialFilterBar } from "./components/GlobalFinancialFilterBar";
@@ -62,7 +62,7 @@ export default function BudgetPlanning() {
           ? "Consolidated treasury view of all departmental allocations, variances, and strategic reserves."
           : "Build and submit your period operational and capital expenditure plans for finance clearance."}
         primaryAction={
-          <div className="flex bg-muted p-1 rounded-xl border border-slate-200">
+          <div className="flex bg-muted p-1 rounded-xl border border-border">
             <Button 
               variant={perspective === "DEPARTMENTAL" ? "default" : "ghost"} 
               size="sm"
@@ -163,7 +163,7 @@ export default function BudgetPlanning() {
                               </div>
                             )}
                             {isModuleActive("fnb") && (
-                              <div className="p-4 rounded-2xl border bg-muted relative group cursor-pointer hover:border-emerald-300 transition-all">
+                              <div className="p-4 rounded-2xl border bg-muted relative group cursor-pointer hover:border-success transition-all">
                                 <BudgetProgressRow label="FnB Hub" total={1500000000} spent={920000000} color="emerald" />
                                 <ArrowRight className="absolute top-4 right-4 h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all" />
                               </div>
@@ -175,7 +175,7 @@ export default function BudgetPlanning() {
                               </div>
                             )}
                             {isModuleActive("farming") && (
-                              <div className="p-4 rounded-2xl border bg-muted relative group cursor-pointer hover:border-emerald-300 transition-all">
+                              <div className="p-4 rounded-2xl border bg-muted relative group cursor-pointer hover:border-success transition-all">
                                 <BudgetProgressRow label="Farm Desk" total={7500000000} spent={4800000000} color="emerald" />
                                 <ArrowRight className="absolute top-4 right-4 h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all" />
                               </div>
@@ -240,8 +240,8 @@ export default function BudgetPlanning() {
                     </p>
                   </div>
                 </div>
-                <div className="p-4 rounded-2xl bg-success border border-emerald-100 flex gap-4">
-                  <div className="p-3 bg-white rounded-xl h-fit border border-emerald-100">
+                <div className="p-4 rounded-2xl bg-success border border-success flex gap-4">
+                  <div className="p-3 bg-white rounded-xl h-fit border border-success">
                     <Zap className="w-6 h-6 text-success" />
                   </div>
                   <div>
@@ -256,7 +256,7 @@ export default function BudgetPlanning() {
           </div>
         </div>
 
-        <div className="space-y-6 h-fit bg-muted p-6 rounded-3xl border border-dashed border-slate-200">
+        <div className="space-y-6 h-fit bg-muted p-6 rounded-3xl border border-dashed border-border">
           <div>
             <div className="flex items-center gap-2 mb-4">
               <Plus className="w-5 h-5 text-primary" />
@@ -269,11 +269,11 @@ export default function BudgetPlanning() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">Item Description</label>
-                <Input placeholder="e.g. New Workstation Laptops" className="h-12 border-slate-200 rounded-xl" />
+                <Input placeholder="e.g. New Workstation Laptops" className="h-12 border-border rounded-xl" />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">Requested Amount (Rp)</label>
-                <Input type="number" placeholder="50,000,000" className="h-12 border-slate-200 rounded-xl" />
+                <Input type="number" placeholder="50,000,000" className="h-12 border-border rounded-xl" />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">Expense Category</label>
@@ -302,7 +302,7 @@ export default function BudgetPlanning() {
             </div>
           </div>
 
-          <div className="pt-6 border-t border-slate-200">
+          <div className="pt-6 border-t border-border">
             <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-success" /> Compliance Checklist
             </h4>
@@ -321,19 +321,19 @@ export default function BudgetPlanning() {
 function BudgetStatCard({ label, value, trend, icon: Icon, color }: any) {
   const colors = {
     indigo: "text-primary bg-primary border-primary",
-    emerald: "text-success bg-success border-emerald-100",
-    amber: "text-warning bg-warning border-amber-100",
-    rose: "text-destructive bg-destructive border-rose-100",
-    slate: "text-muted-foreground bg-muted border-slate-100",
-  }[color as string] || "text-muted-foreground bg-muted border-slate-100";
+    emerald: "text-success bg-success border-success",
+    amber: "text-warning bg-warning border-warning",
+    rose: "text-destructive bg-destructive border-destructive",
+    slate: "text-muted-foreground bg-muted border-border",
+  }[color as string] || "text-muted-foreground bg-muted border-border";
 
   return (
-    <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all">
+    <div className="bg-white p-5 rounded-3xl border border-border shadow-sm hover:shadow-md transition-all">
       <div className={`p-2.5 rounded-2xl w-fit mb-3 border ${colors}`}>
         <Icon className="w-5 h-5" />
       </div>
       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">{label}</p>
-      <p className="text-xl font-black text-muted-foreground tracking-tight">{formatCurrency(value)}</p>
+      <p className="text-xl font-black text-muted-foreground tracking-tight">{formatCurrency(value, "IDR", "id-ID")}</p>
       <p className="text-[10px] font-bold text-muted-foreground mt-2 flex items-center gap-1 uppercase tracking-wider">
         {trend}
       </p>
@@ -357,7 +357,7 @@ function BudgetProgressRow({ label, total, spent, color }: any) {
         <div>
           <p className="text-xs font-black uppercase tracking-tight text-muted-foreground italic">{label}</p>
           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5">
-            {formatCurrency(spent)} / {formatCurrency(total)}
+            {formatCurrency(spent, "IDR", "id-ID")} / {formatCurrency(total, "IDR", "id-ID")}
           </p>
         </div>
         <p className="text-xs font-black text-muted-foreground">{percent}%</p>
@@ -371,18 +371,18 @@ function BudgetProgressRow({ label, total, spent, color }: any) {
 
 function BudgetTableRow({ item, total, spent, status }: any) {
   const statusConfig = {
-    HEALTHY: { label: "Healthy", class: "bg-success text-success border-emerald-200" },
-    WARNING: { label: "Warning", class: "bg-warning text-warning border-amber-200" },
-    CRITICAL: { label: "Critical", class: "bg-destructive text-destructive border-rose-200" },
-    ON_HOLD: { label: "On Hold", class: "bg-muted text-muted-foreground border-slate-200" },
-  }[status as string] || { label: "Unknown", class: "bg-muted text-muted-foreground border-slate-200" };
+    HEALTHY: { label: "Healthy", class: "bg-success text-success border-success" },
+    WARNING: { label: "Warning", class: "bg-warning text-warning border-warning" },
+    CRITICAL: { label: "Critical", class: "bg-destructive text-destructive border-destructive" },
+    ON_HOLD: { label: "On Hold", class: "bg-muted text-muted-foreground border-border" },
+  }[status as string] || { label: "Unknown", class: "bg-muted text-muted-foreground border-border" };
 
   return (
     <tr className="hover:bg-muted transition-colors">
       <td className="p-4 font-bold text-muted-foreground">{item}</td>
-      <td className="p-4 text-muted-foreground font-medium">{formatCurrency(total)}</td>
-      <td className="p-4 text-muted-foreground font-medium">{formatCurrency(spent)}</td>
-      <td className="p-4 text-muted-foreground font-bold">{formatCurrency(total - spent)}</td>
+      <td className="p-4 text-muted-foreground font-medium">{formatCurrency(total, "IDR", "id-ID")}</td>
+      <td className="p-4 text-muted-foreground font-medium">{formatCurrency(spent, "IDR", "id-ID")}</td>
+      <td className="p-4 text-muted-foreground font-bold">{formatCurrency(total - spent, "IDR", "id-ID")}</td>
       <td className="p-4">
         <Badge variant="outline" className={`font-black uppercase tracking-widest text-[9px] h-6 px-3 border ${statusConfig.class}`}>
           {statusConfig.label}
@@ -395,7 +395,7 @@ function BudgetTableRow({ item, total, spent, status }: any) {
 function FiscalEventBox({ date, label, type }: any) {
   return (
     <div className="flex items-center gap-4 p-3 rounded-2xl hover:bg-muted transition-colors cursor-pointer group">
-      <div className="flex flex-col items-center justify-center h-12 w-12 bg-white rounded-xl border border-slate-100 shadow-sm group-hover:border-primary transition-colors">
+      <div className="flex flex-col items-center justify-center h-12 w-12 bg-white rounded-xl border border-border shadow-sm group-hover:border-primary transition-colors">
         <p className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">{date.split(" ")[0]}</p>
         <p className="text-sm font-black text-muted-foreground">{date.split(" ")[1]}</p>
       </div>
@@ -414,7 +414,7 @@ function CheckItem({ label, status }: any) {
       {status === "COMPLETED" ? (
         <CheckCircle2 className="w-4 h-4 text-success" />
       ) : (
-        <div className="w-4 h-4 rounded-full border-2 border-slate-200" />
+        <div className="w-4 h-4 rounded-full border-2 border-border" />
       )}
       <p className={`text-[10px] font-black uppercase tracking-widest ${status === "COMPLETED" ? "text-muted-foreground" : "text-muted-foreground"}`}>
         {label}

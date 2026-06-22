@@ -15,6 +15,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TrendingUp, Target, Zap, Activity } from "lucide-react";
 import type { RetailOrder, RetailStore, RetailChannel } from "@/core/types/retail/retail";
 import { useSession } from "@/core/security/session";
+import { apiRequest } from "@/core/api/apiClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface FleetRevenueMatrixProps {
   orders: RetailOrder[];
@@ -28,6 +30,7 @@ export const FleetRevenueMatrix: React.FC<FleetRevenueMatrixProps> = ({
   channels,
 }) => {
   const session = useSession();
+  const { toast } = useToast();
 
   // Aggregate sales by node (store or channel)
   const nodeSales = useMemo(() => {
@@ -114,16 +117,26 @@ export const FleetRevenueMatrix: React.FC<FleetRevenueMatrixProps> = ({
                 </div>
                 <div className="flex gap-2">
                   <button 
-                    onClick={() => {
-                      alert("Serializing multi-tenant revenue data to CSV. (Simulated)");
+                    onClick={async () => {
+                      try {
+                        await apiRequest("/retail/analytics/fleet-serialize", "POST", session);
+                        toast({ title: "Export Complete", description: "Fleet revenue data serialized to CSV." });
+                      } catch (e) {
+                        toast({ title: "Export Failed", description: "Could not serialize fleet revenue data.", variant: "destructive" });
+                      }
                     }}
                     className="px-4 py-2 bg-secondary/40 border border-border rounded-xl text-[9px] font-black italic uppercase text-muted-foreground hover:text-foreground hover:bg-white/10 transition-all tracking-widest"
                   >
                     Export CSV
                   </button>
                   <button 
-                    onClick={() => {
-                      alert("Requesting strategic yield projections from AI core. (Simulated)");
+                    onClick={async () => {
+                      try {
+                        await apiRequest("/retail/analytics/strategic-yield", "POST", session);
+                        toast({ title: "Forecast Generated", description: "Strategic yield projections computed successfully." });
+                      } catch (e) {
+                        toast({ title: "Forecast Failed", description: "Could not generate strategic yield projections.", variant: "destructive" });
+                      }
                     }}
                     className="px-4 py-2 bg-primary/20 border border-primary rounded-xl text-[9px] font-black italic uppercase text-primary hover:text-primary hover:bg-primary/40 transition-all tracking-widest"
                   >

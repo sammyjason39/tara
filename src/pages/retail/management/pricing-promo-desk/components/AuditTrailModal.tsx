@@ -25,7 +25,7 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl bg-secondary border-slate-800 p-8 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.4)]">
+      <DialogContent className="max-w-2xl bg-secondary border-border p-8 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.4)]">
         <DialogHeader className="mb-8">
           <DialogTitle className="text-xl font-black italic tracking-tighter flex items-center gap-3 text-foreground">
             <div className="p-2.5 rounded-2xl bg-primary/20 text-primary">
@@ -45,10 +45,10 @@ export const AuditTrailModal: React.FC<AuditTrailModalProps> = ({
                 No governance events recorded yet.
               </div>
             ) : (
-              <div className="relative border-l-2 border-slate-800 pl-8 ml-4 space-y-10 pb-4">
+              <div className="relative border-l-2 border-border pl-8 ml-4 space-y-10 pb-4">
                 {(Array.isArray(auditLog) ? auditLog : []).map((entry) => (
                   <div key={entry.id} className="relative group">
-                    <div className="absolute -left-[41px] top-1.5 w-4 h-4 rounded-full bg-secondary/60 border-[3px] border-slate-900 group-hover:bg-primary group-hover:shadow-[0_0_15px_rgba(59,130,246,0.6)] transition-all z-10" />
+                    <div className="absolute -left-[41px] top-1.5 w-4 h-4 rounded-full bg-secondary/60 border-[3px] border-border group-hover:bg-primary group-hover:shadow-[0_0_15px_rgba(59,130,246,0.6)] transition-all z-10" />
 
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex items-center gap-4">

@@ -15,7 +15,7 @@ export const ProcurementPipelineWidget: React.FC = () => {
 
   return (
     <div 
-      className="flex flex-col h-full rounded-[3rem] border border-slate-800 bg-muted p-10 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group cursor-pointer overflow-hidden relative"
+      className="flex flex-col h-full rounded-[3rem] border border-border bg-muted p-10 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group cursor-pointer overflow-hidden relative"
       onClick={() => navigate('/core/procurement/prs')}
     >
       <div className="flex items-center justify-between mb-10 relative z-10">
@@ -34,7 +34,7 @@ export const ProcurementPipelineWidget: React.FC = () => {
           {stages.map((s, i) => (
             <div key={i} className="flex flex-col items-center gap-4 group/stage">
               <div className={cn(
-                "z-10 flex h-16 w-16 items-center justify-center rounded-[1.5rem] border-4 border-slate-900 bg-muted shadow-2xl transition-all duration-500 group-hover/stage:scale-110",
+                "z-10 flex h-16 w-16 items-center justify-center rounded-[1.5rem] border-4 border-border bg-muted shadow-2xl transition-all duration-500 group-hover/stage:scale-110",
                 s.color
               )}>
                 <s.icon className={cn("h-6 w-6 transition-all", s.glow)} />

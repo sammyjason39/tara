@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { EmptyState, ErrorState } from "@/components/shared/AsyncState";
 
 const hoursSince = (timestamp: string) =>
   Math.max(0, (Date.now() - new Date(timestamp).getTime()) / (1000 * 60 * 60));
@@ -93,7 +94,7 @@ export default function ProcurementInsights() {
   return (
     <div className="min-h-full p-8 space-y-10 bg-muted dark:bg-muted">
       {/* Tactical Header */}
-      <div className="flex items-end justify-between border-b border-slate-200 dark:border-slate-800 pb-8">
+      <div className="flex items-end justify-between border-b border-muted dark:border-muted pb-8">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-warning font-black text-[10px] uppercase tracking-[0.3em]">
             <Activity className="h-3 w-3" /> Supply Intelligence Node
@@ -110,12 +111,12 @@ export default function ProcurementInsights() {
               placeholder="Query Intelligence..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 bg-white dark:bg-muted border-slate-200 dark:border-slate-800 w-64 rounded-xl focus:ring-amber-500/20"
+              className="pl-10 bg-white dark:bg-muted border-muted dark:border-muted w-64 rounded-xl focus:ring-warning/20"
             />
           </div>
           <Button 
             onClick={refresh}
-            className="rounded-xl bg-warning hover:bg-warning text-white shadow-lg shadow-amber-600/20 gap-2"
+            className="rounded-xl bg-warning hover:bg-warning text-white shadow-lg shadow-warning/20 gap-2"
           >
             <RefreshCcw className={cn("h-4 w-4", loading && "animate-spin")} />
             Sync
@@ -128,7 +129,7 @@ export default function ProcurementInsights() {
         {Object.entries(integrationMetrics).map(([key, data]) => {
           const Icon = data.icon;
           return (
-            <div key={key} className="group relative p-6 rounded-[2rem] bg-white dark:bg-muted border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
+            <div key={key} className="group relative p-6 rounded-[2rem] bg-white dark:bg-muted border border-muted dark:border-muted shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
               <div className={cn(
                 "absolute top-6 right-6 h-12 w-12 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:rotate-12",
                 data.color === 'rose' ? "bg-destructive text-destructive" :
@@ -183,9 +184,21 @@ export default function ProcurementInsights() {
               Array(4).fill(0).map((_, i) => (
                 <div key={i} className="h-24 rounded-3xl bg-muted animate-pulse" />
               ))
+            ) : errorMessage ? (
+              <ErrorState
+                title="Couldn't load spend insights"
+                description={errorMessage}
+                onRetry={refresh}
+              />
+            ) : insights.length === 0 ? (
+              <EmptyState
+                icon={TrendingUp}
+                title="No spend insights yet"
+                description="No procurement spend analytics are available for this tenant scope."
+              />
             ) : (
               (Array.isArray(insights) ? insights : []).map((insight) => (
-                <div key={insight.id} className="group flex items-center justify-between p-6 rounded-3xl bg-white dark:bg-muted border border-slate-100 dark:border-slate-800 hover:border-amber-500/30 hover:shadow-xl transition-all duration-500">
+                <div key={insight.id} className="group flex items-center justify-between p-6 rounded-3xl bg-white dark:bg-muted border border-muted dark:border-muted hover:border-warning/30 hover:shadow-xl transition-all duration-500">
                   <div className="flex items-center gap-6">
                     <div className="h-12 w-12 rounded-2xl bg-muted dark:bg-muted flex items-center justify-center group-hover:bg-warning group-hover:text-white transition-all duration-500 shadow-inner">
                       <Zap className="h-5 w-5" />
@@ -216,7 +229,7 @@ export default function ProcurementInsights() {
              </h3>
           </div>
 
-          <div className="p-8 rounded-[2.5rem] bg-primary text-white relative overflow-hidden group shadow-2xl shadow-indigo-950/20">
+          <div className="p-8 rounded-[2.5rem] bg-primary text-white relative overflow-hidden group shadow-2xl shadow-primary/20">
              <div className="absolute top-0 right-0 h-40 w-40 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl group-hover:scale-150 transition-transform duration-1000" />
              <div className="relative z-10 space-y-6">
                 <div className="space-y-2">
@@ -250,7 +263,7 @@ export default function ProcurementInsights() {
           </div>
 
           {/* SLA Alert Box */}
-          <div className="p-6 rounded-3xl bg-destructive border border-rose-500/20 space-y-4">
+          <div className="p-6 rounded-3xl bg-destructive border border-destructive/20 space-y-4">
              <div className="flex items-center gap-3 text-destructive">
                 <AlertCircle className="h-5 w-5" />
                 <span className="text-xs font-black uppercase tracking-widest">Critical SLA Alerts</span>

@@ -1,5 +1,5 @@
 import { TenantContext } from "../../gateway/tenant-context.interface";
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException, BadRequestException, ConflictException } from "@nestjs/common";
 import { CreateAdjustmentDto } from "./dto/create-adjustment.dto";
 import { CreateItemDto } from "./dto/create-item.dto";
 import { StockIntakeDto } from "./dto/stock-intake.dto";
@@ -44,12 +44,12 @@ export class InventoryService {
     return this.repository.getDashboard(ctx, location_id);
   }
 
-  async getItems(ctx: TenantContext, location_id?: string, page: number = 1, limit: number = 30, search?: string, category_id?: string, status?: string, sortBy?: "name" | "quantity" | "created_at", sortOrder?: "asc" | "desc") {
-    return this.repository.getItems(ctx, location_id, page, limit, search, category_id, status, sortBy, sortOrder);
+  async getItems(ctx: TenantContext, location_id?: string, page: number = 1, limit: number = 30, search?: string, category_id?: string, status?: string, is_anomaly?: boolean, sortBy?: "name" | "quantity" | "created_at", sortOrder?: "asc" | "desc") {
+    return this.repository.getItems(ctx, location_id, page, limit, search, category_id, status, is_anomaly, sortBy, sortOrder);
   }
 
-  async countItems(ctx: TenantContext, location_id?: string, search?: string, category_id?: string) {
-    return this.repository.countItems(ctx, location_id, search, category_id);
+  async countItems(ctx: TenantContext, location_id?: string, search?: string, category_id?: string, is_anomaly?: boolean) {
+    return this.repository.countItems(ctx, location_id, search, category_id, is_anomaly);
   }
 
   async createItem(ctx: TenantContext, data: CreateItemDto, user_id?: string) {
@@ -100,8 +100,12 @@ export class InventoryService {
     return this.repository.countBalances(ctx, location_id, department_id, search, category_id, item_id);
   }
 
-  async getMovements(ctx: TenantContext, item_id?: string) {
-    return this.repository.getMovements(ctx, item_id);
+  async getMovements(ctx: TenantContext, item_id?: string, page: number = 1, limit: number = 50) {
+    return this.repository.getMovements(ctx, item_id, page, limit);
+  }
+
+  async countMovements(ctx: TenantContext, item_id?: string) {
+    return this.repository.countMovements(ctx, item_id);
   }
 
   async intakeStock(ctx: TenantContext, data: StockIntakeDto, user_id?: string, tx?: any, correlation_id?: string) {
@@ -1092,6 +1096,41 @@ export class InventoryService {
     return result;
   }
 
+  /**
+   * Soft-delete an inventory item by setting status to "deleted" and updating the timestamp.
+   * Does NOT remove the database row — preserves data for audit/recovery purposes.
+   *
+   * Validates: Requirement 10.7
+   */
+  async softDeleteItem(ctx: TenantContext, item_id: string, user_id?: string) {
+    const item = await this.prisma.item_masters.findFirst({
+      where: { id: item_id, tenant_id: ctx.tenant_id },
+    });
+    if (!item) {
+      throw new NotFoundException(`Inventory item not found`);
+    }
+
+    const result = await this.prisma.item_masters.update({
+      where: { id: item_id, tenant_id: ctx.tenant_id },
+      data: {
+        status: "deleted",
+        updated_at: new Date(),
+      },
+    });
+
+    if (user_id) {
+      await this.auditService.log({
+        tenant_id: ctx.tenant_id,
+        user_id,
+        module: "inventory",
+        action: "SOFT_DELETE",
+        entity_type: "ITEM",
+        entity_id: item_id,
+      });
+    }
+    return result;
+  }
+
   async batchDeleteItems(ctx: TenantContext,
     itemIds: string[],
     user_id?: string,
@@ -1377,6 +1416,153 @@ export class InventoryService {
     return this.repository.createProductCategory(ctx, data);
   }
 
+  async getOrCreateAnomalyCategory(ctx: TenantContext) {
+    // Try to find existing Anomaly category
+    let category = await this.prisma.product_categories.findFirst({
+      where: {
+        tenant_id: ctx.tenant_id,
+        name: "Anomaly",
+      },
+    });
+
+    if (!category) {
+      // Create new Anomaly category if it doesn't exist
+      category = await this.prisma.product_categories.create({
+        data: {
+          id: uuidv4(),
+          tenant_id: ctx.tenant_id,
+          name: "Anomaly",
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      });
+    }
+
+    return category;
+  }
+
+  async getOrCreateAnomalyCategoryWithFlag(ctx: TenantContext) {
+    // This method wraps the anomaly category to indicate it's the anomaly category
+    const category = await this.getOrCreateAnomalyCategory(ctx);
+    return {
+      ...category,
+      is_anomaly_category: true,
+    };
+  }
+
+  async batchCreateIncompleteItems(
+    ctx: TenantContext,
+    items: { barcode: string; name: string }[],
+    user_id?: string
+  ): Promise<any[]> {
+    // Get anomaly category first
+    const anomalyCategory = await this.getOrCreateAnomalyCategory(ctx);
+
+    // Process each item and create with is_anomaly=true and status="incomplete"
+    const createdItems: any[] = [];
+    const failedItems: { barcode: string; error: string }[] = [];
+
+    for (const item of items) {
+      try {
+        // Generate SKU from barcode if not already available
+        let sku = item.barcode;
+        if (!item.barcode || item.barcode.trim() === "") {
+          sku = await this.skuGenerator.generateSku(ctx, "Anomaly");
+        }
+
+        // Create the incomplete item
+        const inventoryItem = await this.repository.createItem(ctx, {
+          sku,
+          name: item.name,
+          category: "Anomaly",
+          barcode: item.barcode,
+          uom: "pcs",
+          status: "incomplete",
+          base_price: 0,
+          tax_rate: 0.11,
+          is_anomaly: true,
+          department_id: null,
+        });
+
+        createdItems.push({
+          id: inventoryItem.id,
+          sku: inventoryItem.sku,
+          name: inventoryItem.name,
+          barcode: inventoryItem.barcode,
+          category_id: inventoryItem.category_id,
+          is_anomaly: true,
+          status: "incomplete" as const,
+          created_at: inventoryItem.created_at,
+        });
+      } catch (err: any) {
+        failedItems.push({
+          barcode: item.barcode,
+          error: err.message || "Failed to create item",
+        });
+      }
+    }
+
+    // Log audit trail
+    if (user_id && createdItems.length > 0) {
+      await this.auditService.log({
+        tenant_id: ctx.tenant_id,
+        user_id,
+        module: "INVENTORY",
+        action: "BATCH_CREATE_INCOMPLETE",
+        entity_type: "ITEM",
+        entity_id: "batch",
+        metadata: {
+          count: createdItems.length,
+          failed_count: failedItems.length,
+          anomaly_category_id: anomalyCategory.id,
+        },
+      });
+    }
+
+    return {
+      success: true,
+      created: createdItems,
+      failed: failedItems,
+      total: createdItems.length + failedItems.length,
+    };
+  }
+
+  async markItemsAsAnomalies(
+    ctx: TenantContext,
+    itemIds: string[],
+    reason: string,
+    user_id?: string
+  ): Promise<number> {
+    // Update items with is_anomaly flag
+    const updatedItems = await this.prisma.item_masters.updateMany({
+      where: {
+        id: { in: itemIds },
+        tenant_id: ctx.tenant_id,
+      },
+      data: {
+        is_anomaly: true,
+        updated_at: new Date(),
+      },
+    });
+
+    // Log audit trail entry for each marking
+    if (user_id && updatedItems.count > 0) {
+      for (const itemId of itemIds) {
+        await this.auditService.log({
+          tenant_id: ctx.tenant_id,
+          user_id,
+          module: "INVENTORY",
+          action: "MARK_ANOMALY",
+          entity_type: "ITEM",
+          entity_id: itemId,
+          metadata: { reason },
+        });
+      }
+    }
+
+    return updatedItems.count;
+  }
+
   async updateCategory(ctx: TenantContext, id: string, data: any) {
     return this.repository.updateProductCategory(ctx, id, data);
   }
@@ -1387,6 +1573,14 @@ export class InventoryService {
 
   async updateItemCategory(ctx: TenantContext, itemId: string, categoryId: string) {
     return this.repository.updateItemCategory(ctx, itemId, categoryId);
+  }
+
+  async getItemById(ctx: TenantContext, itemId: string) {
+    return this.repository.getItemById(ctx, itemId);
+  }
+
+  async getCategoryById(ctx: TenantContext, categoryId: string) {
+    return this.repository.getCategoryById(ctx, categoryId);
   }
 
   async updateItem(ctx: TenantContext, itemId: string, data: any, user_id?: string) {
@@ -1832,6 +2026,356 @@ export class InventoryService {
       where: { id, tenant_id: ctx.tenant_id },
       data: { status: 'ABORTED' }
     });
+  }
+
+  /**
+   * Cancel an import job. Only allows cancellation if the job is in PENDING or PROCESSING status.
+   * Returns 404 if job doesn't exist, 409 if job is in a terminal state (COMPLETED/FAILED/CANCELLED/ABORTED).
+   *
+   * Validates: Requirement 10.8
+   */
+  async cancelImportJob(id: string, ctx: TenantContext) {
+    const job = await this.prisma.inventory_import_jobs.findFirst({
+      where: { id, tenant_id: ctx.tenant_id },
+    });
+
+    if (!job) {
+      throw new NotFoundException(`Import job not found`);
+    }
+
+    const cancellableStatuses = ['PENDING', 'PROCESSING'];
+    if (!cancellableStatuses.includes(job.status)) {
+      throw new ConflictException(
+        `Cannot cancel import job in ${job.status} status. Only PENDING or PROCESSING jobs can be cancelled.`
+      );
+    }
+
+    return this.prisma.inventory_import_jobs.update({
+      where: { id, tenant_id: ctx.tenant_id },
+      data: {
+        status: 'CANCELLED',
+        updated_at: new Date(),
+      },
+    });
+  }
+
+  // --- Void Request & Approval Workflow Service Methods ---
+  async createVoidRequest(
+    ctx: TenantContext,
+    entity_type: string,
+    entity_id: string,
+    reason: string,
+    requested_by: string
+  ): Promise<any> {
+    // Determine company_id from context if available
+    const company_id = ctx.company_id;
+
+    // Check if user has elevated role (OWNER or SUPERADMIN)
+    const elevatedRoles = ["OWNER", "SUPERADMIN"];
+    const isElevatedRole = elevatedRoles.includes(ctx.role || "");
+
+    // Create the void request
+    const voidRequest = await this.repository.createVoidRequest(
+      ctx,
+      {
+        entity_type,
+        entity_id,
+        reason,
+        requested_by,
+        company_id,
+        status: isElevatedRole ? "APPROVED" : "PENDING",
+        approved_by: isElevatedRole ? requested_by : null,
+        approved_at: isElevatedRole ? new Date() : null,
+      }
+    );
+
+    // Log audit entry for void request
+    await this.auditService.log({
+      tenant_id: ctx.tenant_id,
+      user_id: requested_by,
+      module: "inventory",
+      action: isElevatedRole ? "VOID_APPLIED_IMMEDIATELY" : "VOID_REQUEST_CREATED",
+      entity_type: "VOID_REQUEST",
+      entity_id: voidRequest.id,
+      metadata: {
+        entity_type,
+        entity_id,
+        reason,
+        requested_by,
+        is_elevated_role: isElevatedRole,
+        auto_approved: isElevatedRole,
+      },
+    });
+
+    // For elevated roles, execute the actual void immediately
+    if (isElevatedRole && entity_type === "incomplete_item") {
+      await this.repository.deleteItem(ctx, entity_id);
+    }
+
+    // For elevated roles, apply abandoned cycle void immediately
+    if (isElevatedRole && entity_type === "abandoned_cycle") {
+      await this.applyAbandonedCycleVoid(ctx, entity_id, requested_by);
+    }
+
+    return voidRequest;
+  }
+
+  async approveVoidRequest(
+    ctx: TenantContext,
+    voidRequest_id: string,
+    approver_id: string
+  ): Promise<any> {
+    // First get the void request to check its current state
+    const voidRequest = await this.repository.getVoidRequestById(ctx, voidRequest_id);
+    
+    if (!voidRequest) {
+      throw new Error("Void request not found");
+    }
+
+    if (voidRequest.status !== "PENDING") {
+      throw new Error(`Void request is already ${voidRequest.status}`);
+    }
+
+    // Approve the void request
+    const approvedRequest = await this.repository.approveVoidRequest(
+      ctx,
+      voidRequest_id,
+      approver_id
+    );
+
+    // Apply the actual void: delete the entity
+    if (voidRequest.entity_type === "incomplete_item") {
+      await this.repository.deleteItem(ctx, voidRequest.entity_id);
+    }
+
+    // Apply the actual void: mark abandoned cycle as VOIDED
+    if (voidRequest.entity_type === "abandoned_cycle") {
+      await this.applyAbandonedCycleVoid(ctx, voidRequest.entity_id, approver_id);
+    }
+
+    // Log audit entry for approval
+    await this.auditService.log({
+      tenant_id: ctx.tenant_id,
+      user_id: approver_id,
+      module: "inventory",
+      action: "VOID_REQUEST_APPROVED",
+      entity_type: "VOID_REQUEST",
+      entity_id: voidRequest_id,
+      metadata: {
+        approved_by: approver_id,
+        original_entity_type: voidRequest.entity_type,
+        original_entity_id: voidRequest.entity_id,
+        void_applied: true,
+      },
+    });
+
+    return approvedRequest;
+  }
+
+  async rejectVoidRequest(
+    ctx: TenantContext,
+    voidRequest_id: string,
+    rejector_id: string,
+    rejection_reason?: string
+  ): Promise<any> {
+    // First get the void request to check its current state
+    const voidRequest = await this.repository.getVoidRequestById(ctx, voidRequest_id);
+    
+    if (!voidRequest) {
+      throw new Error("Void request not found");
+    }
+
+    if (voidRequest.status !== "PENDING") {
+      throw new Error(`Void request is already ${voidRequest.status}`);
+    }
+
+    // Reject the void request
+    const rejectedRequest = await this.repository.rejectVoidRequest(
+      ctx,
+      voidRequest_id,
+      rejector_id
+    );
+
+    // Log audit entry for rejection
+    await this.auditService.log({
+      tenant_id: ctx.tenant_id,
+      user_id: rejector_id,
+      module: "inventory",
+      action: "VOID_REQUEST_REJECTED",
+      entity_type: "VOID_REQUEST",
+      entity_id: voidRequest_id,
+      metadata: {
+        rejected_by: rejector_id,
+        rejection_reason: rejection_reason || null,
+        original_entity_type: voidRequest.entity_type,
+        original_entity_id: voidRequest.entity_id,
+      },
+    });
+
+    return rejectedRequest;
+  }
+
+  async getVoidRequestById(
+    ctx: TenantContext,
+    voidRequest_id: string
+  ): Promise<any | null> {
+    return this.repository.getVoidRequestById(ctx, voidRequest_id);
+  }
+
+  async getVoidRequestsByEntity(
+    ctx: TenantContext,
+    entity_type: string,
+    entity_id: string
+  ): Promise<any[]> {
+    return this.repository.getVoidRequestsByEntity(ctx, entity_type, entity_id);
+  }
+
+  async listVoidRequests(
+    ctx: TenantContext,
+    filters?: {
+      status?: string;
+      entity_type?: string;
+    }
+  ): Promise<any[]> {
+    return this.repository.listVoidRequests(ctx, filters);
+  }
+
+  // ─── Abandoned Audit Cycle Resolution ────────────────────────────────
+
+  /**
+   * Detects audit cycles that were initiated on the server but never committed.
+   * A cycle is considered abandoned if it has status "OPEN" and has not been
+   * updated within the given threshold (default 24 hours).
+   */
+  async getAbandonedAuditCycles(
+    ctx: TenantContext,
+    thresholdHours: number = 24
+  ): Promise<any[]> {
+    const allCycles = await this.repository.getAuditCycles(ctx);
+    const threshold = Date.now() - thresholdHours * 60 * 60 * 1000;
+
+    return allCycles.filter((cycle: any) => {
+      const isOpen = cycle.status === "OPEN";
+      const lastActivity = cycle.updated_at
+        ? new Date(cycle.updated_at).getTime()
+        : cycle.created_at
+          ? new Date(cycle.created_at).getTime()
+          : 0;
+      return isOpen && lastActivity < threshold;
+    });
+  }
+
+  /**
+   * Flags a specific audit cycle as abandoned.
+   * Sets status to "ABANDONED" so it shows up in resolution queues.
+   */
+  async flagAbandonedCycle(
+    ctx: TenantContext,
+    cycleId: string,
+    flaggedBy: string
+  ): Promise<any> {
+    const updatedCycle = await this.repository.updateAuditCycle(ctx, cycleId, {
+      status: "ABANDONED",
+    });
+
+    await this.auditService.log({
+      tenant_id: ctx.tenant_id,
+      user_id: flaggedBy,
+      module: "inventory",
+      action: "AUDIT_CYCLE_FLAGGED_ABANDONED",
+      entity_type: "AUDIT_CYCLE",
+      entity_id: cycleId,
+      metadata: {
+        flagged_by: flaggedBy,
+        previous_status: "OPEN",
+      },
+    });
+
+    return updatedCycle;
+  }
+
+  /**
+   * Requests voiding of an abandoned audit cycle.
+   * Uses the same approval workflow as item voids:
+   * - Owner/Superadmin: applied immediately
+   * - Other roles: creates a pending Approval_Request requiring Elevated_Role approval
+   *
+   * Requirements: 4.5, 8.7
+   */
+  async voidAbandonedCycle(
+    ctx: TenantContext,
+    cycleId: string,
+    reason: string,
+    requested_by: string
+  ): Promise<any> {
+    // Validate the cycle exists and is in an abandoned/open state
+    const cycles = await this.repository.getAuditCycles(ctx);
+    const cycle = cycles.find((c: any) => c.id === cycleId);
+
+    if (!cycle) {
+      throw new Error("Audit cycle not found");
+    }
+
+    if (cycle.status !== "ABANDONED" && cycle.status !== "OPEN") {
+      throw new Error(
+        `Audit cycle cannot be voided: current status is ${cycle.status}`
+      );
+    }
+
+    // Check if the user has an elevated role (Manager/HOD+) to request void
+    const elevatedRoles = ["OWNER", "SUPERADMIN", "MANAGER", "HOD"];
+    const isElevatedRole = elevatedRoles.includes(ctx.role || "");
+
+    if (!isElevatedRole) {
+      throw new Error(
+        "Insufficient permissions: Elevated_Role (Manager/HOD+) required to void abandoned cycles"
+      );
+    }
+
+    // Use the same void request workflow as incomplete items
+    const voidRequest = await this.createVoidRequest(
+      ctx,
+      "abandoned_cycle",
+      cycleId,
+      reason,
+      requested_by
+    );
+
+    // For Owner/Superadmin the void is applied immediately via createVoidRequest.
+    // For elevated but non-owner roles (Manager/HOD), a pending request is created.
+    // When approved, the cycle will be voided via approveVoidRequest.
+
+    return voidRequest;
+  }
+
+  /**
+   * Applies the void action for an abandoned_cycle entity type.
+   * Called when a void request for an abandoned cycle is approved or auto-approved.
+   */
+  async applyAbandonedCycleVoid(
+    ctx: TenantContext,
+    cycleId: string,
+    voidedBy: string
+  ): Promise<any> {
+    const updatedCycle = await this.repository.updateAuditCycle(ctx, cycleId, {
+      status: "VOIDED",
+      closed_by: voidedBy,
+    });
+
+    await this.auditService.log({
+      tenant_id: ctx.tenant_id,
+      user_id: voidedBy,
+      module: "inventory",
+      action: "AUDIT_CYCLE_VOIDED",
+      entity_type: "AUDIT_CYCLE",
+      entity_id: cycleId,
+      metadata: {
+        voided_by: voidedBy,
+        previous_status: "ABANDONED",
+      },
+    });
+
+    return updatedCycle;
   }
 }
 

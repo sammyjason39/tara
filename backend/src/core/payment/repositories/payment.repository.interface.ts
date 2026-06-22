@@ -1,4 +1,6 @@
 import { TenantContext } from "../../../gateway/tenant-context.interface";
+import { ScopeLike } from "../../../shared/utils/multi-tenancy.util";
+import { Prisma } from "@prisma/client";
 import { AttachDisputeEvidenceDto } from "../dto/attach-dispute-evidence.dto";
 import { CreateDisputeDto } from "../dto/create-dispute.dto";
 import { CreatePaymentTransactionDto } from "../dto/create-payment-transaction.dto";
@@ -39,9 +41,9 @@ export type PaymentDashboard = {
 };
 
 export abstract class IPaymentRepository {
-  abstract getDashboard( ctx: TenantContext): Promise<PaymentDashboard>;
+  abstract getDashboard( scope: ScopeLike): Promise<PaymentDashboard>;
 
-  abstract getTransactions( ctx: TenantContext): Promise<PaymentTransaction[]>;
+  abstract getTransactions( scope: ScopeLike): Promise<PaymentTransaction[]>;
   abstract createTransaction( ctx: TenantContext,
     dto: CreatePaymentTransactionDto,
     actor_id: string,
@@ -49,27 +51,32 @@ export abstract class IPaymentRepository {
   abstract approveTransaction( ctx: TenantContext,
     paymentId: string,
     actor_id: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<PaymentTransaction>;
   abstract rejectTransaction( ctx: TenantContext,
     paymentId: string,
     actor_id: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<PaymentTransaction>;
   abstract routeTransaction( ctx: TenantContext,
     paymentId: string,
     dto: RoutePaymentDto,
     actor_id: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<PaymentTransaction>;
   abstract executeTransaction( ctx: TenantContext,
     paymentId: string,
     dto: ExecutePaymentDto,
     actor_id: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<PaymentTransaction>;
   abstract settleTransaction( ctx: TenantContext,
     paymentId: string,
     actor_id: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<PaymentTransaction>;
 
-  abstract getProviders( ctx: TenantContext): Promise<PaymentProvider[]>;
+  abstract getProviders( scope: ScopeLike): Promise<PaymentProvider[]>;
   abstract updateProviderStatus( ctx: TenantContext,
     providerId: string,
     dto: UpdateProviderStatusDto,
@@ -79,17 +86,17 @@ export abstract class IPaymentRepository {
     actor_id: string,
   ): Promise<PaymentProvider[]>;
 
-  abstract getRoutingPolicies( ctx: TenantContext,
+  abstract getRoutingPolicies( scope: ScopeLike,
   ): Promise<PaymentRoutingPolicy[]>;
-  abstract getDevices( ctx: TenantContext): Promise<PaymentDevice[]>;
-  abstract getDevicePools( ctx: TenantContext): Promise<PaymentDevicePool[]>;
+  abstract getDevices( scope: ScopeLike): Promise<PaymentDevice[]>;
+  abstract getDevicePools( scope: ScopeLike): Promise<PaymentDevicePool[]>;
   abstract updateDeviceStatus( ctx: TenantContext,
     device_id: string,
     dto: UpdateDeviceStatusDto,
     actor_id: string,
   ): Promise<PaymentDevice>;
 
-  abstract getRefunds( ctx: TenantContext): Promise<PaymentRefund[]>;
+  abstract getRefunds( scope: ScopeLike): Promise<PaymentRefund[]>;
   abstract createRefund( ctx: TenantContext,
     dto: CreateRefundDto,
     actor_id: string,
@@ -97,13 +104,15 @@ export abstract class IPaymentRepository {
   abstract approveRefund( ctx: TenantContext,
     refundId: string,
     actor_id: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<PaymentRefund>;
   abstract executeRefund( ctx: TenantContext,
     refundId: string,
     actor_id: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<PaymentRefund>;
 
-  abstract getDisputes( ctx: TenantContext): Promise<PaymentDispute[]>;
+  abstract getDisputes( scope: ScopeLike): Promise<PaymentDispute[]>;
   abstract createDispute( ctx: TenantContext,
     dto: CreateDisputeDto,
     actor_id: string,
@@ -117,20 +126,22 @@ export abstract class IPaymentRepository {
     disputeId: string,
     dto: ProgressDisputeDto,
     actor_id: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<PaymentDispute>;
   abstract resolveDispute( ctx: TenantContext,
     disputeId: string,
     dto: ResolveDisputeDto,
     actor_id: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<PaymentDispute>;
 
-  abstract getChargebacks( ctx: TenantContext): Promise<PaymentChargeback[]>;
-  abstract getSettlements( ctx: TenantContext): Promise<PaymentSettlement[]>;
-  abstract getEvidencePacks( ctx: TenantContext): Promise<PaymentEvidencePack[]>;
-  abstract getAuditEvents( ctx: TenantContext): Promise<PaymentAuditEvent[]>;
+  abstract getChargebacks( scope: ScopeLike): Promise<PaymentChargeback[]>;
+  abstract getSettlements( scope: ScopeLike): Promise<PaymentSettlement[]>;
+  abstract getEvidencePacks( scope: ScopeLike): Promise<PaymentEvidencePack[]>;
+  abstract getAuditEvents( scope: ScopeLike): Promise<PaymentAuditEvent[]>;
 
   // Unified Gateway & Settings
-  abstract getPaymentSettings( ctx: TenantContext): Promise<any>;
+  abstract getPaymentSettings( scope: ScopeLike): Promise<any>;
   abstract updatePaymentSettings( ctx: TenantContext, data: any): Promise<any>;
   abstract getGatewayAccount( ctx: TenantContext,
     provider: string,

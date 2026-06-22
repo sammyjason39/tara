@@ -43,6 +43,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useSession } from "@/core/security/session";
 import { marketingService } from "@/core/services/marketing/marketingService";
+import { formatDateTime } from "@/lib/format";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -56,6 +58,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CreateAppointmentModal } from "./modals/CreateAppointmentModal";
 import {
   Select,
   SelectContent,
@@ -169,12 +172,12 @@ export default function AppointmentDesk() {
                Scheduling Matrix Active
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent italic leading-none">Scheduler</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground italic leading-none">Scheduler</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic">"Time authorizes the total orchestration of relationship nodes; coordinate it with absolute tactical precision."</p>
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-slate-800/20 shadow-2xl">
+          <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-border/20 shadow-2xl">
             <div className="flex bg-muted dark:bg-muted p-1.5 rounded-2xl shadow-inner mr-2 h-auto">
                <Button 
                   variant="ghost" 
@@ -277,8 +280,8 @@ export default function AppointmentDesk() {
         {/* Main Grid Area */}
         <div className="col-span-12 lg:col-span-8 flex flex-col gap-10 overflow-hidden">
           {view === "calendar" ? (
-            <Card className="flex-1 rounded-[4rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden flex flex-col min-h-[700px] group/calendar">
-              <CardHeader className="p-12 pb-6 border-b border-white/10 dark:border-slate-800/10 shrink-0">
+            <Card className="flex-1 rounded-[4rem] border-none shadow-2xl glass-card overflow-hidden flex flex-col min-h-[700px] group/calendar">
+              <CardHeader className="p-12 pb-6 border-b border-white/10 dark:border-border/10 shrink-0">
                 <div className="flex items-center justify-between">
                    <div className="space-y-2">
                       <h2 className="text-4xl font-black tracking-tighter uppercase italic leading-none">{new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</h2>
@@ -292,7 +295,7 @@ export default function AppointmentDesk() {
                 </div>
               </CardHeader>
               <div className="flex-1 flex flex-col items-center justify-center text-center p-32 grayscale opacity-20 space-y-8">
-                 <div className="h-24 w-24 bg-white dark:bg-muted rounded-[3rem] flex items-center justify-center shadow-2xl border border-slate-100 dark:border-slate-700 group-hover/calendar:rotate-12 transition-all duration-700">
+                 <div className="h-24 w-24 bg-white dark:bg-muted rounded-[3rem] flex items-center justify-center shadow-2xl border border-border dark:border-border group-hover/calendar:rotate-12 transition-all duration-700">
                     <CalendarDays className="h-12 w-12 text-muted-foreground" />
                  </div>
                  <div className="space-y-2">
@@ -302,8 +305,8 @@ export default function AppointmentDesk() {
               </div>
             </Card>
           ) : (
-            <Card className="flex-1 rounded-[4rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden flex flex-col group/registry">
-              <CardHeader className="p-12 pb-6 border-b border-white/10 dark:border-slate-800/10 shrink-0">
+            <Card className="flex-1 rounded-[4rem] border-none shadow-2xl glass-card overflow-hidden flex flex-col group/registry">
+              <CardHeader className="p-12 pb-6 border-b border-white/10 dark:border-border/10 shrink-0">
                  <div className="flex items-center justify-between">
                     <div className="space-y-2">
                        <CardTitle className="text-3xl font-black tracking-tighter flex items-center gap-4 uppercase italic">
@@ -317,15 +320,11 @@ export default function AppointmentDesk() {
               </CardHeader>
               <ScrollArea className="flex-1 bg-black/5 dark:bg-white/5">
                 {appointments.length === 0 ? (
-                  <div className="text-center py-40 space-y-8 grayscale opacity-20 flex flex-col items-center">
-                    <div className="h-24 w-24 bg-white dark:bg-muted rounded-[3rem] flex items-center justify-center shadow-2xl border border-slate-100 dark:border-slate-700">
-                       <CalendarIcon className="h-12 w-12 text-muted-foreground" />
-                    </div>
-                    <div className="space-y-2">
-                       <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground">Stack Empty</p>
-                       <p className="text-sm font-medium italic italic opacity-40">"No strategic engagements currently authorized in the scheduling matrix."</p>
-                    </div>
-                  </div>
+                  <EmptyState
+                    title="Stack empty"
+                    description="No strategic engagements currently authorized in the scheduling matrix."
+                    icon={CalendarIcon}
+                  />
                 ) : (
                   <div className="p-0 divide-y divide-white/5 dark:divide-slate-800/5">
                     {(Array.isArray(appointments) ? appointments : []).map((apt) => (
@@ -338,7 +337,7 @@ export default function AppointmentDesk() {
                                   </AvatarFallback>
                                 </Avatar>
                                 <div className={cn(
-                                  "absolute -bottom-1 -right-1 h-5 w-5 rounded-lg border-4 border-white dark:border-slate-900 shadow-lg",
+                                  "absolute -bottom-1 -right-1 h-5 w-5 rounded-lg border-4 border-white dark:border-border shadow-lg",
                                   apt.status === 'SCHEDULED' ? "bg-primary animate-pulse" : "bg-success"
                                 )} />
                              </div>
@@ -351,7 +350,7 @@ export default function AppointmentDesk() {
                                   </div>
                                   <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary italic">
                                      <Clock3 className="h-3.5 w-3.5" />
-                                     {new Date(apt.scheduled_at).toLocaleString()}
+                                     {formatDateTime(apt.scheduled_at)}
                                   </div>
                                </div>
                              </div>
@@ -376,8 +375,8 @@ export default function AppointmentDesk() {
 
         {/* Sidebar Intelligence */}
         <div className="col-span-12 lg:col-span-4 flex flex-col gap-10">
-           <Card className="rounded-[4rem] border-none shadow-2xl bg-white/60 dark:bg-muted backdrop-blur-xl overflow-hidden flex flex-col group/horizon">
-             <CardHeader className="p-10 pb-4 border-b border-white/10 dark:border-slate-800/10">
+           <Card className="rounded-[4rem] border-none shadow-2xl glass-card overflow-hidden flex flex-col group/horizon">
+             <CardHeader className="p-10 pb-4 border-b border-white/10 dark:border-border/10">
                 <div className="flex items-center justify-between mb-2">
                    <div className="space-y-1">
                       <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground italic">Temporal Grid</p>
@@ -392,7 +391,7 @@ export default function AppointmentDesk() {
              <CardContent className="p-10 pt-6 space-y-8">
                 {todayApts.length === 0 ? (
                   <div className="text-center py-16 space-y-6 grayscale opacity-20 flex flex-col items-center">
-                    <div className="h-20 w-20 bg-white dark:bg-muted rounded-[2rem] flex items-center justify-center shadow-2xl border border-slate-100 dark:border-slate-700">
+                    <div className="h-20 w-20 bg-white dark:bg-muted rounded-[2rem] flex items-center justify-center shadow-2xl border border-border dark:border-border">
                        <ActivitySquare className="h-10 w-10 text-muted-foreground animate-pulse" />
                     </div>
                     <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground">Clear Horizon</p>
@@ -423,7 +422,7 @@ export default function AppointmentDesk() {
                 )}
                 <Button 
                    variant="outline" 
-                   className="w-full h-16 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest border-slate-200 dark:border-slate-800 hover:bg-primary hover:text-white hover:border-primary transition-all gap-4 shadow-xl group/btn" 
+                   className="w-full h-16 rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest border-border dark:border-border hover:bg-primary hover:text-white hover:border-primary transition-all gap-4 shadow-xl group/btn" 
                    onClick={() => setView("list")}
                 >
                    VIEW FULL GRID <ArrowRight className="h-4 w-4 group-hover/btn:translate-x-2 transition-transform" />

@@ -58,8 +58,8 @@ export const StoreSupplyConfigModule: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Inbound Supply */}
-        <div className="space-y-6 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
+        <div className="space-y-6 bg-white p-6 rounded-2xl border border-border shadow-sm">
+          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-border pb-3">
             <Truck className="w-4 h-4 text-muted-foreground" /> Inbound Logistics
           </h3>
 
@@ -75,7 +75,7 @@ export const StoreSupplyConfigModule: React.FC = () => {
                   handleUpdate({ default_inbound_warehouse_id: e.target.value })
                 }
                 placeholder="Region Central Warehouse (WH-01)"
-                className="font-mono border-slate-200"
+                className="font-mono border-border"
               />
             </div>
 
@@ -90,7 +90,7 @@ export const StoreSupplyConfigModule: React.FC = () => {
                   handleUpdate({ transfer_priority_policy: value })
                 }
               >
-                <SelectTrigger className="border-slate-200">
+                <SelectTrigger className="border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -118,7 +118,7 @@ export const StoreSupplyConfigModule: React.FC = () => {
                   handleUpdate({ replenishment_rule_set: value })
                 }
               >
-                <SelectTrigger className="border-slate-200">
+                <SelectTrigger className="border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -138,8 +138,8 @@ export const StoreSupplyConfigModule: React.FC = () => {
         </div>
 
         {/* Outbound & Fulfillment */}
-        <div className="space-y-6 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
+        <div className="space-y-6 bg-white p-6 rounded-2xl border border-border shadow-sm">
+          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-border pb-3">
             <ArrowRightLeft className="w-4 h-4 text-muted-foreground" /> Outbound
             Routing
           </h3>
@@ -156,7 +156,7 @@ export const StoreSupplyConfigModule: React.FC = () => {
                   handleUpdate({ safety_stock_policy: value })
                 }
               >
-                <SelectTrigger className="border-slate-200">
+                <SelectTrigger className="border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -186,7 +186,7 @@ export const StoreSupplyConfigModule: React.FC = () => {
                   handleUpdate({ auto_reorder_threshold_template: value })
                 }
               >
-                <SelectTrigger className="border-slate-200">
+                <SelectTrigger className="border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -218,7 +218,7 @@ export const StoreSupplyConfigModule: React.FC = () => {
                   })
                 }
                 placeholder="STORE-002, WH-01"
-                className="font-mono border-slate-200"
+                className="font-mono border-border"
               />
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
                 Comma-separated list of secondary fulfillment locations

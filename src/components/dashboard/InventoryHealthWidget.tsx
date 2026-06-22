@@ -7,13 +7,13 @@ export const InventoryHealthWidget: React.FC = () => {
   const navigate = useNavigate();
 
   const metrics = [
-    { label: 'Low Stock SKUs', value: 24, icon: AlertTriangle, color: 'text-destructive', bg: 'bg-destructive', border: 'border-rose-500/20' },
+    { label: 'Low Stock SKUs', value: 24, icon: AlertTriangle, color: 'text-destructive', bg: 'bg-destructive', border: 'border-destructive/20' },
     { label: 'Total SKUs', value: 1240, icon: Package, color: 'text-primary', bg: 'bg-primary', border: 'border-primary' },
-    { label: 'Turnover Rate', value: '4.2x', icon: BarChart2, color: 'text-success', bg: 'bg-success', border: 'border-emerald-500/20' },
+    { label: 'Turnover Rate', value: '4.2x', icon: BarChart2, color: 'text-success', bg: 'bg-success', border: 'border-success/20' },
   ];
 
   return (
-    <div className="flex flex-col h-full rounded-[2.5rem] border border-slate-800 bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group overflow-hidden relative">
+    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group overflow-hidden relative">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-muted-foreground border border-white/10 group-hover:text-white transition-colors">

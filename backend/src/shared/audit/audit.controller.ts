@@ -6,6 +6,8 @@ import { TenantInterceptor } from '../../gateway/tenant.interceptor';
 import { RolesGuard } from '../guards/roles.guard';
 import { Roles } from '../decorators/roles.decorator';
 import { UserRole } from '../roles';
+import { PaginationPipe, PaginationParams } from '../pipes/pagination.pipe';
+import { CacheInterceptor, CacheTTL, CacheInvalidationHelper } from '../cache';
 
 
 @Controller('audit')
@@ -15,20 +17,47 @@ export class AuditController {
   constructor(
     private readonly auditService: AuditService,
     private readonly reportingService: ReportingService,
+    private readonly cacheHelper: CacheInvalidationHelper,
   ) {}
 
 
   @Get('logs')
-  query(@Req() req: any, @Query() filters: AuditQueryDto) {
-    return this.auditService.query(req.tenantContext.tenant_id, filters);
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
+  async query(
+    @Req() req: any,
+    @Query(PaginationPipe) pagination: PaginationParams,
+    @Query('module') module?: string,
+    @Query('action') action?: string,
+    @Query('user_id') userId?: string,
+    @Query('entity_type') entityType?: string,
+    @Query('entity_id') entityId?: string,
+    @Query('severity') severity?: string,
+    @Query('start_date') startDate?: string,
+    @Query('end_date') endDate?: string,
+  ) {
+    return this.auditService.queryPaginated(req.tenantContext.tenant_id, pagination, {
+      module,
+      action,
+      user_id: userId,
+      entity_type: entityType,
+      entity_id: entityId,
+      severity,
+      start_date: startDate,
+      end_date: endDate,
+    });
   }
 
   @Get('logs/:id')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   async getOne(@Req() req: any, @Param('id') id: string) {
     return this.auditService.getLogDetail(req.tenantContext.tenant_id, id);
   }
 
   @Get('verify-chain')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   async verifyChain(@Req() req: any, @Query('fromTimestamp') fromTimestamp?: string) {
     const tenant_id = req.tenantContext.tenant_id; // Shared tenant middleware
     return this.auditService.verifyChain(
@@ -53,18 +82,25 @@ export class AuditController {
       source_ip: req.ip,
       request_id: req.headers['x-request-id'] as string,
     });
+    await this.cacheHelper.invalidateAll();
     return result;
   }
 
   @Get('system/metrics')
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
   @Roles(UserRole.SUPERADMIN, UserRole.OWNER)
   async getMetrics(@Req() req: any) {
     return this.auditService.getMetrics();
   }
 
   @Get('anchors/public')
-  async getPublicAnchors() {
-    return this.auditService.getPublicAnchors();
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(30)
+  async getPublicAnchors(
+    @Query(PaginationPipe) pagination: PaginationParams,
+  ) {
+    return this.auditService.getPublicAnchorsPaginated(pagination);
   }
 
   @Get('export')

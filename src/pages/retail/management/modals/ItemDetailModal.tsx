@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, TrendingUp, MapPin, Clock, Edit3, Trash2 } from "lucide-react";
+import { useModuleList } from "@/hooks/useModuleQuery";
 
 interface InventoryItem {
   id: string;
@@ -18,6 +19,20 @@ interface InventoryItem {
   name: string;
   category: string;
   stock: number;
+}
+
+interface MovementRecord {
+  date: string;
+  type: string;
+  qty: number;
+  location: string;
+  ref: string;
+}
+
+interface LocationRecord {
+  name: string;
+  stock: number;
+  status: string;
 }
 
 interface ItemDetailModalProps {
@@ -37,19 +52,21 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 }) => {
   if (!item) return null;
 
-  // Mock data for demonstration
-  const movements = [
-    { date: "2026-02-15 14:30", type: "SALE", qty: -5, location: "Store Jakarta", ref: "ORD-9921" },
-    { date: "2026-02-15 10:15", type: "RECEIVE", qty: 50, location: "Warehouse", ref: "PO-8801" },
-    { date: "2026-02-14 16:45", type: "TRANSFER", qty: -10, location: "Store Surabaya", ref: "TF-8802" },
-    { date: "2026-02-14 09:20", type: "ADJUSTMENT", qty: 2, location: "Store Jakarta", ref: "ADJ-1234" },
-  ];
+  // Fetch movements from backend, fallback to empty array
+  const { data: movementsData } = useModuleList<MovementRecord>(
+    `/retail/inventory/items/${item.id}/movements`,
+    { page: 1, pageSize: 20 },
+    { enabled: isOpen }
+  );
+  const movements = movementsData?.data ?? [];
 
-  const locations = [
-    { name: "Store Jakarta", stock: item.stock, status: "ACTIVE" },
-    { name: "Store Surabaya", stock: Math.floor(item.stock * 0.6), status: "ACTIVE" },
-    { name: "Warehouse Central", stock: Math.floor(item.stock * 2), status: "ACTIVE" },
-  ];
+  // Fetch location stock from backend, fallback to empty array
+  const { data: locationsData } = useModuleList<LocationRecord>(
+    `/retail/inventory/items/${item.id}/locations`,
+    { page: 1, pageSize: 10 },
+    { enabled: isOpen }
+  );
+  const locations = locationsData?.data ?? [];
 
   const getMovementColor = (type: string) => {
     switch (type) {
@@ -96,7 +113,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                   }}
                   variant="outline"
                   size="sm"
-                  className="h-10 px-4 rounded-xl font-black italic text-destructive border-red-300 hover:bg-destructive"
+                  className="h-10 px-4 rounded-xl font-black italic text-destructive border-destructive hover:bg-destructive"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete
@@ -124,7 +141,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 <div className="text-xs text-primary font-bold mt-1">Units Available</div>
               </div>
 
-              <div className="bg-success rounded-2xl p-6 border-2 border-emerald-200">
+              <div className="bg-success rounded-2xl p-6 border-2 border-success">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp className="w-5 h-5 text-success" />
                   <div className="text-xs font-black uppercase tracking-widest text-success">Turnover</div>
@@ -133,7 +150,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 <div className="text-xs text-success font-bold mt-1">Per Month</div>
               </div>
 
-              <div className="bg-warning rounded-2xl p-6 border-2 border-amber-200">
+              <div className="bg-warning rounded-2xl p-6 border-2 border-warning">
                 <div className="flex items-center gap-2 mb-2">
                   <Clock className="w-5 h-5 text-warning" />
                   <div className="text-xs font-black uppercase tracking-widest text-warning">Reorder Point</div>
@@ -169,7 +186,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           <TabsContent value="movements" className="space-y-3 mt-4">
             <div className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-3">Recent Activity</div>
             {(Array.isArray(movements) ? movements : []).map((movement, idx) => (
-              <div key={idx} className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl hover:border-primary transition-all">
+              <div key={idx} className="flex items-center justify-between p-4 bg-white border border-border rounded-xl hover:border-primary transition-all">
                 <div className="flex items-center gap-4">
                   <Badge className={`${getMovementColor(movement.type)} font-black italic text-xs px-3`}>
                     {movement.type}
@@ -192,7 +209,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           <TabsContent value="locations" className="space-y-3 mt-4">
             <div className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-3">Stock by Location</div>
             {(Array.isArray(locations) ? locations : []).map((location, idx) => (
-              <div key={idx} className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl">
+              <div key={idx} className="flex items-center justify-between p-4 bg-white border border-border rounded-xl">
                 <div className="flex items-center gap-3">
                   <MapPin className="w-5 h-5 text-primary" />
                   <div>

@@ -8,6 +8,33 @@ export class DevicePairingService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
+   * Get a paginated list of paired devices for a tenant.
+   */
+  async getDevicesPaginated(tenantId: string, pagination: { page: number; pageSize: number }) {
+    const skip = (pagination.page - 1) * pagination.pageSize;
+
+    const [data, totalCount] = await Promise.all([
+      this.prisma.iot_devices.findMany({
+        where: { tenant_id: tenantId },
+        skip,
+        take: pagination.pageSize,
+        orderBy: { created_at: 'desc' },
+      }),
+      this.prisma.iot_devices.count({
+        where: { tenant_id: tenantId },
+      }),
+    ]);
+
+    return {
+      data,
+      totalCount,
+      currentPage: pagination.page,
+      pageSize: pagination.pageSize,
+      totalPages: Math.ceil(totalCount / pagination.pageSize),
+    };
+  }
+
+  /**
    * Initializes a handshake with an ESP32 or terminal
    */
   async issueToken(tenantId: string, macAddress: string, type: string) {

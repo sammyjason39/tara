@@ -15,7 +15,8 @@ import {
   Layers,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassCard } from "@/components/shared/GlassCard";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -197,7 +198,7 @@ const ReceivingTerminal = () => {
         {/* TACTICAL HEADER */}
         <div className="flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center text-foreground shadow-lg shadow-blue-600/20">
+            <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center text-foreground shadow-lg shadow-primary/20">
               <Truck className="w-7 h-7" />
             </div>
             <div>
@@ -221,7 +222,7 @@ const ReceivingTerminal = () => {
               variant="outline" 
               size="sm" 
               onClick={() => window.location.reload()}
-              className="h-10 rounded-xl bg-secondary/40 border-border text-foreground hover:bg-white/10 font-black italic uppercase text-[10px] tracking-widest gap-2"
+              className="h-10 rounded-xl bg-secondary/40 border-border text-foreground hover:bg-accent font-black italic uppercase text-[10px] tracking-widest gap-2"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} /> Refresh Manifests
             </Button>
@@ -230,7 +231,7 @@ const ReceivingTerminal = () => {
               variant="ghost" 
               size="icon"
               onClick={() => navigate("/m/retail/operational/gateway")}
-              className="h-10 w-10 rounded-xl bg-secondary/40 border-border text-foreground hover:bg-white/10"
+              className="h-10 w-10 rounded-xl bg-secondary/40 border-border text-foreground hover:bg-accent"
               title="Exit to Gateway"
             >
               <Home className="w-4 h-4 text-primary" />
@@ -241,7 +242,7 @@ const ReceivingTerminal = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 flex-1 overflow-hidden">
           <div className="lg:col-span-3 flex flex-col gap-6 overflow-hidden">
             {!activeShipment ? (
-              <Card className="flex-1 flex flex-col bg-secondary/40 backdrop-blur-3xl border-border rounded-[2.5rem] overflow-hidden shadow-2xl">
+              <GlassCard className="flex-1 flex flex-col bg-secondary/40 backdrop-blur-3xl border-border rounded-[2.5rem] overflow-hidden shadow-2xl">
                 <CardHeader className="flex flex-row items-center justify-between border-b border-border p-8">
                   <div className="space-y-1">
                     <CardTitle className="text-2xl font-black italic text-foreground tracking-tighter uppercase">
@@ -253,7 +254,7 @@ const ReceivingTerminal = () => {
                   </div>
                   <Button
                     variant="outline"
-                    className="gap-3 font-black italic bg-primary border-none text-foreground rounded-xl px-8 h-14 shadow-lg shadow-blue-600/20 hover:bg-primary/50 transition-all uppercase text-[11px] tracking-widest"
+                    className="gap-3 font-black italic bg-primary border-none text-foreground rounded-xl px-8 h-14 shadow-lg shadow-primary/20 hover:bg-primary/50 transition-all uppercase text-[11px] tracking-widest"
                     onClick={() => {
                       const first = shipments.find((s) => s.status === "pending");
                       if (first) {
@@ -281,7 +282,7 @@ const ReceivingTerminal = () => {
                         .map((shipment) => (
                           <div
                             key={shipment.id}
-                            className="p-6 rounded-[2rem] border border-white/5 bg-white/[0.02] flex items-center justify-between hover:bg-white/[0.05] hover:border-primary transition-all cursor-pointer group"
+                            className="p-6 rounded-[2rem] border border-border/40 bg-muted/10 flex items-center justify-between hover:bg-muted/20 hover:border-primary transition-all cursor-pointer group"
                             onClick={() => startIntake(shipment)}
                           >
                             <div className="flex gap-6">
@@ -315,7 +316,7 @@ const ReceivingTerminal = () => {
                               >
                                 {shipment.priority} PRIORITY
                               </Badge>
-                              <div className="w-12 h-12 rounded-xl bg-secondary/40 flex items-center justify-center text-muted-foreground group-hover:bg-white group-hover:text-foreground transition-all">
+                              <div className="w-12 h-12 rounded-xl bg-secondary/40 flex items-center justify-center text-muted-foreground group-hover:bg-accent group-hover:text-accent-foreground transition-all">
                                 <ArrowRight className="w-6 h-6" />
                               </div>
                             </div>
@@ -333,12 +334,12 @@ const ReceivingTerminal = () => {
                     )}
                   </div>
                 </CardContent>
-              </Card>
+              </GlassCard>
             ) : (
-              <Card className="flex-1 flex flex-col bg-secondary/40 backdrop-blur-3xl border-border rounded-[2.5rem] overflow-hidden shadow-2xl animate-in fade-in slide-in-from-right-12 duration-700">
-                <CardHeader className="bg-background text-foreground flex flex-row items-center justify-between p-8 border-b border-white/5">
+              <GlassCard className="flex-1 flex flex-col bg-secondary/40 backdrop-blur-3xl border-border rounded-[2.5rem] overflow-hidden shadow-2xl animate-in fade-in slide-in-from-right-12 duration-700">
+                <CardHeader className="bg-background text-foreground flex flex-row items-center justify-between p-8 border-b border-border/40">
                   <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
                       <Truck className="w-8 h-8" />
                     </div>
                     <div>
@@ -354,7 +355,7 @@ const ReceivingTerminal = () => {
                     </div>
                   </div>
                   <button
-                    className="w-14 h-14 rounded-2xl bg-secondary/40 hover:bg-white/10 flex items-center justify-center text-foreground transition-all active:scale-90"
+                    className="w-14 h-14 rounded-2xl bg-secondary/40 hover:bg-accent flex items-center justify-center text-foreground transition-all active:scale-90"
                     onClick={() => setActiveShipment(null)}
                   >
                     <X className="w-7 h-7" />
@@ -370,8 +371,8 @@ const ReceivingTerminal = () => {
                             key={item.itemId}
                             className={`p-6 rounded-[2rem] border transition-all flex items-center justify-between group ${
                               hasVariance && item.received > 0
-                                ? "bg-destructive border-red-500/30 shadow-[0_0_40px_rgba(239,68,68,0.1)]"
-                                : "bg-secondary/40 border-border hover:border-white/20"
+                                ? "bg-destructive/10 border-destructive/30 shadow-[0_0_40px_hsl(var(--destructive)/0.1)]"
+                                : "bg-secondary/40 border-border hover:border-foreground/20"
                             }`}
                           >
                             <div className="flex gap-6">
@@ -396,9 +397,9 @@ const ReceivingTerminal = () => {
                                   {item.expected}
                                 </div>
                               </div>
-                              <div className="flex items-center gap-4 bg-black/20 p-2 rounded-2xl border border-border shadow-inner">
+                              <div className="flex items-center gap-4 bg-background/40 p-2 rounded-2xl border border-border shadow-inner">
                                 <button
-                                  className="h-12 w-12 bg-secondary/40 hover:bg-white/10 text-foreground rounded-xl font-black text-xl transition-all active:scale-90"
+                                  className="h-12 w-12 bg-secondary/40 hover:bg-accent text-foreground rounded-xl font-black text-xl transition-all active:scale-90"
                                   onClick={() => updateReceived(item.itemId, -1)}
                                 >
                                   -
@@ -407,7 +408,7 @@ const ReceivingTerminal = () => {
                                   {item.received}
                                 </div>
                                 <button
-                                  className="h-12 w-12 bg-secondary/40 hover:bg-white/10 text-foreground rounded-xl font-black text-xl transition-all active:scale-90"
+                                  className="h-12 w-12 bg-secondary/40 hover:bg-accent text-foreground rounded-xl font-black text-xl transition-all active:scale-90"
                                   onClick={() => updateReceived(item.itemId, 1)}
                                 >
                                   +
@@ -415,12 +416,12 @@ const ReceivingTerminal = () => {
                               </div>
                               <div className="w-24 flex justify-end">
                                 {hasVariance && item.received > 0 && (
-                                  <Badge className="bg-destructive text-foreground border-none text-[9px] font-black italic px-3 py-1 shadow-lg shadow-red-600/20 animate-pulse">
+                                  <Badge className="bg-destructive text-foreground border-none text-[9px] font-black italic px-3 py-1 shadow-lg shadow-destructive/20 animate-pulse">
                                     {item.received - item.expected > 0 ? `+${item.received - item.expected}` : item.received - item.expected} DELTA
                                   </Badge>
                                 )}
                                 {!hasVariance && item.received > 0 && (
-                                  <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center border border-emerald-500/20">
+                                  <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center border border-success/20">
                                     <CheckCircle2 className="w-7 h-7 text-success" />
                                   </div>
                                 )}
@@ -446,7 +447,7 @@ const ReceivingTerminal = () => {
                     </div>
                     <Button
                       size="lg"
-                      className="bg-primary hover:bg-primary/50 font-black italic h-20 px-16 rounded-[1.5rem] shadow-2xl shadow-blue-600/20 text-xl transition-transform active:scale-95 uppercase tracking-widest"
+                      className="bg-primary hover:bg-primary/50 font-black italic h-20 px-16 rounded-[1.5rem] shadow-2xl shadow-primary/20 text-xl transition-transform active:scale-95 uppercase tracking-widest"
                       onClick={completeIntake}
                       disabled={isProcessing}
                     >
@@ -454,13 +455,13 @@ const ReceivingTerminal = () => {
                     </Button>
                   </div>
                 </CardContent>
-              </Card>
+              </GlassCard>
             )}
           </div>
 
           <div className="flex flex-col gap-8">
-            <Card className="border-none bg-destructive/10 backdrop-blur-3xl shadow-2xl rounded-[2.5rem] overflow-hidden group">
-              <CardHeader className="py-6 px-8 border-b border-red-500/20">
+            <GlassCard className="border-none bg-destructive/10 backdrop-blur-3xl shadow-2xl rounded-[2.5rem] overflow-hidden group">
+              <CardHeader className="py-6 px-8 border-b border-destructive/20">
                 <CardTitle className="flex items-center gap-3 text-destructive text-[11px] uppercase font-black tracking-[0.3em] leading-none italic">
                   <AlertTriangle className="w-5 h-5" /> Variance Watch
                 </CardTitle>
@@ -471,15 +472,15 @@ const ReceivingTerminal = () => {
                 </p>
                 <Button 
                   onClick={() => navigate("/core/logistics")}
-                  className="w-full text-[10px] font-black italic uppercase h-12 bg-destructive text-foreground hover:bg-destructive transition-all rounded-xl shadow-lg shadow-red-600/20 tracking-widest"
+                  className="w-full text-[10px] font-black italic uppercase h-12 bg-destructive text-foreground hover:bg-destructive transition-all rounded-xl shadow-lg shadow-destructive/20 tracking-widest"
                 >
                   Flag Intake Errors
                 </Button>
               </CardContent>
-            </Card>
+            </GlassCard>
 
-            <Card className="flex-1 bg-secondary/40 backdrop-blur-3xl border-border rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col">
-              <CardHeader className="border-b border-white/5 p-8">
+            <GlassCard className="flex-1 bg-secondary/40 backdrop-blur-3xl border-border rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col">
+              <CardHeader className="border-b border-border/40 p-8">
                 <CardTitle className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.4em] italic">
                   Intake Velocity
                 </CardTitle>
@@ -495,19 +496,19 @@ const ReceivingTerminal = () => {
                     </span>
                   </div>
                   <div className="h-4 bg-secondary/40 rounded-full overflow-hidden border border-border p-1">
-                    <div className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full w-[92%] transition-all duration-1000 shadow-[0_0_20px_rgba(37,99,235,0.4)]" />
+                    <div className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full w-[92%] transition-all duration-1000 shadow-[0_0_20px_hsl(var(--primary)/0.4)]" />
                   </div>
                 </div>
                 
                 <div className="space-y-6">
                   <div className="flex items-center gap-4">
-                    <div className="w-3 h-3 rounded-full bg-success shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
+                    <div className="w-3 h-3 rounded-full bg-success shadow-[0_0_15px_hsl(var(--success)/0.5)]" />
                     <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest italic">
                       Ledger Status: PURE_SYNC
                     </span>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="w-3 h-3 rounded-full bg-primary/50 shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
+                    <div className="w-3 h-3 rounded-full bg-primary/50 shadow-[0_0_15px_hsl(var(--primary)/0.5)]" />
                     <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest italic">
                       Node: {activeStore?.name || "LOCAL_DOCK"}
                     </span>
@@ -520,7 +521,7 @@ const ReceivingTerminal = () => {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </GlassCard>
           </div>
         </div>
       </div>

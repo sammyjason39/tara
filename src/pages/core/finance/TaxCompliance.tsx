@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSession } from "@/core/security/session";
-import { formatCurrency } from "@/lib/utils/currency";
+import { formatCurrency } from "@/lib/format";
 
 export default function TaxCompliance() {
   const session = useSession();
@@ -45,8 +45,8 @@ export default function TaxCompliance() {
           </Button>
         }
         secondaryActions={
-          <div className="flex bg-muted p-1 rounded-xl border border-slate-200">
-            <Button onClick={() => alert("Switching to Domestic Tax Ledger")} variant="ghost" size="sm" className="bg-white shadow-sm font-bold text-[10px] uppercase tracking-wider">Domestic</Button>
+          <div className="flex bg-muted p-1 rounded-xl border border-border">
+            <Button onClick={() => alert("Switching to Domestic Tax Ledger")} variant="ghost" size="sm" className="bg-card shadow-sm font-bold text-[10px] uppercase tracking-wider">Domestic</Button>
             <Button onClick={() => alert("Switching to International Cross-Border Ledger")} variant="ghost" size="sm" className="text-muted-foreground font-bold text-[10px] uppercase tracking-wider">International</Button>
           </div>
         }
@@ -132,7 +132,7 @@ export default function TaxCompliance() {
         <div className="space-y-6">
           <WorkspacePanel title="Risk Monitoring" description="AI-driven compliance anomaly detection.">
             <div className="space-y-4">
-              <div className="flex gap-4 p-4 rounded-2xl bg-warning border border-amber-100">
+              <div className="flex gap-4 p-4 rounded-2xl bg-warning border border-warning/30">
                 <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-widest text-warning">VAT Discrepancy</p>
@@ -193,9 +193,9 @@ export default function TaxCompliance() {
 
 function ComplianceSummaryCard({ label, value, status, dueDate, trend, icon: Icon }: any) {
   return (
-    <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all">
+    <div className="bg-card p-5 rounded-3xl border border-border shadow-sm hover:shadow-md transition-all">
       <div className="flex justify-between items-start mb-4">
-        <div className="p-2.5 rounded-2xl bg-muted border border-slate-100 h-fit">
+        <div className="p-2.5 rounded-2xl bg-muted border border-border h-fit">
           <Icon className="w-5 h-5 text-muted-foreground" />
         </div>
         <Badge variant="outline" className="text-[8px] font-black uppercase tracking-widest border-primary text-primary bg-primary">
@@ -204,7 +204,7 @@ function ComplianceSummaryCard({ label, value, status, dueDate, trend, icon: Ico
       </div>
       <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">{label}</p>
       <p className="text-xl font-black text-muted-foreground tracking-tight">
-        {typeof value === "number" ? formatCurrency(value) : value}
+        {typeof value === "number" ? formatCurrency(value, "IDR", "id-ID") : value}
       </p>
       {dueDate && (
         <div className="flex items-center gap-1.5 mt-3">
@@ -221,8 +221,8 @@ function ComplianceSummaryCard({ label, value, status, dueDate, trend, icon: Ico
 
 function CalendarEventRow({ date, title, detail, status }: any) {
   return (
-    <div className="flex gap-4 p-4 rounded-2xl hover:bg-muted transition-colors group border-b last:border-0 border-slate-100">
-      <div className="flex flex-col items-center justify-center h-12 w-12 bg-white rounded-xl border border-slate-100 shadow-sm group-hover:border-primary transition-colors shrink-0">
+    <div className="flex gap-4 p-4 rounded-2xl hover:bg-muted transition-colors group border-b last:border-0 border-border">
+      <div className="flex flex-col items-center justify-center h-12 w-12 bg-card rounded-xl border border-border shadow-sm group-hover:border-primary transition-colors shrink-0">
         <p className="text-[10px] font-black uppercase tracking-tighter text-muted-foreground">{date.split(" ")[0]}</p>
         <p className="text-sm font-black text-muted-foreground">{date.split(" ")[1]}</p>
       </div>
@@ -241,7 +241,7 @@ function CalendarEventRow({ date, title, detail, status }: any) {
 
 function EvidenceCard({ title, count, size, date }: any) {
   return (
-    <div className="p-4 rounded-2xl border border-slate-100 bg-muted hover:bg-white hover:shadow-lg hover:border-primary transition-all group">
+    <div className="p-4 rounded-2xl border border-border bg-muted hover:bg-card hover:shadow-lg hover:border-primary transition-all group">
       <div className="flex items-center justify-between mb-3">
         <FileText className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
         <Button disabled title="Not available yet" variant="ghost" size="icon" className="h-6 w-6 rounded-lg">

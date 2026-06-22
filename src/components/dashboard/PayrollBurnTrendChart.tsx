@@ -18,7 +18,7 @@ export const PayrollBurnTrendChart: React.FC = () => {
 
   return (
     <div 
-      className="flex flex-col h-full rounded-[2.5rem] border border-slate-800 bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-rose-500/10 group cursor-pointer overflow-hidden relative"
+      className="flex flex-col h-full rounded-[2.5rem] border border-border bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-rose-500/10 group cursor-pointer overflow-hidden relative"
       onClick={() => navigate('/core/hr/paycycle')}
     >
       <div className="flex items-center justify-between mb-6 relative z-10">

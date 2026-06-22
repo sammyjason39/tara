@@ -37,11 +37,7 @@ import {
   Barcode,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  Product,
-  formatCurrency,
-  generateId,
-} from "@/lib/mock-data";
+import { formatCurrency } from "@/lib/format";
 import { toast } from "@/hooks/use-toast";
 import { useSession } from "@/core/security/session";
 import { emitRetailPushEvent } from "@/modules/retail/api/retailGatewayPush";
@@ -63,23 +59,24 @@ interface InventoryItem extends RetailProduct {
 
 const productCategories = ['Coffee', 'Merchandise', 'Gift Cards', 'Equipment'];
 
-// Mock reorder requests
-const initialReorderRequests: ReorderRequest[] = [
-  {
-    id: "RO-001",
-    productId: "r6",
-    productName: "French Press",
-    quantity: 20,
-    status: "pending",
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    supplier: "Merch Supply Co",
-  },
-];
+// Reorder request shape used by the local reorder workflow.
+interface ReorderRequest {
+  id: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  status: "pending" | "ordered" | "received";
+  createdAt: string;
+  supplier?: string;
+}
+
+// Reorder requests are created at runtime by the operator; no seeded sample data.
+const initialReorderRequests: ReorderRequest[] = [];
 
 const statusColors = {
-  pending: "bg-warning text-warning border-yellow-500/20",
+  pending: "bg-warning text-warning border-warning/20",
   ordered: "bg-primary/10 text-primary border-primary",
-  received: "bg-success text-success border-green-500/20",
+  received: "bg-success text-success border-success/20",
 };
 
 const retailers = ["All", ...productCategories];
@@ -116,19 +113,27 @@ export default function RetailInventory() {
         inventoryService.listLocations(session.tenant_id!, session)
       ]);
 
-      const mapped: InventoryItem[] = (invData || []).map(p => ({
-        ...p,
-        minStock: (p.metadata as any)?.min_stock || 5,
-        maxStock: (p.metadata as any)?.max_stock || 100,
-        reorderPoint: (p.metadata as any)?.reorder_point || 10,
-        supplier: (p.metadata as any)?.supplier || "General",
-        lastRestocked: p.updatedAt,
-      }));
+      const mapped: InventoryItem[] = (invData || []).map(p => {
+        const meta = (p.metadata ?? {}) as {
+          min_stock?: number;
+          max_stock?: number;
+          reorder_point?: number;
+          supplier?: string;
+        };
+        return {
+          ...p,
+          minStock: meta.min_stock || 5,
+          maxStock: meta.max_stock || 100,
+          reorderPoint: meta.reorder_point || 10,
+          supplier: meta.supplier || "General",
+          lastRestocked: p.updatedAt,
+        };
+      });
       setInventory(mapped);
       setCategories(cats || []);
       
       const locationMap = new Map<string, { id: string; name: string }>();
-      (Array.isArray(locs) ? locs : []).forEach((loc: any) => {
+      (Array.isArray(locs) ? locs : []).forEach((loc: { id?: string; name?: string; code?: string }) => {
         if (!loc?.id) return;
         const name = loc.name || loc.code || loc.id;
         const nameKey = name.toLowerCase().trim();
@@ -324,7 +329,7 @@ export default function RetailInventory() {
         price: parseFloat(formData.price),
         barcode: formData.barcode,
         metadata: {
-          ...((selectedProduct.metadata as any) || {}),
+          ...((selectedProduct.metadata as Record<string, unknown>) || {}),
           min_stock: parseInt(formData.minStock),
           max_stock: parseInt(formData.maxStock),
           reorder_point: parseInt(formData.reorderPoint),

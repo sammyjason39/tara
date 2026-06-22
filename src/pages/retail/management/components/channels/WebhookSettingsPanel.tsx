@@ -216,14 +216,14 @@ export const WebhookSettingsPanel: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-100 overflow-hidden divide-y divide-slate-100">
+        <div className="rounded-2xl border border-border overflow-hidden divide-y divide-slate-100">
           {/* Inbound URL */}
           <div className="p-4 space-y-2">
             <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
               Listening Endpoint
             </Label>
             <div className="flex items-center gap-2">
-              <code className="flex-1 text-xs font-mono bg-secondary/5 border border-slate-200 rounded-xl px-4 py-3 truncate text-muted-foreground">
+              <code className="flex-1 text-xs font-mono bg-secondary/5 border border-border rounded-xl px-4 py-3 truncate text-muted-foreground">
                 {inboundUrl}
               </code>
               <CopyBtn value={inboundUrl} field="inbound" />
@@ -241,7 +241,7 @@ export const WebhookSettingsPanel: React.FC<Props> = ({
               HMAC Signing Key
             </Label>
             <div className="flex items-center gap-2">
-              <div className="flex-1 flex items-center gap-2 bg-secondary/5 border border-slate-200 rounded-xl px-4 py-3">
+              <div className="flex-1 flex items-center gap-2 bg-secondary/5 border border-border rounded-xl px-4 py-3">
                 <Key className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                 <code className="text-xs font-mono text-muted-foreground truncate">
                   {hmacKey}
@@ -253,7 +253,7 @@ export const WebhookSettingsPanel: React.FC<Props> = ({
                 variant="outline"
                 onClick={handleRotateHmac}
                 disabled={isRotating}
-                className="rounded-xl font-black italic text-xs gap-1.5 border-amber-200 text-warning hover:bg-warning shrink-0"
+                className="rounded-xl font-black italic text-xs gap-1.5 border-warning text-warning hover:bg-warning shrink-0"
               >
                 <RotateCcw
                   className={cn("w-3.5 h-3.5", isRotating && "animate-spin")}
@@ -347,7 +347,7 @@ export const WebhookSettingsPanel: React.FC<Props> = ({
             <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
               Events to Forward
             </Label>
-            <div className="rounded-2xl border border-slate-100 overflow-hidden divide-y divide-slate-50">
+            <div className="rounded-2xl border border-border overflow-hidden divide-y divide-slate-50">
               {(Array.isArray(WEBHOOK_EVENTS) ? WEBHOOK_EVENTS : []).map((ev) => (
                 <div
                   key={ev.key}

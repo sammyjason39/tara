@@ -21,6 +21,7 @@ import { TenantContext } from "../../../gateway/tenant-context.interface";
 @Injectable()
 export class InventoryMockRepository extends IInventoryRepository {
   private items: any[] = [];
+  private categories: any[] = [];
   private balances: any[] = [];
   private movements: any[] = [];
   private adjustments: any[] = [];
@@ -33,6 +34,12 @@ export class InventoryMockRepository extends IInventoryRepository {
     const hanselTenant = "hansel-demo-tenant";
     const loc1 = "hansel-loc-1";
     const loc2 = "hansel-loc-2";
+
+    this.categories = [
+      { id: "cat-electronics-1", tenant_id: hanselTenant, name: "Electronics", is_anomaly_category: false },
+      { id: "cat-software-1", tenant_id: hanselTenant, name: "Software", is_anomaly_category: false },
+      { id: "cat-anomaly-123", tenant_id: hanselTenant, name: "Anomaly", is_anomaly_category: true },
+    ];
 
     this.items = [
       { id: "hansel-prod-1", tenant_id: hanselTenant, sku: "ELEC-MBP-M3", name: "MacBook Pro 14 M3", category: "Electronics", barcode: "888123456789", status: "active", created_at: new Date() },
@@ -73,7 +80,7 @@ export class InventoryMockRepository extends IInventoryRepository {
     };
   }
 
-  async getItems(ctx: TenantContext, location_id?: string, page?: number, limit?: number, search?: string, category_id?: string): Promise<InventoryItem[]> {
+  async getItems(ctx: TenantContext, location_id?: string, page?: number, limit?: number, search?: string, category_id?: string, status?: string, is_anomaly?: boolean, sortBy?: "name" | "quantity" | "created_at", sortOrder?: "asc" | "desc"): Promise<InventoryItem[]> {
     let items = this.items.filter((i) => i.tenant_id === ctx.tenant_id);
     if (location_id) {
       const productIds = this.balances
@@ -83,6 +90,15 @@ export class InventoryMockRepository extends IInventoryRepository {
     }
     if (search) {
       items = items.filter((i) => i.name.toLowerCase().includes(search.toLowerCase()) || i.sku.toLowerCase().includes(search.toLowerCase()));
+    }
+    if (category_id && category_id !== "all") {
+      items = items.filter((i) => i.category_id === category_id);
+    }
+    if (status && status !== "all") {
+      items = items.filter((i) => i.status === status);
+    }
+    if (is_anomaly !== undefined) {
+      items = items.filter((i) => i.is_anomaly === is_anomaly);
     }
     if (page && limit) {
       const skip = (page - 1) * limit;
@@ -91,7 +107,7 @@ export class InventoryMockRepository extends IInventoryRepository {
     return items;
   }
 
-  async countItems(ctx: TenantContext, location_id?: string, search?: string, category_id?: string): Promise<number> {
+  async countItems(ctx: TenantContext, location_id?: string, search?: string, category_id?: string, is_anomaly?: boolean): Promise<number> {
     let items = this.items.filter((i) => i.tenant_id === ctx.tenant_id);
     if (location_id) {
       const productIds = this.balances
@@ -101,6 +117,12 @@ export class InventoryMockRepository extends IInventoryRepository {
     }
     if (search) {
       items = items.filter((i) => i.name.toLowerCase().includes(search.toLowerCase()) || i.sku.toLowerCase().includes(search.toLowerCase()));
+    }
+    if (category_id && category_id !== "all") {
+      items = items.filter((i) => i.category_id === category_id);
+    }
+    if (is_anomaly !== undefined) {
+      items = items.filter((i) => i.is_anomaly === is_anomaly);
     }
     return items.length;
   }
@@ -137,8 +159,17 @@ export class InventoryMockRepository extends IInventoryRepository {
     return balances.length;
   }
 
-  async getMovements(ctx: TenantContext): Promise<StockMovement[]> {
-    return this.movements.filter((m) => m.tenant_id === ctx.tenant_id);
+  async getMovements(ctx: TenantContext, item_id?: string, page: number = 1, limit: number = 50): Promise<StockMovement[]> {
+    let filtered = this.movements.filter((m) => m.tenant_id === ctx.tenant_id);
+    if (item_id) filtered = filtered.filter((m: any) => m.item_id === item_id);
+    const skip = (page - 1) * limit;
+    return filtered.slice(skip, skip + limit);
+  }
+
+  async countMovements(ctx: TenantContext, item_id?: string): Promise<number> {
+    let filtered = this.movements.filter((m) => m.tenant_id === ctx.tenant_id);
+    if (item_id) filtered = filtered.filter((m: any) => m.item_id === item_id);
+    return filtered.length;
   }
 
   async intakeStock(ctx: TenantContext, data: StockIntakeDto, tx?: any): Promise<StockMovement> {
@@ -289,11 +320,102 @@ export class InventoryMockRepository extends IInventoryRepository {
     return { id: itemId, ...data };
   }
 
+  async getItemById(ctx: TenantContext, itemId: string): Promise<any> {
+    return this.items.find(i => i.id === itemId && i.tenant_id === ctx.tenant_id) || null;
+  }
+
+  async getCategoryById(ctx: TenantContext, categoryId: string): Promise<any> {
+    return this.categories.find(c => c.id === categoryId && c.tenant_id === ctx.tenant_id) || null;
+  }
+
   async getSalesHistory(ctx: TenantContext, itemId: string): Promise<any[]> {
     return [];
   }
 
   async getProcurementHistory(ctx: TenantContext, itemId: string): Promise<any[]> {
+    return [];
+  }
+
+  // --- Void Request & Approval Workflow Methods ---
+  async createVoidRequest(
+    ctx: TenantContext,
+    data: {
+      entity_type: string;
+      entity_id: string;
+      reason: string;
+      requested_by: string;
+      company_id?: string;
+      status?: "PENDING" | "APPROVED" | "REJECTED";
+      approved_by?: string;
+      approved_at?: Date;
+    }
+  ): Promise<any> {
+    const voidRequest = {
+      id: `vr-${Date.now()}`,
+      tenant_id: ctx.tenant_id,
+      entity_type: data.entity_type,
+      entity_id: data.entity_id,
+      reason: data.reason,
+      requested_by: data.requested_by,
+      status: data.status || "PENDING",
+      company_id: data.company_id,
+      approved_by: data.status === "APPROVED" ? data.approved_by || data.requested_by : null,
+      approved_at: data.status === "APPROVED" ? data.approved_at || new Date() : null,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+    return voidRequest;
+  }
+
+  async approveVoidRequest(
+    ctx: TenantContext,
+    voidRequest_id: string,
+    approver_id: string
+  ): Promise<any> {
+    return {
+      id: voidRequest_id,
+      status: "APPROVED",
+      approved_by: approver_id,
+      approved_at: new Date(),
+      last_action: "APPROVED",
+      updated_at: new Date(),
+    };
+  }
+
+  async rejectVoidRequest(
+    ctx: TenantContext,
+    voidRequest_id: string,
+    rejector_id: string
+  ): Promise<any> {
+    return {
+      id: voidRequest_id,
+      status: "REJECTED",
+      rejected_by: rejector_id,
+      rejected_at: new Date(),
+      last_action: "REJECTED",
+      updated_at: new Date(),
+    };
+  }
+
+  async getVoidRequestById(ctx: TenantContext, voidRequest_id: string): Promise<any | null> {
+    return null;
+  }
+
+  async getVoidRequestsByEntity(
+    ctx: TenantContext,
+    entity_type: string,
+    entity_id: string
+  ): Promise<any[]> {
+    return [];
+  }
+
+  async listVoidRequests(
+    ctx: TenantContext,
+    filters?: {
+      status?: string;
+      entity_type?: string;
+    }
+  ): Promise<any[]> {
     return [];
   }
 }

@@ -8,7 +8,8 @@ import {
   ChevronRight,
   Store,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
+import { GlassCard } from "@/components/shared/GlassCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -75,7 +76,7 @@ const ShiftOpenTerminal = () => {
           {/* Left: Protocol & Identity */}
           <div className="flex flex-col justify-center space-y-8">
             <div className="space-y-4">
-              <div className="w-16 h-16 rounded-[1.75rem] bg-primary flex items-center justify-center text-foreground shadow-2xl shadow-indigo-600/30">
+              <div className="w-16 h-16 rounded-[1.75rem] bg-primary flex items-center justify-center text-foreground shadow-2xl shadow-primary/30">
                 <Power className="w-8 h-8" />
               </div>
               <h1 className="text-5xl font-black text-foreground italic tracking-tighter uppercase leading-[0.9]">
@@ -107,7 +108,7 @@ const ShiftOpenTerminal = () => {
           </div>
 
           {/* Right: Input Terminal */}
-          <Card className="bg-card/40 border-border backdrop-blur-2xl rounded-[3rem] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.5)] overflow-hidden">
+          <GlassCard className="bg-card/40 border-border backdrop-blur-2xl rounded-[3rem] shadow-[0_40px_100px_-20px_hsl(var(--foreground)/0.5)] overflow-hidden">
             <CardContent className="p-10 space-y-8">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -145,11 +146,11 @@ const ShiftOpenTerminal = () => {
                   className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all ${
                     isAcknowledged 
                     ? "bg-primary/10 border-primary/50 text-foreground" 
-                    : "bg-secondary/40 border-border text-muted-foreground hover:border-white/20"
+                    : "bg-secondary/40 border-border text-muted-foreground hover:border-primary/30"
                   }`}
                 >
                   <div className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
-                    isAcknowledged ? "bg-primary shadow-lg shadow-indigo-600/40" : "bg-secondary"
+                    isAcknowledged ? "bg-primary shadow-lg shadow-primary/40" : "bg-secondary"
                   }`}>
                     {isAcknowledged && <ShieldCheck className="w-4 h-4 text-foreground" />}
                   </div>
@@ -162,7 +163,7 @@ const ShiftOpenTerminal = () => {
               <Button
                 onClick={handleOpenShift}
                 disabled={isOpening}
-                className="w-full h-20 bg-primary hover:bg-primary/90 text-primary-foreground rounded-[1.5rem] font-black italic text-xl uppercase tracking-tighter shadow-2xl shadow-white/5 active:scale-95 transition-all group"
+                className="w-full h-20 bg-primary hover:bg-primary/90 text-primary-foreground rounded-[1.5rem] font-black italic text-xl uppercase tracking-tighter shadow-2xl shadow-primary/20 active:scale-95 transition-all group"
               >
                 {isOpening ? (
                   <RefreshCw className="w-8 h-8 animate-spin" />
@@ -178,7 +179,7 @@ const ShiftOpenTerminal = () => {
                 Atomic verification enabled • ID: {session.tenant_id?.slice(0, 8)}
               </p>
             </CardContent>
-          </Card>
+          </GlassCard>
         </div>
       </div>
     </div>

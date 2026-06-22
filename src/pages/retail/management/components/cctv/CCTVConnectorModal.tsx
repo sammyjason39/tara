@@ -155,10 +155,10 @@ export default function CCTVConnectorModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md p-0 overflow-hidden border-slate-100 rounded-[28px]">
-        <DialogHeader className="p-6 bg-secondary/5 border-b border-slate-100">
+      <DialogContent className="max-w-md p-0 overflow-hidden border-border rounded-[28px]">
+        <DialogHeader className="p-6 bg-secondary/5 border-b border-border">
           <DialogTitle className="text-xl font-black italic tracking-tighter text-muted-foreground flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-white shadow-sm border border-slate-100 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-white shadow-sm border border-border flex items-center justify-center">
               <Camera className="w-5 h-5 text-primary" />
             </div>
             Connect CCTV
@@ -178,7 +178,7 @@ export default function CCTVConnectorModal({
                   setValidated(false);
                 }}
               >
-                <SelectTrigger className="rounded-xl border-slate-200 text-sm">
+                <SelectTrigger className="rounded-xl border-border text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -199,7 +199,7 @@ export default function CCTVConnectorModal({
                 placeholder="e.g. Front Door Feed"
                 value={f.name || ""}
                 onChange={(e) => update("name", e.target.value)}
-                className="rounded-xl border-slate-200 text-sm"
+                className="rounded-xl border-border text-sm"
               />
             </div>
 
@@ -212,7 +212,7 @@ export default function CCTVConnectorModal({
                   placeholder="192.168.1.100"
                   value={f.ipAddress || ""}
                   onChange={(e) => update("ipAddress", e.target.value)}
-                  className="rounded-xl border-slate-200 font-mono text-sm"
+                  className="rounded-xl border-border font-mono text-sm"
                 />
               </div>
             )}
@@ -227,7 +227,7 @@ export default function CCTVConnectorModal({
                     placeholder="admin"
                     value={f.username || ""}
                     onChange={(e) => update("username", e.target.value)}
-                    className="rounded-xl border-slate-200 text-sm"
+                    className="rounded-xl border-border text-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -239,7 +239,7 @@ export default function CCTVConnectorModal({
                     placeholder="••••••••"
                     value={f.password || ""}
                     onChange={(e) => update("password", e.target.value)}
-                    className="rounded-xl border-slate-200 text-sm"
+                    className="rounded-xl border-border text-sm"
                   />
                 </div>
               </div>
@@ -254,7 +254,7 @@ export default function CCTVConnectorModal({
                   placeholder="e.g. ezviz_user_123"
                   value={f.cloudAccountId || ""}
                   onChange={(e) => update("cloudAccountId", e.target.value)}
-                  className="rounded-xl border-slate-200 font-mono text-sm"
+                  className="rounded-xl border-border font-mono text-sm"
                 />
               </div>
             )}
@@ -269,7 +269,7 @@ export default function CCTVConnectorModal({
                   placeholder="6-letter code"
                   value={f.verificationCode || ""}
                   onChange={(e) => update("verificationCode", e.target.value)}
-                  className="rounded-xl border-slate-200 font-mono text-sm"
+                  className="rounded-xl border-border font-mono text-sm"
                 />
                 <p className="text-[10px] text-muted-foreground font-medium">
                   Found on the camera sticker
@@ -286,19 +286,19 @@ export default function CCTVConnectorModal({
                   placeholder="rtsp://admin:pass@ip:554/stream1"
                   value={f.rtspUrl || ""}
                   onChange={(e) => update("rtspUrl", e.target.value)}
-                  className="rounded-xl border-slate-200 font-mono text-sm"
+                  className="rounded-xl border-border font-mono text-sm"
                 />
               </div>
             )}
           </div>
         </div>
 
-        <div className="p-6 bg-secondary/5 border-t border-slate-100 flex items-center justify-between">
+        <div className="p-6 bg-secondary/5 border-t border-border flex items-center justify-between">
           <Button
             variant="outline"
             onClick={handleTest}
             disabled={!f.name || loading}
-            className={`rounded-xl h-10 px-5 text-xs font-bold transition-all ${validated ? "border-emerald-200 bg-success text-success hover:bg-success/10 hover:text-success" : "border-slate-200 text-muted-foreground"} gap-2`}
+            className={`rounded-xl h-10 px-5 text-xs font-bold transition-all ${validated ? "border-success bg-success text-success hover:bg-success/10 hover:text-success" : "border-border text-muted-foreground"} gap-2`}
           >
             {validated ? (
               <CheckCircle2 className="w-4 h-4" />

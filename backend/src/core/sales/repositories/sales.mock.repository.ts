@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { TenantContext } from "../../../gateway/tenant-context.interface";
+import { TenantScope } from "../../../shared/scope/tenant-scope";
 import { CloseOpportunityDto } from "../dto/close-opportunity.dto";
 import { CreateLeadDto } from "../dto/create-lead.dto";
 import { CreateOpportunityDto } from "../dto/create-opportunity.dto";
@@ -250,7 +250,7 @@ export class SalesMockRepository extends ISalesRepository {
     return created;
   }
 
-  async getDashboard(ctx: TenantContext): Promise<SalesDashboard> {
+  async getDashboard(ctx: TenantScope): Promise<SalesDashboard> {
     const store = this.getStore(ctx.tenant_id);
     const now = new Date();
     const openOpps = store.opportunities.filter(
@@ -286,7 +286,7 @@ export class SalesMockRepository extends ISalesRepository {
     };
   }
 
-  async getManagerMetrics(ctx: TenantContext): Promise<SalesManagerMetrics> {
+  async getManagerMetrics(ctx: TenantScope): Promise<SalesManagerMetrics> {
     const store = this.getStore(ctx.tenant_id);
     const openOpps = store.opportunities.filter(
       (item) => item.stage !== "closed_won" && item.stage !== "closed_lost",
@@ -314,7 +314,7 @@ export class SalesMockRepository extends ISalesRepository {
   }
 
   async getExecutiveForecast(
-    ctx: TenantContext,
+    ctx: TenantScope,
   ): Promise<SalesExecutiveForecast> {
     const store = this.getStore(ctx.tenant_id);
     const openOpps = store.opportunities.filter(
@@ -344,7 +344,7 @@ export class SalesMockRepository extends ISalesRepository {
     };
   }
 
-  async getNextBestActions(ctx: TenantContext): Promise<SalesNextAction[]> {
+  async getNextBestActions(ctx: TenantScope): Promise<SalesNextAction[]> {
     const store = this.getStore(ctx.tenant_id);
     return [
       {
@@ -358,35 +358,35 @@ export class SalesMockRepository extends ISalesRepository {
     ];
   }
 
-  async getSalesAnalytics(ctx: TenantContext): Promise<any> {
+  async getSalesAnalytics(ctx: TenantScope): Promise<any> {
     return {
       revenueByMonth: [],
       topReps: [],
     };
   }
 
-  async getForecast(ctx: TenantContext): Promise<any> {
+  async getForecast(ctx: TenantScope): Promise<any> {
     return {
       forecastedValue: 1200000,
       confidence: 85,
     };
   }
 
-  async getPipelineVelocity(ctx: TenantContext): Promise<any> {
+  async getPipelineVelocity(ctx: TenantScope): Promise<any> {
     return {
       avgDaysPerStage: {},
       totalDaysToClose: 24,
     };
   }
 
-  async getSLAPerformance(ctx: TenantContext): Promise<any> {
+  async getSLAPerformance(ctx: TenantScope): Promise<any> {
     return {
       metRate: 94,
       breachCount: 2,
     };
   }
 
-  async getPipeline(ctx: TenantContext): Promise<any[]> {
+  async getPipeline(ctx: TenantScope): Promise<any[]> {
     const opportunities = this.getStore(ctx.tenant_id).opportunities;
     const stageMap: Record<string, { count: number; totalAmount: number; weightedAmount: number }> = {};
 
@@ -408,12 +408,12 @@ export class SalesMockRepository extends ISalesRepository {
     }));
   }
 
-  async getLeads(ctx: TenantContext, status?: string): Promise<SalesLead[]> {
+  async getLeads(ctx: TenantScope, status?: string): Promise<SalesLead[]> {
     const leads = this.getStore(ctx.tenant_id).leads;
     return status ? leads.filter((item) => item.status === status) : leads;
   }
 
-  async createLead(ctx: TenantContext, dto: CreateLeadDto): Promise<SalesLead> {
+  async createLead(ctx: TenantScope, dto: CreateLeadDto): Promise<SalesLead> {
     const store = this.getStore(ctx.tenant_id);
     const owner = this.findRepWithLowestLoad(ctx.tenant_id);
     const created: SalesLead = {
@@ -448,7 +448,7 @@ export class SalesMockRepository extends ISalesRepository {
   }
 
   async updateLeadStatus(
-    ctx: TenantContext,
+    ctx: TenantScope,
     lead_id: string,
     dto: UpdateLeadStatusDto,
   ): Promise<SalesLead> {
@@ -470,7 +470,7 @@ export class SalesMockRepository extends ISalesRepository {
   }
 
   async convertLead(
-    ctx: TenantContext,
+    ctx: TenantScope,
     lead_id: string,
     actor_id: string,
   ): Promise<SalesOpportunity> {
@@ -513,13 +513,13 @@ export class SalesMockRepository extends ISalesRepository {
     return created;
   }
 
-  async getOpportunities(ctx: TenantContext, stage?: string): Promise<SalesOpportunity[]> {
+  async getOpportunities(ctx: TenantScope, stage?: string): Promise<SalesOpportunity[]> {
     const opps = this.getStore(ctx.tenant_id).opportunities;
     return stage ? opps.filter((item) => item.stage === stage) : opps;
   }
 
   async createOpportunity(
-    ctx: TenantContext,
+    ctx: TenantScope,
     dto: CreateOpportunityDto,
   ): Promise<SalesOpportunity> {
     const store = this.getStore(ctx.tenant_id);
@@ -558,7 +558,7 @@ export class SalesMockRepository extends ISalesRepository {
   }
 
   async moveOpportunityStage(
-    ctx: TenantContext,
+    ctx: TenantScope,
     opportunityId: string,
     dto: MoveOpportunityStageDto,
   ): Promise<SalesOpportunity> {
@@ -579,7 +579,7 @@ export class SalesMockRepository extends ISalesRepository {
   }
 
   async closeOpportunity(
-    ctx: TenantContext,
+    ctx: TenantScope,
     opportunityId: string,
     dto: CloseOpportunityDto,
   ): Promise<SalesOpportunity | SalesOrder> {
@@ -630,13 +630,13 @@ export class SalesMockRepository extends ISalesRepository {
     return order;
   }
 
-  async getQuotes(ctx: TenantContext, dealId?: string): Promise<SalesQuote[]> {
+  async getQuotes(ctx: TenantScope, dealId?: string): Promise<SalesQuote[]> {
     const quotes = this.getStore(ctx.tenant_id).quotes;
     return dealId ? quotes.filter((item) => item.opportunityId === dealId) : quotes;
   }
 
   async createQuote(
-    ctx: TenantContext,
+    ctx: TenantScope,
     dto: CreateQuoteDto,
   ): Promise<SalesQuote> {
     const store = this.getStore(ctx.tenant_id);
@@ -679,7 +679,7 @@ export class SalesMockRepository extends ISalesRepository {
     return created;
   }
 
-  async submitQuote(ctx: TenantContext, quoteId: string): Promise<SalesQuote> {
+  async submitQuote(ctx: TenantScope, quoteId: string): Promise<SalesQuote> {
     const quote = this.findQuote(ctx.tenant_id, quoteId);
     if (quote.status !== "draft") {
       throw new BadRequestException("Only draft quotes can be submitted.");
@@ -698,7 +698,7 @@ export class SalesMockRepository extends ISalesRepository {
   }
 
   async decideQuote(
-    ctx: TenantContext,
+    ctx: TenantScope,
     quoteId: string,
     dto: QuoteDecisionDto,
   ): Promise<SalesQuote> {
@@ -721,12 +721,12 @@ export class SalesMockRepository extends ISalesRepository {
     return quote;
   }
 
-  async getTimeline(ctx: TenantContext): Promise<SalesTimelineEvent[]> {
+  async getTimeline(ctx: TenantScope): Promise<SalesTimelineEvent[]> {
     return this.getStore(ctx.tenant_id).timeline;
   }
 
   async createTimelineEvent(
-    ctx: TenantContext,
+    ctx: TenantScope,
     dto: CreateTimelineEventDto,
   ): Promise<SalesTimelineEvent> {
     this.findOpportunity(ctx.tenant_id, dto.opportunityId);
@@ -755,12 +755,12 @@ export class SalesMockRepository extends ISalesRepository {
     return created;
   }
 
-  async getDeals(ctx: TenantContext, status?: string): Promise<any[]> {
+  async getDeals(ctx: TenantScope, status?: string): Promise<any[]> {
     const orders = this.getStore(ctx.tenant_id).orders;
     return status ? orders.filter((o) => o.status === status) : orders;
   }
 
-  async createDeal(ctx: TenantContext, dto: any): Promise<any> {
+  async createDeal(ctx: TenantScope, dto: any): Promise<any> {
     const store = this.getStore(ctx.tenant_id);
     const created = {
       id: this.id("deal"),
@@ -773,11 +773,11 @@ export class SalesMockRepository extends ISalesRepository {
     return created;
   }
 
-  async getTasks(ctx: TenantContext): Promise<SalesTask[]> {
+  async getTasks(ctx: TenantScope): Promise<SalesTask[]> {
     return this.getStore(ctx.tenant_id).tasks;
   }
 
-  async createTask(ctx: TenantContext, dto: CreateTaskDto): Promise<SalesTask> {
+  async createTask(ctx: TenantScope, dto: CreateTaskDto): Promise<SalesTask> {
     const store = this.getStore(ctx.tenant_id);
     const created: SalesTask = {
       id: this.id(`${ctx.tenant_id}-task`),
@@ -805,7 +805,7 @@ export class SalesMockRepository extends ISalesRepository {
     return created;
   }
 
-  async completeTask(ctx: TenantContext, taskId: string): Promise<SalesTask> {
+  async completeTask(ctx: TenantScope, taskId: string): Promise<SalesTask> {
     const task = this.getStore(ctx.tenant_id).tasks.find(
       (item) => item.id === taskId,
     );
@@ -824,15 +824,15 @@ export class SalesMockRepository extends ISalesRepository {
     return task;
   }
 
-  async getOrders(ctx: TenantContext): Promise<SalesOrder[]> {
+  async getOrders(ctx: TenantScope): Promise<SalesOrder[]> {
     return this.getStore(ctx.tenant_id).orders;
   }
 
-  async getAlerts(ctx: TenantContext): Promise<SalesAlert[]> {
+  async getAlerts(ctx: TenantScope): Promise<SalesAlert[]> {
     return this.getStore(ctx.tenant_id).alerts;
   }
 
-  async runSlaSweep(ctx: TenantContext, actor_id: string): Promise<SalesAlert[]> {
+  async runSlaSweep(ctx: TenantScope, actor_id: string): Promise<SalesAlert[]> {
     const store = this.getStore(ctx.tenant_id);
     const now = this.now().getTime();
     store.leads.forEach((lead) => {
@@ -861,7 +861,7 @@ export class SalesMockRepository extends ISalesRepository {
     return store.alerts;
   }
 
-  async getAuditEvents(ctx: TenantContext): Promise<SalesAuditEvent[]> {
+  async getAuditEvents(ctx: TenantScope): Promise<SalesAuditEvent[]> {
     return this.getStore(ctx.tenant_id).audit;
   }
 
@@ -872,12 +872,12 @@ export class SalesMockRepository extends ISalesRepository {
     );
   }
 
-  async recordConsolidatedSale(ctx: TenantContext, data: any): Promise<void> {
+  async recordConsolidatedSale(ctx: TenantScope, data: any): Promise<void> {
     // Mock implementation
     console.log("Mock consolidated sale recorded", data);
   }
 
-  async getOverview(ctx: TenantContext): Promise<any> {
+  async getOverview(ctx: TenantScope): Promise<any> {
     return this.getDashboard(ctx);
   }
 }

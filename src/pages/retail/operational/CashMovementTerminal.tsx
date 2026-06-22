@@ -5,13 +5,15 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useRetail } from '../context/RetailContext';
-import { Card, CardContent } from '@/components/ui/card';
+import { GlassCard } from '@/components/shared/GlassCard';
+import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useSession } from '@/core/security/session';
 import { toast } from '@/hooks/use-toast';
 import { retailService } from '@/core/services/retail/retailService';
+import { formatCurrency } from '@/lib/format';
 
 const CashMovementTerminal = () => {
   const navigate = useNavigate();
@@ -62,7 +64,7 @@ const CashMovementTerminal = () => {
 
       toast({ 
         title: "Movement Recorded", 
-        description: `${type === 'CASH_OUT' ? 'Deducted' : 'Added'} Rp ${numAmount.toLocaleString()} to register.`,
+        description: `${type === 'CASH_OUT' ? 'Deducted' : 'Added'} ${formatCurrency(numAmount, "IDR", "id-ID")} to register.`,
       });
       
       await refreshState();
@@ -104,7 +106,7 @@ const CashMovementTerminal = () => {
           </div>
           <Button 
             variant="ghost" 
-            className="w-16 h-16 rounded-2xl bg-secondary/40 border border-border hover:bg-white/10 text-foreground"
+            className="w-16 h-16 rounded-2xl bg-secondary/40 border border-border hover:bg-accent text-foreground"
             onClick={() => navigate('/m/retail/operational/gateway')}
           >
             <X className="w-6 h-6" />
@@ -114,16 +116,16 @@ const CashMovementTerminal = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 flex-1">
           {/* Main Controls */}
           <div className="lg:col-span-12 space-y-8">
-            <Card className="bg-secondary/40 border-border backdrop-blur-2xl rounded-[3rem] overflow-hidden shadow-2xl">
+            <GlassCard className="bg-secondary/40 border-border backdrop-blur-2xl rounded-[3rem] overflow-hidden shadow-2xl">
               <CardContent className="p-12 space-y-12">
                 
                 {/* Movement Type Toggle */}
-                <div className="flex p-2 bg-card/50 rounded-[2rem] border border-white/5">
+                <div className="flex p-2 bg-card/50 rounded-[2rem] border border-border/40">
                   <button
                     onClick={() => setType('CASH_OUT')}
                     className={`flex-1 h-20 rounded-[1.5rem] flex items-center justify-center gap-4 transition-all ${
                       type === 'CASH_OUT' 
-                      ? 'bg-destructive text-foreground shadow-xl shadow-rose-500/20' 
+                      ? 'bg-destructive text-foreground shadow-xl shadow-destructive/20' 
                       : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
@@ -134,7 +136,7 @@ const CashMovementTerminal = () => {
                     onClick={() => setType('CASH_IN')}
                     className={`flex-1 h-20 rounded-[1.5rem] flex items-center justify-center gap-4 transition-all ${
                       type === 'CASH_IN' 
-                      ? 'bg-success text-foreground shadow-xl shadow-emerald-500/20' 
+                      ? 'bg-success text-foreground shadow-xl shadow-success/20' 
                       : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
@@ -144,7 +146,7 @@ const CashMovementTerminal = () => {
                 </div>
 
                 {/* Amount Input */}
-                <div className="relative group bg-secondary/40 border border-border rounded-3xl p-8 hover:bg-white/10 transition-colors focus-within:border-primary">
+                <div className="relative group bg-secondary/40 border border-border rounded-3xl p-8 hover:bg-accent/40 transition-colors focus-within:border-primary">
                   <div className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-4 italic text-center">
                     Enter Amount
                   </div>
@@ -177,7 +179,7 @@ const CashMovementTerminal = () => {
                     </label>
                     <Input 
                       placeholder="e.g., Office Supplies, Cleaning, Petty Cash..."
-                      className="h-20 bg-secondary/40 border-none rounded-2xl px-8 font-bold text-foreground placeholder:text-muted-foreground/30 focus:bg-white/10 transition-all"
+                      className="h-20 bg-secondary/40 border-none rounded-2xl px-8 font-bold text-foreground placeholder:text-muted-foreground/30 focus:bg-accent/40 transition-all"
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
                     />
@@ -188,7 +190,7 @@ const CashMovementTerminal = () => {
                     </label>
                     <Input 
                       placeholder="Handover notes, specific item list..."
-                      className="h-20 bg-secondary/40 border-none rounded-2xl px-8 font-bold text-foreground placeholder:text-muted-foreground/30 focus:bg-white/10 transition-all"
+                      className="h-20 bg-secondary/40 border-none rounded-2xl px-8 font-bold text-foreground placeholder:text-muted-foreground/30 focus:bg-accent/40 transition-all"
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                     />
@@ -199,8 +201,8 @@ const CashMovementTerminal = () => {
                 <Button
                   className={`w-full h-28 text-3xl font-black italic uppercase tracking-[0.3em] shadow-2xl rounded-[2.5rem] relative overflow-hidden transition-all active:scale-[0.98] ${
                     type === 'CASH_OUT' 
-                    ? 'bg-destructive hover:bg-destructive text-foreground shadow-rose-600/20' 
-                    : 'bg-success hover:bg-success text-foreground shadow-emerald-600/20'
+                    ? 'bg-destructive hover:bg-destructive text-foreground shadow-destructive/20' 
+                    : 'bg-success hover:bg-success text-foreground shadow-success/20'
                   }`}
                   onClick={handleSubmit}
                   disabled={isSubmitting}
@@ -209,7 +211,7 @@ const CashMovementTerminal = () => {
                     <RefreshCw className="w-12 h-12 animate-spin" />
                   ) : (
                     <div className="flex items-center gap-8">
-                      <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-foreground shadow-xl">
+                      <div className="w-16 h-16 rounded-2xl bg-foreground/20 flex items-center justify-center text-foreground shadow-xl">
                         {type === 'CASH_OUT' ? <ArrowDownCircle className="w-9 h-9" /> : <ArrowUpCircle className="w-9 h-9" />}
                       </div>
                       <span>Authorize {type === 'CASH_OUT' ? 'Cash Out' : 'Cash In'}</span>
@@ -218,7 +220,7 @@ const CashMovementTerminal = () => {
                 </Button>
 
               </CardContent>
-            </Card>
+            </GlassCard>
 
             <div className="flex items-center justify-center gap-6 px-12 py-5 bg-secondary/40 rounded-full border border-border backdrop-blur-xl max-w-fit mx-auto">
               <ShieldCheck className="w-6 h-6 text-primary" />

@@ -225,3 +225,48 @@ export type AgenticEvent = {
   error_msg?: string;
   created_at: string;
 };
+
+/* ============================================================================ */
+/* STOCK OPNAME SESSION                                                         */
+/* ============================================================================ */
+
+/**
+ * Scan entry representing one SKU's accumulated count during an opname session.
+ */
+export type ScanEntry = {
+  id?: string;
+  sku: string;
+  name: string;
+  systemCount: number;
+  actualCount: number;
+  timestamp: string;
+  serials?: string[];
+};
+
+/**
+ * Anomaly item created during opname for unregistered barcodes.
+ */
+export type AnomalyItem = {
+  id: string;
+  sku: string;
+  name: string;
+  barcode: string;
+  category_id: string;
+  is_anomaly: boolean;
+  status: "incomplete";
+  createdAt: string;
+};
+
+/**
+ * Opname session state persisted to localStorage to survive page reloads.
+ */
+export type OpnameSession = {
+  cycleId: string;
+  locationId: string;
+  entries: ScanEntry[];
+  unresolvedBarcodes: string[];
+  anomalies: string[];
+  newItems: any[];
+  createdAt: number;
+  lastUpdated: number;
+};

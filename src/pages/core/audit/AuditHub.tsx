@@ -27,6 +27,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Search, Info, Loader2, Shield, Activity, Terminal } from "lucide-react";
+import { formatDateTime, safeText } from "@/lib/format";
 import DepartmentWorkspaceLayout from "@/components/layouts/DepartmentWorkspaceLayout";
 
 const SECTIONS = [
@@ -208,16 +209,16 @@ export default function AuditHub() {
                       onClick={() => setSelectedLog(log)}
                     >
                       <TableCell className="font-mono text-xs">
-                        {new Date(log.createdAt || log.created_at || log.timestamp).toLocaleString()}
+                        {formatDateTime(log.createdAt || log.created_at || log.timestamp)}
                       </TableCell>
-                      <TableCell className="capitalize font-medium">{log.module}</TableCell>
+                      <TableCell className="capitalize font-medium">{safeText(log.module)}</TableCell>
                       <TableCell>
-                        <code className="bg-muted px-1 rounded text-xs">{log.action}</code>
+                        <code className="bg-muted px-1 rounded text-xs">{safeText(log.action)}</code>
                       </TableCell>
                       <TableCell>
                         <div className="text-xs">
-                          <span className="font-semibold">{log.entityType || log.entity_type || "N/A"}:</span>
-                          <span className="text-muted-foreground ml-1">{log.entityId || log.entity_id}</span>
+                          <span className="font-semibold">{safeText(log.entityType || log.entity_type)}:</span>
+                          <span className="text-muted-foreground ml-1">{safeText(log.entityId || log.entity_id)}</span>
                         </div>
                       </TableCell>
                       <TableCell className="font-mono text-xs">{(log.userId || log.user_id)?.split("-")[0] || "anon"}...</TableCell>
@@ -302,13 +303,13 @@ export default function AuditHub() {
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <label className="text-[10px] uppercase text-muted-foreground">Before</label>
-                      <div className="bg-destructive border border-red-500/20 text-destructive p-2 rounded text-[10px] font-mono whitespace-pre-wrap">
+                      <div className="bg-destructive/10 border border-destructive/20 text-destructive p-2 rounded text-[10px] font-mono whitespace-pre-wrap">
                         {JSON.stringify(selectedLog.changes.before || {}, null, 2)}
                       </div>
                     </div>
                     <div className="space-y-1">
                       <label className="text-[10px] uppercase text-muted-foreground">After</label>
-                      <div className="bg-success border border-green-500/20 text-success p-2 rounded text-[10px] font-mono whitespace-pre-wrap">
+                      <div className="bg-success/10 border border-success/20 text-success p-2 rounded text-[10px] font-mono whitespace-pre-wrap">
                         {JSON.stringify(selectedLog.changes.after || {}, null, 2)}
                       </div>
                     </div>

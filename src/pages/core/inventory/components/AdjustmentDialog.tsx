@@ -10,8 +10,9 @@ import {
 import { Input as UIInput } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AlertCircle } from "lucide-react";
-import { inventoryService } from "@/core/services/inventory/inventoryService";
 import { useSession } from "@/core/security/session";
+import { stockAdjustmentSchema, validateNonNegativeBalance } from "../schemas";
+import { useStockAdjustment } from "../hooks/useInventoryQueries";
 import type {
   InventoryStockBalance,
   InventoryItemMaster,
@@ -34,9 +35,9 @@ export function AdjustmentDialog({
   onSuccess,
 }: AdjustmentDialogProps) {
   const session = useSession();
+  const adjustMutation = useStockAdjustment();
   const [delta, setDelta] = useState(0);
   const [reason, setReason] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const reset = () => {
@@ -49,31 +50,41 @@ export function AdjustmentDialog({
 
   const handleAdjust = async () => {
     if (!selectedBalance) return;
-    if (delta === 0) {
-      setError("Please enter a non-zero delta.");
+
+    // Validate with Zod schema
+    const formData = {
+      item_id: selectedBalance.item.id,
+      location_id: selectedBalance.balance.location_id,
+      department_id: selectedBalance.balance.department_id || "",
+      requested_delta: delta,
+      reason: reason.trim(),
+    };
+
+    const result = stockAdjustmentSchema.safeParse(formData);
+    if (!result.success) {
+      const firstError = result.error.errors[0];
+      setError(firstError.message);
       return;
     }
-    if (!reason.trim()) {
-      setError("Reason is required for audit purposes.");
+
+    // Validate non-negative balance
+    const balanceError = validateNonNegativeBalance(
+      selectedBalance.balance.quantity || 0,
+      delta
+    );
+    if (balanceError) {
+      setError(balanceError);
       return;
     }
-    setLoading(true);
+
     setError(null);
     try {
-      await inventoryService.requestAdjustment(session.tenant_id, session, {
-        item_id: selectedBalance.item.id,
-        location_id: selectedBalance.balance.location_id,
-        department_id: selectedBalance.balance.department_id,
-        requested_delta: delta,
-        reason,
-      });
+      await adjustMutation.mutateAsync(formData);
       onSuccess();
       onOpenChange(false);
       reset();
     } catch (err: any) {
       setError(err?.message || "Failed to submit adjustment.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -161,12 +172,12 @@ export function AdjustmentDialog({
               reset();
               onOpenChange(false);
             }}
-            disabled={loading}
+            disabled={adjustMutation.isPending}
           >
             Cancel
           </Button>
-          <Button onClick={handleAdjust} disabled={loading || delta === 0}>
-            {loading ? "Submitting..." : "Submit Adjustment"}
+          <Button onClick={handleAdjust} disabled={adjustMutation.isPending || delta === 0}>
+            {adjustMutation.isPending ? "Submitting..." : "Submit Adjustment"}
           </Button>
         </DialogFooter>
       </DialogContent>

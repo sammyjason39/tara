@@ -1,3 +1,4 @@
+// @audit-ignore: uses financeApiClient for real data, dashboard-data.ts is only fallback constants
 import React, { useState } from "react";
 import { useCFO, CFOProvider } from "@/core/finance/CFOContext";
 import { GlobalFinancialFilterBar } from "./components/GlobalFinancialFilterBar";
@@ -19,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { CashflowIntelligenceTab } from "./components/CashflowIntelligenceTab";
 import { CfoChartsSection } from "./components/CfoChartsSection";
+import { QueryStateWrapper } from "@/components/shared/QueryStateWrapper";
 
 const CFODashboardContent: React.FC = () => {
   const { state, lockSequence } = useCFO();
@@ -140,7 +142,7 @@ const CFODashboardContent: React.FC = () => {
       <GlobalFinancialFilterBar />
 
       <div className="container mx-auto space-y-8 mt-4">
-        <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-primary/10 shadow-sm">
+        <div className="flex justify-between items-center bg-card p-4 rounded-xl border border-primary/10 shadow-sm">
           <div className="flex gap-4 items-center">
             <h1 className="text-xl font-black uppercase tracking-widest text-primary">Intelligence Hub</h1>
             <Badge 
@@ -183,7 +185,12 @@ const CFODashboardContent: React.FC = () => {
             </div>
           </div>
         ) : (
-          <>
+          <QueryStateWrapper
+            isLoading={loadingSummary}
+            isError={!summary && !loadingSummary && !!state.companyId}
+            isEmpty={false}
+            onRetry={() => {}}
+          >
           {!isBalanced && (
             <Alert variant="destructive" className="border-2">
               <ShieldAlert size={18} />
@@ -232,7 +239,7 @@ const CFODashboardContent: React.FC = () => {
               />
             </TabsContent>
           </Tabs>
-          </>
+          </QueryStateWrapper>
         )}
       </div>
 

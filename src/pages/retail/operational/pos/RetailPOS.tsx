@@ -308,10 +308,10 @@ export default function RetailPOS() {
 
         <div className="xl:col-span-4">
           <Card className="h-full flex flex-col border-none shadow-lg bg-secondary/5 sticky top-6">
-            <CardHeader className="border-b bg-white rounded-t-lg">
+            <CardHeader className="border-b border-border bg-card rounded-t-lg">
               <CardTitle className="text-xl">Active Cart</CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col p-6 bg-white">
+            <CardContent className="flex-1 flex flex-col p-6 bg-card">
               <div className="flex-1 space-y-4 overflow-y-auto max-h-[500px] mb-6">
                 {cart.length === 0 ? (
                   <p className="text-center text-muted-foreground italic py-12">

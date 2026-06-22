@@ -15,6 +15,7 @@ import { buildTemplatePreview, contractTemplates } from "@/core/tools/docs/Templ
 import { DocumentViewer } from "@/core/tools/docs/DocumentViewer";
 import type { ContractRecord, VisaRecord } from "@/core/hr/legal/contractTypes";
 import type { LegalContractHandoff } from "@/core/types/procurement/procurement";
+import { EmptyState } from "@/components/shared/AsyncState";
 
 export default function LexBoard() {
   const session = useSession();
@@ -108,13 +109,24 @@ export default function LexBoard() {
               </tr>
             </thead>
             <tbody>
-              {(Array.isArray(filteredContracts) ? filteredContracts : []).map((contract) => (
+              {filteredContracts.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="p-0">
+                    <EmptyState
+                      title="No contracts"
+                      description="No contracts match the current search. Create a contract to populate this list."
+                    />
+                  </td>
+                </tr>
+              ) : (
+                (Array.isArray(filteredContracts) ? filteredContracts : []).map((contract) => (
                 <tr key={contract.id} className="border-t">
                   <td className="p-3">{contract.title}</td>
                   <td className="p-3 text-muted-foreground">{contract.type}</td>
                   <td className="p-3 text-muted-foreground">{contract.status}</td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
         </DataTableShell>

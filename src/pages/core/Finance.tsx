@@ -41,12 +41,12 @@ const SECTIONS = [
 
 const statusTone = (status: string) => {
   if (status === "Complete" || status === "Ready") {
-    return "bg-success text-success border-emerald-500/20";
+    return "bg-success text-success border-success/20";
   }
   if (status === "Attention" || status === "Overdue") {
-    return "bg-destructive text-destructive border-rose-500/20";
+    return "bg-destructive text-destructive border-destructive/20";
   }
-  return "bg-muted text-muted-foreground border-slate-500/20";
+  return "bg-muted text-muted-foreground border-border/20";
 };
 
 interface FinanceMetric {
@@ -120,7 +120,7 @@ export default function CoreFinance() {
     return (
       <div className="flex h-screen items-center justify-center bg-muted">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+          <div className="h-12 w-12 border-4 border-success border-t-transparent rounded-full animate-spin" />
           <p className="text-xs font-black uppercase tracking-widest text-muted-foreground italic">Accessing Treasury Mainframe...</p>
         </div>
       </div>
@@ -272,7 +272,7 @@ export default function CoreFinance() {
                 </div>
               </div>
             ))}
-            <Button onClick={() => toast({ title: "Full Queue", description: "Redirecting to detailed billing ledger..." })} variant="outline" className="w-full rounded-xl h-11 font-black text-[10px] uppercase tracking-widest border-slate-200">
+            <Button onClick={() => toast({ title: "Full Queue", description: "Redirecting to detailed billing ledger..." })} variant="outline" className="w-full rounded-xl h-11 font-black text-[10px] uppercase tracking-widest border-border">
               View full ledger
             </Button>
           </div>
@@ -307,12 +307,12 @@ export default function CoreFinance() {
                 </div>
               </div>
             ))}
-            <div className="flex items-center justify-between rounded-2xl border border-dashed p-6 bg-success border-emerald-500/20">
+            <div className="flex items-center justify-between rounded-2xl border border-dashed p-6 bg-success border-success/20">
               <div className="flex items-center gap-3">
                 <ShieldCheck className="h-5 w-5 text-success" />
                 <span className="text-[11px] font-bold text-success uppercase tracking-widest">Tax documentation package ready</span>
               </div>
-              <Button onClick={handleDownloadTaxPackage} size="sm" variant="outline" className="rounded-xl h-9 px-6 font-black text-[10px] uppercase tracking-widest border-emerald-200 text-success">
+              <Button onClick={handleDownloadTaxPackage} size="sm" variant="outline" className="rounded-xl h-9 px-6 font-black text-[10px] uppercase tracking-widest border-success text-success">
                 Download
               </Button>
             </div>
@@ -326,7 +326,7 @@ export default function CoreFinance() {
       >
         <div className="grid gap-4 md:grid-cols-3 pt-2">
           {(Array.isArray(auditReadiness) ? auditReadiness : []).map((item) => (
-            <div key={item.id} className="rounded-2xl border p-5 bg-white dark:bg-muted shadow-sm border-slate-100">
+            <div key={item.id} className="rounded-2xl border p-5 bg-white dark:bg-muted shadow-sm border-border">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <p className="text-xs font-black uppercase tracking-widest text-muted-foreground dark:text-white">
                   {item.label}

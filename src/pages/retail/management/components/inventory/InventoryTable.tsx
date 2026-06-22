@@ -18,6 +18,7 @@ import {
   Printer,
   FolderTree,
   Image as ImageIcon,
+  CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InventoryItemView } from "./types";
@@ -40,6 +41,7 @@ type TableProps = {
   onPrint: (item: InventoryItemView) => void;
   onMovement: (type: "transfer_out", item: InventoryItemView) => void;
   onReclassify?: (item: InventoryItemView) => void;
+  onComplete?: (item: InventoryItemView) => void;
   onCategoryClick?: (categoryId: string) => void;
   onRowClick?: (item: InventoryItemView) => void;
 } & PaginationProps;
@@ -61,7 +63,7 @@ const PaginationBar: React.FC<PaginationProps> = ({
   });
 
   return (
-    <div className="px-6 py-4 border-t border-slate-50 bg-secondary/5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+    <div className="px-6 py-4 border-t border-border bg-secondary/5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div className="flex items-center gap-3 flex-wrap">
         <span className="text-[10px] font-black italic uppercase tracking-widest text-muted-foreground">
           Page {page} of {totalPages} • Total {totalItems} items
@@ -138,6 +140,7 @@ export const InventoryTable: React.FC<TableProps> = ({
   onPrint,
   onMovement,
   onPageChange,
+  onComplete,
   onCategoryClick,
   onRowClick,
 }) => {
@@ -145,7 +148,7 @@ export const InventoryTable: React.FC<TableProps> = ({
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="border-b border-slate-50">
+          <tr className="border-b border-border">
             {[
               "Image",
               "SKU",
@@ -186,10 +189,10 @@ export const InventoryTable: React.FC<TableProps> = ({
                 <tr
                   key={item.id}
                   onClick={() => onRowClick?.(item)}
-                  className="group border-b border-slate-50 last:border-none hover:bg-secondary/5 transition-colors cursor-pointer"
+                  className="group border-b border-border last:border-none hover:bg-secondary/5 transition-colors cursor-pointer"
                 >
                   <td className="px-6 py-4">
-                    <div className="h-10 w-10 rounded-xl overflow-hidden bg-muted dark:bg-muted border border-slate-200 dark:border-slate-800 flex items-center justify-center">
+                    <div className="h-10 w-10 rounded-xl overflow-hidden bg-muted dark:bg-muted border border-border dark:border-border flex items-center justify-center">
                       {item.imageUrl ? (
                         <img 
                           src={item.imageUrl} 
@@ -312,6 +315,18 @@ export const InventoryTable: React.FC<TableProps> = ({
                           <FolderTree className="w-3.5 h-3.5 text-warning" />{" "}
                           Change Category
                         </DropdownMenuItem>
+                        {item.category?.toLowerCase() === "anomaly" && onComplete && (
+                          <DropdownMenuItem
+                            className="rounded-xl gap-2 font-black italic text-xs py-3"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onComplete(item);
+                            }}
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 text-success" />{" "}
+                            Complete Item
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           className="rounded-xl gap-2 font-black italic text-xs py-3 text-destructive focus:bg-destructive"

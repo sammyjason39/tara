@@ -3,10 +3,13 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { mockTables, mockCafeProducts, type Table, type Product, formatCurrency } from '@/lib/mock-data';
+import { EmptyState } from '@/components/shared/AsyncState';
+import { mockTables, mockCafeProducts, type Table, type Product } from '@/lib/mock-data';
+import { formatCurrency } from '@/lib/format';
+import { toast } from '@/hooks/use-toast';
 import { OrderPad } from '@/components/pos-cafe/OrderPad';
 import { TableBilling } from '@/components/pos-cafe/TableBilling';
-import { Users, Clock, Plus, Receipt } from 'lucide-react';
+import { Users, Clock, Plus, Receipt, LayoutGrid } from 'lucide-react';
 
 type TableAction = 'order' | 'billing' | null;
 
@@ -49,6 +52,10 @@ export default function CafeTables() {
           : t
       ));
       setTableAction('order');
+      toast({
+        title: 'Order started',
+        description: `Table ${selectedTable.number} is now occupied`,
+      });
     }
   };
 
@@ -93,6 +100,10 @@ export default function CafeTables() {
           total: (prev.currentOrder?.total || 0) + orderTotal,
         }
       } : null);
+      toast({
+        title: 'Order sent to kitchen',
+        description: `Table ${selectedTable.number} — ${formatCurrency(orderTotal)} added`,
+      });
     }
     setTableAction(null);
   };
@@ -110,6 +121,10 @@ export default function CafeTables() {
           t.id === selectedTable.id ? { ...t, status: 'available' as const } : t
         ));
       }, 30000);
+      toast({
+        title: 'Payment complete',
+        description: `Table ${selectedTable.number} settled and set for cleaning`,
+      });
     }
     setSelectedTable(null);
     setTableAction(null);
@@ -150,37 +165,45 @@ export default function CafeTables() {
       </div>
 
       {/* Table Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {(Array.isArray(tables) ? tables : []).map((table) => (
-          <button
-            key={table.id}
-            onClick={() => handleTableClick(table)}
-            className={cn(
-              'relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all touch-target min-h-[120px]',
-              getTableStatusColor(table.status)
-            )}
-          >
-            <span className="text-2xl font-bold">{table.number}</span>
-            <div className="flex items-center gap-1 text-sm mt-1">
-              <Users size={14} />
-              <span>{table.capacity}</span>
-            </div>
-            
-            {table.status === 'occupied' && table.occupiedSince && (
-              <div className="flex items-center gap-1 text-xs mt-2 opacity-80">
-                <Clock size={12} />
-                <span>{getOccupiedDuration(table.occupiedSince)}</span>
+      {tables.length === 0 ? (
+        <EmptyState
+          icon={LayoutGrid}
+          title="No tables configured"
+          description="No tables exist for this venue yet. Configure the floor plan to start seating guests."
+        />
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {(Array.isArray(tables) ? tables : []).map((table) => (
+            <button
+              key={table.id}
+              onClick={() => handleTableClick(table)}
+              className={cn(
+                'relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all touch-target min-h-[120px]',
+                getTableStatusColor(table.status)
+              )}
+            >
+              <span className="text-2xl font-bold">{table.number}</span>
+              <div className="flex items-center gap-1 text-sm mt-1">
+                <Users size={14} />
+                <span>{table.capacity}</span>
               </div>
-            )}
-            
-            {table.currentOrder && (
-              <Badge variant="secondary" className="absolute -top-2 -right-2 text-xs">
-                {formatCurrency(table.currentOrder.total)}
-              </Badge>
-            )}
-          </button>
-        ))}
-      </div>
+              
+              {table.status === 'occupied' && table.occupiedSince && (
+                <div className="flex items-center gap-1 text-xs mt-2 opacity-80">
+                  <Clock size={12} />
+                  <span>{getOccupiedDuration(table.occupiedSince)}</span>
+                </div>
+              )}
+              
+              {table.currentOrder && (
+                <Badge variant="secondary" className="absolute -top-2 -right-2 text-xs">
+                  {formatCurrency(table.currentOrder.total)}
+                </Badge>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Table Action Dialog */}
       <Dialog open={!!selectedTable && tableAction === null && selectedTable.status !== 'available'} onOpenChange={(open) => !open && handleClose()}>

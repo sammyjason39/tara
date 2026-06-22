@@ -93,7 +93,7 @@ export default function StrategyControlDesk() {
           title="Strategy Control Desk"
           subtitle="AI-driven tactical orchestration and budget governance."
           primaryAction={
-            <div className="flex items-center gap-2 bg-success border border-emerald-500/20 px-4 py-2 rounded-xl">
+            <div className="flex items-center gap-2 bg-success border border-success/20 px-4 py-2 rounded-xl">
               <ShieldCheck className="h-4 w-4 text-success" />
               <span className="text-[10px] font-black uppercase tracking-widest text-success italic">Governance Active</span>
             </div>
@@ -165,8 +165,8 @@ export default function StrategyControlDesk() {
                     rec.status === "PENDING" 
                       ? "bg-secondary/30 border-border hover:border-primary/50" 
                       : rec.status === "AUTHORIZED"
-                      ? "bg-success border-emerald-500/20"
-                      : "bg-destructive border-rose-500/20 opacity-60"
+                      ? "bg-success border-success/20"
+                      : "bg-destructive border-destructive/20 opacity-60"
                   )}
                 >
                   <div className="flex flex-col md:flex-row items-center justify-between gap-8">

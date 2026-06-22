@@ -95,7 +95,7 @@ export default function WorkforceComplianceHub() {
           secondaryActions={
             <Button 
               variant="outline" 
-              className="rounded-[1.2rem] px-6 h-12 font-black text-xs uppercase tracking-widest border-slate-200 bg-secondary/400 backdrop-blur-sm hover:bg-white transition-all"
+              className="rounded-[1.2rem] px-6 h-12 font-black text-xs uppercase tracking-widest border-border bg-secondary/40 backdrop-blur-sm hover:bg-secondary/60 transition-all"
               onClick={() => refresh(true)}
               disabled={refreshing}
             >
@@ -341,7 +341,7 @@ export default function WorkforceComplianceHub() {
         {activeTab === "forensics" && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
              <Card className="lg:col-span-8 glass-card border-none shadow-2xl rounded-[2rem] overflow-hidden flex flex-col bg-background text-success font-mono">
-                <div className="p-8 border-b border-border bg-black/40 flex items-center justify-between">
+                <div className="p-8 border-b border-border bg-background/40 flex items-center justify-between">
                    <div className="flex items-center gap-3">
                       <Terminal className="h-5 w-5" />
                       <h3 className="text-[10px] font-black uppercase tracking-[0.3em] italic">Forensic Event Stream</h3>
@@ -404,7 +404,7 @@ export default function WorkforceComplianceHub() {
   );
 }
 
-function DollarSignIcon({ className }: any) {
+function DollarSignIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
       <line x1="12" y1="1" x2="12" y2="23" />

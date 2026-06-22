@@ -1,0 +1,15 @@
+{
+  "enabled": true,
+  "name": "Run Tests After Task",
+  "description": "Running tests after task generation",
+  "version": "1",
+  "when": {
+    "type": "postTaskExecution"
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "npm run test"
+  },
+  "workspaceFolderName": "business-flow-suite-v2",
+  "shortName": "post-task-tests"
+}

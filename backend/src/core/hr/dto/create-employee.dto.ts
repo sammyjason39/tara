@@ -7,6 +7,8 @@ import {
   IsNumber,
   Min,
   IsDateString,
+  MinLength,
+  MaxLength,
 } from "class-validator";
 
 export enum EmploymentStatus {
@@ -38,10 +40,14 @@ export class CreateEmployeeDto {
 
   @IsString()
   @IsNotEmpty()
+  @MinLength(2, { message: 'first_name must be at least 2 characters' })
+  @MaxLength(100, { message: 'first_name must be at most 100 characters' })
   first_name: string;
 
   @IsString()
   @IsNotEmpty()
+  @MinLength(2, { message: 'last_name must be at least 2 characters' })
+  @MaxLength(100, { message: 'last_name must be at most 100 characters' })
   last_name: string;
 
   @IsString()

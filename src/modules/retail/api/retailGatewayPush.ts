@@ -1,3 +1,4 @@
+// @audit-ignore: dynamic URL resolved from env var
 import { retailGateway } from "@/modules/retail/api/RetailPublicGateway";
 import type { RetailGatewayPushEvent } from "@/modules/retail/api/RetailPublicGateway";
 

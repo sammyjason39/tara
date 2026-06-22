@@ -29,7 +29,9 @@ import {
   UtensilsCrossed,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { mockCafeProducts, Product, formatCurrency } from '@/lib/mock-data';
+import { EmptyState } from '@/components/shared/AsyncState';
+import { mockCafeProducts, Product } from '@/lib/mock-data';
+import { formatCurrency } from '@/lib/format';
 import { useApp } from '@/contexts/AppContext';
 import { toast } from '@/hooks/use-toast';
 
@@ -199,8 +201,15 @@ export default function CafeCashier() {
 
         {/* Product Grid */}
         <ScrollArea className="flex-1">
-          <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-            {(Array.isArray(filteredProducts) ? filteredProducts : []).map((product) => (
+          {filteredProducts.length === 0 ? (
+            <EmptyState
+              icon={Coffee}
+              title="No menu items found"
+              description="No products match the current search or category. Adjust your filters to see more items."
+            />
+          ) : (
+            <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              {(Array.isArray(filteredProducts) ? filteredProducts : []).map((product) => (
               <Card
                 key={product.id}
                 className={cn(
@@ -229,7 +238,8 @@ export default function CafeCashier() {
                 </CardContent>
               </Card>
             ))}
-          </div>
+            </div>
+          )}
         </ScrollArea>
       </div>
 
@@ -474,7 +484,7 @@ export default function CafeCashier() {
                       size="sm"
                       onClick={() => setCashReceived(amount.toString())}
                     >
-                      ${amount}
+                      {formatCurrency(amount)}
                     </Button>
                   ))}
                 </div>

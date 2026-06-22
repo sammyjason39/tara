@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSession } from "@/core/security/session";
 import { financeService } from "@/core/services/finance/financeService";
 import { InvitePartnerDialog } from "./components/InvitePartnerDialog";
+import { formatNumber } from "@/lib/format";
 import { 
   Users, 
   UserPlus,
@@ -77,7 +78,7 @@ export default function JVDesk() {
       />
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="glass-panel p-5 rounded-2xl border bg-white/50 backdrop-blur-sm shadow-sm relative overflow-hidden group">
+        <div className="glass-panel p-5 rounded-2xl border bg-card/50 backdrop-blur-sm shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
             <Users className="h-12 w-12 text-primary" />
           </div>
@@ -89,7 +90,7 @@ export default function JVDesk() {
           </div>
         </div>
 
-        <div className="glass-panel p-5 rounded-2xl border bg-white/50 backdrop-blur-sm shadow-sm relative overflow-hidden group">
+        <div className="glass-panel p-5 rounded-2xl border bg-card/50 backdrop-blur-sm shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
             <HandCoins className="h-12 w-12 text-primary" />
           </div>
@@ -101,7 +102,7 @@ export default function JVDesk() {
           </div>
         </div>
 
-        <div className="glass-panel p-5 rounded-2xl border bg-white/50 backdrop-blur-sm shadow-sm relative overflow-hidden group">
+        <div className="glass-panel p-5 rounded-2xl border bg-card/50 backdrop-blur-sm shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
             <Scale className="h-12 w-12 text-destructive" />
           </div>
@@ -147,13 +148,13 @@ export default function JVDesk() {
                     (Array.isArray(settlement) ? settlement : []).map((s, idx) => (
                       <tr key={idx} className="border-t hover:bg-muted/50 transition-colors">
                         <td className="p-3 font-medium text-primary">{s.participant_name}</td>
-                        <td className="p-3 text-success font-medium">Rp {s.gross_revenue?.toLocaleString()}</td>
-                        <td className="p-3 text-destructive font-medium">Rp {s.cost_burden?.toLocaleString()}</td>
+                        <td className="p-3 text-success font-medium">Rp {formatNumber(s.gross_revenue ?? 0)}</td>
+                        <td className="p-3 text-destructive font-medium">Rp {formatNumber(s.cost_burden ?? 0)}</td>
                         <td className="p-3">
                           <Badge className={cn(
-                            s.net_payable > 0 ? "bg-success text-success border-emerald-200" : "bg-destructive text-destructive border-rose-200"
+                            s.net_payable > 0 ? "bg-success text-success border-success/30" : "bg-destructive text-destructive border-destructive/30"
                           )}>
-                            Rp {s.net_payable?.toLocaleString()}
+                            Rp {formatNumber(s.net_payable ?? 0)}
                           </Badge>
                         </td>
                         <td className="p-3 text-right">
@@ -195,7 +196,7 @@ export default function JVDesk() {
                       <td className="p-3">
                         <Badge variant="outline">{l.type}</Badge>
                       </td>
-                      <td className="p-3 font-semibold">Rp {l.allocated_amt?.toLocaleString()}</td>
+                      <td className="p-3 font-semibold">Rp {formatNumber(l.allocated_amt ?? 0)}</td>
                       <td className="p-3 text-xs font-mono text-muted-foreground">{l.journal_id?.substring(0, 8)}</td>
                     </tr>
                   ))}
@@ -210,7 +211,7 @@ export default function JVDesk() {
           <TabsContent value="profiles" className="pt-4">
             <div className="grid gap-4 md:grid-cols-2">
               {(Array.isArray(profiles) ? profiles : []).map((p) => (
-                <div key={p.id} className="border rounded-xl p-4 flex items-start justify-between hover:border-primary/30 transition-all cursor-pointer bg-white shadow-sm">
+                <div key={p.id} className="border rounded-xl p-4 flex items-start justify-between hover:border-primary/30 transition-all cursor-pointer bg-card shadow-sm">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <h4 className="font-bold text-primary">{p.name}</h4>

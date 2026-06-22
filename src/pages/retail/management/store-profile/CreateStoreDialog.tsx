@@ -171,7 +171,7 @@ export const CreateStoreDialog: React.FC<CreateStoreDialogProps> = ({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="rounded-2xl border-slate-200/50 bg-white/80 backdrop-blur-2xl shadow-2xl max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0">
+      <DialogContent className="rounded-2xl border-border/50 bg-white/80 backdrop-blur-2xl shadow-2xl max-w-2xl max-h-[90vh] overflow-hidden flex flex-col p-0">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
 
         <DialogHeader className="p-8 pb-4">
@@ -205,7 +205,7 @@ export const CreateStoreDialog: React.FC<CreateStoreDialogProps> = ({
                     type="text"
                     name="name"
                     required
-                    className="flex h-12 w-full rounded-2xl border border-slate-200 bg-secondary/5 px-4 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-primary transition-all"
+                    className="flex h-12 w-full rounded-2xl border border-border bg-secondary/5 px-4 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-primary transition-all"
                     placeholder="e.g. Ubud Flagship"
                     autoFocus
                   />
@@ -220,7 +220,7 @@ export const CreateStoreDialog: React.FC<CreateStoreDialogProps> = ({
                   type="text"
                   name="code"
                   required
-                  className="flex h-12 w-full rounded-2xl border border-slate-200 bg-secondary/5 px-4 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-primary transition-all"
+                  className="flex h-12 w-full rounded-2xl border border-border bg-secondary/5 px-4 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-primary transition-all"
                   placeholder="e.g. UBX-01"
                 />
               </div>
@@ -232,7 +232,7 @@ export const CreateStoreDialog: React.FC<CreateStoreDialogProps> = ({
                 <select
                   name="type"
                   defaultValue="flagship"
-                  className="w-full h-12 rounded-2xl border border-slate-200 bg-secondary/5 px-4 font-bold italic text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-primary transition-all appearance-none cursor-pointer"
+                  className="w-full h-12 rounded-2xl border border-border bg-secondary/5 px-4 font-bold italic text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-primary transition-all appearance-none cursor-pointer"
                 >
                   <option value="flagship">Flagship Node</option>
                   <option value="satellite">Satellite Branch</option>
@@ -253,7 +253,7 @@ export const CreateStoreDialog: React.FC<CreateStoreDialogProps> = ({
                       <input
                         type="tel"
                         name="phone"
-                        className="flex h-12 w-full rounded-2xl border border-slate-200 bg-secondary/5 pl-11 pr-4 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-primary transition-all"
+                        className="flex h-12 w-full rounded-2xl border border-border bg-secondary/5 pl-11 pr-4 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-primary transition-all"
                         placeholder="Registry Phone Line"
                       />
                     </div>
@@ -262,7 +262,7 @@ export const CreateStoreDialog: React.FC<CreateStoreDialogProps> = ({
                       <input
                         type="email"
                         name="email"
-                        className="flex h-12 w-full rounded-2xl border border-slate-200 bg-secondary/5 pl-11 pr-4 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-primary transition-all"
+                        className="flex h-12 w-full rounded-2xl border border-border bg-secondary/5 pl-11 pr-4 py-2 font-bold italic text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-primary transition-all"
                         placeholder="Node Email Alias"
                       />
                     </div>
@@ -281,7 +281,7 @@ export const CreateStoreDialog: React.FC<CreateStoreDialogProps> = ({
                   required
                   value={selectedLocationId}
                   onChange={(e) => setSelectedLocationId(e.target.value)}
-                  className="w-full h-12 rounded-2xl border border-slate-200 bg-secondary/5 px-4 font-bold italic text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-primary transition-all appearance-none cursor-pointer"
+                  className="w-full h-12 rounded-2xl border border-border bg-secondary/5 px-4 font-bold italic text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-primary transition-all appearance-none cursor-pointer"
                 >
                   <option value="" disabled>
                     Select Bound Location...
@@ -311,7 +311,7 @@ export const CreateStoreDialog: React.FC<CreateStoreDialogProps> = ({
                       id="use-office"
                       checked={useOfficeAddress}
                       onCheckedChange={(v) => setUseOfficeAddress(v as boolean)}
-                      className="rounded-md border-slate-300"
+                      className="rounded-md border-border"
                     />
                     <Label
                       htmlFor="use-office"
@@ -330,7 +330,7 @@ export const CreateStoreDialog: React.FC<CreateStoreDialogProps> = ({
                   }
                   onChange={(e) => setManualAddress(e.target.value)}
                   disabled={useOfficeAddress}
-                  className="flex min-h-[100px] w-full rounded-2xl border border-slate-200 bg-secondary/5 px-4 py-3 font-bold italic text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-primary transition-all disabled:opacity-50 resize-none"
+                  className="flex min-h-[100px] w-full rounded-2xl border border-border bg-secondary/5 px-4 py-3 font-bold italic text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-primary transition-all disabled:opacity-50 resize-none"
                   placeholder="Street, City, Building, Floor..."
                 />
               </div>
@@ -351,7 +351,7 @@ export const CreateStoreDialog: React.FC<CreateStoreDialogProps> = ({
                       step="any"
                       name="latitude"
                       placeholder="0.0000"
-                      className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-2 font-bold text-xs"
+                      className="flex h-10 w-full rounded-lg border border-border bg-white px-2 font-bold text-xs"
                     />
                   </div>
                   <div className="space-y-1">
@@ -361,7 +361,7 @@ export const CreateStoreDialog: React.FC<CreateStoreDialogProps> = ({
                       step="any"
                       name="longitude"
                       placeholder="0.0000"
-                      className="flex h-10 w-full rounded-lg border border-slate-200 bg-white px-2 font-bold text-xs"
+                      className="flex h-10 w-full rounded-lg border border-border bg-white px-2 font-bold text-xs"
                     />
                   </div>
                 </div>
@@ -387,7 +387,7 @@ export const CreateStoreDialog: React.FC<CreateStoreDialogProps> = ({
                   </Label>
                   <select
                     name="managerId"
-                    className="w-full h-11 rounded-2xl border border-slate-200 bg-secondary/5 px-4 font-bold italic text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-primary transition-all appearance-none cursor-pointer"
+                    className="w-full h-11 rounded-2xl border border-border bg-secondary/5 px-4 font-bold italic text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-primary transition-all appearance-none cursor-pointer"
                   >
                     <option value="">Unassigned</option>
                     {(Array.isArray(managers) ? managers : []).map((m) => (
@@ -403,7 +403,7 @@ export const CreateStoreDialog: React.FC<CreateStoreDialogProps> = ({
                   </Label>
                   <select
                     name="inventoryPoolId"
-                    className="w-full h-11 rounded-2xl border border-slate-200 bg-secondary/5 px-4 font-bold italic text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-primary transition-all appearance-none cursor-pointer"
+                    className="w-full h-11 rounded-2xl border border-border bg-secondary/5 px-4 font-bold italic text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-primary transition-all appearance-none cursor-pointer"
                   >
                     <option value="">Private Local Pool</option>
                     {(Array.isArray(pools) ? pools : []).map((p) => (
@@ -417,13 +417,13 @@ export const CreateStoreDialog: React.FC<CreateStoreDialogProps> = ({
             </div>
           </div>
 
-          <DialogFooter className="mt-12 sticky bottom-0 bg-background/80 backdrop-blur-md pb-8 -mx-8 px-8 border-t border-slate-100 pt-6">
+          <DialogFooter className="mt-12 sticky bottom-0 bg-background/80 backdrop-blur-md pb-8 -mx-8 px-8 border-t border-border pt-6">
             <div className="flex w-full gap-4">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setOpen(false)}
-                className="flex-1 h-14 rounded-2xl border-slate-200 font-black italic uppercase tracking-widest text-[10px] hover:bg-secondary/5 transition-all"
+                className="flex-1 h-14 rounded-2xl border-border font-black italic uppercase tracking-widest text-[10px] hover:bg-secondary/5 transition-all"
               >
                 Abort Provisioning
               </Button>

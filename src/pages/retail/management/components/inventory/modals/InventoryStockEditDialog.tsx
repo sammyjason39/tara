@@ -119,7 +119,7 @@ export const InventoryStockEditDialog: React.FC<Props> = ({
             />
           </div>
 
-          <div className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3">
+          <div className="flex items-center justify-between rounded-xl border border-border px-4 py-3">
             <div className="text-xs font-bold text-muted-foreground">
               Notify procurement / replenish
             </div>

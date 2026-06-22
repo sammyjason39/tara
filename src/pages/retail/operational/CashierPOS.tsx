@@ -21,7 +21,7 @@ import {
   Power,
   Store
 } from "lucide-react";
-import { formatCurrency } from "@/lib/utils/currency";
+import { formatCurrency } from "@/lib/format";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -452,6 +452,7 @@ const CashierPOS = () => {
     }
   };
 
+  if (isLoading || isContextLoading) {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-background text-muted-foreground font-black italic uppercase tracking-[0.25em]">
         <div className="absolute inset-0 overflow-hidden">
@@ -461,6 +462,7 @@ const CashierPOS = () => {
         <span className="relative z-10 text-foreground">Syncing POS Environment...</span>
       </div>
     );
+  }
 
   return (
     <div className="flex-1 relative flex selection:bg-primary/30 selection:text-primary-foreground">
@@ -739,7 +741,7 @@ const CashierPOS = () => {
                    <p className="text-xs font-bold tracking-tighter">{lastTransaction?.storeName}</p>
                    <p className="text-[8px]">{lastTransaction?.storeAddress}</p>
                 </div>
-                <div className="py-2 border-y border-dashed border-slate-300 space-y-0.5 text-[8px]">
+                <div className="py-2 border-y border-dashed border-muted space-y-0.5 text-[8px]">
                    <div className="flex justify-between"><span>ORDER:</span><span>#{lastTransaction?.orderId?.slice(-8).toUpperCase()}</span></div>
                    <div className="flex justify-between"><span>DATE:</span><span>{lastTransaction?.date}</span></div>
                    <div className="flex justify-between"><span>CASHIER:</span><span>{lastTransaction?.cashier}</span></div>
@@ -748,18 +750,18 @@ const CashierPOS = () => {
                    {lastTransaction?.items.map((item: any, i: number) => (
                       <div key={i} className="flex justify-between">
                          <span>{item.quantity}x {item.name}</span>
-                         <span>{formatCurrency(item.total)}</span>
+                         <span>{formatCurrency(item.total, "IDR", "id-ID")}</span>
                       </div>
                    ))}
                 </div>
-                <div className="py-2 border-t border-dashed border-slate-300 space-y-1 font-bold">
-                   <div className="flex justify-between"><span>TOTAL</span><span>{formatCurrency(lastTransaction?.grandTotal)}</span></div>
+                <div className="py-2 border-t border-dashed border-muted space-y-1 font-bold">
+                   <div className="flex justify-between"><span>TOTAL</span><span>{formatCurrency(lastTransaction?.grandTotal, "IDR", "id-ID")}</span></div>
                    <div className="flex justify-between text-primary"><span>METHOD</span><span>{lastTransaction?.paymentMethod}</span></div>
                 </div>
                 {lastTransaction?.changeAmount > 0 && (
                    <div className="p-3 bg-success/10 rounded-lg flex justify-between items-center text-success">
                       <span className="font-black">CHANGE DUE:</span>
-                      <span className="text-sm font-black tracking-tighter">{formatCurrency(lastTransaction.changeAmount)}</span>
+                      <span className="text-sm font-black tracking-tighter">{formatCurrency(lastTransaction.changeAmount, "IDR", "id-ID")}</span>
                    </div>
                 )}
                 <div className="py-4 flex flex-col items-center">

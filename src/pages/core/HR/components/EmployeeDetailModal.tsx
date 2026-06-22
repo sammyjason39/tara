@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { formatCurrency, formatDate } from '@/lib/mock-data';
+import { formatCurrency, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
 
 interface EmployeeDetailModalProps {
@@ -56,7 +56,7 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
               </div>
             </div>
             <div className="flex gap-2">
-               <Badge className="bg-success text-success border-emerald-500/20 px-3 py-1 rounded-lg font-black uppercase text-[10px]">
+               <Badge className="bg-success text-success border-success/20 px-3 py-1 rounded-lg font-black uppercase text-[10px]">
                   {employee.status}
                </Badge>
             </div>
@@ -65,7 +65,7 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
 
         <div className="flex-1 flex overflow-hidden">
           <Tabs defaultValue="identity" className="flex-1 flex flex-col">
-            <div className="px-8 border-b border-slate-100 bg-muted">
+            <div className="px-8 border-b border-border bg-muted">
               <TabsList className="h-14 bg-transparent p-0 gap-8">
                 {[
                   { id: 'identity', icon: User, label: 'Core Identity' },
@@ -77,7 +77,7 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
                   <TabsTrigger 
                     key={t.id}
                     value={t.id}
-                    className="data-[state=active]:bg-transparent data-[state=active]:border-b-4 data-[state=active]:border-slate-900 data-[state=active]:text-muted-foreground rounded-none h-full px-2 font-black uppercase italic tracking-widest text-[10px] text-muted-foreground transition-all border-b-4 border-transparent gap-2"
+                    className="data-[state=active]:bg-transparent data-[state=active]:border-b-4 data-[state=active]:border-border data-[state=active]:text-muted-foreground rounded-none h-full px-2 font-black uppercase italic tracking-widest text-[10px] text-muted-foreground transition-all border-b-4 border-transparent gap-2"
                   >
                     <t.icon className="w-3.5 h-3.5" />
                     {t.label}
@@ -112,7 +112,7 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
                   </TabsContent>
 
                   <TabsContent value="attendance" className="mt-0 space-y-6 animate-in fade-in duration-300">
-                     <div className="rounded-2xl border border-slate-100 overflow-hidden">
+                     <div className="rounded-2xl border border-border overflow-hidden">
                         <table className="w-full text-left">
                            <thead className="bg-muted text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
                               <tr>
@@ -124,7 +124,7 @@ export const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
                            </thead>
                            <tbody className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                               {(record?.attendance || []).map((entry: any) => (
-                                <tr key={entry.id} className="border-t border-slate-100 hover:bg-muted">
+                                <tr key={entry.id} className="border-t border-border hover:bg-muted">
                                    <td className="p-4">{entry.date}</td>
                                    <td className="p-4">09:00 - 18:00</td>
                                    <td className="p-4">08:54 / 18:02</td>

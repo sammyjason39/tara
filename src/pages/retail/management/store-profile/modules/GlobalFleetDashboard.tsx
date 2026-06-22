@@ -51,7 +51,7 @@ export const GlobalFleetDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-slate-100 shadow-sm rounded-2xl">
+        <Card className="border-border shadow-sm rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-black italic text-muted-foreground">
               Active Nodes
@@ -66,7 +66,7 @@ export const GlobalFleetDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-100 shadow-sm rounded-2xl">
+        <Card className="border-border shadow-sm rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-black italic text-muted-foreground">
               Flagship Hubs
@@ -81,12 +81,12 @@ export const GlobalFleetDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-100 shadow-sm rounded-2xl">
+        <Card className="border-border shadow-sm rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-black italic text-muted-foreground">
               Virtual Branches
             </CardTitle>
-            <Globe className="h-4 w-4 text-emerald-600" />
+            <Globe className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black">{virtualBranches}</div>
@@ -96,7 +96,7 @@ export const GlobalFleetDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-100 shadow-sm rounded-2xl">
+        <Card className="border-border shadow-sm rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-black italic text-muted-foreground">
               Max POS Capacity
@@ -113,7 +113,7 @@ export const GlobalFleetDashboard: React.FC = () => {
       </div>
 
       {/* Node Registration Table / List */}
-      <Card className="border-slate-100 shadow-sm rounded-2xl mt-8">
+      <Card className="border-border shadow-sm rounded-2xl mt-8">
         <CardHeader>
           <CardTitle className="text-sm font-black italic text-muted-foreground">
             Fleet Index
@@ -130,20 +130,20 @@ export const GlobalFleetDashboard: React.FC = () => {
                   onClick={() => setSelectedStoreId(store.id)}
                   data-testid="fleet-index-row"
                   data-branch-kind={virtual ? "virtual" : "physical"}
-                  className="flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-secondary/5 cursor-pointer hover:border-primary hover:shadow-md transition-all group"
+                  className="flex items-center justify-between p-4 rounded-xl border border-border bg-secondary/5 cursor-pointer hover:border-primary hover:shadow-md transition-all group"
                 >
                   <div className="flex items-center gap-4">
                     <div
                       className={`w-10 h-10 rounded-lg border flex items-center justify-center shadow-sm transition-colors ${
                         virtual
-                          ? "bg-emerald-50 border-emerald-200 group-hover:border-emerald-400"
-                          : "bg-white border-slate-100 group-hover:border-primary"
+                          ? "bg-success/10 border-success/20 group-hover:border-success/60"
+                          : "bg-white border-border group-hover:border-primary"
                       }`}
                     >
                       <TypeIcon
                         className={`w-5 h-5 transition-colors ${
                           virtual
-                            ? "text-emerald-600"
+                            ? "text-success"
                             : "text-muted-foreground group-hover:text-primary"
                         }`}
                       />
@@ -157,7 +157,7 @@ export const GlobalFleetDashboard: React.FC = () => {
                         <span
                           className={`text-[9px] font-black italic uppercase tracking-widest px-2 py-0.5 rounded-md ${
                             virtual
-                              ? "bg-emerald-500/10 text-emerald-600"
+                              ? "bg-success/10 text-success"
                               : "bg-secondary/10 text-muted-foreground"
                           }`}
                         >

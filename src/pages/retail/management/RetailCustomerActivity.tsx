@@ -148,7 +148,7 @@ export function RetailCustomerActivity({
                     </div>
                     <div className="space-y-2">
                       <p>Compliance</p>
-                      <Badge className="bg-success/20 text-success border border-emerald-500/20 rounded-lg px-3 h-6 gap-2">
+                      <Badge className="bg-success/20 text-success border border-success/20 rounded-lg px-3 h-6 gap-2">
                         <ShieldCheck className="w-3 h-3" /> VERIFIED
                       </Badge>
                     </div>
@@ -211,7 +211,7 @@ function CustomerDetailDialog({ isOpen, onOpenChange, customer, onExpansionReque
               </div>
 
               {/* Compliance Vault */}
-              <div className="p-8 rounded-2xl bg-destructive/5 border border-rose-500/10 space-y-6">
+              <div className="p-8 rounded-2xl bg-destructive/5 border border-destructive/10 space-y-6">
                 <div className="flex items-center justify-between">
                   <p className="text-[10px] font-black text-destructive uppercase tracking-[0.3em] italic">Compliance Vault</p>
                   <Lock className="w-4 h-4 text-destructive" />
@@ -226,7 +226,7 @@ function CustomerDetailDialog({ isOpen, onOpenChange, customer, onExpansionReque
                   </Button>
                   <Button 
                     variant="outline"
-                    className="w-full h-12 rounded-xl bg-destructive/10 border-rose-500/20 text-[9px] font-black uppercase tracking-widest text-destructive hover:bg-destructive/20 gap-3"
+                    className="w-full h-12 rounded-xl bg-destructive/10 border-destructive/20 text-[9px] font-black uppercase tracking-widest text-destructive hover:bg-destructive/20 gap-3"
                     onClick={() => onExpansionRequest?.(`Identity Anonymization: ${customer.name}`)}
                   >
                     <Trash2 className="w-3.5 h-3.5" /> Anonymize Identity
@@ -359,7 +359,7 @@ function OrderHistoryList({ customerId }: { customerId: string }) {
                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] italic">Order Context</p>
                   <p className="text-sm font-mono text-primary font-bold italic">{order.id.slice(0, 12).toUpperCase()}</p>
                 </div>
-                <Badge className="bg-success/20 text-success border border-emerald-500/20 rounded-lg h-7 px-3 font-black italic tracking-widest text-[9px] uppercase">
+                <Badge className="bg-success/20 text-success border border-success/20 rounded-lg h-7 px-3 font-black italic tracking-widest text-[9px] uppercase">
                   {order.status}
                 </Badge>
               </div>
@@ -418,8 +418,8 @@ function CustomerWishlistView({ wishlist, onExpansionRequest }: any) {
           </div>
         ) : (
           (Array.isArray(items) ? items : []).map((item: any) => (
-            <div key={item.id} className="p-6 bg-white/[0.02] border border-white/5 rounded-[2rem] flex flex-col items-center text-center space-y-6 hover:bg-white/[0.04] hover:border-rose-500/20 transition-all duration-500 group/wish shadow-xl">
-              <div className="w-24 h-24 rounded-[2rem] bg-destructive/10 border border-rose-500/20 flex items-center justify-center shadow-3xl group-hover/wish:scale-110 group-hover/wish:rotate-6 transition-all duration-500">
+            <div key={item.id} className="p-6 bg-white/[0.02] border border-white/5 rounded-[2rem] flex flex-col items-center text-center space-y-6 hover:bg-white/[0.04] hover:border-destructive/20 transition-all duration-500 group/wish shadow-xl">
+              <div className="w-24 h-24 rounded-[2rem] bg-destructive/10 border border-destructive/20 flex items-center justify-center shadow-3xl group-hover/wish:scale-110 group-hover/wish:rotate-6 transition-all duration-500">
                 <Heart className="w-10 h-10 text-destructive fill-rose-400/10" />
               </div>
               <div className="space-y-2">

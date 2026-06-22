@@ -47,6 +47,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSession } from "@/core/security/session";
 import { salesService } from "@/core/services/sales/salesService";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
 import type { OpportunityStage, SalesOpportunity } from "@/core/types/sales/sales";
 
@@ -151,7 +152,7 @@ export default function PipelineBoard() {
                Live Board Matrix
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent italic">Pipeline Matrix</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground italic">Pipeline Matrix</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic">"Execution is everything. The board is your battlefield for high-value conversions."</p>
         </div>
         
@@ -194,7 +195,7 @@ export default function PipelineBoard() {
               
               return (
                 <div key={stage} className="flex flex-col w-[350px] shrink-0 group">
-                  <div className="flex items-center justify-between p-5 mb-6 rounded-[2rem] bg-white/40 dark:bg-muted backdrop-blur-xl border border-white/20 dark:border-slate-800/20 shadow-xl group-hover:shadow-2xl transition-all duration-500">
+                  <div className="flex items-center justify-between p-5 mb-6 rounded-[2rem] bg-white/40 dark:bg-muted backdrop-blur-xl border border-white/20 dark:border-border/20 shadow-xl group-hover:shadow-2xl transition-all duration-500">
                      <div className="flex items-center gap-4">
                         <div className={cn("h-4 w-4 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.1)]", STAGE_COLORS[stage])} />
                         <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">{stage.replace('_', ' ')}</p>
@@ -204,10 +205,10 @@ export default function PipelineBoard() {
                      </Badge>
                   </div>
 
-                  <div className="flex-1 space-y-6 p-4 rounded-[2.5rem] bg-muted dark:bg-muted border-2 border-dashed border-slate-200/50 dark:border-slate-800/50 transition-colors group-hover:border-primary">
+                  <div className="flex-1 space-y-6 p-4 rounded-[2.5rem] bg-muted dark:bg-muted border-2 border-dashed border-border/50 dark:border-border/50 transition-colors group-hover:border-primary">
                     {filteredOpps.length === 0 ? (
                       <div className="h-48 flex flex-col items-center justify-center text-center p-8 space-y-4 opacity-30 grayscale group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700">
-                         <div className="h-16 w-16 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center">
+                         <div className="h-16 w-16 rounded-full border-2 border-dashed border-border flex items-center justify-center">
                             <Box className="h-6 w-6 text-muted-foreground" />
                          </div>
                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Empty Strategic Node</p>
@@ -252,7 +253,7 @@ export default function PipelineBoard() {
                                  </div>
                                  <div className="space-y-0.5">
                                     <div className="flex items-baseline gap-1.5">
-                                       <span className="text-3xl font-black tracking-tighter text-primary italic">${item.amount.toLocaleString()}</span>
+                                       <span className="text-3xl font-black tracking-tighter text-primary italic">{formatCurrency(item.amount, item.currency)}</span>
                                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{item.currency}</span>
                                     </div>
                                     <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground italic">Projected Valuation</p>
@@ -272,14 +273,14 @@ export default function PipelineBoard() {
                                  </div>
                               </div>
 
-                              <div className="flex items-center justify-between pt-4 border-t border-slate-50 dark:border-slate-800">
+                              <div className="flex items-center justify-between pt-4 border-t border-border dark:border-border">
                                  <Badge variant="secondary" className="bg-muted dark:bg-muted text-muted-foreground border-none rounded-full px-4 py-1.5 text-[9px] font-black uppercase tracking-widest italic shadow-sm">
                                     {item.health.replace('_', ' ')} PULSE
                                  </Badge>
                                  
                                  <div className="flex -space-x-3">
                                     {[1, 2].map(i => (
-                                      <div key={i} className="h-9 w-9 rounded-full border-2 border-white dark:border-slate-900 bg-muted dark:bg-muted flex items-center justify-center text-[10px] font-black text-primary shadow-md uppercase">
+                                      <div key={i} className="h-9 w-9 rounded-full border-2 border-white dark:border-border bg-muted dark:bg-muted flex items-center justify-center text-[10px] font-black text-primary shadow-md uppercase">
                                          {item.owner_name?.charAt(0) || "U"}
                                       </div>
                                     ))}
@@ -325,7 +326,7 @@ export default function PipelineBoard() {
             </div>
             <div>
                <p className="text-[11px] font-black uppercase tracking-[0.2em] opacity-60 italic">Aggregate Nominal Yield</p>
-               <h4 className="text-4xl font-black tracking-tighter italic">${aggregateValue.toLocaleString()}</h4>
+               <h4 className="text-4xl font-black tracking-tighter italic">{formatCurrency(aggregateValue)}</h4>
             </div>
          </Card>
          <Card className="rounded-[2.5rem] border-none shadow-2xl bg-white dark:bg-muted p-8 flex items-center gap-8 pointer-events-auto hover:scale-105 transition-transform duration-500 cursor-default">

@@ -13,15 +13,39 @@ import { SimpleKpi, SectionLabel } from "./DashboardPrimitives";
 import { cn } from "@/lib/utils";
 import { CHART_COLORS, CHART_COLORS_DARK, CHART_NEUTRAL, CHART_NEUTRAL_DARK } from "@/lib/chart-colors";
 import { useTheme } from "next-themes";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/core/api/apiClient";
+import { useSession } from "@/core/security/session";
+import { QueryStateWrapper } from "@/components/shared/QueryStateWrapper";
 
 const fmt = (v: number | string) => [`Rp ${v}M`];
 
 export function CfoChartsSection({ summaryData }: { summaryData?: any }) {
   const { theme } = useTheme();
+  const session = useSession();
   const colors = theme === 'dark' ? CHART_COLORS_DARK : CHART_COLORS;
   const neutral = theme === 'dark' ? CHART_NEUTRAL_DARK : CHART_NEUTRAL;
   const gridStroke = theme === 'dark' ? '#1e293b' : '#f1f5f9';
   const tickFill = theme === 'dark' ? '#94a3b8' : '#64748b';
+
+  // Fetch CFO analytics data from backend, falling back to static data
+  const { data: analyticsData, isLoading, isError, error, refetch } = useQuery({
+    queryKey: ["finance-cfo-analytics"],
+    queryFn: () => apiRequest<{
+      liquidity?: typeof CFO_LIQUIDITY_DATA;
+      arAging?: typeof CFO_AR_AGING_DATA;
+      apPipeline?: typeof CFO_AP_PIPELINE_DATA;
+      assetAllocation?: typeof CFO_ASSET_ALLOCATION;
+      compliance?: typeof COMPLIANCE_RADAR_DATA;
+    }>("/finance/dashboard/cfo-analytics", "GET", session),
+    staleTime: 30_000,
+  });
+
+  const liquidityData = analyticsData?.liquidity ?? CFO_LIQUIDITY_DATA;
+  const arAgingData = analyticsData?.arAging ?? CFO_AR_AGING_DATA;
+  const apPipelineData = analyticsData?.apPipeline ?? CFO_AP_PIPELINE_DATA;
+  const assetAllocationData = analyticsData?.assetAllocation ?? CFO_ASSET_ALLOCATION;
+  const complianceData = analyticsData?.compliance ?? COMPLIANCE_RADAR_DATA;
 
   return (
     <section>
@@ -30,21 +54,29 @@ export function CfoChartsSection({ summaryData }: { summaryData?: any }) {
         sub="Liquidity, receivables, accounts payable & capital structure"
       />
 
+      <QueryStateWrapper
+        isLoading={isLoading}
+        isError={isError}
+        error={error ?? undefined}
+        isEmpty={false}
+        onRetry={() => refetch()}
+      >
+
       {/* ── Row 1: Liquidity + AR Aging ─────────────────────────── */}
       <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr] mb-5">
         <WorkspacePanel
           title="Treasury Liquidity & 6-Month Runway"
           description="Net cash reserve vs aggregate inflows and outflows (Rp M)"
-          className="rounded-3xl border-slate-100 bg-white shadow-sm"
+          className="rounded-3xl border-border bg-white shadow-sm"
         >
-          <div className="grid grid-cols-3 gap-4 my-5 p-4 bg-muted rounded-2xl border border-slate-100">
+          <div className="grid grid-cols-3 gap-4 my-5 p-4 bg-muted rounded-2xl border border-border">
             <SimpleKpi label="Inflows (Period)"  value={summaryData ? `Rp ${Number(summaryData.revenue).toLocaleString()}` : "Loading..."}  color="text-success" />
             <SimpleKpi label="Outflows (Period)" value={summaryData ? `Rp ${Number(summaryData.expense).toLocaleString()}` : "Loading..."}  color="text-destructive"    />
             <SimpleKpi label="Net Reserve"    value={summaryData ? `Rp ${Number(summaryData.netProfit).toLocaleString()}` : "Loading..."} color="text-primary"  />
           </div>
           <div className="h-[260px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={CFO_LIQUIDITY_DATA}>
+              <ComposedChart data={liquidityData}>
                 <defs>
                   <linearGradient id="gReserve" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%"   stopColor={colors[1]} stopOpacity={0.15} />
@@ -67,7 +99,7 @@ export function CfoChartsSection({ summaryData }: { summaryData?: any }) {
         <WorkspacePanel
           title="A/R Aging Report"
           description="Outstanding receivables by age — flags collection risk"
-          className="rounded-3xl border-slate-100 bg-white shadow-sm"
+          className="rounded-3xl border-border bg-white shadow-sm"
         >
           <div className="flex items-center justify-between my-5">
             <div>
@@ -81,13 +113,13 @@ export function CfoChartsSection({ summaryData }: { summaryData?: any }) {
           </div>
           <div className="h-[248px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={CFO_AR_AGING_DATA} layout="vertical" margin={{ left: 10, right: 30 }}>
+              <BarChart data={arAgingData} layout="vertical" margin={{ left: 10, right: 30 }}>
                 <XAxis type="number" hide />
                 <YAxis dataKey="name" type="category" axisLine={false} tickLine={false}
                   tick={{ fontSize: 11, fontWeight: 700, fill: tickFill }} />
                 <ChartTooltip {...CHART_TOOLTIP_STYLE} formatter={fmt} />
                 <Bar dataKey="amount" name="Amount" radius={[0, 6, 6, 0]} barSize={22}>
-                  {(Array.isArray(CFO_AR_AGING_DATA) ? CFO_AR_AGING_DATA : []).map((e, i) => <Cell key={i} fill={e.fill} />)}
+                  {(Array.isArray(arAgingData) ? arAgingData : []).map((e, i) => <Cell key={i} fill={e.fill} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -100,11 +132,11 @@ export function CfoChartsSection({ summaryData }: { summaryData?: any }) {
         <WorkspacePanel
           title="Accounts Payable Pipeline"
           description="Outstanding liabilities by category — due vs overdue (Rp M)"
-          className="rounded-3xl border-slate-100 bg-white shadow-sm"
+          className="rounded-3xl border-border bg-white shadow-sm"
         >
           <div className="h-[280px] w-full mt-3">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={CFO_AP_PIPELINE_DATA} layout="vertical" margin={{ left: 10, right: 30 }}>
+              <BarChart data={apPipelineData} layout="vertical" margin={{ left: 10, right: 30 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={gridStroke} />
                 <XAxis type="number" hide />
                 <YAxis dataKey="name" type="category" axisLine={false} tickLine={false}
@@ -121,14 +153,14 @@ export function CfoChartsSection({ summaryData }: { summaryData?: any }) {
         <WorkspacePanel
           title="Enterprise Asset Allocation"
           description="Capital deployment breakdown across liquidity classes"
-          className="rounded-3xl border-slate-100 bg-white shadow-sm"
+          className="rounded-3xl border-border bg-white shadow-sm"
         >
           <div className="h-[280px] w-full relative mt-3">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={CFO_ASSET_ALLOCATION} cx="50%" cy="44%" innerRadius={70}
+                <Pie data={assetAllocationData} cx="50%" cy="44%" innerRadius={70}
                   outerRadius={100} paddingAngle={4} dataKey="value" stroke="none">
-                  {(Array.isArray(CFO_ASSET_ALLOCATION) ? CFO_ASSET_ALLOCATION : []).map((e, i) => <Cell key={i} fill={e.color} />)}
+                  {(Array.isArray(assetAllocationData) ? assetAllocationData : []).map((e, i) => <Cell key={i} fill={e.color} />)}
                 </Pie>
                 <ChartTooltip {...CHART_TOOLTIP_STYLE} formatter={(v) => [`${v}%`]} />
                 <Legend verticalAlign="bottom" iconType="circle"
@@ -152,11 +184,11 @@ export function CfoChartsSection({ summaryData }: { summaryData?: any }) {
         <WorkspacePanel
           title="Compliance Health Radar"
           description="Cross-departmental governance adherence scoring"
-          className="rounded-3xl border-slate-100 bg-white shadow-sm"
+          className="rounded-3xl border-border bg-white shadow-sm"
         >
           {/* Score pills */}
           <div className="flex flex-wrap gap-1.5 mt-3 mb-3">
-            {(Array.isArray(COMPLIANCE_RADAR_DATA) ? COMPLIANCE_RADAR_DATA : []).map((d) => (
+            {(Array.isArray(complianceData) ? complianceData : []).map((d) => (
               <span
                 key={d.subject}
                 className={cn(
@@ -172,7 +204,7 @@ export function CfoChartsSection({ summaryData }: { summaryData?: any }) {
           </div>
           <div className="h-[232px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={COMPLIANCE_RADAR_DATA}>
+              <RadarChart data={complianceData}>
                 <PolarGrid stroke={neutral} />
                 <PolarAngleAxis dataKey="subject"
                   tick={{ fontSize: 11, fontWeight: 700, fill: tickFill }} />
@@ -186,6 +218,7 @@ export function CfoChartsSection({ summaryData }: { summaryData?: any }) {
           </div>
         </WorkspacePanel>
       </div>
+      </QueryStateWrapper>
     </section>
   );
 }

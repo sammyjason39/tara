@@ -24,6 +24,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { GlassCard } from "@/components/shared/GlassCard";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { 
   Dialog, 
   DialogContent, 
@@ -51,6 +53,7 @@ import { Label } from "@/components/ui/label";
 import { useSession } from "@/core/security/session";
 import { salesService } from "@/core/services/sales/salesService";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
 import type { SalesOpportunity, SalesQuote } from "@/core/types/sales/sales";
 
@@ -157,12 +160,12 @@ export default function QuoteDesk() {
                Proposal Stream Active
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent italic">Quote Desk</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground italic">Quote Desk</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic">"Versioned proposal orchestration with automated approval workflows."</p>
         </div>
         
         <div className="flex items-center gap-4">
-          <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-slate-800/20 shadow-2xl">
+          <div className="flex items-center bg-white/50 dark:bg-muted backdrop-blur-xl p-2 rounded-[2rem] border border-white/20 dark:border-border/20 shadow-2xl">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -211,7 +214,7 @@ export default function QuoteDesk() {
                       </SelectTrigger>
                       <SelectContent className="rounded-2xl border-none shadow-2xl p-2">
                         {(Array.isArray(opportunities) ? opportunities : []).map(o => (
-                          <SelectItem key={o.id} value={o.id} className="rounded-xl py-3 font-bold">{o.accountName} (${o.amount.toLocaleString()})</SelectItem>
+                          <SelectItem key={o.id} value={o.id} className="rounded-xl py-3 font-bold">{o.accountName} ({formatCurrency(o.amount)})</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -256,8 +259,8 @@ export default function QuoteDesk() {
       </div>
 
       {/* Quote Registry Area */}
-      <Card className="rounded-[3rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden">
-        <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-slate-800/20">
+      <GlassCard className="rounded-[3rem] border-none shadow-2xl overflow-hidden">
+        <CardHeader className="p-10 pb-6 border-b border-white/20 dark:border-border/20">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
@@ -297,7 +300,7 @@ export default function QuoteDesk() {
                         </div>
                         <div>
                           <p className="font-black text-base italic">{item.id.slice(-8)}</p>
-                          <Badge variant="outline" className="text-[9px] font-black px-2 py-0 h-4 border-slate-200 uppercase tracking-widest mt-1">VERSION {item.version}.0</Badge>
+                          <Badge variant="outline" className="text-[9px] font-black px-2 py-0 h-4 border-border uppercase tracking-widest mt-1">VERSION {item.version}.0</Badge>
                         </div>
                       </div>
                     </td>
@@ -306,8 +309,8 @@ export default function QuoteDesk() {
                     </td>
                     <td className="px-10 py-8">
                        <div className="space-y-1">
-                          <p className="text-sm font-black text-success">${item.netAmount.toLocaleString()}</p>
-                          <p className="text-[9px] font-bold text-muted-foreground uppercase">Gross: ${item.amount.toLocaleString()} ({item.discountPercent}% OFF)</p>
+                          <p className="text-sm font-black text-success">{formatCurrency(item.netAmount)}</p>
+                          <p className="text-[9px] font-bold text-muted-foreground uppercase">Gross: {formatCurrency(item.amount)} ({item.discountPercent}% OFF)</p>
                        </div>
                     </td>
                     <td className="px-10 py-8">
@@ -346,12 +349,20 @@ export default function QuoteDesk() {
               </tbody>
             </table>
           </div>
+          {!loading && filtered.length === 0 && (
+            <EmptyState
+              title="No proposals yet"
+              description="No quotes match the current filter. Generate a proposal from an active opportunity."
+              icon={FileText}
+              className="m-10"
+            />
+          )}
         </CardContent>
-      </Card>
+      </GlassCard>
 
       {/* Tactical Insights Overlay */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-         <Card className="rounded-[2.5rem] border-none shadow-xl bg-white/40 dark:bg-muted backdrop-blur-xl p-8 flex items-center gap-6">
+         <GlassCard className="rounded-[2.5rem] border-none shadow-xl p-8 flex items-center gap-6">
             <div className="h-14 w-14 rounded-2xl bg-primary flex items-center justify-center">
                <ShieldCheck className="h-7 w-7 text-primary" />
             </div>
@@ -359,8 +370,8 @@ export default function QuoteDesk() {
                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">COMPLIANCE INDEX</p>
                <h4 className="text-2xl font-black">100%</h4>
             </div>
-         </Card>
-         <Card className="rounded-[2.5rem] border-none shadow-xl bg-white/40 dark:bg-muted backdrop-blur-xl p-8 flex items-center gap-6">
+         </GlassCard>
+         <GlassCard className="rounded-[2.5rem] border-none shadow-xl p-8 flex items-center gap-6">
             <div className="h-14 w-14 rounded-2xl bg-success flex items-center justify-center">
                <History className="h-7 w-7 text-success" />
             </div>
@@ -368,14 +379,14 @@ export default function QuoteDesk() {
                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">AVG APPROVAL TIME</p>
                <h4 className="text-2xl font-black text-success">4.2h</h4>
             </div>
-         </Card>
+         </GlassCard>
          <Card className="rounded-[2.5rem] border-none shadow-xl bg-primary text-white p-8 flex items-center gap-6 shadow-indigo-600/20">
             <div className="h-14 w-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20">
                <DollarSign className="h-7 w-7" />
             </div>
             <div>
                <p className="text-[10px] font-black uppercase tracking-widest opacity-60">PROPOSAL VOLUME</p>
-               <h4 className="text-2xl font-black">${quotes.reduce((acc, q) => acc + q.netAmount, 0).toLocaleString()}</h4>
+               <h4 className="text-2xl font-black">{formatCurrency(quotes.reduce((acc, q) => acc + q.netAmount, 0))}</h4>
             </div>
          </Card>
       </div>

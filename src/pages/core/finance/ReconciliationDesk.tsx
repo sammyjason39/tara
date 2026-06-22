@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Bank, 
   FileText, 
@@ -22,6 +22,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/core/api/apiClient';
+import { QueryStateWrapper } from '@/components/shared/QueryStateWrapper';
 
 interface BankTransaction {
   id: string;
@@ -43,56 +46,40 @@ interface LedgerEntry {
 export const ReconciliationDesk: React.FC = () => {
   const session = useSession();
   const { state } = useCFO();
-  const [statements, setStatements] = useState<any[]>([]);
   const [selectedStatementId, setSelectedStatementId] = useState<string | null>(null);
-  const [bankTxs, setBankTxs] = useState<BankTransaction[]>([]);
-  const [unmatchedLedger, setUnmatchedLedger] = useState<LedgerEntry[]>([]);
   const [selectedBankTx, setSelectedBankTx] = useState<BankTransaction | null>(null);
   const [selectedLedgerIds, setSelectedLedgerIds] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    fetchStatements();
-  }, []);
+  // Fetch bank statements list via TanStack Query
+  const { data: statements = [], isLoading: statementsLoading, isError: statementsError, error: statementsErr, refetch: refetchStatements } = useQuery({
+    queryKey: ["finance-reconciliation-statements"],
+    queryFn: () => apiRequest<any[]>("/finance/reconciliation/statements", "GET", session),
+    staleTime: 30_000,
+  });
 
-  useEffect(() => {
-    if (selectedStatementId) {
-      fetchStatementDetails(selectedStatementId);
-    }
-  }, [selectedStatementId]);
+  // Fetch transactions for selected statement via TanStack Query
+  const { data: statementDetails, isLoading: detailsLoading, isError: detailsError, error: detailsErr, refetch: refetchDetails } = useQuery({
+    queryKey: ["finance-reconciliation-details", selectedStatementId],
+    queryFn: () => apiRequest<{ bankTransactions: BankTransaction[]; unmatchedLedger: LedgerEntry[] }>(
+      `/finance/reconciliation/statements/${selectedStatementId}/details`, "GET", session
+    ),
+    enabled: !!selectedStatementId,
+    staleTime: 30_000,
+  });
 
-  const fetchStatements = async () => {
-    try {
-      // In a real app, we'd list statements. For now, assume we have a list.
-      const res = await financeService.getMoneySources(session.tenant_id, session);
-      // Logic to list statements...
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  const bankTxs = statementDetails?.bankTransactions ?? [];
+  const unmatchedLedger = statementDetails?.unmatchedLedger ?? [];
 
-  const fetchStatementDetails = async (id: string) => {
-    setIsLoading(true);
-    try {
-      // Fetch transactions for the statement
-      // For now, let's assume we have an endpoint for this or use general list
-      // Mocking the result for the demo Desk
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const isLoading = statementsLoading || detailsLoading;
 
   const handleAutoMatch = async () => {
     if (!selectedStatementId) return;
-    setIsLoading(true);
     try {
       const res = await financeService.autoMatchTransactions(session, selectedStatementId);
       toast({ title: 'Auto-Match Complete', description: `Matched ${res.matched} transactions.` });
-      fetchStatementDetails(selectedStatementId);
+      refetchDetails();
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -101,7 +88,7 @@ export const ReconciliationDesk: React.FC = () => {
     try {
       await financeService.manualMatchTransactions(session, selectedBankTx.id, selectedLedgerIds);
       toast({ title: 'Match Successful' });
-      fetchStatementDetails(selectedStatementId!);
+      refetchDetails();
       setSelectedLedgerIds([]);
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -122,7 +109,7 @@ export const ReconciliationDesk: React.FC = () => {
     <div className="p-6 space-y-6 bg-muted min-h-screen">
       <GlobalFinancialFilterBar />
 
-      <header className="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm backdrop-blur-md">
+      <header className="flex justify-between items-center bg-card p-4 rounded-xl border border-border shadow-sm backdrop-blur-md">
         <div>
           <h1 className="text-2xl font-bold text-muted-foreground flex items-center gap-2">
             <Bank className="w-8 h-8 text-primary" />
@@ -143,9 +130,18 @@ export const ReconciliationDesk: React.FC = () => {
         </div>
       </header>
 
+      <QueryStateWrapper
+        isLoading={statementsLoading}
+        isError={statementsError}
+        error={statementsErr ?? undefined}
+        isEmpty={!selectedStatementId && statements.length === 0}
+        onRetry={() => refetchStatements()}
+        emptyMessage="No bank statements found. Import a statement to begin reconciliation."
+      >
+
       <div className="grid grid-cols-12 gap-6">
         {/* Left: Bank Transactions */}
-        <Card className="col-span-12 lg:col-span-7 border-none shadow-xl bg-white/80 backdrop-blur-lg">
+        <Card className="col-span-12 lg:col-span-7 border-none shadow-xl bg-card/80 backdrop-blur-lg">
           <CardHeader className="border-b bg-muted">
             <div className="flex justify-between items-center">
               <div>
@@ -173,7 +169,7 @@ export const ReconciliationDesk: React.FC = () => {
                     <tr 
                       key={tx.id} 
                       onClick={() => setSelectedBankTx(tx)}
-                      className={`cursor-pointer hover:bg-primary transition-colors ${selectedBankTx?.id === tx.id ? 'bg-primary border-l-4 border-primary' : 'border-b border-slate-100'}`}
+                      className={`cursor-pointer hover:bg-primary transition-colors ${selectedBankTx?.id === tx.id ? 'bg-primary border-l-4 border-primary' : 'border-b border-border'}`}
                     >
                       <td className="p-4 text-sm font-medium">{tx.transaction_date}</td>
                       <td className="p-4">
@@ -185,9 +181,9 @@ export const ReconciliationDesk: React.FC = () => {
                       </td>
                       <td className="p-4">
                         <Badge variant="outline" className={
-                          tx.status === 'MATCHED' ? 'bg-success text-success border-emerald-100' : 
-                          tx.status === 'PARTIALLY_MATCHED' ? 'bg-warning text-warning border-amber-100' : 
-                          'bg-muted text-muted-foreground border-slate-200'
+                          tx.status === 'MATCHED' ? 'bg-success text-success border-success/30' : 
+                          tx.status === 'PARTIALLY_MATCHED' ? 'bg-warning text-warning border-warning/30' : 
+                          'bg-muted text-muted-foreground border-border'
                         }>
                           {tx.status}
                         </Badge>
@@ -202,7 +198,7 @@ export const ReconciliationDesk: React.FC = () => {
 
         {/* Right: Matches & Ledger */}
         <div className="col-span-12 lg:col-span-5 space-y-6">
-          <Card className="border-none shadow-xl bg-white/80 backdrop-blur-lg border-l-4 border-primary">
+          <Card className="border-none shadow-xl bg-card/80 backdrop-blur-lg border-l-4 border-primary">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <LinkIcon className="w-5 h-5 text-primary" />
@@ -248,14 +244,14 @@ export const ReconciliationDesk: React.FC = () => {
                   </Button>
                 </div>
               ) : (
-                <div className="h-32 flex items-center justify-center border-2 border-dashed border-slate-200 rounded-xl text-muted-foreground italic">
+                <div className="h-32 flex items-center justify-center border-2 border-dashed border-border rounded-xl text-muted-foreground italic">
                   Select a bank transaction on the left
                 </div>
               )}
             </CardContent>
           </Card>
 
-          <Card className="border-none shadow-xl bg-white/80 backdrop-blur-lg">
+          <Card className="border-none shadow-xl bg-card/80 backdrop-blur-lg">
             <CardHeader className="bg-muted border-b">
               <CardTitle className="text-sm uppercase tracking-widest text-muted-foreground">Unmatched Ledger Entries</CardTitle>
             </CardHeader>
@@ -271,7 +267,7 @@ export const ReconciliationDesk: React.FC = () => {
                         setSelectedLedgerIds(prev => [...prev, entry.id]);
                       }
                     }}
-                    className={`p-4 border-b border-slate-100 cursor-pointer hover:bg-muted transition-colors flex justify-between items-center ${selectedLedgerIds.includes(entry.id) ? 'bg-success' : ''}`}
+                    className={`p-4 border-b border-border cursor-pointer hover:bg-muted transition-colors flex justify-between items-center ${selectedLedgerIds.includes(entry.id) ? 'bg-success' : ''}`}
                   >
                     <div>
                       <div className="text-sm font-bold text-muted-foreground">{entry.description}</div>
@@ -282,7 +278,7 @@ export const ReconciliationDesk: React.FC = () => {
                         {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(entry.amount)}
                       </div>
                       <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
-                        selectedLedgerIds.includes(entry.id) ? 'bg-success border-emerald-500' : 'border-slate-300'
+                        selectedLedgerIds.includes(entry.id) ? 'bg-success border-success' : 'border-border'
                       }`}>
                         {selectedLedgerIds.includes(entry.id) && <Check className="w-3 h-3 text-white" />}
                       </div>
@@ -294,6 +290,7 @@ export const ReconciliationDesk: React.FC = () => {
           </Card>
         </div>
       </div>
+      </QueryStateWrapper>
     </div>
   );
 };

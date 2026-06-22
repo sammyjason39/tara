@@ -198,6 +198,7 @@ model tenants {
   payment_pos_devices                    payment_pos_devices[]
   payment_providers                      payment_providers[]
   payment_refunds                        payment_refunds[]
+  void_requests                          void_requests[]
   payment_retry_attempts                 payment_retry_attempts[]
   payment_routing_policies               payment_routing_policies[]
   payment_settings                       payment_settings?
@@ -287,6 +288,7 @@ model tenants {
   workflow_definitions                   workflow_definitions[]
   workflow_instances                     workflow_instances[]
   workflow_requests                      workflow_requests[]
+  void_requests                          void_requests[]
 }
 
 model accounting_periods {
@@ -3189,6 +3191,31 @@ model inventory_integration_events {
   @@index([company_id])
 }
 
+model void_requests {
+  id              String     @id @default(uuid())
+  tenant_id       String
+  entity_type     String     // "incomplete_item" | "abandoned_audit_cycle"
+  entity_id       String
+  reason          String
+  requested_by    String
+  status          String     @default("PENDING") // "PENDING" | "APPROVED" | "REJECTED"
+  approved_by     String?
+  rejected_by     String?
+  approved_at     DateTime?
+  rejected_at     DateTime?
+  metadata        Json?
+  created_at      DateTime   @default(now())
+  updated_at      DateTime   @default(now())
+  companies       companies? @relation(fields: [company_id], references: [id])
+  tenants         tenants    @relation(fields: [tenant_id], references: [id])
+  company_id      String?
+
+  @@index([tenant_id])
+  @@index([entity_type, entity_id])
+  @@index([status])
+  @@index([company_id])
+}
+
 model inventory_movement_requests {
   id               String       @id @default(uuid())
   tenant_id        String
@@ -3392,6 +3419,7 @@ model item_masters {
   metadata                    Json?
   pricing_tiers               Json?
   selling_price               Decimal                       @default(0) @db.Decimal(15, 2)
+  is_anomaly                  Boolean                       @default(false)
   bin_assignments             bin_assignments[]
   inventory_adjustments       inventory_adjustments[]
   inventory_movement_requests inventory_movement_requests[]
@@ -3507,7 +3535,6 @@ model leave_requests {
   status        String      @default("requested")
   approved_by   String?
   approved_at   DateTime?
-  review_notes  String?
   created_at    DateTime    @default(now())
   updated_at    DateTime    @default(now())
   approval_id   String?
@@ -7090,42 +7117,4 @@ enum NotificationChannel {
 enum ProcurementMode {
   DIRECT
   BIDDING
-}
-
-model finance_period_closing_records {
-  id                  String   @id @default(uuid())
-  tenant_id           String
-  company_id          String?
-  period_id           String
-  status              String   @default("COMPLETED")
-  snapshot_sequence   Int      @default(0)
-  integrity_hash      String
-  closing_journal_id  String?
-  reversal_journal_id String?
-  net_income_base     Decimal  @default(0) @db.Decimal(20, 2)
-  closed_by           String
-  closed_at           DateTime @default(now())
-  metadata            Json?
-  created_at          DateTime @default(now())
-  updated_at          DateTime @default(now())
-
-  @@unique([tenant_id, period_id])
-  @@index([tenant_id])
-}
-
-model finance_period_execution_locks {
-  id                 String   @id @default(uuid())
-  tenant_id          String
-  company_id         String?
-  period_id          String
-  closing_request_id String
-  status             String   @default("IN_PROGRESS")
-  locked_by          String
-  started_at         DateTime @default(now())
-  expires_at         DateTime
-  created_at         DateTime @default(now())
-  updated_at         DateTime @default(now())
-
-  @@unique([tenant_id, period_id])
-  @@index([tenant_id])
 }

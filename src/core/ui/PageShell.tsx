@@ -32,12 +32,12 @@ export function PageShell({
             </aside>
           )}
           
-          <main className="flex-1 overflow-y-auto relative bg-surface-1/30 premium-scrollbar transition-premium">
-            <div className="container max-w-7xl mx-auto p-8 lg:p-12">
+          <section className="flex-1 overflow-y-auto overflow-x-hidden relative bg-surface-1/30 premium-scrollbar transition-premium">
+            <div className="container max-w-7xl mx-auto p-4 md:p-8 lg:p-12">
               {children}
             </div>
             {footer && <div className="p-8 border-t border-border/50 mt-auto">{footer}</div>}
-          </main>
+          </section>
 
           {right && (
             <aside className="w-80 shrink-0 border-l border-border/50 bg-surface-2/40 backdrop-blur-2xl hidden xl:block overflow-y-auto premium-scrollbar">

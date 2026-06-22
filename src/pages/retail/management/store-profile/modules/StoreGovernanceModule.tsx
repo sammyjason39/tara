@@ -65,9 +65,9 @@ export const StoreGovernanceModule: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Entitlements & Licensing */}
-        <div className="space-y-6 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
+        <div className="space-y-6 bg-white p-6 rounded-2xl border border-border shadow-sm relative overflow-hidden">
           <div className="absolute -top-4 -right-4 w-24 h-24 bg-destructive rounded-full blur-3xl opacity-50 pointer-events-none" />
-          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3 relative z-10">
+          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-border pb-3 relative z-10">
             <Fingerprint className="w-4 h-4 text-muted-foreground" /> Digital
             Entitlements
           </h3>
@@ -84,7 +84,7 @@ export const StoreGovernanceModule: React.FC = () => {
                   handleUpdate({ license_status: value })
                 }
               >
-                <SelectTrigger className="border-slate-200">
+                <SelectTrigger className="border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -121,7 +121,7 @@ export const StoreGovernanceModule: React.FC = () => {
                   handleUpdate({ activation_source: value })
                 }
               >
-                <SelectTrigger className="border-slate-200">
+                <SelectTrigger className="border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -154,16 +154,16 @@ export const StoreGovernanceModule: React.FC = () => {
                     activation_date: new Date(e.target.value).toISOString(),
                   })
                 }
-                className="font-mono border-slate-200"
+                className="font-mono border-border"
               />
             </div>
           </div>
         </div>
 
         {/* Security & Audit Parameters */}
-        <div className="space-y-6 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
+        <div className="space-y-6 bg-white p-6 rounded-2xl border border-border shadow-sm relative overflow-hidden">
           <div className="absolute -bottom-4 -right-4 w-32 h-32 bg-secondary/10 rounded-full blur-3xl opacity-50 pointer-events-none" />
-          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3 relative z-10">
+          <h3 className="text-sm font-black italic text-muted-foreground tracking-wider flex items-center gap-2 border-b border-border pb-3 relative z-10">
             <Lock className="w-4 h-4 text-muted-foreground" /> Security & Compliance
           </h3>
 
@@ -179,7 +179,7 @@ export const StoreGovernanceModule: React.FC = () => {
                   handleUpdate({ compliance_level: parseInt(value) })
                 }
               >
-                <SelectTrigger className="border-slate-200">
+                <SelectTrigger className="border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -207,7 +207,7 @@ export const StoreGovernanceModule: React.FC = () => {
                   handleUpdate({ audit_frequency_tier: value })
                 }
               >
-                <SelectTrigger className="border-slate-200">
+                <SelectTrigger className="border-border">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -235,7 +235,7 @@ export const StoreGovernanceModule: React.FC = () => {
                   handleUpdate({ decommission_trigger: e.target.value })
                 }
                 placeholder="https://api.internal/webhooks/wipe-node"
-                className="font-mono border-slate-200"
+                className="font-mono border-border"
               />
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
                 Endpoint to hit when this node is permanently closed and data
@@ -243,7 +243,7 @@ export const StoreGovernanceModule: React.FC = () => {
               </p>
             </div>
 
-            <div className="bg-destructive p-4 rounded-xl border border-red-100 mt-6 hidden group-hover:block transition-all">
+            <div className="bg-destructive p-4 rounded-xl border border-destructive mt-6 hidden group-hover:block transition-all">
               <p className="text-xs text-destructive font-medium mb-3">
                 <strong>DANGER ZONE</strong>
               </p>

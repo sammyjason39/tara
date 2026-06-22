@@ -6,7 +6,7 @@
       "localStorage": [
         {
           "name": "ZENVIX_SESSION",
-          "value": "{\"user_id\":\"f8591842-777d-47b0-8ac4-f10fff1008dd\",\"tenant_id\":\"tnt-3rlhko\",\"location_id\":\"\",\"role\":\"OWNER\",\"department_id\":\"dept-ret\",\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmODU5MTg0Mi03NzdkLTQ3YjAtOGFjNC1mMTBmZmYxMDA4ZGQiLCJlbWFpbCI6ImJhbWJ1c2lsdmVya2Vkb25nYW5hbkBnbWFpbC5jb20iLCJpYXQiOjE3ODExNDIxNDEsImV4cCI6MTc4MTIyODU0MX0.7-eaiOKxy1oq0nVf3-bxie722iQkDf5WI4cs0kMZvq0\",\"permissions\":[\"VIEW_FINANCIALS\",\"VIEW_INVENTORY\",\"VIEW_DEVICES\",\"VIEW_HR\",\"VIEW_AUDIT\",\"MANAGE_STORE\"]}"
+          "value": "{\"user_id\":\"41f40428-cf93-4ebe-8fbf-a20d68d2cae0\",\"tenant_id\":\"tnt-hsf6mt\",\"location_id\":\"540036c1-10aa-49e6-8141-bf7e66044195\",\"role\":\"SUPERADMIN\",\"department_id\":\"93c5b4be-413b-450d-aa9e-99826f7aec68\",\"token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MWY0MDQyOC1jZjkzLTRlYmUtOGZiZi1hMjBkNjhkMmNhZTAiLCJlbWFpbCI6InN5bnRodGVzdCtzeW50aHRlc3QtcGhhc2UxYXV0aC0xNzgyMTE5MzA3NTA1LWluZTkza0B6ZW52aXgudGVzdCIsImlhdCI6MTc4MjExOTMxNCwiZXhwIjoxNzgyMjA1NzE0fQ.cou5OK-b0nHvs1kGQkQlRaxyN9mTNgUSkns3LNKPNKw\",\"permissions\":[\"VIEW_FINANCIALS\",\"VIEW_INVENTORY\",\"VIEW_DEVICES\",\"VIEW_HR\",\"VIEW_AUDIT\",\"MANAGE_STORE\"]}"
         },
         {
           "name": "sidebar-collapsed",
@@ -14,7 +14,7 @@
         },
         {
           "name": "ZENVIX_TOKEN",
-          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmODU5MTg0Mi03NzdkLTQ3YjAtOGFjNC1mMTBmZmYxMDA4ZGQiLCJlbWFpbCI6ImJhbWJ1c2lsdmVya2Vkb25nYW5hbkBnbWFpbC5jb20iLCJpYXQiOjE3ODExNDIxNDEsImV4cCI6MTc4MTIyODU0MX0.7-eaiOKxy1oq0nVf3-bxie722iQkDf5WI4cs0kMZvq0"
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MWY0MDQyOC1jZjkzLTRlYmUtOGZiZi1hMjBkNjhkMmNhZTAiLCJlbWFpbCI6InN5bnRodGVzdCtzeW50aHRlc3QtcGhhc2UxYXV0aC0xNzgyMTE5MzA3NTA1LWluZTkza0B6ZW52aXgudGVzdCIsImlhdCI6MTc4MjExOTMxNCwiZXhwIjoxNzgyMjA1NzE0fQ.cou5OK-b0nHvs1kGQkQlRaxyN9mTNgUSkns3LNKPNKw"
         },
         {
           "name": "ops_cart",

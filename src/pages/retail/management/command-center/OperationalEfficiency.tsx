@@ -124,7 +124,7 @@ export const OperationalEfficiency: React.FC<OperationalEfficiencyProps> = ({
           {(Array.isArray(data.slowestSkus) ? data.slowestSkus : []).map((sku, idx) => (
             <div
               key={idx}
-              className="group/item flex items-start gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-amber-500/30 hover:bg-white/[0.04] transition-all duration-500 cursor-default shadow-lg"
+              className="group/item flex items-start gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-warning/30 hover:bg-white/[0.04] transition-all duration-500 cursor-default shadow-lg"
             >
               <div className="w-12 h-12 rounded-xl bg-secondary/50 flex items-center justify-center shrink-0 group-hover/item:scale-110 group-hover/item:text-warning transition-all border border-white/5 shadow-inner">
                 <Clock className="w-6 h-6 opacity-40 group-hover/item:opacity-100 transition-opacity" />

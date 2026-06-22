@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Param,
   Post,
@@ -16,6 +17,10 @@ import { ModuleStateGuard } from "../auth/guards/module-state.guard";
 import { BranchGatingGuard } from "../auth/guards/branch-gating.guard";
 import { RequiredModule } from "../../shared/decorators/required-module.decorator";
 import { TenantGuard } from "../../shared/guards/tenant.guard";
+import { RolesGuard } from "../../shared/guards/roles.guard";
+import { Roles } from "../../shared/decorators/roles.decorator";
+import { UserRole } from "../../shared/roles";
+import { TenantScopeResolver } from "../../shared/scope/tenant-scope.resolver";
 import { CloseOpportunityDto } from "./dto/close-opportunity.dto";
 import { CreateLeadDto } from "./dto/create-lead.dto";
 import { CreateOpportunityDto } from "./dto/create-opportunity.dto";
@@ -28,49 +33,94 @@ import { UpdateLeadStatusDto } from "./dto/update-lead-status.dto";
 import { SalesService } from "./sales.service";
 import { PrismaService } from "../../persistence/prisma.service";
 import { isModuleActive } from "../../shared/helpers/module-active.helper";
-import { MultiTenancyUtil } from "../../shared/utils/multi-tenancy.util";
 
 interface RequestWithTenant extends Request {
   tenantContext: TenantContext;
 }
 
+/**
+ * Sales Controller (Phase 3)
+ *
+ * Identity and scope are derived exclusively from the verified
+ * `request.tenantContext` (populated by `TenantInterceptor` after the
+ * JWT-bearing tenant middleware), never from client-supplied headers or body
+ * fields (Requirements 2.1, 2.2, 2.5, 2.10). Each request resolves a validated
+ * `TenantScope` via the shared `TenantScopeResolver` and passes that scope into
+ * the Sales service, which filters every read/write by the scope's `tenant_id`.
+ * `RolesGuard` plus a `@Roles(...)` gate on every mutating handler
+ * (create/update/convert/stage/close/submit/decide/complete/sweep) enforces
+ * role-based access control; `ModuleStateGuard` rejects requests when the Sales
+ * module is inactive for the tenant (Requirements 3.1, 3.2, 3.5, 3.6).
+ */
 @Controller('sales')
 @UseInterceptors(TenantInterceptor)
-@UseGuards(ModuleStateGuard, BranchGatingGuard, TenantGuard)
+@UseGuards(ModuleStateGuard, BranchGatingGuard, TenantGuard, RolesGuard)
 @RequiredModule("sales")
 export class SalesController {
   constructor(
     private readonly salesService: SalesService,
     private readonly prisma: PrismaService,
+    private readonly scopeResolver: TenantScopeResolver,
   ) {}
+
+  /**
+   * Resolve the verified actor `user_id` from the tenant context, rejecting a
+   * mutating request that carries no verified user identity (Requirements 2.3,
+   * 2.10). Actor identity is never taken from a client-supplied header nor a
+   * `"system"` fallback.
+   */
+  private requireActor(request: RequestWithTenant): string {
+    const user_id = request.tenantContext.user_id;
+    if (!user_id) {
+      throw new ForbiddenException(
+        "A verified user identity is required to perform this action.",
+      );
+    }
+    return user_id;
+  }
 
   @Get("dashboard")
   async getDashboard(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
-    const dashboardData = await this.salesService.getDashboard(request.tenantContext);
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const dashboardData = await this.salesService.getDashboard(scope);
 
-    // Core Module Integration: Retail Contributions
-    const moduleContributions: any = {};
-    if (await isModuleActive(this.prisma, tenant_id, "retail")) {
+    // Core Module Integration: Retail Contributions (Requirements 10.9, 10.10,
+    // 6.8, 6.9, 6.10). Retail revenue and order counts are contributed ONLY
+    // when the Retail Module_Activation_State is active for the tenant; when
+    // inactive the dashboard is returned without retail contributions and
+    // without error. Every value is read from persisted, tenant-scoped
+    // `retail_orders` data — no placeholder/mock/hardcoded values.
+    const moduleContributions: { retail?: { retailRevenue: number; retailOrders: number } } = {};
+    if (await isModuleActive(this.prisma, scope.tenant_id, "retail")) {
+      // Scope only by the columns `retail_orders` actually carries
+      // (`tenant_id`, optional `company_id`) so reusing the resolved scope
+      // across a table with different scope columns never produces an invalid
+      // query (Requirement 10.10 — success without error).
+      const retailScope: { tenant_id: string; company_id?: string } = {
+        tenant_id: scope.tenant_id,
+      };
+      if (scope.company_id) retailScope.company_id = scope.company_id;
+
       const startOfWeek = new Date();
       startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
       startOfWeek.setHours(0, 0, 0, 0);
 
-      const retailRevenueAgg = await this.prisma.retail_orders.aggregate({
-        where: {
-          ...MultiTenancyUtil.getScope(request.tenantContext),
-          status: { in: ["COMPLETED", "PAID", "complete", "paid"] },
-          created_at: { gte: startOfWeek },
-        },
-        _sum: { total_amount: true },
-      });
-
-      const retailOrders = await this.prisma.retail_orders.count({
-        where: {
-          ...MultiTenancyUtil.getScope(request.tenantContext),
-          created_at: { gte: startOfWeek },
-        },
-      });
+      const [retailRevenueAgg, retailOrders] = await Promise.all([
+        this.prisma.retail_orders.aggregate({
+          where: {
+            ...retailScope,
+            status: { in: ["COMPLETED", "PAID", "complete", "paid"] },
+            created_at: { gte: startOfWeek },
+          },
+          _sum: { total_amount: true },
+        }),
+        this.prisma.retail_orders.count({
+          where: {
+            ...retailScope,
+            created_at: { gte: startOfWeek },
+          },
+        }),
+      ]);
 
       moduleContributions.retail = {
         retailRevenue: retailRevenueAgg._sum.total_amount?.toNumber() || 0,
@@ -80,7 +130,7 @@ export class SalesController {
 
     return {
       success: true,
-      tenant_id,
+      tenant_id: scope.tenant_id,
       data: {
         ...dashboardData,
         moduleContributions,
@@ -90,95 +140,99 @@ export class SalesController {
 
   @Get("manager-metrics")
   async getManagerMetrics(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
     return {
       success: true,
-      tenant_id,
-      data: await this.salesService.getManagerMetrics(request.tenantContext),
+      tenant_id: scope.tenant_id,
+      data: await this.salesService.getManagerMetrics(scope),
     };
   }
 
   @Get("executive-forecast")
   async getExecutiveForecast(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
     return {
       success: true,
-      tenant_id,
-      data: await this.salesService.getExecutiveForecast(request.tenantContext),
+      tenant_id: scope.tenant_id,
+      data: await this.salesService.getExecutiveForecast(scope),
     };
   }
 
   @Get("nba")
   async getNextBestActions(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
     return {
       success: true,
-      tenant_id,
-      data: await this.salesService.getNextBestActions(request.tenantContext),
+      tenant_id: scope.tenant_id,
+      data: await this.salesService.getNextBestActions(scope),
     };
   }
 
   @Get("forecast")
   async getForecast(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
     return {
       success: true,
-      tenant_id,
-      data: await this.salesService.getForecast(request.tenantContext),
+      tenant_id: scope.tenant_id,
+      data: await this.salesService.getForecast(scope),
     };
   }
 
   @Get("analytics")
   async getAnalytics(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
     return {
       success: true,
-      tenant_id,
-      data: await this.salesService.getSalesAnalytics(request.tenantContext),
+      tenant_id: scope.tenant_id,
+      data: await this.salesService.getSalesAnalytics(scope),
     };
   }
 
   @Get("leads")
   async getLeads(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
-    const data = await this.salesService.getLeads(request.tenantContext);
-    return { success: true, tenant_id, count: data.length, data };
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const data = await this.salesService.getLeads(scope);
+    return { success: true, tenant_id: scope.tenant_id, count: data.length, data };
   }
 
   @Get("pipeline")
   async getPipeline(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
-    const data = await this.salesService.getPipeline(request.tenantContext);
-    return { success: true, tenant_id, count: data.length, data };
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const data = await this.salesService.getPipeline(scope);
+    return { success: true, tenant_id: scope.tenant_id, count: data.length, data };
   }
 
   @Post("leads")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.MEMBER)
   async createLead(
     @Req() request: RequestWithTenant,
     @Body() dto: CreateLeadDto,
   ) {
-    const { tenant_id, user_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const user_id = this.requireActor(request);
     return {
       success: true,
-      tenant_id,
+      tenant_id: scope.tenant_id,
       message: "Lead created",
-      data: await this.salesService.createLead(request.tenantContext, dto, user_id),
+      data: await this.salesService.createLead(scope, dto, user_id),
     };
   }
 
   @Put("leads/:id/status")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.MEMBER)
   async updateLeadStatus(
     @Req() request: RequestWithTenant,
     @Param("id") lead_id: string,
     @Body() dto: UpdateLeadStatusDto,
   ) {
-    const { tenant_id, user_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const user_id = this.requireActor(request);
     return {
       success: true,
-      tenant_id,
+      tenant_id: scope.tenant_id,
       message: "Lead status updated",
       data: await this.salesService.updateLeadStatus(
-        request.tenantContext,
+        scope,
         lead_id,
         dto,
         user_id,
@@ -187,57 +241,59 @@ export class SalesController {
   }
 
   @Post("leads/:id/convert")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.MEMBER)
   async convertLead(
     @Req() request: RequestWithTenant,
     @Param("id") lead_id: string,
   ) {
-    const { tenant_id, user_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const user_id = this.requireActor(request);
     return {
       success: true,
-      tenant_id,
+      tenant_id: scope.tenant_id,
       message: "Lead converted to opportunity",
-      data: await this.salesService.convertLead(
-        request.tenantContext,
-        lead_id,
-        user_id || "system",
-      ),
+      data: await this.salesService.convertLead(scope, lead_id, user_id),
     };
   }
 
   @Get("opportunities")
   async getOpportunities(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
-    const data = await this.salesService.getOpportunities(request.tenantContext);
-    return { success: true, tenant_id, count: data.length, data };
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const data = await this.salesService.getOpportunities(scope);
+    return { success: true, tenant_id: scope.tenant_id, count: data.length, data };
   }
 
   @Post("opportunities")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.MEMBER)
   async createOpportunity(
     @Req() request: RequestWithTenant,
     @Body() dto: CreateOpportunityDto,
   ) {
-    const { tenant_id, user_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const user_id = this.requireActor(request);
     return {
       success: true,
-      tenant_id,
+      tenant_id: scope.tenant_id,
       message: "Opportunity created",
-      data: await this.salesService.createOpportunity(request.tenantContext, dto, user_id),
+      data: await this.salesService.createOpportunity(scope, dto, user_id),
     };
   }
 
   @Put("opportunities/:id/stage")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.MEMBER)
   async moveOpportunityStage(
     @Req() request: RequestWithTenant,
     @Param("id") opportunityId: string,
     @Body() dto: MoveOpportunityStageDto,
   ) {
-    const { tenant_id, user_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const user_id = this.requireActor(request);
     return {
       success: true,
-      tenant_id,
+      tenant_id: scope.tenant_id,
       message: "Opportunity stage updated",
       data: await this.salesService.moveOpportunityStage(
-        request.tenantContext,
+        scope,
         opportunityId,
         dto,
         user_id,
@@ -246,18 +302,20 @@ export class SalesController {
   }
 
   @Put("opportunities/:id/close")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.MEMBER)
   async closeOpportunity(
     @Req() request: RequestWithTenant,
     @Param("id") opportunityId: string,
     @Body() dto: CloseOpportunityDto,
   ) {
-    const { tenant_id, user_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const user_id = this.requireActor(request);
     return {
       success: true,
-      tenant_id,
+      tenant_id: scope.tenant_id,
       message: "Opportunity close operation complete",
       data: await this.salesService.closeOpportunity(
-        request.tenantContext,
+        scope,
         opportunityId,
         dto,
         user_id,
@@ -267,134 +325,145 @@ export class SalesController {
 
   @Get("quotes")
   async getQuotes(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
-    const data = await this.salesService.getQuotes(request.tenantContext);
-    return { success: true, tenant_id, count: data.length, data };
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const data = await this.salesService.getQuotes(scope);
+    return { success: true, tenant_id: scope.tenant_id, count: data.length, data };
   }
 
   @Post("quotes")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.MEMBER)
   async createQuote(
     @Req() request: RequestWithTenant,
     @Body() dto: CreateQuoteDto,
   ) {
-    const { tenant_id, user_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const user_id = this.requireActor(request);
     return {
       success: true,
-      tenant_id,
+      tenant_id: scope.tenant_id,
       message: "Quote created",
-      data: await this.salesService.createQuote(request.tenantContext, dto, user_id),
+      data: await this.salesService.createQuote(scope, dto, user_id),
     };
   }
 
   @Put("quotes/:id/submit")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.MEMBER)
   async submitQuote(
     @Req() request: RequestWithTenant,
     @Param("id") quoteId: string,
   ) {
-    const { tenant_id, user_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const user_id = this.requireActor(request);
     return {
       success: true,
-      tenant_id,
+      tenant_id: scope.tenant_id,
       message: "Quote submitted for approval",
-      data: await this.salesService.submitQuote(request.tenantContext, quoteId, user_id),
+      data: await this.salesService.submitQuote(scope, quoteId, user_id),
     };
   }
 
   @Put("quotes/:id/decision")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   async decideQuote(
     @Req() request: RequestWithTenant,
     @Param("id") quoteId: string,
     @Body() dto: QuoteDecisionDto,
   ) {
-    const { tenant_id, user_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const user_id = this.requireActor(request);
     return {
       success: true,
-      tenant_id,
+      tenant_id: scope.tenant_id,
       message: "Quote decision recorded",
-      data: await this.salesService.decideQuote(request.tenantContext, quoteId, dto, user_id),
+      data: await this.salesService.decideQuote(scope, quoteId, dto, user_id),
     };
   }
 
   @Get("timeline")
   async getTimeline(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
-    const data = await this.salesService.getTimeline(request.tenantContext);
-    return { success: true, tenant_id, count: data.length, data };
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const data = await this.salesService.getTimeline(scope);
+    return { success: true, tenant_id: scope.tenant_id, count: data.length, data };
   }
 
   @Post("timeline")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.MEMBER)
   async createTimelineEvent(
     @Req() request: RequestWithTenant,
     @Body() dto: CreateTimelineEventDto,
   ) {
-    const { tenant_id, user_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const user_id = this.requireActor(request);
     return {
       success: true,
-      tenant_id,
+      tenant_id: scope.tenant_id,
       message: "Timeline event created",
-      data: await this.salesService.createTimelineEvent(request.tenantContext, dto, user_id),
+      data: await this.salesService.createTimelineEvent(scope, dto, user_id),
     };
   }
 
   @Get("tasks")
   async getTasks(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
-    const data = await this.salesService.getTasks(request.tenantContext);
-    return { success: true, tenant_id, count: data.length, data };
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const data = await this.salesService.getTasks(scope);
+    return { success: true, tenant_id: scope.tenant_id, count: data.length, data };
   }
 
   @Post("tasks")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.MEMBER)
   async createTask(
     @Req() request: RequestWithTenant,
     @Body() dto: CreateTaskDto,
   ) {
-    const { tenant_id, user_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const user_id = this.requireActor(request);
     return {
       success: true,
-      tenant_id,
+      tenant_id: scope.tenant_id,
       message: "Task created",
-      data: await this.salesService.createTask(request.tenantContext, dto, user_id),
+      data: await this.salesService.createTask(scope, dto, user_id),
     };
   }
 
   @Put("tasks/:id/done")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.MEMBER)
   async completeTask(
     @Req() request: RequestWithTenant,
     @Param("id") taskId: string,
   ) {
-    const { tenant_id, user_id } = request.tenantContext;
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const user_id = this.requireActor(request);
     return {
       success: true,
-      tenant_id,
+      tenant_id: scope.tenant_id,
       message: "Task marked done",
-      data: await this.salesService.completeTask(request.tenantContext, taskId, user_id),
+      data: await this.salesService.completeTask(scope, taskId, user_id),
     };
   }
 
   @Get("orders")
   async getOrders(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
-    const data = await this.salesService.getOrders(request.tenantContext);
-    return { success: true, tenant_id, count: data.length, data };
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const data = await this.salesService.getOrders(scope);
+    return { success: true, tenant_id: scope.tenant_id, count: data.length, data };
   }
 
   @Get("alerts")
   async getAlerts(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
-    const data = await this.salesService.getAlerts(request.tenantContext);
-    return { success: true, tenant_id, count: data.length, data };
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const data = await this.salesService.getAlerts(scope);
+    return { success: true, tenant_id: scope.tenant_id, count: data.length, data };
   }
 
   @Post("sla-sweep")
+  @Roles(UserRole.ADMIN, UserRole.MANAGER)
   async runSlaSweep(@Req() request: RequestWithTenant) {
-    const { tenant_id, user_id } = request.tenantContext;
-    const data = await this.salesService.runSlaSweep(
-      request.tenantContext,
-      user_id || "system",
-    );
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const user_id = this.requireActor(request);
+    const data = await this.salesService.runSlaSweep(scope, user_id);
     return {
       success: true,
-      tenant_id,
+      tenant_id: scope.tenant_id,
       message: "SLA sweep executed",
       count: data.length,
       data,
@@ -403,8 +472,8 @@ export class SalesController {
 
   @Get("audit-events")
   async getAuditEvents(@Req() request: RequestWithTenant) {
-    const { tenant_id } = request.tenantContext;
-    const data = await this.salesService.getAuditEvents(request.tenantContext);
-    return { success: true, tenant_id, count: data.length, data };
+    const scope = await this.scopeResolver.resolve(request.tenantContext);
+    const data = await this.salesService.getAuditEvents(scope);
+    return { success: true, tenant_id: scope.tenant_id, count: data.length, data };
   }
 }

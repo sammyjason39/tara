@@ -778,7 +778,7 @@ export default function Explorer() {
             ) : viewMode === "details" ? (
               <div
                 ref={detailsAreaRef}
-                className="relative rounded-lg border"
+                className="relative rounded-lg border overflow-x-auto"
                 onMouseDown={(event) => {
                   if (event.button !== 0) return;
                   const target = event.target as HTMLElement;
@@ -1180,6 +1180,7 @@ export default function Explorer() {
                       if (typeof m === 'string') { try { m = JSON.parse(m); } catch(e) {} }
                       return m?.type === "STOCK_OPNAME_REPORT";
                     }) ? (
+                      <div className="overflow-x-auto">
                       <table className="w-full text-left">
                         <thead className="bg-muted/50 border-b">
                           <tr className="text-left text-xs text-muted-foreground font-semibold">
@@ -1246,6 +1247,7 @@ export default function Explorer() {
                           })}
                         </tbody>
                       </table>
+                      </div>
                     ) : (
                       <div className={`grid gap-6 ${
                         viewMode === "large" ? "md:grid-cols-2 xl:grid-cols-4" : "md:grid-cols-2 xl:grid-cols-3"
@@ -1330,7 +1332,7 @@ export default function Explorer() {
                                     
                                     <div className="flex flex-col gap-2 mt-2">
                                         <div className="flex items-center gap-2">
-                                          <div className="flex items-center gap-1.5 bg-muted dark:bg-white/5 px-2.5 py-1 rounded-lg border border-slate-900/5 dark:border-white/5 shadow-inner group-hover:bg-primary/5 transition-all">
+                                          <div className="flex items-center gap-1.5 bg-muted dark:bg-white/5 px-2.5 py-1 rounded-lg border border-border/5 dark:border-white/5 shadow-inner group-hover:bg-primary/5 transition-all">
                                             <Folder className="h-2.5 w-2.5 text-muted-foreground" />
                                             <p className="text-[8px] text-muted-foreground font-black tracking-widest truncate max-w-[120px] uppercase">
                                               {folderMap.get(file.folderId ?? "root") ?? "ROOT_NODE"}
@@ -1354,7 +1356,7 @@ export default function Explorer() {
                                                   <Bot className="h-3 w-3" />
                                                   {meta.ai_name || "AUDIT_ENGINE"}
                                                 </div>
-                                                <div className="flex items-center gap-1 bg-muted text-muted-foreground text-[8px] px-2 py-1 rounded-lg border border-slate-200 font-black shadow-sm uppercase tracking-widest">
+                                                <div className="flex items-center gap-1 bg-muted text-muted-foreground text-[8px] px-2 py-1 rounded-lg border border-border font-black shadow-sm uppercase tracking-widest">
                                                   <User className="h-3 w-3" />
                                                   {meta.performer}
                                                 </div>

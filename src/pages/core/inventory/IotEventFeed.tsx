@@ -9,19 +9,24 @@ import {
 } from "@/core/types/inventory/inventory";
 import { Radio, RefreshCw, Cpu, Database, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ErrorState } from "@/components/shared/AsyncState";
+import { formatDateTime } from "@/lib/format";
 
 export default function IotEventFeed() {
   const session = useSession();
   const [events, setEvents] = useState<InventoryIotEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const loadEvents = useCallback(async () => {
     try {
       setLoading(true);
+      setError(false);
       const data = await inventoryService.listIotEvents(session.tenant_id, session);
-      setEvents(data);
-    } catch (error) {
-      console.error("Failed to load IoT events:", error);
+      setEvents(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to load IoT events:", err);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -61,6 +66,13 @@ export default function IotEventFeed() {
           description="Most recent 50 events across all registered devices."
         >
           <div className="border rounded-lg overflow-hidden">
+            {error ? (
+              <ErrorState
+                title="Couldn't load the event stream"
+                description="The IoT and RFID telemetry feed failed to load. Check your connection and try again."
+                onRetry={loadEvents}
+              />
+            ) : (
             <table className="w-full text-sm">
               <thead className="bg-muted/50 border-b">
                 <tr>
@@ -100,7 +112,7 @@ export default function IotEventFeed() {
                          </div>
                       </td>
                       <td className="p-3 text-muted-foreground text-xs">
-                        {new Date(event.createdAt).toLocaleTimeString()}
+                        {formatDateTime(event.createdAt)}
                       </td>
                       <td className="p-3 text-right">
                         <Badge variant={event.processed ? "outline" : "default"} className="text-[10px]">
@@ -112,6 +124,7 @@ export default function IotEventFeed() {
                 )}
               </tbody>
             </table>
+            )}
           </div>
         </WorkspacePanel>
 
@@ -120,7 +133,7 @@ export default function IotEventFeed() {
           description="Edge gateway and telemetry status."
         >
           <div className="space-y-4">
-             <div className="p-4 rounded-lg bg-success border border-emerald-500/20">
+             <div className="p-4 rounded-lg bg-success border border-success/20">
                 <div className="flex items-center justify-between mb-2">
                    <p className="text-sm font-medium text-success">Gate-01 (Main Warehouse)</p>
                    <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
@@ -128,7 +141,7 @@ export default function IotEventFeed() {
                 <p className="text-xs text-muted-foreground uppercase">Status: Online · Last Scan: 2m ago</p>
              </div>
 
-             <div className="p-4 rounded-lg bg-success border border-emerald-500/20">
+             <div className="p-4 rounded-lg bg-success border border-success/20">
                 <div className="flex items-center justify-between mb-2">
                    <p className="text-sm font-medium text-success">Gate-02 (Loading Dock)</p>
                    <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
@@ -136,7 +149,7 @@ export default function IotEventFeed() {
                 <p className="text-xs text-muted-foreground uppercase">Status: Online · Last Scan: 15m ago</p>
              </div>
 
-             <div className="p-4 rounded-lg bg-warning border border-orange-500/20">
+             <div className="p-4 rounded-lg bg-warning border border-warning">
                 <div className="flex items-center justify-between mb-2">
                    <p className="text-sm font-medium text-warning">Temp-Sensor-04 (Cold Storage)</p>
                    <div className="h-2 w-2 rounded-full bg-warning" />

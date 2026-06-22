@@ -35,6 +35,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSession } from "@/core/security/session";
 import { marketingService } from "@/core/services/marketing/marketingService";
+import { formatDate } from "@/lib/format";
+import { EmptyState } from "@/components/shared/AsyncState";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { MarketingAuditEvent } from "@/core/types/marketing/marketing";
@@ -103,7 +105,7 @@ export default function MarketingAuditLog() {
                Immutable Trail Active
             </div>
           </div>
-          <h1 className="text-6xl font-black tracking-tighter bg-gradient-to-br from-slate-900 via-slate-700 to-indigo-900 dark:from-white dark:to-slate-400 bg-clip-text text-transparent italic leading-none">Marketing Audit</h1>
+          <h1 className="text-6xl font-black tracking-tighter text-foreground italic leading-none">Marketing Audit</h1>
           <p className="text-muted-foreground font-medium max-w-2xl text-lg leading-relaxed italic">"Trust is authorized through absolute transparency and immutable auditable integrity."</p>
         </div>
         
@@ -130,7 +132,7 @@ export default function MarketingAuditLog() {
 
       {/* Audit Intelligence Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-         <Card className="rounded-[3rem] border-none shadow-2xl bg-white/60 dark:bg-muted backdrop-blur-xl p-10 flex items-center gap-8 group hover:shadow-indigo-500/10 transition-all duration-500 overflow-hidden relative">
+         <Card className="rounded-[3rem] border-none shadow-2xl glass-card p-10 flex items-center gap-8 group hover:shadow-indigo-500/10 transition-all duration-500 overflow-hidden relative">
             <div className="absolute top-0 right-0 h-40 w-40 bg-primary rounded-full blur-3xl -mr-20 -mt-20 group-hover:scale-150 transition-transform duration-1000" />
             <div className="h-20 w-20 rounded-[1.5rem] bg-primary flex items-center justify-center group-hover:scale-110 transition-transform duration-500 relative z-10 shadow-inner">
                <Lock className="h-10 w-10 text-primary" />
@@ -141,7 +143,7 @@ export default function MarketingAuditLog() {
                <p className="text-[9px] font-black uppercase tracking-widest text-primary italic leading-none">Security Protocol Active</p>
             </div>
          </Card>
-         <Card className="rounded-[3rem] border-none shadow-2xl bg-white/60 dark:bg-muted backdrop-blur-xl p-10 flex items-center gap-8 group hover:shadow-emerald-500/10 transition-all duration-500 overflow-hidden relative">
+         <Card className="rounded-[3rem] border-none shadow-2xl glass-card p-10 flex items-center gap-8 group hover:shadow-emerald-500/10 transition-all duration-500 overflow-hidden relative">
             <div className="absolute top-0 right-0 h-40 w-40 bg-success rounded-full blur-3xl -mr-20 -mt-20 group-hover:scale-150 transition-transform duration-1000" />
             <div className="h-20 w-20 rounded-[1.5rem] bg-success flex items-center justify-center group-hover:scale-110 transition-transform duration-500 relative z-10 shadow-inner">
                <FileSearch className="h-10 w-10 text-success" />
@@ -166,8 +168,8 @@ export default function MarketingAuditLog() {
       </div>
 
       {/* Main Audit Registry */}
-      <Card className="rounded-[4rem] border-none shadow-2xl bg-white/40 dark:bg-muted backdrop-blur-xl overflow-hidden flex flex-col group/registry">
-        <CardHeader className="p-12 pb-6 border-b border-white/10 dark:border-slate-800/10 flex flex-row items-center justify-between shrink-0">
+      <Card className="rounded-[4rem] border-none shadow-2xl glass-card overflow-hidden flex flex-col group/registry">
+        <CardHeader className="p-12 pb-6 border-b border-white/10 dark:border-border/10 flex flex-row items-center justify-between shrink-0">
           <div className="space-y-2">
             <CardTitle className="text-3xl font-black tracking-tighter flex items-center gap-4 uppercase italic">
               <History className="h-8 w-8 text-primary group-hover/registry:rotate-12 transition-transform duration-500" />
@@ -197,7 +199,7 @@ export default function MarketingAuditLog() {
                   <tr key={item.id} className="group hover:bg-primary transition-all cursor-default">
                     <td className="px-12 py-10">
                        <div className="space-y-1">
-                          <p className="font-black text-sm uppercase tracking-tight text-muted-foreground dark:text-white leading-none italic">{new Date(item.createdAt).toLocaleDateString()}</p>
+                          <p className="font-black text-sm uppercase tracking-tight text-muted-foreground dark:text-white leading-none italic">{formatDate(item.createdAt)}</p>
                           <p className="text-[10px] font-black text-muted-foreground uppercase italic opacity-60 leading-none">{new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
                        </div>
                     </td>
@@ -226,7 +228,7 @@ export default function MarketingAuditLog() {
                        </div>
                     </td>
                     <td className="px-12 py-10">
-                       <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/50 dark:bg-muted border border-slate-100 dark:border-slate-800 group-hover:border-primary transition-all max-w-sm">
+                       <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/50 dark:bg-muted border border-border dark:border-border group-hover:border-primary transition-all max-w-sm">
                           <Terminal className="h-4 w-4 text-muted-foreground shrink-0" />
                           <p className="text-[11px] font-medium text-muted-foreground dark:text-muted-foreground leading-relaxed italic truncate">
                              "{item.detail}"
@@ -239,15 +241,11 @@ export default function MarketingAuditLog() {
             </table>
           </div>
           {filtered.length === 0 && (
-             <div className="p-32 text-center grayscale opacity-20 space-y-8 flex flex-col items-center">
-                <div className="h-24 w-24 bg-white dark:bg-muted rounded-[3rem] flex items-center justify-center shadow-2xl border border-slate-100 dark:border-slate-700">
-                   <History className="h-12 w-12 text-muted-foreground" />
-                </div>
-                <div className="space-y-2">
-                   <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground">Governance Ledger Clear</p>
-                   <p className="text-sm font-medium italic italic opacity-40">"No strategic operation events currently logged in the immutable trail."</p>
-                </div>
-             </div>
+             <EmptyState
+               title="Governance ledger clear"
+               description="No strategic operation events currently logged in the immutable trail."
+               icon={History}
+             />
           )}
         </CardContent>
       </Card>

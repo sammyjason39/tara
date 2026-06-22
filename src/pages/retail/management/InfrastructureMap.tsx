@@ -107,7 +107,7 @@ export default function InfrastructureMap() {
         {/* Node Sidebar */}
         <div className="col-span-12 xl:col-span-4 space-y-10">
           {selectedNode ? (
-            <Card className="rounded-[2rem] border-none shadow-2xl bg-white dark:bg-secondary p-6 space-y-8 animate-in slide-in-from-right-4 duration-500">
+            <Card className="rounded-[2rem] border-none shadow-2xl bg-card dark:bg-secondary p-6 space-y-8 animate-in slide-in-from-right-4 duration-500">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <h3 className="text-3xl font-black italic tracking-tighter uppercase leading-none">{selectedNode.name}</h3>
@@ -142,7 +142,7 @@ export default function InfrastructureMap() {
               </div>
             </Card>
           ) : (
-            <Card className="rounded-[2rem] border-none shadow-2xl bg-white dark:bg-secondary p-6 flex flex-col items-center justify-center text-center space-y-6 min-h-[300px]">
+            <Card className="rounded-[2rem] border-none shadow-2xl bg-card dark:bg-secondary p-6 flex flex-col items-center justify-center text-center space-y-6 min-h-[300px]">
                <div className="h-20 w-20 rounded-2xl bg-secondary flex items-center justify-center">
                   <Globe className="h-10 w-10 text-muted-foreground" />
                </div>
@@ -153,19 +153,19 @@ export default function InfrastructureMap() {
             </Card>
           )}
 
-          <Card className="rounded-[2rem] border-none shadow-2xl bg-white dark:bg-secondary p-8">
+          <Card className="rounded-[2rem] border-none shadow-2xl bg-card dark:bg-secondary p-8">
              <h4 className="text-xs font-black uppercase tracking-[0.3em] text-muted-foreground mb-6 flex items-center gap-3 italic">
                 <Activity className="h-4 w-4 text-primary" /> System Alerts
              </h4>
              <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-destructive/5 border border-rose-500/10 flex items-start gap-4">
+                <div className="p-4 rounded-2xl bg-destructive/5 border border-destructive/10 flex items-start gap-4">
                    <ShieldAlert className="h-5 w-5 text-destructive shrink-0" />
                    <div>
                       <p className="text-[10px] font-black uppercase text-destructive">Critical Failure</p>
                       <p className="text-xs font-medium italic italic">Node Bali_01 disconnected from grid.</p>
                    </div>
                 </div>
-                <div className="p-4 rounded-2xl bg-warning border border-amber-500/10 flex items-start gap-4">
+                <div className="p-4 rounded-2xl bg-warning border border-warning/10 flex items-start gap-4">
                    <Server className="h-5 w-5 text-warning shrink-0" />
                    <div>
                       <p className="text-[10px] font-black uppercase text-warning">Maintenance</p>

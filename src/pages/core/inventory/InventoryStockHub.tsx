@@ -3,7 +3,7 @@ import { useSession } from "@/core/security/session";
 import { apiRequest } from "@/core/api/apiClient";
 import { inventoryService } from "@/core/services/inventory/inventoryService";
 import { retailService } from "@/core/services/retail/retailService";
-import { formatCurrency } from "@/lib/utils/currency";
+import { formatCurrency, formatNumber } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input as UIInput } from "@/components/ui/input";
 import {
@@ -320,7 +320,7 @@ export default function InventoryStockHub() {
   const mainContent = (
     <div className="p-6 space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-muted rounded-[2.5rem] overflow-hidden group">
+        <Card className="border-none shadow-xl shadow-muted/50 dark:shadow-none bg-white dark:bg-muted rounded-[2.5rem] overflow-hidden group">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Items Type</CardTitle>
             <Layers className="h-4 w-4 text-primary opacity-50" />
@@ -331,7 +331,7 @@ export default function InventoryStockHub() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-muted rounded-[2.5rem] overflow-hidden group">
+        <Card className="border-none shadow-xl shadow-muted/50 dark:shadow-none bg-white dark:bg-muted rounded-[2.5rem] overflow-hidden group">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Items On-Hand</CardTitle>
             <Package className="h-4 w-4 text-primary opacity-50" />
@@ -342,7 +342,7 @@ export default function InventoryStockHub() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-muted rounded-[2.5rem] overflow-hidden">
+        <Card className="border-none shadow-xl shadow-muted/50 dark:shadow-none bg-white dark:bg-muted rounded-[2.5rem] overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Low Stock</CardTitle>
             <AlertTriangle className="h-4 w-4 text-warning opacity-50" />
@@ -353,7 +353,7 @@ export default function InventoryStockHub() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-muted rounded-[2.5rem] overflow-hidden">
+        <Card className="border-none shadow-xl shadow-muted/50 dark:shadow-none bg-white dark:bg-muted rounded-[2.5rem] overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Out of Stock</CardTitle>
             <AlertTriangle className="h-4 w-4 text-destructive opacity-50" />
@@ -364,34 +364,34 @@ export default function InventoryStockHub() {
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-muted rounded-[2.5rem] overflow-hidden">
+        <Card className="border-none shadow-xl shadow-muted/50 dark:shadow-none bg-white dark:bg-muted rounded-[2.5rem] overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Item Capital Value</CardTitle>
             <Archive className="h-4 w-4 text-primary opacity-50" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black tracking-tighter text-primary">
-              {formatCurrency(stats.capitalValue, stats.currency)}
+              {formatCurrency(stats.capitalValue, stats.currency, "id-ID")}
             </div>
             <p className="text-[10px] font-bold text-primary mt-1 uppercase tracking-widest">Initial Investment</p>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-muted rounded-[2.5rem] overflow-hidden">
+        <Card className="border-none shadow-xl shadow-muted/50 dark:shadow-none bg-white dark:bg-muted rounded-[2.5rem] overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Inventory Value</CardTitle>
             <BarChart3 className="h-4 w-4 text-success opacity-50" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-black tracking-tighter text-success">
-              {formatCurrency(stats.totalValue, stats.currency)}
+              {formatCurrency(stats.totalValue, stats.currency, "id-ID")}
             </div>
             <p className="text-[10px] font-bold text-success mt-1 uppercase tracking-widest">Financial Asset Value</p>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="border-none shadow-2xl shadow-slate-200/50 dark:shadow-none bg-white dark:bg-muted rounded-[3rem] overflow-hidden">
+      <Card className="border-none shadow-2xl shadow-muted/50 dark:shadow-none bg-white dark:bg-muted rounded-[3rem] overflow-hidden">
         <div className="p-8 border-b">
           <InventoryFilterHub 
             search={search}
@@ -435,7 +435,7 @@ export default function InventoryStockHub() {
               <TableBody>
                 {loading ? (
                   Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i} className="border-slate-100 dark:border-slate-800">
+                    <TableRow key={i} className="border-muted dark:border-muted">
                       <TableCell colSpan={6} className="py-6 px-8">
                         <Skeleton className="h-12 w-full rounded-xl" />
                       </TableCell>
@@ -454,11 +454,11 @@ export default function InventoryStockHub() {
                   filteredItems.map((item) => (
                     <TableRow 
                       key={item.id} 
-                      className="border-slate-100 dark:border-slate-800 group hover:bg-primary/[0.02] cursor-pointer transition-all"
+                      className="border-muted dark:border-muted group hover:bg-primary/[0.02] cursor-pointer transition-all"
                       onClick={() => setSelectedItem(item)}
                     >
                       <TableCell className="pl-8 py-4">
-                        <div className="h-10 w-10 rounded-xl overflow-hidden bg-muted dark:bg-muted border border-slate-200 dark:border-slate-800 flex items-center justify-center">
+                        <div className="h-10 w-10 rounded-xl overflow-hidden bg-muted dark:bg-muted border border-muted dark:border-muted flex items-center justify-center">
                           {(item as any).image_url ? (
                             <img 
                               src={(item as any).image_url} 
@@ -484,12 +484,12 @@ export default function InventoryStockHub() {
                         </div>
                       </TableCell>
                       <TableCell className="py-6 text-right font-black italic text-primary">
-                        Rp {(item.selling_price || 0).toLocaleString()}
+                        {formatCurrency(item.selling_price || 0, stats.currency, "id-ID")}
                       </TableCell>
                       <TableCell className="py-6 text-right">
                         <div className="flex flex-col items-end">
                           <span className={`text-sm font-black ${item.currentStock <= item.minStock ? 'text-destructive' : 'text-muted-foreground dark:text-white'}`}>
-                            {item.currentStock?.toLocaleString() ?? "0"} {item.unit || 'units'}
+                            {formatNumber(item.currentStock ?? 0)} {item.unit || 'units'}
                           </span>
                           {item.currentStock <= item.minStock && (
                             <span className="text-[9px] font-black uppercase tracking-tighter text-destructive mt-0.5">Threshold Alert</span>
@@ -533,7 +533,7 @@ export default function InventoryStockHub() {
           <div className="p-6 border-t flex items-center justify-between bg-muted dark:bg-muted">
             <div className="flex items-center gap-4">
               <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                Showing <span className="text-muted-foreground dark:text-white">{items.length}</span> of <span className="text-muted-foreground dark:text-white">{totalCount.toLocaleString()}</span> Items
+                Showing <span className="text-muted-foreground dark:text-white">{items.length}</span> of <span className="text-muted-foreground dark:text-white">{formatNumber(totalCount)}</span> Items
               </p>
             </div>
             
@@ -543,7 +543,7 @@ export default function InventoryStockHub() {
                 size="sm"
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1 || loading}
-                className="h-10 px-4 rounded-xl border-slate-200 text-[10px] font-black uppercase tracking-widest disabled:opacity-30"
+                className="h-10 px-4 rounded-xl border-muted text-[10px] font-black uppercase tracking-widest disabled:opacity-30"
               >
                 Previous
               </Button>
@@ -559,7 +559,7 @@ export default function InventoryStockHub() {
                 size="sm"
                 onClick={() => setPage(p => p + 1)}
                 disabled={items.length < 30 || page >= Math.ceil(totalCount / 30) || loading}
-                className="h-10 px-4 rounded-xl border-slate-200 text-[10px] font-black uppercase tracking-widest disabled:opacity-30"
+                className="h-10 px-4 rounded-xl border-muted text-[10px] font-black uppercase tracking-widest disabled:opacity-30"
               >
                 Next
               </Button>
@@ -573,7 +573,7 @@ export default function InventoryStockHub() {
   return (
     <div className="min-h-full p-8 space-y-10 bg-muted dark:bg-muted">
       {/* Tactical Header */}
-      <div className="flex items-end justify-between border-b border-slate-200 dark:border-slate-800 pb-8">
+      <div className="flex items-end justify-between border-b border-muted dark:border-muted pb-8">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-[0.3em]">
             <Layers className="h-3 w-3" /> LOGISTICS_ENGINE

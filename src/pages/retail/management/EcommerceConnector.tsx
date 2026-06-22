@@ -40,9 +40,9 @@ const PLATFORM_COLOR: Record<string, string> = {
 };
 
 const PLATFORM_ACCENT: Record<string, string> = {
-  HEADLESS: "border-slate-200 hover:border-slate-400",
+  HEADLESS: "border-border hover:border-border",
   PRESET: "border-primary hover:border-primary",
-  PREMADE: "border-emerald-100 hover:border-emerald-400",
+  PREMADE: "border-success hover:border-success",
 };
 
 const STATUS_BADGE: Record<string, string> = {
@@ -134,7 +134,7 @@ const EcommerceConnector = () => {
       label: "Suspended",
       value: stats.suspended,
       icon: PauseCircle,
-      color: "bg-white text-muted-foreground border border-slate-100",
+      color: "bg-white text-muted-foreground border border-border",
     },
   ];
 
@@ -150,7 +150,7 @@ const EcommerceConnector = () => {
           <Button
             variant="outline"
             onClick={fetchChannels}
-            className="h-10 px-5 rounded-2xl border-slate-200 font-black italic uppercase tracking-widest text-[10px] gap-2"
+            className="h-10 px-5 rounded-2xl border-border font-black italic uppercase tracking-widest text-[10px] gap-2"
           >
             <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
             Refresh
@@ -221,7 +221,7 @@ const EcommerceConnector = () => {
                   "bg-secondary/10 text-muted-foreground";
                 const accent =
                   PLATFORM_ACCENT[ch.integrationCategory] ??
-                  "border-slate-200 hover:border-slate-400";
+                  "border-border hover:border-border";
                 const statusBadge =
                   STATUS_BADGE[ch.status ?? "active"] ??
                   "bg-secondary/10 text-muted-foreground";
@@ -236,7 +236,7 @@ const EcommerceConnector = () => {
                     className={cn(
                       "w-full text-left rounded-2xl border-2 p-4 transition-all bg-white",
                       isSelected
-                        ? "border-slate-900 shadow-lg ring-1 ring-slate-900/10"
+                        ? "border-border shadow-lg ring-1 ring-slate-900/10"
                         : accent,
                     )}
                   >
@@ -285,7 +285,7 @@ const EcommerceConnector = () => {
             {channels.length > 0 && (
               <button
                 onClick={() => setCreateOpen(true)}
-                className="w-full rounded-2xl border-2 border-dashed border-slate-200 hover:border-slate-400 bg-transparent hover:bg-white transition-all p-4 flex items-center gap-3 group"
+                className="w-full rounded-2xl border-2 border-dashed border-border hover:border-border bg-transparent hover:bg-white transition-all p-4 flex items-center gap-3 group"
               >
                 <div className="w-9 h-9 rounded-xl bg-secondary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Plus className="w-4 h-4 text-muted-foreground" />
@@ -303,7 +303,7 @@ const EcommerceConnector = () => {
           {selectedChannel && (
             <button
               onClick={() => setSelectedChannel(null)}
-              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-white/80 backdrop-blur border border-slate-200 flex items-center justify-center hover:bg-secondary/10 transition-colors shadow-sm"
+              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-white/80 backdrop-blur border border-border flex items-center justify-center hover:bg-secondary/10 transition-colors shadow-sm"
             >
               <X className="w-4 h-4 text-muted-foreground" />
             </button>

@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { formatCurrency, formatDate, formatTime } from '@/lib/mock-data';
+import { formatCurrency, formatDate } from '@/lib/format';
+import { formatTime } from '@/lib/mock-data';
 import { Search, Receipt, Calendar, CreditCard, Banknote, Smartphone, Eye } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 

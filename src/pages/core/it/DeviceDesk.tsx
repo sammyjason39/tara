@@ -12,17 +12,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Laptop, Network, ShieldCheck } from "lucide-react";
+import { Laptop } from "lucide-react";
 import { FeedbackAlert } from "@/core/tools/FeedbackAlert";
 import { useSession } from "@/core/security/session";
 import { itSettingsService, type ITDevice } from "@/core/services/it/itSettingsService";
+import { formatDateTime } from "@/lib/format";
+import { RegisterDeviceModal } from "./modals/RegisterDeviceModal";
+import { cn } from "@/lib/utils";
 
 export default function DeviceDesk() {
   const session = useSession();
@@ -126,7 +122,7 @@ export default function DeviceDesk() {
                          <span className="text-xs uppercase font-bold">{dev.status}</span>
                       </div>
                     </td>
-                    <td className="p-3 text-muted-foreground text-[10px] italic">{new Date(dev.lastSeen).toLocaleString()}</td>
+                    <td className="p-3 text-muted-foreground text-[10px] italic">{formatDateTime(dev.lastSeen)}</td>
                   </tr>
                 ))
               )}
@@ -135,119 +131,16 @@ export default function DeviceDesk() {
         </DataTableShell>
       </WorkspacePanel>
 
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-w-3xl p-0 overflow-hidden" aria-describedby="device-create-description">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Assign New Device</DialogTitle>
-          </DialogHeader>
-          <div id="device-create-description" className="sr-only">Register a new IT asset.</div>
-          <div className="grid md:grid-cols-[1fr_2fr]">
-            <div className="bg-muted p-6 flex flex-col justify-between">
-              <div>
-                <Laptop className="w-8 h-8 text-primary mb-4" />
-                <DialogTitle className="text-xl mb-2">Assign Node</DialogTitle>
-                <p className="text-sm text-muted-foreground">
-                  Register a physical or logical IT asset to the centralized inventory matrix.
-                </p>
-                <div className="mt-8 space-y-4">
-                  <div className="flex items-start gap-3 text-sm">
-                    <div className="mt-0.5"><Network className="w-4 h-4 text-muted-foreground" /></div>
-                    <div>
-                      <p className="font-medium">Topological Mapping</p>
-                      <p className="text-muted-foreground text-xs">Define parent connections for visual graph.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-primary/5 p-4 rounded-lg mt-8 border border-primary/10">
-                <p className="text-xs text-primary font-medium flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4" /> Policy Enforcement
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Registered devices are subject to MDM policies.
-                </p>
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Identity</label>
-                      <Input placeholder="Device Name" id="reg-device-name" />
-                   </div>
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Class</label>
-                      <Select onValueChange={(val) => ((window as any)._regDeviceType = val)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select Type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="laptop">Workstation</SelectItem>
-                          <SelectItem value="mobile">Mobile Node</SelectItem>
-                          <SelectItem value="iot">IoT / Edge</SelectItem>
-                          <SelectItem value="server">Core Server</SelectItem>
-                          <SelectItem value="database">Database Host</SelectItem>
-                        </SelectContent>
-                      </Select>
-                   </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Location Context</label>
-                      <Input placeholder="Location ID" id="reg-location-id" defaultValue={session.location_id} />
-                   </div>
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Topological Parent</label>
-                      <Select onValueChange={(val) => ((window as any)._regParentId = val)}>
-                         <SelectTrigger>
-                            <SelectValue placeholder="Core Connection" />
-                         </SelectTrigger>
-                         <SelectContent>
-                            <SelectItem value="ROOT">ROOT / Gateway</SelectItem>
-                            {(Array.isArray(devices) ? devices : []).filter(d => d.deviceType === 'server').map(d => (
-                               <SelectItem key={d.id} value={d.id}>{d.deviceName}</SelectItem>
-                            ))}
-                         </SelectContent>
-                      </Select>
-                   </div>
-                </div>
-
-                <div className="flex justify-end gap-3 pt-6 mt-6 border-t border-border">
-                  <Button variant="outline" onClick={() => setCreateOpen(false)} className="rounded-xl px-6">Cancel</Button>
-                  <Button
-                    className="rounded-xl bg-primary text-white px-8"
-                    onClick={async () => {
-                      try {
-                        const deviceName = (document.getElementById("reg-device-name") as HTMLInputElement).value;
-                        const locationId = (document.getElementById("reg-location-id") as HTMLInputElement).value;
-                        const deviceType = (window as any)._regDeviceType || "iot";
-                        const parentId = (window as any)._regParentId;
-
-                        await itSettingsService.registerDevice(session.tenant_id, session, {
-                          deviceName,
-                          deviceType,
-                          locationId,
-                          parentId,
-                          status: "active",
-                        });
-                        
-                        setCreateOpen(false);
-                        setStatusMessage("Infrastructure node registered successfully.");
-                        setVersion((prev) => prev + 1);
-                      } catch (err) {
-                        setErrorMessage("Failed to register node.");
-                      }
-                    }}
-                  >
-                    Provision Node
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <RegisterDeviceModal
+        isOpen={createOpen}
+        onClose={() => setCreateOpen(false)}
+        defaultLocationId={session.location_id}
+        existingDevices={devices}
+        onSuccess={() => {
+          setStatusMessage("Infrastructure node registered successfully.");
+          setVersion((prev) => prev + 1);
+        }}
+      />
 
       <Dialog open={!!selectedDevice} onOpenChange={() => setSelectedDevice(null)}>
         <DialogContent className="max-w-md bg-background p-0 overflow-hidden border-none shadow-2xl">
@@ -279,13 +172,13 @@ export default function DeviceDesk() {
             </div>
             
             <div className="p-4 rounded-2xl bg-card border border-border text-[9px] text-muted-foreground italic leading-relaxed">
-              Managed via LAN-first physical mapping. Last seen: {selectedDevice ? new Date(selectedDevice.lastSeen).toLocaleString() : "N/A"}. Security policies active.
+              Managed via LAN-first physical mapping. Last seen: {selectedDevice ? formatDateTime(selectedDevice.lastSeen) : "N/A"}. Security policies active.
             </div>
 
             <div className="flex flex-col gap-2 pt-2">
               <Button
                 variant="outline"
-                className="w-full rounded-xl font-black text-[10px] uppercase tracking-widest py-6 border-slate-200 dark:border-slate-800"
+                className="w-full rounded-xl font-black text-[10px] uppercase tracking-widest py-6 border-muted dark:border-muted"
                 onClick={async () => {
                   try {
                     if (selectedDevice) {
@@ -303,7 +196,7 @@ export default function DeviceDesk() {
               </Button>
               <Button
                 variant="destructive"
-                className="w-full rounded-xl font-black text-[10px] uppercase tracking-widest py-6 shadow-xl shadow-rose-500/20"
+                className="w-full rounded-xl font-black text-[10px] uppercase tracking-widest py-6 shadow-xl shadow-destructive/20"
                 onClick={async () => {
                   try {
                     if (selectedDevice) {

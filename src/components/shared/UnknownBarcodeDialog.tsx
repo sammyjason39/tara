@@ -95,7 +95,7 @@ export const UnknownBarcodeDialog: React.FC<UnknownBarcodeDialogProps> = ({
               <div className="grid grid-cols-1 gap-4">
                 <button
                   onClick={() => setStep("create")}
-                  className="group relative flex items-center gap-4 p-5 rounded-[1.5rem] border-2 border-slate-100 bg-white hover:border-primary hover:shadow-xl hover:shadow-indigo-50 transition-all text-left"
+                  className="group relative flex items-center gap-4 p-5 rounded-[1.5rem] border-2 border-border bg-white hover:border-primary hover:shadow-xl hover:shadow-indigo-50 transition-all text-left"
                 >
                   <div className="bg-primary p-3 rounded-xl group-hover:bg-primary group-hover:text-white transition-colors">
                     <PackagePlus className="w-6 h-6" />
@@ -112,7 +112,7 @@ export const UnknownBarcodeDialog: React.FC<UnknownBarcodeDialogProps> = ({
                     onReportAnomaly(barcode);
                     handleClose();
                   }}
-                  className="group relative flex items-center gap-4 p-5 rounded-[1.5rem] border-2 border-slate-100 bg-white hover:border-amber-500 hover:shadow-xl hover:shadow-amber-50 transition-all text-left"
+                  className="group relative flex items-center gap-4 p-5 rounded-[1.5rem] border-2 border-border bg-white hover:border-warning hover:shadow-xl hover:shadow-amber-50 transition-all text-left"
                 >
                   <div className="bg-warning p-3 rounded-xl group-hover:bg-warning group-hover:text-white transition-colors">
                     <AlertTriangle className="w-6 h-6" />
@@ -135,7 +135,7 @@ export const UnknownBarcodeDialog: React.FC<UnknownBarcodeDialogProps> = ({
                     placeholder="e.g. Red Bull 250ml"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="h-12 rounded-xl border-slate-100 font-bold focus:ring-2 focus:ring-indigo-500/20"
+                    className="h-12 rounded-xl border-border font-bold focus:ring-2 focus:ring-indigo-500/20"
                   />
                 </div>
 
@@ -144,7 +144,7 @@ export const UnknownBarcodeDialog: React.FC<UnknownBarcodeDialogProps> = ({
                   <select
                     value={categoryId}
                     onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full h-12 rounded-xl border border-slate-100 bg-white px-3 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                    className="w-full h-12 rounded-xl border border-border bg-white px-3 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
                   >
                     <option value="">Select Category...</option>
                     {categoryOptions.map(cat => (

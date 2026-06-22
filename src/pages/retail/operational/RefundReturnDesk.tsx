@@ -11,7 +11,8 @@ import {
   RefreshCw,
   X,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassCard } from "@/components/shared/GlassCard";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ import { toast } from "@/hooks/use-toast";
 import { retailService } from "@/core/services/retail/retailService";
 import { useSession } from "@/core/security/session";
 import { useRetail } from "../context/RetailContext";
+import { formatCurrency } from "@/lib/format";
 import { useNavigate } from "react-router-dom";
 
 const RefundReturnDesk = () => {
@@ -173,7 +175,7 @@ const RefundReturnDesk = () => {
                 variant="outline" 
                 size="sm" 
                 onClick={() => window.location.reload()}
-                className="h-10 rounded-xl bg-secondary/40 border-border text-foreground hover:bg-white/10 font-black italic uppercase text-[10px] tracking-widest gap-2"
+                className="h-10 rounded-xl bg-secondary/40 border-border text-foreground hover:bg-accent font-black italic uppercase text-[10px] tracking-widest gap-2"
              >
                 <RefreshCw className={`w-3.5 h-3.5 ${isSearching ? 'animate-spin' : ''}`} /> Sync Ledger
              </Button>
@@ -182,7 +184,7 @@ const RefundReturnDesk = () => {
                 variant="ghost" 
                 size="icon"
                 onClick={() => navigate("/m/retail/operational/gateway")}
-                className="h-10 w-10 rounded-xl bg-secondary/40 border-border text-foreground hover:bg-white/10"
+                className="h-10 w-10 rounded-xl bg-secondary/40 border-border text-foreground hover:bg-accent"
                 title="Exit to Gateway"
              >
                 <X className="w-4 h-4" />
@@ -192,8 +194,8 @@ const RefundReturnDesk = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 flex-1 overflow-hidden">
           <div className="lg:col-span-3 flex flex-col gap-6 overflow-hidden">
-            <Card className="bg-secondary/40 backdrop-blur-3xl border-border rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col flex-1">
-              <CardHeader className="p-8 border-b border-white/5 space-y-6">
+            <GlassCard className="bg-secondary/40 backdrop-blur-3xl border-border rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col flex-1">
+              <CardHeader className="p-8 border-b border-border/40 space-y-6">
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="relative flex-1 group">
                     <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-muted-foreground group-focus-within:text-destructive transition-colors" />
@@ -246,8 +248,8 @@ const RefundReturnDesk = () => {
                             key={item.itemId}
                             className={`p-6 rounded-[2rem] border transition-all flex items-center justify-between group cursor-pointer ${
                               isSelected
-                                ? "bg-destructive/10 border-destructive/30 shadow-[0_0_40px_rgba(239,68,68,0.1)]"
-                                : "bg-secondary/40 border-border hover:border-white/20"
+                                ? "bg-destructive/10 border-destructive/30 shadow-[0_0_40px_hsl(var(--destructive)/0.1)]"
+                                : "bg-secondary/40 border-border hover:border-foreground/20"
                             }`}
                             onClick={() => toggleItem(item.itemId)}
                           >
@@ -267,7 +269,7 @@ const RefundReturnDesk = () => {
                             <div className="flex items-center gap-12">
                                <div className="text-right">
                                   <div className="text-2xl font-black italic text-foreground tracking-tighter">
-                                     Rp {item.totalPrice.toLocaleString()}
+                                     {formatCurrency(item.totalPrice, "IDR", "id-ID")}
                                   </div>
                                   <div className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">
                                      Settled Value
@@ -292,7 +294,7 @@ const RefundReturnDesk = () => {
                         Reversal Total
                       </div>
                       <div className="text-5xl font-black italic tracking-tighter">
-                        Rp {refundAmount.toLocaleString()}
+                        {formatCurrency(refundAmount, "IDR", "id-ID")}
                       </div>
                     </div>
                     <Button
@@ -306,11 +308,11 @@ const RefundReturnDesk = () => {
                   </div>
                 )}
               </CardContent>
-            </Card>
+            </GlassCard>
           </div>
 
           <div className="flex flex-col gap-8">
-            <Card className="border-none bg-destructive/10 backdrop-blur-3xl shadow-2xl rounded-[2.5rem] overflow-hidden group">
+            <GlassCard className="border-none bg-destructive/10 backdrop-blur-3xl shadow-2xl rounded-[2.5rem] overflow-hidden group">
               <CardHeader className="py-6 px-8 border-b border-destructive/20">
                 <CardTitle className="flex items-center gap-3 text-destructive text-[11px] uppercase font-black tracking-[0.3em] leading-none italic">
                   <ShieldAlert className="w-5 h-5" /> Policy Enforcement
@@ -320,15 +322,15 @@ const RefundReturnDesk = () => {
                 <p className="text-[11px] text-muted-foreground font-bold leading-relaxed italic uppercase tracking-widest">
                   Returns exceeding <span className="text-destructive">Rp 1,000,000</span> will trigger a supervisor biometric request and zone lockdown.
                 </p>
-                <div className="p-4 bg-black/20 rounded-2xl border border-destructive/10 flex items-center gap-4">
+                <div className="p-4 bg-background/40 rounded-2xl border border-destructive/10 flex items-center gap-4">
                    <AlertCircle className="w-5 h-5 text-destructive" />
                    <span className="text-[9px] font-black uppercase text-muted-foreground tracking-widest italic">Vault Lock Active</span>
                 </div>
               </CardContent>
-            </Card>
+            </GlassCard>
 
-            <Card className="flex-1 bg-secondary/40 backdrop-blur-3xl border-border rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col">
-              <CardHeader className="border-b border-white/5 p-8">
+            <GlassCard className="flex-1 bg-secondary/40 backdrop-blur-3xl border-border rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col">
+              <CardHeader className="border-b border-border/40 p-8">
                 <CardTitle className="text-[11px] font-black text-muted-foreground uppercase tracking-[0.4em] italic">
                   Recent Reversals
                 </CardTitle>
@@ -340,7 +342,7 @@ const RefundReturnDesk = () => {
                     { id: "ORD-821", amount: "120,500", time: "1h ago" },
                     { id: "ORD-770", amount: "35,000", time: "3h ago" },
                   ].map((log, i) => (
-                    <div key={i} className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex justify-between items-center hover:bg-secondary/40 transition-all">
+                    <div key={i} className="p-4 rounded-2xl bg-muted/10 border border-border/40 flex justify-between items-center hover:bg-secondary/40 transition-all">
                        <div className="flex items-center gap-4">
                           <History className="w-4 h-4 text-muted-foreground" />
                           <div className="text-[10px] font-black text-foreground italic uppercase tracking-tighter">{log.id}</div>
@@ -353,7 +355,7 @@ const RefundReturnDesk = () => {
                   ))}
                 </div>
               </CardContent>
-            </Card>
+            </GlassCard>
           </div>
         </div>
       </div>

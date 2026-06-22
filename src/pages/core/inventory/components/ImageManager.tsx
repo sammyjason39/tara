@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/core/security/session";
-import { inventoryService } from "@/core/services/inventory/inventoryService";
+import { useItemImages, useUploadImage, useSetPrimaryImage, useDeleteImage } from "../hooks/useInventoryQueries";
 import {
   Dialog,
   DialogContent,
@@ -29,46 +29,24 @@ export function ImageManager({
   onImagesUpdated,
 }: ImageManagerProps) {
   const { session } = useSession();
-  const [images, setImages] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const { data: images = [], isLoading: loading, refetch: fetchImages } = useItemImages(isOpen ? itemId : undefined);
+  const uploadMutation = useUploadImage(itemId);
+  const setPrimaryMutation = useSetPrimaryImage(itemId);
+  const deleteMutation = useDeleteImage(itemId);
   const [error, setError] = useState<string | null>(null);
-
-  const fetchImages = async () => {
-    if (!itemId) return;
-    setLoading(true);
-    try {
-      const data = await inventoryService.listItemImages(session.tenant_id, session, itemId);
-      setImages(data);
-    } catch (err) {
-      console.error("Failed to fetch images:", err);
-      setError("Failed to load images.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isOpen && itemId) {
-      fetchImages();
-    }
-  }, [isOpen, itemId]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setUploading(true);
     setError(null);
     try {
-      await inventoryService.uploadItemImage(session.tenant_id, session, itemId, file);
-      await fetchImages();
+      await uploadMutation.mutateAsync(file);
       onImagesUpdated?.();
     } catch (err) {
       console.error("Upload failed:", err);
       setError("Failed to upload image.");
     } finally {
-      setUploading(false);
       // Clear input
       e.target.value = "";
     }
@@ -76,8 +54,7 @@ export function ImageManager({
 
   const handleDelete = async (imageId: string) => {
     try {
-      await inventoryService.deleteItemImage(session.tenant_id, session, itemId, imageId);
-      await fetchImages();
+      await deleteMutation.mutateAsync(imageId);
       onImagesUpdated?.();
     } catch (err) {
       console.error("Delete failed:", err);
@@ -87,8 +64,7 @@ export function ImageManager({
 
   const handleSetPrimary = async (imageId: string) => {
     try {
-      await inventoryService.setPrimaryItemImage(session.tenant_id, session, itemId, imageId);
-      await fetchImages();
+      await setPrimaryMutation.mutateAsync(imageId);
       onImagesUpdated?.();
     } catch (err) {
       console.error("Set primary failed:", err);
@@ -171,16 +147,16 @@ export function ImageManager({
               className="hidden"
               accept="image/*"
               onChange={handleUpload}
-              disabled={uploading}
+              disabled={uploadMutation.isPending}
             />
             <Button
               asChild
               variant="outline"
-              disabled={uploading}
+              disabled={uploadMutation.isPending}
             >
               <label htmlFor="image-upload" className="cursor-pointer flex items-center gap-2">
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                {uploading ? "Uploading..." : "Upload New Image"}
+                {uploadMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                {uploadMutation.isPending ? "Uploading..." : "Upload New Image"}
               </label>
             </Button>
           </div>

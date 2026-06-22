@@ -11,6 +11,7 @@ import { FilterBar } from "@/core/tools/FilterBar";
 import { useSession } from "@/core/security/session";
 import { trainingService } from "@/core/services/hr/trainingService";
 import { staffService } from "@/core/services/hr/staffService";
+import { EmptyState } from "@/components/shared/AsyncState";
 
 export default function SkillTrack() {
   const session = useSession();
@@ -107,13 +108,24 @@ export default function SkillTrack() {
               </tr>
             </thead>
             <tbody>
-              {(Array.isArray(filteredAssignments) ? filteredAssignments : []).map((assignment) => (
+              {filteredAssignments.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="p-0">
+                    <EmptyState
+                      title="No training assignments"
+                      description="No training assignments match the current search. Assign training to populate this list."
+                    />
+                  </td>
+                </tr>
+              ) : (
+                (Array.isArray(filteredAssignments) ? filteredAssignments : []).map((assignment) => (
                 <tr key={assignment.id} className="border-t">
                   <td className="p-3">{assignment.employeeId}</td>
                   <td className="p-3 text-muted-foreground">{assignment.programId}</td>
                   <td className="p-3 text-muted-foreground">{assignment.status}</td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
         </DataTableShell>
