@@ -333,8 +333,8 @@ export function CoreLayout() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto transition-all">
-          <div className="mx-auto w-full">
+        <main className="flex-1 overflow-hidden transition-all">
+          <div className="mx-auto w-full h-full">
             <PageErrorBoundary key={location.pathname} routeLabel="Core">
               <Outlet />
             </PageErrorBoundary>

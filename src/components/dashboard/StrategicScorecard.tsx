@@ -60,15 +60,15 @@ export const ActionItemsWidget: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-white shadow-xl overflow-hidden">
+    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-card shadow-xl overflow-hidden">
       <div className="p-8 pb-4">
-        <h4 className="text-lg font-black text-muted-foreground">Action Items</h4>
+        <h4 className="text-lg font-black text-foreground">Action Items</h4>
         <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Critical executive tasks</p>
       </div>
       
       <div className="flex-1 px-8 space-y-4">
         {actions.map((action, i) => (
-          <div key={i} className="group relative flex items-start gap-4 rounded-2xl border border-border bg-muted p-4 transition-all hover:bg-white hover:shadow-md cursor-pointer">
+          <div key={i} className="group relative flex items-start gap-4 rounded-2xl border border-border bg-secondary/50 p-4 transition-all hover:bg-secondary hover:shadow-md cursor-pointer">
             <div className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${action.priority === 'high' ? 'bg-destructive' : action.priority === 'medium' ? 'bg-warning' : 'bg-primary'}`} />
             <div className="flex-1">
               <p className="text-xs font-black text-muted-foreground">{action.title}</p>

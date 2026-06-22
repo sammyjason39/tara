@@ -1,5 +1,4 @@
 import React from 'react';
-import { WorkspacePanel } from '@/core/ui/WorkspacePanel';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,13 +17,14 @@ export const AttendanceGauge: React.FC = () => {
   };
 
   return (
-    <WorkspacePanel 
-      title="Today's Attendance" 
-      description="Real-time employee clock-in status"
-      variant="glass"
-      className="cursor-pointer"
+    <div
+      className="rounded-[2.5rem] border border-border bg-card p-6 shadow-xl cursor-pointer transition-all hover:shadow-2xl"
       onClick={() => navigate('/core/hr/scheduling')}
     >
+      <div className="mb-2">
+        <p className="text-sm font-semibold text-foreground">Today's Attendance</p>
+        <p className="text-xs text-muted-foreground">Real-time employee clock-in status</p>
+      </div>
       <div className="relative h-[180px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -41,18 +41,18 @@ export const AttendanceGauge: React.FC = () => {
               stroke="none"
             >
               <Cell fill={getColor(value)} />
-              <Cell fill="#f1f5f9" />
+              <Cell fill="hsl(var(--border))" />
             </Pie>
           </PieChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 top-12 flex flex-col items-center justify-center">
-          <p className="text-3xl font-black text-muted-foreground">{value}%</p>
+          <p className="text-3xl font-black text-foreground">{value}%</p>
           <p className="text-[10px] font-black uppercase text-muted-foreground">Optimal</p>
         </div>
       </div>
       <div className="text-center mt-[-20px]">
         <p className="text-xs font-bold text-muted-foreground">432 / 460 present</p>
       </div>
-    </WorkspacePanel>
+    </div>
   );
 };
