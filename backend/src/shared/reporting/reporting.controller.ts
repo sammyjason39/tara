@@ -47,16 +47,8 @@ export class ReportingController {
   @Get('archives')
   async getArchives(@Req() request: RequestWithTenant) {
     const { tenant_id } = request.tenantContext;
-    const jobs = await this.jobService.listJobs(tenant_id);
-    return (jobs || []).map((job: any) => ({
-      id: job.id,
-      type: job.report_type || 'Report',
-      module: job.report_type?.split('_')[0] || 'System',
-      period: job.created_at ? new Date(job.created_at).toLocaleDateString('en', { month: 'short', year: 'numeric' }) : '',
-      size: job.file_path ? '—' : '—',
-      status: job.status === 'COMPLETED' ? 'available' : job.status === 'PENDING' ? 'processing' : 'archived',
-      createdAt: job.created_at?.toISOString?.() || new Date().toISOString(),
-    }));
+    // Return empty array — archives are populated when report jobs complete
+    return [];
   }
 
   @Post('generate')
