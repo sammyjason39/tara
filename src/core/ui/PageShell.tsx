@@ -32,7 +32,7 @@ export function PageShell({
             </aside>
           )}
           
-          <section className="flex-1 overflow-y-auto overflow-x-hidden relative bg-surface-1/30 premium-scrollbar transition-premium">
+          <section className="flex-1 overflow-y-auto overflow-x-hidden relative bg-background premium-scrollbar transition-premium">
             <div className="w-full">
               {children}
             </div>

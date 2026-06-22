@@ -98,7 +98,7 @@ export default function DepartmentWorkspaceLayout({
   const [textC, bgC, shadowC, borderLC, borderC20, hoverTextC, fromC5] = c.split(" ");
 
   return (
-    <div className="h-full bg-muted dark:bg-muted font-sans overflow-hidden flex flex-col">
+    <div className="h-full bg-background font-sans overflow-hidden flex flex-col">
       {/* Mobile nav overlay */}
       {mobileNavOpen && (
         <div
@@ -300,7 +300,7 @@ export default function DepartmentWorkspaceLayout({
           </div>
         }
       >
-        <div className="p-0 h-full bg-muted dark:bg-muted">
+        <div className="p-0 h-full">
           <ErrorBoundary>
             {children || <Outlet />}
           </ErrorBoundary>
