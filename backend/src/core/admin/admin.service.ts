@@ -309,8 +309,8 @@ export class AdminService {
         const [leads, qualified, proposal, negotiation, won] = await Promise.all([
           this.prisma.sales_leads?.count({ where: { tenant_id } }) || Promise.resolve(0),
           this.prisma.sales_leads?.count({ where: { tenant_id, status: 'QUALIFIED' } }) || Promise.resolve(0),
-          this.prisma.sales_quotations?.count({ where: { tenant_id, status: 'SENT' } }) || Promise.resolve(0),
-          this.prisma.sales_quotations?.count({ where: { tenant_id, status: 'NEGOTIATION' } }) || Promise.resolve(0),
+          this.prisma.sales_quotes?.count({ where: { tenant_id, status: 'SENT' } }) || Promise.resolve(0),
+          this.prisma.sales_quotes?.count({ where: { tenant_id, status: 'NEGOTIATION' } }) || Promise.resolve(0),
           this.prisma.sales_orders?.count({ where: { tenant_id, status: { in: ['CONFIRMED', 'COMPLETED'] } } }) || Promise.resolve(0),
         ]);
         return { leads, qualified, proposal, negotiation, won };
@@ -337,7 +337,7 @@ export class AdminService {
             where: { tenant_id, status: 'PENDING' },
             orderBy: { created_at: 'desc' },
             take: 5,
-            select: { id: true, created_at: true, type: true },
+            select: { id: true, created_at: true, status: true },
           });
           return items;
         } catch { return []; }
@@ -374,9 +374,9 @@ export class AdminService {
         payroll: payrollData,
         actionItems: (actionItems as any[]).map((item: any) => ({
           id: item.id,
-          title: item.type || 'Pending Request',
+          title: item.status || 'Pending Request',
           time: item.created_at ? this.timeAgo(item.created_at) : 'recently',
-          priority: item.type === 'APPROVAL' ? 'high' : item.type === 'REVIEW' ? 'medium' : 'low',
+          priority: item.status === 'APPROVAL' ? 'high' : item.status === 'REVIEW' ? 'medium' : 'low',
         })),
       },
       timeseries: {
