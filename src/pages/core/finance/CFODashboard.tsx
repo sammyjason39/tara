@@ -128,7 +128,7 @@ const CFODashboardContent: React.FC = () => {
       deepLink: window.location.href,
     };
 
-    // Mock Chat Integration
+    // Chat integration: prepare context for ops-comms channel
     console.log("[CHAT_INTEGRATION] Discussing Report context:", chatContext);
 
     toast({ 

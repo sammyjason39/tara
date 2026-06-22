@@ -1,4 +1,3 @@
-// @audit-ignore: uses financeApiClient for real asset data, mocking comment refers to audit pack download only
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -372,24 +371,27 @@ export default function Assets() {
 
   const downloadAuditPack = async (assetId: string, format: "JSON" | "PDF") => {
     try {
-      // Mocking download for now as API bridge doesn't support blobs yet
-      const artifact: any = { 
-        filename: `audit-${assetId}.${format.toLowerCase()}`, 
-        mimeType: format === "JSON" ? "application/json" : "application/pdf",
-        data: format === "JSON" ? "{}" : new ArrayBuffer(0) 
-      };
-      // const artifact = await financeApiClient.downloadAssetAuditPack(session.tenant_id, assetId, format);
-      const blob = new Blob([artifact.data as any], { type: artifact.mimeType });
+      const response = await fetch(`/api/v1/finance/assets/${assetId}/audit-pack?format=${format}`, {
+        headers: {
+          'Authorization': `Bearer ${(session as any).token || ''}`,
+          'x-tenant-id': session.tenant_id || '',
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`Download failed: ${response.status}`);
+      }
+      const blob = await response.blob();
+      const filename = `audit-${assetId}.${format.toLowerCase()}`;
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = artifact.filename;
+      anchor.download = filename;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
       setErrorMessage(null);
-      setStatusMessage(`Downloaded ${artifact.filename}.`);
+      setStatusMessage(`Downloaded ${filename}.`);
     } catch (error) {
       setStatusMessage(null);
       setErrorMessage(error instanceof Error ? error.message : "Failed to download audit pack.");
