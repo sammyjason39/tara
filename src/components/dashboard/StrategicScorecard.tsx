@@ -10,10 +10,10 @@ export const EnterpriseHealthWidget: React.FC = () => {
   const data = [{ value: score }, { value: 100 - score }];
 
   return (
-    <div className="group relative flex flex-col items-center justify-center rounded-[2.5rem] border border-border bg-muted p-7 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-500/20 overflow-hidden">
+    <div className="group relative flex flex-col items-center justify-center rounded-[2.5rem] border border-border bg-card p-7 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-indigo-500/20 overflow-hidden">
       <div className="absolute top-6 left-7 flex flex-col">
          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Enterprise</span>
-         <span className="text-sm font-black text-white">Health Index</span>
+         <span className="text-sm font-black text-foreground">Health Index</span>
       </div>
       
       <div className="relative h-28 w-28 mt-4">
@@ -36,7 +36,7 @@ export const EnterpriseHealthWidget: React.FC = () => {
           </PieChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-3xl font-black text-white">{score}</span>
+          <span className="text-3xl font-black text-foreground">{score}</span>
           <span className="text-[8px] font-black uppercase text-primary">Score</span>
         </div>
       </div>
@@ -84,7 +84,7 @@ export const ActionItemsWidget: React.FC = () => {
       <div className="p-8 pt-4">
         <Button 
           variant="outline" 
-          className="w-full rounded-2xl h-14 text-xs font-black uppercase tracking-[0.2em] border-border hover:bg-primary hover:text-white hover:border-primary transition-all active:scale-[0.98] shadow-sm"
+          className="w-full rounded-2xl h-14 text-xs font-black uppercase tracking-[0.2em] border-border hover:bg-primary hover:text-foreground hover:border-primary transition-all active:scale-[0.98] shadow-sm"
           onClick={() => navigate('/core/workflow')}
         >
           VIEW ALL TASKS

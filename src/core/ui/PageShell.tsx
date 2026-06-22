@@ -33,7 +33,7 @@ export function PageShell({
           )}
           
           <section className="flex-1 overflow-y-auto overflow-x-hidden relative bg-surface-1/30 premium-scrollbar transition-premium">
-            <div className="container max-w-7xl mx-auto p-4 md:p-8 lg:p-12">
+            <div className="w-full">
               {children}
             </div>
             {footer && <div className="p-8 border-t border-border/50 mt-auto">{footer}</div>}

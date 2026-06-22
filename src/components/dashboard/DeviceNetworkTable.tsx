@@ -26,14 +26,14 @@ export const DeviceNetworkTable: React.FC<DeviceNetworkTableProps> = ({ data = [
   };
 
   return (
-    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group overflow-hidden relative">
+    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-card p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group overflow-hidden relative">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary border border-primary">
             <Radio className="h-6 w-6" />
           </div>
           <div>
-            <h4 className="text-xl font-black italic uppercase tracking-tighter text-white">Edge Infrastructure</h4>
+            <h4 className="text-xl font-black italic uppercase tracking-tighter text-foreground">Edge Infrastructure</h4>
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Live status of hardware nodes & IoT network</p>
           </div>
         </div>
@@ -64,7 +64,7 @@ export const DeviceNetworkTable: React.FC<DeviceNetworkTableProps> = ({ data = [
                         <Icon className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="text-xs font-black text-white">{device.name}</p>
+                        <p className="text-xs font-black text-foreground">{device.name}</p>
                         <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{device.type}</p>
                       </div>
                     </div>

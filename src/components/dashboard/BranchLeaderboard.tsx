@@ -18,10 +18,10 @@ export const BranchLeaderboard: React.FC<BranchLeaderboardProps> = ({ data }) =>
   })).sort((a, b) => b.revenue - a.revenue);
 
   return (
-    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10">
+    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-card p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h4 className="text-xl font-black italic uppercase tracking-tighter text-white">Regional Performance</h4>
+          <h4 className="text-xl font-black italic uppercase tracking-tighter text-foreground">Regional Performance</h4>
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Top performing branches by revenue</p>
         </div>
         <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center border border-primary">
@@ -48,12 +48,12 @@ export const BranchLeaderboard: React.FC<BranchLeaderboardProps> = ({ data }) =>
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;
                     return (
-                      <div className="rounded-2xl border border-white/10 bg-muted p-4 shadow-2xl backdrop-blur-xl">
+                      <div className="rounded-2xl border border-white/10 bg-card p-4 shadow-2xl backdrop-blur-xl">
                         <div className="flex items-center gap-2 mb-2">
                           <MapPin className="h-3 w-3 text-primary" />
                           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{data.name}</p>
                         </div>
-                        <p className="text-xl font-black text-white">${(data.revenue / 1000).toFixed(1)}k</p>
+                        <p className="text-xl font-black text-foreground">${(data.revenue / 1000).toFixed(1)}k</p>
                         <div className="mt-2 flex items-center gap-1.5">
                            <div className="h-1 w-12 bg-white/5 rounded-full overflow-hidden">
                               <div className="h-full bg-primary" style={{ width: `${data.percentOfTotal}%` }} />
@@ -104,7 +104,7 @@ export const BranchLeaderboard: React.FC<BranchLeaderboardProps> = ({ data }) =>
             )}>
               {i + 1}
             </div>
-            <p className="text-[8px] font-black uppercase text-muted-foreground truncate w-full group-hover:text-white transition-colors">{d.name}</p>
+            <p className="text-[8px] font-black uppercase text-muted-foreground truncate w-full group-hover:text-foreground transition-colors">{d.name}</p>
           </div>
         ))}
       </div>

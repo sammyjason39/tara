@@ -18,12 +18,12 @@ export const PayrollBurnTrendChart: React.FC = () => {
 
   return (
     <div 
-      className="flex flex-col h-full rounded-[2.5rem] border border-border bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-rose-500/10 group cursor-pointer overflow-hidden relative"
+      className="flex flex-col h-full rounded-[2.5rem] border border-border bg-card p-8 shadow-2xl transition-all duration-500 hover:shadow-rose-500/10 group cursor-pointer overflow-hidden relative"
       onClick={() => navigate('/core/hr/paycycle')}
     >
       <div className="flex items-center justify-between mb-6 relative z-10">
         <div>
-          <h4 className="text-lg font-black italic uppercase tracking-tighter text-white">Payroll Burn Trend</h4>
+          <h4 className="text-lg font-black italic uppercase tracking-tighter text-foreground">Payroll Burn Trend</h4>
           <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Monthly expenditure trajectory</p>
         </div>
         <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:bg-destructive transition-all">

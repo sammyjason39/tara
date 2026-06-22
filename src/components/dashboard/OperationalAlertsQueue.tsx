@@ -31,19 +31,19 @@ export const OperationalAlertsQueue: React.FC<OperationalAlertsQueueProps> = ({ 
   };
 
   return (
-    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10">
+    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-card p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-destructive text-destructive border border-destructive/20">
             <ShieldAlert className="h-5 w-5" />
           </div>
           <div>
-            <h4 className="text-sm font-black uppercase tracking-[0.15em] text-white">Alerts Queue</h4>
+            <h4 className="text-sm font-black uppercase tracking-[0.15em] text-foreground">Alerts Queue</h4>
             <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Critical issues requiring intervention</p>
           </div>
         </div>
         <div className="flex h-8 w-16 items-center justify-center rounded-lg bg-white/5 border border-white/10">
-           <span className="text-[10px] font-black text-white">{data.length}</span>
+           <span className="text-[10px] font-black text-foreground">{data.length}</span>
            <span className="text-[8px] font-bold text-muted-foreground ml-1 uppercase tracking-tighter">Live</span>
         </div>
       </div>
@@ -67,13 +67,13 @@ export const OperationalAlertsQueue: React.FC<OperationalAlertsQueueProps> = ({ 
                   </div>
                   <div className="flex-1 space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-white transition-colors">{alert.module}</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">{alert.module}</span>
                       <span className="text-[9px] font-bold text-muted-foreground">{new Date(alert.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
-                    <p className="text-xs font-black text-white">{alert.title}</p>
+                    <p className="text-xs font-black text-foreground">{alert.title}</p>
                     <p className="text-[10px] leading-relaxed text-muted-foreground group-hover:text-muted-foreground transition-colors line-clamp-2">{alert.detail}</p>
                   </div>
-                  <ArrowRight className="h-4 w-4 self-center text-muted-foreground group-hover:text-white transition-colors" />
+                  <ArrowRight className="h-4 w-4 self-center text-muted-foreground group-hover:text-foreground transition-colors" />
                 </div>
               );
             })

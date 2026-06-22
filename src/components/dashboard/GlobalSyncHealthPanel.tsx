@@ -14,10 +14,10 @@ interface GlobalSyncHealthPanelProps {
 
 export const GlobalSyncHealthPanel: React.FC<GlobalSyncHealthPanelProps> = ({ data }) => {
   return (
-    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 overflow-hidden group">
+    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-card p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 overflow-hidden group">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h4 className="text-xl font-black italic uppercase tracking-tighter text-white">Global Sync Fabric</h4>
+          <h4 className="text-xl font-black italic uppercase tracking-tighter text-foreground">Global Sync Fabric</h4>
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Database replication and outbox event integrity</p>
         </div>
         <div className={cn(
@@ -53,7 +53,7 @@ export const GlobalSyncHealthPanel: React.FC<GlobalSyncHealthPanelProps> = ({ da
               <span className="text-[10px] font-black uppercase tracking-widest">Pending</span>
               <RefreshCcw className="h-4 w-4 animate-spin-slow text-primary" />
             </div>
-            <p className="text-4xl font-black tracking-tighter text-white">{data.pending}</p>
+            <p className="text-4xl font-black tracking-tighter text-foreground">{data.pending}</p>
           </div>
 
           <div className={cn(
@@ -64,14 +64,14 @@ export const GlobalSyncHealthPanel: React.FC<GlobalSyncHealthPanelProps> = ({ da
               <span className="text-[10px] font-black uppercase tracking-widest">Failed</span>
               <AlertTriangle className={cn("h-4 w-4", data.failed > 0 ? "text-destructive animate-bounce" : "text-muted-foreground")} />
             </div>
-            <p className={cn("text-4xl font-black tracking-tighter", data.failed > 0 ? "text-destructive" : "text-white")}>{data.failed}</p>
+            <p className={cn("text-4xl font-black tracking-tighter", data.failed > 0 ? "text-destructive" : "text-foreground")}>{data.failed}</p>
           </div>
 
           <div className="col-span-1 sm:col-span-2 flex flex-col sm:flex-row items-center justify-between gap-4 px-2 pt-4 border-t border-white/5">
             <div className="flex items-center gap-3">
               <div className="h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_8px_rgb(16,185,129)]" />
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                Latency: <span className="text-white font-black">{data.latencyMin}m</span>
+                Latency: <span className="text-foreground font-black">{data.latencyMin}m</span>
               </span>
             </div>
             <span className="text-[9px] font-black text-muted-foreground uppercase tracking-tighter">

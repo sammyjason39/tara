@@ -16,7 +16,7 @@ export const SalesPipelineFunnel: React.FC = () => {
 
   return (
     <div 
-      className="flex flex-col h-full rounded-[3rem] border border-border bg-muted p-10 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group cursor-pointer overflow-hidden relative"
+      className="flex flex-col h-full rounded-[3rem] border border-border bg-card p-10 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group cursor-pointer overflow-hidden relative"
       onClick={() => navigate('/core/sales/pipeline')}
     >
       <div className="flex items-center justify-between mb-10 relative z-10">
@@ -25,7 +25,7 @@ export const SalesPipelineFunnel: React.FC = () => {
             <BarChart3 className="h-6 w-6" />
           </div>
           <div>
-            <h4 className="text-xl font-black italic uppercase tracking-tighter text-white">Sales Pipeline</h4>
+            <h4 className="text-xl font-black italic uppercase tracking-tighter text-foreground">Sales Pipeline</h4>
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Conversion from lead to closed-won</p>
           </div>
         </div>
@@ -44,8 +44,8 @@ export const SalesPipelineFunnel: React.FC = () => {
                 s.color, s.glow
               )}
             >
-              <span className="text-[10px] font-black text-white uppercase tracking-widest">{s.label}</span>
-              <span className="text-xs font-black text-white">{s.value}</span>
+              <span className="text-[10px] font-black text-foreground uppercase tracking-widest">{s.label}</span>
+              <span className="text-xs font-black text-foreground">{s.value}</span>
             </div>
             {i < stages.length - 1 && (
               <div className="h-2 w-0.5 bg-white/5 group-hover/stage:bg-white/20 transition-colors" />
@@ -59,7 +59,7 @@ export const SalesPipelineFunnel: React.FC = () => {
             <TrendingUp className="h-4 w-4 text-success" />
             <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Win Rate</span>
          </div>
-         <span className="text-lg font-black text-white">7.1%</span>
+         <span className="text-lg font-black text-foreground">7.1%</span>
       </div>
       
       {/* Subtle background glow */}

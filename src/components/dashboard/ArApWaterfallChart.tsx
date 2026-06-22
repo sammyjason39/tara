@@ -34,7 +34,7 @@ export const ArApWaterfallChart: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col h-full rounded-[2.5rem] glass-card p-8 card-premium overflow-hidden group">
+    <div className="flex flex-col h-full rounded-[2.5rem] bg-card border border-border p-8 shadow-xl overflow-hidden group">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h4 className="text-xl font-black italic uppercase tracking-tighter text-foreground">AR/AP Aging Waterfall</h4>

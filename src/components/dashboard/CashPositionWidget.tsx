@@ -17,12 +17,12 @@ export const CashPositionWidget: React.FC = () => {
 
   return (
     <div 
-      className="flex flex-col h-full rounded-[3rem] border border-border bg-muted p-10 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group cursor-pointer overflow-hidden relative"
+      className="flex flex-col h-full rounded-[3rem] border border-border bg-card p-10 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group cursor-pointer overflow-hidden relative"
       onClick={() => navigate('/core/finance/treasury')}
     >
       <div className="flex items-center justify-between mb-8 relative z-10">
         <div>
-          <h4 className="text-xl font-black italic uppercase tracking-tighter text-white">Cash Position</h4>
+          <h4 className="text-xl font-black italic uppercase tracking-tighter text-foreground">Cash Position</h4>
           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Liquidity across all sources</p>
         </div>
         <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center border border-primary">
@@ -52,7 +52,7 @@ export const CashPositionWidget: React.FC = () => {
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">Total Net</p>
-            <p className="text-3xl font-black text-white tracking-tighter">${(total / 1000000).toFixed(1)}M</p>
+            <p className="text-3xl font-black text-foreground tracking-tighter">${(total / 1000000).toFixed(1)}M</p>
           </div>
         </div>
 
@@ -60,17 +60,17 @@ export const CashPositionWidget: React.FC = () => {
           {data.map((item, i) => (
             <div key={i} className="flex items-center justify-between group/item">
               <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 border border-white/5 text-muted-foreground group-hover/item:text-white group-hover/item:border-white/10 transition-all">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 border border-white/5 text-muted-foreground group-hover/item:text-foreground group-hover/item:border-white/10 transition-all">
                   <item.icon className="h-5 w-5" />
                 </div>
                 <div>
-                   <p className="text-xs font-black text-muted-foreground group-hover/item:text-white transition-colors uppercase tracking-widest">{item.name}</p>
+                   <p className="text-xs font-black text-muted-foreground group-hover/item:text-foreground transition-colors uppercase tracking-widest">{item.name}</p>
                    <div className="mt-1 h-1 w-24 bg-white/5 rounded-full overflow-hidden">
                       <div className="h-full transition-all duration-1000" style={{ width: `${(item.value / total) * 100}%`, backgroundColor: item.color }} />
                    </div>
                 </div>
               </div>
-              <p className="text-sm font-black text-white">${(item.value / 1000).toFixed(0)}k</p>
+              <p className="text-sm font-black text-foreground">${(item.value / 1000).toFixed(0)}k</p>
             </div>
           ))}
           <div className="mt-6 border-t border-white/5 pt-6 flex items-center justify-between">

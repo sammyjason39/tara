@@ -30,20 +30,20 @@ export const WorkflowPipeline: React.FC<WorkflowPipelineProps> = ({ data = [] })
   };
 
   return (
-    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10">
+    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-card p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-muted-foreground border border-white/10 group-hover:text-white transition-colors">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-muted-foreground border border-white/10 group-hover:text-foreground transition-colors">
             <GitBranch className="h-5 w-5" />
           </div>
           <div>
-            <h4 className="text-sm font-black uppercase tracking-[0.15em] text-white">Operational Pipeline</h4>
+            <h4 className="text-sm font-black uppercase tracking-[0.15em] text-foreground">Operational Pipeline</h4>
             <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Active multi-step business processes</p>
           </div>
         </div>
         <button 
           onClick={() => navigate('/core/workflow')}
-          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-muted-foreground hover:text-white hover:bg-white/10 transition-all"
+          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 text-muted-foreground hover:text-foreground hover:bg-white/10 transition-all"
           title="Go to Workflow Inbox"
         >
           <ArrowRight className="h-4 w-4" />
@@ -62,7 +62,7 @@ export const WorkflowPipeline: React.FC<WorkflowPipelineProps> = ({ data = [] })
                     {item.status}
                   </div>
                 </div>
-                <p className="text-xs font-black text-white">{item.title}</p>
+                <p className="text-xs font-black text-foreground">{item.title}</p>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1.5 text-[9px] font-black text-muted-foreground">
                     <Clock className="h-3 w-3" /> {item.timeElapsed}
@@ -87,7 +87,7 @@ export const WorkflowPipeline: React.FC<WorkflowPipelineProps> = ({ data = [] })
       </div>
 
       <button 
-        className="mt-6 w-full py-4 rounded-2xl border border-white/5 bg-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:bg-primary hover:text-white hover:border-primary transition-all active:scale-[0.98]"
+        className="mt-6 w-full py-4 rounded-2xl border border-white/5 bg-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:bg-primary hover:text-foreground hover:border-primary transition-all active:scale-[0.98]"
         onClick={() => navigate('/core/workflow')}
       >
         ACCESS CONTROL CENTER

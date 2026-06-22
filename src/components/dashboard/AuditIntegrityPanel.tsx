@@ -17,14 +17,14 @@ interface AuditIntegrityPanelProps {
 
 export const AuditIntegrityPanel: React.FC<AuditIntegrityPanelProps> = ({ data, onVerify, loading }) => {
   return (
-    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 overflow-hidden group">
+    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-card p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 overflow-hidden group">
       <div className="flex items-center justify-between mb-10">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary border border-primary">
             <Fingerprint className="h-5 w-5" />
           </div>
           <div>
-            <h4 className="text-xl font-black italic uppercase tracking-tighter text-white">Audit Integrity</h4>
+            <h4 className="text-xl font-black italic uppercase tracking-tighter text-foreground">Audit Integrity</h4>
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Cryptographic verification of system logs</p>
           </div>
         </div>
@@ -33,7 +33,7 @@ export const AuditIntegrityPanel: React.FC<AuditIntegrityPanelProps> = ({ data, 
           size="sm" 
           disabled={loading}
           onClick={onVerify}
-          className="h-10 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:bg-white/10 hover:text-white transition-all"
+          className="h-10 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:bg-white/10 hover:text-foreground transition-all"
         >
           <RefreshCw className={cn("mr-2 h-3.5 w-3.5", loading && "animate-spin")} />
           Re-Verify
@@ -51,7 +51,7 @@ export const AuditIntegrityPanel: React.FC<AuditIntegrityPanelProps> = ({ data, 
             {data.status === 'CLEAN' ? <ShieldCheck className="h-14 w-14" /> : <ShieldAlert className="h-14 w-14" />}
           </div>
           <div className="mt-6 text-center">
-            <p className="text-4xl font-black tracking-tighter text-white">{data.score}%</p>
+            <p className="text-4xl font-black tracking-tighter text-foreground">{data.score}%</p>
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mt-1">Integrity Score</p>
           </div>
         </div>
@@ -63,7 +63,7 @@ export const AuditIntegrityPanel: React.FC<AuditIntegrityPanelProps> = ({ data, 
                 <Lock className="h-3 w-3" />
                 <span className="text-[10px] font-black uppercase tracking-widest">Verified</span>
               </div>
-              <p className="text-3xl font-black tracking-tighter text-white">4.2k+</p>
+              <p className="text-3xl font-black tracking-tighter text-foreground">4.2k+</p>
             </div>
             <div className="space-y-2 group/stat">
               <div className={cn(
@@ -73,7 +73,7 @@ export const AuditIntegrityPanel: React.FC<AuditIntegrityPanelProps> = ({ data, 
                 <Unlock className="h-3 w-3" />
                 <span className="text-[10px] font-black uppercase tracking-widest">Broken</span>
               </div>
-              <p className={cn("text-3xl font-black tracking-tighter", data.brokenCount > 0 ? "text-destructive" : "text-white")}>
+              <p className={cn("text-3xl font-black tracking-tighter", data.brokenCount > 0 ? "text-destructive" : "text-foreground")}>
                 {data.brokenCount}
               </p>
             </div>

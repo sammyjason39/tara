@@ -34,9 +34,9 @@ export const GlobalEventFeed: React.FC<GlobalEventFeedProps> = ({ activities = [
   };
 
   return (
-    <div className="flex flex-col h-full rounded-[3rem] border border-border bg-muted p-10 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group overflow-hidden relative">
+    <div className="flex flex-col h-full rounded-[3rem] border border-border bg-card p-10 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group overflow-hidden relative">
       <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:opacity-10 transition-opacity">
-         <Globe className="h-40 w-40 text-white" />
+         <Globe className="h-40 w-40 text-foreground" />
       </div>
 
       <div className="flex items-center justify-between mb-10 relative z-10">
@@ -45,7 +45,7 @@ export const GlobalEventFeed: React.FC<GlobalEventFeedProps> = ({ activities = [
             <Terminal className="h-6 w-6" />
           </div>
           <div>
-            <h4 className="text-xl font-black italic uppercase tracking-tighter text-white">Global Event Telemetry</h4>
+            <h4 className="text-xl font-black italic uppercase tracking-tighter text-foreground">Global Event Telemetry</h4>
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Real-time multi-tenant activity stream</p>
           </div>
         </div>
@@ -71,7 +71,7 @@ export const GlobalEventFeed: React.FC<GlobalEventFeedProps> = ({ activities = [
               )} />
               <div className="flex-1 space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-black text-white group-hover/item:text-primary transition-colors">{activity.title}</p>
+                  <p className="text-sm font-black text-foreground group-hover/item:text-primary transition-colors">{activity.title}</p>
                   <span className="text-[9px] font-black uppercase text-muted-foreground tracking-tighter">{formatDistanceToNow(new Date(activity.time))} ago</span>
                 </div>
                 <p className="text-[11px] font-medium text-muted-foreground line-clamp-2 leading-relaxed group-hover/item:text-muted-foreground transition-colors">{activity.detail}</p>

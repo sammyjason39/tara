@@ -13,19 +13,19 @@ export const InventoryHealthWidget: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-muted p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group overflow-hidden relative">
+    <div className="flex flex-col h-full rounded-[2.5rem] border border-border bg-card p-8 shadow-2xl transition-all duration-500 hover:shadow-indigo-500/10 group overflow-hidden relative">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-muted-foreground border border-white/10 group-hover:text-white transition-colors">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-muted-foreground border border-white/10 group-hover:text-foreground transition-colors">
             <Boxes className="h-5 w-5" />
           </div>
           <div>
-            <h4 className="text-sm font-black uppercase tracking-[0.15em] text-white">Inventory Health</h4>
+            <h4 className="text-sm font-black uppercase tracking-[0.15em] text-foreground">Inventory Health</h4>
             <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Stock levels & velocity</p>
           </div>
         </div>
         <div className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
-           <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-white transition-colors" />
+           <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
         </div>
       </div>
 
@@ -41,14 +41,14 @@ export const InventoryHealthWidget: React.FC = () => {
               </div>
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{m.label}</span>
             </div>
-            <span className="text-xl font-black text-white">{m.value}</span>
+            <span className="text-xl font-black text-foreground">{m.value}</span>
           </div>
         ))}
       </div>
       
       <button 
         onClick={() => navigate('/core/inventory/stock')}
-        className="mt-6 w-full py-4 rounded-2xl border border-white/5 bg-white/5 text-[9px] font-black uppercase tracking-[0.25em] text-muted-foreground hover:bg-primary hover:text-white hover:border-primary transition-all active:scale-[0.98]"
+        className="mt-6 w-full py-4 rounded-2xl border border-white/5 bg-white/5 text-[9px] font-black uppercase tracking-[0.25em] text-muted-foreground hover:bg-primary hover:text-foreground hover:border-primary transition-all active:scale-[0.98]"
       >
         ANALYSIS CONSOLE
       </button>
