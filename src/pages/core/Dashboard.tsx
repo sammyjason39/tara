@@ -47,16 +47,8 @@ const SECTIONS = [
     title: "STRATEGIC",
     items: [
       { id: 'overview', icon: LayoutDashboard, label: "Command Overview", to: "/core" },
-      { id: 'trajectory', icon: TrendingUp, label: "Growth Trajectory", to: "/core/trajectory" },
-      { id: 'risk', icon: Target, label: "Risk Matrix", to: "/core/risk" },
     ]
   },
-  {
-    title: "HISTORICAL",
-    items: [
-      { id: 'archives', icon: History, label: "Data Archives", to: "/core/archives" },
-    ]
-  }
 ];
 
 export default function CoreDashboard() {
