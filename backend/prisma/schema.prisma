@@ -288,7 +288,6 @@ model tenants {
   workflow_definitions                   workflow_definitions[]
   workflow_instances                     workflow_instances[]
   workflow_requests                      workflow_requests[]
-  void_requests                          void_requests[]
 }
 
 model accounting_periods {
