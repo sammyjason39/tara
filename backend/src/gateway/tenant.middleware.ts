@@ -32,8 +32,14 @@ export class TenantMiddleware implements NestMiddleware {
        return next();
     }
 
-    // Bypass for public inventory images
-    if (req.originalUrl?.includes("/inventory/images/") || req.url?.includes("/inventory/images/")) {
+    // Bypass for auth routes (login, register, forgot-password)
+    const fullUrl = req.originalUrl || req.url || '';
+    if (fullUrl.includes('/auth/') || fullUrl.startsWith('/auth') || fullUrl.includes('/v1/auth/')) {
+       return next();
+    }
+
+    // Bypass for monitoring/health checks
+    if (fullUrl.includes('/monitoring/') || fullUrl.includes('/v1/monitoring/')) {
        return next();
     }
 
