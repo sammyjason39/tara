@@ -148,21 +148,15 @@ project-tara/
 
 ## Dokumentasi Teknis
 
-Untuk developer, dokumentasi lengkap tersedia di folder [`docs/`](./docs/):
+Untuk developer, dokumentasi lengkap tersedia di folder [`docs/`](./docs/README.md):
 
-| Dokumen | Isi |
-|---------|-----|
-| [Arsitektur Sistem](./docs/ARCHITECTURE.md) | Diagram arsitektur, layer, dan design decisions |
-| [Database Schema](./docs/DATABASE.md) | Semua tabel, relasi, dan indexing strategy |
-| [API Reference](./docs/API.md) | Endpoint lengkap, request/response, autentikasi |
-| [Agen Otonom](./docs/AGENTS.md) | 7 agen, cara kerja, event, dan konfigurasi |
-| [Hermes AI Integration](./backend/src/core/hr/hermes/README.md) | Integrasi AI agentic, action gateway, safety guardrails |
-| [Hermes SDK](./packages/hermes-sdk/README.md) | SDK untuk menghubungkan Hermes VPS ke TARA via SSH tunnel |
-| [Hermes Setup Guide](./packages/hermes-sdk/SETUP_INSTRUCTIONS.md) | Panduan lengkap setup Hermes (step-by-step) |
-| [Deployment](./docs/DEPLOYMENT.md) | Docker, environment variables, production setup |
-| [Frontend](./docs/FRONTEND.md) | Routing, design system, tema, dan komponen |
-| [Security](./docs/SECURITY.md) | Autentikasi, otorisasi, enkripsi, OWASP |
-| [Changelog](./CHANGELOG.md) | Riwayat versi dan catatan rilis |
+| Kategori | Dokumen |
+|----------|---------|
+| **Backend** | [Arsitektur](./docs/backend/ARCHITECTURE.md), [API](./docs/backend/API.md), [Database](./docs/backend/DATABASE.md), [Agen](./docs/backend/AGENTS.md), [Security](./docs/backend/SECURITY.md) |
+| **Frontend** | [Frontend Guide](./docs/frontend/FRONTEND.md) |
+| **Hermes AI** | [Module](./docs/hermes/HERMES_MODULE.md), [SDK](./docs/hermes/HERMES_SDK.md), [Setup Guide](./docs/hermes/SETUP_INSTRUCTIONS.md), [WhatsApp](./docs/hermes/WHATSAPP_AGENT.md) |
+| **Deployment** | [Deployment Guide](./docs/DEPLOYMENT.md) |
+| **Changelog** | [Changelog](./CHANGELOG.md) |
 
 ---
 
