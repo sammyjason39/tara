@@ -4,6 +4,19 @@
 
 This module provides the integration layer between TARA HR System and the **Hermes** external LLM-based agentic AI system.
 
+**Hermes runs on a separate VPS** and connects to TARA over an SSH tunnel. See [`packages/hermes-sdk/SETUP_INSTRUCTIONS.md`](../../../packages/hermes-sdk/SETUP_INSTRUCTIONS.md) for the full setup guide.
+
+### Deployment Architecture
+
+```
+┌─────────────────────────┐         SSH (port 22)         ┌─────────────────────────┐
+│     HERMES VPS          │ ─────────────────────────────► │     TARA VPS            │
+│                         │                                │     43.156.118.56       │
+│  LLM Agent Code         │         Tunnel forwards        │                         │
+│  + @tara/hermes-sdk     │ ◄────── localhost:3081 ──────► │  tara-backend (Docker)  │
+└─────────────────────────┘                                └─────────────────────────┘
+```
+
 ### Design Philosophy
 
 - **Hermes reads events** from TARA via WebSocket (Event Stream)
@@ -136,3 +149,48 @@ Managed via `/admin/hermes` endpoints:
   max_suggestions_per_agent_per_day: 20,
 }
 ```
+
+
+## Hermes SDK (for Separate VPS)
+
+The `@tara/hermes-sdk` package (in `packages/hermes-sdk/`) provides everything needed for the Hermes VPS to connect:
+
+```typescript
+import { HermesClient, SSHTunnel } from '@tara/hermes-sdk';
+
+const tunnel = new SSHTunnel({
+  sshHost: '43.156.118.56',
+  sshUser: 'ubuntu',
+  sshPassword: process.env.TARA_SSH_PASSWORD,
+  remotePort: 3081,
+});
+await tunnel.connect();
+
+const hermes = new HermesClient({
+  baseUrl: tunnel.baseUrl!,
+  apiKey: process.env.HERMES_API_KEY,
+});
+
+// Query, execute actions, listen to events
+await hermes.events.connect({ eventTypes: ['attendance.*', 'leave.*'] });
+```
+
+### SDK Documentation
+
+- **README:** [`packages/hermes-sdk/README.md`](../../../packages/hermes-sdk/README.md)
+- **Setup Guide:** [`packages/hermes-sdk/SETUP_INSTRUCTIONS.md`](../../../packages/hermes-sdk/SETUP_INSTRUCTIONS.md)
+- **Examples:** [`packages/hermes-sdk/examples/`](../../../packages/hermes-sdk/examples/)
+
+## VPS Information
+
+| Setting | Value |
+|---------|-------|
+| TARA Host | `43.156.118.56` |
+| SSH Port | `22` |
+| SSH User | `ubuntu` |
+| SSH Auth | Password |
+| Backend Port (Docker published) | `3081` |
+| Backend Port (container internal) | `3001` |
+| Frontend Port | `3080` |
+| Database Port | `5488` |
+| Redis Port | `6388` |

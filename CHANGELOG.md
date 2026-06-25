@@ -10,6 +10,20 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [2.1.0] - 2026-06-26
 
 ### Added
+- **Hermes SDK** (`packages/hermes-sdk/`): Standalone TypeScript SDK for Hermes agents on a separate VPS
+  - `HermesClient`: REST client for actions, queries, suggestions, event replay
+  - `EventStream`: WebSocket client with auto-reconnect for real-time events
+  - `SSHTunnel`: Built-in SSH tunnel (connects to TARA VPS via port 22 when HTTP ports are blocked)
+  - `SETUP_INSTRUCTIONS.md`: Complete step-by-step guide for team integration
+  - Example agents: `basic-agent.ts`, `agent-with-ssh-tunnel.ts`
+  - `.env.example` with TARA VPS connection settings
+- **HermesModule.forRoot()**: Refactored Hermes from flat providers to a self-contained NestJS dynamic module
+  - Injection tokens for NotificationService, IntegrationService, EventBus, WhatsApp (all pluggable)
+  - Host apps just call `HermesModule.forRoot({ ... })` instead of registering 12+ providers manually
+- **WhatsApp Agent Integration** (Kapso): Per-user WhatsApp number with OTP verification
+  - Inbound/outbound messaging, session management, 30-min auto-timeout
+  - Hermes actions: `send_whatsapp_reply`, `query_whatsapp_conversation`
+  - 90-day message retention with daily cleanup cron
 - **SOP Document Management**: Upload, manage, and view Standard Operating Procedure PDFs
   - Single and bulk PDF upload (up to 20 files, 50MB each)
   - Categorized document list with search and filtering

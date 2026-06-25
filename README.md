@@ -20,6 +20,7 @@
 | 🔔 **Notifikasi Multi-Kanal** | Kirim alert via aplikasi, WhatsApp, Telegram, atau Email |
 | 🤖 **8 Agen Otonom** | Robot HR yang bekerja 24/7 tanpa perlu dioperasikan manual |
 | 🧠 **Hermes AI** | Integrasi AI agentic: baca event, kirim reminder, sarankan keputusan |
+| 📡 **Hermes SDK** | TypeScript SDK untuk menghubungkan Hermes (VPS terpisah) ke TARA via SSH tunnel |
 | 📊 **Laporan & Analitik** | Dashboard kehadiran, keterlambatan, dan produktivitas |
 | 🏢 **Profil Perusahaan** | Kelola informasi perusahaan, kantor, cabang, dan departemen |
 
@@ -135,6 +136,8 @@ project-tara/
 │   ├── src/scripts/        # Seed scripts (auto-run di Docker)
 │   ├── uploads/sop/        # Persistent PDF storage (not in git)
 │   └── prisma/             # Database schema & migrations
+├── packages/               # Shared packages
+│   └── hermes-sdk/         # SDK untuk Hermes VPS (SSH tunnel + REST + WebSocket)
 ├── docker/                 # Docker init scripts (PostGIS setup)
 ├── docs/                   # Dokumentasi teknis
 ├── docker-compose.yml      # Production (satu command: docker compose up)
@@ -154,6 +157,8 @@ Untuk developer, dokumentasi lengkap tersedia di folder [`docs/`](./docs/):
 | [API Reference](./docs/API.md) | Endpoint lengkap, request/response, autentikasi |
 | [Agen Otonom](./docs/AGENTS.md) | 7 agen, cara kerja, event, dan konfigurasi |
 | [Hermes AI Integration](./backend/src/core/hr/hermes/README.md) | Integrasi AI agentic, action gateway, safety guardrails |
+| [Hermes SDK](./packages/hermes-sdk/README.md) | SDK untuk menghubungkan Hermes VPS ke TARA via SSH tunnel |
+| [Hermes Setup Guide](./packages/hermes-sdk/SETUP_INSTRUCTIONS.md) | Panduan lengkap setup Hermes (step-by-step) |
 | [Deployment](./docs/DEPLOYMENT.md) | Docker, environment variables, production setup |
 | [Frontend](./docs/FRONTEND.md) | Routing, design system, tema, dan komponen |
 | [Security](./docs/SECURITY.md) | Autentikasi, otorisasi, enkripsi, OWASP |
