@@ -18,7 +18,7 @@
 | 📅 **Jadwal Kerja** | Atur shift, jadwal per karyawan, hari libur |
 | 📄 **Dokumen SOP** | Upload, kelola, dan baca dokumen SOP (PDF) untuk seluruh karyawan |
 | 🔔 **Notifikasi Multi-Kanal** | Kirim alert via aplikasi, WhatsApp, Telegram, atau Email |
-| 🤖 **7 Agen Otonom** | Robot HR yang bekerja 24/7 tanpa perlu dioperasikan manual |
+| 🤖 **8 Agen Otonom** | Robot HR yang bekerja 24/7 tanpa perlu dioperasikan manual |
 | 🧠 **Hermes AI** | Integrasi AI agentic: baca event, kirim reminder, sarankan keputusan |
 | 📊 **Laporan & Analitik** | Dashboard kehadiran, keterlambatan, dan produktivitas |
 | 🏢 **Profil Perusahaan** | Kelola informasi perusahaan, kantor, cabang, dan departemen |

@@ -231,3 +231,19 @@ Error responses:
 
 - Auth endpoints: 5 requests/minute per IP
 - General API: 100 requests/minute per user
+
+---
+
+## Event Bus — SOP Events
+
+All SOP actions emit events to the Event Bus (persisted in `event_bus_logs`). These events are available to Hermes AI and other downstream consumers.
+
+| Event Type | Trigger |
+|---|---|
+| `sop.document.uploaded` | Single PDF uploaded |
+| `sop.document.bulk_uploaded` | Multiple PDFs uploaded |
+| `sop.document.updated` | Metadata edited |
+| `sop.document.deleted` | Document removed |
+| `sop.document.viewed` | Document accessed/downloaded |
+| `sop.catalog.response` | SOP Agent responds to Hermes catalog query |
+| `sop.context.provided` | SOP context pushed to Hermes |

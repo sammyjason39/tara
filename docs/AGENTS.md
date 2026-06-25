@@ -1,6 +1,6 @@
 # Autonomous Agents
 
-TARA operates 7 autonomous agents that handle HR tasks 24/7 without manual intervention. All agents can be enabled/disabled via the Settings page.
+TARA operates 8 autonomous agents that handle HR tasks 24/7 without manual intervention. All agents can be enabled/disabled via the Settings page.
 
 ## Agent Overview
 
@@ -13,6 +13,7 @@ TARA operates 7 autonomous agents that handle HR tasks 24/7 without manual inter
 | 5 | Late Report Agent | Cron: Daily 09:05 WIB | Query tardy → Public announcement + HR recap | 2 minutes |
 | 6 | Onboarding Agent | New employee created | Execute 7-step workflow | 2 hours |
 | 7 | Saldo Cuti Agent | Balance query / Monthly cron | Real-time balance + monthly recap | 5 seconds |
+| 8 | SOP Agent | SOP CRUD actions + Hermes queries | Emit lifecycle events → Provide SOP context to Hermes | Real-time |
 
 ## Agent Architecture
 
@@ -85,6 +86,35 @@ Employee taps Clock In
 - Shows: remaining days, used days, total entitlement, upcoming leaves
 - Private to requesting employee
 
+### 8. SOP Agent (`sop-agent.service.ts`)
+- Tracks and emits events for all SOP document lifecycle actions
+- Provides SOP catalog context to Hermes AI for knowledge-aware responses
+- Enables audit trail of all document changes via Event Bus persistence
+
+**Events Emitted:**
+
+| Event Type | Trigger |
+|---|---|
+| `sop.document.uploaded` | Single PDF uploaded |
+| `sop.document.bulk_uploaded` | Multiple PDFs uploaded at once |
+| `sop.document.updated` | Metadata edited (title, description, category) |
+| `sop.document.deleted` | Document removed |
+| `sop.document.viewed` | Document accessed/downloaded |
+| `sop.catalog.response` | Response to Hermes catalog query |
+| `sop.context.provided` | SOP awareness context sent to Hermes |
+
+**Events Listened:**
+
+| Event Type | Action |
+|---|---|
+| `hermes.query.sop_catalog` | Returns full SOP document catalog to Hermes |
+| `hermes.context.requested` | Provides SOP awareness when topic is SOP/prosedur related |
+
+**Hermes Integration:**
+- When Hermes receives a question about company procedures, it emits `hermes.query.sop_catalog`
+- The SOP Agent responds with all active documents (titles, descriptions, categories, download URLs)
+- Hermes can then reference specific SOPs in its responses to employees
+
 ## Configuration
 
 Agents are configured via `Settings > Agen Otonom` or the `agent_configs` table:
@@ -106,7 +136,7 @@ All automated actions can be performed manually by HR:
 - HR can send notifications manually
 - HR can process onboarding steps manually
 
-## Hermes AI — The 8th Agent (External, LLM-based)
+## Hermes AI — The 9th Agent (External, LLM-based)
 
 In addition to the 7 deterministic internal agents, TARA supports an external LLM-based agent called **Hermes**. Unlike the internal agents, Hermes uses AI reasoning.
 
