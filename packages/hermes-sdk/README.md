@@ -11,6 +11,55 @@ npm install @tara/hermes-sdk
 # or just copy the packages/hermes-sdk folder into your Hermes project
 ```
 
+## Connection Methods
+
+### Direct HTTP (if ports are open between VPSes)
+
+```typescript
+import { HermesClient } from '@tara/hermes-sdk';
+
+const hermes = new HermesClient({
+  baseUrl: 'http://43.156.118.56:3081',
+  apiKey: 'your-hermes-api-key',
+  agentId: 'hermes-main',
+});
+```
+
+### SSH Tunnel (when only port 22 is reachable)
+
+```typescript
+import { HermesClient, SSHTunnel } from '@tara/hermes-sdk';
+
+// 1. Create tunnel
+const tunnel = new SSHTunnel({
+  sshHost: '43.156.118.56',
+  sshPort: 22,
+  sshUser: 'ubuntu',
+  sshPassword: process.env.TARA_SSH_PASSWORD,
+  remotePort: 3081,  // TARA backend port on the VPS
+});
+
+const localPort = await tunnel.connect();
+// Tunnel active: localhost:{localPort} → 43.156.118.56:3081
+
+// 2. Use the tunnel URL
+const hermes = new HermesClient({
+  baseUrl: tunnel.baseUrl!,  // http://127.0.0.1:{localPort}
+  apiKey: 'your-hermes-api-key',
+  agentId: 'hermes-main',
+});
+
+// 3. Everything works the same from here
+const health = await hermes.healthCheck();
+await hermes.events.connect({ eventTypes: ['attendance.*'] });
+
+// 4. Cleanup on shutdown
+process.on('SIGINT', async () => {
+  hermes.events.disconnect();
+  await tunnel.disconnect();
+});
+```
+
 ## Quick Start
 
 ```typescript
