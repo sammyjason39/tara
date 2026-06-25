@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { User, Sun, Moon, Globe, LogOut, ChevronRight, Shield, Lock, Eye, EyeOff, KeyRound } from "lucide-react";
+import { User, Sun, Moon, Globe, LogOut, ChevronRight, Shield, Lock, Eye, EyeOff, KeyRound, MessageCircle, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 
@@ -14,11 +14,79 @@ export function MobileProfilePage() {
   const [showSecurity, setShowSecurity] = useState(false);
   const [showLang, setShowLang] = useState(false);
   const [showPin, setShowPin] = useState(false);
+  const [showWhatsApp, setShowWhatsApp] = useState(false);
+  const [waNumber, setWaNumber] = useState("");
+  const [waOtp, setWaOtp] = useState("");
+  const [waStatus, setWaStatus] = useState<{ opted_in: boolean; verified: boolean; number: string | null; has_pending_verification: boolean } | null>(null);
+  const [waLoading, setWaLoading] = useState(false);
+  const [waStep, setWaStep] = useState<"idle" | "otp_sent" | "verified">("idle");
   const [passwords, setPasswords] = useState({ current: "", new_pass: "", confirm: "" });
   const [pinData, setPinData] = useState({ pin: "", confirm_pin: "" });
   const [showPass, setShowPass] = useState(false);
 
   const handleLogout = () => { logout(); navigate("/login"); };
+
+  // WhatsApp Integration
+  const loadWaStatus = async () => {
+    try {
+      const res = await api.get("/me/whatsapp");
+      setWaStatus(res.data);
+      if (res.data.verified) setWaStep("verified");
+      else if (res.data.has_pending_verification) setWaStep("otp_sent");
+      else setWaStep("idle");
+    } catch { /* silently fail if endpoint not ready */ }
+  };
+
+  const handleWaToggle = () => {
+    setShowWhatsApp(!showWhatsApp);
+    if (!showWhatsApp && !waStatus) loadWaStatus();
+  };
+
+  const handleSendOtp = async () => {
+    if (!waNumber || waNumber.length < 10) { toast.error("Masukkan nomor WhatsApp yang valid"); return; }
+    setWaLoading(true);
+    try {
+      const res = await api.put("/me/whatsapp", { whatsapp_number: waNumber });
+      if (res.data.success) {
+        toast.success(res.data.message);
+        setWaStep("otp_sent");
+      } else {
+        toast.error(res.data.message || "Gagal mengirim OTP");
+      }
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || "Gagal mengirim OTP");
+    } finally { setWaLoading(false); }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!/^\d{6}$/.test(waOtp)) { toast.error("Kode harus 6 digit"); return; }
+    setWaLoading(true);
+    try {
+      const res = await api.post("/me/whatsapp/verify", { code: waOtp });
+      if (res.data.success) {
+        toast.success(res.data.message);
+        setWaStep("verified");
+        setWaStatus({ ...waStatus!, verified: true, opted_in: true, has_pending_verification: false });
+      } else {
+        toast.error(res.data.message);
+      }
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || "Verifikasi gagal");
+    } finally { setWaLoading(false); }
+  };
+
+  const handleRevokeWa = async () => {
+    setWaLoading(true);
+    try {
+      await api.delete("/me/whatsapp");
+      toast.success("WhatsApp berhasil diputuskan");
+      setWaStep("idle");
+      setWaStatus(null);
+      setWaNumber("");
+      setWaOtp("");
+    } catch { toast.error("Gagal memutuskan WhatsApp"); }
+    finally { setWaLoading(false); }
+  };
 
   const handleChangePassword = async () => {
     if (!passwords.current || !passwords.new_pass) { toast.error("Password lama dan baru wajib diisi"); return; }
@@ -134,6 +202,79 @@ export function MobileProfilePage() {
             <button onClick={handleSetPin} className="w-full h-9 rounded-md bg-primary text-primary-foreground text-sm font-medium">
               <KeyRound className="h-3.5 w-3.5 inline mr-1.5" />Simpan PIN
             </button>
+          </div>
+        )}
+
+        {/* WhatsApp / Hermes */}
+        <button onClick={handleWaToggle} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-accent/50">
+          <MessageCircle className="h-5 w-5 text-muted-foreground" />
+          <div className="flex-1 text-left">
+            <p className="text-sm">WhatsApp Hermes</p>
+            <p className="text-2xs text-muted-foreground">
+              {waStatus?.verified ? "✅ Terhubung" : "Hubungkan WhatsApp dengan AI asisten"}
+            </p>
+          </div>
+          <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform", showWhatsApp && "rotate-90")} />
+        </button>
+        {showWhatsApp && (
+          <div className="mx-4 p-4 rounded-md border border-border/50 space-y-4 animate-fade-in">
+            {waStep === "verified" ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                  <CheckCircle2 className="h-5 w-5" />
+                  <span className="text-sm font-medium">WhatsApp Terverifikasi</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Nomor: {waStatus?.number || "****"}<br/>
+                  Anda dapat berkomunikasi dengan Hermes AI melalui WhatsApp.
+                </p>
+                <button onClick={handleRevokeWa} disabled={waLoading}
+                  className="w-full h-9 rounded-md border border-destructive/30 text-destructive text-sm font-medium hover:bg-destructive/5 disabled:opacity-50">
+                  {waLoading ? <Loader2 className="h-3.5 w-3.5 inline mr-1.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5 inline mr-1.5" />}
+                  Putuskan WhatsApp
+                </button>
+              </div>
+            ) : waStep === "otp_sent" ? (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Kode verifikasi telah dikirim ke WhatsApp Anda. Masukkan 6 digit kode di bawah.
+                </p>
+                <div className="space-y-1.5">
+                  <label className="text-luxury-label">Kode OTP</label>
+                  <input type="text" inputMode="numeric" maxLength={6} value={waOtp}
+                    onChange={e => setWaOtp(e.target.value.replace(/\D/g, ""))}
+                    placeholder="••••••"
+                    className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm font-mono tracking-[0.3em] text-center" />
+                </div>
+                <button onClick={handleVerifyOtp} disabled={waLoading}
+                  className="w-full h-9 rounded-md bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-50">
+                  {waLoading ? <Loader2 className="h-3.5 w-3.5 inline mr-1.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5 inline mr-1.5" />}
+                  Verifikasi
+                </button>
+                <button onClick={() => { setWaStep("idle"); setWaOtp(""); }}
+                  className="w-full h-8 text-xs text-muted-foreground hover:text-foreground">
+                  Ganti nomor / kirim ulang
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Hubungkan nomor WhatsApp Anda untuk berkomunikasi dengan Hermes AI.
+                  Anda akan menerima kode verifikasi via WhatsApp.
+                </p>
+                <div className="space-y-1.5">
+                  <label className="text-luxury-label">Nomor WhatsApp</label>
+                  <input type="tel" value={waNumber} onChange={e => setWaNumber(e.target.value)}
+                    placeholder="+6281234567890"
+                    className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm" />
+                </div>
+                <button onClick={handleSendOtp} disabled={waLoading}
+                  className="w-full h-9 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
+                  {waLoading ? <Loader2 className="h-3.5 w-3.5 inline mr-1.5 animate-spin" /> : <MessageCircle className="h-3.5 w-3.5 inline mr-1.5" />}
+                  Kirim Kode Verifikasi
+                </button>
+              </div>
+            )}
           </div>
         )}
 

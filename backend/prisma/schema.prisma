@@ -68,6 +68,15 @@ model Employee {
 
   hermes_follow_ups   HermesFollowUp[] @relation("HermesFollowUpRecipient")
 
+  // WhatsApp Integration
+  whatsapp_number      String?
+  whatsapp_opted_in    Boolean  @default(false)
+  whatsapp_verified    Boolean  @default(false)
+  whatsapp_verified_at DateTime?
+
+  whatsapp_messages  WhatsAppMessageLog[] @relation("WhatsAppEmployee")
+  whatsapp_sessions  WhatsAppSession[]    @relation("WhatsAppSessionEmployee")
+
   created_employees Employee[] @relation("EmployeeCreator")
   updated_employees Employee[] @relation("EmployeeUpdater")
   creator           Employee?  @relation("EmployeeCreator", fields: [created_by], references: [id])
@@ -756,4 +765,65 @@ model SopDocument {
   @@index([is_active])
   @@index([created_at])
   @@map("sop_documents")
+}
+
+
+// ============================================================================
+// WhatsApp Agent Integration (Kapso)
+// ============================================================================
+
+// WhatsApp Message Log — full audit trail of all messages sent/received
+model WhatsAppMessageLog {
+  id                   String   @id @default(uuid())
+  employee_id          String
+  direction            String   // 'inbound' | 'outbound'
+  message_type         String   @default("text") // 'text' | 'template' | 'media' | 'interactive' | 'otp'
+  content              String   // message body (encrypted at DB level)
+  wa_message_id        String?  // Kapso/Meta message ID for delivery tracking
+  wa_status            String   @default("sent") // 'sent' | 'delivered' | 'read' | 'failed'
+  hermes_agent_id      String?  // which Hermes agent processed/sent this
+  hermes_action_log_id String?  // FK link to hermes_action_logs for audit cross-reference
+  session_id           String?  // FK to whatsapp_sessions
+  correlation_id       String?  // groups related messages in a conversation thread
+  metadata             Json?    // additional context (template params, media URLs, etc.)
+  error_message        String?  // failure reason if wa_status = 'failed'
+  created_at           DateTime @default(now())
+
+  // Relations
+  employee Employee         @relation("WhatsAppEmployee", fields: [employee_id], references: [id])
+  session  WhatsAppSession? @relation("WhatsAppSessionMessages", fields: [session_id], references: [id])
+
+  @@index([employee_id])
+  @@index([direction])
+  @@index([wa_message_id])
+  @@index([session_id])
+  @@index([hermes_agent_id])
+  @@index([correlation_id])
+  @@index([created_at])
+  @@index([employee_id, direction, created_at])
+  @@map("whatsapp_message_logs")
+}
+
+// WhatsApp Session — conversation session tracking
+model WhatsAppSession {
+  id               String    @id @default(uuid())
+  employee_id      String
+  started_at       DateTime  @default(now())
+  ended_at         DateTime?
+  last_activity_at DateTime  @default(now())
+  message_count    Int       @default(0)
+  hermes_agent_id  String?   // which Hermes agent is handling this session
+  status           String    @default("active") // 'active' | 'idle' | 'closed'
+  metadata         Json?     // session context (topic, intent, etc.)
+  created_at       DateTime  @default(now())
+
+  // Relations
+  employee Employee              @relation("WhatsAppSessionEmployee", fields: [employee_id], references: [id])
+  messages WhatsAppMessageLog[]  @relation("WhatsAppSessionMessages")
+
+  @@index([employee_id])
+  @@index([status])
+  @@index([last_activity_at])
+  @@index([employee_id, status])
+  @@map("whatsapp_sessions")
 }

@@ -5,6 +5,8 @@ import {
   Body,
   UseGuards,
   Request,
+  Inject,
+  Optional,
   HttpCode,
   HttpStatus,
   Logger,
@@ -18,6 +20,7 @@ import { HermesAuditService } from './hermes-audit.service';
 import { HermesNotificationExecutor } from './executors/notification.executor';
 import { HermesFollowUpExecutor } from './executors/follow-up.executor';
 import { HermesQueryExecutor } from './executors/query.executor';
+import { HERMES_WHATSAPP_AGENT } from './hermes.tokens';
 import { HERMES_ACTION_CATALOG } from './hermes-action.catalog';
 import {
   HermesActionRequest,
@@ -48,6 +51,7 @@ export class HermesActionController {
     private readonly notificationExecutor: HermesNotificationExecutor,
     private readonly followUpExecutor: HermesFollowUpExecutor,
     private readonly queryExecutor: HermesQueryExecutor,
+    @Inject(HERMES_WHATSAPP_AGENT) @Optional() private readonly whatsAppAgent: any,
   ) {}
 
   /**
@@ -97,6 +101,7 @@ export class HermesActionController {
       'send_notification',
       'send_bulk_reminder',
       'set_follow_up',
+      'send_whatsapp_reply',
     ];
     if (!validActions.includes(body.action as HermesSafeActionType)) {
       const logId = await this.auditService.logAction({
@@ -226,6 +231,16 @@ export class HermesActionController {
         return this.notificationExecutor.sendBulkReminder(agentId, params as any);
       case 'set_follow_up':
         return this.followUpExecutor.setFollowUp(agentId, params as any);
+      case 'send_whatsapp_reply':
+        if (!this.whatsAppAgent) {
+          throw new BadRequestException('WhatsApp integration is not configured in this deployment');
+        }
+        return this.whatsAppAgent.executeReply({
+          employee_id: params.recipient_id,
+          message: params.message,
+          hermes_agent_id: agentId,
+          buttons: params.buttons,
+        });
       default:
         throw new BadRequestException(`Unhandled action: ${action}`);
     }

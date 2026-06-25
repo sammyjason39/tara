@@ -1,13 +1,31 @@
 import {
   Injectable,
+  Inject,
+  Optional,
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
-import { HermesIntegrationService } from '../services/hermes-integration.service';
+import { HERMES_INTEGRATION_SERVICE } from './hermes.tokens';
 import { HermesAuthorityLevel } from './hermes.interfaces';
+
+/**
+ * Minimal interface the host's integration service must satisfy for this guard.
+ */
+export interface IHermesIntegrationService {
+  getConfig(): Promise<{
+    enabled: boolean;
+    api_key: string;
+    agents: Array<{
+      id: string;
+      name: string;
+      is_enabled: boolean;
+      authority_level: string;
+    }>;
+  }>;
+}
 
 /**
  * Hermes API Key Guard
@@ -16,12 +34,27 @@ import { HermesAuthorityLevel } from './hermes.interfaces';
  * On success, attaches the resolved agent context to `request.hermesAgent`.
  *
  * Usage: @UseGuards(HermesApiKeyGuard)
+ *
+ * Works in two modes:
+ * 1. With injected HERMES_INTEGRATION_SERVICE token (plug-and-play module mode)
+ * 2. With direct HermesIntegrationService injection (legacy flat registration mode)
  */
 @Injectable()
 export class HermesApiKeyGuard implements CanActivate {
   private readonly logger = new Logger(HermesApiKeyGuard.name);
+  private readonly hermesService: IHermesIntegrationService;
 
-  constructor(private readonly hermesService: HermesIntegrationService) {}
+  constructor(
+    @Inject(HERMES_INTEGRATION_SERVICE) @Optional() injectedService?: IHermesIntegrationService,
+  ) {
+    if (!injectedService) {
+      throw new Error(
+        'HermesApiKeyGuard requires HERMES_INTEGRATION_SERVICE. ' +
+        'Use HermesModule.forRoot({ integrationService: YourService }) or provide the token manually.',
+      );
+    }
+    this.hermesService = injectedService;
+  }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();

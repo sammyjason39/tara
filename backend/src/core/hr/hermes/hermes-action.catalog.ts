@@ -168,4 +168,29 @@ export const HERMES_ACTION_CATALOG: HermesActionCatalogEntry[] = [
       { name: 'confidence', type: 'number (0-1)', required: false, description: 'Confidence score' },
     ],
   },
+
+  // =========================================================================
+  // WHATSAPP ACTIONS (send replies via user's WhatsApp)
+  // =========================================================================
+  {
+    action: 'send_whatsapp_reply',
+    description: 'Send a reply to an employee via their WhatsApp. The employee must have opted-in and verified their number. Use this to respond to inbound WhatsApp messages from employees.',
+    category: 'safe_action',
+    required_authority: 'read_write',
+    parameters: [
+      { name: 'recipient_id', type: 'string (UUID)', required: true, description: 'Employee ID to send the reply to' },
+      { name: 'message', type: 'string', required: true, description: 'Reply message content (max 4096 chars)' },
+      { name: 'buttons', type: 'array', required: false, description: 'Optional interactive buttons (max 3): [{id: string, title: string}]' },
+    ],
+  },
+  {
+    action: 'query_whatsapp_conversation',
+    description: 'Get recent WhatsApp conversation history with an employee. Useful for understanding context before replying.',
+    category: 'query',
+    required_authority: 'read_only',
+    parameters: [
+      { name: 'employee_id', type: 'string (UUID)', required: true, description: 'Employee ID to get conversation for' },
+      { name: 'limit', type: 'number', required: false, description: 'Max messages to return (default: 20)' },
+    ],
+  },
 ];

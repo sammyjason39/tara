@@ -1,20 +1,19 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 
-// Hermes Integration
-import { HermesApiKeyGuard } from './hermes/hermes-api-key.guard';
-import { HermesAuthorityGuard } from './hermes/hermes-authority.guard';
-import { HermesRateLimitGuard } from './hermes/hermes-rate-limit.guard';
-import { HermesSafetyService } from './hermes/hermes-safety.service';
-import { HermesAuditService } from './hermes/hermes-audit.service';
-import { HermesSuggestionService } from './hermes/hermes-suggestion.service';
-import { HermesFollowUpProcessor } from './hermes/hermes-followup.processor';
-import { HermesNotificationExecutor } from './hermes/executors/notification.executor';
-import { HermesFollowUpExecutor } from './hermes/executors/follow-up.executor';
-import { HermesQueryExecutor } from './hermes/executors/query.executor';
-import { HermesActionController } from './hermes/hermes-action.controller';
-import { HermesSuggestionController } from './hermes/hermes-suggestion.controller';
-import { HermesEventsController } from './hermes/hermes-events.controller';
+// Hermes Integration — now a self-contained module
+import { HermesModule } from './hermes/hermes.module';
+
+// WhatsApp Agent Integration
+import { WhatsAppClientService } from './whatsapp/services/whatsapp-client.service';
+import { WhatsAppInboundService } from './whatsapp/services/whatsapp-inbound.service';
+import { WhatsAppOutboundService } from './whatsapp/services/whatsapp-outbound.service';
+import { WhatsAppSessionService } from './whatsapp/services/whatsapp-session.service';
+import { WhatsAppAuditService } from './whatsapp/services/whatsapp-audit.service';
+import { WhatsAppVerificationService } from './whatsapp/services/whatsapp-verification.service';
+import { WhatsAppWebhookController } from './whatsapp/controllers/whatsapp-webhook.controller';
+import { WhatsAppSettingsController } from './whatsapp/controllers/whatsapp-settings.controller';
+import { WhatsAppAgent } from './whatsapp/whatsapp.agent';
 
 // Controllers
 import { TaraEmployeeController } from './controllers/tara-employee.controller';
@@ -104,7 +103,16 @@ import { I18nModule } from './i18n/i18n.module';
  * Clean, focused — no payroll, recruitment, OCR, or other multi-department cruft.
  */
 @Module({
-  imports: [AuthModule],
+  imports: [
+    AuthModule,
+    // Hermes — plug-and-play integration
+    HermesModule.forRoot({
+      notificationService: NotificationService,
+      integrationService: HermesIntegrationService,
+      eventBusService: EventBusService,
+      whatsAppAgent: WhatsAppAgent,
+    }),
+  ],
   controllers: [
     TaraEmployeeController,
     TaraLeaveController,
@@ -122,10 +130,9 @@ import { I18nModule } from './i18n/i18n.module';
     PayrollController,
     ScheduleController,
     EventSubscriptionController,
-    // Hermes Integration
-    HermesActionController,
-    HermesSuggestionController,
-    HermesEventsController,
+    // WhatsApp Integration
+    WhatsAppWebhookController,
+    WhatsAppSettingsController,
   ],
   providers: [
     // Core services
@@ -187,17 +194,14 @@ import { I18nModule } from './i18n/i18n.module';
     TaraContextQueryService,
     TenantScopeResolver,
 
-    // Hermes Integration
-    HermesApiKeyGuard,
-    HermesAuthorityGuard,
-    HermesRateLimitGuard,
-    HermesSafetyService,
-    HermesAuditService,
-    HermesSuggestionService,
-    HermesFollowUpProcessor,
-    HermesNotificationExecutor,
-    HermesFollowUpExecutor,
-    HermesQueryExecutor,
+    // WhatsApp Agent Integration
+    WhatsAppClientService,
+    WhatsAppInboundService,
+    WhatsAppOutboundService,
+    WhatsAppSessionService,
+    WhatsAppAuditService,
+    WhatsAppVerificationService,
+    WhatsAppAgent,
   ],
   exports: [
     EventBusService,

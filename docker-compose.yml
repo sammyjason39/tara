@@ -93,6 +93,12 @@ services:
       # Hermes defaults (override via admin API after first boot)
       HERMES_ENABLED: ${HERMES_ENABLED:-false}
       HERMES_API_KEY: ${HERMES_API_KEY:-}
+      # WhatsApp (Kapso)
+      KAPSO_API_KEY: ${KAPSO_API_KEY:-}
+      KAPSO_PHONE_NUMBER_ID: ${KAPSO_PHONE_NUMBER_ID:-597907523413541}
+      KAPSO_BUSINESS_ACCOUNT_ID: ${KAPSO_BUSINESS_ACCOUNT_ID:-2102230076919824}
+      KAPSO_CONFIG_ID: ${KAPSO_CONFIG_ID:-31b31160-36d4-4468-92b6-2458fa6b949e}
+      KAPSO_WEBHOOK_SECRET: ${KAPSO_WEBHOOK_SECRET:-}
     ports:
       - "${BACKEND_PORT:-3001}:3001"
     healthcheck:

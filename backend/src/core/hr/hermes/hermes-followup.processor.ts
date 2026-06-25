@@ -1,7 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Inject, Optional, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../../persistence/prisma.service';
-import { NotificationService, TaraNotificationType } from '../services/notification.service';
+import { HERMES_NOTIFICATION_SERVICE } from './hermes.tokens';
+import { IHermesNotificationAdapter } from './executors/notification.executor';
+
+/** Standard notification type constant for follow-ups */
+const NOTIFICATION_TYPE_GENERAL = 'general_notification';
 
 /**
  * Hermes Follow-Up Processor
@@ -18,7 +22,7 @@ export class HermesFollowUpProcessor {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly notificationService: NotificationService,
+    @Inject(HERMES_NOTIFICATION_SERVICE) @Optional() private readonly notificationService: IHermesNotificationAdapter | null,
   ) {}
 
   /**
@@ -26,6 +30,10 @@ export class HermesFollowUpProcessor {
    */
   @Cron('*/5 * * * *') // Every 5 minutes
   async processDueFollowUps(): Promise<void> {
+    if (!this.notificationService) {
+      return; // Notification service not configured — skip
+    }
+
     const now = new Date();
 
     const dueFollowUps = await this.prisma.hermesFollowUp.findMany({
@@ -57,7 +65,7 @@ export class HermesFollowUpProcessor {
         // Send the notification
         await this.notificationService.sendNotification({
           recipient_id: followUp.recipient_id,
-          type: TaraNotificationType.GENERAL_NOTIFICATION,
+          type: NOTIFICATION_TYPE_GENERAL,
           visibility: 'private',
           title: followUp.title,
           content: followUp.message,

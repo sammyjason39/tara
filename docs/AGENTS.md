@@ -14,6 +14,7 @@ TARA operates 8 autonomous agents that handle HR tasks 24/7 without manual inter
 | 6 | Onboarding Agent | New employee created | Execute 7-step workflow | 2 hours |
 | 7 | Saldo Cuti Agent | Balance query / Monthly cron | Real-time balance + monthly recap | 5 seconds |
 | 8 | SOP Agent | SOP CRUD actions + Hermes queries | Emit lifecycle events → Provide SOP context to Hermes | Real-time |
+| 9 | WhatsApp Agent | Webhook: inbound message / Hermes reply | Route WA ↔ Hermes, session mgmt, audit logging | Real-time |
 
 ## Agent Architecture
 
@@ -167,3 +168,36 @@ Hermes is configured via `Settings > Hermes AI` or the admin API:
 - Configure which events are forwarded
 
 See full documentation: [`backend/src/core/hr/hermes/README.md`](../backend/src/core/hr/hermes/README.md)
+
+## WhatsApp Agent — Hermes Communication Channel
+
+The WhatsApp Agent enables bidirectional messaging between employees and Hermes AI via their personal WhatsApp. Powered by [Kapso](https://kapso.com) WhatsApp Business API.
+
+### How It Works
+
+1. Employee sets their WhatsApp number in Profile → verifies via OTP
+2. Employee sends a message to the TARA WhatsApp number
+3. Webhook receives → InboundService identifies employee → emits `whatsapp.message.inbound` event
+4. Hermes observes the event, queries conversation history for context
+5. Hermes calls `send_whatsapp_reply` action → WhatsApp Agent delivers the reply
+6. Everything logged in `whatsapp_message_logs` with audit cross-references
+
+### Key Features
+
+- **OTP Verification** — 6-digit code sent via WhatsApp, 5-min expiry
+- **Session Tracking** — auto-timeout after 30 min inactivity
+- **Rate Limiting** — max 10 outbound messages/employee/hour
+- **90-Day Retention** — auto-cleanup via daily cron
+- **Event Bus Integration** — 8 event types for full observability
+- **Notification Forwarding** — important system notifications also sent to WhatsApp
+
+### Source
+
+```
+backend/src/core/hr/whatsapp/
+├── controllers/        (webhook + self-service API)
+├── services/           (client, inbound, outbound, session, audit, verification)
+└── whatsapp.agent.ts   (event-driven bridge)
+```
+
+See full documentation: [`docs/WHATSAPP_AGENT.md`](./WHATSAPP_AGENT.md)

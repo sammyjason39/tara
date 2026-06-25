@@ -39,6 +39,10 @@ export class HermesQueryExecutor {
         return this.getOnboardingStatus(params.employee_id);
       case 'weekly_checkin_status':
         return this.getWeeklyCheckinStatus(params.employee_id, params.date);
+      case 'whatsapp_conversation_history':
+        return this.getWhatsAppConversation(params.employee_id, params.limit);
+      case 'whatsapp_session_status':
+        return this.getWhatsAppSessionStatus(params.employee_id);
       case 'agent_health':
         return this.getAgentHealth();
       default:
@@ -359,5 +363,81 @@ export class HermesQueryExecutor {
     const monday = new Date(now.setDate(diff));
     monday.setHours(0, 0, 0, 0);
     return monday;
+  }
+
+  // ===========================================================================
+  // WhatsApp Queries
+  // ===========================================================================
+
+  private async getWhatsAppConversation(employeeId: string, limit?: number) {
+    if (!employeeId) throw new BadRequestException('employee_id is required for whatsapp_conversation_history');
+
+    const messages = await this.prisma.whatsAppMessageLog.findMany({
+      where: { employee_id: employeeId },
+      orderBy: { created_at: 'desc' },
+      take: limit || 20,
+      select: {
+        id: true,
+        direction: true,
+        message_type: true,
+        content: true,
+        wa_status: true,
+        hermes_agent_id: true,
+        session_id: true,
+        created_at: true,
+      },
+    });
+
+    return {
+      employee_id: employeeId,
+      message_count: messages.length,
+      messages: messages.reverse().map((m) => ({
+        id: m.id,
+        role: m.direction === 'inbound' ? 'user' : 'assistant',
+        content: m.content,
+        type: m.message_type,
+        status: m.wa_status,
+        agent_id: m.hermes_agent_id,
+        timestamp: m.created_at,
+      })),
+    };
+  }
+
+  private async getWhatsAppSessionStatus(employeeId: string) {
+    if (!employeeId) throw new BadRequestException('employee_id is required for whatsapp_session_status');
+
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: {
+        whatsapp_number: true,
+        whatsapp_opted_in: true,
+        whatsapp_verified: true,
+        whatsapp_verified_at: true,
+      },
+    });
+
+    const activeSession = await this.prisma.whatsAppSession.findFirst({
+      where: { employee_id: employeeId, status: 'active' },
+      orderBy: { last_activity_at: 'desc' },
+    });
+
+    const totalMessages = await this.prisma.whatsAppMessageLog.count({
+      where: { employee_id: employeeId },
+    });
+
+    return {
+      employee_id: employeeId,
+      whatsapp_configured: !!employee?.whatsapp_number,
+      opted_in: employee?.whatsapp_opted_in || false,
+      verified: employee?.whatsapp_verified || false,
+      verified_at: employee?.whatsapp_verified_at,
+      active_session: activeSession ? {
+        session_id: activeSession.id,
+        started_at: activeSession.started_at,
+        last_activity_at: activeSession.last_activity_at,
+        message_count: activeSession.message_count,
+      } : null,
+      total_messages: totalMessages,
+    };
   }
 }

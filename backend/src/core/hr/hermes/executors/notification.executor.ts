@@ -1,6 +1,34 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { NotificationService, TaraNotificationType } from '../../services/notification.service';
+import { Injectable, Inject, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../../persistence/prisma.service';
+import { HERMES_NOTIFICATION_SERVICE } from '../hermes.tokens';
+
+/**
+ * Minimal interface the host's notification service must satisfy.
+ */
+export interface IHermesNotificationAdapter {
+  sendNotification(payload: {
+    recipient_id: string;
+    type: string;
+    visibility: string;
+    title: string;
+    content: string;
+    metadata?: Record<string, any>;
+  }): Promise<{ id: string } | null>;
+  sendBulkNotification(payload: {
+    recipient_ids: string[];
+    type: string;
+    visibility: string;
+    title: string;
+    content: string;
+    metadata?: Record<string, any>;
+  }): Promise<any>;
+}
+
+/**
+ * Standard notification type constant (replaces the TaraNotificationType enum import).
+ * The host's notification service should accept this string or map it appropriately.
+ */
+const NOTIFICATION_TYPE_GENERAL = 'general_notification';
 
 /**
  * Notification Executor for Hermes
@@ -20,7 +48,7 @@ export class HermesNotificationExecutor {
   private readonly logger = new Logger(HermesNotificationExecutor.name);
 
   constructor(
-    private readonly notificationService: NotificationService,
+    @Inject(HERMES_NOTIFICATION_SERVICE) private readonly notificationService: IHermesNotificationAdapter,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -39,7 +67,7 @@ export class HermesNotificationExecutor {
 
     const result = await this.notificationService.sendNotification({
       recipient_id: params.recipient_id,
-      type: TaraNotificationType.GENERAL_NOTIFICATION,
+      type: NOTIFICATION_TYPE_GENERAL,
       visibility: 'private',
       title: params.title,
       content: params.message,
@@ -73,7 +101,7 @@ export class HermesNotificationExecutor {
 
     const result = await this.notificationService.sendNotification({
       recipient_id: params.recipient_id,
-      type: TaraNotificationType.GENERAL_NOTIFICATION,
+      type: NOTIFICATION_TYPE_GENERAL,
       visibility: 'private',
       title: params.title,
       content: params.message,
@@ -108,7 +136,7 @@ export class HermesNotificationExecutor {
 
     const result = await this.notificationService.sendNotification({
       recipient_id: params.recipient_id,
-      type: TaraNotificationType.GENERAL_NOTIFICATION,
+      type: NOTIFICATION_TYPE_GENERAL,
       visibility: 'private',
       title: params.title,
       content: params.message,
@@ -144,7 +172,7 @@ export class HermesNotificationExecutor {
 
     const result = await this.notificationService.sendNotification({
       recipient_id: params.recipient_id,
-      type: TaraNotificationType.GENERAL_NOTIFICATION,
+      type: NOTIFICATION_TYPE_GENERAL,
       visibility: 'private',
       title: params.title,
       content: params.message,
@@ -199,7 +227,7 @@ export class HermesNotificationExecutor {
 
     const result = await this.notificationService.sendBulkNotification({
       recipient_ids: validIds,
-      type: TaraNotificationType.GENERAL_NOTIFICATION,
+      type: NOTIFICATION_TYPE_GENERAL,
       visibility: 'private',
       title: params.title,
       content: params.message,

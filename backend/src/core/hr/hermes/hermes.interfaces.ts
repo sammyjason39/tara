@@ -36,6 +36,7 @@ export type HermesSafeActionType =
   | 'send_notification'       // General informational notification
   | 'send_bulk_reminder'      // Remind a group about pending items
   | 'set_follow_up'           // Schedule a follow-up reminder for later
+  | 'send_whatsapp_reply'     // Reply to a user's WhatsApp message
   | 'query_data';             // Read any data (attendance, leave, employees)
 
 /**
@@ -127,6 +128,8 @@ export type HermesQueryType =
   | 'notification_history'
   | 'onboarding_status'
   | 'weekly_checkin_status'
+  | 'whatsapp_conversation_history'
+  | 'whatsapp_session_status'
   | 'agent_health';
 
 // =============================================================================

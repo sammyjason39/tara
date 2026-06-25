@@ -1,12 +1,24 @@
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, Optional, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../../persistence/prisma.service';
-import { EventBusService } from '../services/event-bus.service';
+import { HERMES_EVENT_BUS_SERVICE } from './hermes.tokens';
 import {
   HermesSuggestionRequest,
   HermesSuggestionResponse,
   HermesSuggestionStatus,
 } from './hermes.interfaces';
+
+/**
+ * Minimal interface for the event bus adapter.
+ */
+export interface IHermesEventBusAdapter {
+  emit(event: {
+    event_type: string;
+    actor: { id: string; type: string };
+    entity: { id: string; type: string };
+    payload: Record<string, any>;
+  }): Promise<void>;
+}
 
 /**
  * Hermes Suggestion Service
@@ -27,7 +39,7 @@ export class HermesSuggestionService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly eventBusService: EventBusService,
+    @Inject(HERMES_EVENT_BUS_SERVICE) @Optional() private readonly eventBusService: IHermesEventBusAdapter | null,
   ) {}
 
   /**
@@ -197,6 +209,8 @@ export class HermesSuggestionService {
   // ===========================================================================
 
   private async emitSuggestionEvent(eventType: string, suggestion: any): Promise<void> {
+    if (!this.eventBusService) return; // EventBus not configured — skip silently
+
     try {
       await this.eventBusService.emit({
         event_type: eventType,

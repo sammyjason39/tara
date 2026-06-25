@@ -63,6 +63,16 @@ export const EVENT_NAMES = {
   // External (Finance) Events
   FINANCE_PAYROLL_PROCESSED: 'finance.payroll.processed.v1',
   FINANCE_EXPENSE_RECORDED: 'finance.expense.recorded.v1',
+
+  // WhatsApp Events
+  WHATSAPP_MESSAGE_INBOUND: 'whatsapp.message.inbound',
+  WHATSAPP_MESSAGE_OUTBOUND: 'whatsapp.message.outbound',
+  WHATSAPP_DELIVERY_FAILED: 'whatsapp.delivery.failed',
+  WHATSAPP_SESSION_STARTED: 'whatsapp.session.started',
+  WHATSAPP_SESSION_CLOSED: 'whatsapp.session.closed',
+  WHATSAPP_VERIFICATION_SENT: 'whatsapp.verification.sent',
+  WHATSAPP_VERIFICATION_CONFIRMED: 'whatsapp.verification.confirmed',
+  WHATSAPP_OPTED_OUT: 'whatsapp.opted_out',
 } as const;
 
 export type EventName = typeof EVENT_NAMES[keyof typeof EVENT_NAMES];
