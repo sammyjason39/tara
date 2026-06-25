@@ -1,0 +1,19 @@
+{
+  "name": "@tara/hermes-sdk",
+  "version": "1.0.0",
+  "description": "Lightweight TypeScript SDK for Hermes AI agents to integrate with any TARA-compatible backend",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.7.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.0.0"
+  },
+  "license": "UNLICENSED"
+}
