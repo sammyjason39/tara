@@ -7,6 +7,17 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [2.0.1] - 2026-06-25
+
+### Fixed
+- Mobile users now correctly land on the Mobile interface (`/m`) after login instead of the Web dashboard
+- Root URL (`/`) now detects viewport and redirects to `/m` (mobile) or `/web` (desktop)
+
+### Added
+- `src/lib/useIsMobile.ts` — viewport detection hook used for adaptive routing
+
+---
+
 ## [2.0.0] - 2026-06-25
 
 ### Added

@@ -50,6 +50,7 @@ src/
 │   └── NotFoundPage.tsx
 └── lib/
     ├── api.ts                  # HTTP client with auth header
+    ├── useIsMobile.ts          # Mobile viewport detection hook (<768px)
     ├── utils.ts                # cn() helper for Tailwind
     └── version.ts              # App version (single source of truth)
 ```
@@ -58,6 +59,7 @@ src/
 
 | Path | Layout | Page | Access |
 |------|--------|------|--------|
+| `/` | — | RootRedirect | — |
 | `/login` | None | LoginPage | Public |
 | `/web` | WebLayout | DashboardPage | HR/Supervisor |
 | `/web/employees` | WebLayout | EmployeesPage | HR |
@@ -73,6 +75,18 @@ src/
 | `/m/leave` | MobileLayout | MobileLeavePage | All |
 | `/m/notifications` | MobileLayout | MobileNotificationsPage | All |
 | `/m/profile` | MobileLayout | MobileProfilePage | All |
+
+### Adaptive Routing (Mobile Detection)
+
+After login, the app automatically routes users to the correct interface based on viewport width:
+
+- **Mobile (< 768px):** Redirects to `/m` (MobileLayout with bottom tab navigation)
+- **Desktop (≥ 768px):** Redirects to `/web` (WebLayout with sidebar navigation)
+
+This detection is handled by the `useIsMobile` hook (`src/lib/useIsMobile.ts`) which uses `window.matchMedia` to listen for viewport changes. The hook is used in two places:
+
+1. **LoginPage** — navigates to `/m` or `/web` after successful authentication
+2. **RootRedirect** (in `App.tsx`) — redirects the `/` route based on device + auth state
 
 ## Design System
 

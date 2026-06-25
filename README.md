@@ -121,7 +121,7 @@ project-tara/
 │   ├── components/         # Komponen UI (shadcn/ui, AppFooter)
 │   ├── contexts/           # Auth & Theme context
 │   ├── layouts/            # WebLayout, MobileLayout
-│   └── lib/                # Utilities, API helper, version config
+│   └── lib/                # Utilities, API helper, mobile detection, version config
 ├── backend/                # Backend (NestJS + TypeScript)
 │   ├── src/core/hr/        # Modul HR (agen, services, controllers)
 │   ├── src/core/hr/hermes/ # Integrasi Hermes AI (action gateway, safety)

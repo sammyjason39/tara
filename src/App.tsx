@@ -2,7 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { useIsMobile } from "@/lib/useIsMobile";
 
 // Layouts
 import { WebLayout } from "@/layouts/WebLayout";
@@ -39,6 +40,16 @@ const queryClient = new QueryClient({
   },
 });
 
+/** Redirects to /m or /web based on viewport size, or /login if not authenticated */
+function RootRedirect() {
+  const isMobile = useIsMobile();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) return null;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <Navigate to={isMobile ? "/m" : "/web"} replace />;
+}
+
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -72,7 +83,7 @@ export function App() {
               </Route>
 
               {/* Default */}
-              <Route path="/" element={<Navigate to="/login" replace />} />
+              <Route path="/" element={<RootRedirect />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </BrowserRouter>

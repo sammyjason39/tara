@@ -5,12 +5,14 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "react-i18next";
 import { Eye, EyeOff, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/lib/useIsMobile";
 
 export function LoginPage() {
   const { login } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -24,7 +26,7 @@ export function LoginPage() {
 
     try {
       await login(email, password);
-      navigate("/web");
+      navigate(isMobile ? "/m" : "/web");
     } catch (err: any) {
       setError(err.message || t("auth.login_failed"));
     } finally {
