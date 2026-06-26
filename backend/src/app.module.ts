@@ -28,7 +28,7 @@ import { SopModule } from './core/sop/sop.module';
     AuthModule,
     SettingsModule,
     SopModule,    // SOP document management with PDF storage
-    // HrModule,  // Disabled in demo mode — enable when DB is connected
+    HrModule,     // HR + Hermes + WhatsApp local MVP
   ],
   providers: [
     {

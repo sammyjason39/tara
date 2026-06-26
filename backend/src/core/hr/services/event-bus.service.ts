@@ -93,12 +93,16 @@ export class EventBusService {
       this.validateEvent(event);
 
       // Store event in EventBusLog table
+      // actor_id has an FK to employees.id. System/agent actors are not employees,
+      // so keep actor_id null for them while preserving actor_type.
+      const actor_id = event.actor!.type === 'employee' ? event.actor!.id : null;
+
       const eventLog = await this.prisma.eventBusLog.create({
         data: {
           id: event_id,
           event_type: event.event_type!,
           event_version: event_version,
-          actor_id: event.actor!.id,
+          actor_id,
           actor_type: event.actor!.type,
           entity_id: event.entity!.id,
           entity_type: event.entity!.type,

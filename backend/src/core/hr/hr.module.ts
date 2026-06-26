@@ -3,6 +3,7 @@ import { AuthModule } from '../auth/auth.module';
 
 // Hermes Integration — now a self-contained module
 import { HermesModule } from './hermes/hermes.module';
+import { HermesWhatsAppBridgeAgent } from './hermes/hermes-whatsapp-bridge.agent';
 
 // WhatsApp Agent Integration
 import { WhatsAppClientService } from './whatsapp/services/whatsapp-client.service';
@@ -105,12 +106,12 @@ import { I18nModule } from './i18n/i18n.module';
 @Module({
   imports: [
     AuthModule,
-    // Hermes — plug-and-play integration
     HermesModule.forRoot({
       notificationService: NotificationService,
       integrationService: HermesIntegrationService,
       eventBusService: EventBusService,
       whatsAppAgent: WhatsAppAgent,
+      useExistingAdapters: true,
     }),
   ],
   controllers: [
@@ -202,6 +203,7 @@ import { I18nModule } from './i18n/i18n.module';
     WhatsAppAuditService,
     WhatsAppVerificationService,
     WhatsAppAgent,
+    HermesWhatsAppBridgeAgent,
   ],
   exports: [
     EventBusService,

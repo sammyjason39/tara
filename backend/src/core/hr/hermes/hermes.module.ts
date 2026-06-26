@@ -1,4 +1,4 @@
-import { Module, DynamicModule, Provider, Type } from '@nestjs/common';
+import { Module, DynamicModule, ExistingProvider, Provider, Type } from '@nestjs/common';
 import { HermesApiKeyGuard } from './hermes-api-key.guard';
 import { HermesAuthorityGuard } from './hermes-authority.guard';
 import { HermesRateLimitGuard } from './hermes-rate-limit.guard';
@@ -61,6 +61,30 @@ export interface HermesModuleOptions {
    * Optional: Additional modules to import (e.g., PersistenceModule).
    */
   imports?: any[];
+
+  /**
+   * Use existing providers from imported modules instead of creating fresh
+   * adapter instances inside HermesModule. Preferred when Hermes is mounted
+   * inside the same Nest app as TARA because host services keep their own DI
+   * context and dependencies.
+   */
+  useExistingAdapters?: boolean;
+}
+
+function bindAdapter(provide: string | symbol, adapter: Type<any> | any, useExistingAdapters?: boolean): Provider {
+  if (!adapter) {
+    return { provide, useValue: null };
+  }
+
+  if (useExistingAdapters && typeof adapter === 'function') {
+    return { provide, useExisting: adapter } as ExistingProvider;
+  }
+
+  if (typeof adapter === 'function') {
+    return { provide, useClass: adapter };
+  }
+
+  return { provide, useValue: adapter };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -110,15 +134,11 @@ export class HermesModule {
    */
   static forRoot(options: HermesModuleOptions): DynamicModule {
     const providers: Provider[] = [
-      // Adapter bindings — the host supplies these implementations
-      {
-        provide: HERMES_NOTIFICATION_SERVICE,
-        useClass: options.notificationService,
-      },
-      {
-        provide: HERMES_INTEGRATION_SERVICE,
-        useClass: options.integrationService,
-      },
+      // Adapter bindings — the host supplies these implementations.
+      // In production, useExistingAdapters keeps host services in their original
+      // module context and avoids duplicating dependencies.
+      bindAdapter(HERMES_NOTIFICATION_SERVICE, options.notificationService, options.useExistingAdapters),
+      bindAdapter(HERMES_INTEGRATION_SERVICE, options.integrationService, options.useExistingAdapters),
 
       // Hermes internal services
       HermesApiKeyGuard,
@@ -135,10 +155,7 @@ export class HermesModule {
 
     // Optional: EventBus
     if (options.eventBusService) {
-      providers.push({
-        provide: HERMES_EVENT_BUS_SERVICE,
-        useClass: options.eventBusService,
-      });
+      providers.push(bindAdapter(HERMES_EVENT_BUS_SERVICE, options.eventBusService, options.useExistingAdapters));
     } else {
       providers.push({
         provide: HERMES_EVENT_BUS_SERVICE,
@@ -148,10 +165,7 @@ export class HermesModule {
 
     // Optional: WhatsApp Agent
     if (options.whatsAppAgent) {
-      providers.push({
-        provide: HERMES_WHATSAPP_AGENT,
-        useClass: options.whatsAppAgent,
-      });
+      providers.push(bindAdapter(HERMES_WHATSAPP_AGENT, options.whatsAppAgent, options.useExistingAdapters));
     } else {
       providers.push({
         provide: HERMES_WHATSAPP_AGENT,
