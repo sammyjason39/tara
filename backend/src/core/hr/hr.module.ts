@@ -71,6 +71,7 @@ import { EventStreamGateway } from './events/event-stream.gateway';
 import { SessionDataPushGateway } from './events/session-data-push.gateway';
 import { EventSubscriptionRegistry } from './events/event-subscription.registry';
 import { EventSubscriptionController } from './events/event-subscription.controller';
+import { WebApiController } from './controllers/web-api.controller';
 
 // i18n
 import { I18nService } from './i18n/i18n.service';
@@ -138,6 +139,7 @@ import { I18nModule } from './i18n/i18n.module';
     // WhatsApp Integration
     WhatsAppWebhookController,
     WhatsAppSettingsController,
+    WebApiController,
   ],
   providers: [
     // Core services
