@@ -91,6 +91,11 @@ export class AwsDeviceBatchSyncService implements OnModuleInit {
    * Defaults to every 60 minutes. HR_Team can change interval via settings.
    */
   async onModuleInit(): Promise<void> {
+    if (this.schedulerRegistry.doesExist('cron', AwsDeviceBatchSyncService.CRON_JOB_NAME)) {
+      this.logger.log('AWS batch sync cron already registered — skipping duplicate init');
+      return;
+    }
+
     const intervalMinutes = await this.getConfiguredInterval();
     this.registerCronJob(intervalMinutes);
     this.logger.log(

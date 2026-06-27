@@ -19,6 +19,7 @@ import { diskStorage } from 'multer';
 import { Response } from 'express';
 import { SopService } from './sop.service';
 import { SopAgentService } from './sop-agent.service';
+import { SopIndexerService } from '../ai/sop-indexer.service';
 import { v4 as uuidv4 } from 'uuid';
 import * as path from 'path';
 
@@ -42,6 +43,7 @@ export class SopController {
   constructor(
     private readonly sopService: SopService,
     private readonly sopAgent: SopAgentService,
+    private readonly sopIndexer: SopIndexerService,
   ) {}
 
   private getMulterStorage() {
@@ -111,6 +113,9 @@ export class SopController {
       file_size: doc.file_size,
     });
 
+    // Index for AI RAG (async, non-blocking)
+    this.sopIndexer.indexDocument(doc.id).catch(() => {});
+
     return { success: true, data: doc };
   }
 
@@ -171,6 +176,10 @@ export class SopController {
       })),
     );
 
+    for (const doc of created) {
+      this.sopIndexer.indexDocument(doc.id).catch(() => {});
+    }
+
     return { success: true, data: created, count: created.length };
   }
 
@@ -228,6 +237,8 @@ export class SopController {
       body,
     );
 
+    this.sopIndexer.indexDocument(doc.id).catch(() => {});
+
     return { success: true, data: doc };
   }
 
@@ -248,6 +259,8 @@ export class SopController {
       category: doc.category,
       file_name: doc.file_name,
     });
+
+    await this.sopIndexer.removeDocumentIndex(doc.id).catch(() => {});
 
     return { success: true, ...result };
   }

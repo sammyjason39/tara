@@ -12,6 +12,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+import { HermesDisabledGuard } from '../../ai/hermes-disabled.guard';
 import { HermesApiKeyGuard, HermesAgentContext } from './hermes-api-key.guard';
 import { HermesRateLimitGuard } from './hermes-rate-limit.guard';
 import { HermesSafetyService } from './hermes-safety.service';
@@ -39,6 +40,7 @@ import {
  *   PUT    /api/hermes/suggestions/:id/reject — Reject suggestion (JWT auth)
  */
 @Controller('hermes/suggestions')
+@UseGuards(HermesDisabledGuard)
 export class HermesSuggestionController {
   private readonly logger = new Logger(HermesSuggestionController.name);
 

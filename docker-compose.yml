@@ -37,7 +37,7 @@ services:
       # Ensure PostGIS extension is created automatically
       POSTGRES_INITDB_ARGS: "--locale=C.UTF-8"
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./docker/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
@@ -56,7 +56,7 @@ services:
     container_name: tara-redis
     restart: unless-stopped
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     volumes:
       - redisdata:/data
     healthcheck:
@@ -69,7 +69,7 @@ services:
   # Backend API (NestJS)
   # - Auto-runs migrations on startup
   # - Seeds default config (agents, roles, Hermes)
-  # - Exposes port 3001
+  # - Internal only on 3001; public access via nginx :80 → /api/
   # ============================================================================
   backend:
     build:
@@ -99,10 +99,19 @@ services:
       KAPSO_BUSINESS_ACCOUNT_ID: ${KAPSO_BUSINESS_ACCOUNT_ID:-2102230076919824}
       KAPSO_CONFIG_ID: ${KAPSO_CONFIG_ID:-31b31160-36d4-4468-92b6-2458fa6b949e}
       KAPSO_WEBHOOK_SECRET: ${KAPSO_WEBHOOK_SECRET:-}
-    ports:
-      - "${BACKEND_PORT:-3001}:3001"
+      # TARA AI Assistant
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-https://tokease.com/v1}
+      AI_MODEL: ${AI_MODEL:-qwen3.7-plus}
+      DEMO_MODE: ${DEMO_MODE:-false}
+      SOP_UPLOAD_DIR: /var/data/tara/sop
+      NODE_OPTIONS: ${NODE_OPTIONS:---max-old-space-size=6144}
+    expose:
+      - "3001"
+    volumes:
+      - sop_data:/var/data/tara/sop
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3001/health || exit 1"]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3001/health',(r)=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -132,4 +141,6 @@ volumes:
   pgdata:
     driver: local
   redisdata:
+    driver: local
+  sop_data:
     driver: local

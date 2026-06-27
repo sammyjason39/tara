@@ -1,9 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../../../persistence/prisma.service';
 import { EventBusService } from '../../services/event-bus.service';
 import { WhatsAppAuditService } from './whatsapp-audit.service';
 import { WhatsAppSessionService } from './whatsapp-session.service';
 import { WhatsAppClientService } from './whatsapp-client.service';
+import { WhatsAppOutboundService } from './whatsapp-outbound.service';
+import { AiOrchestratorService } from '../../../ai/ai-orchestrator.service';
+import { AiConfigService } from '../../../ai/ai-config.service';
 
 export interface InboundMessage {
   from: string; // sender phone number
@@ -57,6 +60,10 @@ export class WhatsAppInboundService {
     private readonly auditService: WhatsAppAuditService,
     private readonly sessionService: WhatsAppSessionService,
     private readonly clientService: WhatsAppClientService,
+    private readonly outboundService: WhatsAppOutboundService,
+    @Inject(forwardRef(() => AiOrchestratorService))
+    private readonly aiOrchestrator: AiOrchestratorService,
+    private readonly aiConfigService: AiConfigService,
   ) {}
 
   /**
@@ -141,7 +148,7 @@ export class WhatsAppInboundService {
       },
     });
 
-    // Emit to Event Bus → Hermes will pick this up
+    // Emit to Event Bus (for other agents / audit)
     await this.eventBusService.emit({
       event_type: 'whatsapp.message.inbound',
       event_version: '1.0',
@@ -159,6 +166,39 @@ export class WhatsAppInboundService {
         timestamp: message.timestamp,
       },
     });
+
+    // Route to TARA AI Assistant
+    if (this.aiConfigService.isAiEnabled()) {
+      try {
+        const aiResult = await this.aiOrchestrator.processWhatsAppMessage({
+          employeeId: employee.id,
+          message: messageContent,
+          sessionId,
+        });
+
+        if (aiResult.useButtons && aiResult.buttons?.length) {
+          await this.outboundService.sendButtons(
+            employee.id,
+            aiResult.reply,
+            aiResult.buttons,
+          );
+        } else {
+          await this.outboundService.sendMessage({
+            employee_id: employee.id,
+            content: aiResult.reply,
+            correlation_id: sessionId,
+            metadata: { source: 'tara_ai' },
+          });
+        }
+      } catch (err) {
+        this.logger.error(`[INBOUND] AI processing failed: ${err.message}`, err.stack);
+        await this.outboundService.sendMessage({
+          employee_id: employee.id,
+          content: 'Maaf, asisten AI sedang mengalami gangguan. Silakan coba lagi nanti atau hubungi HR.',
+          correlation_id: sessionId,
+        });
+      }
+    }
 
     this.logger.log(
       `[INBOUND] Processed message from ${employee.full_name} (session: ${sessionId})`,
@@ -228,6 +268,7 @@ export class WhatsAppInboundService {
         whatsapp_opted_in: true,
         whatsapp_verified: true,
         language_preference: true,
+        role: { select: { role_name: true } },
       },
     });
 

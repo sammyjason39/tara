@@ -8,6 +8,7 @@ import {
   HttpStatus,
   BadRequestException,
 } from '@nestjs/common';
+import { HermesDisabledGuard } from '../../ai/hermes-disabled.guard';
 import { HermesApiKeyGuard } from './hermes-api-key.guard';
 import { PrismaService } from '../../../persistence/prisma.service';
 import { HermesAuditService } from './hermes-audit.service';
@@ -23,7 +24,7 @@ import { HermesAuditService } from './hermes-audit.service';
  *   GET /api/hermes/events/stats     — Daily action stats
  */
 @Controller('hermes/events')
-@UseGuards(HermesApiKeyGuard)
+@UseGuards(HermesDisabledGuard, HermesApiKeyGuard)
 export class HermesEventsController {
   constructor(
     private readonly prisma: PrismaService,

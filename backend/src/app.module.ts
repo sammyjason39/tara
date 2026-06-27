@@ -12,10 +12,13 @@ import { SettingsModule } from './core/settings/settings.module';
 import { HrModule } from './core/hr/hr.module';
 import { DemoModule } from './core/demo/demo.module';
 import { SopModule } from './core/sop/sop.module';
+import { AiModule } from './core/ai/ai.module';
+
+const demoEnabled = process.env.DEMO_MODE === 'true';
 
 /**
  * TARA HR System v2 — Root Module
- * DemoModule is loaded to provide mock data when DB is unavailable.
+ * DemoModule only loads when DEMO_MODE=true (mock data without DB).
  */
 @Module({
   imports: [
@@ -24,11 +27,12 @@ import { SopModule } from './core/sop/sop.module';
     ThrottlerModule.forRoot([{ name: 'default', ttl: 60000, limit: 100 }]),
     EventEmitterModule.forRoot(),
     PersistenceModule,
-    DemoModule,  // Demo routes (provides mock data without DB)
+    ...(demoEnabled ? [DemoModule] : []),
     AuthModule,
     SettingsModule,
     SopModule,    // SOP document management with PDF storage
-    HrModule,     // HR + Hermes + WhatsApp local MVP
+    AiModule,     // TARA AI Assistant (LangChain + RAG + WhatsApp)
+    HrModule,     // HR + WhatsApp local MVP
   ],
   providers: [
     {

@@ -12,6 +12,7 @@ import {
   Logger,
   BadRequestException,
 } from '@nestjs/common';
+import { HermesDisabledGuard } from '../../ai/hermes-disabled.guard';
 import { HermesApiKeyGuard, HermesAgentContext } from './hermes-api-key.guard';
 import { HermesAuthorityGuard, RequiresAuthority } from './hermes-authority.guard';
 import { HermesRateLimitGuard } from './hermes-rate-limit.guard';
@@ -41,7 +42,7 @@ import {
  * Authority level is enforced per action.
  */
 @Controller('hermes')
-@UseGuards(HermesApiKeyGuard, HermesRateLimitGuard)
+@UseGuards(HermesDisabledGuard, HermesApiKeyGuard, HermesRateLimitGuard)
 export class HermesActionController {
   private readonly logger = new Logger(HermesActionController.name);
 

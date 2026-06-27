@@ -24,6 +24,7 @@ import { PayrollPage } from "@/pages/web/PayrollPage";
 import { SchedulePage } from "@/pages/web/SchedulePage";
 import { EmployeeDetailPage } from "@/pages/web/EmployeeDetailPage";
 import { SopPage } from "@/pages/web/SopPage";
+import { AiLogsPage } from "@/pages/web/AiLogsPage";
 
 // Mobile pages
 import { MobileHomePage } from "@/pages/mobile/MobileHomePage";
@@ -76,6 +77,7 @@ export function App() {
                 <Route path="payroll" element={<PayrollPage />} />
                 <Route path="schedule" element={<SchedulePage />} />
                 <Route path="sop" element={<SopPage />} />
+                <Route path="ai-logs" element={<AiLogsPage />} />
               </Route>
 
               {/* Mobile Interface (All Employees) */}

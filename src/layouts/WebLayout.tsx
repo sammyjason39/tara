@@ -21,6 +21,7 @@ import {
   User,
   ChevronDown,
   FileText,
+  ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +33,7 @@ const navItems = [
   { to: "/web/payroll", icon: Banknote, labelKey: "nav.payroll" },
   { to: "/web/schedule", icon: CalendarClock, labelKey: "nav.schedule" },
   { to: "/web/sop", icon: FileText, labelKey: "nav.sop" },
+  { to: "/web/ai-logs", icon: ScrollText, labelKey: "nav.aiLogs" },
   { to: "/web/notifications", icon: Bell, labelKey: "nav.notifications" },
   { to: "/web/settings", icon: Settings, labelKey: "nav.settings" },
 ];

@@ -1,9 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { AiModule } from '../ai/ai.module';
 
 // Hermes Integration — now a self-contained module
 import { HermesModule } from './hermes/hermes.module';
-import { HermesWhatsAppBridgeAgent } from './hermes/hermes-whatsapp-bridge.agent';
 
 // WhatsApp Agent Integration
 import { WhatsAppClientService } from './whatsapp/services/whatsapp-client.service';
@@ -106,13 +106,17 @@ import { I18nModule } from './i18n/i18n.module';
 @Module({
   imports: [
     AuthModule,
-    HermesModule.forRoot({
-      notificationService: NotificationService,
-      integrationService: HermesIntegrationService,
-      eventBusService: EventBusService,
-      whatsAppAgent: WhatsAppAgent,
-      useExistingAdapters: true,
-    }),
+    forwardRef(() => AiModule),
+    forwardRef(() =>
+      HermesModule.forRoot({
+        notificationService: NotificationService,
+        integrationService: HermesIntegrationService,
+        eventBusService: EventBusService,
+        whatsAppAgent: WhatsAppAgent,
+        useExistingAdapters: true,
+        imports: [AuthModule, forwardRef(() => HrModule)],
+      }),
+    ),
   ],
   controllers: [
     TaraEmployeeController,
@@ -203,7 +207,6 @@ import { I18nModule } from './i18n/i18n.module';
     WhatsAppAuditService,
     WhatsAppVerificationService,
     WhatsAppAgent,
-    HermesWhatsAppBridgeAgent,
   ],
   exports: [
     EventBusService,
@@ -211,13 +214,17 @@ import { I18nModule } from './i18n/i18n.module';
     EmployeeManagementService,
     GeoService,
     NotificationService,
+    HermesIntegrationService,
     LeaveService,
+    LoanService,
     SystemSettingsService,
     AgentConfigService,
     WarningLetterService,
     DepartmentService,
     RoleService,
     SupervisorService,
+    WhatsAppOutboundService,
+    WhatsAppAgent,
   ],
 })
 export class HrModule {}

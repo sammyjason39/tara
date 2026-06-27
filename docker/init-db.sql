@@ -13,6 +13,14 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- pg_trgm for full-text search on employee names
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
+-- pgvector for SOP RAG embeddings (optional — JSONB fallback if unavailable)
+DO $$
+BEGIN
+  CREATE EXTENSION IF NOT EXISTS vector;
+EXCEPTION WHEN OTHERS THEN
+  RAISE NOTICE 'pgvector extension not available — using JSONB embedding fallback';
+END $$;
+
 -- Verify extensions
 DO $$
 BEGIN

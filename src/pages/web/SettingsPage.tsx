@@ -4,9 +4,10 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import {
   Bot, Clock, MapPin, CalendarDays, Bell, Server,
-  Building2, Users, Shield, Key, Send, Zap, Plus,
+  Building2, Users, Shield, Key, Send,
   Trash2, TestTube, Wifi, X, Save, Activity, Pencil, Building,
 } from "lucide-react";
+import { AiAssistantSection } from "./AiLogsPage";
 import { cn } from "@/lib/utils";
 
 const sections = [
@@ -18,7 +19,7 @@ const sections = [
   { id: "geofence", label: "Lokasi & Geo-Fence", icon: MapPin },
   { id: "leaves", label: "Kebijakan Cuti", icon: CalendarDays },
   { id: "channels", label: "Kanal Notifikasi", icon: Send },
-  { id: "hermes", label: "Hermes AI", icon: Zap },
+  { id: "ai", label: "AI Assistant", icon: Bot },
 ];
 
 export function SettingsPage() {
@@ -48,7 +49,7 @@ export function SettingsPage() {
           {active === "geofence" && <GeoFenceSection />}
           {active === "leaves" && <LeavesSection />}
           {active === "channels" && <ChannelsSection />}
-          {active === "hermes" && <HermesSection />}
+          {active === "ai" && <AiAssistantSection />}
         </div>
       </div>
     </div>
@@ -610,108 +611,6 @@ function ChannelsSection() {
         )}
       </div>
       <button onClick={saveChannels} className="px-4 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"><Save className="h-3.5 w-3.5 inline mr-1.5" />Simpan Semua Konfigurasi</button>
-    </div>
-  );
-}
-
-// === HERMES AI ===
-function HermesSection() {
-  const [enabled, setEnabled] = useState(false);
-  const [config, setConfig] = useState({ url: "", api_key: "", webhook_secret: "" });
-  const [agents, setAgents] = useState<any[]>([]);
-  const [showAddAgent, setShowAddAgent] = useState(false);
-  const [newAgent, setNewAgent] = useState({ name: "", endpoint_url: "", authority: "read_only" });
-  const [authority, setAuthority] = useState("read_only");
-  const [events, setEvents] = useState<Record<string, boolean>>({
-    "attendance.clock_in": true, "attendance.tardiness_detected": true,
-    "leave.request.submitted": true, "leave.request.approved": true,
-    "report.tardiness_generated": true, "onboarding.workflow_completed": true,
-  });
-
-  const testConnection = () => {
-    if (!config.url) { toast.error("Connection URL wajib diisi"); return; }
-    toast.success(`Koneksi ke ${config.url} berhasil (demo mode)`);
-  };
-  const addAgent = () => {
-    if (!newAgent.name || !newAgent.endpoint_url) { toast.error("Nama dan endpoint wajib diisi"); return; }
-    setAgents([...agents, { ...newAgent, id: `h-${Date.now()}`, health_status: "unknown", is_enabled: true }]);
-    toast.success(`Agen "${newAgent.name}" berhasil ditambahkan`);
-    setShowAddAgent(false); setNewAgent({ name: "", endpoint_url: "", authority: "read_only" });
-  };
-  const removeAgent = (id: string) => { setAgents(agents.filter(a => a.id !== id)); toast.success("Agen dihapus"); };
-  const saveHermes = () => toast.success("Konfigurasi Hermes AI disimpan");
-
-  return (
-    <div className="space-y-6">
-      <SH title="Hermes Agentic AI" sub="Konfigurasi koneksi, agen, dan otoritas Hermes" />
-      {/* Connection */}
-      <div className="surface-elevated p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium">Koneksi Hermes</p>
-          <Toggle on={enabled} onToggle={() => { setEnabled(!enabled); toast.success(enabled ? "Hermes dinonaktifkan" : "Hermes diaktifkan"); }} />
-        </div>
-        {enabled && (
-          <div className="space-y-3 animate-fade-in">
-            <div className="grid grid-cols-2 gap-3">
-              <Inp label="Connection URL" value={config.url} onChange={v => setConfig({...config, url: v})} placeholder="https://hermes.api.example.com" />
-              <Inp label="API Key" value={config.api_key} onChange={v => setConfig({...config, api_key: v})} placeholder="sk-..." />
-              <Inp label="Webhook Secret" value={config.webhook_secret} onChange={v => setConfig({...config, webhook_secret: v})} placeholder="whsec_..." />
-            </div>
-            <button onClick={testConnection} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-input text-xs hover:bg-accent"><Wifi className="h-3 w-3" /> Tes Koneksi</button>
-          </div>
-        )}
-      </div>
-      {/* Agents */}
-      <div className="surface-elevated p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium">Agen Hermes</p>
-          <button onClick={() => setShowAddAgent(!showAddAgent)} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-gold/10 text-gold text-xs font-medium hover:bg-gold/20"><Plus className="h-3 w-3" /> Tambah Agen</button>
-        </div>
-        {showAddAgent && (
-          <div className="p-4 rounded-md border border-gold/20 space-y-3 animate-fade-in">
-            <div className="grid grid-cols-2 gap-3">
-              <Inp label="Nama Agen" value={newAgent.name} onChange={v => setNewAgent({...newAgent, name: v})} placeholder="HR Assistant" />
-              <Inp label="Endpoint URL" value={newAgent.endpoint_url} onChange={v => setNewAgent({...newAgent, endpoint_url: v})} placeholder="https://..." />
-            </div>
-            <div className="flex gap-2"><button onClick={() => setShowAddAgent(false)} className="px-3 py-1.5 rounded text-xs border border-input hover:bg-accent">Batal</button><button onClick={addAgent} className="px-3 py-1.5 rounded text-xs bg-primary text-primary-foreground font-medium">Tambah</button></div>
-          </div>
-        )}
-        {agents.length === 0 ? (
-          <p className="text-2xs text-muted-foreground">Belum ada agen Hermes terdaftar.</p>
-        ) : agents.map(a => (
-          <div key={a.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-            <div><p className="text-sm font-medium">{a.name}</p><p className="text-2xs text-muted-foreground">{a.endpoint_url}</p></div>
-            <button onClick={() => removeAgent(a.id)} className="p-1 hover:text-destructive"><Trash2 className="h-3.5 w-3.5 text-muted-foreground" /></button>
-          </div>
-        ))}
-      </div>
-      {/* Event Forwarding */}
-      <div className="surface-elevated p-5 space-y-3">
-        <p className="text-sm font-medium">Event yang Diteruskan ke Hermes</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-          {Object.entries(events).map(([ev, checked]) => (
-            <label key={ev} className="flex items-center gap-2 px-3 py-2 rounded-md border border-input text-xs hover:bg-accent/50 cursor-pointer">
-              <input type="checkbox" checked={checked} onChange={() => setEvents({...events, [ev]: !checked})} className="rounded" />
-              <span className="font-mono">{ev}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-      {/* Authority */}
-      <div className="surface-elevated p-5 space-y-3">
-        <p className="text-sm font-medium">Level Otoritas Default</p>
-        {[
-          { v: "read_only", l: "Baca Saja", d: "Hanya bisa membaca data, tidak bisa mengubah" },
-          { v: "read_write", l: "Baca & Tulis", d: "Bisa membaca dan mengubah data dengan persetujuan" },
-          { v: "full_autonomous", l: "Otonom Penuh", d: "Bisa bertindak tanpa persetujuan manual" },
-        ].map(a => (
-          <label key={a.v} onClick={() => setAuthority(a.v)} className={cn("flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-colors", authority === a.v ? "border-gold bg-gold/5" : "border-input hover:border-gold/50")}>
-            <input type="radio" name="authority" checked={authority === a.v} onChange={() => setAuthority(a.v)} className="mt-0.5" />
-            <div><p className="text-sm font-medium">{a.l}</p><p className="text-2xs text-muted-foreground">{a.d}</p></div>
-          </label>
-        ))}
-      </div>
-      <button onClick={saveHermes} className="px-4 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"><Save className="h-3.5 w-3.5 inline mr-1.5" />Simpan Konfigurasi Hermes</button>
     </div>
   );
 }
