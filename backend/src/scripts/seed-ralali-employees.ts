@@ -154,6 +154,23 @@ function parseDate(value: string): Date | null {
   return null;
 }
 
+function dedupeEmail(email: string, employeeNumber: string, usedEmails: Set<string>): string {
+  let candidate = email.toLowerCase().trim();
+  if (!usedEmails.has(candidate)) {
+    usedEmails.add(candidate);
+    return candidate;
+  }
+
+  const [local, domain] = candidate.split('@');
+  candidate = `${local}.${employeeNumber}@${domain}`;
+  if (usedEmails.has(candidate)) {
+    candidate = `${local}+${employeeNumber}@${domain}`;
+  }
+  usedEmails.add(candidate);
+  console.warn(`[RALALI] Duplicate email ${email} → using ${candidate}`);
+  return candidate;
+}
+
 function normalizePhone(raw: string): string | null {
   const digits = raw.replace(/\D/g, '');
   if (!digits) return null;
@@ -322,12 +339,15 @@ async function main() {
   let employeeCount = 0;
   const skipped: string[] = [];
   const unmappedFields = { jobPosition: 0, gender: 0, divisionOnly: 0 };
+  const usedEmails = new Set<string>();
 
   for (const row of rows) {
     if (!row.email) {
       skipped.push(`${row.fullName} (no email)`);
       continue;
     }
+
+    const email = dedupeEmail(row.email, String(row.employeeNumber), usedEmails);
 
     const deptName = row.department || row.division;
     if (!row.department && row.division) unmappedFields.divisionOnly++;
@@ -342,7 +362,7 @@ async function main() {
     await seedEmployee({
       employee_code: String(row.employeeNumber),
       full_name: row.fullName,
-      email: row.email,
+      email,
       phone: phone ? `+${phone}` : null,
       whatsapp_number: phone,
       departmentName: deptName,
