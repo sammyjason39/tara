@@ -216,11 +216,32 @@ function AgentsSection() {
 }
 
 // === ORGANIZATION ===
+function asList<T>(value: unknown): T[] {
+  return Array.isArray(value) ? value : [];
+}
+
 function OrganizationSection() {
   const queryClient = useQueryClient();
-  const { data: offices } = useQuery({ queryKey: ["admin-offices"], queryFn: () => api.get("/admin/offices"), placeholderData: { data: [] } });
-  const { data: departments } = useQuery({ queryKey: ["admin-departments"], queryFn: () => api.get("/admin/departments"), placeholderData: { data: [] } });
-  const { data: roles } = useQuery({ queryKey: ["admin-roles"], queryFn: () => api.get("/admin/roles"), placeholderData: { data: [] } });
+  const { data: officesRes, isError: officesError } = useQuery({
+    queryKey: ["admin-offices"],
+    queryFn: () => api.get("/admin/offices"),
+    placeholderData: { data: [] },
+  });
+  const { data: departmentsRes, isError: departmentsError } = useQuery({
+    queryKey: ["admin-departments"],
+    queryFn: () => api.get("/admin/departments"),
+    placeholderData: { data: [] },
+  });
+  const { data: rolesRes, isError: rolesError } = useQuery({
+    queryKey: ["admin-roles"],
+    queryFn: () => api.get("/admin/roles"),
+    placeholderData: { data: [] },
+  });
+
+  const offices = asList<any>(officesRes?.data);
+  const departments = asList<any>(departmentsRes?.data);
+  const roles = asList<any>(rolesRes?.data);
+  const loadError = officesError || departmentsError || rolesError;
   const [showOfficeForm, setShowOfficeForm] = useState(false);
   const [showDeptForm, setShowDeptForm] = useState(false);
   const [showRoleForm, setShowRoleForm] = useState(false);
@@ -317,6 +338,11 @@ function OrganizationSection() {
   return (
     <div className="space-y-6">
       <SH title="Organisasi" sub="Kelola kantor, departemen, dan jabatan" />
+      {loadError && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          Gagal memuat data organisasi. Silakan refresh halaman atau login ulang.
+        </div>
+      )}
       {/* Offices */}
       <div className="surface-elevated p-5 space-y-3">
         <div className="flex items-center justify-between">
@@ -339,7 +365,7 @@ function OrganizationSection() {
             </div>
           </div>
         )}
-        {(offices?.data || []).map((o: any) => (
+        {offices.map((o: any) => (
           <div key={o.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
             <div><p className="text-sm font-medium">{o.location_name}</p><p className="text-2xs text-muted-foreground">{o.address || "—"} • Radius {o.geofence_radius_meters}m</p></div>
             <div className="flex items-center gap-1">
@@ -368,7 +394,7 @@ function OrganizationSection() {
             </div>
           </div>
         )}
-        {(departments?.data || []).map((d: any) => (
+        {departments.map((d: any) => (
           <div key={d.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
             <div><p className="text-sm font-medium">{d.name}</p><p className="text-2xs text-muted-foreground">{d.description || "—"} • {d.employees?.length || 0} karyawan</p></div>
             <div className="flex items-center gap-1">
@@ -390,10 +416,10 @@ function OrganizationSection() {
             <div className="flex gap-2"><button onClick={() => setShowRoleForm(false)} className="px-3 py-1.5 rounded text-xs border border-input hover:bg-accent">Batal</button><button onClick={addRole} className="px-3 py-1.5 rounded text-xs bg-primary text-primary-foreground font-medium">Simpan</button></div>
           </div>
         )}
-        {(roles?.data || []).map((r: any) => (
+        {roles.map((r: any) => (
           <div key={r.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
             <div><p className="text-sm font-medium">{r.role_name}</p><p className="text-2xs text-muted-foreground">{r.employees?.length || 0} pengguna</p></div>
-            <button onClick={() => toast("Edit izin segera hadir")} className="text-2xs text-gold hover:text-gold/80">Edit Izin</button>
+            <button onClick={() => toast.info("Edit izin segera hadir")} className="text-2xs text-gold hover:text-gold/80">Edit Izin</button>
           </div>
         ))}
       </div>
