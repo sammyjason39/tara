@@ -3,6 +3,9 @@ import fc from 'fast-check';
 import { LeaveService } from './leave.service';
 import { PrismaService } from '../../../persistence/prisma.service';
 import { EventBusService } from '../../../shared/events/event-bus.service';
+import { NotificationService } from './notification.service';
+import { LeaveRequestAgent } from '../agents/leave-request.agent';
+import { CacheAsideService } from '../../../shared/cache/cache-aside.service';
 
 /**
  * Property Test 2: Leave Balance Update Accuracy
@@ -61,6 +64,13 @@ describe('Property 2: Leave Balance Update Accuracy', () => {
     leaveService = new LeaveService(
       mockPrismaService as PrismaService,
       mockEventBusService as EventBusService,
+      { sendNotification: vi.fn() } as unknown as NotificationService,
+      {
+        processLeaveRequestSubmission: vi.fn(),
+        processLeaveRequestApproval: vi.fn(),
+        processLeaveRequestRejection: vi.fn(),
+      } as unknown as LeaveRequestAgent,
+      new CacheAsideService(),
     );
   });
 

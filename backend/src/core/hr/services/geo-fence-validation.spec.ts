@@ -29,7 +29,7 @@ describe('GeoService - Geo-Fence Validation', () => {
   beforeEach(() => {
     // Create mock Prisma service
     mockPrismaService = {
-      locations: {
+      officeLocation: {
         findUnique: vi.fn(),
       },
     };
@@ -42,11 +42,11 @@ describe('GeoService - Geo-Fence Validation', () => {
     describe('successful validation', () => {
       it('should validate employee within geo-fence', async () => {
         // Mock location data
-        mockPrismaService.locations.findUnique.mockResolvedValue({
-          name: mockOfficeName,
+        mockPrismaService.officeLocation.findUnique.mockResolvedValue({
+          location_name: mockOfficeName,
           latitude: mockOfficeLatitude,
           longitude: mockOfficeLongitude,
-          geofence_radius: mockGeofenceRadius,
+          geofence_radius_meters: mockGeofenceRadius,
         });
 
         // Employee location 50 meters away (within 200m fence)
@@ -69,11 +69,11 @@ describe('GeoService - Geo-Fence Validation', () => {
       });
 
       it('should validate employee outside geo-fence', async () => {
-        mockPrismaService.locations.findUnique.mockResolvedValue({
-          name: mockOfficeName,
+        mockPrismaService.officeLocation.findUnique.mockResolvedValue({
+          location_name: mockOfficeName,
           latitude: mockOfficeLatitude,
           longitude: mockOfficeLongitude,
-          geofence_radius: mockGeofenceRadius,
+          geofence_radius_meters: mockGeofenceRadius,
         });
 
         // Employee location 500 meters away (outside 200m fence)
@@ -92,11 +92,11 @@ describe('GeoService - Geo-Fence Validation', () => {
       });
 
       it('should validate employee at exact geo-fence boundary', async () => {
-        mockPrismaService.locations.findUnique.mockResolvedValue({
-          name: mockOfficeName,
+        mockPrismaService.officeLocation.findUnique.mockResolvedValue({
+          location_name: mockOfficeName,
           latitude: mockOfficeLatitude,
           longitude: mockOfficeLongitude,
-          geofence_radius: 100,
+          geofence_radius_meters: 100,
         });
 
         // Employee exactly 100 meters away (approximately)
@@ -115,33 +115,33 @@ describe('GeoService - Geo-Fence Validation', () => {
       });
 
       it('should query the correct location from database', async () => {
-        mockPrismaService.locations.findUnique.mockResolvedValue({
-          name: mockOfficeName,
+        mockPrismaService.officeLocation.findUnique.mockResolvedValue({
+          location_name: mockOfficeName,
           latitude: mockOfficeLatitude,
           longitude: mockOfficeLongitude,
-          geofence_radius: mockGeofenceRadius,
+          geofence_radius_meters: mockGeofenceRadius,
         });
 
         await service.validateGeoFence(-8.6705, 115.2126, mockLocationId);
 
-        expect(mockPrismaService.locations.findUnique).toHaveBeenCalledWith({
+        expect(mockPrismaService.officeLocation.findUnique).toHaveBeenCalledWith({
           where: { id: mockLocationId },
           select: {
-            name: true,
+            location_name: true,
             latitude: true,
             longitude: true,
-            geofence_radius: true,
+            geofence_radius_meters: true,
           },
         });
       });
 
       it('should handle Decimal conversion correctly', async () => {
         // Test with Decimal objects (as Prisma returns)
-        mockPrismaService.locations.findUnique.mockResolvedValue({
-          name: mockOfficeName,
+        mockPrismaService.officeLocation.findUnique.mockResolvedValue({
+          location_name: mockOfficeName,
           latitude: new Decimal('-6.2088'),
           longitude: new Decimal('106.8456'),
-          geofence_radius: 250,
+          geofence_radius_meters: 250,
         });
 
         const result = await service.validateGeoFence(
@@ -159,7 +159,7 @@ describe('GeoService - Geo-Fence Validation', () => {
 
     describe('error handling', () => {
       it('should throw error if location not found', async () => {
-        mockPrismaService.locations.findUnique.mockResolvedValue(null);
+        mockPrismaService.officeLocation.findUnique.mockResolvedValue(null);
 
         await expect(
           service.validateGeoFence(-8.6705, 115.2126, 'non-existent-id'),
@@ -167,11 +167,11 @@ describe('GeoService - Geo-Fence Validation', () => {
       });
 
       it('should throw error if location has no latitude', async () => {
-        mockPrismaService.locations.findUnique.mockResolvedValue({
-          name: mockOfficeName,
+        mockPrismaService.officeLocation.findUnique.mockResolvedValue({
+          location_name: mockOfficeName,
           latitude: null,
           longitude: mockOfficeLongitude,
-          geofence_radius: mockGeofenceRadius,
+          geofence_radius_meters: mockGeofenceRadius,
         });
 
         await expect(
@@ -180,11 +180,11 @@ describe('GeoService - Geo-Fence Validation', () => {
       });
 
       it('should throw error if location has no longitude', async () => {
-        mockPrismaService.locations.findUnique.mockResolvedValue({
-          name: mockOfficeName,
+        mockPrismaService.officeLocation.findUnique.mockResolvedValue({
+          location_name: mockOfficeName,
           latitude: mockOfficeLatitude,
           longitude: null,
-          geofence_radius: mockGeofenceRadius,
+          geofence_radius_meters: mockGeofenceRadius,
         });
 
         await expect(
@@ -193,11 +193,11 @@ describe('GeoService - Geo-Fence Validation', () => {
       });
 
       it('should throw error if location has no geofence_radius', async () => {
-        mockPrismaService.locations.findUnique.mockResolvedValue({
-          name: mockOfficeName,
+        mockPrismaService.officeLocation.findUnique.mockResolvedValue({
+          location_name: mockOfficeName,
           latitude: mockOfficeLatitude,
           longitude: mockOfficeLongitude,
-          geofence_radius: null,
+          geofence_radius_meters: null,
         });
 
         await expect(
@@ -206,11 +206,11 @@ describe('GeoService - Geo-Fence Validation', () => {
       });
 
       it('should throw error for invalid employee coordinates', async () => {
-        mockPrismaService.locations.findUnique.mockResolvedValue({
-          name: mockOfficeName,
+        mockPrismaService.officeLocation.findUnique.mockResolvedValue({
+          location_name: mockOfficeName,
           latitude: mockOfficeLatitude,
           longitude: mockOfficeLongitude,
-          geofence_radius: mockGeofenceRadius,
+          geofence_radius_meters: mockGeofenceRadius,
         });
 
         // Invalid latitude (> 90)
@@ -222,11 +222,11 @@ describe('GeoService - Geo-Fence Validation', () => {
 
     describe('different geo-fence radii', () => {
       it('should work with small geo-fence (50m)', async () => {
-        mockPrismaService.locations.findUnique.mockResolvedValue({
-          name: mockOfficeName,
+        mockPrismaService.officeLocation.findUnique.mockResolvedValue({
+          location_name: mockOfficeName,
           latitude: mockOfficeLatitude,
           longitude: mockOfficeLongitude,
-          geofence_radius: 50,
+          geofence_radius_meters: 50,
         });
 
         // Employee 30 meters away
@@ -242,11 +242,11 @@ describe('GeoService - Geo-Fence Validation', () => {
       });
 
       it('should work with large geo-fence (1000m)', async () => {
-        mockPrismaService.locations.findUnique.mockResolvedValue({
-          name: mockOfficeName,
+        mockPrismaService.officeLocation.findUnique.mockResolvedValue({
+          location_name: mockOfficeName,
           latitude: mockOfficeLatitude,
           longitude: mockOfficeLongitude,
-          geofence_radius: 1000,
+          geofence_radius_meters: 1000,
         });
 
         // Employee 500 meters away
@@ -267,11 +267,11 @@ describe('GeoService - Geo-Fence Validation', () => {
         const officeLatitude = new Decimal('-6.2088');
         const officeLongitude = new Decimal('106.8456');
 
-        mockPrismaService.locations.findUnique.mockResolvedValue({
-          name: 'PT. Maju Bersama HQ',
+        mockPrismaService.officeLocation.findUnique.mockResolvedValue({
+          location_name: 'PT. Maju Bersama HQ',
           latitude: officeLatitude,
           longitude: officeLongitude,
-          geofence_radius: 200,
+          geofence_radius_meters: 200,
         });
 
         // Employee at entrance, 50 meters from office center
@@ -289,11 +289,11 @@ describe('GeoService - Geo-Fence Validation', () => {
         const officeLatitude = new Decimal('-6.2088');
         const officeLongitude = new Decimal('106.8456');
 
-        mockPrismaService.locations.findUnique.mockResolvedValue({
-          name: 'PT. Maju Bersama HQ',
+        mockPrismaService.officeLocation.findUnique.mockResolvedValue({
+          location_name: 'PT. Maju Bersama HQ',
           latitude: officeLatitude,
           longitude: officeLongitude,
-          geofence_radius: 200,
+          geofence_radius_meters: 200,
         });
 
         // Employee at coffee shop, 500 meters away
@@ -316,29 +316,29 @@ describe('GeoService - Geo-Fence Validation', () => {
 
     beforeEach(() => {
       // Setup mock for multiple locations
-      mockPrismaService.locations.findUnique.mockImplementation(({ where }: any) => {
+      mockPrismaService.officeLocation.findUnique.mockImplementation(({ where }: any) => {
         if (where.id === location1Id) {
           return Promise.resolve({
-            name: 'Jakarta Office',
+            location_name: 'Jakarta Office',
             latitude: new Decimal('-6.2088'),
             longitude: new Decimal('106.8456'),
-            geofence_radius: 200,
+            geofence_radius_meters: 200,
           });
         }
         if (where.id === location2Id) {
           return Promise.resolve({
-            name: 'Bali Office',
+            location_name: 'Bali Office',
             latitude: new Decimal('-8.6705'),
             longitude: new Decimal('115.2126'),
-            geofence_radius: 150,
+            geofence_radius_meters: 150,
           });
         }
         if (where.id === location3Id) {
           return Promise.resolve({
-            name: 'Surabaya Office',
+            location_name: 'Surabaya Office',
             latitude: new Decimal('-7.2575'),
             longitude: new Decimal('112.7521'),
-            geofence_radius: 300,
+            geofence_radius_meters: 300,
           });
         }
         return Promise.resolve(null);
@@ -414,7 +414,7 @@ describe('GeoService - Geo-Fence Validation', () => {
     });
 
     it('should throw error if all locations are invalid', async () => {
-      mockPrismaService.locations.findUnique.mockResolvedValue(null);
+      mockPrismaService.officeLocation.findUnique.mockResolvedValue(null);
 
       await expect(
         service.validateGeoFenceMultiple(-8.6705, 115.2126, ['invalid-1', 'invalid-2']),
@@ -423,13 +423,13 @@ describe('GeoService - Geo-Fence Validation', () => {
 
     it('should handle mix of valid and invalid locations', async () => {
       // Only location2 is valid, others return null
-      mockPrismaService.locations.findUnique.mockImplementation(({ where }: any) => {
+      mockPrismaService.officeLocation.findUnique.mockImplementation(({ where }: any) => {
         if (where.id === location2Id) {
           return Promise.resolve({
-            name: 'Bali Office',
+            location_name: 'Bali Office',
             latitude: new Decimal('-8.6705'),
             longitude: new Decimal('115.2126'),
-            geofence_radius: 150,
+            geofence_radius_meters: 150,
           });
         }
         return Promise.resolve(null);

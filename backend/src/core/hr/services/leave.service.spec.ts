@@ -5,6 +5,8 @@ import { LeaveService } from './leave.service';
 import { PrismaService } from '../../../persistence/prisma.service';
 import { EventBusService } from './event-bus.service';
 import { NotificationService } from './notification.service';
+import { LeaveRequestAgent } from '../agents/leave-request.agent';
+import { CacheAsideService } from '../../../shared/cache/cache-aside.service';
 
 describe('LeaveService', () => {
   let service: LeaveService;
@@ -53,6 +55,15 @@ describe('LeaveService', () => {
           provide: NotificationService,
           useValue: mockNotificationService,
         },
+        {
+          provide: LeaveRequestAgent,
+          useValue: {
+            processLeaveRequestSubmission: vi.fn(),
+            processLeaveRequestApproval: vi.fn(),
+            processLeaveRequestRejection: vi.fn(),
+          },
+        },
+        CacheAsideService,
       ],
     }).compile();
 

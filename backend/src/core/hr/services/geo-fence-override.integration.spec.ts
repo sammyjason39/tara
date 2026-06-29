@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { GeoFenceOverrideService } from './geo-fence-override.service';
 import { PrismaService } from '../../../persistence/prisma.service';

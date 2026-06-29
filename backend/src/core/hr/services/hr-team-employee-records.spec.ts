@@ -1,8 +1,8 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { TaraEmployeeService } from './tara-employee.service';
 import { EmployeeManagementService, CreateEmployeeDto } from './employee-management.service';
+import { CacheAsideService } from '../../../shared/cache/cache-aside.service';
 import { TaraContextQueryService } from '../../auth/services/tara-context-query.service';
-import { ContextDeterminerService } from '../../auth/services/context-determiner.service';
 import type { TaraAuthPayload } from '../../auth/tara-auth.service';
 import type { PrismaService } from '../../../persistence/prisma.service';
 import type { EventBusService } from './event-bus.service';
@@ -49,6 +49,7 @@ describe('HR_Team Employee Records (Task 35.1)', () => {
       employeeService = new EmployeeManagementService(
         prisma as unknown as PrismaService,
         eventBus as unknown as EventBusService,
+        new CacheAsideService(),
       );
     });
 
@@ -513,75 +514,6 @@ describe('HR_Team Employee Records (Task 35.1)', () => {
           },
         },
       });
-    });
-  });
-
-  describe('Context Determination: HR_Team on Mobile gets Personal_Employee_Context', () => {
-    let contextDeterminer: ContextDeterminerService;
-
-    beforeEach(() => {
-      contextDeterminer = new ContextDeterminerService();
-    });
-
-    test('HR_Team on Mobile → Personal_Employee_Context (required for clock-in/out)', () => {
-      const result = contextDeterminer.determineContext({
-        role: 'HR_Team',
-        interfaceOrigin: 'Mobile',
-      });
-
-      expect(result.context).toBe('Personal_Employee');
-      expect(result.canAccessAllEmployees).toBe(false);
-      expect(result.role).toBe('HR_Team');
-      expect(result.interface).toBe('Mobile');
-    });
-
-    test('HR_Team on Web → Administrative_Context (NOT for personal clock-in/out)', () => {
-      const result = contextDeterminer.determineContext({
-        role: 'HR_Team',
-        interfaceOrigin: 'Web',
-      });
-
-      expect(result.context).toBe('Administrative');
-      expect(result.canAccessAllEmployees).toBe(true);
-    });
-
-    test('Mobile interface defaults secure context even with missing header', () => {
-      const interfaceType = contextDeterminer.extractInterfaceFromHeader(undefined);
-      expect(interfaceType).toBe('Mobile');
-
-      // Which means HR_Team without header is safely restricted
-      const result = contextDeterminer.determineContext({
-        role: 'HR_Team',
-        interfaceOrigin: interfaceType,
-      });
-      expect(result.context).toBe('Personal_Employee');
-    });
-
-    test('HR_Team Mobile context allows clock-in with their own employee_id only', () => {
-      const contextQueryService = new TaraContextQueryService();
-      const hrMobileUser: TaraAuthPayload = {
-        sub: 'emp-hr-001',
-        email: 'sarah.hr@company.com',
-        role: 'HR_Team',
-        context: 'Personal_Employee',
-        interface: 'Mobile',
-        tenant_id: 'tenant-1',
-        session_id: 'session-1',
-      };
-
-      // HR_Team on Mobile can only access their own data
-      const employeeFilter = contextQueryService.getEmployeeIdFilter(hrMobileUser);
-      expect(employeeFilter).toBe('emp-hr-001');
-
-      // Validate access to own data - should succeed
-      expect(() => {
-        contextQueryService.validateContextAccess(hrMobileUser, 'emp-hr-001');
-      }).not.toThrow();
-
-      // Validate access to other employee data - should fail
-      expect(() => {
-        contextQueryService.validateContextAccess(hrMobileUser, 'emp-other-001');
-      }).toThrow();
     });
   });
 

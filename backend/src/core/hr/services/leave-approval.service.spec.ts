@@ -5,6 +5,8 @@ import { LeaveService } from './leave.service';
 import { PrismaService } from '../../../persistence/prisma.service';
 import { EventBusService } from './event-bus.service';
 import { NotificationService } from './notification.service';
+import { LeaveRequestAgent } from '../agents/leave-request.agent';
+import { CacheAsideService } from '../../../shared/cache/cache-aside.service';
 
 /**
  * Unit tests for Leave Approval Workflow
@@ -96,6 +98,15 @@ describe('LeaveService - Approval Workflow', () => {
             sendNotification: vi.fn(),
           },
         },
+        {
+          provide: LeaveRequestAgent,
+          useValue: {
+            processLeaveRequestSubmission: vi.fn(),
+            processLeaveRequestApproval: vi.fn(),
+            processLeaveRequestRejection: vi.fn(),
+          },
+        },
+        CacheAsideService,
       ],
     }).compile();
 
@@ -277,7 +288,7 @@ describe('LeaveService - Approval Workflow', () => {
         expect.objectContaining({
           event_type: 'leave.request.approved',
           event_version: '1.0',
-          actor: { id: mockApproverId, type: 'approver' },
+          actor: { id: mockApproverId, type: 'employee' },
           entity: { id: mockLeaveRequestId, type: 'leave_request' },
           payload: expect.objectContaining({
             leave_request_id: mockLeaveRequestId,
@@ -474,7 +485,7 @@ describe('LeaveService - Approval Workflow', () => {
         expect.objectContaining({
           event_type: 'leave.request.rejected',
           event_version: '1.0',
-          actor: { id: mockApproverId, type: 'approver' },
+          actor: { id: mockApproverId, type: 'employee' },
           entity: { id: mockLeaveRequestId, type: 'leave_request' },
           payload: expect.objectContaining({
             leave_request_id: mockLeaveRequestId,

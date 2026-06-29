@@ -1,10 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { GlobalValidationPipe } from '../../../shared/pipes/global-validation.pipe';
-import { ArgumentMetadata, BadRequestException } from '@nestjs/common';
+import { ArgumentMetadata, BadRequestException, ValidationPipe } from '@nestjs/common';
 import { CreateEmployeeDto } from './create-employee.dto';
 
 describe('CreateEmployeeDto', () => {
-  let pipe: GlobalValidationPipe;
+  let pipe: ValidationPipe;
 
   const createMetadata = (metatype: any): ArgumentMetadata => ({
     type: 'body',
@@ -13,7 +12,7 @@ describe('CreateEmployeeDto', () => {
   });
 
   beforeEach(() => {
-    pipe = new GlobalValidationPipe();
+    pipe = new ValidationPipe({ transform: true, whitelist: true });
   });
 
   it('should pass with valid employee data', async () => {

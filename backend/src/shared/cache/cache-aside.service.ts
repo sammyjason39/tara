@@ -9,9 +9,11 @@ export class CacheAsideService {
   private cache = new Map<string, { value: any; expires: number }>();
 
   static LEAVE_BALANCE_TTL = 300_000;
+  static EMPLOYEE_PROFILE_TTL = 300_000;
 
   static leaveBalnceKey(employeeId: string) { return `leave_balance:${employeeId}`; }
   static leaveBalanceKey(employeeId: string, year?: number) { return `leave_balance:${employeeId}:${year || 'current'}`; }
+  static employeeProfileKey(employeeId: string) { return `employee_profile:${employeeId}`; }
 
   async get<T>(key: string): Promise<T | null> {
     const entry = this.cache.get(key);

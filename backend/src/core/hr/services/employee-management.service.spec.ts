@@ -3,7 +3,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { EmployeeManagementService, CreateEmployeeDto, UpdateEmployeeDto } from './employee-management.service';
 import { PrismaService } from '../../../persistence/prisma.service';
-import { EventBusService } from '../../../shared/events/event-bus.service';
+import { EventBusService } from './event-bus.service';
+import { CacheAsideService } from '../../../shared/cache/cache-aside.service';
 
 describe('EmployeeManagementService', () => {
   let service: EmployeeManagementService;
@@ -46,7 +47,7 @@ describe('EmployeeManagementService', () => {
 
   beforeEach(async () => {
     const mockPrismaService = {
-      employees: {
+      employee: {
         findFirst: vi.fn(),
         findMany: vi.fn(),
         create: vi.fn(),
@@ -70,6 +71,7 @@ describe('EmployeeManagementService', () => {
           provide: EventBusService,
           useValue: mockEventBusService,
         },
+        CacheAsideService,
       ],
     }).compile();
 
@@ -97,10 +99,10 @@ describe('EmployeeManagementService', () => {
 
     it('should create an employee successfully', async () => {
       // Mock: no existing email or employee_code
-      prismaService.employees.findFirst.mockResolvedValue(null);
+      prismaService.employee.findFirst.mockResolvedValue(null);
 
       // Mock: employee creation
-      prismaService.employees.create.mockResolvedValue({
+      prismaService.employee.create.mockResolvedValue({
         ...mockEmployee,
         departments: { id: mockDepartmentId, department_name: 'Engineering' } as any,
         tara_roles: null,
@@ -111,7 +113,7 @@ describe('EmployeeManagementService', () => {
 
       expect(result).toBeDefined();
       expect(result.email).toBe(createData.email);
-      expect(prismaService.employees.create).toHaveBeenCalledWith(
+      expect(prismaService.employee.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             email: createData.email,
@@ -142,8 +144,8 @@ describe('EmployeeManagementService', () => {
     });
 
     it('should throw ConflictException when email already exists', async () => {
-      // Mock: existing email found
-      prismaService.employees.findFirst.mockResolvedValueOnce(mockEmployee as any);
+      // Mock: existing email found (stable across repeated invocations)
+      prismaService.employee.findFirst.mockResolvedValue(mockEmployee as any);
 
       await expect(service.createEmployee(createData, 'user-123')).rejects.toThrow(ConflictException);
       await expect(service.createEmployee(createData, 'user-123')).rejects.toThrow(
@@ -152,10 +154,10 @@ describe('EmployeeManagementService', () => {
     });
 
     it('should throw ConflictException when employee_code already exists', async () => {
-      // Mock: no existing email, but existing employee_code
-      prismaService.employees.findFirst
-        .mockResolvedValueOnce(null) // email check
-        .mockResolvedValueOnce(mockEmployee as any); // employee_code check
+      // Mock: no existing email, but existing employee_code (stable across repeated invocations)
+      prismaService.employee.findFirst.mockImplementation((args: any) =>
+        Promise.resolve(args?.where?.employee_code ? (mockEmployee as any) : null),
+      );
 
       await expect(service.createEmployee(createData, 'user-123')).rejects.toThrow(ConflictException);
       await expect(service.createEmployee(createData, 'user-123')).rejects.toThrow(
@@ -172,11 +174,11 @@ describe('EmployeeManagementService', () => {
 
     it('should update an employee successfully', async () => {
       // Mock: employee exists
-      prismaService.employees.findFirst.mockResolvedValue(mockEmployee as any);
+      prismaService.employee.findFirst.mockResolvedValue(mockEmployee as any);
 
       // Mock: employee update
       const updatedEmployee = { ...mockEmployee, ...updateData };
-      prismaService.employees.update.mockResolvedValue({
+      prismaService.employee.update.mockResolvedValue({
         ...updatedEmployee,
         departments: { id: mockDepartmentId, department_name: 'Engineering' } as any,
         tara_roles: null,
@@ -187,7 +189,7 @@ describe('EmployeeManagementService', () => {
 
       expect(result).toBeDefined();
       expect(result.first_name).toBe(updateData.first_name);
-      expect(prismaService.employees.update).toHaveBeenCalledWith(
+      expect(prismaService.employee.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: mockEmployeeId },
           data: expect.objectContaining(updateData),
@@ -206,7 +208,7 @@ describe('EmployeeManagementService', () => {
 
     it('should throw NotFoundException when employee does not exist', async () => {
       // Mock: employee not found
-      prismaService.employees.findFirst.mockResolvedValue(null);
+      prismaService.employee.findFirst.mockResolvedValue(null);
 
       await expect(service.updateEmployee(mockEmployeeId, mockTenantId, updateData, 'user-123')).rejects.toThrow(
         NotFoundException,
@@ -219,7 +221,7 @@ describe('EmployeeManagementService', () => {
       };
 
       // Mock: employee exists
-      prismaService.employees.findFirst
+      prismaService.employee.findFirst
         .mockResolvedValueOnce(mockEmployee as any) // employee check
         .mockResolvedValueOnce({ ...mockEmployee, id: 'different-id' } as any); // email exists check
 
@@ -232,7 +234,7 @@ describe('EmployeeManagementService', () => {
   describe('getEmployeeById', () => {
     it('should return an employee by ID', async () => {
       // Mock: employee found
-      prismaService.employees.findFirst.mockResolvedValue({
+      prismaService.employee.findFirst.mockResolvedValue({
         ...mockEmployee,
         departments: { id: mockDepartmentId, department_name: 'Engineering' } as any,
         tara_roles: null,
@@ -244,7 +246,7 @@ describe('EmployeeManagementService', () => {
 
       expect(result).toBeDefined();
       expect(result.id).toBe(mockEmployeeId);
-      expect(prismaService.employees.findFirst).toHaveBeenCalledWith(
+      expect(prismaService.employee.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             id: mockEmployeeId,
@@ -257,7 +259,7 @@ describe('EmployeeManagementService', () => {
 
     it('should throw NotFoundException when employee does not exist', async () => {
       // Mock: employee not found
-      prismaService.employees.findFirst.mockResolvedValue(null);
+      prismaService.employee.findFirst.mockResolvedValue(null);
 
       await expect(service.getEmployeeById(mockEmployeeId, mockTenantId)).rejects.toThrow(NotFoundException);
     });
@@ -282,8 +284,8 @@ describe('EmployeeManagementService', () => {
         },
       ];
 
-      prismaService.employees.count.mockResolvedValue(1);
-      prismaService.employees.findMany.mockResolvedValue(mockEmployees as any);
+      prismaService.employee.count.mockResolvedValue(1);
+      prismaService.employee.findMany.mockResolvedValue(mockEmployees as any);
 
       const result = await service.searchEmployees(filters);
 
@@ -292,7 +294,7 @@ describe('EmployeeManagementService', () => {
       expect(result.total).toBe(1);
       expect(result.page).toBe(1);
       expect(result.limit).toBe(20);
-      expect(prismaService.employees.findMany).toHaveBeenCalledWith(
+      expect(prismaService.employee.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             tenant_id: mockTenantId,
@@ -312,13 +314,13 @@ describe('EmployeeManagementService', () => {
         limit: 20,
       };
 
-      prismaService.employees.count.mockResolvedValue(1);
-      prismaService.employees.findMany.mockResolvedValue([mockEmployee] as any);
+      prismaService.employee.count.mockResolvedValue(1);
+      prismaService.employee.findMany.mockResolvedValue([mockEmployee] as any);
 
       const result = await service.searchEmployees(filters);
 
       expect(result).toBeDefined();
-      expect(prismaService.employees.findMany).toHaveBeenCalledWith(
+      expect(prismaService.employee.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             OR: expect.arrayContaining([
@@ -336,17 +338,17 @@ describe('EmployeeManagementService', () => {
   describe('deleteEmployee', () => {
     it('should soft delete an employee successfully', async () => {
       // Mock: employee exists
-      prismaService.employees.findFirst.mockResolvedValue(mockEmployee as any);
+      prismaService.employee.findFirst.mockResolvedValue(mockEmployee as any);
 
       // Mock: employee soft deletion
       const deletedEmployee = { ...mockEmployee, deleted_at: new Date() };
-      prismaService.employees.update.mockResolvedValue(deletedEmployee as any);
+      prismaService.employee.update.mockResolvedValue(deletedEmployee as any);
 
       const result = await service.deleteEmployee(mockEmployeeId, mockTenantId, 'user-123');
 
       expect(result).toBeDefined();
       expect(result.deleted_at).toBeDefined();
-      expect(prismaService.employees.update).toHaveBeenCalledWith(
+      expect(prismaService.employee.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: mockEmployeeId },
           data: expect.objectContaining({
@@ -363,7 +365,7 @@ describe('EmployeeManagementService', () => {
 
     it('should throw NotFoundException when employee does not exist', async () => {
       // Mock: employee not found
-      prismaService.employees.findFirst.mockResolvedValue(null);
+      prismaService.employee.findFirst.mockResolvedValue(null);
 
       await expect(service.deleteEmployee(mockEmployeeId, mockTenantId, 'user-123')).rejects.toThrow(
         NotFoundException,
@@ -380,13 +382,13 @@ describe('EmployeeManagementService', () => {
         },
       ];
 
-      prismaService.employees.findMany.mockResolvedValue(mockEmployees as any);
+      prismaService.employee.findMany.mockResolvedValue(mockEmployees as any);
 
       const result = await service.getEmployeesByDepartment(mockDepartmentId, mockTenantId);
 
       expect(result).toBeDefined();
       expect(result).toHaveLength(1);
-      expect(prismaService.employees.findMany).toHaveBeenCalledWith(
+      expect(prismaService.employee.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             department_id: mockDepartmentId,
@@ -409,13 +411,13 @@ describe('EmployeeManagementService', () => {
         },
       ];
 
-      prismaService.employees.findMany.mockResolvedValue(mockEmployees as any);
+      prismaService.employee.findMany.mockResolvedValue(mockEmployees as any);
 
       const result = await service.getEmployeesByRole(mockRoleId, mockTenantId);
 
       expect(result).toBeDefined();
       expect(result).toHaveLength(1);
-      expect(prismaService.employees.findMany).toHaveBeenCalledWith(
+      expect(prismaService.employee.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             tara_role_id: mockRoleId,
@@ -437,13 +439,13 @@ describe('EmployeeManagementService', () => {
         },
       ];
 
-      prismaService.employees.findMany.mockResolvedValue(mockEmployees as any);
+      prismaService.employee.findMany.mockResolvedValue(mockEmployees as any);
 
       const result = await service.getEmployeesByStatus('active', mockTenantId);
 
       expect(result).toBeDefined();
       expect(result).toHaveLength(1);
-      expect(prismaService.employees.findMany).toHaveBeenCalledWith(
+      expect(prismaService.employee.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             status: 'active',
@@ -483,10 +485,10 @@ describe('EmployeeManagementService', () => {
       ];
 
       // Mock: no existing employees
-      prismaService.employees.findFirst.mockResolvedValue(null);
+      prismaService.employee.findFirst.mockResolvedValue(null);
 
       // Mock: successful creations
-      prismaService.employees.create
+      prismaService.employee.create
         .mockResolvedValueOnce({
           ...mockEmployee,
           email: 'john@example.com',
@@ -538,12 +540,12 @@ describe('EmployeeManagementService', () => {
       ];
 
       // Mock: first succeeds, second has duplicate email
-      prismaService.employees.findFirst
+      prismaService.employee.findFirst
         .mockResolvedValueOnce(null) // no existing email for first
         .mockResolvedValueOnce(null) // no existing code for first
         .mockResolvedValueOnce({ ...mockEmployee, email: 'john@example.com' } as any); // duplicate email for second
 
-      prismaService.employees.create.mockResolvedValueOnce({
+      prismaService.employee.create.mockResolvedValueOnce({
         ...mockEmployee,
         email: 'john@example.com',
         departments: {} as any,
@@ -575,8 +577,8 @@ describe('EmployeeManagementService', () => {
         manager_id: managerId,
       };
 
-      prismaService.employees.findFirst.mockResolvedValue(null);
-      prismaService.employees.create.mockResolvedValue({
+      prismaService.employee.findFirst.mockResolvedValue(null);
+      prismaService.employee.create.mockResolvedValue({
         ...mockEmployee,
         manager_id: managerId,
         departments: { id: mockDepartmentId, department_name: 'Engineering' } as any,
@@ -587,7 +589,7 @@ describe('EmployeeManagementService', () => {
       const result = await service.createEmployee(createData, 'user-123');
 
       expect(result.manager_id).toBe(managerId);
-      expect(prismaService.employees.create).toHaveBeenCalledWith(
+      expect(prismaService.employee.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             manager_id: managerId,
@@ -602,9 +604,9 @@ describe('EmployeeManagementService', () => {
         manager_id: newManagerId,
       };
 
-      prismaService.employees.findFirst.mockResolvedValue(mockEmployee as any);
+      prismaService.employee.findFirst.mockResolvedValue(mockEmployee as any);
       const updatedEmployee = { ...mockEmployee, manager_id: newManagerId };
-      prismaService.employees.update.mockResolvedValue({
+      prismaService.employee.update.mockResolvedValue({
         ...updatedEmployee,
         departments: { id: mockDepartmentId, department_name: 'Engineering' } as any,
         tara_roles: null,
@@ -639,8 +641,8 @@ describe('EmployeeManagementService', () => {
         // No manager_id - top-level employee
       };
 
-      prismaService.employees.findFirst.mockResolvedValue(null);
-      prismaService.employees.create.mockResolvedValue({
+      prismaService.employee.findFirst.mockResolvedValue(null);
+      prismaService.employee.create.mockResolvedValue({
         ...mockEmployee,
         manager_id: null,
         departments: { id: mockDepartmentId, department_name: 'Executive' } as any,
@@ -659,9 +661,9 @@ describe('EmployeeManagementService', () => {
         manager_id: null as any,
       };
 
-      prismaService.employees.findFirst.mockResolvedValue(employeeWithManager as any);
+      prismaService.employee.findFirst.mockResolvedValue(employeeWithManager as any);
       const updatedEmployee = { ...employeeWithManager, manager_id: null };
-      prismaService.employees.update.mockResolvedValue({
+      prismaService.employee.update.mockResolvedValue({
         ...updatedEmployee,
         departments: { id: mockDepartmentId, department_name: 'Engineering' } as any,
         tara_roles: null,
@@ -697,13 +699,13 @@ describe('EmployeeManagementService', () => {
         },
       ];
 
-      prismaService.employees.count.mockResolvedValue(1);
-      prismaService.employees.findMany.mockResolvedValue(mockEmployees as any);
+      prismaService.employee.count.mockResolvedValue(1);
+      prismaService.employee.findMany.mockResolvedValue(mockEmployees as any);
 
       const result = await service.searchEmployees(filters);
 
       expect(result.data).toHaveLength(1);
-      expect(prismaService.employees.findMany).toHaveBeenCalledWith(
+      expect(prismaService.employee.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             tenant_id: mockTenantId,
@@ -735,8 +737,8 @@ describe('EmployeeManagementService', () => {
         },
       ];
 
-      prismaService.employees.count.mockResolvedValue(1);
-      prismaService.employees.findMany.mockResolvedValue(mockEmployees as any);
+      prismaService.employee.count.mockResolvedValue(1);
+      prismaService.employee.findMany.mockResolvedValue(mockEmployees as any);
 
       const result = await service.searchEmployees(filters);
 
@@ -752,8 +754,8 @@ describe('EmployeeManagementService', () => {
         limit: 20,
       };
 
-      prismaService.employees.count.mockResolvedValue(0);
-      prismaService.employees.findMany.mockResolvedValue([]);
+      prismaService.employee.count.mockResolvedValue(0);
+      prismaService.employee.findMany.mockResolvedValue([]);
 
       const result = await service.searchEmployees(filters);
 
@@ -768,15 +770,15 @@ describe('EmployeeManagementService', () => {
         limit: 10,
       };
 
-      prismaService.employees.count.mockResolvedValue(25);
-      prismaService.employees.findMany.mockResolvedValue([mockEmployee] as any);
+      prismaService.employee.count.mockResolvedValue(25);
+      prismaService.employee.findMany.mockResolvedValue([mockEmployee] as any);
 
       const result = await service.searchEmployees(filters);
 
       expect(result.page).toBe(2);
       expect(result.limit).toBe(10);
       expect(result.total).toBe(25);
-      expect(prismaService.employees.findMany).toHaveBeenCalledWith(
+      expect(prismaService.employee.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           skip: 10, // (page 2 - 1) * 10
           take: 10,
@@ -789,8 +791,8 @@ describe('EmployeeManagementService', () => {
         tenant_id: mockTenantId,
       };
 
-      prismaService.employees.count.mockResolvedValue(5);
-      prismaService.employees.findMany.mockResolvedValue([mockEmployee] as any);
+      prismaService.employee.count.mockResolvedValue(5);
+      prismaService.employee.findMany.mockResolvedValue([mockEmployee] as any);
 
       const result = await service.searchEmployees(filters);
 
@@ -816,13 +818,13 @@ describe('EmployeeManagementService', () => {
         },
       ];
 
-      prismaService.employees.count.mockResolvedValue(1);
-      prismaService.employees.findMany.mockResolvedValue(mockEmployees as any);
+      prismaService.employee.count.mockResolvedValue(1);
+      prismaService.employee.findMany.mockResolvedValue(mockEmployees as any);
 
       const result = await service.searchEmployees(filters);
 
       expect(result.data[0].employment_type).toBe('part_time');
-      expect(prismaService.employees.findMany).toHaveBeenCalledWith(
+      expect(prismaService.employee.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             employment_type: 'part_time',
@@ -911,8 +913,8 @@ describe('EmployeeManagementService', () => {
       };
 
       // Mock: email exists in different tenant (should not conflict)
-      prismaService.employees.findFirst.mockResolvedValue(null);
-      prismaService.employees.create.mockResolvedValue({
+      prismaService.employee.findFirst.mockResolvedValue(null);
+      prismaService.employee.create.mockResolvedValue({
         ...mockEmployee,
         tenant_id: 'tenant-456',
         departments: {} as any,
@@ -923,7 +925,7 @@ describe('EmployeeManagementService', () => {
       const result = await service.createEmployee(createData, 'user-123');
 
       expect(result).toBeDefined();
-      expect(prismaService.employees.findFirst).toHaveBeenCalledWith(
+      expect(prismaService.employee.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             tenant_id: 'tenant-456',

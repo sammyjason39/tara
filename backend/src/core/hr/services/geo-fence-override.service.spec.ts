@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { GeoFenceOverrideService } from './geo-fence-override.service';
 import { PrismaService } from '../../../persistence/prisma.service';
@@ -25,7 +26,7 @@ describe('GeoFenceOverrideService', () => {
       count: jest.fn(),
       update: jest.fn(),
     },
-    employees: {
+    employee: {
       findFirst: jest.fn(),
     },
     auditLog: {
@@ -112,7 +113,7 @@ describe('GeoFenceOverrideService', () => {
             override_by: hrUserId,
           }),
         },
-        employees: {
+        employee: {
           findFirst: jest.fn().mockResolvedValue(mockHrUser),
         },
       };
@@ -196,7 +197,7 @@ describe('GeoFenceOverrideService', () => {
         attendance: {
           findFirst: jest.fn().mockResolvedValue(null),
         },
-        employees: {
+        employee: {
           findFirst: jest.fn(),
         },
       };
@@ -227,7 +228,7 @@ describe('GeoFenceOverrideService', () => {
         attendance: {
           findFirst: jest.fn().mockResolvedValue(attendanceWithOverride),
         },
-        employees: {
+        employee: {
           findFirst: jest.fn(),
         },
       };
@@ -253,7 +254,7 @@ describe('GeoFenceOverrideService', () => {
         attendance: {
           findFirst: jest.fn().mockResolvedValue(mockAttendance),
         },
-        employees: {
+        employee: {
           findFirst: jest.fn().mockResolvedValue(null),
         },
       };
@@ -284,7 +285,7 @@ describe('GeoFenceOverrideService', () => {
             override_by: hrUserId,
           }),
         },
-        employees: {
+        employee: {
           findFirst: jest.fn().mockResolvedValue(mockHrUser),
         },
       };
