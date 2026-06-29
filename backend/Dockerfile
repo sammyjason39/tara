@@ -22,7 +22,7 @@ RUN npx prisma generate
 COPY . .
 RUN npm run build
 
-RUN npx tsc src/scripts/seed-defaults.ts \
+RUN npx tsc src/scripts/seed-defaults.ts src/scripts/seed-ralali-employees.ts \
     --outDir dist/scripts \
     --esModuleInterop \
     --resolveJsonModule \
@@ -45,6 +45,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/data ./data
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
 

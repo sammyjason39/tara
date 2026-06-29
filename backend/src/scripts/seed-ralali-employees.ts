@@ -17,7 +17,7 @@ const prisma = new PrismaClient();
 const DEFAULT_PASSWORD = process.env.SEED_PASSWORD || 'demo123';
 const CSV_PATH =
   process.env.RALALI_EMPLOYEES_CSV ||
-  path.resolve(__dirname, '../../data/ralali-employees-2026.csv');
+  path.resolve(process.cwd(), 'data/ralali-employees-2026.csv');
 
 const SUPER_ADMIN_EMAILS = new Set([
   'samuel.jason@majubersama.com',
