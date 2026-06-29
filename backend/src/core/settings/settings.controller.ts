@@ -3,7 +3,12 @@ import { SettingsService } from './settings.service';
 import { JwtGuard } from '../auth/guards/jwt.guard';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 
-@Controller('settings')
+/**
+ * Internal settings API — category rows from system_settings.
+ * Path is intentionally NOT `settings/:category` to avoid shadowing
+ * WebApiController routes like GET /settings/company.
+ */
+@Controller('settings/system')
 @UseGuards(JwtGuard, RolesGuard)
 @Roles('HR_Admin', 'SuperAdmin')
 export class SettingsController {
