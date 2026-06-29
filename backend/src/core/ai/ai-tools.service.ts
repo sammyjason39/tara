@@ -8,6 +8,9 @@ import { EmployeeAiContext, TARA_CLOCK_URL } from './ai.interfaces';
 /** Marker returned by prepare_* tools to trigger confirmation flow */
 export const CONFIRMATION_MARKER = '__TARA_CONFIRM__';
 
+/** Marker returned by escalate_to_hr tool */
+export const ESCALATION_MARKER = '__TARA_ESCALATE__';
+
 @Injectable()
 export class AiToolsService {
   constructor(
@@ -139,6 +142,24 @@ export class AiToolsService {
         ),
       );
     }
+
+    tools.push(
+      this.tool(
+        'escalate_to_hr',
+        'Eskalasi ke staff HR (Pak Ahmad) jika pertanyaan di luar konteks HR Ralali/TARA, tidak ada tool/SOP yang relevan, atau tidak yakin jawabannya. JANGAN untuk sengketa nama/profil karyawan.',
+        z.object({
+          reason: z.string().describe('Alasan eskalasi singkat'),
+          question_summary: z.string().describe('Ringkasan pertanyaan user'),
+        }),
+        async (args) =>
+          JSON.stringify({
+            [ESCALATION_MARKER]: true,
+            employee_id: ctx.id,
+            employee_name: ctx.full_name,
+            ...args,
+          }),
+      ),
+    );
 
     return tools;
   }

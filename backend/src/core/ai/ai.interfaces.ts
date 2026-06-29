@@ -36,6 +36,14 @@ export const TARA_PUBLIC_BASE_URL =
   process.env.TARA_PUBLIC_URL || 'https://tara.ralali.io';
 export const TARA_CLOCK_URL = `${TARA_PUBLIC_BASE_URL}/m/clock`;
 
+/** HR contact for AI escalations (Pak Ahmad Yani) */
+export const HR_ESCALATION_CONTACT_EMAIL =
+  process.env.AI_HR_ESCALATION_EMAIL || 'ahmad.yani@ralali.com';
+
+/** Fixed reply to user when escalating to HR */
+export const TARA_ESCALATION_USER_MESSAGE =
+  'Mohon maaf untuk hal tersebut diluar kapasitas TARA untuk menjawab, staff HR akan bergabung dalam percakapan ini untuk membantu, mohon menunggu ya';
+
 export const DEFAULT_WHATSAPP_CONFIG: TaraWhatsAppConfig = {
   enabled: false,
   kapsoApiKey: '',
@@ -70,5 +78,5 @@ export interface AiProcessResult {
   toolsCalled: string[];
   inputTokens: number;
   outputTokens: number;
-  status: 'success' | 'error' | 'pending_confirmation';
+  status: 'success' | 'error' | 'pending_confirmation' | 'escalated';
 }

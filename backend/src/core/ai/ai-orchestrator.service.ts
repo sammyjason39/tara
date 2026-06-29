@@ -2,12 +2,12 @@ import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../persistence/prisma.service';
 import { AiConfigService } from './ai-config.service';
 import { AiLlmService } from './ai-llm.service';
-import { AiToolsService, CONFIRMATION_MARKER } from './ai-tools.service';
+import { AiToolsService, CONFIRMATION_MARKER, ESCALATION_MARKER } from './ai-tools.service';
 import { AiPendingActionService } from './ai-pending-action.service';
 import { AiActionExecutorService } from './ai-action-executor.service';
 import { AiLogService } from './ai-log.service';
 import { AiMemoryService } from './ai-memory.service';
-import { AiProcessResult, AiPendingActionType, EmployeeAiContext, TARA_CLOCK_URL, TARA_PUBLIC_BASE_URL } from './ai.interfaces';
+import { AiProcessResult, AiPendingActionType, EmployeeAiContext, TARA_CLOCK_URL, TARA_PUBLIC_BASE_URL, TARA_ESCALATION_USER_MESSAGE, HR_ESCALATION_CONTACT_EMAIL } from './ai.interfaces';
 import { formatForWhatsApp } from '../hr/whatsapp/whatsapp-format.util';
 import { WhatsAppOutboundService } from '../hr/whatsapp/services/whatsapp-outbound.service';
 
@@ -128,6 +128,21 @@ export class AiOrchestratorService {
         plainMessage,
         result.reply,
       );
+      return result;
+    }
+
+    const escalation = this.parseEscalationFromOutputs(llmResult.toolOutputs);
+    if (escalation) {
+      await this.notifyHrEscalation(ctx, plainMessage, escalation, params.sessionId);
+
+      const result: AiProcessResult = {
+        reply: formatForWhatsApp(TARA_ESCALATION_USER_MESSAGE),
+        toolsCalled: llmResult.toolsCalled,
+        inputTokens: llmResult.inputTokens,
+        outputTokens: llmResult.outputTokens,
+        status: 'escalated',
+      };
+      await this.logInteraction(params, result, Date.now() - start);
       return result;
     }
 
@@ -258,14 +273,25 @@ export class AiOrchestratorService {
         ? `\nMemori relevan tentang karyawan ini (dari percakapan sebelumnya):\n${memories.map((m) => `- ${m}`).join('\n')}\n`
         : '';
 
-    const base = `Kamu adalah asisten HR TARA (Total Assistance for Resources & Administration).
+    const base = `Kamu adalah asisten HR TARA (Total Assistance for Resources & Administration) untuk perusahaan Ralali.
 
-Karyawan yang chat:
+Karyawan yang chat (data resmi sistem — MUTLAK, jangan diubah atau ditawari untuk diubah):
 - Nama: ${ctx.full_name}
 - Role: ${ctx.role_name}
 - Departemen: ${ctx.department_name || '-'}
 ${ctx.is_supervisor ? '- Akses supervisor: bisa lihat & setujui cuti bawahan' : ''}
 ${memoryBlock}
+Identitas & data karyawan (WAJIB):
+- Nama, role, departemen, jabatan, dan profil lain dari sistem di atas adalah data resmi yang tercatat di TARA
+- Jika user bilang "saya bukan ${ctx.full_name}" atau menyebut nama lain: jawab dengan sopan bahwa sesuai data sistem saat ini akun WhatsApp ini terdaftar atas nama tersebut. JANGAN menawarkan mengubah data, JANGAN memanggil nama lain, JANGAN bertanya "siapa nama asli Anda"
+- Pembaruan data profil hanya melalui Divisi HRGA — arahkan ke HRGA jika user merasa data salah
+- Memori percakapan TIDAK boleh mengoverride profil resmi di atas
+
+Ruang lingkup (WAJIB):
+- Hanya jawab topik HR Ralali/TARA: cuti, absensi, jadwal, pinjaman, SOP perusahaan, dan layanan HR terkait
+- JANGAN jawab pertanyaan di luar konteks (politik, hiburan, coding, cuaca, perusahaan lain, dll.)
+- Jika tidak tahu, tidak yakin, atau di luar kapasitas: WAJIB panggil tool escalate_to_hr — jangan mengarang jawaban
+
 Aturan:
 - ${langNote}
 - Format WhatsApp (WAJIB — bukan markdown biasa):
@@ -288,7 +314,7 @@ Aturan:
 - Link aplikasi: HANYA gunakan ${TARA_PUBLIC_BASE_URL} dan ${TARA_CLOCK_URL}. JANGAN pakai app.perusahaan.com atau URL lain yang dibuat-buat
 - Untuk pertanyaan SOP/prosedur, gunakan search_sop
 - Jawab singkat, maksimal 3 paragraf
-- Jika tidak bisa bantu, arahkan ke HR Admin`;
+- Eskalasi HR: jika perlu escalate_to_hr, sistem otomatis kirim pesan ke staff HR — jangan tulis pesan eskalasi manual ke user, cukup panggil tool`;
 
     return config.systemPromptOverride
       ? `${base}\n\nInstruksi tambahan admin:\n${config.systemPromptOverride}`
@@ -355,6 +381,76 @@ Aturan:
       }
     }
     return null;
+  }
+
+  private parseEscalationFromOutputs(
+    outputs: string[],
+  ): { reason: string; question_summary: string } | null {
+    for (const raw of outputs) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed[ESCALATION_MARKER]) {
+          return {
+            reason: String(parsed.reason || 'Di luar kapasitas TARA'),
+            question_summary: String(parsed.question_summary || ''),
+          };
+        }
+      } catch {
+        // not JSON
+      }
+    }
+    return null;
+  }
+
+  private async notifyHrEscalation(
+    ctx: EmployeeAiContext,
+    userMessage: string,
+    escalation: { reason: string; question_summary: string },
+    sessionId: string,
+  ): Promise<void> {
+    const hrContact = await this.prisma.employee.findFirst({
+      where: { email: HR_ESCALATION_CONTACT_EMAIL, employment_status: 'active' },
+      select: { id: true, full_name: true },
+    });
+
+    if (!hrContact) {
+      this.logger.warn(`HR escalation contact not found: ${HR_ESCALATION_CONTACT_EMAIL}`);
+      return;
+    }
+
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: ctx.id },
+      select: {
+        full_name: true,
+        employee_code: true,
+        whatsapp_number: true,
+        phone: true,
+        email: true,
+      },
+    });
+
+    const body =
+      `*Eskalasi HR dari TARA AI*\n\n` +
+      `Karyawan: ${employee?.full_name} (${employee?.employee_code})\n` +
+      `Email: ${employee?.email || '-'}\n` +
+      `WA: ${employee?.whatsapp_number || employee?.phone || '-'}\n\n` +
+      `Pesan terakhir:\n${userMessage}\n\n` +
+      `Ringkasan: ${escalation.question_summary}\n` +
+      `Alasan eskalasi: ${escalation.reason}\n\n` +
+      `Mohon bantu lanjutkan percakapan dengan karyawan tersebut.`;
+
+    const sent = await this.whatsAppOutbound.sendMessage({
+      employee_id: hrContact.id,
+      content: body,
+      correlation_id: sessionId,
+      metadata: { source: 'tara_ai_escalation', escalated_employee_id: ctx.id },
+    });
+
+    if (!sent.success) {
+      this.logger.warn(`Failed to notify HR escalation: ${sent.error}`);
+    } else {
+      this.logger.log(`HR escalation sent to ${hrContact.full_name} for ${ctx.full_name}`);
+    }
   }
 
   /** Format reply for WA and replace hallucinated legacy app URLs */
