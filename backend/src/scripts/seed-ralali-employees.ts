@@ -20,7 +20,7 @@ const CSV_PATH =
   path.resolve(process.cwd(), 'data/ralali-employees-2026.csv');
 
 const SUPER_ADMIN_EMAILS = new Set([
-  'samuel.jason@majubersama.com',
+  'samuel@conextlab.ai',
   'irwan@ralali.com',
   'ahmad.yani@ralali.com',
   'tony.sibarani@ralali.com',
@@ -29,7 +29,7 @@ const SUPER_ADMIN_EMAILS = new Set([
 const SAMUEL = {
   employee_code: 'SA-001',
   full_name: 'Samuel Jason',
-  email: 'samuel.jason@majubersama.com',
+  email: 'samuel@conextlab.ai',
   phone: '087728589845',
   whatsapp_number: '6287728589845',
   department: 'Technology',
@@ -408,7 +408,7 @@ async function main() {
   console.log(`  Password:    ${DEFAULT_PASSWORD}`);
   console.log('');
   console.log('SuperAdmin accounts:');
-  console.log('  samuel.jason@majubersama.com');
+  console.log('  samuel@conextlab.ai');
   console.log('  irwan@ralali.com');
   console.log('  ahmad.yani@ralali.com');
   console.log('  tony.sibarani@ralali.com');

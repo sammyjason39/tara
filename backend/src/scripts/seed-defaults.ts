@@ -200,7 +200,7 @@ async function main() {
   });
 
   await prisma.employee.upsert({
-    where: { email: 'samuel.jason@majubersama.com' },
+    where: { email: 'samuel@conextlab.ai' },
     update: {
       password_hash: passwordHash,
       full_name: 'Samuel Jason',
@@ -216,7 +216,7 @@ async function main() {
       id: samuelId,
       employee_code: 'SA-001',
       full_name: 'Samuel Jason',
-      email: 'samuel.jason@majubersama.com',
+      email: 'samuel@conextlab.ai',
       phone: '087728589845',
       password_hash: passwordHash,
       role_id: superAdminRole!.id,
@@ -472,7 +472,7 @@ startxref
   console.log('[SEED] ✓ All defaults seeded successfully');
   console.log('');
   console.log('Demo accounts (password: demo123):');
-  console.log('  Super Admin: samuel.jason@majubersama.com  WA:', samuelWa);
+  console.log('  Super Admin: samuel@conextlab.ai  WA:', samuelWa);
   console.log('  HR Admin:    sari@majubersama.com  WA:', ownerWa);
   console.log('  Supervisor:  budi@majubersama.com  WA: 6281234567891');
   console.log('  Employee:    rina@majubersama.com  WA: 6281234567892');
