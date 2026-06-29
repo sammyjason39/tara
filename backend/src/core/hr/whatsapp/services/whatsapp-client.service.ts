@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { WhatsAppClient } from '@kapso/whatsapp-cloud-api';
+import { formatForWhatsApp } from '../whatsapp-format.util';
 
 /**
  * WhatsApp Client Service — Kapso SDK wrapper.
@@ -102,14 +103,15 @@ export class WhatsAppClientService implements OnModuleInit {
     const normalizedTo = this.normalizePhoneNumber(to);
     const kapsoButtons = buttons.slice(0, 3).map((b) => ({
       id: b.id,
-      title: b.title.substring(0, 20),
+      title: b.title.replace(/[^\w\s,.-]/gu, '').trim().substring(0, 20) || b.id,
     }));
+    const bodyText = formatForWhatsApp(body);
 
     try {
       const result = await this.client.messages.sendInteractiveButtons({
         phoneNumberId: this.phoneNumberId,
         to: normalizedTo,
-        bodyText: body,
+        bodyText,
         buttons: kapsoButtons,
       });
 
@@ -118,8 +120,7 @@ export class WhatsAppClientService implements OnModuleInit {
       return { messageId, success: true };
     } catch (error) {
       this.logger.error(`[WA] Failed to send buttons to ${to}: ${error.message}`);
-      const fallbackBody = `${body}\n\nBalas: ${kapsoButtons.map((b) => b.title).join(' / ')}`;
-      return this.sendText(to, fallbackBody);
+      return { success: false };
     }
   }
 

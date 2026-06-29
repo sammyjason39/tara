@@ -7,6 +7,7 @@ import { WhatsAppClientService } from './whatsapp-client.service';
 import { WhatsAppOutboundService } from './whatsapp-outbound.service';
 import { AiOrchestratorService } from '../../../ai/ai-orchestrator.service';
 import { AiConfigService } from '../../../ai/ai-config.service';
+import { formatForWhatsApp } from '../whatsapp-format.util';
 
 export interface InboundMessage {
   from: string; // sender phone number
@@ -325,20 +326,29 @@ export class WhatsAppInboundService {
 
     // Route to TARA AI Assistant
     if (this.aiConfigService.isAiEnabled()) {
+      const quickReply =
+        messageContent.startsWith('[button:') ||
+        /^(ya|setuju|ok|batal|tidak|no)$/i.test(messageContent.trim());
+
+      const ACK_DELAY_MS = 30_000;
+      let processingComplete = false;
+      const ackTimer = !quickReply
+        ? setTimeout(async () => {
+            if (processingComplete) return;
+            try {
+              await this.outboundService.sendMessage({
+                employee_id: employee.id,
+                content: '⏳ Sebentar ya, TARA sedang memproses permintaan Anda...',
+                correlation_id: sessionId,
+                metadata: { source: 'tara_ai_ack', delayed: true },
+              });
+            } catch (err) {
+              this.logger.warn(`[INBOUND] Delayed ack failed: ${err.message}`);
+            }
+          }, ACK_DELAY_MS)
+        : undefined;
+
       try {
-        const quickReply =
-          messageContent.startsWith('[button:') ||
-          /^(ya|setuju|ok|batal|tidak|no)$/i.test(messageContent.trim());
-
-        if (!quickReply) {
-          await this.outboundService.sendMessage({
-            employee_id: employee.id,
-            content: '⏳ Sebentar ya, TARA sedang memproses permintaan Anda...',
-            correlation_id: sessionId,
-            metadata: { source: 'tara_ai_ack' },
-          });
-        }
-
         const aiResult = await this.aiOrchestrator.processWhatsAppMessage({
           employeeId: employee.id,
           message: messageContent,
@@ -352,9 +362,12 @@ export class WhatsAppInboundService {
             aiResult.buttons,
           );
           if (!buttonResult.success) {
+            const fallback = formatForWhatsApp(
+              `${aiResult.reply}\n\nBalas *YA* untuk setuju atau *BATAL* untuk batal.`,
+            );
             await this.outboundService.sendMessage({
               employee_id: employee.id,
-              content: aiResult.reply,
+              content: fallback,
               correlation_id: sessionId,
               metadata: { source: 'tara_ai', buttons_fallback: true },
             });
@@ -374,6 +387,9 @@ export class WhatsAppInboundService {
           content: 'Maaf, asisten AI sedang mengalami gangguan. Silakan coba lagi nanti atau hubungi HR.',
           correlation_id: sessionId,
         });
+      } finally {
+        processingComplete = true;
+        if (ackTimer) clearTimeout(ackTimer);
       }
     }
 

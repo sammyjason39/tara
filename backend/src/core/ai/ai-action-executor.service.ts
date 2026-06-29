@@ -46,15 +46,15 @@ export class AiActionExecutorService {
   buildSummary(actionType: AiPendingActionType, payload: Record<string, any>): string {
     switch (actionType) {
       case 'submit_leave':
-        return `📋 Konfirmasi Pengajuan Cuti\n\nJenis: ${payload.leave_type}\nTanggal: ${payload.start_date} s/d ${payload.end_date}\nAlasan: ${payload.reason || '-'}\n\nBalas YA untuk melanjutkan, atau TIDAK untuk membatalkan.`;
+        return `📋 *Konfirmasi Pengajuan Cuti*\n\nJenis: ${payload.leave_type}\nTanggal: ${payload.start_date} s/d ${payload.end_date}\nAlasan: ${payload.reason || '-'}\n\nPilih tombol di bawah untuk melanjutkan.`;
       case 'submit_loan':
-        return `💳 Konfirmasi Pengajuan Pinjaman\n\nJumlah: Rp ${Number(payload.amount).toLocaleString('id-ID')}\nJenis: ${payload.loan_type}\nCicilan: ${payload.installment_count || 1}x\nAlasan: ${payload.reason || '-'}\n\nBalas YA untuk melanjutkan.`;
+        return `💳 *Konfirmasi Pengajuan Pinjaman*\n\nJumlah: Rp ${Number(payload.amount).toLocaleString('id-ID')}\nJenis: ${payload.loan_type}\nCicilan: ${payload.installment_count || 1}x\nAlasan: ${payload.reason || '-'}\n\nPilih tombol di bawah untuk melanjutkan.`;
       case 'approve_leave':
-        return `✅ Konfirmasi Setujui Cuti\n\nID Pengajuan: ${payload.leave_request_id}\n\nBalas YA untuk menyetujui.`;
+        return `*Konfirmasi Setujui Cuti*\n\nID Pengajuan: ${payload.leave_request_id}\n\nPilih tombol di bawah untuk menyetujui.`;
       case 'reject_leave':
-        return `❌ Konfirmasi Tolak Cuti\n\nID Pengajuan: ${payload.leave_request_id}\nAlasan: ${payload.rejection_reason || '-'}\n\nBalas YA untuk menolak.`;
+        return `*Konfirmasi Tolak Cuti*\n\nID Pengajuan: ${payload.leave_request_id}\nAlasan: ${payload.rejection_reason || '-'}\n\nPilih tombol di bawah untuk menolak.`;
       default:
-        return `Konfirmasi aksi: ${actionType}\n\nBalas YA untuk melanjutkan.`;
+        return `Konfirmasi aksi: ${actionType}\n\nPilih tombol di bawah untuk melanjutkan.`;
     }
   }
 

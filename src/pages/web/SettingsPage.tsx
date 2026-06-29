@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 import {
   Bot, Clock, MapPin, CalendarDays, Bell, Server,
   Building2, Users, Shield, Key, Send,
-  Trash2, TestTube, Wifi, X, Save, Activity, Pencil, Building,
+  Trash2, TestTube, Wifi, X, Save, Activity, Pencil, Building, Plus,
 } from "lucide-react";
 import { AiAssistantSection } from "./AiLogsPage";
 import { cn } from "@/lib/utils";

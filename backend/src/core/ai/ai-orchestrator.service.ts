@@ -8,6 +8,7 @@ import { AiActionExecutorService } from './ai-action-executor.service';
 import { AiLogService } from './ai-log.service';
 import { AiMemoryService } from './ai-memory.service';
 import { AiProcessResult, AiPendingActionType, EmployeeAiContext } from './ai.interfaces';
+import { formatForWhatsApp } from '../hr/whatsapp/whatsapp-format.util';
 import { WhatsAppOutboundService } from '../hr/whatsapp/services/whatsapp-outbound.service';
 
 @Injectable()
@@ -110,11 +111,11 @@ export class AiOrchestratorService {
       });
 
       const result: AiProcessResult = {
-        reply: summary,
+        reply: formatForWhatsApp(summary),
         useButtons: true,
         buttons: [
-          { id: 'confirm_yes', title: '✅ Setuju' },
-          { id: 'confirm_no', title: '❌ Batal' },
+          { id: 'confirm_yes', title: 'Ya, Setuju' },
+          { id: 'confirm_no', title: 'Batal' },
         ],
         toolsCalled: llmResult.toolsCalled,
         inputTokens: llmResult.inputTokens,
@@ -131,7 +132,7 @@ export class AiOrchestratorService {
     }
 
     const result: AiProcessResult = {
-      reply: llmResult.content,
+      reply: formatForWhatsApp(llmResult.content),
       toolsCalled: llmResult.toolsCalled,
       inputTokens: llmResult.inputTokens,
       outputTokens: llmResult.outputTokens,
@@ -175,8 +176,8 @@ export class AiOrchestratorService {
       `Alasan: ${leave.reason || '-'}`;
 
     await this.whatsAppOutbound.sendButtons(supervisor.id, body, [
-      { id: `approve_leave_${leaveRequestId}`, title: '✅ Setuju' },
-      { id: `reject_leave_${leaveRequestId}`, title: '❌ Tolak' },
+      { id: `approve_leave_${leaveRequestId}`, title: 'Setuju' },
+      { id: `reject_leave_${leaveRequestId}`, title: 'Tolak' },
     ]);
   }
 
@@ -230,11 +231,11 @@ export class AiOrchestratorService {
     });
 
     const result: AiProcessResult = {
-      reply: summary,
+      reply: formatForWhatsApp(summary),
       useButtons: true,
       buttons: [
-        { id: 'confirm_yes', title: '✅ Ya, Lanjut' },
-        { id: 'confirm_no', title: '❌ Batal' },
+        { id: 'confirm_yes', title: 'Ya, Lanjut' },
+        { id: 'confirm_no', title: 'Batal' },
       ],
       toolsCalled: [actionType],
       inputTokens: 0,
@@ -267,8 +268,20 @@ ${ctx.is_supervisor ? '- Akses supervisor: bisa lihat & setujui cuti bawahan' : 
 ${memoryBlock}
 Aturan:
 - ${langNote}
+- Format WhatsApp (WAJIB — bukan markdown biasa):
+  • Tebal: *kata* (SATU asterisk di kiri-kanan). JANGAN pakai **bold** markdown
+  • Miring: _kata_
+  • Coret: ~kata~
+  • JANGAN pakai tabel markdown (| kolom |), heading #, atau ---
+  • Gunakan teks biasa + bullet • atau baris terpisah untuk daftar data
+  • Contoh saldo cuti yang benar:
+    *Saldo Cuti 2026*
+    • Total jatah: 12 hari
+    • Sudah dipakai: 0 hari
+    • Sisa: 12 hari
 - Gunakan tools untuk mengambil data — jangan mengarang angka atau tanggal
-- Untuk ajukan cuti/pinjaman/setujui cuti, gunakan tool prepare_* (sistem akan minta konfirmasi)
+- Untuk ajukan cuti/pinjaman/setujui cuti, WAJIB gunakan tool prepare_* (sistem otomatis kirim tombol Setuju/Batal di bawah pesan)
+- Jangan minta user ketik YA/BATAL manual jika sudah pakai tool prepare_*
 - Absensi clock-in/out harus via aplikasi mobile (butuh GPS & biometrik), arahkan ke /m/clock
 - Untuk pertanyaan SOP/prosedur, gunakan search_sop
 - Jawab singkat, maksimal 3 paragraf

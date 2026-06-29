@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../../persistence/prisma.service';
 import { EventBusService } from '../../services/event-bus.service';
 import { WhatsAppClientService } from './whatsapp-client.service';
+import { formatForWhatsApp } from '../whatsapp-format.util';
 import { WhatsAppAuditService } from './whatsapp-audit.service';
 import { WhatsAppSessionService } from './whatsapp-session.service';
 
@@ -108,14 +109,15 @@ export class WhatsAppOutboundService {
     );
 
     // Send via Kapso SDK
-    const result = await this.clientService.sendText(employee.whatsapp_number, params.content);
+    const formatted = formatForWhatsApp(params.content);
+    const result = await this.clientService.sendText(employee.whatsapp_number, formatted);
 
     // Log the message
     const logEntry = await this.auditService.logMessage({
       employee_id: params.employee_id,
       direction: 'outbound',
       message_type: params.message_type || 'text',
-      content: params.content,
+      content: formatted,
       wa_message_id: result.messageId,
       wa_status: result.success ? 'sent' : 'failed',
       hermes_agent_id: params.hermes_agent_id,
@@ -191,7 +193,12 @@ export class WhatsAppOutboundService {
       return { success: false, error: 'Employee not eligible for WhatsApp' };
     }
 
-    const result = await this.clientService.sendButtons(employee.whatsapp_number, body, buttons);
+    const formattedBody = formatForWhatsApp(body);
+    const result = await this.clientService.sendButtons(
+      employee.whatsapp_number,
+      formattedBody,
+      buttons,
+    );
 
     const sessionId = await this.sessionService.getOrCreateSession(employeeId, hermesAgentId);
 
@@ -199,7 +206,7 @@ export class WhatsAppOutboundService {
       employee_id: employeeId,
       direction: 'outbound',
       message_type: 'interactive',
-      content: `${body} [buttons: ${buttons.map((b) => b.title).join(', ')}]`,
+      content: `${formattedBody} [buttons: ${buttons.map((b) => b.title).join(', ')}]`,
       wa_message_id: result.messageId,
       wa_status: result.success ? 'sent' : 'failed',
       hermes_agent_id: hermesAgentId,

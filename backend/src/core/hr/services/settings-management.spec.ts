@@ -814,8 +814,8 @@ describe('HR_Team-Only Access Restriction (Task 20.6)', () => {
 
   describe('controller @Roles("HR_Team") decorator enforcement', () => {
     it('SettingsController has @Roles("HR_Team") metadata at class level', () => {
-      // The Roles decorator uses SetMetadata with key 'tara_roles'
-      const metadata = Reflect.getMetadata('tara_roles', SettingsController);
+      // The Roles decorator uses SetMetadata with key 'roles'
+      const metadata = Reflect.getMetadata('roles', SettingsController);
       expect(metadata).toEqual(['HR_Team']);
     });
 
