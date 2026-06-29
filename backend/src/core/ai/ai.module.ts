@@ -13,6 +13,7 @@ import { AiToolsService } from './ai-tools.service';
 import { AiLlmService } from './ai-llm.service';
 import { AiActionExecutorService } from './ai-action-executor.service';
 import { AiOrchestratorService } from './ai-orchestrator.service';
+import { AiMemoryService } from './ai-memory.service';
 import { AiAdminController } from './ai-admin.controller';
 import { AiCleanupScheduler } from './ai-cleanup.scheduler';
 import { HermesDisabledGuard } from './hermes-disabled.guard';
@@ -32,12 +33,14 @@ import { HermesDisabledGuard } from './hermes-disabled.guard';
     AiActionExecutorService,
     AiOrchestratorService,
     AiCleanupScheduler,
+    AiMemoryService,
     HermesDisabledGuard,
   ],
   exports: [
     AiConfigService,
     AiOrchestratorService,
     AiLogService,
+    AiMemoryService,
     SopIndexerService,
     HermesDisabledGuard,
   ],

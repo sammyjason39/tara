@@ -6,6 +6,7 @@ import { AiToolsService, CONFIRMATION_MARKER } from './ai-tools.service';
 import { AiPendingActionService } from './ai-pending-action.service';
 import { AiActionExecutorService } from './ai-action-executor.service';
 import { AiLogService } from './ai-log.service';
+import { AiMemoryService } from './ai-memory.service';
 import { AiProcessResult, AiPendingActionType, EmployeeAiContext } from './ai.interfaces';
 import { WhatsAppOutboundService } from '../hr/whatsapp/services/whatsapp-outbound.service';
 
@@ -22,6 +23,7 @@ export class AiOrchestratorService {
     @Inject(forwardRef(() => AiActionExecutorService))
     private readonly actionExecutor: AiActionExecutorService,
     private readonly logService: AiLogService,
+    private readonly memoryService: AiMemoryService,
     @Inject(forwardRef(() => WhatsAppOutboundService))
     private readonly whatsAppOutbound: WhatsAppOutboundService,
   ) {}
@@ -80,8 +82,9 @@ export class AiOrchestratorService {
     }
 
     const history = await this.loadConversationHistory(params.employeeId, 10);
+    const memories = await this.memoryService.searchMemories(params.employeeId, plainMessage);
     const tools = this.toolsService.buildTools(ctx);
-    const systemPrompt = this.buildSystemPrompt(ctx);
+    const systemPrompt = this.buildSystemPrompt(ctx, memories);
 
     const llmResult = await this.llmService.chatWithTools({
       systemPrompt,
@@ -119,6 +122,11 @@ export class AiOrchestratorService {
         status: 'pending_confirmation',
       };
       await this.logInteraction(params, result, Date.now() - start);
+      await this.memoryService.rememberConversation(
+        params.employeeId,
+        plainMessage,
+        result.reply,
+      );
       return result;
     }
 
@@ -130,6 +138,11 @@ export class AiOrchestratorService {
       status: 'success',
     };
     await this.logInteraction(params, result, Date.now() - start);
+    await this.memoryService.rememberConversation(
+      params.employeeId,
+      plainMessage,
+      result.reply,
+    );
     return result;
   }
 
@@ -232,12 +245,17 @@ export class AiOrchestratorService {
     return result;
   }
 
-  private buildSystemPrompt(ctx: EmployeeAiContext): string {
+  private buildSystemPrompt(ctx: EmployeeAiContext, memories: string[] = []): string {
     const config = this.configService.getAiConfig();
     const langNote =
       config.responseLanguage === 'en'
         ? 'Respond in English.'
         : 'Selalu jawab dalam Bahasa Indonesia yang ramah dan profesional.';
+
+    const memoryBlock =
+      memories.length > 0
+        ? `\nMemori relevan tentang karyawan ini (dari percakapan sebelumnya):\n${memories.map((m) => `- ${m}`).join('\n')}\n`
+        : '';
 
     const base = `Kamu adalah asisten HR TARA (Total Assistance for Resources & Administration).
 
@@ -246,7 +264,7 @@ Karyawan yang chat:
 - Role: ${ctx.role_name}
 - Departemen: ${ctx.department_name || '-'}
 ${ctx.is_supervisor ? '- Akses supervisor: bisa lihat & setujui cuti bawahan' : ''}
-
+${memoryBlock}
 Aturan:
 - ${langNote}
 - Gunakan tools untuk mengambil data — jangan mengarang angka atau tanggal

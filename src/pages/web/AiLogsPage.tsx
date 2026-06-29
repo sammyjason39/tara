@@ -133,7 +133,7 @@ export function AiAssistantSection() {
     provider: "tokease",
     api_key: "",
     base_url: "https://tokease.com/v1",
-    model: "qwen3.7-plus",
+    model: "deepseek-v4-flash",
     max_tokens: 1024,
     temperature: 0.3,
     response_language: "id",
@@ -159,7 +159,7 @@ export function AiAssistantSection() {
       provider: cfg.ai?.provider ?? "tokease",
       api_key: "",
       base_url: cfg.ai?.baseUrl ?? cfg.ai?.base_url ?? "https://tokease.com/v1",
-      model: cfg.ai?.model ?? "qwen3.7-plus",
+      model: cfg.ai?.model ?? "deepseek-v4-flash",
       max_tokens: cfg.ai?.maxTokens ?? cfg.ai?.max_tokens ?? 1024,
       temperature: cfg.ai?.temperature ?? 0.3,
       response_language: cfg.ai?.responseLanguage ?? cfg.ai?.response_language ?? "id",
@@ -251,7 +251,7 @@ export function AiAssistantSection() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Inp label="Provider" value={ai.provider} onChange={(v) => setAi({ ...ai, provider: v })} />
-          <Inp label="Model" value={ai.model} onChange={(v) => setAi({ ...ai, model: v })} placeholder="qwen3.7-plus" />
+          <Inp label="Model" value={ai.model} onChange={(v) => setAi({ ...ai, model: v })} placeholder="deepseek-v4-flash" />
           <Inp label="Base URL" value={ai.base_url} onChange={(v) => setAi({ ...ai, base_url: v })} placeholder="https://tokease.com/v1" />
           <Inp label="API Key" value={ai.api_key} onChange={(v) => setAi({ ...ai, api_key: v })} placeholder="Kosongkan jika tidak diubah" />
           <Inp label="Max Tokens" value={String(ai.max_tokens)} onChange={(v) => setAi({ ...ai, max_tokens: Number(v) })} />

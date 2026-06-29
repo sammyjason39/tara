@@ -68,6 +68,7 @@ async function main() {
   console.log('[SEED] ✓ Default roles seeded');
 
   const hrRole = await prisma.role.findUnique({ where: { role_name: 'HR_Admin' } });
+  const superAdminRole = await prisma.role.findUnique({ where: { role_name: 'SuperAdmin' } });
   const supRole = await prisma.role.findUnique({ where: { role_name: 'Supervisor' } });
   const empRole = await prisma.role.findUnique({ where: { role_name: 'Employee' } });
 
@@ -76,6 +77,12 @@ async function main() {
     where: { name: 'Human Resources' },
     update: {},
     create: { name: 'Human Resources', description: 'HR Department' },
+  });
+
+  const itDepartment = await prisma.department.upsert({
+    where: { name: 'IT' },
+    update: {},
+    create: { name: 'IT', description: 'Information Technology' },
   });
 
   const office = await prisma.officeLocation.upsert({
@@ -96,30 +103,34 @@ async function main() {
   const sariId = '00000000-0000-4000-8000-000000000101';
   const budiId = '00000000-0000-4000-8000-000000000102';
   const rinaId = '00000000-0000-4000-8000-000000000103';
+  const samuelId = '00000000-0000-4000-8000-000000000104';
+
+  const ownerWa = process.env.SEED_OWNER_WHATSAPP || '6281234567890';
+  const samuelWa = '6287728589845';
 
   await prisma.employee.upsert({
     where: { email: 'sari@majubersama.com' },
     update: {
       password_hash: passwordHash,
-      whatsapp_number: '6281234567890',
+      whatsapp_number: ownerWa,
       whatsapp_opted_in: true,
       whatsapp_verified: true,
       whatsapp_verified_at: new Date(),
-      phone: '081234567890',
+      phone: '+6281234567890',
     },
     create: {
       id: sariId,
       employee_code: 'ADM-001',
       full_name: 'Sari Wulandari',
       email: 'sari@majubersama.com',
-      phone: '081234567890',
+      phone: '+6281234567890',
       password_hash: passwordHash,
       role_id: hrRole!.id,
       department_id: department.id,
       office_location_id: office.id,
       hire_date: new Date('2020-03-15'),
       employment_status: 'active',
-      whatsapp_number: '6281234567890',
+      whatsapp_number: ownerWa,
       whatsapp_opted_in: true,
       whatsapp_verified: true,
       whatsapp_verified_at: new Date(),
@@ -187,11 +198,43 @@ async function main() {
       whatsapp_verified_at: new Date(),
     },
   });
+
+  await prisma.employee.upsert({
+    where: { email: 'samuel.jason@majubersama.com' },
+    update: {
+      password_hash: passwordHash,
+      full_name: 'Samuel Jason',
+      phone: '087728589845',
+      whatsapp_number: samuelWa,
+      whatsapp_opted_in: true,
+      whatsapp_verified: true,
+      whatsapp_verified_at: new Date(),
+      role_id: superAdminRole!.id,
+      department_id: itDepartment.id,
+    },
+    create: {
+      id: samuelId,
+      employee_code: 'SA-001',
+      full_name: 'Samuel Jason',
+      email: 'samuel.jason@majubersama.com',
+      phone: '087728589845',
+      password_hash: passwordHash,
+      role_id: superAdminRole!.id,
+      department_id: itDepartment.id,
+      office_location_id: office.id,
+      hire_date: new Date('2024-01-01'),
+      employment_status: 'active',
+      whatsapp_number: samuelWa,
+      whatsapp_opted_in: true,
+      whatsapp_verified: true,
+      whatsapp_verified_at: new Date(),
+    },
+  });
   console.log('[SEED] ✓ Demo employees seeded (password: demo123)');
 
   // === 5. Leave Balances ===
   const year = new Date().getFullYear();
-  for (const empId of [sariId, budiId, rinaId]) {
+  for (const empId of [sariId, budiId, rinaId, samuelId]) {
     await prisma.leaveBalance.upsert({
       where: { employee_id_year: { employee_id: empId, year } },
       update: {},
@@ -213,7 +256,7 @@ async function main() {
     { key: 'ai.provider', value: 'tokease', category: 'ai' },
     { key: 'ai.api_key', value: process.env.AI_API_KEY || '', category: 'ai' },
     { key: 'ai.base_url', value: process.env.AI_BASE_URL || 'https://tokease.com/v1', category: 'ai' },
-    { key: 'ai.model', value: process.env.AI_MODEL || 'qwen3.7-plus', category: 'ai' },
+    { key: 'ai.model', value: process.env.AI_MODEL || 'deepseek-v4-flash', category: 'ai' },
     { key: 'ai.max_tokens', value: 1024, category: 'ai' },
     { key: 'ai.temperature', value: 0.3, category: 'ai' },
     { key: 'ai.response_language', value: 'id', category: 'ai' },
@@ -249,12 +292,12 @@ async function main() {
     },
     {
       key: 'whatsapp.phone_number_id',
-      value: process.env.KAPSO_PHONE_NUMBER_ID || '597907523413541',
+      value: process.env.KAPSO_PHONE_NUMBER_ID || '1177690982091942',
       category: 'whatsapp',
     },
     {
       key: 'whatsapp.business_number',
-      value: process.env.KAPSO_BUSINESS_NUMBER || '+6281234567890',
+      value: process.env.KAPSO_BUSINESS_NUMBER || '+6285196416317',
       category: 'whatsapp',
     },
     {
@@ -429,7 +472,8 @@ startxref
   console.log('[SEED] ✓ All defaults seeded successfully');
   console.log('');
   console.log('Demo accounts (password: demo123):');
-  console.log('  HR Admin:    sari@majubersama.com  WA: 6281234567890');
+  console.log('  Super Admin: samuel.jason@majubersama.com  WA:', samuelWa);
+  console.log('  HR Admin:    sari@majubersama.com  WA:', ownerWa);
   console.log('  Supervisor:  budi@majubersama.com  WA: 6281234567891');
   console.log('  Employee:    rina@majubersama.com  WA: 6281234567892');
   console.log('');

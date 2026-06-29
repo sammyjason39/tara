@@ -8,16 +8,18 @@ import {
   HttpCode,
   Logger,
   UnauthorizedException,
+  Req,
 } from '@nestjs/common';
-import { WhatsAppInboundService, WebhookPayload } from '../services/whatsapp-inbound.service';
-import * as crypto from 'crypto';
+import type { RawBodyRequest } from '@nestjs/common';
+import { WhatsAppInboundService } from '../services/whatsapp-inbound.service';
+import { verifyKapsoWebhookSignature } from '../whatsapp-webhook.util';
 
 /**
  * WhatsApp Webhook Controller
  *
  * Receives incoming webhooks from Kapso/Meta:
  * - GET  /api/whatsapp/webhook — verification challenge (Meta setup)
- * - POST /api/whatsapp/webhook — inbound messages & status updates
+ * - POST /api/whatsapp/webhook — Kapso v2 events + Meta payload forwarding
  *
  * Security: Validates X-Webhook-Signature header using KAPSO_WEBHOOK_SECRET.
  */
@@ -30,7 +32,6 @@ export class WhatsAppWebhookController {
 
   /**
    * Webhook verification (GET) — Meta sends a challenge during setup.
-   * Returns the hub.challenge value if hub.verify_token matches.
    */
   @Get()
   verifyWebhook(
@@ -48,50 +49,47 @@ export class WhatsAppWebhookController {
   }
 
   /**
-   * Receive webhook events (POST) — inbound messages and delivery statuses.
+   * Receive webhook events (POST) — Kapso v2 or Meta-forwarded payloads.
    */
   @Post()
   @HttpCode(200)
   async receiveWebhook(
-    @Body() payload: WebhookPayload,
+    @Req() req: RawBodyRequest<Request>,
+    @Body() payload: Record<string, unknown>,
     @Headers('x-webhook-signature') signature: string,
+    @Headers('x-webhook-event') webhookEvent: string,
   ): Promise<{ status: string }> {
-    // Validate signature if webhook secret is configured
+    const rawBody =
+      req.rawBody?.toString('utf8') ??
+      (typeof payload === 'string' ? payload : JSON.stringify(payload));
+
     if (this.webhookSecret && signature) {
-      const isValid = this.validateSignature(JSON.stringify(payload), signature);
+      const isValid = verifyKapsoWebhookSignature(
+        signature,
+        this.webhookSecret,
+        rawBody,
+        payload,
+      );
       if (!isValid) {
-        this.logger.warn('[WEBHOOK] Invalid signature — rejecting payload');
+        this.logger.warn(
+          `[WEBHOOK] Invalid signature for event ${webhookEvent || 'unknown'}`,
+        );
         throw new UnauthorizedException('Invalid webhook signature');
       }
     }
 
-    // Process asynchronously (return 200 immediately per WhatsApp requirements)
+    if (webhookEvent) {
+      this.logger.log(`[WEBHOOK] Received Kapso event: ${webhookEvent}`);
+    }
+
     setImmediate(async () => {
       try {
-        await this.inboundService.processWebhook(payload);
+        await this.inboundService.processWebhook(payload, webhookEvent);
       } catch (error) {
         this.logger.error(`[WEBHOOK] Processing error: ${error.message}`, error.stack);
       }
     });
 
     return { status: 'ok' };
-  }
-
-  /**
-   * Validate Kapso X-Webhook-Signature using HMAC-SHA256.
-   */
-  private validateSignature(body: string, signature: string): boolean {
-    if (!this.webhookSecret) return true; // Skip if no secret configured
-
-    const hmac = crypto
-      .createHmac('sha256', this.webhookSecret)
-      .update(body)
-      .digest('hex');
-
-    const expected = `sha256=${hmac}`;
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expected),
-    );
   }
 }

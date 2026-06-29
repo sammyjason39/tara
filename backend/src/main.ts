@@ -7,7 +7,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   // CORS
   const origins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173')

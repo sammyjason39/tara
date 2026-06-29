@@ -9,7 +9,7 @@ import { WhatsAppClient } from '@kapso/whatsapp-cloud-api';
  *
  * Environment:
  *   KAPSO_API_KEY           — Project API key
- *   KAPSO_PHONE_NUMBER_ID   — Default phone number ID (597907523413541)
+ *   KAPSO_PHONE_NUMBER_ID   — Default phone number ID
  */
 @Injectable()
 export class WhatsAppClientService implements OnModuleInit {
@@ -19,7 +19,7 @@ export class WhatsAppClientService implements OnModuleInit {
 
   onModuleInit() {
     const apiKey = process.env.KAPSO_API_KEY;
-    this.phoneNumberId = process.env.KAPSO_PHONE_NUMBER_ID || '597907523413541';
+    this.phoneNumberId = process.env.KAPSO_PHONE_NUMBER_ID || '1177690982091942';
 
     if (!apiKey) {
       this.logger.warn('KAPSO_API_KEY not set — WhatsApp agent will be disabled');
@@ -99,27 +99,27 @@ export class WhatsAppClientService implements OnModuleInit {
       return { success: false };
     }
 
+    const normalizedTo = this.normalizePhoneNumber(to);
+    const kapsoButtons = buttons.slice(0, 3).map((b) => ({
+      id: b.id,
+      title: b.title.substring(0, 20),
+    }));
+
     try {
-      const result = await (this.client.messages as any).sendInteractive({
+      const result = await this.client.messages.sendInteractiveButtons({
         phoneNumberId: this.phoneNumberId,
-        to: this.normalizePhoneNumber(to),
-        interactive: {
-          type: 'button',
-          body: { text: body },
-          action: {
-            buttons: buttons.slice(0, 3).map((b) => ({
-              type: 'reply',
-              reply: { id: b.id, title: b.title.substring(0, 20) },
-            })),
-          },
-        },
+        to: normalizedTo,
+        bodyText: body,
+        buttons: kapsoButtons,
       });
 
-      const messageId = (result as any)?.messages?.[0]?.id;
+      const messageId = (result as { messages?: Array<{ id?: string }> })?.messages?.[0]?.id;
+      this.logger.log(`[WA] Buttons sent to ${to} — wamid: ${messageId}`);
       return { messageId, success: true };
     } catch (error) {
       this.logger.error(`[WA] Failed to send buttons to ${to}: ${error.message}`);
-      return { success: false };
+      const fallbackBody = `${body}\n\nBalas: ${kapsoButtons.map((b) => b.title).join(' / ')}`;
+      return this.sendText(to, fallbackBody);
     }
   }
 

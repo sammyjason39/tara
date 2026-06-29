@@ -24,7 +24,7 @@ export const DEFAULT_AI_CONFIG: TaraAiConfig = {
   provider: 'tokease',
   apiKey: '',
   baseUrl: 'https://tokease.com/v1',
-  model: 'qwen3.7-plus',
+  model: 'deepseek-v4-flash',
   maxTokens: 1024,
   temperature: 0.3,
   responseLanguage: 'id',

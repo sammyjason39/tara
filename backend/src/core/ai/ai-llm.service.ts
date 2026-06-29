@@ -28,6 +28,8 @@ export class AiLlmService {
       temperature: config.temperature,
       maxTokens: config.maxTokens,
       apiKey,
+      timeout: 90_000,
+      maxRetries: 1,
       configuration: {
         baseURL: config.baseUrl,
       },
@@ -59,11 +61,13 @@ export class AiLlmService {
     let inputTokens = 0;
     let outputTokens = 0;
     let iterations = 0;
-    const maxIterations = 6;
+    const maxIterations = 4;
 
     while (iterations < maxIterations) {
       iterations++;
+      const iterStart = Date.now();
       const response = await llmWithTools.invoke(messages);
+      this.logger.log(`LLM iteration ${iterations} completed in ${Date.now() - iterStart}ms`);
 
       const usage = response.usage_metadata as { input_tokens?: number; output_tokens?: number } | undefined;
       inputTokens += usage?.input_tokens || 0;

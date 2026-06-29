@@ -1,30 +1,27 @@
 # ==============================================================================
 # TARA Backend — Dockerfile
-# Builds the NestJS API, includes Prisma migrations, and runs auto-migration on
-# container start via docker-entrypoint.sh.
+# Uses Debian slim (glibc) — required for onnxruntime / @xenova/transformers
+# and mem0 local embeddings on production VPS.
 # ==============================================================================
 
 # --- Stage 1: Build ---
-FROM node:20-alpine AS builder
+FROM node:20-bookworm-slim AS builder
 
 WORKDIR /app
 
-# Install build dependencies (for native modules if any)
-RUN apk add --no-cache python3 make g++
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 make g++ openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies first (layer caching)
-COPY package*.json ./
+COPY package*.json .npmrc ./
 COPY prisma ./prisma/
 RUN npm ci
 
-# Generate Prisma client
 RUN npx prisma generate
 
-# Copy source and build
 COPY . .
 RUN npm run build
 
-# Compile the seed script (standalone, not part of NestJS module tree)
 RUN npx tsc src/scripts/seed-defaults.ts \
     --outDir dist/scripts \
     --esModuleInterop \
@@ -36,30 +33,23 @@ RUN npx tsc src/scripts/seed-defaults.ts \
     2>/dev/null || echo "Seed script compilation skipped"
 
 # --- Stage 2: Production ---
-FROM node:20-alpine AS runner
+FROM node:20-bookworm-slim AS runner
 
 WORKDIR /app
 ENV NODE_ENV=production
 
-# Install only what's needed at runtime
-RUN apk add --no-cache tini
+RUN apt-get update && apt-get install -y --no-install-recommends tini openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy built application
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
-
-# Copy Prisma (schema + migrations for runtime migrate deploy)
 COPY --from=builder /app/prisma ./prisma
-
-# Copy entrypoint
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
 
-# Use tini as PID 1 for proper signal handling
-ENTRYPOINT ["/sbin/tini", "--"]
+ENTRYPOINT ["/usr/bin/tini", "--"]
 
 EXPOSE 3001
 
-# Entrypoint handles: wait for DB → run migrations → seed → start app
 CMD ["/app/docker-entrypoint.sh"]

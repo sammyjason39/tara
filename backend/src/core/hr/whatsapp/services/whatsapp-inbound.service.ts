@@ -67,28 +67,182 @@ export class WhatsAppInboundService {
   ) {}
 
   /**
-   * Process incoming webhook payload from Kapso/Meta.
+   * Process incoming webhook payload from Kapso (v2 events) or Meta format.
    */
-  async processWebhook(payload: WebhookPayload): Promise<void> {
+  async processWebhook(payload: Record<string, unknown>, webhookEvent?: string): Promise<void> {
+    if (payload?.entry) {
+      await this.processMetaWebhook(payload as unknown as WebhookPayload);
+      return;
+    }
+
+    const event =
+      (payload?.event as string) ||
+      (payload?.type as string) ||
+      webhookEvent;
+
+    if (event?.startsWith('whatsapp.')) {
+      await this.processKapsoV2Webhook(payload, event);
+      return;
+    }
+
+    this.logger.warn(
+      `[WEBHOOK] Unhandled payload format (event=${event || 'none'}, keys=${Object.keys(payload).join(',')})`,
+    );
+  }
+
+  private async processMetaWebhook(payload: WebhookPayload): Promise<void> {
     if (!payload?.entry) return;
 
     for (const entry of payload.entry) {
       for (const change of entry.changes) {
         const value = change.value;
 
-        // Handle delivery status updates
         if (value.statuses && value.statuses.length > 0) {
           await this.handleStatusUpdates(value.statuses);
         }
 
-        // Handle inbound messages
         if (value.messages && value.messages.length > 0) {
           for (const message of value.messages) {
-            await this.handleInboundMessage(message, value.contacts?.[0]);
+            await this.handleInboundMessage(
+              this.normalizeInboundMessage(message),
+              value.contacts?.[0],
+            );
           }
         }
       }
     }
+  }
+
+  private async processKapsoV2Webhook(payload: Record<string, unknown>, event: string): Promise<void> {
+    if (event === 'whatsapp.message.received') {
+      const extracted = this.extractKapsoInboundMessages(payload);
+
+      if (extracted.length === 0) {
+        this.logger.warn(
+          `[WEBHOOK] message.received but no processable messages (batch=${payload.batch === true}, keys=${Object.keys(payload).join(',')})`,
+        );
+        return;
+      }
+
+      for (const { message, contact } of extracted) {
+        await this.handleInboundMessage(message, contact);
+      }
+      return;
+    }
+
+    if (
+      event === 'whatsapp.message.delivered' ||
+      event === 'whatsapp.message.read' ||
+      event === 'whatsapp.message.failed'
+    ) {
+      const data = payload.data as Record<string, unknown> | undefined;
+      const messageId = (data?.message_id || data?.id) as string | undefined;
+      if (!messageId) return;
+
+      const statusMap: Record<string, 'delivered' | 'read' | 'failed'> = {
+        'whatsapp.message.delivered': 'delivered',
+        'whatsapp.message.read': 'read',
+        'whatsapp.message.failed': 'failed',
+      };
+
+      await this.handleStatusUpdates([
+        {
+          id: messageId,
+          status: statusMap[event],
+          timestamp: String(data?.timestamp || Date.now()),
+          errors: event === 'whatsapp.message.failed'
+            ? [{ code: 0, title: String(data?.error || 'delivery failed') }]
+            : undefined,
+        },
+      ]);
+    }
+  }
+
+  private extractKapsoInboundMessages(payload: Record<string, unknown>): Array<{
+    message: InboundMessage;
+    contact?: { profile: { name: string }; wa_id: string };
+  }> {
+    const data = payload.data;
+    const items: Record<string, unknown>[] = [];
+
+    if (Array.isArray(data)) {
+      items.push(...(data as Record<string, unknown>[]));
+    } else if (data && typeof data === 'object') {
+      const record = data as Record<string, unknown>;
+      if (Array.isArray(record.messages)) {
+        items.push(...(record.messages as Record<string, unknown>[]));
+      } else {
+        items.push(record);
+      }
+    } else if (payload.message) {
+      // Kapso v2 flat payload: { message, conversation, phone_number_id, ... }
+      items.push(payload);
+    }
+
+    const results: Array<{
+      message: InboundMessage;
+      contact?: { profile: { name: string }; wa_id: string };
+    }> = [];
+
+    for (const record of items) {
+      const msgWrapper = (record.message as Record<string, unknown>) || record;
+      const inner =
+        (msgWrapper.message as Record<string, unknown>) || msgWrapper;
+
+      const conversation = record.conversation as Record<string, unknown> | undefined;
+      const contactRaw = record.contact || record.contacts || msgWrapper.contacts;
+      const contact = Array.isArray(contactRaw)
+        ? (contactRaw[0] as { profile: { name: string }; wa_id: string })
+        : (contactRaw as { profile: { name: string }; wa_id: string } | undefined);
+
+      const from =
+        inner.from ||
+        msgWrapper.from ||
+        conversation?.phone_number ||
+        record.phone_number ||
+        payload.phone_number ||
+        contact?.wa_id;
+
+      if (!from) {
+        this.logger.warn(
+          `[WEBHOOK] Skipping item — no sender (keys=${Object.keys(record).join(',')})`,
+        );
+        continue;
+      }
+
+      results.push({
+        message: this.normalizeInboundMessage({ ...inner, from }),
+        contact,
+      });
+    }
+
+    return results;
+  }
+
+  private normalizeInboundMessage(
+    message: InboundMessage | Record<string, unknown>,
+  ): InboundMessage {
+    const msg = message as Record<string, unknown>;
+    const textRaw = msg.text;
+    let text: InboundMessage['text'];
+    if (textRaw && typeof textRaw === 'object' && 'body' in (textRaw as object)) {
+      text = textRaw as InboundMessage['text'];
+    } else if (typeof textRaw === 'string') {
+      text = { body: textRaw };
+    } else if (typeof msg.body === 'string') {
+      text = { body: msg.body };
+    } else if (typeof msg.content === 'string') {
+      text = { body: msg.content };
+    }
+
+    return {
+      from: String(msg.from || '').replace(/^\+/, ''),
+      messageId: String(msg.id || msg.message_id || msg.messageId || ''),
+      timestamp: String(msg.timestamp || Math.floor(Date.now() / 1000)),
+      type: (msg.type as InboundMessage['type']) || 'text',
+      text,
+      interactive: msg.interactive as InboundMessage['interactive'],
+    };
   }
 
   /**
@@ -106,7 +260,9 @@ export class WhatsAppInboundService {
     );
 
     // Mark as read (show blue ticks)
-    await this.clientService.markRead(message.messageId);
+    if (message.messageId) {
+      await this.clientService.markRead(message.messageId);
+    }
 
     // Identify employee by WhatsApp number
     const employee = await this.findEmployeeByPhone(senderPhone);
@@ -170,6 +326,19 @@ export class WhatsAppInboundService {
     // Route to TARA AI Assistant
     if (this.aiConfigService.isAiEnabled()) {
       try {
+        const quickReply =
+          messageContent.startsWith('[button:') ||
+          /^(ya|setuju|ok|batal|tidak|no)$/i.test(messageContent.trim());
+
+        if (!quickReply) {
+          await this.outboundService.sendMessage({
+            employee_id: employee.id,
+            content: '⏳ Sebentar ya, TARA sedang memproses permintaan Anda...',
+            correlation_id: sessionId,
+            metadata: { source: 'tara_ai_ack' },
+          });
+        }
+
         const aiResult = await this.aiOrchestrator.processWhatsAppMessage({
           employeeId: employee.id,
           message: messageContent,
@@ -177,11 +346,19 @@ export class WhatsAppInboundService {
         });
 
         if (aiResult.useButtons && aiResult.buttons?.length) {
-          await this.outboundService.sendButtons(
+          const buttonResult = await this.outboundService.sendButtons(
             employee.id,
             aiResult.reply,
             aiResult.buttons,
           );
+          if (!buttonResult.success) {
+            await this.outboundService.sendMessage({
+              employee_id: employee.id,
+              content: aiResult.reply,
+              correlation_id: sessionId,
+              metadata: { source: 'tara_ai', buttons_fallback: true },
+            });
+          }
         } else {
           await this.outboundService.sendMessage({
             employee_id: employee.id,
