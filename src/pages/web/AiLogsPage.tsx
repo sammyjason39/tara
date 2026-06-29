@@ -156,9 +156,9 @@ export function AiAssistantSection() {
     const cfg = data.data;
     setAi({
       enabled: cfg.ai?.enabled ?? false,
-      provider: cfg.ai?.provider ?? "tokease",
+      provider: cfg.ai?.provider ?? "openrouter",
       api_key: "",
-      base_url: cfg.ai?.baseUrl ?? cfg.ai?.base_url ?? "https://tokease.com/v1",
+      base_url: cfg.ai?.baseUrl ?? cfg.ai?.base_url ?? "https://openrouter.ai/api/v1",
       model: cfg.ai?.model ?? "deepseek-v4-flash",
       max_tokens: cfg.ai?.maxTokens ?? cfg.ai?.max_tokens ?? 1024,
       temperature: cfg.ai?.temperature ?? 0.3,
