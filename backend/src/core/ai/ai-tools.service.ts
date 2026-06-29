@@ -30,14 +30,14 @@ export class AiToolsService {
 
       this.tool(
         'get_my_attendance_today',
-        'Cek status absensi hari ini',
+        'HANYA untuk cek data absensi PRIBADI hari ini (sudah clock-in/out belum). JANGAN dipakai jika user hanya tanya cara absen.',
         z.object({}),
         async () => JSON.stringify(await this.getAttendanceToday(ctx.id)),
       ),
 
       this.tool(
         'get_my_attendance_history',
-        'Riwayat absensi 30 hari terakhir',
+        'HANYA untuk cek riwayat absensi PRIBADI (telat, bolos, riwayat N hari). JANGAN dipakai jika user hanya tanya cara absen.',
         z.object({ days: z.number().optional().describe('Jumlah hari, default 30') }),
         async ({ days }) =>
           JSON.stringify(await this.getAttendanceHistory(ctx.id, days || 30)),

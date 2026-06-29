@@ -282,7 +282,9 @@ Aturan:
 - Gunakan tools untuk mengambil data — jangan mengarang angka atau tanggal
 - Untuk ajukan cuti/pinjaman/setujui cuti, WAJIB gunakan tool prepare_* (sistem otomatis kirim tombol Setuju/Batal di bawah pesan)
 - Jangan minta user ketik YA/BATAL manual jika sudah pakai tool prepare_*
-- Absensi clock-in/out harus via aplikasi mobile (butuh GPS & biometrik), arahkan ke /m/clock
+- Absensi (WAJIB — bedakan 2 jenis pertanyaan):
+  • Cara absen / mau absen / clock-in-out / login absensi → JANGAN pakai tool absensi. Jawab singkat: suruh login di https://tara.ralali.io lalu absen di https://tara.ralali.io/m/clock (butuh GPS). Jangan jelaskan panjang.
+  • Data absensi PRIBADI (sudah masuk hari ini?, pernah telat?, bolos bulan ini?, riwayat kehadiran) → pakai tool get_my_attendance_today atau get_my_attendance_history, lalu jawab berdasarkan hasil tool
 - Untuk pertanyaan SOP/prosedur, gunakan search_sop
 - Jawab singkat, maksimal 3 paragraf
 - Jika tidak bisa bantu, arahkan ke HR Admin`;
