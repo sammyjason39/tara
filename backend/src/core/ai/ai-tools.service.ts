@@ -3,7 +3,7 @@ import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { PrismaService } from '../../persistence/prisma.service';
 import { AiRagService } from './ai-rag.service';
-import { EmployeeAiContext } from './ai.interfaces';
+import { EmployeeAiContext, TARA_CLOCK_URL } from './ai.interfaces';
 
 /** Marker returned by prepare_* tools to trigger confirmation flow */
 export const CONFIRMATION_MARKER = '__TARA_CONFIRM__';
@@ -195,18 +195,39 @@ export class AiToolsService {
   private async getAttendanceToday(employeeId: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return this.prisma.attendance.findFirst({
+    const record = await this.prisma.attendance.findFirst({
       where: { employee_id: employeeId, attendance_date: today },
     });
+
+    if (!record) {
+      return {
+        status: 'belum_ada_record',
+        message: 'Belum ada record absensi hari ini di TARA.',
+        clock_in_url: TARA_CLOCK_URL,
+      };
+    }
+
+    return record;
   }
 
   private async getAttendanceHistory(employeeId: string, days: number) {
     const start = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    return this.prisma.attendance.findMany({
+    const records = await this.prisma.attendance.findMany({
       where: { employee_id: employeeId, attendance_date: { gte: start } },
       orderBy: { attendance_date: 'desc' },
       take: days,
     });
+
+    return {
+      days_requested: days,
+      record_count: records.length,
+      records,
+      clock_in_url: TARA_CLOCK_URL,
+      note:
+        records.length === 0
+          ? 'Belum ada riwayat absensi dalam periode ini di TARA.'
+          : undefined,
+    };
   }
 
   private async getMyPendingLeaves(employeeId: string) {

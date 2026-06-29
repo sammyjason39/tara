@@ -21,15 +21,20 @@ export interface TaraWhatsAppConfig {
 
 export const DEFAULT_AI_CONFIG: TaraAiConfig = {
   enabled: false,
-  provider: 'tokease',
+  provider: 'openrouter',
   apiKey: '',
-  baseUrl: 'https://tokease.com/v1',
+  baseUrl: 'https://openrouter.ai/api/v1',
   model: 'deepseek-v4-flash',
   maxTokens: 1024,
   temperature: 0.3,
   responseLanguage: 'id',
   confirmationTimeoutMinutes: 60,
 };
+
+/** Public TARA app URLs — sole allowed links in AI replies */
+export const TARA_PUBLIC_BASE_URL =
+  process.env.TARA_PUBLIC_URL || 'https://tara.ralali.io';
+export const TARA_CLOCK_URL = `${TARA_PUBLIC_BASE_URL}/m/clock`;
 
 export const DEFAULT_WHATSAPP_CONFIG: TaraWhatsAppConfig = {
   enabled: false,

@@ -101,7 +101,7 @@ services:
       KAPSO_WEBHOOK_SECRET: ${KAPSO_WEBHOOK_SECRET:-}
       # TARA AI Assistant
       AI_API_KEY: ${AI_API_KEY:-}
-      AI_BASE_URL: ${AI_BASE_URL:-https://tokease.com/v1}
+      AI_BASE_URL: ${AI_BASE_URL:-https://openrouter.ai/api/v1}
       AI_MODEL: ${AI_MODEL:-deepseek-v4-flash}
       DEMO_MODE: ${DEMO_MODE:-false}
       SOP_UPLOAD_DIR: /var/data/tara/sop

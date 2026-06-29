@@ -130,9 +130,9 @@ export function AiAssistantSection() {
 
   const [ai, setAi] = useState({
     enabled: false,
-    provider: "tokease",
+    provider: "openrouter",
     api_key: "",
-    base_url: "https://tokease.com/v1",
+    base_url: "https://openrouter.ai/api/v1",
     model: "deepseek-v4-flash",
     max_tokens: 1024,
     temperature: 0.3,
@@ -252,7 +252,7 @@ export function AiAssistantSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Inp label="Provider" value={ai.provider} onChange={(v) => setAi({ ...ai, provider: v })} />
           <Inp label="Model" value={ai.model} onChange={(v) => setAi({ ...ai, model: v })} placeholder="deepseek-v4-flash" />
-          <Inp label="Base URL" value={ai.base_url} onChange={(v) => setAi({ ...ai, base_url: v })} placeholder="https://tokease.com/v1" />
+          <Inp label="Base URL" value={ai.base_url} onChange={(v) => setAi({ ...ai, base_url: v })} placeholder="https://openrouter.ai/api/v1" />
           <Inp label="API Key" value={ai.api_key} onChange={(v) => setAi({ ...ai, api_key: v })} placeholder="Kosongkan jika tidak diubah" />
           <Inp label="Max Tokens" value={String(ai.max_tokens)} onChange={(v) => setAi({ ...ai, max_tokens: Number(v) })} />
           <Inp label="Temperature" value={String(ai.temperature)} onChange={(v) => setAi({ ...ai, temperature: Number(v) })} />

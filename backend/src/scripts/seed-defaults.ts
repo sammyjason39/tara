@@ -250,12 +250,12 @@ async function main() {
   }
   console.log('[SEED] ✓ Leave balances seeded');
 
-  // === 6. AI Assistant defaults (Tokease) ===
+  // === 6. AI Assistant defaults (OpenRouter) ===
   const aiSettings = [
     { key: 'ai.enabled', value: process.env.AI_API_KEY ? true : false, category: 'ai' },
-    { key: 'ai.provider', value: 'tokease', category: 'ai' },
+    { key: 'ai.provider', value: 'openrouter', category: 'ai' },
     { key: 'ai.api_key', value: process.env.AI_API_KEY || '', category: 'ai' },
-    { key: 'ai.base_url', value: process.env.AI_BASE_URL || 'https://tokease.com/v1', category: 'ai' },
+    { key: 'ai.base_url', value: process.env.AI_BASE_URL || 'https://openrouter.ai/api/v1', category: 'ai' },
     { key: 'ai.model', value: process.env.AI_MODEL || 'deepseek-v4-flash', category: 'ai' },
     { key: 'ai.max_tokens', value: 1024, category: 'ai' },
     { key: 'ai.temperature', value: 0.3, category: 'ai' },

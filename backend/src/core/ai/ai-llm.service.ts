@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ChatOpenAI } from '@langchain/openai';
 import { HumanMessage, SystemMessage, AIMessage, ToolMessage } from '@langchain/core/messages';
 import { AiConfigService } from './ai-config.service';
+import { TARA_CLOCK_URL, TARA_PUBLIC_BASE_URL } from './ai.interfaces';
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
 
@@ -22,6 +23,7 @@ export class AiLlmService {
   createClient() {
     const config = this.configService.getAiConfig();
     const apiKey = this.configService.getRawApiKey();
+    const isOpenRouter = config.baseUrl.includes('openrouter.ai');
 
     return new ChatOpenAI({
       model: config.model,
@@ -32,6 +34,12 @@ export class AiLlmService {
       maxRetries: 1,
       configuration: {
         baseURL: config.baseUrl,
+        ...(isOpenRouter && {
+          defaultHeaders: {
+            'HTTP-Referer': TARA_PUBLIC_BASE_URL,
+            'X-Title': 'TARA HR Assistant',
+          },
+        }),
       },
     });
   }

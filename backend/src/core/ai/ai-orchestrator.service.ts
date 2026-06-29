@@ -7,7 +7,7 @@ import { AiPendingActionService } from './ai-pending-action.service';
 import { AiActionExecutorService } from './ai-action-executor.service';
 import { AiLogService } from './ai-log.service';
 import { AiMemoryService } from './ai-memory.service';
-import { AiProcessResult, AiPendingActionType, EmployeeAiContext } from './ai.interfaces';
+import { AiProcessResult, AiPendingActionType, EmployeeAiContext, TARA_CLOCK_URL, TARA_PUBLIC_BASE_URL } from './ai.interfaces';
 import { formatForWhatsApp } from '../hr/whatsapp/whatsapp-format.util';
 import { WhatsAppOutboundService } from '../hr/whatsapp/services/whatsapp-outbound.service';
 
@@ -132,7 +132,7 @@ export class AiOrchestratorService {
     }
 
     const result: AiProcessResult = {
-      reply: formatForWhatsApp(llmResult.content),
+      reply: this.finalizeReply(llmResult.content),
       toolsCalled: llmResult.toolsCalled,
       inputTokens: llmResult.inputTokens,
       outputTokens: llmResult.outputTokens,
@@ -283,8 +283,9 @@ Aturan:
 - Untuk ajukan cuti/pinjaman/setujui cuti, WAJIB gunakan tool prepare_* (sistem otomatis kirim tombol Setuju/Batal di bawah pesan)
 - Jangan minta user ketik YA/BATAL manual jika sudah pakai tool prepare_*
 - Absensi (WAJIB — bedakan 2 jenis pertanyaan):
-  • Cara absen / mau absen / clock-in-out / login absensi → JANGAN pakai tool absensi. Jawab singkat: suruh login di https://tara.ralali.io lalu absen di https://tara.ralali.io/m/clock (butuh GPS). Jangan jelaskan panjang.
-  • Data absensi PRIBADI (sudah masuk hari ini?, pernah telat?, bolos bulan ini?, riwayat kehadiran) → pakai tool get_my_attendance_today atau get_my_attendance_history, lalu jawab berdasarkan hasil tool
+  • Cara absen / mau absen / clock-in-out / login absensi → JANGAN pakai tool absensi. Jawab singkat: suruh login di ${TARA_PUBLIC_BASE_URL} lalu absen di ${TARA_CLOCK_URL} (butuh GPS). Jangan jelaskan panjang.
+  • Data absensi PRIBADI (sudah masuk hari ini?, pernah telat?, bolos bulan ini?, riwayat kehadiran) → pakai tool get_my_attendance_today atau get_my_attendance_history, lalu jawab berdasarkan hasil tool. Jika belum ada data, katakan belum ada record — tetap arahkan absen ke ${TARA_CLOCK_URL}
+- Link aplikasi: HANYA gunakan ${TARA_PUBLIC_BASE_URL} dan ${TARA_CLOCK_URL}. JANGAN pakai app.perusahaan.com atau URL lain yang dibuat-buat
 - Untuk pertanyaan SOP/prosedur, gunakan search_sop
 - Jawab singkat, maksimal 3 paragraf
 - Jika tidak bisa bantu, arahkan ke HR Admin`;
@@ -354,6 +355,14 @@ Aturan:
       }
     }
     return null;
+  }
+
+  /** Format reply for WA and replace hallucinated legacy app URLs */
+  private finalizeReply(text: string): string {
+    const sanitized = text
+      .replace(/https?:\/\/app\.perusahaan\.com/gi, TARA_PUBLIC_BASE_URL)
+      .replace(/app\.perusahaan\.com/gi, 'tara.ralali.io');
+    return formatForWhatsApp(sanitized);
   }
 
   private async logInteraction(
