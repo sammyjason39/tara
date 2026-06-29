@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import {
-  Bot, Clock, MapPin, CalendarDays, Bell, Server,
+  Bot, Clock, CalendarDays, Bell, Server,
   Building2, Users, Shield, Key, Send,
   Trash2, TestTube, Wifi, X, Save, Activity, Pencil, Building, Plus,
 } from "lucide-react";
@@ -16,7 +16,6 @@ const sections = [
   { id: "organization", label: "Organisasi", icon: Building2 },
   { id: "users", label: "Akun & Akses", icon: Key },
   { id: "attendance", label: "Kehadiran", icon: Clock },
-  { id: "geofence", label: "Lokasi & Geo-Fence", icon: MapPin },
   { id: "leaves", label: "Kebijakan Cuti", icon: CalendarDays },
   { id: "channels", label: "Kanal Notifikasi", icon: Send },
   { id: "ai", label: "AI Assistant", icon: Bot },
@@ -46,7 +45,6 @@ export function SettingsPage() {
           {active === "organization" && <OrganizationSection />}
           {active === "users" && <UsersSection />}
           {active === "attendance" && <AttendanceSection />}
-          {active === "geofence" && <GeoFenceSection />}
           {active === "leaves" && <LeavesSection />}
           {active === "channels" && <ChannelsSection />}
           {active === "ai" && <AiAssistantSection />}
@@ -337,7 +335,7 @@ function OrganizationSection() {
 
   return (
     <div className="space-y-6">
-      <SH title="Organisasi" sub="Kelola kantor, departemen, dan jabatan" />
+      <SH title="Organisasi" sub="Kelola kantor (lokasi & geo-fence), departemen, dan jabatan" />
       {loadError && (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           Gagal memuat data organisasi. Silakan refresh halaman atau login ulang.
@@ -346,7 +344,7 @@ function OrganizationSection() {
       {/* Offices */}
       <div className="surface-elevated p-5 space-y-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2"><Building2 className="h-4 w-4 text-muted-foreground" /><p className="text-sm font-medium">Kantor / Cabang</p></div>
+          <div className="flex items-center gap-2"><Building2 className="h-4 w-4 text-muted-foreground" /><p className="text-sm font-medium">Kantor / Cabang & Geo-Fence</p></div>
           <button onClick={() => { setShowOfficeForm(!showOfficeForm); setEditingOffice(null); setOfficeForm({ location_name: "", address: "", latitude: "", longitude: "", geofence_radius_meters: "200" }); }} className="flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-gold/10 text-gold text-xs font-medium hover:bg-gold/20"><Plus className="h-3 w-3" /> Tambah Kantor</button>
         </div>
         {(showOfficeForm || editingOffice) && (
@@ -367,7 +365,7 @@ function OrganizationSection() {
         )}
         {offices.map((o: any) => (
           <div key={o.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-            <div><p className="text-sm font-medium">{o.location_name}</p><p className="text-2xs text-muted-foreground">{o.address || "—"} • Radius {o.geofence_radius_meters}m</p></div>
+            <div><p className="text-sm font-medium">{o.location_name}</p><p className="text-2xs text-muted-foreground">{o.address || "—"} • {o.latitude}, {o.longitude} • Radius {o.geofence_radius_meters}m</p></div>
             <div className="flex items-center gap-1">
               <button onClick={() => startEditOffice(o)} className="p-1.5 hover:bg-accent rounded-md" title="Edit"><Pencil className="h-3.5 w-3.5 text-muted-foreground hover:text-gold" /></button>
               <button onClick={() => deleteOffice(o.id)} className="p-1.5 hover:bg-accent rounded-md" title="Hapus"><Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" /></button>
@@ -524,31 +522,6 @@ function AttendanceSection() {
           <Toggle on={manualOverride} onToggle={() => { setManualOverride(!manualOverride); toast.success(manualOverride ? "Override dinonaktifkan" : "Override diaktifkan"); }} />
         </div>
         <button onClick={save} className="px-4 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"><Save className="h-3.5 w-3.5 inline mr-1.5" />Simpan Pengaturan</button>
-      </div>
-    </div>
-  );
-}
-
-// === GEO FENCE ===
-function GeoFenceSection() {
-  const [form, setForm] = useState({ location_name: "Kantor Pusat Jakarta", latitude: "-6.2088", longitude: "106.8456", geofence_radius_meters: "200", address: "Jl. Sudirman No. 123" });
-  const save = async () => {
-    if (!form.location_name || !form.latitude || !form.longitude) { toast.error("Nama, latitude, longitude wajib diisi"); return; }
-    await api.post("/admin/offices", { ...form, latitude: Number(form.latitude), longitude: Number(form.longitude), geofence_radius_meters: Number(form.geofence_radius_meters) });
-    toast.success("Lokasi berhasil disimpan");
-  };
-  return (
-    <div className="space-y-6">
-      <SH title="Lokasi & Geo-Fence" sub="Atur lokasi kantor dan batas radius kehadiran" />
-      <div className="surface-elevated p-6 space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <Inp label="Nama Lokasi" value={form.location_name} onChange={v => setForm({...form, location_name: v})} placeholder="Kantor Pusat Jakarta" />
-          <Inp label="Alamat" value={form.address} onChange={v => setForm({...form, address: v})} placeholder="Jl. Sudirman No. 123" />
-          <Inp label="Latitude" value={form.latitude} onChange={v => setForm({...form, latitude: v})} placeholder="-6.2088" />
-          <Inp label="Longitude" value={form.longitude} onChange={v => setForm({...form, longitude: v})} placeholder="106.8456" />
-          <Inp label="Radius (meter)" value={form.geofence_radius_meters} onChange={v => setForm({...form, geofence_radius_meters: v})} placeholder="200" />
-        </div>
-        <button onClick={save} className="px-4 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"><Save className="h-3.5 w-3.5 inline mr-1.5" />Simpan Lokasi</button>
       </div>
     </div>
   );
