@@ -17,6 +17,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed": "ts-node src/scripts/seed-defaults.ts",
+    "seed:ralali": "ts-node src/scripts/seed-ralali-employees.ts",
     "test:ai-e2e": "NODE_OPTIONS='--max-old-space-size=8192' ts-node -r tsconfig-paths/register src/scripts/test-ai-e2e.ts",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
