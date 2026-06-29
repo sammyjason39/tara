@@ -36,6 +36,11 @@ const SAMUEL = {
   hire_date: '2024-01-01',
 };
 
+/** Manual corrections not reflected in the source CSV export */
+const EMAIL_OVERRIDES: Record<string, string> = {
+  '607': 'businessprocessralali1@gmail.com', // Muetia Adellya Putri
+};
+
 const ID_MONTHS: Record<string, number> = {
   januari: 0,
   jan: 0,
@@ -347,7 +352,8 @@ async function main() {
       continue;
     }
 
-    const email = dedupeEmail(row.email, String(row.employeeNumber), usedEmails);
+    const rawEmail = EMAIL_OVERRIDES[String(row.employeeNumber)] || row.email;
+    const email = dedupeEmail(rawEmail, String(row.employeeNumber), usedEmails);
 
     const deptName = row.department || row.division;
     if (!row.department && row.division) unmappedFields.divisionOnly++;
