@@ -64,3 +64,7 @@ yarn-error.log*
 .cache/
 .temp/
 certbot/www/
+
+# Employee PII exports (do not commit)
+Copy of Data NIK Karyawan*.csv
+*Data Karyawan Ralali*.csv
