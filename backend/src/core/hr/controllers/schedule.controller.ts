@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ScheduleService } from '../services/schedule.service';
+import { JwtGuard } from '../../auth/guards/jwt.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/guards/roles.guard';
 
@@ -27,6 +28,7 @@ import { Roles } from '../../auth/guards/roles.guard';
  * - Company holidays
  */
 @Controller('schedules')
+@UseGuards(JwtGuard)
 export class ScheduleController {
   constructor(private readonly scheduleService: ScheduleService) {}
 
