@@ -1,204 +1,284 @@
-# TARA — Total Assistance for Resources & Administration
+# TARA HR Agentic
 
-**TARA** adalah sistem manajemen HR (Human Resources) cerdas yang dirancang untuk **Ralali**. Sistem ini mengotomatisasi operasional HR sehari-hari menggunakan 7 agen otonom, sehingga tim HR dapat fokus pada tugas strategis.
+**Total Assistance for Resources & Administration** — sistem HR cerdas dengan agen otonom dan asisten AI untuk mengotomatisasi operasional kehadiran, cuti, penggajian, dan komunikasi karyawan.
 
-**Version:** 2.1.0 ([Changelog](./CHANGELOG.md))  
-**Status:** Active Development
+[![Version](https://img.shields.io/badge/version-2.0.0-blue)](./CHANGELOG.md)
+[![Stack](https://img.shields.io/badge/stack-React%20%7C%20NestJS%20%7C%20PostgreSQL-555)](./docs/README.md)
+[![License](https://img.shields.io/badge/license-Proprietary-red)](#lisensi)
 
----
-
-## Apa yang TARA Lakukan?
-
-| Fitur | Penjelasan Singkat |
-|-------|-------------------|
-| 🕐 **Absensi Otomatis** | Karyawan clock-in/out via ponsel (biometrik + GPS) atau fingerprint device |
-| 📋 **Manajemen Cuti** | Pengajuan cuti online, persetujuan otomatis, saldo real-time |
-| 💰 **Penggajian** | Hitung gaji, potongan, bonus, dan cetak slip gaji |
-| 💳 **Pinjaman / Kasbon** | Karyawan ajukan pinjaman, cicilan otomatis potong gaji |
-| 📅 **Jadwal Kerja** | Atur shift, jadwal per karyawan, hari libur |
-| 📄 **Dokumen SOP** | Upload, kelola, dan baca dokumen SOP (PDF) untuk seluruh karyawan |
-| 🔔 **Notifikasi Multi-Kanal** | Kirim alert via aplikasi, WhatsApp, Telegram, atau Email |
-| 🤖 **8 Agen Otonom** | Robot HR yang bekerja 24/7 tanpa perlu dioperasikan manual |
-| 🧠 **Hermes AI** | Integrasi AI agentic: baca event, kirim reminder, sarankan keputusan |
-| 📡 **Hermes SDK** | TypeScript SDK untuk menghubungkan Hermes (VPS terpisah) ke TARA via SSH tunnel |
-| 📊 **Laporan & Analitik** | Dashboard kehadiran, keterlambatan, dan produktivitas |
-| 🏢 **Profil Perusahaan** | Kelola informasi perusahaan, kantor, cabang, dan departemen |
+**Production:** [tara.ralali.io](https://tara.ralali.io)
 
 ---
 
-## Siapa yang Menggunakan TARA?
+## Deskripsi
 
-| Pengguna | Akses |
-|----------|-------|
-| **HR Admin** | Akses penuh via Web — kelola semua karyawan, pengaturan, laporan |
-| **Supervisor** | Web — setujui cuti tim, lihat laporan tim |
-| **Karyawan** | Mobile (PWA) — clock-in/out, ajukan cuti, lihat slip gaji, notifikasi |
+TARA adalah platform HR end-to-end yang menggabungkan **web dashboard untuk HR**, **aplikasi mobile (PWA) untuk karyawan**, dan **asisten AI berbasis WhatsApp**. Sistem ini dirancang agar tim HR tidak perlu menangani tugas repetitif secara manual — agen otonom berjalan 24/7 untuk memproses absensi, cuti, notifikasi, onboarding, dan laporan.
+
+Asisten AI TARA (via OpenRouter) dapat menjawab pertanyaan karyawan, mengeksekusi aksi HR dengan konfirmasi, dan mengeskalasi ke staff HR bila diperlukan.
 
 ---
 
-## Tampilan Aplikasi
+## Fitur Utama
 
-### Web Interface (untuk HR & Supervisor)
-- Dashboard dengan statistik real-time (total karyawan, hadir hari ini, cuti pending, terlambat)
-- Direktori karyawan dengan pencarian + halaman detail per karyawan
-- Manajemen cuti (setujui/tolak)
-- Penggajian (periode, komponen, slip)
-- Dokumen SOP (upload single/bulk PDF, viewer inline, kategori)
-- Pengaturan lengkap (profil perusahaan, organisasi, agen, notifikasi, Hermes AI)
+### Kehadiran & Organisasi
+- Clock-in/out via mobile dengan **GPS geo-fence** per kantor/cabang
+- Manajemen kantor, departemen, dan jabatan dari satu tab Organisasi
+- Deteksi keterlambatan otomatis dan laporan harian
+- Jadwal kerja, shift, dan hari libur
 
-### Mobile Interface (untuk Karyawan)
-- Clock-in/out dengan satu ketukan
-- Ajukan cuti dari ponsel
-- Lihat saldo cuti dan riwayat
-- Baca dokumen SOP (viewer PDF inline)
-- Notifikasi real-time
-- Profil dan pengaturan bahasa
+### Cuti & Penggajian
+- Pengajuan cuti online dengan alur persetujuan supervisor
+- Saldo cuti real-time dan riwayat pengajuan
+- Perhitungan gaji, komponen, potongan, dan slip gaji
+
+### Dokumen & Komunikasi
+- Manajemen dokumen SOP (upload PDF, kategori, viewer inline)
+- Notifikasi multi-kanal: in-app, WhatsApp, Telegram, Email
+- Dashboard analitik kehadiran dan produktivitas
+
+### Agen Otonom (24/7)
+| Agen | Fungsi |
+|------|--------|
+| Leave Request | Validasi saldo cuti, notifikasi supervisor, update saldo |
+| Absensi | Rekam clock-in/out, deteksi terlambat, cache status |
+| Clock Confirmation | Konfirmasi privat ke karyawan setelah absen |
+| Weekly Checkin | Form produktivitas Jumat, laporan Senin |
+| Late Report | Pengumuman keterlambatan harian + recap HR |
+| Onboarding | Workflow 7 langkah untuk karyawan baru |
+| Saldo Cuti | Query saldo & rekapitulasi bulanan |
+| SOP | Lifecycle dokumen SOP & konteks untuk AI |
+| WhatsApp | Routing pesan WA ↔ AI, session & audit log |
+
+### Asisten AI TARA
+- Integrasi **OpenRouter** (model OpenAI-compatible, default: `deepseek-v4-flash`)
+- Chat WhatsApp untuk karyawan: cek profil, saldo cuti, jadwal, SOP
+- Tool-calling dengan konfirmasi sebelum aksi sensitif
+- Eskalasi otomatis ke HR untuk pertanyaan di luar konteks
+- Memory per karyawan (Mem0) dan log interaksi di admin panel
 
 ---
 
-## Cara Menjalankan (Quick Start)
+## Tech Stack
+
+| Layer | Teknologi |
+|-------|-----------|
+| **Frontend** | React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui, TanStack Query |
+| **Mobile** | PWA (Vite PWA), responsive layout terpisah |
+| **Backend** | NestJS 11, TypeScript, Prisma ORM |
+| **Database** | PostgreSQL 16 + PostGIS |
+| **Cache** | Redis 7 |
+| **Real-time** | Socket.IO (WebSocket) |
+| **Auth** | JWT + bcrypt |
+| **AI** | LangChain, OpenRouter API, Mem0 |
+| **WhatsApp** | Kapso WhatsApp Cloud API |
+| **Deploy** | Docker Compose, Nginx |
+
+---
+
+## Arsitektur Singkat
+
+```
+┌─────────────┐     ┌─────────────┐     ┌──────────────────┐
+│  Web (HR)   │     │ Mobile PWA  │     │ WhatsApp (Kapso) │
+└──────┬──────┘     └──────┬──────┘     └────────┬─────────┘
+       │                   │                      │
+       └───────────────────┼──────────────────────┘
+                           ▼
+                  ┌─────────────────┐
+                  │  Nginx :80      │
+                  │  /api → backend │
+                  └────────┬────────┘
+                           ▼
+                  ┌─────────────────┐
+                  │ NestJS Backend  │
+                  │  • HR Services  │
+                  │  • AI Orchestr. │
+                  │  • 9 Agents     │
+                  └────────┬────────┘
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+        PostgreSQL      Redis      OpenRouter
+        + PostGIS                  (LLM API)
+```
+
+---
+
+## Instalasi
 
 ### Prasyarat
-- Docker & Docker Compose (rekomendasi)
-- Atau: Node.js 20+, PostgreSQL 16+ dengan PostGIS
 
-### Langkah (Docker — Plug & Play)
+- **Docker & Docker Compose** (disarankan untuk production)
+- Atau untuk development native: **Node.js 20+**, **PostgreSQL 16+** (PostGIS), **Redis 7+**
+
+### Opsi 1 — Docker (Production / Plug & Play)
 
 ```bash
 # 1. Clone repository
-git clone <repository-url>
-cd project-tara
+git clone https://github.com/Conextlab-MIT/TARA-HR-AGENTIC.git
+cd TARA-HR-AGENTIC
 
-# 2. Salin konfigurasi
+# 2. Salin dan edit konfigurasi
 cp .env.example .env
+# Edit .env — minimal set JWT_SECRET, AI_API_KEY, KAPSO_* untuk production
 
-# 3. Jalankan semuanya (build + migrate + seed + start)
-docker compose up --build
+# 3. Build & jalankan semua service
+docker compose up --build -d
 ```
 
-Selesai. Semua berjalan otomatis:
-- Database dibuat dan di-migrasi
-- Data default (agen, role, konfigurasi Hermes) di-seed
-- Backend dan frontend aktif
+Saat startup, Docker otomatis:
+1. Menyalakan PostgreSQL (PostGIS) dan Redis
+2. Menjalankan migrasi Prisma
+3. Seed konfigurasi default (agen, role, settings)
+4. Build frontend dan serve via Nginx
 
-Aplikasi tersedia di:
-- **Frontend:** http://localhost
-- **Backend API:** http://localhost:3001
-- **Health Check:** http://localhost:3001/health
-- **Hermes WebSocket:** ws://localhost:3001/event-stream
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost |
+| Backend API | http://localhost/api/ (via Nginx proxy) |
+| Health check | http://localhost:3001/health |
 
-### Langkah (Development — Native)
+### Opsi 2 — Development (Native)
 
 ```bash
-# 1. Jalankan database via Docker
+# 1. Jalankan database & Redis saja via Docker
 docker compose -f docker-compose.dev.yml up -d
 
 # 2. Install dependencies
 npm install
 cd backend && npm install && cd ..
 
-# 3. Migrasi database
-cd backend && npx prisma migrate deploy && cd ..
+# 3. Konfigurasi backend
+cp backend/.env.example backend/.env
+# Set DATABASE_URL, JWT_SECRET, REDIS_URL, AI_API_KEY
 
-# 4. Jalankan aplikasi (frontend + backend bersamaan)
+# 4. Migrasi database
+cd backend && npx prisma migrate deploy && npm run seed && cd ..
+
+# 5. Jalankan frontend + backend bersamaan
 npm run dev
 ```
 
-- **Frontend:** http://localhost:5173
-- **Backend:** http://localhost:3001
+| Service | URL |
+|---------|-----|
+| Frontend (Vite) | http://localhost:5173 |
+| Backend | http://localhost:3001 |
 
-### Demo Mode (Tanpa Database)
-TARA dapat berjalan dalam demo mode tanpa PostgreSQL:
+### Seed Data Karyawan (Opsional)
+
+```bash
+# Development
+cd backend && npm run seed:ralali
+
+# Production (di dalam container)
+docker exec tara-backend node dist/scripts/seed-ralali-employees.js
 ```
-Email: sari@majubersama.com
+
+### Demo Mode
+
+Tanpa database penuh, TARA dapat berjalan dalam demo mode:
+
+```
+Email:    sari@majubersama.com
 Password: demo123
 ```
 
 ---
 
-## Struktur Proyek (Ringkas)
+## Konfigurasi Environment
+
+Salin `.env.example` ke `.env` di root project. Variabel penting:
+
+| Variabel | Deskripsi |
+|----------|-----------|
+| `DB_PASSWORD` | Password PostgreSQL |
+| `JWT_SECRET` | Secret key untuk JWT (wajib diganti di production) |
+| `ALLOWED_ORIGINS` | CORS origins (comma-separated) |
+| `VITE_API_URL` | URL API untuk frontend build |
+| `AI_API_KEY` | API key OpenRouter |
+| `AI_BASE_URL` | Default: `https://openrouter.ai/api/v1` |
+| `AI_MODEL` | Default: `deepseek-v4-flash` |
+| `KAPSO_API_KEY` | API key Kapso untuk WhatsApp |
+| `KAPSO_WEBHOOK_SECRET` | Secret verifikasi webhook Kapso |
+| `HERMES_ENABLED` | `false` (gunakan TARA AI Assistant) |
+
+Detail lengkap: [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md)
+
+---
+
+## Struktur Proyek
 
 ```
-project-tara/
-├── src/                    # Frontend (React + TypeScript)
-│   ├── pages/web/          # Halaman Web Interface
-│   ├── pages/mobile/       # Halaman Mobile Interface
-│   ├── components/         # Komponen UI (shadcn/ui, AppFooter)
-│   ├── contexts/           # Auth & Theme context
-│   ├── layouts/            # WebLayout, MobileLayout
-│   └── lib/                # Utilities, API helper, mobile detection, version config
-├── backend/                # Backend (NestJS + TypeScript)
-│   ├── src/core/hr/        # Modul HR (agen, services, controllers)
-│   ├── src/core/hr/hermes/ # Integrasi Hermes AI (action gateway, safety)
-│   ├── src/core/sop/       # Modul SOP (upload PDF, storage, viewer)
-│   ├── src/core/auth/      # Autentikasi (JWT + bcrypt)
-│   ├── src/core/demo/      # Demo mode (data mock)
-│   ├── src/scripts/        # Seed scripts (auto-run di Docker)
-│   ├── uploads/sop/        # Persistent PDF storage (not in git)
-│   └── prisma/             # Database schema & migrations
-├── packages/               # Shared packages
-│   └── hermes-sdk/         # SDK untuk Hermes VPS (SSH tunnel + REST + WebSocket)
-├── docker/                 # Docker init scripts (PostGIS setup)
-├── docs/                   # Dokumentasi teknis
-├── docker-compose.yml      # Production (satu command: docker compose up)
-└── docker-compose.dev.yml  # Development (DB + Redis saja)
+TARA-HR-AGENTIC/
+├── src/                        # Frontend React
+│   ├── pages/web/              # Dashboard HR (karyawan, cuti, gaji, settings)
+│   ├── pages/mobile/           # PWA karyawan (absen, cuti, SOP)
+│   ├── components/             # UI components (shadcn/ui)
+│   └── lib/                    # API client, auth, utilities
+├── backend/                    # NestJS API
+│   ├── src/core/hr/            # Modul HR (agen, attendance, leave, payroll)
+│   ├── src/core/ai/            # AI orchestrator, tools, memory, logs
+│   ├── src/core/sop/           # Manajemen dokumen SOP
+│   ├── src/core/auth/          # JWT authentication
+│   ├── src/scripts/            # Seed & utility scripts
+│   └── prisma/                 # Schema & migrations
+├── packages/hermes-sdk/        # SDK Hermes (opsional, VPS terpisah)
+├── docker/                     # Init scripts (PostGIS)
+├── docs/                       # Dokumentasi teknis
+├── docker-compose.yml          # Production stack
+└── docker-compose.dev.yml      # Dev: DB + Redis only
 ```
 
 ---
 
-## Dokumentasi Teknis
+## Dokumentasi
 
-Untuk developer, dokumentasi lengkap tersedia di folder [`docs/`](./docs/README.md):
-
-| Kategori | Dokumen |
-|----------|---------|
-| **Backend** | [Arsitektur](./docs/backend/ARCHITECTURE.md), [API](./docs/backend/API.md), [Database](./docs/backend/DATABASE.md), [Agen](./docs/backend/AGENTS.md), [Security](./docs/backend/SECURITY.md) |
-| **Frontend** | [Frontend Guide](./docs/frontend/FRONTEND.md) |
-| **Hermes AI** | [Module](./docs/hermes/HERMES_MODULE.md), [SDK](./docs/hermes/HERMES_SDK.md), [Setup Guide](./docs/hermes/SETUP_INSTRUCTIONS.md), [WhatsApp](./docs/hermes/WHATSAPP_AGENT.md) |
-| **Deployment** | [Deployment Guide](./docs/DEPLOYMENT.md) |
-| **Changelog** | [Changelog](./CHANGELOG.md) |
+| Topik | File |
+|-------|------|
+| Index dokumentasi | [`docs/README.md`](./docs/README.md) |
+| Deployment | [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) |
+| Arsitektur backend | [`docs/backend/ARCHITECTURE.md`](./docs/backend/ARCHITECTURE.md) |
+| API reference | [`docs/backend/API.md`](./docs/backend/API.md) |
+| Agen otonom | [`docs/backend/AGENTS.md`](./docs/backend/AGENTS.md) |
+| Frontend guide | [`docs/frontend/FRONTEND.md`](./docs/frontend/FRONTEND.md) |
+| Changelog | [`CHANGELOG.md`](./CHANGELOG.md) |
 
 ---
 
-## 🏷️ Version Control
+## Peran Pengguna
 
-TARA menggunakan [Semantic Versioning](https://semver.org/) (MAJOR.MINOR.PATCH).
+| Role | Akses |
+|------|-------|
+| **SuperAdmin / HR Admin** | Web — kelola karyawan, organisasi, pengaturan, laporan, AI logs |
+| **Supervisor** | Web — setujui cuti tim, lihat laporan tim |
+| **Employee** | Mobile PWA — absen, ajukan cuti, baca SOP, notifikasi, chat AI via WA |
 
-| Sumber | Fungsi |
-|--------|--------|
-| `src/lib/version.ts` | Single source of truth untuk versi aplikasi |
-| `package.json` | Versi untuk npm/build tooling |
-| `CHANGELOG.md` | Riwayat rilis yang mudah dibaca |
+---
 
-Footer aplikasi menampilkan versi, tahun copyright, dan nama perusahaan di semua halaman (desktop & mobile).
-
-### Cara Rilis Versi Baru
+## Scripts Utama
 
 ```bash
-# 1. Update src/lib/version.ts (APP_VERSION + APP_BUILD_DATE)
-# 2. Update version di package.json
-# 3. Tambahkan entry ke CHANGELOG.md
-# 4. Commit dan tag
-git commit -am "release: v2.1.0"
-git tag v2.1.0
-git push --follow-tags
+# Root
+npm run dev              # Frontend + backend (development)
+npm run build            # Build frontend production
+npm test                 # Frontend tests (Vitest)
+
+# Backend
+cd backend
+npm run start:dev        # NestJS watch mode
+npm run build            # Compile TypeScript
+npm run seed             # Seed default config
+npm run seed:ralali      # Seed karyawan Ralali dari CSV
+npm test                 # Backend tests (Vitest)
 ```
-
----
-
-## Teknologi
-
-| Layer | Stack |
-|-------|-------|
-| Frontend | React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui |
-| Backend | NestJS, TypeScript, Prisma ORM |
-| Database | PostgreSQL 14+ dengan PostGIS |
-| Real-time | WebSocket (Socket.IO) |
-| Auth | JWT + bcrypt |
-| Deployment | Docker, Nginx |
 
 ---
 
 ## Lisensi
 
-Proprietary — Ralali. Hak cipta dilindungi.
+Proprietary — dikembangkan untuk **Ralali** / **Conextlab MIT**. Hak cipta dilindungi.
+
+---
+
+<p align="center">
+  <strong>TARA HR Agentic</strong> · v2.0.0 · <a href="https://tara.ralali.io">tara.ralali.io</a>
+</p>
