@@ -165,11 +165,14 @@ npm run dev
 
 ### Seed Data Karyawan (Opsional)
 
+File CSV karyawan **tidak disertakan di git** (data PII). Letakkan export di `backend/data/ralali-employees-2026.csv` atau set `RALALI_EMPLOYEES_CSV` di environment.
+
 ```bash
 # Development
 cd backend && npm run seed:ralali
 
-# Production (di dalam container)
+# Production (salin CSV ke container dulu, lalu seed)
+docker cp ./backend/data/ralali-employees-2026.csv tara-backend:/app/data/
 docker exec tara-backend node dist/scripts/seed-ralali-employees.js
 ```
 

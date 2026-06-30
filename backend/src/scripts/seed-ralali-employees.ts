@@ -326,7 +326,11 @@ async function seedEmployee(params: {
 
 async function main() {
   if (!fs.existsSync(CSV_PATH)) {
-    throw new Error(`CSV not found: ${CSV_PATH}`);
+    throw new Error(
+      `CSV not found: ${CSV_PATH}\n` +
+        'Place the employee export locally or set RALALI_EMPLOYEES_CSV to its path. ' +
+        'Employee CSV files are not stored in git.',
+    );
   }
 
   console.log('[RALALI] Loading employees from:', CSV_PATH);
