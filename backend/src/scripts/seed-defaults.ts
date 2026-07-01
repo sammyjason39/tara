@@ -112,6 +112,7 @@ async function main() {
     where: { email: 'sari@majubersama.com' },
     update: {
       password_hash: passwordHash,
+      must_change_password: true,
       whatsapp_number: ownerWa,
       whatsapp_opted_in: true,
       whatsapp_verified: true,
@@ -125,6 +126,7 @@ async function main() {
       email: 'sari@majubersama.com',
       phone: '+6281234567890',
       password_hash: passwordHash,
+      must_change_password: true,
       role_id: hrRole!.id,
       department_id: department.id,
       office_location_id: office.id,
@@ -141,6 +143,7 @@ async function main() {
     where: { email: 'budi@majubersama.com' },
     update: {
       password_hash: passwordHash,
+      must_change_password: true,
       supervisor_id: sariId,
       whatsapp_number: '6281234567891',
       whatsapp_opted_in: true,
@@ -155,6 +158,7 @@ async function main() {
       email: 'budi@majubersama.com',
       phone: '081234567891',
       password_hash: passwordHash,
+      must_change_password: true,
       role_id: supRole!.id,
       department_id: department.id,
       office_location_id: office.id,
@@ -172,6 +176,7 @@ async function main() {
     where: { email: 'rina@majubersama.com' },
     update: {
       password_hash: passwordHash,
+      must_change_password: true,
       supervisor_id: budiId,
       whatsapp_number: '6281234567892',
       whatsapp_opted_in: true,
@@ -186,6 +191,7 @@ async function main() {
       email: 'rina@majubersama.com',
       phone: '081234567892',
       password_hash: passwordHash,
+      must_change_password: true,
       role_id: empRole!.id,
       department_id: department.id,
       office_location_id: office.id,
@@ -203,6 +209,7 @@ async function main() {
     where: { email: 'samuel@conextlab.ai' },
     update: {
       password_hash: passwordHash,
+      must_change_password: true,
       full_name: 'Samuel Jason',
       phone: '087728589845',
       whatsapp_number: samuelWa,
@@ -219,6 +226,7 @@ async function main() {
       email: 'samuel@conextlab.ai',
       phone: '087728589845',
       password_hash: passwordHash,
+      must_change_password: true,
       role_id: superAdminRole!.id,
       department_id: itDepartment.id,
       office_location_id: office.id,

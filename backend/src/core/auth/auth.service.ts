@@ -1,7 +1,8 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { PrismaService } from '../../persistence/prisma.service';
+import type { Employee } from '@prisma/client';
 
 export interface JwtPayload {
   sub: string;
@@ -27,6 +28,44 @@ export class AuthService {
     this.jwtSecret = secret || 'dev-secret-key-do-not-use-in-prod';
   }
 
+  private getDefaultSeedPassword(): string {
+    return process.env.SEED_PASSWORD || 'demo123';
+  }
+
+  private async isDefaultSeedPasswordHash(passwordHash: string | null | undefined): Promise<boolean> {
+    if (!passwordHash) return false;
+    return bcrypt.compare(this.getDefaultSeedPassword(), passwordHash);
+  }
+
+  private async mustChangePasswordFor(employee: Employee): Promise<boolean> {
+    if (employee.must_change_password) return true;
+    return this.isDefaultSeedPasswordHash(employee.password_hash);
+  }
+
+  private assertNewPasswordAllowed(newPassword: string): void {
+    if (newPassword === this.getDefaultSeedPassword()) {
+      throw new BadRequestException(
+        'Password baru tidak boleh sama dengan password default sementara. Pilih password yang lebih kuat.',
+      );
+    }
+    if (newPassword.length < 8) {
+      throw new BadRequestException('Password baru minimal 8 karakter');
+    }
+  }
+
+  private mapUser(employee: Employee & { role?: { role_name: string } | null; department?: { name: string } | null; office?: { location_name: string } | null }) {
+    return {
+      id: employee.id,
+      email: employee.email,
+      full_name: employee.full_name,
+      employee_code: employee.employee_code,
+      role: employee.role?.role_name || 'Employee',
+      department: employee.department?.name || null,
+      office: employee.office?.location_name || null,
+      language_preference: employee.language_preference,
+    };
+  }
+
   async login(email: string, password: string) {
     const employee = await this.prisma.employee.findUnique({
       where: { email: email.toLowerCase() },
@@ -46,6 +85,8 @@ export class AuthService {
       throw new UnauthorizedException('Account is inactive');
     }
 
+    const must_change_password = await this.mustChangePasswordFor(employee);
+
     const payload: JwtPayload = {
       sub: employee.id,
       email: employee.email,
@@ -58,16 +99,8 @@ export class AuthService {
 
     return {
       token,
-      user: {
-        id: employee.id,
-        email: employee.email,
-        full_name: employee.full_name,
-        employee_code: employee.employee_code,
-        role: employee.role?.role_name || 'Employee',
-        department: employee.department?.name || null,
-        office: employee.office?.location_name || null,
-        language_preference: employee.language_preference,
-      },
+      must_change_password,
+      user: this.mapUser(employee),
     };
   }
 
@@ -77,8 +110,8 @@ export class AuthService {
 
     const rounds = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
     const password_hash = await bcrypt.hash(data.password, rounds);
+    const must_change_password = data.password === this.getDefaultSeedPassword();
 
-    // Hash PIN if provided
     let pin_hash: string | undefined;
     if (data.pin) {
       if (!/^\d{6}$/.test(data.pin)) {
@@ -92,6 +125,7 @@ export class AuthService {
         email: data.email.toLowerCase(),
         password_hash,
         pin_hash,
+        must_change_password,
         full_name: data.full_name,
         employee_code: data.employee_code || `EMP-${Date.now().toString(36).toUpperCase()}`,
         hire_date: new Date(),
@@ -109,17 +143,53 @@ export class AuthService {
     const isMatch = await bcrypt.compare(currentPassword, employee.password_hash);
     if (!isMatch) throw new UnauthorizedException('Current password is incorrect');
 
+    this.assertNewPasswordAllowed(newPassword);
+
     const rounds = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
     const password_hash = await bcrypt.hash(newPassword, rounds);
 
-    await this.prisma.employee.update({ where: { id: employeeId }, data: { password_hash } });
+    await this.prisma.employee.update({
+      where: { id: employeeId },
+      data: { password_hash, must_change_password: false },
+    });
+    return { success: true };
+  }
+
+  async forceChangePassword(employeeId: string, newPassword: string, confirmPassword: string) {
+    if (newPassword !== confirmPassword) {
+      throw new BadRequestException('Konfirmasi password tidak cocok');
+    }
+
+    const employee = await this.prisma.employee.findUnique({ where: { id: employeeId } });
+    if (!employee) throw new UnauthorizedException('User not found');
+
+    const mustChange = await this.mustChangePasswordFor(employee);
+    if (!mustChange) {
+      throw new ForbiddenException('Password change is not required for this account');
+    }
+
+    this.assertNewPasswordAllowed(newPassword);
+
+    const rounds = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
+    const password_hash = await bcrypt.hash(newPassword, rounds);
+
+    await this.prisma.employee.update({
+      where: { id: employeeId },
+      data: { password_hash, must_change_password: false },
+    });
+
     return { success: true };
   }
 
   async resetPassword(employeeId: string, newPassword: string) {
     const rounds = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
     const password_hash = await bcrypt.hash(newPassword, rounds);
-    await this.prisma.employee.update({ where: { id: employeeId }, data: { password_hash } });
+    const must_change_password = newPassword === this.getDefaultSeedPassword();
+
+    await this.prisma.employee.update({
+      where: { id: employeeId },
+      data: { password_hash, must_change_password },
+    });
     return { success: true };
   }
 
@@ -165,6 +235,8 @@ export class AuthService {
     });
     if (!employee) throw new UnauthorizedException('User not found');
 
+    const must_change_password = await this.mustChangePasswordFor(employee);
+
     return {
       id: employee.id,
       email: employee.email,
@@ -179,6 +251,7 @@ export class AuthService {
       hire_date: employee.hire_date,
       employment_status: employee.employment_status,
       language_preference: employee.language_preference,
+      must_change_password,
     };
   }
 }

@@ -1,6 +1,6 @@
 import { Controller, Post, Get, Body, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto, ChangePasswordDto, ResetPasswordDto, SetPinDto, VerifyPinDto } from './dto/auth.dto';
+import { LoginDto, RegisterDto, ChangePasswordDto, ResetPasswordDto, SetPinDto, VerifyPinDto, ForceChangePasswordDto } from './dto/auth.dto';
 import { JwtGuard } from './guards/jwt.guard';
 import { RolesGuard, Roles } from './guards/roles.guard';
 
@@ -32,6 +32,13 @@ export class AuthController {
   async changePassword(@Req() req: any, @Body() dto: ChangePasswordDto) {
     await this.authService.changePassword(req.user.sub, dto.current_password, dto.new_password);
     return { success: true, message: 'Password changed' };
+  }
+
+  @Post('force-change-password')
+  @UseGuards(JwtGuard)
+  async forceChangePassword(@Req() req: any, @Body() dto: ForceChangePasswordDto) {
+    await this.authService.forceChangePassword(req.user.sub, dto.new_password, dto.confirm_password);
+    return { success: true, message: 'Password updated' };
   }
 
   @Post('reset-password')

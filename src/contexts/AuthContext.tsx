@@ -16,8 +16,10 @@ interface AuthContextValue {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  mustChangePassword: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  clearMustChangePassword: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -27,6 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() =>
     localStorage.getItem("tara-token")
   );
+  const [mustChangePassword, setMustChangePassword] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -45,9 +48,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         setUser(data.data);
+        setMustChangePassword(!!data.data?.must_change_password);
       } else {
         localStorage.removeItem("tara-token");
         setToken(null);
+        setMustChangePassword(false);
       }
     } catch {
       // Offline or server down — keep token for later
@@ -71,18 +76,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = await res.json();
     setToken(data.token);
     setUser(data.user);
+    setMustChangePassword(!!data.must_change_password);
     localStorage.setItem("tara-token", data.token);
   }
 
   function logout() {
     setToken(null);
     setUser(null);
+    setMustChangePassword(false);
     localStorage.removeItem("tara-token");
+  }
+
+  function clearMustChangePassword() {
+    setMustChangePassword(false);
   }
 
   return (
     <AuthContext.Provider
-      value={{ user, token, isAuthenticated: !!user, isLoading, login, logout }}
+      value={{
+        user,
+        token,
+        isAuthenticated: !!user,
+        isLoading,
+        mustChangePassword,
+        login,
+        logout,
+        clearMustChangePassword,
+      }}
     >
       {children}
     </AuthContext.Provider>

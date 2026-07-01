@@ -53,6 +53,16 @@ export class SetPinDto {
   pin: string;
 }
 
+export class ForceChangePasswordDto {
+  @IsString()
+  @MinLength(8)
+  new_password: string;
+
+  @IsString()
+  @MinLength(8)
+  confirm_password: string;
+}
+
 export class VerifyPinDto {
   @IsString()
   @MinLength(6)

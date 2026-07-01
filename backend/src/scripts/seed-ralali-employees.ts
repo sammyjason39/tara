@@ -297,6 +297,7 @@ async function seedEmployee(params: {
       email: params.email,
       phone: params.phone || null,
       password_hash: params.password_hash,
+      must_change_password: true,
       role_id: params.role_id,
       department_id,
       office_location_id: params.office_id,

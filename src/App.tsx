@@ -37,6 +37,7 @@ import { MobileSopPage } from "@/pages/mobile/MobileSopPage";
 
 // Misc
 import { NotFoundPage } from "@/pages/NotFoundPage";
+import { ForcePasswordChangeModal } from "@/components/ForcePasswordChangeModal";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -95,6 +96,7 @@ export function App() {
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </BrowserRouter>
+          <ForcePasswordChangeModal />
           <Toaster />
         </AuthProvider>
       </ThemeProvider>
