@@ -4,6 +4,12 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import {
+  formatFileSize,
+  isPdfFile,
+  uploadSopFile,
+  validateSopFiles,
+} from "@/lib/sop-upload";
+import {
   FileText, Upload, Plus, Trash2, Search, X, Eye,
   FolderOpen, Download,
 } from "lucide-react";
@@ -43,11 +49,7 @@ export function SopPage() {
     }
   };
 
-  const formatSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
+  const formatSize = (bytes: number) => formatFileSize(bytes);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -181,13 +183,21 @@ function UploadPanel({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
 
   const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = Array.from(e.target.files || []).filter(f => f.type === "application/pdf");
+    const selected = Array.from(e.target.files || []).filter(isPdfFile);
     if (selected.length === 0) {
-      toast.error("Hanya file PDF yang diperbolehkan");
+      toast.error("Hanya file PDF yang diperbolehkan (.pdf)");
       return;
     }
+
+    const validationError = validateSopFiles(selected);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
     setFiles(selected);
     if (selected.length === 1 && !title) {
       setTitle(selected[0].name.replace(/\.pdf$/i, ""));
@@ -195,41 +205,45 @@ function UploadPanel({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
   };
 
   const handleUpload = async () => {
-    if (files.length === 0) { toast.error("Pilih file PDF terlebih dahulu"); return; }
+    const validationError = validateSopFiles(files);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
     setUploading(true);
+    setUploadProgress(null);
+    const token = localStorage.getItem("tara-token");
+
     try {
-      const token = localStorage.getItem("tara-token");
-      if (files.length === 1) {
-        const formData = new FormData();
-        formData.append("file", files[0]);
-        if (title) formData.append("title", title);
-        if (description) formData.append("description", description);
-        if (category) formData.append("category", category);
+      let successCount = 0;
 
-        const res = await fetch("/api/sop/upload", {
-          method: "POST",
-          headers: { ...(token && { Authorization: `Bearer ${token}` }) },
-          body: formData,
-        });
-        if (!res.ok) throw new Error("Upload failed");
-      } else {
-        const formData = new FormData();
-        files.forEach((f) => formData.append("files", f));
-        if (category) formData.append("category", category);
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        setUploadProgress(`Mengupload ${i + 1}/${files.length}: ${file.name}`);
 
-        const res = await fetch("/api/sop/upload-bulk", {
-          method: "POST",
-          headers: { ...(token && { Authorization: `Bearer ${token}` }) },
-          body: formData,
-        });
-        if (!res.ok) throw new Error("Upload failed");
+        await uploadSopFile(
+          file,
+          {
+            title:
+              files.length === 1 && title
+                ? title
+                : file.name.replace(/\.pdf$/i, ""),
+            description: files.length === 1 ? description : undefined,
+            category: category || undefined,
+          },
+          token,
+        );
+        successCount++;
       }
-      toast.success(`${files.length} dokumen berhasil diupload`);
+
+      toast.success(`${successCount} dokumen berhasil diupload`);
       onSuccess();
     } catch (err: any) {
       toast.error(err.message || "Gagal mengupload dokumen");
     } finally {
       setUploading(false);
+      setUploadProgress(null);
     }
   };
 
@@ -253,7 +267,9 @@ function UploadPanel({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
             ? `${files.length} file dipilih`
             : "Klik atau drag file PDF di sini"}
         </p>
-        <p className="text-2xs text-muted-foreground/60 mt-1">Maks 50MB per file • Hanya PDF</p>
+        <p className="text-2xs text-muted-foreground/60 mt-1">
+          Maks 50MB per file • Upload banyak file dilakukan satu per satu
+        </p>
         <input
           ref={fileInputRef}
           type="file"
@@ -272,7 +288,7 @@ function UploadPanel({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
               <FileText className="h-3.5 w-3.5 text-red-500 shrink-0" />
               <span className="truncate flex-1">{f.name}</span>
               <span className="text-2xs text-muted-foreground shrink-0">
-                {(f.size / 1024).toFixed(0)} KB
+                {formatFileSize(f.size)}
               </span>
             </div>
           ))}
@@ -326,7 +342,11 @@ function UploadPanel({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
       )}
 
       {/* Actions */}
-      <div className="flex justify-end gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        {uploadProgress && (
+          <p className="text-2xs text-muted-foreground">{uploadProgress}</p>
+        )}
+        <div className="flex justify-end gap-2 sm:ml-auto">
         <button onClick={onClose} className="px-4 py-2 rounded-md text-sm border border-input hover:bg-accent">
           Batal
         </button>
@@ -342,6 +362,7 @@ function UploadPanel({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
         >
           {uploading ? "Mengupload..." : `Upload ${files.length > 0 ? `(${files.length})` : ""}`}
         </button>
+        </div>
       </div>
     </div>
   );

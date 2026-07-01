@@ -5,7 +5,13 @@ import {
   DEFAULT_WHATSAPP_CONFIG,
   TaraAiConfig,
   TaraWhatsAppConfig,
+  AiSkillDefinition,
 } from './ai.interfaces';
+import {
+  DEFAULT_AI_SKILLS,
+  buildDefaultSystemPromptTemplate,
+  mergeSkillsWithDefaults,
+} from './ai-skill-registry';
 
 const AI_KEYS = {
   enabled: 'ai.enabled',
@@ -18,6 +24,8 @@ const AI_KEYS = {
   responseLanguage: 'ai.response_language',
   confirmationTimeoutMinutes: 'ai.confirmation_timeout_minutes',
   systemPromptOverride: 'ai.system_prompt_override',
+  systemPrompt: 'ai.system_prompt',
+  skills: 'ai.skills',
 } as const;
 
 const WA_KEYS = {
@@ -50,6 +58,30 @@ export class AiConfigService implements OnModuleInit {
     return { ...this.aiCache };
   }
 
+  getDefaultSystemPrompt(): string {
+    return buildDefaultSystemPromptTemplate();
+  }
+
+  getDefaultSkills(): AiSkillDefinition[] {
+    return DEFAULT_AI_SKILLS.map((s) => ({ ...s }));
+  }
+
+  getAgentDefaultsForApi() {
+    return {
+      systemPrompt: this.getDefaultSystemPrompt(),
+      skills: this.getDefaultSkills(),
+      placeholders: [
+        '{{employee_context}}',
+        '{{employee_name}}',
+        '{{memory_block}}',
+        '{{skill_instructions}}',
+        '{{lang_note}}',
+        '{{base_url}}',
+        '{{clock_url}}',
+      ],
+    };
+  }
+
   getWhatsAppConfig(): TaraWhatsAppConfig {
     return { ...this.waCache };
   }
@@ -67,6 +99,10 @@ export class AiConfigService implements OnModuleInit {
         dto.apiKey && dto.apiKey.length > 0 && !dto.apiKey.includes('•')
           ? dto.apiKey
           : current.apiKey,
+      skills:
+        dto.skills !== undefined
+          ? mergeSkillsWithDefaults(dto.skills)
+          : current.skills,
     };
 
     await Promise.all([
@@ -87,6 +123,18 @@ export class AiConfigService implements OnModuleInit {
       this.settingsService.upsert(
         AI_KEYS.systemPromptOverride,
         next.systemPromptOverride || '',
+        'ai',
+        modifiedBy,
+      ),
+      this.settingsService.upsert(
+        AI_KEYS.systemPrompt,
+        next.systemPrompt || '',
+        'ai',
+        modifiedBy,
+      ),
+      this.settingsService.upsert(
+        AI_KEYS.skills,
+        next.skills || DEFAULT_AI_SKILLS,
         'ai',
         modifiedBy,
       ),
@@ -129,13 +177,13 @@ export class AiConfigService implements OnModuleInit {
   }
 
   /** Mask API key for admin UI */
-  getAiConfigForApi(): TaraAiConfig {
+  getAiConfigForApi(): TaraAiConfig & { apiKeySet: boolean } {
     const c = this.getAiConfig();
     return {
       ...c,
       apiKey: c.apiKey ? `${c.apiKey.slice(0, 8)}${'•'.repeat(Math.min(24, c.apiKey.length - 8))}` : '',
       apiKeySet: !!this.aiCache.apiKey,
-    } as TaraAiConfig & { apiKeySet: boolean };
+    };
   }
 
   getWhatsAppConfigForApi(): TaraWhatsAppConfig {
@@ -185,6 +233,15 @@ export class AiConfigService implements OnModuleInit {
       systemPromptOverride: map[AI_KEYS.systemPromptOverride]
         ? String(map[AI_KEYS.systemPromptOverride])
         : undefined,
+      skills: mergeSkillsWithDefaults(
+        Array.isArray(map[AI_KEYS.skills])
+          ? (map[AI_KEYS.skills] as unknown as AiSkillDefinition[])
+          : undefined,
+      ),
+      systemPrompt:
+        map[AI_KEYS.systemPrompt] && String(map[AI_KEYS.systemPrompt]).trim()
+          ? String(map[AI_KEYS.systemPrompt])
+          : buildDefaultSystemPromptTemplate(),
     };
   }
 

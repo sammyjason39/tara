@@ -40,18 +40,33 @@ export class SopService {
 
   async createMany(docs: Array<{
     title: string;
-    description?: string;
-    category?: string;
+    description?: string | null;
+    category?: string | null;
     file_name: string;
     file_path: string;
     file_size: number;
     mime_type: string;
     uploaded_by?: string;
   }>) {
-    // Use transaction for bulk insert
-    return this.prisma.$transaction(
-      docs.map((doc) => this.prisma.sopDocument.create({ data: doc })),
-    );
+    if (docs.length === 0) return [];
+
+    return this.prisma.$transaction(async (tx) => {
+      const created = [];
+      for (const doc of docs) {
+        created.push(await tx.sopDocument.create({ data: doc }));
+      }
+      return created;
+    });
+  }
+
+  /** Remove a file from disk if DB insert fails or upload is rejected */
+  async removeUploadedFile(storedFilename: string): Promise<void> {
+    if (!storedFilename) return;
+    const fullPath = path.resolve(this.uploadDir, storedFilename);
+    if (fs.existsSync(fullPath)) {
+      fs.unlinkSync(fullPath);
+      this.logger.log(`Removed orphan SOP upload: ${fullPath}`);
+    }
   }
 
   async findAll(includeInactive = false) {

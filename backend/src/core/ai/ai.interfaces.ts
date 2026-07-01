@@ -9,6 +9,19 @@ export interface TaraAiConfig {
   responseLanguage: string;
   confirmationTimeoutMinutes: number;
   systemPromptOverride?: string;
+  systemPrompt?: string;
+  skills?: AiSkillDefinition[];
+}
+
+export interface AiSkillDefinition {
+  id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+  tools: string[];
+  promptAddon?: string;
+  toolDescriptions?: Record<string, string>;
+  requiresElevatedAccess?: boolean;
 }
 
 export interface TaraWhatsAppConfig {

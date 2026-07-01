@@ -3,7 +3,8 @@ import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { PrismaService } from '../../persistence/prisma.service';
 import { AiRagService } from './ai-rag.service';
-import { EmployeeAiContext, TARA_CLOCK_URL } from './ai.interfaces';
+import { EmployeeAiContext, TARA_CLOCK_URL, AiSkillDefinition } from './ai.interfaces';
+import { getEnabledToolNames } from './ai-skill-registry';
 
 /** Marker returned by prepare_* tools to trigger confirmation flow */
 export const CONFIRMATION_MARKER = '__TARA_CONFIRM__';
@@ -18,7 +19,38 @@ export class AiToolsService {
     private readonly ragService: AiRagService,
   ) {}
 
-  buildTools(ctx: EmployeeAiContext): DynamicStructuredTool[] {
+  buildTools(ctx: EmployeeAiContext, skills: AiSkillDefinition[]): DynamicStructuredTool[] {
+    const hasElevatedAccess = ctx.is_supervisor || ctx.is_hr_admin;
+    const enabledTools = getEnabledToolNames(skills, hasElevatedAccess);
+    const descriptionOverrides = this.collectToolDescriptions(skills);
+
+    const allTools = this.buildAllTools(ctx);
+    return allTools
+      .filter((tool) => enabledTools.has(tool.name))
+      .map((tool) => {
+        const override = descriptionOverrides.get(tool.name);
+        if (!override) return tool;
+        return new DynamicStructuredTool({
+          name: tool.name,
+          description: override,
+          schema: tool.schema as z.ZodObject<any>,
+          func: tool.func,
+        });
+      });
+  }
+
+  private collectToolDescriptions(skills: AiSkillDefinition[]): Map<string, string> {
+    const map = new Map<string, string>();
+    for (const skill of skills) {
+      if (!skill.enabled || !skill.toolDescriptions) continue;
+      for (const [toolName, description] of Object.entries(skill.toolDescriptions)) {
+        if (description?.trim()) map.set(toolName, description.trim());
+      }
+    }
+    return map;
+  }
+
+  private buildAllTools(ctx: EmployeeAiContext): DynamicStructuredTool[] {
     const tools: DynamicStructuredTool[] = [
       this.tool('get_my_profile', 'Ambil profil karyawan yang sedang chat', z.object({}), async () =>
         JSON.stringify(await this.getMyProfile(ctx.id)),

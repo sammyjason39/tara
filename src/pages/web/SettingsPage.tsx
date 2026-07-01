@@ -7,7 +7,7 @@ import {
   Building2, Users, Shield, Key, Send,
   Trash2, TestTube, Wifi, X, Save, Activity, Pencil, Building, Plus,
 } from "lucide-react";
-import { AiAssistantSection } from "./AiLogsPage";
+import { AiAgentSettingsSection } from "./AiAgentSettingsSection";
 import { cn } from "@/lib/utils";
 
 const sections = [
@@ -18,7 +18,7 @@ const sections = [
   { id: "attendance", label: "Kehadiran", icon: Clock },
   { id: "leaves", label: "Kebijakan Cuti", icon: CalendarDays },
   { id: "channels", label: "Kanal Notifikasi", icon: Send },
-  { id: "ai", label: "AI Assistant", icon: Bot },
+  { id: "ai", label: "AI Agent", icon: Bot },
 ];
 
 export function SettingsPage() {
@@ -47,7 +47,7 @@ export function SettingsPage() {
           {active === "attendance" && <AttendanceSection />}
           {active === "leaves" && <LeavesSection />}
           {active === "channels" && <ChannelsSection />}
-          {active === "ai" && <AiAssistantSection />}
+          {active === "ai" && <AiAgentSettingsSection />}
         </div>
       </div>
     </div>

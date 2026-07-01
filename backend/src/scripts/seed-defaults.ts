@@ -270,6 +270,8 @@ async function main() {
     { key: 'ai.response_language', value: 'id', category: 'ai' },
     { key: 'ai.confirmation_timeout_minutes', value: 60, category: 'ai' },
     { key: 'ai.system_prompt_override', value: '', category: 'ai' },
+    { key: 'ai.system_prompt', value: '', category: 'ai' },
+    { key: 'ai.skills', value: [], category: 'ai' },
   ];
 
   for (const s of aiSettings) {

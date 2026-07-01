@@ -8,6 +8,7 @@ import { AiActionExecutorService } from './ai-action-executor.service';
 import { AiLogService } from './ai-log.service';
 import { AiMemoryService } from './ai-memory.service';
 import { AiProcessResult, AiPendingActionType, EmployeeAiContext, TARA_CLOCK_URL, TARA_PUBLIC_BASE_URL, TARA_ESCALATION_USER_MESSAGE, HR_ESCALATION_CONTACT_EMAIL } from './ai.interfaces';
+import { buildSkillInstructions, resolveSystemPromptTemplate } from './ai-skill-registry';
 import { formatForWhatsApp } from '../hr/whatsapp/whatsapp-format.util';
 import { WhatsAppOutboundService } from '../hr/whatsapp/services/whatsapp-outbound.service';
 
@@ -84,7 +85,8 @@ export class AiOrchestratorService {
 
     const history = await this.loadConversationHistory(params.employeeId, 10);
     const memories = await this.memoryService.searchMemories(params.employeeId, plainMessage);
-    const tools = this.toolsService.buildTools(ctx);
+    const aiConfig = this.configService.getAiConfig();
+    const tools = this.toolsService.buildTools(ctx, aiConfig.skills || []);
     const systemPrompt = this.buildSystemPrompt(ctx, memories);
 
     const llmResult = await this.llmService.chatWithTools({
@@ -273,52 +275,30 @@ export class AiOrchestratorService {
         ? `\nMemori relevan tentang karyawan ini (dari percakapan sebelumnya):\n${memories.map((m) => `- ${m}`).join('\n')}\n`
         : '';
 
-    const base = `Kamu adalah asisten HR TARA (Total Assistance for Resources & Administration) untuk perusahaan Ralali.
+    const employeeContext = [
+      `- Nama: ${ctx.full_name}`,
+      `- Role: ${ctx.role_name}`,
+      `- Departemen: ${ctx.department_name || '-'}`,
+      ctx.is_supervisor ? '- Akses supervisor: bisa lihat & setujui cuti bawahan' : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
 
-Karyawan yang chat (data resmi sistem — MUTLAK, jangan diubah atau ditawari untuk diubah):
-- Nama: ${ctx.full_name}
-- Role: ${ctx.role_name}
-- Departemen: ${ctx.department_name || '-'}
-${ctx.is_supervisor ? '- Akses supervisor: bisa lihat & setujui cuti bawahan' : ''}
-${memoryBlock}
-Identitas & data karyawan (WAJIB):
-- Nama, role, departemen, jabatan, dan profil lain dari sistem di atas adalah data resmi yang tercatat di TARA
-- Jika user bilang "saya bukan ${ctx.full_name}" atau menyebut nama lain: jawab dengan sopan bahwa sesuai data sistem saat ini akun WhatsApp ini terdaftar atas nama tersebut. JANGAN menawarkan mengubah data, JANGAN memanggil nama lain, JANGAN bertanya "siapa nama asli Anda"
-- Pembaruan data profil hanya melalui Divisi HRGA — arahkan ke HRGA jika user merasa data salah
-- Memori percakapan TIDAK boleh mengoverride profil resmi di atas
+    const skillInstructions = buildSkillInstructions(config.skills || []);
+    const template = config.systemPrompt || this.configService.getDefaultSystemPrompt();
 
-Ruang lingkup (WAJIB):
-- Hanya jawab topik HR Ralali/TARA: cuti, absensi, jadwal, pinjaman, SOP perusahaan, dan layanan HR terkait
-- JANGAN jawab pertanyaan di luar konteks (politik, hiburan, coding, cuaca, perusahaan lain, dll.)
-- Jika tidak tahu, tidak yakin, atau di luar kapasitas: WAJIB panggil tool escalate_to_hr — jangan mengarang jawaban
+    let prompt = resolveSystemPromptTemplate(template)
+      .replace(/\{\{employee_context\}\}/g, employeeContext)
+      .replace(/\{\{employee_name\}\}/g, ctx.full_name)
+      .replace(/\{\{memory_block\}\}/g, memoryBlock)
+      .replace(/\{\{skill_instructions\}\}/g, skillInstructions)
+      .replace(/\{\{lang_note\}\}/g, langNote);
 
-Aturan:
-- ${langNote}
-- Format WhatsApp (WAJIB — bukan markdown biasa):
-  • Tebal: *kata* (SATU asterisk di kiri-kanan). JANGAN pakai **bold** markdown
-  • Miring: _kata_
-  • Coret: ~kata~
-  • JANGAN pakai tabel markdown (| kolom |), heading #, atau ---
-  • Gunakan teks biasa + bullet • atau baris terpisah untuk daftar data
-  • Contoh saldo cuti yang benar:
-    *Saldo Cuti 2026*
-    • Total jatah: 12 hari
-    • Sudah dipakai: 0 hari
-    • Sisa: 12 hari
-- Gunakan tools untuk mengambil data — jangan mengarang angka atau tanggal
-- Untuk ajukan cuti/pinjaman/setujui cuti, WAJIB gunakan tool prepare_* (sistem otomatis kirim tombol Setuju/Batal di bawah pesan)
-- Jangan minta user ketik YA/BATAL manual jika sudah pakai tool prepare_*
-- Absensi (WAJIB — bedakan 2 jenis pertanyaan):
-  • Cara absen / mau absen / clock-in-out / login absensi → JANGAN pakai tool absensi. Jawab singkat: suruh login di ${TARA_PUBLIC_BASE_URL} lalu absen di ${TARA_CLOCK_URL} (butuh GPS). Jangan jelaskan panjang.
-  • Data absensi PRIBADI (sudah masuk hari ini?, pernah telat?, bolos bulan ini?, riwayat kehadiran) → pakai tool get_my_attendance_today atau get_my_attendance_history, lalu jawab berdasarkan hasil tool. Jika belum ada data, katakan belum ada record — tetap arahkan absen ke ${TARA_CLOCK_URL}
-- Link aplikasi: HANYA gunakan ${TARA_PUBLIC_BASE_URL} dan ${TARA_CLOCK_URL}. JANGAN pakai app.perusahaan.com atau URL lain yang dibuat-buat
-- Untuk pertanyaan SOP/prosedur, gunakan search_sop
-- Jawab singkat, maksimal 3 paragraf
-- Eskalasi HR: jika perlu escalate_to_hr, sistem otomatis kirim pesan ke staff HR — jangan tulis pesan eskalasi manual ke user, cukup panggil tool`;
+    if (config.systemPromptOverride?.trim()) {
+      prompt += `\n\nInstruksi tambahan admin:\n${config.systemPromptOverride.trim()}`;
+    }
 
-    return config.systemPromptOverride
-      ? `${base}\n\nInstruksi tambahan admin:\n${config.systemPromptOverride}`
-      : base;
+    return prompt;
   }
 
   private async buildEmployeeContext(employeeId: string): Promise<EmployeeAiContext> {

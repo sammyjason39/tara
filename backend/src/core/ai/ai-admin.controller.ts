@@ -24,6 +24,7 @@ export class AiAdminController {
       data: {
         ai: this.configService.getAiConfigForApi(),
         whatsapp: this.configService.getWhatsAppConfigForApi(),
+        agentDefaults: this.configService.getAgentDefaultsForApi(),
       },
     };
   }
@@ -45,6 +46,8 @@ export class AiAdminController {
           responseLanguage: body.ai.responseLanguage,
           confirmationTimeoutMinutes: body.ai.confirmationTimeoutMinutes,
           systemPromptOverride: body.ai.systemPromptOverride,
+          systemPrompt: body.ai.systemPrompt,
+          skills: body.ai.skills,
         },
         modifiedBy,
       );
@@ -70,6 +73,33 @@ export class AiAdminController {
       data: {
         ai: this.configService.getAiConfigForApi(),
         whatsapp: this.configService.getWhatsAppConfigForApi(),
+        agentDefaults: this.configService.getAgentDefaultsForApi(),
+      },
+    };
+  }
+
+  @Post('reset-agent-defaults')
+  async resetAgentDefaults(@Req() req: any) {
+    const modifiedBy = req.user?.sub;
+    const defaults = this.configService.getAgentDefaultsForApi();
+
+    await this.configService.updateAiConfig(
+      {
+        systemPrompt: defaults.systemPrompt,
+        skills: defaults.skills,
+        systemPromptOverride: '',
+      },
+      modifiedBy,
+    );
+
+    await this.configService.refreshCache();
+
+    return {
+      success: true,
+      message: 'System prompt dan skills direset ke default',
+      data: {
+        ai: this.configService.getAiConfigForApi(),
+        agentDefaults: defaults,
       },
     };
   }
