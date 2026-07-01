@@ -143,13 +143,20 @@ function PinDialog({
 function EnvironmentBanner({ env }: { env: LocationEnvironment }) {
   if (!env.issue) return null;
 
+  const isHint = env.issue === "ios_chrome";
+
   return (
-    <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 space-y-2">
+    <div
+      className={cn(
+        "rounded-lg border p-4 space-y-2",
+        isHint ? "border-gold/30 bg-gold/5" : "border-warning/40 bg-warning/10",
+      )}
+    >
       <div className="flex items-start gap-2">
-        <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+        <AlertTriangle className={cn("h-4 w-4 shrink-0 mt-0.5", isHint ? "text-gold" : "text-warning")} />
         <div className="space-y-1">
-          <p className="text-sm font-medium text-warning">{env.label}</p>
-          <p className="text-2xs text-muted-foreground leading-relaxed">{env.detail}</p>
+          <p className={cn("text-sm font-medium", isHint ? "text-gold" : "text-warning")}>{env.label}</p>
+          <p className="text-2xs text-muted-foreground leading-relaxed whitespace-pre-line">{env.detail}</p>
         </div>
       </div>
       {env.issue === "in_app_browser" && (
@@ -162,6 +169,12 @@ function EnvironmentBanner({ env }: { env: LocationEnvironment }) {
           <ExternalLink className="h-3.5 w-3.5" />
           Buka di browser eksternal
         </a>
+      )}
+      {env.issue === "ios_chrome" && (
+        <p className="text-2xs text-muted-foreground pl-6">
+          Alternatif cepat: buka <span className="font-mono text-foreground">tara.ralali.io/m/clock</span> di{" "}
+          <strong className="text-foreground">Safari</strong>.
+        </p>
       )}
     </div>
   );
