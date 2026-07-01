@@ -105,12 +105,14 @@ services:
       AI_MODEL: ${AI_MODEL:-deepseek-v4-flash}
       DEMO_MODE: ${DEMO_MODE:-false}
       SOP_UPLOAD_DIR: /var/data/tara/sop
+      ATTENDANCE_PHOTO_DIR: /var/data/tara/attendance
       MEM0_DATA_DIR: /var/data/tara/mem0
       NODE_OPTIONS: ${NODE_OPTIONS:---max-old-space-size=6144}
     expose:
       - "3001"
     volumes:
       - sop_data:/var/data/tara/sop
+      - attendance_data:/var/data/tara/attendance
       - mem0_data:/var/data/tara/mem0
     healthcheck:
       test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3001/health',(r)=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
@@ -150,6 +152,8 @@ volumes:
   redisdata:
     driver: local
   sop_data:
+    driver: local
+  attendance_data:
     driver: local
   mem0_data:
     driver: local

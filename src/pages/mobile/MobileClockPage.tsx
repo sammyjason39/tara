@@ -10,6 +10,7 @@ import {
 } from "@/lib/geolocation";
 import { MapPin, Lock, CheckCircle2, AlertTriangle, Loader2, X, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AttendanceSelfieCapture } from "@/components/AttendanceSelfieCapture";
 
 type LocationPermissionState = "unknown" | "prompt" | "granted" | "denied" | "unsupported";
 
@@ -182,7 +183,7 @@ function EnvironmentBanner({ env }: { env: LocationEnvironment }) {
 
 export function MobileClockPage() {
   const { user } = useAuth();
-  const [status, setStatus] = useState<"idle" | "locating" | "pin" | "submitting" | "success" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "locating" | "pin" | "photo" | "submitting" | "success" | "error">("idle");
   const [clockedIn, setClockedIn] = useState(false);
   const [clockInTime, setClockInTime] = useState<string | null>(null);
   const [clockOutTime, setClockOutTime] = useState<string | null>(null);
@@ -199,6 +200,13 @@ export function MobileClockPage() {
   const [pinError, setPinError] = useState<string | null>(null);
   const [isPinVerifying, setIsPinVerifying] = useState(false);
   const [pendingPosition, setPendingPosition] = useState<GeoPosition | null>(null);
+  const [showSelfieCapture, setShowSelfieCapture] = useState(false);
+  const [geofenceInfo, setGeofenceInfo] = useState<{
+    within_fence: boolean;
+    distance_meters: number;
+    office_name: string;
+    geofence_radius_meters: number;
+  } | null>(null);
 
   const locationBlocked = locationEnv.issue === "in_app_browser" || locationEnv.issue === "insecure" || locationEnv.issue === "unsupported";
 
@@ -278,6 +286,33 @@ export function MobileClockPage() {
     setStatus("locating");
     try {
       const position = await requestLocation();
+
+      const geo = await api.post<{
+        success: boolean;
+        data: {
+          within_fence: boolean;
+          distance_meters: number;
+          office_name: string;
+          geofence_radius_meters: number;
+        };
+      }>("/absensi-agent/validate-geofence", {
+        employee_id: user.id,
+        gps_latitude: position.latitude,
+        gps_longitude: position.longitude,
+      });
+
+      setGeofenceInfo(geo.data);
+
+      if (!geo.data.within_fence) {
+        setStatus("error");
+        toast.error(
+          `Anda berada ${geo.data.distance_meters}m dari ${geo.data.office_name}. ` +
+            `Harus dalam radius ${geo.data.geofence_radius_meters}m untuk absen.`,
+        );
+        setTimeout(() => setStatus("idle"), 3000);
+        return;
+      }
+
       setPendingPosition(position);
     } catch (err: any) {
       setStatus("error");
@@ -306,7 +341,8 @@ export function MobileClockPage() {
 
       setShowPinDialog(false);
       setIsPinVerifying(false);
-      await submitClock(pendingPosition!);
+      setStatus("photo");
+      setShowSelfieCapture(true);
     } catch (err: any) {
       setPinError(err.message || "Gagal verifikasi PIN");
       setIsPinVerifying(false);
@@ -320,7 +356,17 @@ export function MobileClockPage() {
     setIsPinVerifying(false);
   };
 
-  const submitClock = async (position: GeoPosition) => {
+  const handleSelfieCancel = () => {
+    setShowSelfieCapture(false);
+    setStatus("idle");
+  };
+
+  const handleSelfieCapture = async (photoDataUrl: string) => {
+    setShowSelfieCapture(false);
+    await submitClock(pendingPosition!, photoDataUrl);
+  };
+
+  const submitClock = async (position: GeoPosition, selfiePhoto: string) => {
     setStatus("submitting");
     const now = new Date();
     const timeStr = now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
@@ -334,6 +380,7 @@ export function MobileClockPage() {
           gps_longitude: position.longitude,
           biometric_verified: true,
           attendance_source: "phone",
+          selfie_photo: selfiePhoto,
         });
         setClockInTime(timeStr);
         setClockedIn(true);
@@ -346,6 +393,7 @@ export function MobileClockPage() {
           gps_latitude: position.latitude,
           gps_longitude: position.longitude,
           attendance_source: "phone",
+          selfie_photo: selfiePhoto,
         });
         setClockOutTime(timeStr);
         setClockedIn(false);
@@ -360,8 +408,8 @@ export function MobileClockPage() {
     }
   };
 
-  const isProcessing = status === "locating" || status === "submitting" || isLocatingPreview;
-  const locationReady = !!lastPosition && !geoError;
+  const isProcessing = status === "locating" || status === "submitting" || status === "photo" || isLocatingPreview;
+  const locationReady = !!lastPosition && !geoError && (geofenceInfo?.within_fence ?? true);
 
   const locationTitle = () => {
     if (locationBlocked) return locationEnv.label;
@@ -378,7 +426,15 @@ export function MobileClockPage() {
     if (geoError) return geoError;
     if (locationBlocked) return locationEnv.detail;
     if (locationReady) {
-      return `Akurasi: ~${Math.round(lastPosition!.accuracy)}m • ${lastPosition!.latitude.toFixed(5)}, ${lastPosition!.longitude.toFixed(5)}`;
+      const geoLine = geofenceInfo?.within_fence
+        ? `Dalam area ${geofenceInfo.office_name} (~${geofenceInfo.distance_meters}m)`
+        : null;
+      return [
+        geoLine,
+        `Akurasi: ~${Math.round(lastPosition!.accuracy)}m • ${lastPosition!.latitude.toFixed(5)}, ${lastPosition!.longitude.toFixed(5)}`,
+      ]
+        .filter(Boolean)
+        .join(" • ");
     }
     if (permissionState === "denied") {
       return "Reset izin lokasi untuk tara.ralali.io di pengaturan browser/HP, lalu tap tombol di bawah.";
@@ -391,6 +447,7 @@ export function MobileClockPage() {
     switch (status) {
       case "locating": return "Mendapatkan lokasi...";
       case "pin": return "Masukkan PIN...";
+      case "photo": return "Ambil foto selfie...";
       case "submitting": return "Mengirim data...";
       case "success": return "Berhasil!";
       case "error": return "Gagal. Coba lagi.";
@@ -415,7 +472,7 @@ export function MobileClockPage() {
       <div className="flex flex-col items-center space-y-4">
         <button
           onClick={handleClock}
-          disabled={isProcessing || status === "pin" || locationBlocked}
+          disabled={isProcessing || status === "pin" || status === "photo" || locationBlocked}
           className={cn(
             "h-32 w-32 rounded-full flex flex-col items-center justify-center gap-1 transition-all duration-300",
             status === "success"
@@ -497,6 +554,13 @@ export function MobileClockPage() {
         onCancel={handlePinCancel}
         isVerifying={isPinVerifying}
         error={pinError}
+      />
+
+      <AttendanceSelfieCapture
+        open={showSelfieCapture}
+        mode={clockedIn ? "out" : "in"}
+        onCapture={handleSelfieCapture}
+        onCancel={handleSelfieCancel}
       />
     </div>
   );

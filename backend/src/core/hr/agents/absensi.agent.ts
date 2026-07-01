@@ -61,6 +61,7 @@ export class AbsensiAgent {
     gpsLongitude: number,
     biometricVerified: boolean,
     attendanceSource: 'phone' | 'aws_device' = 'phone',
+    selfiePhoto?: string,
   ): Promise<any> {
     this.logger.log(
       `Processing clock-in for employee ${employeeId} at ${timestamp.toISOString()}`,
@@ -76,6 +77,7 @@ export class AbsensiAgent {
         gpsLongitude,
         biometricVerified,
         attendanceSource,
+        selfiePhoto,
       );
 
       // Step 2: Emit event to trigger Clock_Confirmation_Agent
@@ -124,6 +126,7 @@ export class AbsensiAgent {
     gpsLatitude: number,
     gpsLongitude: number,
     attendanceSource: 'phone' | 'aws_device' = 'phone',
+    selfiePhoto?: string,
   ): Promise<any> {
     this.logger.log(
       `Processing clock-out for employee ${employeeId} at ${timestamp.toISOString()}`,
@@ -137,6 +140,7 @@ export class AbsensiAgent {
         gpsLatitude,
         gpsLongitude,
         attendanceSource,
+        selfiePhoto,
       );
 
       // Step 2: Emit event to trigger Clock_Confirmation_Agent

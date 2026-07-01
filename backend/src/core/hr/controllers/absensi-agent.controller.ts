@@ -11,6 +11,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { AbsensiAgent } from '../agents/absensi.agent';
+import { TaraAttendanceService } from '../services/tara-attendance.service';
 
 /**
  * Absensi Agent Controller
@@ -30,7 +31,10 @@ import { AbsensiAgent } from '../agents/absensi.agent';
 export class AbsensiAgentController {
   private readonly logger = new Logger(AbsensiAgentController.name);
 
-  constructor(private readonly absensiAgent: AbsensiAgent) {}
+  constructor(
+    private readonly absensiAgent: AbsensiAgent,
+    private readonly attendanceService: TaraAttendanceService,
+  ) {}
 
   /**
    * Record employee clock-in
@@ -51,6 +55,7 @@ export class AbsensiAgentController {
       gps_longitude: number;
       biometric_verified: boolean;
       attendance_source?: 'phone' | 'aws_device';
+      selfie_photo?: string;
     },
   ) {
     this.logger.log(`Clock-in request for employee ${clockInDto.employee_id}`);
@@ -72,6 +77,11 @@ export class AbsensiAgentController {
 
       if (clockInDto.biometric_verified === undefined) {
         throw new BadRequestException('biometric_verified is required');
+      }
+
+      const source = clockInDto.attendance_source || 'phone';
+      if (source === 'phone' && !clockInDto.selfie_photo?.trim()) {
+        throw new BadRequestException('Foto selfie wajib untuk absensi via HP');
       }
 
       // Parse timestamp or use current time
@@ -100,7 +110,8 @@ export class AbsensiAgentController {
         clockInDto.gps_latitude,
         clockInDto.gps_longitude,
         clockInDto.biometric_verified,
-        clockInDto.attendance_source || 'phone',
+        source,
+        clockInDto.selfie_photo,
       );
 
       return {
@@ -115,6 +126,40 @@ export class AbsensiAgentController {
       );
       throw error;
     }
+  }
+
+  /**
+   * Validate GPS against office geofence before PIN / selfie step.
+   */
+  @Post('validate-geofence')
+  @HttpCode(HttpStatus.OK)
+  async validateGeofence(
+    @Body()
+    body: {
+      employee_id: string;
+      gps_latitude: number;
+      gps_longitude: number;
+    },
+  ) {
+    if (!body.employee_id) {
+      throw new BadRequestException('employee_id is required');
+    }
+    if (
+      body.gps_latitude === undefined ||
+      body.gps_longitude === undefined
+    ) {
+      throw new BadRequestException(
+        'GPS coordinates (gps_latitude, gps_longitude) are required',
+      );
+    }
+
+    const result = await this.attendanceService.validateGeofenceForEmployee(
+      body.employee_id,
+      body.gps_latitude,
+      body.gps_longitude,
+    );
+
+    return { success: true, data: result };
   }
 
   /**
@@ -135,6 +180,7 @@ export class AbsensiAgentController {
       gps_latitude: number;
       gps_longitude: number;
       attendance_source?: 'phone' | 'aws_device';
+      selfie_photo?: string;
     },
   ) {
     this.logger.log(`Clock-out request for employee ${clockOutDto.employee_id}`);
@@ -152,6 +198,11 @@ export class AbsensiAgentController {
         throw new BadRequestException(
           'GPS coordinates (gps_latitude, gps_longitude) are required',
         );
+      }
+
+      const outSource = clockOutDto.attendance_source || 'phone';
+      if (outSource === 'phone' && !clockOutDto.selfie_photo?.trim()) {
+        throw new BadRequestException('Foto selfie wajib untuk absensi via HP');
       }
 
       // Parse timestamp or use current time
@@ -179,7 +230,8 @@ export class AbsensiAgentController {
         timestamp,
         clockOutDto.gps_latitude,
         clockOutDto.gps_longitude,
-        clockOutDto.attendance_source || 'phone',
+        outSource,
+        clockOutDto.selfie_photo,
       );
 
       return {

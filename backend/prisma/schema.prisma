@@ -136,6 +136,8 @@ model Attendance {
   is_tardy           Boolean                               @default(false)
   tardiness_minutes  Int                                   @default(0)
   office_location_id String?
+  clock_in_photo_path  String?
+  clock_out_photo_path String?
   override_reason    String?
   override_by        String?
   created_at         DateTime                              @default(now())

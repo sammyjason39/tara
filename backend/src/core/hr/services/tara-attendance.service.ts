@@ -3,6 +3,7 @@ import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../persistence/prisma.service';
 import { GeoService } from './geo.service';
 import { EventBusService, TaraEvent } from './event-bus.service';
+import { AttendancePhotoService } from './attendance-photo.service';
 
 /**
  * TARA Attendance Service
@@ -26,7 +27,68 @@ export class TaraAttendanceService {
     private readonly prisma: PrismaService,
     private readonly geoService: GeoService,
     private readonly eventBusService: EventBusService,
+    private readonly attendancePhotoService: AttendancePhotoService,
   ) {}
+
+  /**
+   * Validate employee GPS against active office geofence (shared by API + clock flows).
+   */
+  async validateGeofenceForEmployee(
+    employee_id: string,
+    gps_latitude: number,
+    gps_longitude: number,
+  ): Promise<{
+    within_fence: boolean;
+    distance_meters: number;
+    office_name: string;
+    office_latitude: number;
+    office_longitude: number;
+    geofence_radius_meters: number;
+  }> {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employee_id },
+      select: { id: true, employment_status: true },
+    });
+
+    if (!employee) {
+      throw new BadRequestException(`Employee not found: ${employee_id}`);
+    }
+
+    if (employee.employment_status !== 'active') {
+      throw new BadRequestException('Karyawan tidak aktif');
+    }
+
+    const officeLocation = await this.prisma.officeLocation.findFirst({
+      where: { is_active: true },
+    });
+
+    if (!officeLocation) {
+      throw new BadRequestException(
+        'Lokasi kantor belum dikonfigurasi. Hubungi HR.',
+      );
+    }
+
+    const officeLatitude = parseFloat(officeLocation.latitude.toString());
+    const officeLongitude = parseFloat(officeLocation.longitude.toString());
+
+    const distanceMeters = this.geoService.calculateHaversineDistance(
+      gps_latitude,
+      gps_longitude,
+      officeLatitude,
+      officeLongitude,
+    );
+
+    const withinFence = distanceMeters <= officeLocation.geofence_radius_meters;
+
+    return {
+      within_fence: withinFence,
+      distance_meters: Math.round(distanceMeters),
+      office_name: officeLocation.location_name,
+      office_latitude: officeLatitude,
+      office_longitude: officeLongitude,
+      geofence_radius_meters: officeLocation.geofence_radius_meters,
+    };
+  }
 
   /**
    * Record employee clock-in with geo-fence validation
@@ -52,6 +114,7 @@ export class TaraAttendanceService {
     gps_longitude: number,
     biometric_verified: boolean,
     attendance_source: 'phone' | 'aws_device' = 'phone',
+    selfie_photo?: string,
   ): Promise<any> {
     this.logger.log(
       `Recording clock-in for employee ${employee_id} at ${timestamp.toISOString()} from ${attendance_source}`,
@@ -93,32 +156,22 @@ export class TaraAttendanceService {
       }
 
       // Step 3: Validate geo-fence (Requirement 23.1)
-      // Manually validate since GeoService uses legacy locations table
-      const officeLatitude = parseFloat(officeLocation.latitude.toString());
-      const officeLongitude = parseFloat(officeLocation.longitude.toString());
-      
-      const distanceMeters = this.geoService.calculateHaversineDistance(
+      const geoValidation = await this.validateGeofenceForEmployee(
+        employee_id,
         gps_latitude,
         gps_longitude,
-        officeLatitude,
-        officeLongitude,
       );
-
-      const withinFence = distanceMeters <= officeLocation.geofence_radius_meters;
-      
-      const geoValidation = {
-        within_fence: withinFence,
-        distance_meters: distanceMeters,
-        office_name: officeLocation.location_name,
-        office_latitude: officeLatitude,
-        office_longitude: officeLongitude,
-        geofence_radius_meters: officeLocation.geofence_radius_meters,
-      };
 
       if (!geoValidation.within_fence) {
         throw new BadRequestException(
           `Clock-in rejected: You are ${geoValidation.distance_meters}m from ${geoValidation.office_name}. ` +
             `Please be within ${geoValidation.geofence_radius_meters}m to clock in.`,
+        );
+      }
+
+      if (attendance_source === 'phone' && !selfie_photo?.trim()) {
+        throw new BadRequestException(
+          'Foto selfie wajib untuk absensi via HP',
         );
       }
 
@@ -147,7 +200,18 @@ export class TaraAttendanceService {
         attendanceDate,
       );
 
-      // Step 6: Create or update attendance record
+      // Step 6: Save selfie photo (phone attendance)
+      let clockInPhotoPath: string | null = null;
+      if (selfie_photo?.trim()) {
+        clockInPhotoPath = await this.attendancePhotoService.saveSelfie(
+          employee_id,
+          attendanceDate,
+          'in',
+          selfie_photo,
+        );
+      }
+
+      // Step 7: Create or update attendance record
       // Store GPS coordinates in PostGIS GEOGRAPHY format (Requirement 23.9)
       // Format: POINT(longitude latitude) - note the order!
       const gpsPointWKT = `POINT(${gps_longitude} ${gps_latitude})`;
@@ -164,6 +228,7 @@ export class TaraAttendanceService {
           is_tardy, 
           tardiness_minutes, 
           office_location_id,
+          clock_in_photo_path,
           created_at,
           updated_at
         )
@@ -177,6 +242,7 @@ export class TaraAttendanceService {
           $6,
           $7,
           $8,
+          $9,
           NOW(),
           NOW()
         )
@@ -188,6 +254,7 @@ export class TaraAttendanceService {
           is_tardy = EXCLUDED.is_tardy,
           tardiness_minutes = EXCLUDED.tardiness_minutes,
           office_location_id = EXCLUDED.office_location_id,
+          clock_in_photo_path = EXCLUDED.clock_in_photo_path,
           updated_at = NOW()
         RETURNING *
       `,
@@ -199,6 +266,7 @@ export class TaraAttendanceService {
         tardinessResult.is_tardy,
         tardinessResult.tardiness_minutes,
         officeLocation.id,
+        clockInPhotoPath,
       );
 
       // Fetch the created/updated record
@@ -312,6 +380,7 @@ export class TaraAttendanceService {
     gps_latitude: number,
     gps_longitude: number,
     attendance_source: 'phone' | 'aws_device' = 'phone',
+    selfie_photo?: string,
   ): Promise<any> {
     this.logger.log(
       `Recording clock-out for employee ${employee_id} at ${timestamp.toISOString()} from ${attendance_source}`,
@@ -345,32 +414,22 @@ export class TaraAttendanceService {
       }
 
       // Step 3: Validate geo-fence (Requirement 23.2)
-      // Manually validate since GeoService uses legacy locations table
-      const officeLatitude = parseFloat(officeLocation.latitude.toString());
-      const officeLongitude = parseFloat(officeLocation.longitude.toString());
-      
-      const distanceMeters = this.geoService.calculateHaversineDistance(
+      const geoValidation = await this.validateGeofenceForEmployee(
+        employee_id,
         gps_latitude,
         gps_longitude,
-        officeLatitude,
-        officeLongitude,
       );
-
-      const withinFence = distanceMeters <= officeLocation.geofence_radius_meters;
-      
-      const geoValidation = {
-        within_fence: withinFence,
-        distance_meters: distanceMeters,
-        office_name: officeLocation.location_name,
-        office_latitude: officeLatitude,
-        office_longitude: officeLongitude,
-        geofence_radius_meters: officeLocation.geofence_radius_meters,
-      };
 
       if (!geoValidation.within_fence) {
         throw new BadRequestException(
           `Clock-out rejected: You are ${geoValidation.distance_meters}m from ${geoValidation.office_name}. ` +
             `Please be within ${geoValidation.geofence_radius_meters}m to clock out.`,
+        );
+      }
+
+      if (attendance_source === 'phone' && !selfie_photo?.trim()) {
+        throw new BadRequestException(
+          'Foto selfie wajib untuk absensi via HP',
         );
       }
 
@@ -399,7 +458,18 @@ export class TaraAttendanceService {
         );
       }
 
-      // Step 5: Update attendance record with clock-out
+      // Step 5: Save selfie photo (phone attendance)
+      let clockOutPhotoPath: string | null = null;
+      if (selfie_photo?.trim()) {
+        clockOutPhotoPath = await this.attendancePhotoService.saveSelfie(
+          employee_id,
+          attendanceDate,
+          'out',
+          selfie_photo,
+        );
+      }
+
+      // Step 6: Update attendance record with clock-out
       const gpsPointWKT = `POINT(${gps_longitude} ${gps_latitude})`;
 
       await tx.$executeRawUnsafe(
@@ -409,12 +479,14 @@ export class TaraAttendanceService {
           clock_out_time = $1,
           clock_out_location = ST_GeogFromText($2),
           clock_out_source = $3,
+          clock_out_photo_path = $4,
           updated_at = NOW()
-        WHERE employee_id = $4 AND attendance_date = $5
+        WHERE employee_id = $5 AND attendance_date = $6
       `,
         timestamp,
         gpsPointWKT,
         attendance_source,
+        clockOutPhotoPath,
         employee_id,
         attendanceDate,
       );

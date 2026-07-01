@@ -40,6 +40,7 @@ import { EmployeeManagementService } from './services/employee-management.servic
 import { GeoService } from './services/geo.service';
 import { GeoFenceOverrideService } from './services/geo-fence-override.service';
 import { TaraAttendanceService } from './services/tara-attendance.service';
+import { AttendancePhotoService } from './services/attendance-photo.service';
 import { NotificationService } from './services/notification.service';
 import { LeaveService } from './services/leave.service';
 import { WeeklyCheckinService } from './services/weekly-checkin.service';
@@ -149,6 +150,7 @@ import { I18nModule } from './i18n/i18n.module';
     GeoService,
     GeoFenceOverrideService,
     TaraAttendanceService,
+    AttendancePhotoService,
     NotificationService,
     LeaveService,
     WeeklyCheckinService,

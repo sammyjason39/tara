@@ -38,6 +38,7 @@ import { MobileSopPage } from "@/pages/mobile/MobileSopPage";
 // Misc
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { ForcePasswordChangeModal } from "@/components/ForcePasswordChangeModal";
+import { PwaInstallPromptModal } from "@/components/PwaInstallPromptModal";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -97,6 +98,7 @@ export function App() {
             </Routes>
           </BrowserRouter>
           <ForcePasswordChangeModal />
+          <PwaInstallPromptModal />
           <Toaster />
         </AuthProvider>
       </ThemeProvider>

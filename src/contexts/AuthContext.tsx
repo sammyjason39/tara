@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { markPwaPromptForSession } from "@/lib/pwa-install";
 
 interface User {
   id: string;
@@ -78,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user);
     setMustChangePassword(!!data.must_change_password);
     localStorage.setItem("tara-token", data.token);
+    markPwaPromptForSession();
   }
 
   function logout() {
