@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
@@ -11,8 +11,13 @@ interface GeoPosition {
   accuracy: number;
 }
 
+type LocationPermissionState = "unknown" | "prompt" | "granted" | "denied" | "unsupported";
+
+const LOCATION_DENIED_HELP =
+  "Izin lokasi diblokir. iOS: Pengaturan → Safari → Lokasi Services → izinkan untuk browser, lalu reset izin situs di Pengaturan → Safari → Lanjutan → Data Situs Web. Android: ikon gembok di address bar → Izin → Lokasi → Izinkan.";
+
 /**
- * Request the device's current GPS position.
+ * Request GPS only from a user gesture (tap). Auto-request on page load is blocked on mobile.
  */
 function getGeoLocation(): Promise<GeoPosition> {
   return new Promise((resolve, reject) => {
@@ -20,31 +25,64 @@ function getGeoLocation(): Promise<GeoPosition> {
       reject(new Error("Perangkat tidak mendukung GPS"));
       return;
     }
+
+    const onSuccess = (pos: GeolocationPosition) =>
+      resolve({
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+        accuracy: pos.coords.accuracy,
+      });
+
+    const onError = (err: GeolocationPositionError) => {
+      switch (err.code) {
+        case err.PERMISSION_DENIED:
+          reject(new Error(LOCATION_DENIED_HELP));
+          break;
+        case err.POSITION_UNAVAILABLE:
+          reject(new Error("Lokasi tidak tersedia. Pastikan GPS aktif."));
+          break;
+        case err.TIMEOUT:
+          reject(new Error("Timeout mendapatkan lokasi. Coba lagi di area terbuka."));
+          break;
+        default:
+          reject(new Error("Gagal mendapatkan lokasi"));
+      }
+    };
+
+    const options: PositionOptions = {
+      enableHighAccuracy: true,
+      timeout: 20000,
+      maximumAge: 60000,
+    };
+
     navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        resolve({
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-          accuracy: pos.coords.accuracy,
-        }),
+      onSuccess,
       (err) => {
-        switch (err.code) {
-          case err.PERMISSION_DENIED:
-            reject(new Error("Izin lokasi ditolak. Aktifkan GPS dan izinkan akses lokasi."));
-            break;
-          case err.POSITION_UNAVAILABLE:
-            reject(new Error("Lokasi tidak tersedia. Pastikan GPS aktif."));
-            break;
-          case err.TIMEOUT:
-            reject(new Error("Timeout mendapatkan lokasi. Coba lagi."));
-            break;
-          default:
-            reject(new Error("Gagal mendapatkan lokasi"));
+        if (err.code === err.PERMISSION_DENIED) {
+          onError(err);
+          return;
         }
+        // Retry with lower accuracy (faster on some devices)
+        navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+          ...options,
+          enableHighAccuracy: false,
+        });
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      options,
     );
   });
+}
+
+async function queryLocationPermission(): Promise<LocationPermissionState> {
+  if (!navigator.geolocation) return "unsupported";
+  if (!navigator.permissions?.query) return "unknown";
+
+  try {
+    const status = await navigator.permissions.query({ name: "geolocation" });
+    return status.state as LocationPermissionState;
+  } catch {
+    return "unknown";
+  }
 }
 
 /**
@@ -76,18 +114,16 @@ function PinDialog({
   if (!open) return null;
 
   const handleChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return; // Only digits
+    if (!/^\d*$/.test(value)) return;
 
     const newPin = [...pin];
-    newPin[index] = value.slice(-1); // Take last character
+    newPin[index] = value.slice(-1);
     setPin(newPin);
 
-    // Auto-advance to next input
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
 
-    // Auto-submit when all 6 digits are entered
     if (value && index === 5) {
       const fullPin = newPin.join("");
       if (fullPin.length === 6) {
@@ -114,7 +150,6 @@ function PinDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="bg-card rounded-2xl p-6 mx-4 w-full max-w-sm shadow-luxury-lg space-y-5">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Lock className="h-5 w-5 text-gold" />
@@ -129,7 +164,6 @@ function PinDialog({
           Masukkan PIN 6 digit untuk verifikasi kehadiran Anda.
         </p>
 
-        {/* PIN Input */}
         <div className="flex justify-center gap-2" onPaste={handlePaste}>
           {pin.map((digit, i) => (
             <input
@@ -146,20 +180,18 @@ function PinDialog({
                 "w-11 h-12 text-center text-lg font-mono font-semibold rounded-lg border-2 bg-background transition-all",
                 "focus:outline-none focus:ring-2 focus:ring-gold/30 focus:border-gold",
                 error ? "border-destructive" : "border-input",
-                isVerifying && "opacity-50"
+                isVerifying && "opacity-50",
               )}
             />
           ))}
         </div>
 
-        {/* Error */}
         {error && (
           <p className="text-center text-sm text-destructive font-medium animate-fade-in">
             {error}
           </p>
         )}
 
-        {/* Loading */}
         {isVerifying && (
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -177,27 +209,75 @@ export function MobileClockPage() {
   const [clockedIn, setClockedIn] = useState(false);
   const [clockInTime, setClockInTime] = useState<string | null>(null);
   const [clockOutTime, setClockOutTime] = useState<string | null>(null);
-  const [geoStatus, setGeoStatus] = useState<"unknown" | "inside" | "outside">("unknown");
+  const [permissionState, setPermissionState] = useState<LocationPermissionState>("unknown");
   const [geoError, setGeoError] = useState<string | null>(null);
   const [lastPosition, setLastPosition] = useState<GeoPosition | null>(null);
+  const [isLocatingPreview, setIsLocatingPreview] = useState(false);
   const [showPinDialog, setShowPinDialog] = useState(false);
   const [pinError, setPinError] = useState<string | null>(null);
   const [isPinVerifying, setIsPinVerifying] = useState(false);
   const [pendingPosition, setPendingPosition] = useState<GeoPosition | null>(null);
 
-  // Get location on page load
+  // Only check permission state on load — never call getCurrentPosition without user tap
   useEffect(() => {
-    getGeoLocation()
-      .then((pos) => {
-        setLastPosition(pos);
-        setGeoStatus("inside");
-        setGeoError(null);
-      })
-      .catch((err) => {
-        setGeoError(err.message);
-        setGeoStatus("unknown");
-      });
+    let mounted = true;
+    let permissionStatus: PermissionStatus | null = null;
+
+    const syncPermission = async () => {
+      const state = await queryLocationPermission();
+      if (mounted) setPermissionState(state);
+    };
+
+    syncPermission();
+
+    if (navigator.permissions?.query) {
+      navigator.permissions
+        .query({ name: "geolocation" })
+        .then((status) => {
+          permissionStatus = status;
+          if (mounted) setPermissionState(status.state as LocationPermissionState);
+          status.onchange = () => {
+            if (mounted) {
+              setPermissionState(status.state as LocationPermissionState);
+              if (status.state === "granted") setGeoError(null);
+            }
+          };
+        })
+        .catch(() => undefined);
+    }
+
+    return () => {
+      mounted = false;
+      if (permissionStatus) permissionStatus.onchange = null;
+    };
   }, []);
+
+  const requestLocation = useCallback(async (): Promise<GeoPosition> => {
+    setIsLocatingPreview(true);
+    setGeoError(null);
+    try {
+      const position = await getGeoLocation();
+      setLastPosition(position);
+      setPermissionState("granted");
+      setGeoError(null);
+      return position;
+    } catch (err: any) {
+      setGeoError(err.message);
+      setPermissionState((prev) => (prev === "unknown" ? "denied" : prev));
+      throw err;
+    } finally {
+      setIsLocatingPreview(false);
+    }
+  }, []);
+
+  const handleEnableLocation = async () => {
+    try {
+      await requestLocation();
+      toast.success("Lokasi berhasil diaktifkan");
+    } catch (err: any) {
+      toast.error("Gagal mengaktifkan lokasi");
+    }
+  };
 
   const handleClock = async () => {
     if (!user?.id) {
@@ -205,24 +285,17 @@ export function MobileClockPage() {
       return;
     }
 
-    // Step 1: Get GPS location
     setStatus("locating");
     try {
-      const position = await getGeoLocation();
-      setLastPosition(position);
-      setGeoStatus("inside");
-      setGeoError(null);
+      const position = await requestLocation();
       setPendingPosition(position);
     } catch (err: any) {
-      setGeoError(err.message);
-      setGeoStatus("unknown");
       setStatus("error");
-      toast.error(err.message);
+      toast.error(err.message || "Gagal mendapatkan lokasi");
       setTimeout(() => setStatus("idle"), 2000);
       return;
     }
 
-    // Step 2: Show PIN dialog
     setStatus("pin");
     setPinError(null);
     setShowPinDialog(true);
@@ -233,7 +306,6 @@ export function MobileClockPage() {
     setPinError(null);
 
     try {
-      // Verify PIN with backend
       const result = await api.post<{ success: boolean; data: { verified: boolean } }>("/auth/verify-pin", { pin });
 
       if (!result.data?.verified) {
@@ -242,7 +314,6 @@ export function MobileClockPage() {
         return;
       }
 
-      // PIN verified — close dialog and submit attendance
       setShowPinDialog(false);
       setIsPinVerifying(false);
       await submitClock(pendingPosition!);
@@ -271,7 +342,7 @@ export function MobileClockPage() {
           timestamp: now.toISOString(),
           gps_latitude: position.latitude,
           gps_longitude: position.longitude,
-          biometric_verified: true, // PIN verified
+          biometric_verified: true,
           attendance_source: "phone",
         });
         setClockInTime(timeStr);
@@ -299,7 +370,26 @@ export function MobileClockPage() {
     }
   };
 
-  const isProcessing = status === "locating" || status === "submitting";
+  const isProcessing = status === "locating" || status === "submitting" || isLocatingPreview;
+  const locationReady = !!lastPosition && !geoError;
+
+  const locationTitle = () => {
+    if (permissionState === "unsupported") return "GPS tidak didukung";
+    if (geoError) return "Lokasi tidak tersedia";
+    if (locationReady) return "Lokasi terdeteksi";
+    if (isLocatingPreview || status === "locating") return "Mendapatkan lokasi...";
+    if (permissionState === "denied") return "Izin lokasi diblokir";
+    return "Lokasi diperlukan untuk absen";
+  };
+
+  const locationDetail = () => {
+    if (geoError) return geoError;
+    if (locationReady) {
+      return `Akurasi: ~${Math.round(lastPosition!.accuracy)}m • ${lastPosition!.latitude.toFixed(5)}, ${lastPosition!.longitude.toFixed(5)}`;
+    }
+    if (permissionState === "denied") return LOCATION_DENIED_HELP;
+    return "Ketuk tombol di bawah atau Clock In — browser akan meminta izin lokasi.";
+  };
 
   const statusLabel = () => {
     switch (status) {
@@ -324,7 +414,6 @@ export function MobileClockPage() {
         </p>
       </div>
 
-      {/* Clock Button */}
       <div className="flex flex-col items-center space-y-4">
         <button
           onClick={handleClock}
@@ -339,7 +428,7 @@ export function MobileClockPage() {
               ? "bg-destructive/5 border-2 border-destructive/40 hover:border-destructive"
               : "bg-gradient-to-br from-gold/20 to-gold/5 border-2 border-gold/40 hover:border-gold hover:shadow-luxury-glow",
             isProcessing && "animate-pulse",
-            "active:scale-95"
+            "active:scale-95",
           )}
         >
           {status === "success" ? (
@@ -360,36 +449,35 @@ export function MobileClockPage() {
         <p className="text-sm text-muted-foreground">{statusLabel()}</p>
       </div>
 
-      {/* Location Status */}
-      <div className="surface-elevated p-4 space-y-2">
+      <div className="surface-elevated p-4 space-y-3">
         <div className="flex items-center gap-2">
-          {geoError ? (
-            <>
-              <AlertTriangle className="h-4 w-4 text-warning" />
-              <span className="text-sm font-medium text-warning">Lokasi tidak tersedia</span>
-            </>
-          ) : geoStatus === "inside" ? (
-            <>
-              <MapPin className="h-4 w-4 text-success" />
-              <span className="text-sm font-medium">Lokasi terdeteksi</span>
-            </>
+          {geoError || permissionState === "denied" ? (
+            <AlertTriangle className="h-4 w-4 text-warning" />
+          ) : locationReady ? (
+            <MapPin className="h-4 w-4 text-success" />
           ) : (
-            <>
-              <MapPin className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Mendeteksi lokasi...</span>
-            </>
+            <MapPin className="h-4 w-4 text-muted-foreground" />
           )}
+          <span className="text-sm font-medium">{locationTitle()}</span>
         </div>
-        <p className="text-2xs text-muted-foreground pl-6">
-          {geoError
-            ? geoError
-            : lastPosition
-            ? `Akurasi: ~${Math.round(lastPosition.accuracy)}m • ${lastPosition.latitude.toFixed(5)}, ${lastPosition.longitude.toFixed(5)}`
-            : "Menunggu data GPS..."}
-        </p>
+        <p className="text-2xs text-muted-foreground pl-6 leading-relaxed">{locationDetail()}</p>
+        {!locationReady && permissionState !== "unsupported" && (
+          <button
+            type="button"
+            onClick={handleEnableLocation}
+            disabled={isLocatingPreview}
+            className="ml-6 flex items-center gap-2 px-3 py-2 rounded-md bg-gold/10 text-gold text-xs font-medium hover:bg-gold/20 disabled:opacity-50"
+          >
+            {isLocatingPreview ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <MapPin className="h-3.5 w-3.5" />
+            )}
+            Izinkan Akses Lokasi
+          </button>
+        )}
       </div>
 
-      {/* Today's Record */}
       <div className="surface-elevated p-4 space-y-3">
         <p className="text-luxury-label">Rekap Hari Ini</p>
         <div className="grid grid-cols-2 gap-3">
@@ -404,7 +492,6 @@ export function MobileClockPage() {
         </div>
       </div>
 
-      {/* PIN Dialog */}
       <PinDialog
         open={showPinDialog}
         onSubmit={handlePinSubmit}
