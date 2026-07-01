@@ -140,7 +140,7 @@ services:
       - "${FRONTEND_PORT:-80}:80"
       - "${FRONTEND_SSL_PORT:-443}:443"
     volumes:
-      - ./nginx.active.conf:/etc/nginx/conf.d/tara.conf:ro
+      - ./nginx.conf:/etc/nginx/conf.d/tara.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
 

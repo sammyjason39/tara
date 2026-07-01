@@ -2,76 +2,16 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
-import { MapPin, Lock, CheckCircle2, AlertTriangle, Loader2, X } from "lucide-react";
+import {
+  requestDeviceLocation,
+  getLocationEnvironment,
+  type GeoPosition,
+  type LocationEnvironment,
+} from "@/lib/geolocation";
+import { MapPin, Lock, CheckCircle2, AlertTriangle, Loader2, X, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface GeoPosition {
-  latitude: number;
-  longitude: number;
-  accuracy: number;
-}
-
 type LocationPermissionState = "unknown" | "prompt" | "granted" | "denied" | "unsupported";
-
-const LOCATION_DENIED_HELP =
-  "Izin lokasi diblokir. iOS: Pengaturan → Safari → Lokasi Services → izinkan untuk browser, lalu reset izin situs di Pengaturan → Safari → Lanjutan → Data Situs Web. Android: ikon gembok di address bar → Izin → Lokasi → Izinkan.";
-
-/**
- * Request GPS only from a user gesture (tap). Auto-request on page load is blocked on mobile.
- */
-function getGeoLocation(): Promise<GeoPosition> {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error("Perangkat tidak mendukung GPS"));
-      return;
-    }
-
-    const onSuccess = (pos: GeolocationPosition) =>
-      resolve({
-        latitude: pos.coords.latitude,
-        longitude: pos.coords.longitude,
-        accuracy: pos.coords.accuracy,
-      });
-
-    const onError = (err: GeolocationPositionError) => {
-      switch (err.code) {
-        case err.PERMISSION_DENIED:
-          reject(new Error(LOCATION_DENIED_HELP));
-          break;
-        case err.POSITION_UNAVAILABLE:
-          reject(new Error("Lokasi tidak tersedia. Pastikan GPS aktif."));
-          break;
-        case err.TIMEOUT:
-          reject(new Error("Timeout mendapatkan lokasi. Coba lagi di area terbuka."));
-          break;
-        default:
-          reject(new Error("Gagal mendapatkan lokasi"));
-      }
-    };
-
-    const options: PositionOptions = {
-      enableHighAccuracy: true,
-      timeout: 20000,
-      maximumAge: 60000,
-    };
-
-    navigator.geolocation.getCurrentPosition(
-      onSuccess,
-      (err) => {
-        if (err.code === err.PERMISSION_DENIED) {
-          onError(err);
-          return;
-        }
-        // Retry with lower accuracy (faster on some devices)
-        navigator.geolocation.getCurrentPosition(onSuccess, onError, {
-          ...options,
-          enableHighAccuracy: false,
-        });
-      },
-      options,
-    );
-  });
-}
 
 async function queryLocationPermission(): Promise<LocationPermissionState> {
   if (!navigator.geolocation) return "unsupported";
@@ -85,9 +25,6 @@ async function queryLocationPermission(): Promise<LocationPermissionState> {
   }
 }
 
-/**
- * PIN Input Dialog Component
- */
 function PinDialog({
   open,
   onSubmit,
@@ -203,14 +140,46 @@ function PinDialog({
   );
 }
 
+function EnvironmentBanner({ env }: { env: LocationEnvironment }) {
+  if (!env.issue) return null;
+
+  return (
+    <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 space-y-2">
+      <div className="flex items-start gap-2">
+        <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-warning">{env.label}</p>
+          <p className="text-2xs text-muted-foreground leading-relaxed">{env.detail}</p>
+        </div>
+      </div>
+      {env.issue === "in_app_browser" && (
+        <a
+          href={window.location.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-gold"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          Buka di browser eksternal
+        </a>
+      )}
+    </div>
+  );
+}
+
 export function MobileClockPage() {
   const { user } = useAuth();
   const [status, setStatus] = useState<"idle" | "locating" | "pin" | "submitting" | "success" | "error">("idle");
   const [clockedIn, setClockedIn] = useState(false);
   const [clockInTime, setClockInTime] = useState<string | null>(null);
   const [clockOutTime, setClockOutTime] = useState<string | null>(null);
+  const [locationEnv] = useState<LocationEnvironment>(() => getLocationEnvironment());
   const [permissionState, setPermissionState] = useState<LocationPermissionState>("unknown");
-  const [geoError, setGeoError] = useState<string | null>(null);
+  const [geoError, setGeoError] = useState<string | null>(
+    locationEnv.issue === "in_app_browser" || locationEnv.issue === "insecure"
+      ? locationEnv.detail
+      : null,
+  );
   const [lastPosition, setLastPosition] = useState<GeoPosition | null>(null);
   const [isLocatingPreview, setIsLocatingPreview] = useState(false);
   const [showPinDialog, setShowPinDialog] = useState(false);
@@ -218,7 +187,8 @@ export function MobileClockPage() {
   const [isPinVerifying, setIsPinVerifying] = useState(false);
   const [pendingPosition, setPendingPosition] = useState<GeoPosition | null>(null);
 
-  // Only check permission state on load — never call getCurrentPosition without user tap
+  const locationBlocked = locationEnv.issue === "in_app_browser" || locationEnv.issue === "insecure" || locationEnv.issue === "unsupported";
+
   useEffect(() => {
     let mounted = true;
     let permissionStatus: PermissionStatus | null = null;
@@ -253,29 +223,36 @@ export function MobileClockPage() {
   }, []);
 
   const requestLocation = useCallback(async (): Promise<GeoPosition> => {
+    if (locationBlocked) {
+      throw new Error(locationEnv.detail);
+    }
+
     setIsLocatingPreview(true);
     setGeoError(null);
     try {
-      const position = await getGeoLocation();
+      const position = await requestDeviceLocation();
       setLastPosition(position);
       setPermissionState("granted");
       setGeoError(null);
       return position;
     } catch (err: any) {
-      setGeoError(err.message);
-      setPermissionState((prev) => (prev === "unknown" ? "denied" : prev));
+      const message = err?.message || "Gagal mendapatkan lokasi";
+      setGeoError(message);
+      if (message.toLowerCase().includes("ditolak") || message.toLowerCase().includes("izin")) {
+        setPermissionState("denied");
+      }
       throw err;
     } finally {
       setIsLocatingPreview(false);
     }
-  }, []);
+  }, [locationBlocked, locationEnv.detail]);
 
   const handleEnableLocation = async () => {
     try {
       await requestLocation();
       toast.success("Lokasi berhasil diaktifkan");
     } catch (err: any) {
-      toast.error("Gagal mengaktifkan lokasi");
+      toast.error(err?.message || "Gagal mengaktifkan lokasi");
     }
   };
 
@@ -291,7 +268,7 @@ export function MobileClockPage() {
       setPendingPosition(position);
     } catch (err: any) {
       setStatus("error");
-      toast.error(err.message || "Gagal mendapatkan lokasi");
+      toast.error(err?.message || "Gagal mendapatkan lokasi");
       setTimeout(() => setStatus("idle"), 2000);
       return;
     }
@@ -374,21 +351,27 @@ export function MobileClockPage() {
   const locationReady = !!lastPosition && !geoError;
 
   const locationTitle = () => {
+    if (locationBlocked) return locationEnv.label;
     if (permissionState === "unsupported") return "GPS tidak didukung";
     if (geoError) return "Lokasi tidak tersedia";
     if (locationReady) return "Lokasi terdeteksi";
     if (isLocatingPreview || status === "locating") return "Mendapatkan lokasi...";
     if (permissionState === "denied") return "Izin lokasi diblokir";
+    if (locationEnv.issue === "ios_standalone") return "Mode aplikasi iOS";
     return "Lokasi diperlukan untuk absen";
   };
 
   const locationDetail = () => {
     if (geoError) return geoError;
+    if (locationBlocked) return locationEnv.detail;
     if (locationReady) {
       return `Akurasi: ~${Math.round(lastPosition!.accuracy)}m • ${lastPosition!.latitude.toFixed(5)}, ${lastPosition!.longitude.toFixed(5)}`;
     }
-    if (permissionState === "denied") return LOCATION_DENIED_HELP;
-    return "Ketuk tombol di bawah atau Clock In — browser akan meminta izin lokasi.";
+    if (permissionState === "denied") {
+      return "Reset izin lokasi untuk tara.ralali.io di pengaturan browser/HP, lalu tap tombol di bawah.";
+    }
+    if (locationEnv.issue === "ios_standalone") return locationEnv.detail;
+    return "Tap Izinkan Akses Lokasi — browser akan meminta izin. Pastikan GPS/Layanan Lokasi HP aktif.";
   };
 
   const statusLabel = () => {
@@ -403,7 +386,9 @@ export function MobileClockPage() {
   };
 
   return (
-    <div className="px-5 py-6 space-y-8 animate-fade-in">
+    <div className="px-5 py-6 space-y-6 animate-fade-in">
+      <EnvironmentBanner env={locationEnv} />
+
       <div className="text-center space-y-1">
         <p className="text-luxury-label">Kehadiran</p>
         <p className="text-3xl font-display font-semibold">
@@ -417,7 +402,7 @@ export function MobileClockPage() {
       <div className="flex flex-col items-center space-y-4">
         <button
           onClick={handleClock}
-          disabled={isProcessing || status === "pin"}
+          disabled={isProcessing || status === "pin" || locationBlocked}
           className={cn(
             "h-32 w-32 rounded-full flex flex-col items-center justify-center gap-1 transition-all duration-300",
             status === "success"
@@ -428,6 +413,7 @@ export function MobileClockPage() {
               ? "bg-destructive/5 border-2 border-destructive/40 hover:border-destructive"
               : "bg-gradient-to-br from-gold/20 to-gold/5 border-2 border-gold/40 hover:border-gold hover:shadow-luxury-glow",
             isProcessing && "animate-pulse",
+            locationBlocked && "opacity-50",
             "active:scale-95",
           )}
         >
@@ -451,7 +437,7 @@ export function MobileClockPage() {
 
       <div className="surface-elevated p-4 space-y-3">
         <div className="flex items-center gap-2">
-          {geoError || permissionState === "denied" ? (
+          {geoError || permissionState === "denied" || locationBlocked ? (
             <AlertTriangle className="h-4 w-4 text-warning" />
           ) : locationReady ? (
             <MapPin className="h-4 w-4 text-success" />
@@ -461,7 +447,7 @@ export function MobileClockPage() {
           <span className="text-sm font-medium">{locationTitle()}</span>
         </div>
         <p className="text-2xs text-muted-foreground pl-6 leading-relaxed">{locationDetail()}</p>
-        {!locationReady && permissionState !== "unsupported" && (
+        {!locationReady && !locationBlocked && permissionState !== "unsupported" && (
           <button
             type="button"
             onClick={handleEnableLocation}
