@@ -1,0 +1,138 @@
+# ==============================================================================
+# TARA HR — Staging stack (isolated from production)
+#
+# Usage on VPS:
+#   cd ~/tara-staging
+#   docker compose -f docker-compose.staging.yml --env-file .env up --build -d
+#
+# Public URL: https://staging.tara.ralali.io (routed via prod nginx vhost)
+# ==============================================================================
+
+name: tara-staging
+
+services:
+  db:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: tara-staging-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tara
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-tara_staging_secret}
+      POSTGRES_INITDB_ARGS: "--locale=C.UTF-8"
+    ports:
+      - "127.0.0.1:${DB_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tara"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: tara-staging-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6380}:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tara-staging-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      APP_ENV: staging
+      PORT: 3001
+      DATABASE_URL: postgresql://postgres:${DB_PASSWORD:-tara_staging_secret}@db:5432/tara?schema=public
+      JWT_SECRET: ${JWT_SECRET:-tara-staging-jwt-change-me}
+      BCRYPT_ROUNDS: 12
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://staging.tara.ralali.io,http://staging.tara.ralali.io}
+      REDIS_URL: redis://redis:6379
+      HERMES_ENABLED: ${HERMES_ENABLED:-false}
+      HERMES_API_KEY: ${HERMES_API_KEY:-}
+      KAPSO_API_KEY: ${KAPSO_API_KEY:-}
+      KAPSO_PHONE_NUMBER_ID: ${KAPSO_PHONE_NUMBER_ID:-}
+      KAPSO_BUSINESS_ACCOUNT_ID: ${KAPSO_BUSINESS_ACCOUNT_ID:-}
+      KAPSO_CONFIG_ID: ${KAPSO_CONFIG_ID:-}
+      KAPSO_BUSINESS_NUMBER: ${KAPSO_BUSINESS_NUMBER:-}
+      KAPSO_WEBHOOK_SECRET: ${KAPSO_WEBHOOK_SECRET:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-https://openrouter.ai/api/v1}
+      AI_MODEL: ${AI_MODEL:-deepseek-v4-flash}
+      DEMO_MODE: ${DEMO_MODE:-false}
+      SEED_ON_START: ${SEED_ON_START:-false}
+      SOP_UPLOAD_DIR: /var/data/tara/sop
+      ATTENDANCE_PHOTO_DIR: /var/data/tara/attendance
+      BRANDING_UPLOAD_DIR: /var/data/tara/branding
+      MEM0_DATA_DIR: /var/data/tara/mem0
+      NODE_OPTIONS: ${NODE_OPTIONS:---max-old-space-size=6144}
+    expose:
+      - "3001"
+    volumes:
+      - sop_data:/var/data/tara/sop
+      - attendance_data:/var/data/tara/attendance
+      - branding_data:/var/data/tara/branding
+      - mem0_data:/var/data/tara/mem0
+    networks:
+      - default
+      - tara_shared
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3001/health',(r)=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-https://staging.tara.ralali.io}
+    container_name: tara-staging-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./nginx.staging-internal.conf:/etc/nginx/conf.d/tara.conf:ro
+    networks:
+      - default
+      - tara_shared
+    # No host ports — reached via prod nginx → tara_shared network
+
+networks:
+  tara_shared:
+    external: true
+
+volumes:
+  pgdata:
+    name: tara_staging_pgdata
+  redisdata:
+    name: tara_staging_redisdata
+  sop_data:
+    name: tara_staging_sop_data
+  attendance_data:
+    name: tara_staging_attendance_data
+  branding_data:
+    name: tara_staging_branding_data
+  mem0_data:
+    name: tara_staging_mem0_data

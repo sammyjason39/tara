@@ -1,0 +1,13 @@
+# Optional overlay for production nginx — routes staging.tara.ralali.io to the staging stack.
+# Applied automatically when the shared Docker network exists on the VPS.
+services:
+  frontend:
+    networks:
+      - default
+      - tara_shared
+    volumes:
+      - ./nginx.staging-vhost.conf:/etc/nginx/conf.d/staging-vhost.conf:ro
+
+networks:
+  tara_shared:
+    external: true
