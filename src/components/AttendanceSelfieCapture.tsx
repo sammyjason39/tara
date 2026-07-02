@@ -2,23 +2,33 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Camera, Loader2, MapPin, RefreshCw, Sun, X } from "lucide-react";
 import {
   bindStreamToVideo,
+  isIOSCamera,
+  isVideoFrameReady,
   mapCameraError,
   requestFrontCameraStream,
   stopMediaStream,
 } from "@/lib/camera";
+import {
+  captureStampedSelfie,
+  fetchClientIp,
+  type AttendancePhotoStamp,
+} from "@/lib/attendance-photo-stamp";
 import { cn } from "@/lib/utils";
 
 type Step = "intro" | "camera" | "preview";
+
+export type AttendanceSelfieStampMeta = Omit<AttendancePhotoStamp, "capturedAt" | "clientIp" | "mode">;
 
 type Props = {
   open: boolean;
   mode: "in" | "out";
   officeName?: string | null;
+  stampMeta?: AttendanceSelfieStampMeta;
   onCapture: (dataUrl: string) => void;
   onCancel: () => void;
 };
 
-export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onCancel }: Props) {
+export function AttendanceSelfieCapture({ open, mode, officeName, stampMeta, onCapture, onCancel }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [step, setStep] = useState<Step>("intro");
@@ -26,6 +36,18 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
   const [error, setError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
   const [isVideoLive, setIsVideoLive] = useState(false);
+  const [clientIp, setClientIp] = useState<string | null>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const isIos = isIOSCamera();
+
+  const syncVideoReady = useCallback(() => {
+    const video = videoRef.current;
+    const stream = streamRef.current;
+    if (!video || !stream) return false;
+    const ready = isVideoFrameReady(video, stream);
+    setIsVideoLive(ready);
+    return ready;
+  }, []);
 
   const stopCamera = useCallback(() => {
     stopMediaStream(streamRef.current);
@@ -41,15 +63,20 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
 
     try {
       await bindStreamToVideo(video, stream);
-      setIsVideoLive(video.videoWidth > 0);
-      setError(null);
-      return video.videoWidth > 0;
+      const ready = syncVideoReady();
+      if (ready) setError(null);
+      return ready;
     } catch (err: unknown) {
+      // iOS may show preview before dimensions are reported — don't hard-fail if track is live.
+      if (isIOSCamera() && syncVideoReady()) {
+        setError(null);
+        return true;
+      }
       setIsVideoLive(false);
       setError(mapCameraError(err));
       return false;
     }
-  }, []);
+  }, [syncVideoReady]);
 
   const startCamera = useCallback(async () => {
     setIsStarting(true);
@@ -61,7 +88,6 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
     try {
       const stream = await requestFrontCameraStream();
       streamRef.current = stream;
-      // Video element only exists when step is "camera" — bind happens in useEffect below.
       setStep("camera");
     } catch (err: unknown) {
       setError(mapCameraError(err));
@@ -71,17 +97,24 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
     }
   }, [stopCamera]);
 
-  // Attach stream after <video> mounts (fixes blank preview on Android Chrome).
+  // Attach stream after <video> mounts (Android needs post-mount bind; iOS uses playing events).
   useEffect(() => {
     if (step !== "camera" || !streamRef.current) return;
 
     let cancelled = false;
     const run = async () => {
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-      if (cancelled) return;
+      const delayFrames = isIOSCamera() ? 1 : 2;
+      for (let i = 0; i < delayFrames; i++) {
+        await new Promise((r) => requestAnimationFrame(r));
+        if (cancelled) return;
+      }
       const ok = await bindActiveStream();
-      if (!cancelled && !ok && !error) {
-        setError("Kamera tidak menampilkan gambar. Tap Muat Ulang Kamera.");
+      if (!cancelled && !ok && !syncVideoReady()) {
+        setError(
+          isIOSCamera()
+            ? "Menunggu kamera iPhone... tap Muat Ulang jika tidak muncul."
+            : "Kamera tidak menampilkan gambar. Tap Muat Ulang Kamera.",
+        );
       }
     };
 
@@ -89,7 +122,35 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
     return () => {
       cancelled = true;
     };
-  }, [step, bindActiveStream, error]);
+  }, [step, bindActiveStream, syncVideoReady]);
+
+  // iOS Safari: keep polling + listen for playing until readiness is detected.
+  useEffect(() => {
+    if (step !== "camera" || !isIos) return;
+
+    const video = videoRef.current;
+    if (!video) return;
+
+    const recheck = () => syncVideoReady();
+
+    video.addEventListener("playing", recheck);
+    video.addEventListener("loadeddata", recheck);
+    video.addEventListener("loadedmetadata", recheck);
+    video.addEventListener("resize", recheck);
+    video.addEventListener("canplay", recheck);
+
+    const poll = window.setInterval(recheck, 200);
+    recheck();
+
+    return () => {
+      video.removeEventListener("playing", recheck);
+      video.removeEventListener("loadeddata", recheck);
+      video.removeEventListener("loadedmetadata", recheck);
+      video.removeEventListener("resize", recheck);
+      video.removeEventListener("canplay", recheck);
+      clearInterval(poll);
+    };
+  }, [step, isIos, syncVideoReady]);
 
   useEffect(() => {
     if (open) {
@@ -98,38 +159,64 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
       setError(null);
       setIsStarting(false);
       setIsVideoLive(false);
+      setIsCapturing(false);
+      void fetchClientIp().then(setClientIp);
     } else {
       stopCamera();
       setPreview(null);
       setError(null);
       setStep("intro");
+      setClientIp(null);
+      setIsCapturing(false);
     }
     return () => stopCamera();
   }, [open, stopCamera]);
 
-  const handleCapture = () => {
+  const handleCapture = async () => {
     const video = videoRef.current;
-    if (!video || !video.videoWidth) {
+    const stream = streamRef.current;
+    if (!video || !stream) {
       setError("Kamera belum siap. Tunggu preview muncul atau tap Muat Ulang Kamera.");
       return;
     }
 
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    ctx.drawImage(video, 0, 0);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-    if (!dataUrl || dataUrl.length < 200) {
-      setError("Gagal mengambil foto. Coba lagi.");
+    if (!isVideoFrameReady(video, stream) && !isIOSCamera()) {
+      setError("Kamera belum siap. Tunggu preview muncul atau tap Muat Ulang Kamera.");
       return;
     }
 
-    setPreview(dataUrl);
-    setStep("preview");
-    stopCamera();
+    setIsCapturing(true);
+    setError(null);
+
+    try {
+      let ip = clientIp;
+      if (!ip) {
+        ip = await fetchClientIp();
+        setClientIp(ip);
+      }
+
+      const dataUrl = captureStampedSelfie(
+        video,
+        {
+          employeeName: stampMeta?.employeeName || "Karyawan",
+          capturedAt: new Date(),
+          latitude: stampMeta?.latitude,
+          longitude: stampMeta?.longitude,
+          officeName: stampMeta?.officeName ?? officeName,
+          clientIp: ip,
+          mode,
+        },
+        stream,
+      );
+
+      setPreview(dataUrl);
+      setStep("preview");
+      stopCamera();
+    } catch {
+      setError("Gagal mengambil foto. Coba lagi.");
+    } finally {
+      setIsCapturing(false);
+    }
   };
 
   const handleRetake = () => {
@@ -146,6 +233,12 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
 
   const title = mode === "in" ? "Foto Clock In" : "Foto Clock Out";
   const showCameraUi = step === "camera" || step === "preview";
+  // iOS: preview may render before videoWidth is reported.
+  const showLiveVideo = step === "camera" && (isVideoLive || (isIos && !!streamRef.current));
+  const showConnectingOverlay = step === "camera" && !showLiveVideo && !isStarting;
+  const canCapture =
+    isVideoLive ||
+    (isIos && step === "camera" && !!streamRef.current && showLiveVideo && !isStarting);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in">
@@ -182,6 +275,10 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
                   <Camera className="h-4 w-4 shrink-0 mt-0.5 text-gold" />
                   <span>Posisikan wajah di tengah kamera tanpa masker atau topi.</span>
                 </li>
+                <li className="flex items-start gap-2.5">
+                  <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-gold" />
+                  <span>Foto akan otomatis berisi cap waktu, lokasi GPS, IP, dan nama Anda.</span>
+                </li>
               </ul>
             </div>
 
@@ -213,7 +310,9 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
             <p className="text-sm text-muted-foreground">
               {step === "preview"
                 ? "Periksa foto Anda. Pastikan wajah terlihat jelas sebelum mengirim."
-                : "Arahkan wajah ke kamera depan, lalu tap tombol di bawah."}
+                : isIos
+                  ? "Arahkan wajah ke kamera depan. Di iPhone, tunggu preview muncul lalu tap Ambil Foto."
+                  : "Arahkan wajah ke kamera depan, lalu tap tombol di bawah."}
             </p>
 
             <div
@@ -233,13 +332,15 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
                     autoPlay
                     className={cn(
                       "h-full w-full object-cover scale-x-[-1]",
-                      !isVideoLive && "opacity-0",
+                      !showLiveVideo && "opacity-0",
                     )}
                   />
-                  {!isVideoLive && !isStarting && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black text-center px-4">
+                  {showConnectingOverlay && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/80 text-center px-4">
                       <Loader2 className="h-8 w-8 text-gold animate-spin" />
-                      <p className="text-xs text-muted-foreground">Menghubungkan kamera...</p>
+                      <p className="text-xs text-muted-foreground">
+                        {isIos ? "Menghubungkan kamera iPhone..." : "Menghubungkan kamera..."}
+                      </p>
                     </div>
                   )}
                 </>
@@ -254,7 +355,7 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
 
             {error && <p className="text-sm text-destructive text-center">{error}</p>}
 
-            {step === "camera" && !isVideoLive && !isStarting && (
+            {step === "camera" && showConnectingOverlay && (
               <button
                 type="button"
                 onClick={() => void startCamera()}
@@ -287,11 +388,11 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
               ) : (
                 <button
                   type="button"
-                  onClick={handleCapture}
-                  disabled={isStarting || !isVideoLive}
+                  onClick={() => void handleCapture()}
+                  disabled={isStarting || !canCapture || isCapturing}
                   className="w-full py-3 rounded-lg bg-gold text-primary-foreground text-sm font-semibold disabled:opacity-50"
                 >
-                  Ambil Foto
+                  {isCapturing ? "Memproses foto..." : "Ambil Foto"}
                 </button>
               )}
             </div>

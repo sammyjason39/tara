@@ -563,6 +563,18 @@ export function MobileClockPage() {
         open={showSelfieCapture}
         mode={clockedIn ? "out" : "in"}
         officeName={geofenceInfo?.office_name}
+        stampMeta={
+          user && pendingPosition
+            ? {
+                employeeName: user.full_name,
+                latitude: pendingPosition.latitude,
+                longitude: pendingPosition.longitude,
+                officeName: geofenceInfo?.office_name,
+              }
+            : user
+              ? { employeeName: user.full_name, officeName: geofenceInfo?.office_name }
+              : undefined
+        }
         onCapture={handleSelfieCapture}
         onCancel={handleSelfieCancel}
       />

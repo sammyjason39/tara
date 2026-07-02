@@ -1,5 +1,6 @@
-import { Controller, Get, Res } from '@nestjs/common';
+import { Controller, Get, Req, Res } from '@nestjs/common';
 import { Response } from 'express';
+import type { Request } from 'express';
 import * as path from 'path';
 import { CompanyBrandingService } from '../services/company-branding.service';
 import { FeatureFlagsService } from '../services/feature-flags.service';
@@ -24,6 +25,19 @@ export class PublicController {
   async getFeatures() {
     const data = await this.featureFlags.getPublicFeatures();
     return { success: true, data };
+  }
+
+  @Get('client-ip')
+  getClientIp(@Req() req: Request) {
+    const forwarded = req.headers['x-forwarded-for'];
+    const ip =
+      (typeof forwarded === 'string' ? forwarded.split(',')[0]?.trim() : undefined) ||
+      (typeof req.headers['x-real-ip'] === 'string' ? req.headers['x-real-ip'] : undefined) ||
+      req.ip ||
+      req.socket?.remoteAddress ||
+      null;
+
+    return { success: true, data: { ip } };
   }
 
   @Get('logo')
