@@ -75,11 +75,15 @@ export type AiPendingActionType =
 
 export interface EmployeeAiContext {
   id: string;
+  employee_code?: string;
   full_name: string;
   email: string;
   role_name: string;
   department_name?: string;
   supervisor_id?: string;
+  supervisor_name?: string;
+  office_name?: string;
+  phone?: string;
   is_supervisor: boolean;
   is_hr_admin: boolean;
 }

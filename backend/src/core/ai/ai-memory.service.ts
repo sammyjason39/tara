@@ -60,6 +60,12 @@ export class AiMemoryService implements OnModuleDestroy {
     const trimmedAssistant = assistantMessage.trim();
     if (!trimmedUser || !trimmedAssistant) return;
 
+    // Skip mem0 extraction when user is only challenging identity / claiming a different name
+    if (/nama\s+saya|panggil\s+saya|saya\s+(ini\s+)?adalah|bukan\s+nama/i.test(trimmedUser)) {
+      this.logger.debug(`[MEM0] Skipping identity-claim message for ${employeeId}`);
+      return;
+    }
+
     try {
       await mem.add(
         [
@@ -103,6 +109,8 @@ export class AiMemoryService implements OnModuleDestroy {
         customInstructions:
           'Ekstrak fakta penting tentang karyawan HR: preferensi cuti, riwayat pertanyaan, ' +
           'kebiasaan kerja, dan konteks yang berguna untuk asisten HR di masa depan. ' +
+          'JANGAN simpan atau mengubah nama, identitas, NIK, atau klaim "nama saya X" dari user. ' +
+          'Identitas karyawan selalu diambil dari database TARA, bukan dari chat. ' +
           'Gunakan Bahasa Indonesia untuk teks memori.',
         embedder: {
           provider: 'langchain',

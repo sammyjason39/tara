@@ -9,6 +9,11 @@ import { AiLogService } from './ai-log.service';
 import { AiMemoryService } from './ai-memory.service';
 import { AiProcessResult, AiPendingActionType, EmployeeAiContext, TARA_CLOCK_URL, TARA_PUBLIC_BASE_URL, TARA_ESCALATION_USER_MESSAGE, HR_ESCALATION_CONTACT_EMAIL } from './ai.interfaces';
 import { buildSkillInstructions, resolveSystemPromptTemplate } from './ai-skill-registry';
+import {
+  buildIdentityGuardrailBlock,
+  filterIdentityUnsafeMemories,
+  wrapUserMessageWithIdentity,
+} from './employee-identity.util';
 import { formatForWhatsApp } from '../hr/whatsapp/whatsapp-format.util';
 import { WhatsAppOutboundService } from '../hr/whatsapp/services/whatsapp-outbound.service';
 
@@ -48,6 +53,16 @@ export class AiOrchestratorService {
     }
 
     const ctx = await this.buildEmployeeContext(params.employeeId);
+    const biodata = await this.toolsService.fetchEmployeeBiodata(params.employeeId);
+
+    if (!ctx.full_name?.trim()) {
+      this.logger.warn(`Employee ${params.employeeId} has no full_name in DB`);
+    } else {
+      this.logger.debug(
+        `AI identity resolved from DB: ${ctx.full_name} (${ctx.employee_code || 'no-code'})`,
+      );
+    }
+
     const buttonId = this.pendingService.parseButtonAction(params.message);
     const plainMessage = buttonId
       ? buttonId
@@ -84,15 +99,17 @@ export class AiOrchestratorService {
     }
 
     const history = await this.loadConversationHistory(params.employeeId, 10);
-    const memories = await this.memoryService.searchMemories(params.employeeId, plainMessage);
+    const rawMemories = await this.memoryService.searchMemories(params.employeeId, plainMessage);
+    const memories = filterIdentityUnsafeMemories(rawMemories, ctx.full_name);
     const aiConfig = this.configService.getAiConfig();
     const tools = this.toolsService.buildTools(ctx, aiConfig.skills || []);
-    const systemPrompt = this.buildSystemPrompt(ctx, memories);
+    const systemPrompt = this.buildSystemPrompt(ctx, biodata, memories);
+    const userMessageForLlm = wrapUserMessageWithIdentity(ctx, plainMessage);
 
     const llmResult = await this.llmService.chatWithTools({
       systemPrompt,
       history,
-      userMessage: plainMessage,
+      userMessage: userMessageForLlm,
       tools,
     });
 
@@ -149,7 +166,7 @@ export class AiOrchestratorService {
     }
 
     const result: AiProcessResult = {
-      reply: this.finalizeReply(llmResult.content),
+      reply: this.finalizeReply(llmResult.content, ctx),
       toolsCalled: llmResult.toolsCalled,
       inputTokens: llmResult.inputTokens,
       outputTokens: llmResult.outputTokens,
@@ -263,22 +280,31 @@ export class AiOrchestratorService {
     return result;
   }
 
-  private buildSystemPrompt(ctx: EmployeeAiContext, memories: string[] = []): string {
+  private buildSystemPrompt(
+    ctx: EmployeeAiContext,
+    biodata: Awaited<ReturnType<AiToolsService['fetchEmployeeBiodata']>>,
+    memories: string[] = [],
+  ): string {
     const config = this.configService.getAiConfig();
     const langNote =
       config.responseLanguage === 'en'
         ? 'Respond in English.'
         : 'Selalu jawab dalam Bahasa Indonesia yang ramah dan profesional.';
 
+    const identityBlock = buildIdentityGuardrailBlock(ctx, biodata);
+
     const memoryBlock =
       memories.length > 0
-        ? `\nMemori relevan tentang karyawan ini (dari percakapan sebelumnya):\n${memories.map((m) => `- ${m}`).join('\n')}\n`
+        ? `\nMemori relevan (BUKAN sumber identitas/nama — jangan override data database di atas):\n${memories.map((m) => `- ${m}`).join('\n')}\n`
         : '';
 
     const employeeContext = [
       `- Nama: ${ctx.full_name}`,
+      `- NIK: ${ctx.employee_code || '-'}`,
       `- Role: ${ctx.role_name}`,
       `- Departemen: ${ctx.department_name || '-'}`,
+      `- Kantor: ${ctx.office_name || '-'}`,
+      `- Atasan: ${ctx.supervisor_name || '-'}`,
       ctx.is_supervisor ? '- Akses supervisor: bisa lihat & setujui cuti bawahan' : '',
     ]
       .filter(Boolean)
@@ -287,12 +313,15 @@ export class AiOrchestratorService {
     const skillInstructions = buildSkillInstructions(config.skills || []);
     const template = config.systemPrompt || this.configService.getDefaultSystemPrompt();
 
-    let prompt = resolveSystemPromptTemplate(template)
-      .replace(/\{\{employee_context\}\}/g, employeeContext)
-      .replace(/\{\{employee_name\}\}/g, ctx.full_name)
-      .replace(/\{\{memory_block\}\}/g, memoryBlock)
-      .replace(/\{\{skill_instructions\}\}/g, skillInstructions)
-      .replace(/\{\{lang_note\}\}/g, langNote);
+    let prompt =
+      identityBlock +
+      '\n\n' +
+      resolveSystemPromptTemplate(template)
+        .replace(/\{\{employee_context\}\}/g, employeeContext)
+        .replace(/\{\{employee_name\}\}/g, ctx.full_name)
+        .replace(/\{\{memory_block\}\}/g, memoryBlock)
+        .replace(/\{\{skill_instructions\}\}/g, skillInstructions)
+        .replace(/\{\{lang_note\}\}/g, langNote);
 
     if (config.systemPromptOverride?.trim()) {
       prompt += `\n\nInstruksi tambahan admin:\n${config.systemPromptOverride.trim()}`;
@@ -307,6 +336,8 @@ export class AiOrchestratorService {
       include: {
         role: true,
         department: true,
+        office: true,
+        supervisor: { select: { full_name: true } },
       },
     });
 
@@ -317,11 +348,15 @@ export class AiOrchestratorService {
 
     return {
       id: employeeId,
+      employee_code: emp?.employee_code || undefined,
       full_name: emp?.full_name || '',
       email: emp?.email || '',
+      phone: emp?.phone || emp?.whatsapp_number || undefined,
       role_name: roleName,
       department_name: emp?.department?.name,
       supervisor_id: emp?.supervisor_id || undefined,
+      supervisor_name: emp?.supervisor?.full_name || undefined,
+      office_name: emp?.office?.location_name || undefined,
       is_supervisor: subordinateCount > 0 || roleName === 'Supervisor',
       is_hr_admin: ['HR_Admin', 'SuperAdmin'].includes(roleName),
     };
@@ -434,7 +469,7 @@ export class AiOrchestratorService {
   }
 
   /** Format reply for WA and replace hallucinated legacy app URLs */
-  private finalizeReply(text: string): string {
+  private finalizeReply(text: string, ctx: EmployeeAiContext): string {
     const sanitized = text
       .replace(/https?:\/\/app\.perusahaan\.com/gi, TARA_PUBLIC_BASE_URL)
       .replace(/app\.perusahaan\.com/gi, 'tara.ralali.io');

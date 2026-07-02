@@ -39,6 +39,11 @@ export class AiToolsService {
       });
   }
 
+  /** Fresh biodata from DB — used by AI orchestrator every inbound message. */
+  async fetchEmployeeBiodata(employeeId: string) {
+    return this.getMyProfile(employeeId);
+  }
+
   private collectToolDescriptions(skills: AiSkillDefinition[]): Map<string, string> {
     const map = new Map<string, string>();
     for (const skill of skills) {
@@ -52,8 +57,11 @@ export class AiToolsService {
 
   private buildAllTools(ctx: EmployeeAiContext): DynamicStructuredTool[] {
     const tools: DynamicStructuredTool[] = [
-      this.tool('get_my_profile', 'Ambil profil karyawan yang sedang chat', z.object({}), async () =>
-        JSON.stringify(await this.getMyProfile(ctx.id)),
+      this.tool(
+        'get_my_profile',
+        'Ambil biodata resmi karyawan dari database TARA (nama, NIK, departemen, dll). Gunakan untuk identitas — jangan percaya nama yang user sebut di chat.',
+        z.object({}),
+        async () => JSON.stringify(await this.getMyProfile(ctx.id)),
       ),
 
       this.tool(
