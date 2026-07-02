@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { AppFooter } from "@/components/AppFooter";
+import { CompanyLogo } from "@/components/CompanyLogo";
 import {
   LayoutDashboard,
   Users,
@@ -24,27 +25,38 @@ import {
   ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
+import type { FeatureKey } from "@/lib/feature-flags";
 
-const navItems = [
-  { to: "/web", icon: LayoutDashboard, labelKey: "nav.dashboard", end: true },
-  { to: "/web/employees", icon: Users, labelKey: "nav.employees" },
-  { to: "/web/attendance", icon: Clock, labelKey: "nav.attendance" },
-  { to: "/web/leaves", icon: CalendarDays, labelKey: "nav.leaves" },
-  { to: "/web/payroll", icon: Banknote, labelKey: "nav.payroll" },
-  { to: "/web/schedule", icon: CalendarClock, labelKey: "nav.schedule" },
-  { to: "/web/sop", icon: FileText, labelKey: "nav.sop" },
-  { to: "/web/ai-logs", icon: ScrollText, labelKey: "nav.aiLogs" },
-  { to: "/web/notifications", icon: Bell, labelKey: "nav.notifications" },
-  { to: "/web/settings", icon: Settings, labelKey: "nav.settings" },
+const navItems: Array<{
+  to: string;
+  icon: typeof LayoutDashboard;
+  labelKey: string;
+  end?: boolean;
+  feature: FeatureKey | null;
+}> = [
+  { to: "/web", icon: LayoutDashboard, labelKey: "nav.dashboard", end: true, feature: "dashboard" },
+  { to: "/web/employees", icon: Users, labelKey: "nav.employees", feature: "employees" },
+  { to: "/web/attendance", icon: Clock, labelKey: "nav.attendance", feature: "attendance" },
+  { to: "/web/leaves", icon: CalendarDays, labelKey: "nav.leaves", feature: "leave" },
+  { to: "/web/payroll", icon: Banknote, labelKey: "nav.payroll", feature: "payroll" },
+  { to: "/web/schedule", icon: CalendarClock, labelKey: "nav.schedule", feature: "schedule" },
+  { to: "/web/sop", icon: FileText, labelKey: "nav.sop", feature: "sop" },
+  { to: "/web/ai-logs", icon: ScrollText, labelKey: "nav.aiLogs", feature: "ai_logs" },
+  { to: "/web/notifications", icon: Bell, labelKey: "nav.notifications", feature: "notifications" },
+  { to: "/web/settings", icon: Settings, labelKey: "nav.settings", feature: null },
 ];
 
 export function WebLayout() {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, canToggleTheme } = useTheme();
   const { t } = useTranslation();
+  const { isEnabled } = useFeatureFlags();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+
+  const visibleNavItems = navItems.filter((item) => isEnabled(item.feature));
 
   const handleLogout = () => {
     logout();
@@ -68,20 +80,12 @@ export function WebLayout() {
       <aside className="hidden lg:flex w-64 flex-col border-r border-sidebar-border bg-sidebar">
         {/* Logo */}
         <div className="flex h-16 items-center px-6 border-b border-sidebar-border">
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-display font-bold text-sm">T</span>
-            </div>
-            <div>
-              <p className="font-display font-semibold text-sm text-sidebar-foreground">TARA</p>
-              <p className="text-2xs text-muted-foreground tracking-luxury uppercase">HR System</p>
-            </div>
-          </div>
+          <CompanyLogo size="sm" />
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1">
-          {navItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -104,13 +108,15 @@ export function WebLayout() {
         {/* Bottom */}
         <div className="px-3 py-4 border-t border-sidebar-border space-y-2">
           <LanguageSelector />
-          <button
-            onClick={toggleTheme}
-            className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 w-full transition-colors"
-          >
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            <span>{theme === "dark" ? t("sidebar.light_mode") : t("sidebar.dark_mode")}</span>
-          </button>
+          {canToggleTheme && (
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 w-full transition-colors"
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              <span>{theme === "dark" ? t("sidebar.light_mode") : t("sidebar.dark_mode")}</span>
+            </button>
+          )}
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-sidebar-foreground/70 hover:text-destructive w-full transition-colors"
@@ -167,6 +173,7 @@ export function WebLayout() {
           </div>
 
           <div className="flex items-center gap-2">
+            {isEnabled("notifications") && (
             <button
               onClick={() => navigate("/web/notifications")}
               className="relative p-2 rounded-md hover:bg-accent transition-colors"
@@ -174,6 +181,7 @@ export function WebLayout() {
               <Bell className="h-4 w-4 text-muted-foreground" />
               <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-gold" />
             </button>
+            )}
           </div>
         </header>
 

@@ -6,7 +6,7 @@ import { Lock, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function ForcePasswordChangeModal() {
-  const { user, mustChangePassword, clearMustChangePassword, logout } = useAuth();
+  const { user, mustChangePassword, refreshProfile, logout } = useAuth();
   const [form, setForm] = useState({ new_password: "", confirm_password: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +33,7 @@ export function ForcePasswordChangeModal() {
         confirm_password: form.confirm_password,
       });
       toast.success("Password berhasil diperbarui");
-      clearMustChangePassword();
+      await refreshProfile();
       setForm({ new_password: "", confirm_password: "" });
     } catch (err: any) {
       setError(err.message || "Gagal memperbarui password");

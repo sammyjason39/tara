@@ -26,6 +26,8 @@ model Employee {
   password_hash        String?
   pin_hash             String?   // 6-digit PIN hash for attendance verification
   must_change_password Boolean  @default(false)
+  password_changed_at  DateTime? // Set on first successful password change — stops force-change prompts
+  pin_changed_at       DateTime? // Last PIN update — used for monthly rotation reminder
   department_id        String?
   role_id              String?
   supervisor_id        String?
@@ -50,7 +52,7 @@ model Employee {
   attendance_records      Attendance[]
   leave_requests          LeaveRequest[]       @relation("EmployeeLeaveRequests")
   approved_leave_requests LeaveRequest[]       @relation("LeaveApprover")
-  leave_balance           LeaveBalance?
+  leave_balances          LeaveBalance[]
   notifications           Notification[]
   warning_letters         WarningLetter[]      @relation("WarningLetterRecipient")
   issued_warnings         WarningLetter[]      @relation("WarningLetterIssuer")
@@ -163,7 +165,7 @@ model LeaveRequest {
   is_paid          Boolean   @default(true) // false for unpaid leave
   start_date       DateTime  @db.Date
   end_date         DateTime  @db.Date
-  total_days       Int
+  total_days       Decimal  @db.Decimal(6, 2)
   reason           String?
   status           String    @default("pending") // 'pending', 'approved', 'rejected', 'cancelled'
   submitted_at     DateTime  @default(now())
@@ -187,12 +189,12 @@ model LeaveRequest {
 
 model LeaveBalance {
   id                    String    @id @default(uuid())
-  employee_id           String    @unique
+  employee_id           String
   year                  Int
-  total_entitlement     Int
-  used_days             Int       @default(0)
-  remaining_days        Int
-  carryover_days        Int       @default(0)
+  total_entitlement     Decimal   @db.Decimal(8, 2)
+  used_days             Decimal   @default(0) @db.Decimal(8, 2)
+  remaining_days        Decimal   @db.Decimal(8, 2)
+  carryover_days        Decimal   @default(0) @db.Decimal(8, 2)
   carryover_expiry_date DateTime? @db.Date
   last_calculated_at    DateTime  @default(now())
   created_at            DateTime  @default(now())
@@ -510,6 +512,7 @@ model WorkSchedule {
   break_start   String?  // "12:00"
   break_end     String?  // "13:00"
   work_days     Json     // [1,2,3,4,5] = Mon-Fri
+  daily_breaks  Json?    // e.g. { "5": { "break_start": "11:30", "break_end": "13:30" } }
   is_default    Boolean  @default(false)
   is_active     Boolean  @default(true)
   created_at    DateTime @default(now())

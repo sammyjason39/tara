@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { FileText, Search, X, Download, FolderOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SopPdfEmbed, downloadSopFile } from "@/components/SopPdfEmbed";
+import { toast } from "sonner";
 
 export function MobileSopPage() {
   const [search, setSearch] = useState("");
@@ -29,7 +31,6 @@ export function MobileSopPage() {
   };
 
   if (viewingDoc) {
-    const pdfUrl = `/api/sop/${viewingDoc.id}/file`;
     return (
       <div className="flex flex-col h-full">
         {/* Header */}
@@ -39,14 +40,19 @@ export function MobileSopPage() {
             <p className="text-2xs text-muted-foreground">{viewingDoc.file_name}</p>
           </div>
           <div className="flex items-center gap-1 shrink-0 ml-2">
-            <a
-              href={pdfUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await downloadSopFile(viewingDoc.id, viewingDoc.file_name);
+                } catch {
+                  toast.error("Gagal mengunduh file PDF");
+                }
+              }}
               className="p-2 rounded-md hover:bg-accent"
             >
               <Download className="h-4 w-4 text-muted-foreground" />
-            </a>
+            </button>
             <button onClick={() => setViewingDoc(null)} className="p-2 rounded-md hover:bg-accent">
               <X className="h-4 w-4 text-muted-foreground" />
             </button>
@@ -54,11 +60,7 @@ export function MobileSopPage() {
         </div>
         {/* PDF */}
         <div className="flex-1 bg-muted">
-          <iframe
-            src={pdfUrl}
-            className="w-full h-full border-0"
-            title={viewingDoc.title}
-          />
+          <SopPdfEmbed docId={viewingDoc.id} title={viewingDoc.title} />
         </div>
       </div>
     );

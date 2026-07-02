@@ -63,9 +63,11 @@ export class TaraLeaveController {
       start_date: string;
       end_date: string;
       reason?: string;
+      half_day?: boolean;
+      total_days?: number;
     },
   ) {
-    const { employee_id, leave_type, start_date, end_date, reason } = body;
+    const { employee_id, leave_type, start_date, end_date, reason, half_day, total_days } = body;
 
     // Validate required fields
     if (!employee_id || !leave_type || !start_date || !end_date) {
@@ -89,6 +91,8 @@ export class TaraLeaveController {
         start_date: startDate,
         end_date: endDate,
         reason,
+        half_day,
+        total_days,
       });
 
       return {

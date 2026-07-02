@@ -10,7 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export function ProfilePage() {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
   // Profile edit state
@@ -43,8 +43,8 @@ export function ProfilePage() {
       toast.error("Password lama dan baru wajib diisi");
       return;
     }
-    if (passwords.new_password.length < 6) {
-      toast.error("Password baru minimal 6 karakter");
+    if (passwords.new_password.length < 8) {
+      toast.error("Password baru minimal 8 karakter");
       return;
     }
     if (passwords.new_password !== passwords.confirm) {
@@ -57,12 +57,11 @@ export function ProfilePage() {
         new_password: passwords.new_password,
       });
       toast.success("Password berhasil diubah");
+      await refreshProfile();
       setPasswords({ current: "", new_password: "", confirm: "" });
       setShowPasswordSection(false);
     } catch (err: any) {
-      toast.success("Password berhasil diubah (demo)");
-      setPasswords({ current: "", new_password: "", confirm: "" });
-      setShowPasswordSection(false);
+      toast.error(err?.message || "Gagal mengubah password");
     }
   };
 

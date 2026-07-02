@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../../../persistence/prisma.service';
+import { toLeaveDays, LeaveDaysInput } from '../../../shared/utils/leave-days.util';
 import {
   NotificationService,
   TaraNotificationType,
@@ -234,16 +235,16 @@ export class SaldoCutiAgent {
       leave_type: req.leave_type,
       start_date: this.formatDate(req.start_date),
       end_date: this.formatDate(req.end_date),
-      total_days: req.total_days,
+      total_days: toLeaveDays(req.total_days),
     }));
 
     // Derive used days from the approved requests and apply carryover rules.
     const approvedDaysInYear = this.sumTotalDays(approvedYearRequests);
     const derived = this.deriveBalance({
-      totalEntitlement: balance?.total_entitlement ?? 0,
-      carryoverDays: balance?.carryover_days ?? 0,
+      totalEntitlement: toLeaveDays(balance?.total_entitlement),
+      carryoverDays: toLeaveDays(balance?.carryover_days),
       carryoverExpiryDate: balance?.carryover_expiry_date ?? null,
-      storedUsedDays: balance?.used_days ?? 0,
+      storedUsedDays: toLeaveDays(balance?.used_days),
       approvedDaysInYear,
     });
 
@@ -261,10 +262,10 @@ export class SaldoCutiAgent {
       year: targetYear,
       // Edge case: no balance record yet -> report zeroed entitlement (Req 7.2).
       has_balance: balance !== null,
-      total_entitlement: balance?.total_entitlement ?? 0,
-      used_days: balance?.used_days ?? 0,
-      remaining_days: balance?.remaining_days ?? 0,
-      carryover_days: balance?.carryover_days ?? 0,
+      total_entitlement: toLeaveDays(balance?.total_entitlement),
+      used_days: toLeaveDays(balance?.used_days),
+      remaining_days: toLeaveDays(balance?.remaining_days),
+      carryover_days: toLeaveDays(balance?.carryover_days),
       carryover_expiry_date: balance?.carryover_expiry_date
         ? this.formatDate(balance.carryover_expiry_date)
         : null,
@@ -341,10 +342,10 @@ export class SaldoCutiAgent {
 
     const approvedDaysInYear = this.sumTotalDays(approvedYearRequests);
     const derived = this.deriveBalance({
-      totalEntitlement: balance?.total_entitlement ?? 0,
-      carryoverDays: balance?.carryover_days ?? 0,
+      totalEntitlement: toLeaveDays(balance?.total_entitlement),
+      carryoverDays: toLeaveDays(balance?.carryover_days),
       carryoverExpiryDate: balance?.carryover_expiry_date ?? null,
-      storedUsedDays: balance?.used_days ?? 0,
+      storedUsedDays: toLeaveDays(balance?.used_days),
       approvedDaysInYear,
     });
 
@@ -352,16 +353,16 @@ export class SaldoCutiAgent {
       employee_id: employeeId,
       year: targetYear,
       has_balance: balance !== null,
-      total_entitlement: balance?.total_entitlement ?? 0,
-      carryover_days: balance?.carryover_days ?? 0,
+      total_entitlement: toLeaveDays(balance?.total_entitlement),
+      carryover_days: toLeaveDays(balance?.carryover_days),
       carryover_valid_days: derived.carryoverValidDays,
       carryover_expired: derived.carryoverExpired,
       carryover_expiry_date: balance?.carryover_expiry_date
         ? this.formatDate(balance.carryover_expiry_date)
         : null,
       computed_used_days: derived.computedUsedDays,
-      stored_used_days: balance?.used_days ?? 0,
-      stored_remaining_days: balance?.remaining_days ?? 0,
+      stored_used_days: toLeaveDays(balance?.used_days),
+      stored_remaining_days: toLeaveDays(balance?.remaining_days),
       available_balance: derived.availableBalance,
       reconciled: derived.reconciled,
     };
@@ -428,8 +429,8 @@ export class SaldoCutiAgent {
   }
 
   /** Sum the total_days across a list of leave-request rows. */
-  private sumTotalDays(rows: Array<{ total_days: number }>): number {
-    return rows.reduce((sum, row) => sum + (row.total_days ?? 0), 0);
+  private sumTotalDays(rows: Array<{ total_days: LeaveDaysInput }>): number {
+    return rows.reduce((sum, row) => sum + toLeaveDays(row.total_days), 0);
   }
 
   /** Return a copy of the date normalised to 00:00 local time. */

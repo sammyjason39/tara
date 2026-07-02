@@ -22,13 +22,21 @@ fi
 # Run Prisma migrations
 echo "[2/4] Running database migrations..."
 npx prisma migrate deploy || {
-  echo "  Migrations failed — trying db push as fallback..."
-  npx prisma db push --accept-data-loss 2>/dev/null || true
+  echo "  ERROR: Migrations failed. Refusing to run db push --accept-data-loss in production."
+  echo "  Fix the migration issue manually. Data is preserved."
+  exit 1
 }
 
-# Seed default data if first run
-echo "[3/4] Seeding default configuration..."
-node dist/scripts/seed-defaults.js 2>/dev/null || echo "  (No seed script or already seeded)"
+# Seed defaults only when explicitly requested (first install / dev)
+if [ "${SEED_ON_START:-false}" = "true" ]; then
+  echo "[3/4] Seeding default configuration (SEED_ON_START=true)..."
+  node dist/scripts/seed-defaults.js || {
+    echo "  Seed script failed"
+    exit 1
+  }
+else
+  echo "[3/4] Skipping seed (set SEED_ON_START=true for first-time setup only)"
+fi
 
 # Start the application
 echo "[4/4] Starting TARA Backend..."

@@ -111,8 +111,6 @@ async function main() {
   await prisma.employee.upsert({
     where: { email: 'sari@majubersama.com' },
     update: {
-      password_hash: passwordHash,
-      must_change_password: true,
       whatsapp_number: ownerWa,
       whatsapp_opted_in: true,
       whatsapp_verified: true,
@@ -142,8 +140,6 @@ async function main() {
   await prisma.employee.upsert({
     where: { email: 'budi@majubersama.com' },
     update: {
-      password_hash: passwordHash,
-      must_change_password: true,
       supervisor_id: sariId,
       whatsapp_number: '6281234567891',
       whatsapp_opted_in: true,
@@ -175,8 +171,6 @@ async function main() {
   await prisma.employee.upsert({
     where: { email: 'rina@majubersama.com' },
     update: {
-      password_hash: passwordHash,
-      must_change_password: true,
       supervisor_id: budiId,
       whatsapp_number: '6281234567892',
       whatsapp_opted_in: true,
@@ -208,8 +202,6 @@ async function main() {
   await prisma.employee.upsert({
     where: { email: 'samuel@conextlab.ai' },
     update: {
-      password_hash: passwordHash,
-      must_change_password: true,
       full_name: 'Samuel Jason',
       phone: '087728589845',
       whatsapp_number: samuelWa,
@@ -277,7 +269,7 @@ async function main() {
   for (const s of aiSettings) {
     await prisma.systemSettings.upsert({
       where: { setting_key: s.key },
-      update: { setting_value: s.value, setting_category: s.category },
+      update: {},
       create: {
         setting_key: s.key,
         setting_value: s.value,
@@ -320,7 +312,7 @@ async function main() {
   for (const s of waSettings) {
     await prisma.systemSettings.upsert({
       where: { setting_key: s.key },
-      update: { setting_value: s.value, setting_category: s.category },
+      update: {},
       create: {
         setting_key: s.key,
         setting_value: s.value,
@@ -390,6 +382,55 @@ async function main() {
     });
   }
   console.log('[SEED] ✓ System settings seeded');
+
+  // === 8b. Company profile & branding defaults ===
+  const companySettings = [
+    { key: 'company.name', value: 'PT. Maju Bersama', category: 'company' },
+    { key: 'company.legal_name', value: 'PT. Maju Bersama Sejahtera', category: 'company' },
+    { key: 'company.industry', value: 'Teknologi Informasi', category: 'company' },
+    {
+      key: 'company.branding',
+      value: {
+        light: { primary: '#1a2332', background: '#faf9f7', accent: '#d4a037' },
+        dark: { primary: '#ebe9e6', background: '#0f1117', accent: '#e0a845' },
+        dark_mode_enabled: true,
+        forced_theme: 'light',
+        default_theme: 'light',
+      },
+      category: 'company',
+    },
+    {
+      key: 'company.enabled_modules',
+      value: {
+        dashboard: true,
+        employees: true,
+        attendance: true,
+        leave: true,
+        payroll: true,
+        loans: true,
+        schedule: true,
+        sop: true,
+        notifications: true,
+        ai_assistant: true,
+        ai_logs: true,
+      },
+      category: 'company',
+    },
+  ];
+
+  for (const s of companySettings) {
+    await prisma.systemSettings.upsert({
+      where: { setting_key: s.key },
+      update: {},
+      create: {
+        setting_key: s.key,
+        setting_value: s.value as any,
+        setting_category: s.category,
+        description: 'Company profile / branding',
+      },
+    });
+  }
+  console.log('[SEED] ✓ Company branding seeded');
 
   // === 9. Sample SOP PDF for RAG testing ===
   const uploadDir =

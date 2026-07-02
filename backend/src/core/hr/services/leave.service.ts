@@ -4,6 +4,11 @@ import { EventBusService } from './event-bus.service';
 import { NotificationService } from './notification.service';
 import { LeaveRequestAgent } from '../agents/leave-request.agent';
 import { CacheAsideService } from '../../../shared/cache/cache-aside.service';
+import {
+  assertValidLeaveDays,
+  formatLeaveDays,
+  toLeaveDays,
+} from '../../../shared/utils/leave-days.util';
 
 /**
  * LeaveService for TARA HR System
@@ -51,8 +56,10 @@ export class LeaveService {
     start_date: Date;
     end_date: Date;
     reason?: string;
+    half_day?: boolean;
+    total_days?: number;
   }): Promise<any> {
-    const { employee_id, leave_type, start_date, end_date, reason } = data;
+    const { employee_id, leave_type, start_date, end_date, reason, half_day, total_days: totalDaysOverride } = data;
 
     this.logger.log(
       `Processing leave request submission for employee ${employee_id}: ${leave_type} from ${start_date.toISOString()} to ${end_date.toISOString()}`,
@@ -64,7 +71,24 @@ export class LeaveService {
     }
 
     // Calculate total days excluding weekends and public holidays
-    const total_days = await this.calculateTotalDays(start_date, end_date);
+    let total_days: number;
+    if (totalDaysOverride !== undefined) {
+      total_days = toLeaveDays(totalDaysOverride);
+      try {
+        assertValidLeaveDays(total_days);
+      } catch (err: any) {
+        throw new BadRequestException(err.message);
+      }
+    } else if (
+      half_day &&
+      start_date.toDateString() === end_date.toDateString()
+    ) {
+      total_days = await this.calculateTotalDays(start_date, end_date, {
+        half_day: true,
+      });
+    } else {
+      total_days = await this.calculateTotalDays(start_date, end_date);
+    }
 
     if (total_days <= 0) {
       throw new BadRequestException(
@@ -103,8 +127,10 @@ export class LeaveService {
       );
     }
 
+    const remaining = toLeaveDays(leaveBalance.remaining_days);
+
     // Edge case: Zero days remaining
-    if (leaveBalance.remaining_days === 0) {
+    if (remaining <= 0) {
       this.logger.warn(
         `Employee ${employee_id} has zero remaining leave days`,
       );
@@ -117,14 +143,14 @@ export class LeaveService {
       );
 
       throw new BadRequestException(
-        `You have no remaining leave days. Requested: ${total_days} days, Available: 0 days. Total entitlement: ${leaveBalance.total_entitlement} days, Used: ${leaveBalance.used_days} days.`,
+        `You have no remaining leave days. Requested: ${formatLeaveDays(total_days)} days, Available: 0 days. Total entitlement: ${formatLeaveDays(leaveBalance.total_entitlement)} days, Used: ${formatLeaveDays(leaveBalance.used_days)} days.`,
       );
     }
 
     // Check if employee has sufficient balance
-    if (leaveBalance.remaining_days < total_days) {
+    if (remaining < total_days) {
       this.logger.warn(
-        `Insufficient leave balance for employee ${employee_id}: requested ${total_days} days, available ${leaveBalance.remaining_days} days`,
+        `Insufficient leave balance for employee ${employee_id}: requested ${total_days} days, available ${remaining} days`,
       );
 
       // Send rejection notification with balance information
@@ -135,7 +161,7 @@ export class LeaveService {
       );
 
       throw new BadRequestException(
-        `Insufficient leave balance. Requested: ${total_days} days, Available: ${leaveBalance.remaining_days} days. Total entitlement: ${leaveBalance.total_entitlement} days, Used: ${leaveBalance.used_days} days.`,
+        `Insufficient leave balance. Requested: ${formatLeaveDays(total_days)} days, Available: ${formatLeaveDays(remaining)} days. Total entitlement: ${formatLeaveDays(leaveBalance.total_entitlement)} days, Used: ${formatLeaveDays(leaveBalance.used_days)} days.`,
       );
     }
 
@@ -191,11 +217,11 @@ export class LeaveService {
           reason: leaveRequest.reason,
           status: leaveRequest.status,
           submitted_at: leaveRequest.submitted_at.toISOString(),
-          remaining_balance: leaveBalance.remaining_days - total_days, // Projected balance after approval
+          remaining_balance: toLeaveDays(leaveBalance.remaining_days) - total_days,
         },
         metadata: {
           department_id: leaveRequest.employee.department_id,
-          current_balance: leaveBalance.remaining_days,
+          current_balance: toLeaveDays(leaveBalance.remaining_days),
         },
       });
 
@@ -242,6 +268,7 @@ export class LeaveService {
   private async calculateTotalDays(
     start_date: Date,
     end_date: Date,
+    options?: { half_day?: boolean },
   ): Promise<number> {
     // Fetch all active public holidays in the date range
     const publicHolidays = await this.prisma.publicHoliday.findMany({
@@ -262,6 +289,8 @@ export class LeaveService {
     let totalDays = 0;
     const currentDate = new Date(start_date);
     const endDateTime = new Date(end_date);
+    const isSingleDay =
+      start_date.toDateString() === end_date.toDateString();
 
     // Iterate through each day in the range
     while (currentDate <= endDateTime) {
@@ -275,7 +304,11 @@ export class LeaveService {
       const isPublicHoliday = holidayDates.has(dateString);
 
       if (!isWeekend && !isPublicHoliday) {
-        totalDays++;
+        if (options?.half_day && isSingleDay) {
+          totalDays += 0.5;
+        } else {
+          totalDays += 1;
+        }
       }
 
       // Move to next day
@@ -545,7 +578,9 @@ export class LeaveService {
           },
           metadata: {
             department_id: result.updatedRequest.employee.department_id,
-            previous_balance: result.updatedBalance.remaining_days + leaveRequest.total_days,
+            previous_balance:
+              toLeaveDays(result.updatedBalance.remaining_days) +
+              toLeaveDays(leaveRequest.total_days),
           },
         });
 

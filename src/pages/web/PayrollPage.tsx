@@ -1,19 +1,30 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
 import { Banknote, Plus, FileText, CreditCard, ChevronRight, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const tabs = [
+const allTabs = [
   { id: "periods", label: "Periode Gaji" },
   { id: "components", label: "Komponen" },
-  { id: "loans", label: "Pinjaman / Kasbon" },
+  { id: "loans", label: "Pinjaman / Kasbon", feature: "loans" as const },
 ];
 
 export function PayrollPage() {
   const [activeTab, setActiveTab] = useState("periods");
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const { isEnabled } = useFeatureFlags();
+
+  const tabs = useMemo(
+    () => allTabs.filter((t) => !t.feature || isEnabled(t.feature)),
+    [isEnabled],
+  );
+
+  const effectiveTab = tabs.some((t) => t.id === activeTab)
+    ? activeTab
+    : tabs[0]?.id ?? "periods";
 
   const handleMainAction = () => {
     setShowCreateForm(true);
@@ -26,13 +37,13 @@ export function PayrollPage() {
           <h1 className="text-luxury-heading text-2xl">Penggajian</h1>
           <p className="text-sm text-muted-foreground mt-1">Kelola payroll, slip gaji, dan pinjaman karyawan</p>
         </div>
-        {activeTab !== "loans" && (
+        {effectiveTab !== "loans" && (
           <button
             onClick={handleMainAction}
             className="flex items-center gap-2 px-4 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
           >
             <Plus className="h-4 w-4" />
-            {activeTab === "periods" ? "Buat Periode" : "Tambah Komponen"}
+            {effectiveTab === "periods" ? "Buat Periode" : "Tambah Komponen"}
           </button>
         )}
       </div>
@@ -45,7 +56,7 @@ export function PayrollPage() {
             onClick={() => { setActiveTab(t.id); setShowCreateForm(false); }}
             className={cn(
               "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
-              activeTab === t.id ? "bg-card shadow-luxury text-foreground" : "text-muted-foreground hover:text-foreground"
+              effectiveTab === t.id ? "bg-card shadow-luxury text-foreground" : "text-muted-foreground hover:text-foreground"
             )}
           >
             {t.label}
@@ -53,9 +64,9 @@ export function PayrollPage() {
         ))}
       </div>
 
-      {activeTab === "periods" && <PeriodsView showForm={showCreateForm} onCloseForm={() => setShowCreateForm(false)} />}
-      {activeTab === "components" && <ComponentsView showForm={showCreateForm} onCloseForm={() => setShowCreateForm(false)} />}
-      {activeTab === "loans" && <LoansView />}
+      {effectiveTab === "periods" && <PeriodsView showForm={showCreateForm} onCloseForm={() => setShowCreateForm(false)} />}
+      {effectiveTab === "components" && <ComponentsView showForm={showCreateForm} onCloseForm={() => setShowCreateForm(false)} />}
+      {effectiveTab === "loans" && <LoansView />}
     </div>
   );
 }

@@ -5,25 +5,21 @@ import { api } from "@/lib/api";
 import {
   requestDeviceLocation,
   getLocationEnvironment,
+  queryGeolocationPermission,
   type GeoPosition,
   type LocationEnvironment,
 } from "@/lib/geolocation";
-import { MapPin, Lock, CheckCircle2, AlertTriangle, Loader2, X, ExternalLink } from "lucide-react";
+import { MapPin, Lock, CheckCircle2, AlertTriangle, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AttendanceSelfieCapture } from "@/components/AttendanceSelfieCapture";
 
 type LocationPermissionState = "unknown" | "prompt" | "granted" | "denied" | "unsupported";
 
 async function queryLocationPermission(): Promise<LocationPermissionState> {
-  if (!navigator.geolocation) return "unsupported";
-  if (!navigator.permissions?.query) return "unknown";
-
-  try {
-    const status = await navigator.permissions.query({ name: "geolocation" });
-    return status.state as LocationPermissionState;
-  } catch {
-    return "unknown";
-  }
+  const state = await queryGeolocationPermission();
+  if (state === "unsupported") return "unsupported";
+  if (state === "unknown") return "unknown";
+  return state as LocationPermissionState;
 }
 
 function PinDialog({
@@ -141,46 +137,6 @@ function PinDialog({
   );
 }
 
-function EnvironmentBanner({ env }: { env: LocationEnvironment }) {
-  if (!env.issue) return null;
-
-  const isHint = env.issue === "ios_chrome";
-
-  return (
-    <div
-      className={cn(
-        "rounded-lg border p-4 space-y-2",
-        isHint ? "border-gold/30 bg-gold/5" : "border-warning/40 bg-warning/10",
-      )}
-    >
-      <div className="flex items-start gap-2">
-        <AlertTriangle className={cn("h-4 w-4 shrink-0 mt-0.5", isHint ? "text-gold" : "text-warning")} />
-        <div className="space-y-1">
-          <p className={cn("text-sm font-medium", isHint ? "text-gold" : "text-warning")}>{env.label}</p>
-          <p className="text-2xs text-muted-foreground leading-relaxed whitespace-pre-line">{env.detail}</p>
-        </div>
-      </div>
-      {env.issue === "in_app_browser" && (
-        <a
-          href={window.location.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-gold"
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-          Buka di browser eksternal
-        </a>
-      )}
-      {env.issue === "ios_chrome" && (
-        <p className="text-2xs text-muted-foreground pl-6">
-          Alternatif cepat: buka <span className="font-mono text-foreground">tara.ralali.io/m/clock</span> di{" "}
-          <strong className="text-foreground">Safari</strong>.
-        </p>
-      )}
-    </div>
-  );
-}
-
 export function MobileClockPage() {
   const { user } = useAuth();
   const [status, setStatus] = useState<"idle" | "locating" | "pin" | "photo" | "submitting" | "success" | "error">("idle");
@@ -209,6 +165,24 @@ export function MobileClockPage() {
   } | null>(null);
 
   const locationBlocked = locationEnv.issue === "in_app_browser" || locationEnv.issue === "insecure" || locationEnv.issue === "unsupported";
+
+  useEffect(() => {
+    if (status !== "locating" && !isLocatingPreview) return;
+
+    const safetyTimer = window.setTimeout(() => {
+      setIsLocatingPreview(false);
+      if (status === "locating") {
+        setStatus("error");
+        setGeoError((prev) =>
+          prev ||
+          "Mendapatkan lokasi terlalu lama. Periksa izin lokasi di pengaturan HP, lalu coba lagi.",
+        );
+        window.setTimeout(() => setStatus("idle"), 3000);
+      }
+    }, 40000);
+
+    return () => window.clearTimeout(safetyTimer);
+  }, [status, isLocatingPreview]);
 
   useEffect(() => {
     let mounted = true;
@@ -362,11 +336,31 @@ export function MobileClockPage() {
   };
 
   const handleSelfieCapture = async (photoDataUrl: string) => {
+    if (!photoDataUrl?.trim()) {
+      toast.error("Foto selfie belum diambil. Silakan ambil foto terlebih dahulu.");
+      setShowSelfieCapture(true);
+      setStatus("photo");
+      return;
+    }
+
+    if (!pendingPosition) {
+      toast.error("Data lokasi hilang. Silakan ulangi proses absen dari awal.");
+      setStatus("idle");
+      return;
+    }
+
     setShowSelfieCapture(false);
-    await submitClock(pendingPosition!, photoDataUrl);
+    await submitClock(pendingPosition, photoDataUrl);
   };
 
   const submitClock = async (position: GeoPosition, selfiePhoto: string) => {
+    if (!selfiePhoto?.trim()) {
+      toast.error("Foto selfie wajib untuk absensi via HP.");
+      setStatus("photo");
+      setShowSelfieCapture(true);
+      return;
+    }
+
     setStatus("submitting");
     const now = new Date();
     const timeStr = now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
@@ -418,8 +412,7 @@ export function MobileClockPage() {
     if (locationReady) return "Lokasi terdeteksi";
     if (isLocatingPreview || status === "locating") return "Mendapatkan lokasi...";
     if (permissionState === "denied") return "Izin lokasi diblokir";
-    if (locationEnv.issue === "ios_standalone") return "Mode aplikasi iOS";
-    return "Lokasi diperlukan untuk absen";
+    return "Lokasi siap untuk absen";
   };
 
   const locationDetail = () => {
@@ -437,10 +430,9 @@ export function MobileClockPage() {
         .join(" • ");
     }
     if (permissionState === "denied") {
-      return "Reset izin lokasi untuk tara.ralali.io di pengaturan browser/HP, lalu tap tombol di bawah.";
+      return "Aktifkan izin lokasi di pengaturan HP atau browser, lalu tap Coba Lagi.";
     }
-    if (locationEnv.issue === "ios_standalone") return locationEnv.detail;
-    return "Tap Izinkan Akses Lokasi — browser akan meminta izin. Pastikan GPS/Layanan Lokasi HP aktif.";
+    return "Lokasi akan diambil saat Anda tap Clock In/Out.";
   };
 
   const statusLabel = () => {
@@ -457,7 +449,17 @@ export function MobileClockPage() {
 
   return (
     <div className="px-5 py-6 space-y-6 animate-fade-in">
-      <EnvironmentBanner env={locationEnv} />
+      {locationBlocked && (
+        <div className="rounded-lg border border-warning/40 bg-warning/10 p-4">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-warning">{locationEnv.label}</p>
+              <p className="text-2xs text-muted-foreground mt-1">{locationEnv.detail}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="text-center space-y-1">
         <p className="text-luxury-label">Kehadiran</p>
@@ -529,7 +531,7 @@ export function MobileClockPage() {
             ) : (
               <MapPin className="h-3.5 w-3.5" />
             )}
-            Izinkan Akses Lokasi
+            Coba Lagi
           </button>
         )}
       </div>
@@ -559,6 +561,7 @@ export function MobileClockPage() {
       <AttendanceSelfieCapture
         open={showSelfieCapture}
         mode={clockedIn ? "out" : "in"}
+        officeName={geofenceInfo?.office_name}
         onCapture={handleSelfieCapture}
         onCancel={handleSelfieCancel}
       />

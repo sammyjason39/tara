@@ -6,12 +6,20 @@ import {
   Bot, Clock, CalendarDays, Bell, Server,
   Building2, Users, Shield, Key, Send,
   Trash2, TestTube, Wifi, X, Save, Activity, Pencil, Building, Plus,
+  ToggleLeft, ToggleRight, Layers,
 } from "lucide-react";
 import { AiAgentSettingsSection } from "./AiAgentSettingsSection";
+import { BrandingSettingsPanel } from "@/components/BrandingSettingsPanel";
+import { CompanyLogo } from "@/components/CompanyLogo";
+import { DEFAULT_BRANDING } from "@/lib/color-utils";
+import { useBranding } from "@/contexts/BrandingContext";
+import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
+import { FEATURE_GROUP_LABELS, type FeatureKey, type FeatureModules } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 
 const sections = [
   { id: "company", label: "Profil Perusahaan", icon: Building },
+  { id: "features", label: "Fitur Modul", icon: Layers },
   { id: "agents", label: "Agen Otonom", icon: Bot },
   { id: "organization", label: "Organisasi", icon: Building2 },
   { id: "users", label: "Akun & Akses", icon: Key },
@@ -23,6 +31,11 @@ const sections = [
 
 export function SettingsPage() {
   const [active, setActive] = useState("company");
+  const { isEnabled } = useFeatureFlags();
+  const visibleSections = sections.filter(
+    (s) => s.id !== "ai" || isEnabled("ai_assistant"),
+  );
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -31,7 +44,7 @@ export function SettingsPage() {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <nav className="lg:col-span-1 space-y-0.5">
-          {sections.map((s) => (
+          {visibleSections.map((s) => (
             <button key={s.id} onClick={() => setActive(s.id)}
               className={cn("w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-all text-left",
                 active === s.id ? "bg-accent shadow-luxury text-foreground font-medium" : "text-muted-foreground hover:text-foreground hover:bg-accent/50")}>
@@ -41,6 +54,7 @@ export function SettingsPage() {
         </nav>
         <div className="lg:col-span-4">
           {active === "company" && <CompanySection />}
+          {active === "features" && <FeaturesSection />}
           {active === "agents" && <AgentsSection />}
           {active === "organization" && <OrganizationSection />}
           {active === "users" && <UsersSection />}
@@ -54,9 +68,107 @@ export function SettingsPage() {
   );
 }
 
+// === FEATURE MODULES ===
+function FeaturesSection() {
+  const queryClient = useQueryClient();
+  const { refreshFeatures } = useFeatureFlags();
+  const { data, isLoading } = useQuery({
+    queryKey: ["feature-settings"],
+    queryFn: () => api.get("/settings/features"),
+  });
+
+  const [modules, setModules] = useState<FeatureModules | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const definitions = data?.data?.definitions ?? [];
+  const loadedModules: FeatureModules | null = data?.data?.modules ?? null;
+
+  const current = modules ?? loadedModules;
+
+  const toggle = (key: FeatureKey) => {
+    if (!current) return;
+    setModules({ ...current, [key]: !current[key] });
+  };
+
+  const handleSave = async () => {
+    if (!current) return;
+    setSaving(true);
+    try {
+      await api.put("/settings/features", { modules: current });
+      await queryClient.invalidateQueries({ queryKey: ["feature-settings"] });
+      await refreshFeatures();
+      setModules(null);
+      toast.success("Konfigurasi fitur disimpan");
+    } catch (e: any) {
+      toast.error(e.message || "Gagal menyimpan");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const grouped = (["core", "hr", "finance", "advanced"] as const).map((group) => ({
+    group,
+    label: FEATURE_GROUP_LABELS[group],
+    items: definitions.filter((d: { group: string }) => d.group === group),
+  }));
+
+  if (isLoading || !current) {
+    return <div className="surface-elevated p-8 text-sm text-muted-foreground text-center">Memuat konfigurasi fitur...</div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <SH
+        title="Fitur Modul"
+        sub="Aktifkan atau nonaktifkan modul sesuai kebutuhan perusahaan. Fitur yang dinonaktifkan disembunyikan dari menu dan diblokir di API."
+      />
+
+      {grouped.map(({ group, label, items }) =>
+        items.length === 0 ? null : (
+          <div key={group} className="surface-elevated p-5 space-y-3">
+            <p className="text-luxury-label">{label}</p>
+            {items.map((def: { key: FeatureKey; label: string; description: string }) => (
+              <div
+                key={def.key}
+                className="flex items-center justify-between gap-4 py-2 border-b border-border/50 last:border-0"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{def.label}</p>
+                  <p className="text-2xs text-muted-foreground mt-0.5">{def.description}</p>
+                </div>
+                <Toggle on={current[def.key]} onToggle={() => toggle(def.key)} />
+              </div>
+            ))}
+          </div>
+        ),
+      )}
+
+      <div className="flex items-center gap-3">
+        <button
+          onClick={handleSave}
+          disabled={saving || modules === null}
+          className="px-4 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
+        >
+          <Save className="h-3.5 w-3.5 inline mr-1.5" />
+          {saving ? "Menyimpan..." : "Simpan Konfigurasi Fitur"}
+        </button>
+        {modules !== null && (
+          <button
+            onClick={() => setModules(null)}
+            className="px-3 py-2 rounded-md border border-input text-sm hover:bg-accent"
+          >
+            Batalkan
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // === COMPANY PROFILE ===
 function CompanySection() {
   const queryClient = useQueryClient();
+  const { refreshBranding } = useBranding();
   const { data, isLoading } = useQuery({
     queryKey: ["company-settings"],
     queryFn: () => api.get("/settings/company"),
@@ -101,6 +213,7 @@ function CompanySection() {
       await api.put("/settings/company", form);
       toast.success("Profil perusahaan berhasil disimpan");
       queryClient.invalidateQueries({ queryKey: ["company-settings"] });
+      await refreshBranding();
       setEditing(false);
     } catch (err: any) {
       toast.error(err.message || "Gagal menyimpan");
@@ -114,15 +227,7 @@ function CompanySection() {
         {!editing ? (
           <>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center">
-                  <Building className="h-6 w-6 text-gold" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold">{company.company_name || "—"}</h3>
-                  <p className="text-sm text-muted-foreground">{company.legal_name || ""}</p>
-                </div>
-              </div>
+              <CompanyLogo size="lg" subtitle={company.legal_name || ""} />
               <button onClick={startEdit} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gold/10 text-gold text-xs font-medium hover:bg-gold/20">
                 <Pencil className="h-3 w-3" /> Edit
               </button>
@@ -149,8 +254,8 @@ function CompanySection() {
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <Inp label="Nama Perusahaan *" value={form.company_name} onChange={v => setForm({...form, company_name: v})} placeholder="PT. Maju Bersama" />
-              <Inp label="Nama Legal" value={form.legal_name} onChange={v => setForm({...form, legal_name: v})} placeholder="PT. Maju Bersama Sejahtera" />
+              <Inp label="Nama Perusahaan *" value={form.company_name} onChange={v => setForm({...form, company_name: v})} placeholder="Nama perusahaan Anda" />
+              <Inp label="Nama Legal" value={form.legal_name} onChange={v => setForm({...form, legal_name: v})} placeholder="Nama legal perusahaan" />
               <Inp label="Industri" value={form.industry} onChange={v => setForm({...form, industry: v})} placeholder="Teknologi Informasi" />
               <Inp label="NPWP" value={form.tax_id} onChange={v => setForm({...form, tax_id: v})} placeholder="01.234.567.8-901.000" />
               <Inp label="Email" value={form.email} onChange={v => setForm({...form, email: v})} placeholder="info@company.com" />
@@ -170,6 +275,12 @@ function CompanySection() {
           </>
         )}
       </div>
+
+      <SH title="Branding & Tampilan" sub="Logo, warna aplikasi, dan pengaturan mode gelap" />
+      <BrandingSettingsPanel
+        initialBranding={company.branding || DEFAULT_BRANDING}
+        logoUrl={company.logo_url}
+      />
     </div>
   );
 }

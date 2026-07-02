@@ -4,12 +4,14 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { User, Sun, Moon, Globe, LogOut, ChevronRight, Shield, Lock, Eye, EyeOff, KeyRound, MessageCircle, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { useBranding } from "@/contexts/BrandingContext";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 
 export function MobileProfilePage() {
-  const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { user, logout, refreshProfile } = useAuth();
+  const { theme, toggleTheme, canToggleTheme } = useTheme();
+  const { companyName, appVersion } = useBranding();
   const navigate = useNavigate();
   const [showSecurity, setShowSecurity] = useState(false);
   const [showLang, setShowLang] = useState(false);
@@ -90,14 +92,17 @@ export function MobileProfilePage() {
 
   const handleChangePassword = async () => {
     if (!passwords.current || !passwords.new_pass) { toast.error("Password lama dan baru wajib diisi"); return; }
-    if (passwords.new_pass.length < 6) { toast.error("Password baru minimal 6 karakter"); return; }
+    if (passwords.new_pass.length < 8) { toast.error("Password baru minimal 8 karakter"); return; }
     if (passwords.new_pass !== passwords.confirm) { toast.error("Konfirmasi password tidak cocok"); return; }
     try {
       await api.post("/auth/change-password", { current_password: passwords.current, new_password: passwords.new_pass });
       toast.success("Password berhasil diubah");
-    } catch { toast.success("Password berhasil diubah (demo)"); }
-    setPasswords({ current: "", new_pass: "", confirm: "" });
-    setShowSecurity(false);
+      await refreshProfile();
+      setPasswords({ current: "", new_pass: "", confirm: "" });
+      setShowSecurity(false);
+    } catch (err: any) {
+      toast.error(err?.message || "Gagal mengubah password");
+    }
   };
 
   const handleSetPin = async () => {
@@ -106,9 +111,14 @@ export function MobileProfilePage() {
     try {
       await api.post("/auth/set-pin", { pin: pinData.pin });
       toast.success("PIN berhasil disimpan");
-    } catch { toast.success("PIN berhasil disimpan (demo)"); }
-    setPinData({ pin: "", confirm_pin: "" });
-    setShowPin(false);
+      sessionStorage.removeItem("tara-pin-rotation-dismissed");
+      localStorage.removeItem("tara-pin-rotation-dismiss-until");
+      await refreshProfile();
+      setPinData({ pin: "", confirm_pin: "" });
+      setShowPin(false);
+    } catch (err: any) {
+      toast.error(err?.message || "Gagal menyimpan PIN");
+    }
   };
 
   return (
@@ -168,7 +178,7 @@ export function MobileProfilePage() {
             <div className="space-y-1.5">
               <label className="text-luxury-label">Password Baru</label>
               <input type="password" value={passwords.new_pass} onChange={e => setPasswords({...passwords, new_pass: e.target.value})}
-                placeholder="Minimal 6 karakter" className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm" />
+                placeholder="Minimal 8 karakter" className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm" />
             </div>
             <div className="space-y-1.5">
               <label className="text-luxury-label">Konfirmasi</label>
@@ -279,12 +289,14 @@ export function MobileProfilePage() {
         )}
 
         {/* Theme */}
-        <button onClick={() => { toggleTheme(); toast.success(`Tema diubah ke mode ${theme === "dark" ? "terang" : "gelap"}`); }}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-accent/50">
-          {theme === "dark" ? <Sun className="h-5 w-5 text-muted-foreground" /> : <Moon className="h-5 w-5 text-muted-foreground" />}
-          <div className="flex-1 text-left"><p className="text-sm">{theme === "dark" ? "Mode Terang" : "Mode Gelap"}</p></div>
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-        </button>
+        {canToggleTheme && (
+          <button onClick={() => { toggleTheme(); toast.success(`Tema diubah ke mode ${theme === "dark" ? "terang" : "gelap"}`); }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-accent/50">
+            {theme === "dark" ? <Sun className="h-5 w-5 text-muted-foreground" /> : <Moon className="h-5 w-5 text-muted-foreground" />}
+            <div className="flex-1 text-left"><p className="text-sm">{theme === "dark" ? "Mode Terang" : "Mode Gelap"}</p></div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </button>
+        )}
       </div>
 
       {/* Logout */}
@@ -293,7 +305,7 @@ export function MobileProfilePage() {
         <LogOut className="h-4 w-4" />Keluar
       </button>
 
-      <p className="text-center text-2xs text-muted-foreground">TARA v2.0 • PT. Maju Bersama</p>
+      <p className="text-center text-2xs text-muted-foreground">TARA v{appVersion} • {companyName}</p>
     </div>
   );
 }

@@ -19,6 +19,7 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name);
   private readonly jwtSecret: string;
   private readonly jwtExpiresIn = '8h';
+  private readonly pinRotationDays = 30;
 
   constructor(private readonly prisma: PrismaService) {
     const secret = process.env.JWT_SECRET;
@@ -38,8 +39,44 @@ export class AuthService {
   }
 
   private async mustChangePasswordFor(employee: Employee): Promise<boolean> {
+    // Password already customized once — never force the first-login modal again.
+    if (employee.password_changed_at) return false;
+
     if (employee.must_change_password) return true;
     return this.isDefaultSeedPasswordHash(employee.password_hash);
+  }
+
+  private shouldRotatePin(employee: Employee): boolean {
+    if (!employee.pin_hash) return false;
+    if (!employee.pin_changed_at) return true;
+    const ageMs = Date.now() - employee.pin_changed_at.getTime();
+    return ageMs >= this.pinRotationDays * 24 * 60 * 60 * 1000;
+  }
+
+  /** Fix legacy rows where password was changed but flags were not cleared. */
+  private async healPasswordFlags(employee: Employee): Promise<Employee> {
+    if (employee.password_changed_at) {
+      if (employee.must_change_password) {
+        return this.prisma.employee.update({
+          where: { id: employee.id },
+          data: { must_change_password: false },
+        });
+      }
+      return employee;
+    }
+
+    const stillDefault = await this.isDefaultSeedPasswordHash(employee.password_hash);
+    if (!stillDefault) {
+      return this.prisma.employee.update({
+        where: { id: employee.id },
+        data: {
+          must_change_password: false,
+          password_changed_at: new Date(),
+        },
+      });
+    }
+
+    return employee;
   }
 
   private assertNewPasswordAllowed(newPassword: string): void {
@@ -85,7 +122,8 @@ export class AuthService {
       throw new UnauthorizedException('Account is inactive');
     }
 
-    const must_change_password = await this.mustChangePasswordFor(employee);
+    const healed = await this.healPasswordFlags(employee);
+    const must_change_password = await this.mustChangePasswordFor(healed);
 
     const payload: JwtPayload = {
       sub: employee.id,
@@ -150,7 +188,11 @@ export class AuthService {
 
     await this.prisma.employee.update({
       where: { id: employeeId },
-      data: { password_hash, must_change_password: false },
+      data: {
+        password_hash,
+        must_change_password: false,
+        password_changed_at: new Date(),
+      },
     });
     return { success: true };
   }
@@ -175,7 +217,11 @@ export class AuthService {
 
     await this.prisma.employee.update({
       where: { id: employeeId },
-      data: { password_hash, must_change_password: false },
+      data: {
+        password_hash,
+        must_change_password: false,
+        password_changed_at: new Date(),
+      },
     });
 
     return { success: true };
@@ -188,7 +234,11 @@ export class AuthService {
 
     await this.prisma.employee.update({
       where: { id: employeeId },
-      data: { password_hash, must_change_password },
+      data: {
+        password_hash,
+        must_change_password,
+        password_changed_at: must_change_password ? null : new Date(),
+      },
     });
     return { success: true };
   }
@@ -199,7 +249,10 @@ export class AuthService {
     }
     const rounds = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
     const pin_hash = await bcrypt.hash(pin, rounds);
-    await this.prisma.employee.update({ where: { id: employeeId }, data: { pin_hash } });
+    await this.prisma.employee.update({
+      where: { id: employeeId },
+      data: { pin_hash, pin_changed_at: new Date() },
+    });
     return { success: true };
   }
 
@@ -235,23 +288,27 @@ export class AuthService {
     });
     if (!employee) throw new UnauthorizedException('User not found');
 
-    const must_change_password = await this.mustChangePasswordFor(employee);
+    const healed = await this.healPasswordFlags(employee);
+    const must_change_password = await this.mustChangePasswordFor(healed);
+    const should_rotate_pin = this.shouldRotatePin(healed);
 
     return {
-      id: employee.id,
-      email: employee.email,
-      full_name: employee.full_name,
-      employee_code: employee.employee_code,
-      phone: employee.phone,
+      id: healed.id,
+      email: healed.email,
+      full_name: healed.full_name,
+      employee_code: healed.employee_code,
+      phone: healed.phone,
       role: employee.role?.role_name || 'Employee',
       department: employee.department?.name || null,
-      department_id: employee.department_id,
+      department_id: healed.department_id,
       office: employee.office?.location_name || null,
-      office_location_id: employee.office_location_id,
-      hire_date: employee.hire_date,
-      employment_status: employee.employment_status,
-      language_preference: employee.language_preference,
+      office_location_id: healed.office_location_id,
+      hire_date: healed.hire_date,
+      employment_status: healed.employment_status,
+      language_preference: healed.language_preference,
       must_change_password,
+      should_rotate_pin,
+      pin_changed_at: healed.pin_changed_at?.toISOString() ?? null,
     };
   }
 }

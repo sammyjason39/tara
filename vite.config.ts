@@ -43,10 +43,12 @@ export default defineConfig({
             purpose: "any maskable",
           },
         ],
+        permissions: ["geolocation", "camera"],
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
         navigateFallback: "/index.html",
+        navigateFallbackDenylist: [/^\/api\//, /^\/socket\.io\//, /^\/event-stream\//, /^\/health$/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

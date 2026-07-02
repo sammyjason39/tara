@@ -7,8 +7,6 @@ export interface GeoPosition {
 export type LocationEnvironmentIssue =
   | "insecure"
   | "in_app_browser"
-  | "ios_standalone"
-  | "ios_chrome"
   | "unsupported";
 
 export interface LocationEnvironment {
@@ -33,7 +31,10 @@ export function isIosDevice(): boolean {
   );
 }
 
-/** Chrome on iOS (WebKit) — UA contains CriOS */
+export function isAndroidDevice(): boolean {
+  return /Android/i.test(navigator.userAgent);
+}
+
 export function isIosChrome(): boolean {
   return isIosDevice() && /CriOS/i.test(navigator.userAgent);
 }
@@ -42,21 +43,6 @@ export function isIosSafari(): boolean {
   const ua = navigator.userAgent;
   return isIosDevice() && /Safari/i.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/i.test(ua);
 }
-
-export const IOS_CHROME_LOCATION_HELP =
-  "Di iPhone, Chrome butuh izin lokasi di 2 tempat:\n" +
-  "1. Pengaturan iPhone → Privasi & Keamanan → Layanan Lokasi → NYALAKAN\n" +
-  "2. Pengaturan iPhone → Chrome → Lokasi → pilih \"Saat Menggunakan App\"\n" +
-  "3. Refresh halaman TARA, tap \"Izinkan Akses Lokasi\", pilih \"Izinkan\"\n" +
-  "4. Jika tidak ada popup: tap (aA) di kiri address bar → Pengaturan Situs → Lokasi → Izinkan\n" +
-  "5. Masih gagal? Buka halaman yang sama di Safari — GPS paling stabil di Safari iPhone.";
-
-export const IOS_LOCATION_DENIED_HELP =
-  isIosChrome()
-    ? IOS_CHROME_LOCATION_HELP
-    : "Pengaturan iPhone → Privasi & Keamanan → Layanan Lokasi → NYALAKAN. " +
-      "Lalu Pengaturan → Safari → Lokasi → Saat Menggunakan App. " +
-      "Refresh halaman, tap Izinkan Akses Lokasi, atau tap (aA) → Pengaturan Situs → Lokasi → Izinkan.";
 
 export function isMobileDevice(): boolean {
   return isIosDevice() || /Android/i.test(navigator.userAgent);
@@ -100,24 +86,7 @@ export function getLocationEnvironment(): LocationEnvironment {
     return {
       issue: "in_app_browser",
       label: `Dibuka dari ${inApp}`,
-      detail: `Browser dalam aplikasi ${inApp} biasanya memblokir GPS. Tap menu (⋯) → "Buka di Safari" atau "Buka di Chrome", lalu izinkan lokasi.`,
-    };
-  }
-
-  if (isStandalonePwa() && isIosDevice()) {
-    return {
-      issue: "ios_standalone",
-      label: "Mode aplikasi (ikon Home Screen)",
-      detail:
-        "Di iPhone, izin lokasi untuk PWA kadang gagal. Buka dulu halaman ini di Safari (bukan dari ikon), izinkan lokasi, lalu baru pakai ikon Home Screen.",
-    };
-  }
-
-  if (isIosChrome()) {
-    return {
-      issue: "ios_chrome",
-      label: "iPhone + Chrome",
-      detail: IOS_CHROME_LOCATION_HELP,
+      detail: `Browser dalam aplikasi ${inApp} biasanya memblokir GPS. Tap menu (⋯) → "Buka di Safari" atau "Buka di Chrome".`,
     };
   }
 
@@ -176,21 +145,46 @@ function formatGeoError(err: GeolocationPositionError | null): string {
 
   switch (err.code) {
     case err.PERMISSION_DENIED:
-      return isIosDevice()
-        ? `Izin lokasi ditolak. ${IOS_LOCATION_DENIED_HELP}`
-        : "Izin lokasi ditolak. Izinkan lokasi untuk situs ini di pengaturan browser, lalu refresh halaman.";
+      return "Izin lokasi ditolak. Aktifkan di pengaturan browser atau HP, lalu coba lagi.";
     case err.POSITION_UNAVAILABLE:
-      return "Sinyal GPS lemah. Nyalakan Lokasi/GPS di pengaturan HP, buka area terbuka, lalu coba lagi.";
+      return "Sinyal GPS lemah. Nyalakan Lokasi/GPS di pengaturan HP, lalu coba lagi.";
     case err.TIMEOUT:
-      return "Timeout mendapatkan lokasi. Pastikan GPS aktif dan coba di area dengan sinyal lebih baik.";
+      return "Timeout mendapatkan lokasi. Pastikan GPS aktif dan coba lagi.";
     default:
       return `Gagal mendapatkan lokasi (kode ${err.code}).`;
   }
 }
 
-/**
- * Mobile-friendly geolocation: low accuracy first, then high accuracy, then watchPosition.
- */
+function withHardTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(Object.assign(new Error(message), { code: 3 }));
+    }, ms);
+
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        window.clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
+
+export async function queryGeolocationPermission(): Promise<PermissionState | "unsupported" | "unknown"> {
+  if (!navigator.geolocation) return "unsupported";
+  if (!navigator.permissions?.query) return "unknown";
+  try {
+    const status = await navigator.permissions.query({ name: "geolocation" });
+    return status.state;
+  } catch {
+    return "unknown";
+  }
+}
+
 export async function requestDeviceLocation(): Promise<GeoPosition> {
   const env = getLocationEnvironment();
   if (env.issue === "insecure" || env.issue === "unsupported") {
@@ -200,16 +194,33 @@ export async function requestDeviceLocation(): Promise<GeoPosition> {
     throw new Error(env.detail);
   }
 
+  const permission = await queryGeolocationPermission();
+  if (permission === "denied") {
+    throw new Error(formatGeoError({ code: 1 } as GeolocationPositionError));
+  }
+
+  const hardTimeoutMs = isAndroidDevice() ? 35000 : 45000;
+  const hardTimeoutMessage =
+    "Tidak ada respons dari GPS. Pastikan izin lokasi sudah diizinkan dan GPS aktif.";
+
+  return withHardTimeout(requestDeviceLocationInternal(), hardTimeoutMs, hardTimeoutMessage);
+}
+
+async function requestDeviceLocationInternal(): Promise<GeoPosition> {
   const mobile = isMobileDevice();
   const ios = isIosDevice();
+  const android = isAndroidDevice();
   let lastError: GeolocationPositionError | null = null;
 
-  // iOS Chrome/WebKit: watchPosition first — often more reliable than one-shot getCurrentPosition
-  if (ios) {
+  if (ios || android) {
     try {
       return await tryWatchPosition(
-        { enableHighAccuracy: false, timeout: 30000, maximumAge: 120000 },
-        35000,
+        {
+          enableHighAccuracy: false,
+          timeout: android ? 15000 : 30000,
+          maximumAge: android ? 60000 : 120000,
+        },
+        android ? 18000 : 35000,
       );
     } catch (err) {
       lastError = err as GeolocationPositionError;
@@ -221,8 +232,8 @@ export async function requestDeviceLocation(): Promise<GeoPosition> {
 
   const strategies: PositionOptions[] = mobile
     ? [
-        { enableHighAccuracy: false, timeout: 30000, maximumAge: 300000 },
-        { enableHighAccuracy: true, timeout: 25000, maximumAge: 0 },
+        { enableHighAccuracy: false, timeout: android ? 12000 : 30000, maximumAge: 300000 },
+        { enableHighAccuracy: true, timeout: android ? 15000 : 25000, maximumAge: 0 },
       ]
     : [
         { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 },
@@ -241,16 +252,12 @@ export async function requestDeviceLocation(): Promise<GeoPosition> {
   if (lastError?.code !== 1) {
     try {
       return await tryWatchPosition(
-        { enableHighAccuracy: false, timeout: 30000, maximumAge: 0 },
-        28000,
+        { enableHighAccuracy: false, timeout: android ? 12000 : 30000, maximumAge: 0 },
+        android ? 15000 : 28000,
       );
     } catch (err) {
       lastError = err as GeolocationPositionError;
     }
-  }
-
-  if (env.issue === "ios_standalone") {
-    throw new Error(`${formatGeoError(lastError)} ${env.detail}`);
   }
 
   throw new Error(formatGeoError(lastError));

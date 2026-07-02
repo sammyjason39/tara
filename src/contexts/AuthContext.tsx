@@ -18,12 +18,22 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   mustChangePassword: boolean;
+  shouldRotatePin: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   clearMustChangePassword: () => void;
+  dismissPinRotation: () => void;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+function applyProfileFlags(data: Record<string, unknown> | undefined) {
+  return {
+    mustChangePassword: !!data?.must_change_password,
+    shouldRotatePin: !!data?.should_rotate_pin,
+  };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -31,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.getItem("tara-token")
   );
   const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [shouldRotatePin, setShouldRotatePin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -41,7 +52,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  async function fetchProfile(authToken: string) {
+  async function fetchProfile(authToken: string, options?: { keepLoading?: boolean }) {
+    if (!options?.keepLoading) {
+      setIsLoading(true);
+    }
     try {
       const res = await fetch("/api/auth/me", {
         headers: { Authorization: `Bearer ${authToken}` },
@@ -49,17 +63,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         setUser(data.data);
-        setMustChangePassword(!!data.data?.must_change_password);
+        const flags = applyProfileFlags(data.data);
+        setMustChangePassword(flags.mustChangePassword);
+        setShouldRotatePin(flags.shouldRotatePin);
       } else {
         localStorage.removeItem("tara-token");
         setToken(null);
         setMustChangePassword(false);
+        setShouldRotatePin(false);
       }
     } catch {
       // Offline or server down — keep token for later
     } finally {
       setIsLoading(false);
     }
+  }
+
+  async function refreshProfile() {
+    if (!token) return;
+    await fetchProfile(token, { keepLoading: true });
   }
 
   async function login(email: string, password: string) {
@@ -78,19 +100,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(data.token);
     setUser(data.user);
     setMustChangePassword(!!data.must_change_password);
+    setShouldRotatePin(false);
     localStorage.setItem("tara-token", data.token);
     markPwaPromptForSession();
+    await fetchProfile(data.token, { keepLoading: true });
   }
 
   function logout() {
     setToken(null);
     setUser(null);
     setMustChangePassword(false);
+    setShouldRotatePin(false);
+    sessionStorage.removeItem("tara-pin-rotation-dismissed");
+    localStorage.removeItem("tara-pin-rotation-dismiss-until");
     localStorage.removeItem("tara-token");
   }
 
   function clearMustChangePassword() {
     setMustChangePassword(false);
+  }
+
+  function dismissPinRotation() {
+    setShouldRotatePin(false);
   }
 
   return (
@@ -101,9 +132,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         isLoading,
         mustChangePassword,
+        shouldRotatePin,
         login,
         logout,
         clearMustChangePassword,
+        dismissPinRotation,
+        refreshProfile,
       }}
     >
       {children}

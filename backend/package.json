@@ -19,6 +19,9 @@
     "seed": "ts-node src/scripts/seed-defaults.ts",
     "seed:ralali": "ts-node src/scripts/seed-ralali-employees.ts",
     "seed:ralali:prod": "node dist/scripts/seed-ralali-employees.js",
+    "seed:leave-xlsx": "ts-node src/scripts/seed-leave-balances-xlsx.ts",
+    "seed:leave-xlsx:dry": "ts-node src/scripts/seed-leave-balances-xlsx.ts --dry-run",
+    "seed:leave-xlsx:prod": "node dist/scripts/seed-leave-balances-xlsx.js",
     "test:ai-e2e": "NODE_OPTIONS='--max-old-space-size=8192' ts-node -r tsconfig-paths/register src/scripts/test-ai-e2e.ts",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
@@ -71,6 +74,7 @@
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.3",
     "uuid": "^14.0.0",
+    "xlsx": "^0.18.5",
     "zod": "^4.4.3"
   },
   "devDependencies": {

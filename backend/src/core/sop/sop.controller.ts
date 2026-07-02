@@ -161,12 +161,6 @@ export class SopController {
     return { success: true, data: docs };
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
-    const doc = await this.sopService.findById(id);
-    return { success: true, data: doc };
-  }
-
   @Get(':id/file')
   async getFile(@Param('id') id: string, @Res() res: Response) {
     const doc = await this.sopService.findById(id);
@@ -181,6 +175,12 @@ export class SopController {
     res.setHeader('Content-Type', doc.mime_type || 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="${doc.file_name}"`);
     res.sendFile(filePath);
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    const doc = await this.sopService.findById(id);
+    return { success: true, data: doc };
   }
 
   @Put(':id')

@@ -98,6 +98,8 @@ function SchedulesView({ showForm, onCloseForm, search }: { showForm: boolean; o
     break_start: "12:00",
     break_end: "13:00",
     work_days: [1, 2, 3, 4, 5] as number[],
+    use_daily_breaks: false,
+    daily_breaks: {} as Record<number, { break_start: string; break_end: string }>,
   });
 
   const { data, refetch } = useQuery({
@@ -120,10 +122,23 @@ function SchedulesView({ showForm, onCloseForm, search }: { showForm: boolean; o
   const handleCreate = async () => {
     if (!form.schedule_name) { toast.error("Nama jadwal wajib diisi"); return; }
     try {
-      await api.post("/schedules", form);
+      const payload = {
+        ...form,
+        daily_breaks: form.use_daily_breaks ? form.daily_breaks : null,
+      };
+      await api.post("/schedules", payload);
       toast.success("Jadwal berhasil dibuat");
       onCloseForm();
-      setForm({ schedule_name: "", start_time: "08:00", end_time: "17:00", break_start: "12:00", break_end: "13:00", work_days: [1, 2, 3, 4, 5] });
+      setForm({
+        schedule_name: "",
+        start_time: "08:00",
+        end_time: "17:00",
+        break_start: "12:00",
+        break_end: "13:00",
+        work_days: [1, 2, 3, 4, 5],
+        use_daily_breaks: false,
+        daily_breaks: {},
+      });
       refetch();
     } catch (err: any) {
       toast.error(err.message || "Gagal membuat jadwal");
@@ -166,15 +181,25 @@ function SchedulesView({ showForm, onCloseForm, search }: { showForm: boolean; o
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-muted-foreground whitespace-nowrap">Istirahat:</label>
-              <input type="time" value={form.break_start}
-                onChange={(e) => setForm({ ...form, break_start: e.target.value })}
-                className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 flex-1" />
-              <span className="text-xs text-muted-foreground">-</span>
-              <input type="time" value={form.break_end}
-                onChange={(e) => setForm({ ...form, break_end: e.target.value })}
-                className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 flex-1" />
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-muted-foreground whitespace-nowrap">Istirahat Default:</label>
+                <input type="time" value={form.break_start}
+                  disabled={form.use_daily_breaks}
+                  onChange={(e) => setForm({ ...form, break_start: e.target.value })}
+                  className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 flex-1 disabled:opacity-50" />
+                <span className="text-xs text-muted-foreground">-</span>
+                <input type="time" value={form.break_end}
+                  disabled={form.use_daily_breaks}
+                  onChange={(e) => setForm({ ...form, break_end: e.target.value })}
+                  className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 flex-1 disabled:opacity-50" />
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer mt-1">
+                <input type="checkbox" checked={form.use_daily_breaks}
+                  onChange={(e) => setForm({ ...form, use_daily_breaks: e.target.checked })}
+                  className="rounded border-input text-primary focus:ring-ring" />
+                <span className="text-xs text-muted-foreground">Atur Istirahat Berbeda per Hari</span>
+              </label>
             </div>
             <div>
               <label className="text-xs text-muted-foreground mb-1.5 block">Hari Kerja:</label>
@@ -188,6 +213,41 @@ function SchedulesView({ showForm, onCloseForm, search }: { showForm: boolean; o
               </div>
             </div>
           </div>
+
+          {form.use_daily_breaks && (
+            <div className="space-y-2 border-t border-border/50 pt-3">
+              <p className="text-xs font-semibold text-gold">Kustomisasi Jam Istirahat per Hari:</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {form.work_days.map((d) => {
+                  const dayBreak = form.daily_breaks[d] || { break_start: form.break_start || "12:00", break_end: form.break_end || "13:00" };
+                  return (
+                    <div key={d} className="flex items-center gap-2 bg-accent/20 p-2 rounded-md border border-border/30">
+                      <span className="text-xs font-medium w-12">{dayNames[d]}:</span>
+                      <input type="time" value={dayBreak.break_start}
+                        onChange={(e) => setForm({
+                          ...form,
+                          daily_breaks: {
+                            ...form.daily_breaks,
+                            [d]: { ...dayBreak, break_start: e.target.value }
+                          }
+                        })}
+                        className="h-8 px-2 rounded-md border border-input bg-background text-xs focus:outline-none focus:ring-1 focus:ring-ring/20 flex-1" />
+                      <span className="text-xs text-muted-foreground">-</span>
+                      <input type="time" value={dayBreak.break_end}
+                        onChange={(e) => setForm({
+                          ...form,
+                          daily_breaks: {
+                            ...form.daily_breaks,
+                            [d]: { ...dayBreak, break_end: e.target.value }
+                          }
+                        })}
+                        className="h-8 px-2 rounded-md border border-input bg-background text-xs focus:outline-none focus:ring-1 focus:ring-ring/20 flex-1" />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <div className="flex justify-end gap-2">
             <button onClick={onCloseForm} className="px-4 py-2 rounded-md text-sm border border-input hover:bg-accent">Batal</button>
             <button onClick={handleCreate} className="px-4 py-2 rounded-md text-sm bg-primary text-primary-foreground hover:bg-primary/90 font-medium">Simpan Jadwal</button>
@@ -240,7 +300,11 @@ function SchedulesView({ showForm, onCloseForm, search }: { showForm: boolean; o
             </div>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <span className="font-mono">{s.start_time} - {s.end_time}</span>
-              {s.break_start && <span className="text-2xs">Istirahat {s.break_start}-{s.break_end}</span>}
+              {s.daily_breaks && Object.keys(s.daily_breaks).length > 0 ? (
+                <span className="text-2xs text-gold font-medium">Istirahat Kustom per Hari</span>
+              ) : (
+                s.break_start && <span className="text-2xs">Istirahat {s.break_start}-{s.break_end}</span>
+              )}
             </div>
             <div className="flex gap-1">
               {[1, 2, 3, 4, 5, 6, 7].map((d) => (
@@ -254,25 +318,40 @@ function SchedulesView({ showForm, onCloseForm, search }: { showForm: boolean; o
               <Users className="h-3 w-3" /> {s.assignments?.length || 0} karyawan ditugaskan
             </p>
             {selectedId === s.id && (
-              <div className="pt-3 border-t border-border/50 animate-fade-in">
-                <p className="text-luxury-label text-xs mb-2">Karyawan yang Ditugaskan</p>
-                {(s.assignments || []).length > 0 ? (
-                  <div className="space-y-1.5">
-                    {s.assignments.map((a: any, i: number) => (
-                      <div key={i} className="flex items-center justify-between py-1">
-                        <div className="flex items-center gap-2">
-                          <div className="h-6 w-6 rounded-full bg-gold/10 flex items-center justify-center text-2xs font-medium text-gold">
-                            {a.employee?.full_name?.charAt(0) || "?"}
-                          </div>
-                          <span className="text-sm">{a.employee?.full_name || `Karyawan #${i+1}`}</span>
+              <div className="pt-3 border-t border-border/50 animate-fade-in space-y-3">
+                {s.daily_breaks && Object.keys(s.daily_breaks).length > 0 && (
+                  <div>
+                    <p className="text-luxury-label text-xs mb-1.5 font-medium text-gold">Jam Istirahat per Hari:</p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {Object.entries(s.daily_breaks).map(([day, b]: [string, any]) => (
+                        <div key={day} className="text-2xs bg-accent/20 p-1.5 rounded border border-border/30 flex justify-between">
+                          <span className="font-medium text-foreground/80">{dayNames[parseInt(day)]}</span>
+                          <span className="font-mono text-muted-foreground">{b.break_start} - {b.break_end}</span>
                         </div>
-                        <span className="text-2xs text-muted-foreground">
-                          Sejak {new Date(a.effective_from).toLocaleDateString("id-ID")}
-                        </span>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                ) : <p className="text-xs text-muted-foreground">Belum ada karyawan ditugaskan</p>}
+                )}
+                <div>
+                  <p className="text-luxury-label text-xs mb-2">Karyawan yang Ditugaskan</p>
+                  {(s.assignments || []).length > 0 ? (
+                    <div className="space-y-1.5">
+                      {s.assignments.map((a: any, i: number) => (
+                        <div key={i} className="flex items-center justify-between py-1">
+                          <div className="flex items-center gap-2">
+                            <div className="h-6 w-6 rounded-full bg-gold/10 flex items-center justify-center text-2xs font-medium text-gold">
+                              {a.employee?.full_name?.charAt(0) || "?"}
+                            </div>
+                            <span className="text-sm">{a.employee?.full_name || `Karyawan #${i+1}`}</span>
+                          </div>
+                          <span className="text-2xs text-muted-foreground">
+                            Sejak {new Date(a.effective_from).toLocaleDateString("id-ID")}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : <p className="text-xs text-muted-foreground">Belum ada karyawan ditugaskan</p>}
+                </div>
               </div>
             )}
           </div>
@@ -286,7 +365,13 @@ function SchedulesView({ showForm, onCloseForm, search }: { showForm: boolean; o
 
 function AssignmentsView({ showForm, onCloseForm, search }: { showForm: boolean; onCloseForm: () => void; search: string }) {
   const queryClient = useQueryClient();
-  const [form, setForm] = useState({ employee_id: "", schedule_id: "", effective_from: "" });
+  const [form, setForm] = useState({
+    employee_id: "",
+    schedule_id: "",
+    effective_from: "",
+    effective_to: "",
+    apply_to_all: false,
+  });
 
   const { data: schedulesData } = useQuery({
     queryKey: ["schedules"],
@@ -314,14 +399,29 @@ function AssignmentsView({ showForm, onCloseForm, search }: { showForm: boolean;
   );
 
   const handleAssign = async () => {
-    if (!form.employee_id || !form.schedule_id || !form.effective_from) {
+    if ((!form.apply_to_all && !form.employee_id) || !form.schedule_id || !form.effective_from) {
       toast.error("Semua field wajib diisi"); return;
     }
     try {
-      await api.post("/schedules/assign", form);
-      toast.success("Karyawan berhasil ditugaskan ke jadwal");
+      if (form.apply_to_all) {
+        await api.post("/schedules/assign/bulk", {
+          schedule_id: form.schedule_id,
+          apply_to_all: true,
+          effective_from: form.effective_from,
+          effective_to: form.effective_to || undefined,
+        });
+        toast.success("Jadwal berhasil ditugaskan ke semua karyawan");
+      } else {
+        await api.post("/schedules/assign", {
+          employee_id: form.employee_id,
+          schedule_id: form.schedule_id,
+          effective_from: form.effective_from,
+          effective_to: form.effective_to || undefined,
+        });
+        toast.success("Karyawan berhasil ditugaskan ke jadwal");
+      }
       onCloseForm();
-      setForm({ employee_id: "", schedule_id: "", effective_from: "" });
+      setForm({ employee_id: "", schedule_id: "", effective_from: "", effective_to: "", apply_to_all: false });
       refetch();
     } catch (err: any) {
       toast.error(err.message || "Gagal menugaskan karyawan");
@@ -346,20 +446,39 @@ function AssignmentsView({ showForm, onCloseForm, search }: { showForm: boolean;
             <h3 className="text-sm font-semibold flex items-center gap-2"><UserPlus className="h-4 w-4" /> Tugaskan Karyawan ke Jadwal</h3>
             <button onClick={onCloseForm} className="p-1 rounded hover:bg-accent"><X className="h-4 w-4 text-muted-foreground" /></button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <select value={form.employee_id} onChange={(e) => setForm({ ...form, employee_id: e.target.value })}
-              className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20">
-              <option value="">Pilih Karyawan</option>
-              {employees.map((e: any) => <option key={e.id} value={e.id}>{e.full_name}</option>)}
-            </select>
-            <select value={form.schedule_id} onChange={(e) => setForm({ ...form, schedule_id: e.target.value })}
-              className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20">
-              <option value="">Pilih Jadwal</option>
-              {schedules.map((s: any) => <option key={s.id} value={s.id}>{s.schedule_name} ({s.start_time}-{s.end_time})</option>)}
-            </select>
-            <input type="date" value={form.effective_from}
-              onChange={(e) => setForm({ ...form, effective_from: e.target.value })}
-              className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="flex flex-col gap-2">
+              <select value={form.employee_id} disabled={form.apply_to_all} onChange={(e) => setForm({ ...form, employee_id: e.target.value })}
+                className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:opacity-50">
+                <option value="">Pilih Karyawan</option>
+                {employees.map((e: any) => <option key={e.id} value={e.id}>{e.full_name}</option>)}
+              </select>
+              <label className="flex items-center gap-2 cursor-pointer mt-1">
+                <input type="checkbox" checked={form.apply_to_all}
+                  onChange={(e) => setForm({ ...form, apply_to_all: e.target.checked, employee_id: e.target.checked ? "" : form.employee_id })}
+                  className="rounded border-input text-primary focus:ring-ring" />
+                <span className="text-xs text-muted-foreground">Tugaskan ke Semua Karyawan</span>
+              </label>
+            </div>
+            <div className="flex flex-col">
+              <select value={form.schedule_id} onChange={(e) => setForm({ ...form, schedule_id: e.target.value })}
+                className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20">
+                <option value="">Pilih Jadwal</option>
+                {schedules.map((s: any) => <option key={s.id} value={s.id}>{s.schedule_name} ({s.start_time}-{s.end_time})</option>)}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-2xs text-muted-foreground">Tanggal Mulai:</label>
+              <input type="date" value={form.effective_from}
+                onChange={(e) => setForm({ ...form, effective_from: e.target.value })}
+                className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-2xs text-muted-foreground">Tanggal Selesai (Opsional):</label>
+              <input type="date" value={form.effective_to}
+                onChange={(e) => setForm({ ...form, effective_to: e.target.value })}
+                className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20" />
+            </div>
           </div>
           <div className="flex justify-end gap-2">
             <button onClick={onCloseForm} className="px-4 py-2 rounded-md text-sm border border-input hover:bg-accent">Batal</button>
@@ -383,7 +502,7 @@ function AssignmentsView({ showForm, onCloseForm, search }: { showForm: boolean;
                 <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Karyawan</th>
                 <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Jadwal</th>
                 <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Jam Kerja</th>
-                <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Berlaku Sejak</th>
+                <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Masa Berlaku</th>
                 <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Departemen</th>
                 <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">Aksi</th>
               </tr>
@@ -394,7 +513,10 @@ function AssignmentsView({ showForm, onCloseForm, search }: { showForm: boolean;
                   <td className="px-4 py-3 text-sm font-medium">{a.employee?.full_name || "—"}</td>
                   <td className="px-4 py-3 text-sm">{a.schedule?.schedule_name || "—"}</td>
                   <td className="px-4 py-3 text-sm font-mono text-muted-foreground">{a.schedule?.start_time} - {a.schedule?.end_time}</td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{new Date(a.effective_from).toLocaleDateString("id-ID")}</td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">
+                    {new Date(a.effective_from).toLocaleDateString("id-ID")}
+                    {a.effective_to ? ` s/d ${new Date(a.effective_to).toLocaleDateString("id-ID")}` : " (Seterusnya)"}
+                  </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">{a.employee?.department?.name || "—"}</td>
                   <td className="px-4 py-3 text-right">
                     <button onClick={() => handleRemove(a.id)} className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">

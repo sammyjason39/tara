@@ -72,13 +72,30 @@ export class ScheduleService {
     });
   }
 
-  async assignSchedule(data: { employee_id: string; schedule_id: string; effective_from: Date; effective_to?: Date; assigned_by?: string }) {
-    return this.prisma.scheduleAssignment.create({ data });
+  async assignSchedule(data: { employee_id: string; schedule_id: string; effective_from: Date | string; effective_to?: Date | string; assigned_by?: string }) {
+    return this.prisma.scheduleAssignment.create({
+      data: {
+        employee_id: data.employee_id,
+        schedule_id: data.schedule_id,
+        effective_from: new Date(data.effective_from),
+        effective_to: data.effective_to ? new Date(data.effective_to) : null,
+        assigned_by: data.assigned_by,
+      },
+    });
   }
 
-  async bulkAssignSchedule(data: { schedule_id: string; employee_ids: string[]; effective_from: string; effective_to?: string; assigned_by?: string }) {
+  async bulkAssignSchedule(data: { schedule_id: string; employee_ids?: string[]; apply_to_all?: boolean; effective_from: string; effective_to?: string; assigned_by?: string }) {
+    let employeeIds = data.employee_ids || [];
+    if (data.apply_to_all) {
+      const employees = await this.prisma.employee.findMany({
+        where: { employment_status: 'active' },
+        select: { id: true },
+      });
+      employeeIds = employees.map((e) => e.id);
+    }
+
     const results = [];
-    for (const employee_id of data.employee_ids) {
+    for (const employee_id of employeeIds) {
       const assignment = await this.prisma.scheduleAssignment.create({
         data: {
           employee_id,

@@ -1,4 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -8,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 export function MobileHomePage() {
   const { user } = useAuth();
+  const { isEnabled } = useFeatureFlags();
   const navigate = useNavigate();
 
   const { data: balance } = useQuery({
@@ -37,13 +39,16 @@ export function MobileHomePage() {
           <p className="text-xs text-muted-foreground uppercase tracking-luxury">{greeting}</p>
           <h1 className="text-xl font-display font-semibold">{user?.full_name || "Karyawan"}</h1>
         </div>
+        {isEnabled("notifications") && (
         <button onClick={() => navigate("/m/notifications")} className="relative p-2 rounded-md hover:bg-accent">
           <Bell className="h-5 w-5 text-muted-foreground" />
           {unread > 0 && <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-gold" />}
         </button>
+        )}
       </div>
 
       {/* Clock In/Out Button */}
+      {isEnabled("attendance") && (
       <button onClick={() => navigate("/m/clock")} className="w-full surface-elevated p-6 flex flex-col items-center space-y-4">
         <p className="text-luxury-label">Status Kehadiran</p>
         <div className={cn("h-24 w-24 rounded-full flex items-center justify-center",
@@ -52,8 +57,10 @@ export function MobileHomePage() {
         </div>
         <p className="text-sm text-muted-foreground">Ketuk untuk masuk ke halaman absen</p>
       </button>
+      )}
 
       {/* Leave Balance Card */}
+      {isEnabled("leave") && (
       <button onClick={() => navigate("/m/leave")} className="w-full text-left surface-elevated p-5 space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-luxury-label">Saldo Cuti</span>
@@ -69,8 +76,10 @@ export function MobileHomePage() {
           <ChevronRight className="h-4 w-4" />
         </div>
       </button>
+      )}
 
       {/* Recent Notifications */}
+      {isEnabled("notifications") && (
       <div className="space-y-3">
         <h2 className="text-luxury-label">Notifikasi Terbaru</h2>
         {notifs.length === 0 ? (
@@ -85,6 +94,7 @@ export function MobileHomePage() {
           ))
         )}
       </div>
+      )}
     </div>
   );
 }

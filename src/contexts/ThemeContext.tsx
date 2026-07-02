@@ -1,38 +1,83 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import type { BrandingConfig } from "@/lib/color-utils";
 
 type Theme = "light" | "dark";
+
+interface ThemeConfig {
+  dark_mode_enabled: boolean;
+  forced_theme: Theme;
+  default_theme: Theme;
+}
 
 interface ThemeContextValue {
   theme: Theme;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
+  canToggleTheme: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
+const DEFAULT_THEME_CONFIG: ThemeConfig = {
+  dark_mode_enabled: true,
+  forced_theme: "light",
+  default_theme: "light",
+};
+
+function resolveInitialTheme(config: ThemeConfig): Theme {
+  if (!config.dark_mode_enabled) {
+    return config.forced_theme;
+  }
+  const stored = localStorage.getItem("tara-theme") as Theme | null;
+  if (stored === "light" || stored === "dark") return stored;
+  return config.default_theme;
+}
+
 export function ThemeProvider({
   children,
-  defaultTheme = "dark",
+  themeConfig = DEFAULT_THEME_CONFIG,
 }: {
   children: ReactNode;
-  defaultTheme?: Theme;
+  themeConfig?: Pick<BrandingConfig, "dark_mode_enabled" | "forced_theme" | "default_theme">;
 }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const stored = localStorage.getItem("tara-theme") as Theme;
-    return stored || defaultTheme;
-  });
+  const config: ThemeConfig = {
+    dark_mode_enabled: themeConfig.dark_mode_enabled ?? true,
+    forced_theme: themeConfig.forced_theme === "dark" ? "dark" : "light",
+    default_theme: themeConfig.default_theme === "dark" ? "dark" : "light",
+  };
+
+  const canToggleTheme = config.dark_mode_enabled;
+
+  const [theme, setThemeState] = useState<Theme>(() => resolveInitialTheme(config));
+
+  useEffect(() => {
+    const resolved = resolveInitialTheme(config);
+    setThemeState(resolved);
+  }, [config.dark_mode_enabled, config.forced_theme, config.default_theme]);
 
   useEffect(() => {
     const root = document.documentElement;
     root.classList.remove("light", "dark");
     root.classList.add(theme);
-    localStorage.setItem("tara-theme", theme);
-  }, [theme]);
+    if (canToggleTheme) {
+      localStorage.setItem("tara-theme", theme);
+    } else {
+      localStorage.removeItem("tara-theme");
+    }
+  }, [theme, canToggleTheme]);
 
-  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
+  const setTheme = (next: Theme) => {
+    if (!canToggleTheme) return;
+    setThemeState(next);
+  };
+
+  const toggleTheme = () => {
+    if (!canToggleTheme) return;
+    setThemeState((t) => (t === "dark" ? "light" : "dark"));
+  };
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggleTheme, canToggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

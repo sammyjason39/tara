@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../../../persistence/prisma.service';
+import { toLeaveDays } from '../../../shared/utils/leave-days.util';
 import { EventBusService, TaraEvent } from '../services/event-bus.service';
 import { NotificationService } from '../services/notification.service';
 
@@ -136,7 +137,7 @@ export class LeaveRequestAgent {
       // Requirement 1.3: Update employee's leave balance automatically
       await this.updateLeaveBalance(
         leaveRequest.employee_id,
-        leaveRequest.total_days,
+        toLeaveDays(leaveRequest.total_days),
         tenantId,
       );
 
@@ -314,6 +315,9 @@ export class LeaveRequestAgent {
         return;
       }
 
+      const usedDays = toLeaveDays(balance.used_days) + totalDays;
+      const remainingDays = toLeaveDays(balance.remaining_days) - totalDays;
+
       // Update balance: deduct used days, update remaining days
       await this.prisma.leaveBalance.update({
         where: {
@@ -323,8 +327,8 @@ export class LeaveRequestAgent {
           },
         },
         data: {
-          used_days: balance.used_days + totalDays,
-          remaining_days: balance.remaining_days - totalDays,
+          used_days: usedDays,
+          remaining_days: remainingDays,
           last_calculated_at: new Date(),
           updated_at: new Date(),
         },
@@ -347,13 +351,13 @@ export class LeaveRequestAgent {
           employee_id: employeeId,
           year: currentYear,
           days_deducted: totalDays,
-          new_remaining_days: balance.remaining_days - totalDays,
-          new_used_days: balance.used_days + totalDays,
+          new_remaining_days: remainingDays,
+          new_used_days: usedDays,
         },
       });
 
       this.logger.log(
-        `Leave balance updated for employee ${employeeId}. Deducted ${totalDays} days. Remaining: ${balance.remaining_days - totalDays} days.`,
+        `Leave balance updated for employee ${employeeId}. Deducted ${totalDays} days. Remaining: ${remainingDays} days.`,
       );
     } catch (error) {
       this.logger.error(

@@ -2,14 +2,18 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useBranding } from "@/contexts/BrandingContext";
 import { useTranslation } from "react-i18next";
 import { Eye, EyeOff, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/lib/useIsMobile";
+import { CompanyLogo } from "@/components/CompanyLogo";
+import { APP_COPYRIGHT_YEAR } from "@/lib/version";
 
 export function LoginPage() {
   const { login } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, canToggleTheme } = useTheme();
+  const { companyName } = useBranding();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -46,14 +50,12 @@ export function LoginPage() {
 
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
           <div>
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-gold/20 border border-gold/30 flex items-center justify-center">
-                <span className="font-display font-bold text-gold text-lg">T</span>
-              </div>
-              <span className="text-primary-foreground/80 text-sm tracking-luxury uppercase font-medium">
-                TARA System
-              </span>
-            </div>
+            <CompanyLogo
+              size="md"
+              subtitle="TARA System"
+              nameClassName="!text-primary-foreground"
+              className="[&_p]:!text-primary-foreground/70"
+            />
           </div>
 
           <div className="space-y-6">
@@ -63,34 +65,33 @@ export function LoginPage() {
               Administration
             </h1>
             <p className="text-primary-foreground/60 text-sm max-w-sm leading-relaxed">
-              Sistem manajemen HR otonom untuk PT. Maju Bersama. 
+              Sistem manajemen HR otonom untuk {companyName}.
               Otomatisasi cerdas, keamanan tingkat enterprise.
             </p>
           </div>
 
           <p className="text-primary-foreground/30 text-xs">
-            © 2024 PT. Maju Bersama. All rights reserved.
+            © {APP_COPYRIGHT_YEAR} {companyName}. All rights reserved.
           </p>
         </div>
       </div>
 
       {/* Right panel — login form */}
       <div className="flex-1 flex flex-col justify-center items-center px-6 bg-background relative">
-        <button
-          onClick={toggleTheme}
-          className="absolute top-6 right-6 p-2 rounded-md hover:bg-accent transition-colors"
-          aria-label="Toggle theme"
-        >
-          {theme === "dark" ? <Sun className="h-4 w-4 text-muted-foreground" /> : <Moon className="h-4 w-4 text-muted-foreground" />}
-        </button>
+        {canToggleTheme && (
+          <button
+            onClick={toggleTheme}
+            className="absolute top-6 right-6 p-2 rounded-md hover:bg-accent transition-colors"
+            aria-label="Toggle theme"
+          >
+            {theme === "dark" ? <Sun className="h-4 w-4 text-muted-foreground" /> : <Moon className="h-4 w-4 text-muted-foreground" />}
+          </button>
+        )}
 
         <div className="w-full max-w-sm space-y-8">
           {/* Mobile logo */}
-          <div className="lg:hidden flex items-center gap-3 justify-center">
-            <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
-              <span className="font-display font-bold text-primary-foreground text-lg">T</span>
-            </div>
-            <span className="font-display font-semibold text-lg">TARA</span>
+          <div className="lg:hidden flex justify-center">
+            <CompanyLogo size="md" subtitle="" />
           </div>
 
           <div className="space-y-2 text-center lg:text-left">

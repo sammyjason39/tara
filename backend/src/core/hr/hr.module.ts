@@ -66,6 +66,9 @@ import { AuditService } from '../../shared/audit/audit.service';
 import { LoggerService } from '../../shared/logger/logger.service';
 import { TaraContextQueryService } from '../auth/services/tara-context-query.service';
 import { TenantScopeResolver } from './scope/tenant-scope.resolver';
+import { CompanyBrandingService } from './services/company-branding.service';
+import { FeatureFlagsService } from './services/feature-flags.service';
+import { FeatureEnabledGuard } from './guards/feature-enabled.guard';
 
 // Events & WebSocket
 import { EventStreamGateway } from './events/event-stream.gateway';
@@ -73,6 +76,7 @@ import { SessionDataPushGateway } from './events/session-data-push.gateway';
 import { EventSubscriptionRegistry } from './events/event-subscription.registry';
 import { EventSubscriptionController } from './events/event-subscription.controller';
 import { WebApiController } from './controllers/web-api.controller';
+import { PublicController } from './controllers/public.controller';
 
 // i18n
 import { I18nService } from './i18n/i18n.service';
@@ -141,6 +145,7 @@ import { I18nModule } from './i18n/i18n.module';
     WhatsAppWebhookController,
     WhatsAppSettingsController,
     WebApiController,
+    PublicController,
   ],
   providers: [
     // Core services
@@ -171,6 +176,9 @@ import { I18nModule } from './i18n/i18n.module';
     PayrollService,
     LoanService,
     ScheduleService,
+    CompanyBrandingService,
+    FeatureFlagsService,
+    FeatureEnabledGuard,
     { provide: AWS_DEVICE_API_CLIENT, useClass: StubAwsDeviceApiClient },
 
     // 12 Autonomous Agents
@@ -229,6 +237,8 @@ import { I18nModule } from './i18n/i18n.module';
     SupervisorService,
     WhatsAppOutboundService,
     WhatsAppAgent,
+    FeatureFlagsService,
+    FeatureEnabledGuard,
   ],
 })
 export class HrModule {}

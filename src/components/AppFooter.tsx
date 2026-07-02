@@ -1,4 +1,5 @@
-import { APP_VERSION, APP_COMPANY, APP_COPYRIGHT_YEAR } from "@/lib/version";
+import { APP_VERSION, APP_COPYRIGHT_YEAR } from "@/lib/version";
+import { useBranding } from "@/contexts/BrandingContext";
 import { cn } from "@/lib/utils";
 
 interface AppFooterProps {
@@ -6,6 +7,8 @@ interface AppFooterProps {
 }
 
 export function AppFooter({ className }: AppFooterProps) {
+  const { companyName, appVersion } = useBranding();
+
   return (
     <footer
       className={cn(
@@ -14,10 +17,10 @@ export function AppFooter({ className }: AppFooterProps) {
       )}
     >
       <span>
-        &copy; {APP_COPYRIGHT_YEAR} {APP_COMPANY}
+        &copy; {APP_COPYRIGHT_YEAR} {companyName}
       </span>
       <span className="mx-1.5 hidden sm:inline">&middot;</span>
-      <span className="block sm:inline">v{APP_VERSION}</span>
+      <span className="block sm:inline">v{appVersion}</span>
     </footer>
   );
 }

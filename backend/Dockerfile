@@ -22,8 +22,14 @@ RUN npx prisma generate
 COPY . .
 RUN npm run build
 
-RUN npx tsc src/scripts/seed-defaults.ts src/scripts/seed-ralali-employees.ts \
-    --outDir dist/scripts \
+RUN npx tsc \
+    src/scripts/seed-defaults.ts \
+    src/scripts/seed-ralali-employees.ts \
+    src/scripts/seed-leave-balances-xlsx.ts \
+    src/scripts/lib/parse-leave-xlsx.ts \
+    src/shared/utils/leave-days.util.ts \
+    --outDir dist \
+    --rootDir src \
     --esModuleInterop \
     --resolveJsonModule \
     --skipLibCheck \

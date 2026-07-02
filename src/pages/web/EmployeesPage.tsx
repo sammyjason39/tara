@@ -6,9 +6,11 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { Search, Plus, Filter, MoreHorizontal, Building2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useBranding } from "@/contexts/BrandingContext";
 
 export function EmployeesPage() {
   const { t } = useTranslation();
+  const { companyName } = useBranding();
   const [search, setSearch] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [showAddPanel, setShowAddPanel] = useState(false);
@@ -77,7 +79,7 @@ export function EmployeesPage() {
         <div>
           <h1 className="text-luxury-heading text-2xl">{t("employees.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {t("employees.description")}
+            Kelola data karyawan {companyName}
           </p>
         </div>
         <button

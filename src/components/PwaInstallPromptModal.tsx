@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Download, Loader2, Share, Smartphone, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSitePermissions } from "@/contexts/SitePermissionsContext";
 import { detectInAppBrowser } from "@/lib/geolocation";
 import {
   type BeforeInstallPromptEvent,
@@ -87,6 +88,7 @@ function AndroidSteps() {
 
 export function PwaInstallPromptModal() {
   const { user, isAuthenticated, isLoading, mustChangePassword } = useAuth();
+  const { permissionsReady } = useSitePermissions();
   const [visible, setVisible] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalling, setIsInstalling] = useState(false);
@@ -104,14 +106,14 @@ export function PwaInstallPromptModal() {
   }, []);
 
   useEffect(() => {
-    if (isLoading || !isAuthenticated || !user || mustChangePassword) {
+    if (isLoading || !isAuthenticated || !user || mustChangePassword || !permissionsReady) {
       setVisible(false);
       return;
     }
 
     const show = shouldShowPwaInstallPrompt(user.id);
     setVisible(show);
-  }, [isLoading, isAuthenticated, user, mustChangePassword]);
+  }, [isLoading, isAuthenticated, user, mustChangePassword, permissionsReady]);
 
   useEffect(() => {
     if (isStandalonePwa() && user) {

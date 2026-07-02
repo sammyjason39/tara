@@ -14,6 +14,8 @@ import { ScheduleService } from '../services/schedule.service';
 import { JwtGuard } from '../../auth/guards/jwt.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/guards/roles.guard';
+import { RequireFeature } from '../decorators/require-feature.decorator';
+import { FeatureEnabledGuard } from '../guards/feature-enabled.guard';
 
 /**
  * Schedule Controller — dedicated endpoints for work schedule management.
@@ -28,7 +30,8 @@ import { Roles } from '../../auth/guards/roles.guard';
  * - Company holidays
  */
 @Controller('schedules')
-@UseGuards(JwtGuard)
+@UseGuards(JwtGuard, FeatureEnabledGuard)
+@RequireFeature('schedule')
 export class ScheduleController {
   constructor(private readonly scheduleService: ScheduleService) {}
 
@@ -94,7 +97,7 @@ export class ScheduleController {
 
   @Post('assign/bulk')
   @UseGuards(RolesGuard) @Roles('SuperAdmin', 'HR_Admin')
-  async bulkAssignSchedule(@Body() dto: { schedule_id: string; employee_ids: string[]; effective_from: string; effective_to?: string }, @Req() req: any) {
+  async bulkAssignSchedule(@Body() dto: { schedule_id: string; employee_ids?: string[]; apply_to_all?: boolean; effective_from: string; effective_to?: string }, @Req() req: any) {
     const data = await this.scheduleService.bulkAssignSchedule({
       ...dto,
       assigned_by: req.user?.sub,

@@ -69,3 +69,8 @@ certbot/www/
 Copy of Data NIK Karyawan*.csv
 *Data Karyawan Ralali*.csv
 backend/data/*.csv
+# Leave balance exports (PII — do not commit or rsync)
+Update Cuti*.xlsx
+**/Update Cuti*.xlsx
+leave-cuti.xlsx
+backend/data/*.xlsx

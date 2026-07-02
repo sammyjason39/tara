@@ -14,6 +14,7 @@ import {
   FolderOpen, Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SopPdfEmbed, downloadSopFile } from "@/components/SopPdfEmbed";
 
 export function SopPage() {
   const { t } = useTranslation();
@@ -370,7 +371,13 @@ function UploadPanel({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
 
 // === PDF Viewer Modal ===
 function PdfViewer({ doc, onClose }: { doc: any; onClose: () => void }) {
-  const pdfUrl = `/api/sop/${doc.id}/file`;
+  const handleDownload = async () => {
+    try {
+      await downloadSopFile(doc.id, doc.file_name);
+    } catch {
+      toast.error("Gagal mengunduh file PDF");
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
@@ -382,15 +389,14 @@ function PdfViewer({ doc, onClose }: { doc: any; onClose: () => void }) {
             <p className="text-2xs text-muted-foreground">{doc.file_name}</p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <a
-              href={pdfUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={handleDownload}
               className="p-2 rounded-md hover:bg-accent"
-              title="Buka di tab baru"
+              title="Unduh PDF"
             >
               <Download className="h-4 w-4 text-muted-foreground" />
-            </a>
+            </button>
             <button onClick={onClose} className="p-2 rounded-md hover:bg-accent">
               <X className="h-4 w-4 text-muted-foreground" />
             </button>
@@ -398,11 +404,7 @@ function PdfViewer({ doc, onClose }: { doc: any; onClose: () => void }) {
         </div>
         {/* PDF Embed */}
         <div className="flex-1 bg-muted">
-          <iframe
-            src={pdfUrl}
-            className="w-full h-full border-0"
-            title={doc.title}
-          />
+          <SopPdfEmbed docId={doc.id} title={doc.title} />
         </div>
       </div>
     </div>

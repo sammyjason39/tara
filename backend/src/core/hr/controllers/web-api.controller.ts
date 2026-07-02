@@ -3,15 +3,24 @@ import {
   Get,
   Post,
   Put,
+  Delete,
   Body,
   Param,
   Query,
   Req,
   UseGuards,
+  UploadedFile,
+  UseInterceptors,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtGuard } from '../../auth/guards/jwt.guard';
 import { RolesGuard, Roles } from '../../auth/guards/roles.guard';
 import { PrismaService } from '../../../persistence/prisma.service';
+import { CompanyBrandingService } from '../services/company-branding.service';
+import { FeatureFlagsService } from '../services/feature-flags.service';
+import { createLogoMulterOptions } from '../services/company-logo-upload.config';
 
 /**
  * Frontend-compatible REST routes (previously served by DemoModule).
@@ -20,7 +29,11 @@ import { PrismaService } from '../../../persistence/prisma.service';
 @Controller()
 @UseGuards(JwtGuard)
 export class WebApiController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly brandingService: CompanyBrandingService,
+    private readonly featureFlags: FeatureFlagsService,
+  ) {}
 
   @Get('dashboard/stats')
   @UseGuards(RolesGuard)
@@ -219,29 +232,25 @@ export class WebApiController {
       where: { employment_status: 'active' },
     });
 
-    const rows = await this.prisma.systemSettings.findMany({
-      where: { setting_key: { startsWith: 'company.' } },
-    });
-    const settings: Record<string, string> = {};
-    for (const row of rows) {
-      settings[row.setting_key] = String(row.setting_value ?? '');
-    }
+    const settings = await this.brandingService.getCompanySettingsMap();
+    const publicBranding = await this.brandingService.getPublicBranding();
 
     return {
       success: true,
       data: {
-        company_name: settings['company.name'] || 'Ralali',
-        legal_name: settings['company.legal_name'] || 'PT. Ralali',
+        company_name: publicBranding.company_name,
+        legal_name: publicBranding.legal_name || '',
         industry: settings['company.industry'] || 'Teknologi Informasi',
         tax_id: settings['company.tax_id'] || '',
         email: settings['company.email'] || '',
         phone: settings['company.phone'] || '',
         website: settings['company.website'] || '',
-        address:
-          settings['company.address'] ||
-          'Capital Cove Business Loft, BSD City, Jl. BSD Grand Boulevard No.26',
+        address: settings['company.address'] || '',
         founded_year: settings['company.founded_year'] || '',
         total_employees: totalEmployees,
+        logo_url: publicBranding.logo_url,
+        logo_updated_at: publicBranding.logo_updated_at,
+        branding: publicBranding.branding,
       },
     };
   }
@@ -281,6 +290,52 @@ export class WebApiController {
     }
 
     return this.getCompanySettings();
+  }
+
+  @Put('settings/company/branding')
+  @UseGuards(RolesGuard)
+  @Roles('SuperAdmin', 'HR_Admin')
+  async updateCompanyBranding(@Body() body: any, @Req() req: any) {
+    const branding = await this.brandingService.saveBranding(body, req.user.sub);
+    return { success: true, data: branding };
+  }
+
+  @Post('settings/company/logo')
+  @UseGuards(RolesGuard)
+  @Roles('SuperAdmin', 'HR_Admin')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('logo', createLogoMulterOptions()))
+  async uploadCompanyLogo(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: any,
+  ) {
+    const result = await this.brandingService.saveLogo(file, req.user.sub);
+    return { success: true, data: result };
+  }
+
+  @Delete('settings/company/logo')
+  @UseGuards(RolesGuard)
+  @Roles('SuperAdmin', 'HR_Admin')
+  async deleteCompanyLogo(@Req() req: any) {
+    await this.brandingService.deleteLogo(req.user.sub);
+    return { success: true, message: 'Logo dihapus' };
+  }
+
+  @Get('settings/features')
+  @UseGuards(RolesGuard)
+  @Roles('SuperAdmin', 'HR_Admin')
+  async getFeatureSettings() {
+    const data = await this.featureFlags.getAdminSettings();
+    return { success: true, data };
+  }
+
+  @Put('settings/features')
+  @UseGuards(RolesGuard)
+  @Roles('SuperAdmin', 'HR_Admin')
+  async updateFeatureSettings(@Body() body: any, @Req() req: any) {
+    const modules = this.featureFlags.validateModules(body?.modules ?? body);
+    const saved = await this.featureFlags.saveModules(modules, req.user.sub);
+    return { success: true, data: { modules: saved, definitions: (await this.featureFlags.getAdminSettings()).definitions } };
   }
 
   @Get('admin/users')
