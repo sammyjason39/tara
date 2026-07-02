@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { Bell, BellOff, CheckCheck } from "lucide-react";
+import { formatDate, formatDateTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 export function NotificationsPage() {
@@ -83,7 +84,7 @@ export function NotificationsPage() {
                   <div className="flex items-start justify-between gap-2">
                     <p className={cn("text-sm", !n.is_read && "font-medium")}>{n.title}</p>
                     <span className="text-2xs text-muted-foreground whitespace-nowrap">
-                      {n.created_at && new Date(n.created_at).toLocaleDateString("id-ID")}
+                      {formatDate(n.created_at)}
                     </span>
                   </div>
                   <p className={cn("text-xs text-muted-foreground mt-1", expandedId !== n.id && "line-clamp-2")}>{n.content}</p>
@@ -99,7 +100,7 @@ export function NotificationsPage() {
                           </div>
                         )}
                         <p className="text-2xs text-muted-foreground">
-                          Dibuat: {n.created_at ? new Date(n.created_at).toLocaleString("id-ID") : "—"}
+                          Dibuat: {formatDateTime(n.created_at)}
                         </p>
                       </div>
                     </div>

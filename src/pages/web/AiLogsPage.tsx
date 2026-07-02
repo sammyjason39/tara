@@ -4,6 +4,7 @@ import { api } from "@/lib/api";
 import {
   Bot, MessageSquare, Zap, Activity, ChevronLeft, ChevronRight,
 } from "lucide-react";
+import { formatDateTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 
@@ -76,7 +77,7 @@ export function AiLogsPage() {
               ) : logs.map((log: any) => (
                 <tr key={log.id} className="border-b border-border/30 hover:bg-accent/30">
                   <td className="px-4 py-3 text-2xs whitespace-nowrap">
-                    {new Date(log.created_at).toLocaleString("id-ID")}
+                    {formatDateTime(log.created_at)}
                   </td>
                   <td className="px-4 py-3">{log.employee?.full_name || "—"}</td>
                   <td className="px-4 py-3 max-w-[180px] truncate text-2xs">{log.user_message}</td>

@@ -10,6 +10,7 @@ import {
   type LocationEnvironment,
 } from "@/lib/geolocation";
 import { MapPin, Lock, CheckCircle2, AlertTriangle, Loader2, X } from "lucide-react";
+import { formatDateWithWeekday } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { AttendanceSelfieCapture } from "@/components/AttendanceSelfieCapture";
 
@@ -467,7 +468,7 @@ export function MobileClockPage() {
           {new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
         </p>
         <p className="text-xs text-muted-foreground">
-          {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+          {formatDateWithWeekday(new Date())}
         </p>
       </div>
 

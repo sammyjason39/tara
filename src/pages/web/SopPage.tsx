@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { formatDate } from "@/lib/dates";
 import {
   formatFileSize,
   isPdfFile,
@@ -141,7 +142,7 @@ export function SopPage() {
                   )}
                   <span>{formatSize(doc.file_size)}</span>
                   <span>•</span>
-                  <span>{new Date(doc.created_at).toLocaleDateString("id-ID")}</span>
+                  <span>{formatDate(doc.created_at)}</span>
                 </div>
                 {doc.description && (
                   <p className="text-2xs text-muted-foreground mt-1 truncate">{doc.description}</p>

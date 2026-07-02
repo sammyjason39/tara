@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { CalendarClock, Clock, ChevronRight, Users } from "lucide-react";
+import { formatDate, formatDateWithWeekday } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 
@@ -35,7 +36,7 @@ export function MobileSchedulePage() {
       <div>
         <h1 className="text-xl font-display font-semibold">Jadwal Saya</h1>
         <p className="text-xs text-muted-foreground mt-1">
-          {today.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+          {formatDateWithWeekday(today)}
         </p>
       </div>
 
@@ -105,8 +106,8 @@ export function MobileSchedulePage() {
           {/* Effective Dates */}
           <div className="pt-3 border-t border-border/50">
             <p className="text-2xs text-muted-foreground">
-              Berlaku sejak {new Date(mySchedule.effective_from).toLocaleDateString("id-ID")}
-              {mySchedule.effective_to && ` hingga ${new Date(mySchedule.effective_to).toLocaleDateString("id-ID")}`}
+              Berlaku sejak {formatDate(mySchedule.effective_from)}
+              {mySchedule.effective_to && ` hingga ${formatDate(mySchedule.effective_to)}`}
             </p>
           </div>
         </div>

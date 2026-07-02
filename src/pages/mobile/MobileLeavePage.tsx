@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { CalendarDays, Plus, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DatePickerInput } from "@/components/DatePickerInput";
+import { formatDateRange } from "@/lib/dates";
 import { formatLeaveDays, toLeaveDays } from "@/lib/leave-days";
 
 export function MobileLeavePage() {
@@ -105,13 +107,20 @@ export function MobileLeavePage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <label className="text-luxury-label">Dari</label>
-                <input type="date" value={form.start_date} onChange={e => setForm({...form, start_date: e.target.value})}
-                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" />
+                <DatePickerInput
+                  value={form.start_date}
+                  onChange={(start_date) => setForm({ ...form, start_date })}
+                  aria-label="Tanggal mulai cuti"
+                />
               </div>
               <div className="space-y-1.5">
                 <label className="text-luxury-label">Sampai</label>
-                <input type="date" value={form.end_date} onChange={e => setForm({...form, end_date: e.target.value})}
-                  className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm" />
+                <DatePickerInput
+                  value={form.end_date}
+                  onChange={(end_date) => setForm({ ...form, end_date })}
+                  min={form.start_date || undefined}
+                  aria-label="Tanggal selesai cuti"
+                />
               </div>
             </div>
             {isSingleDay && (
@@ -155,7 +164,9 @@ export function MobileLeavePage() {
             <div className="flex items-start justify-between">
               <div className="space-y-0.5">
                 <p className="text-sm font-medium capitalize">Cuti {l.leave_type}</p>
-                <p className="text-2xs text-muted-foreground">{formatLeaveDays(l.total_days)} hari • {l.start_date && new Date(l.start_date).toLocaleDateString("id-ID")}</p>
+                <p className="text-2xs text-muted-foreground">
+                  {formatLeaveDays(l.total_days)} hari • {formatDateRange(l.start_date, l.end_date)}
+                </p>
                 {l.reason && <p className="text-2xs text-muted-foreground italic mt-1">"{l.reason}"</p>}
               </div>
               <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium",

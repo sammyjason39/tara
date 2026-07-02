@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { Bell, BellOff, Megaphone, Lock } from "lucide-react";
+import { formatDateTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 export function MobileNotificationsPage() {
@@ -65,7 +66,7 @@ export function MobileNotificationsPage() {
                   <p className={cn("text-sm leading-snug", !n.is_read && "font-medium")}>{n.title}</p>
                   <p className={cn("text-2xs text-muted-foreground mt-1", expandedId !== n.id && "line-clamp-2")}>{n.content}</p>
                   <p className="text-2xs text-muted-foreground/60 mt-1.5">
-                    {n.created_at && new Date(n.created_at).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    {formatDateTime(n.created_at)}
                   </p>
                   {expandedId === n.id && (
                     <div className="mt-2 pt-2 border-t border-border/50 animate-fade-in">

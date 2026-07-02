@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { DatePickerInput } from "@/components/DatePickerInput";
 import { api } from "@/lib/api";
+import { formatDate } from "@/lib/dates";
 import {
   CalendarClock,
   Plus,
@@ -345,7 +347,7 @@ function SchedulesView({ showForm, onCloseForm, search }: { showForm: boolean; o
                             <span className="text-sm">{a.employee?.full_name || `Karyawan #${i+1}`}</span>
                           </div>
                           <span className="text-2xs text-muted-foreground">
-                            Sejak {new Date(a.effective_from).toLocaleDateString("id-ID")}
+                            Sejak {formatDate(a.effective_from)}
                           </span>
                         </div>
                       ))}
@@ -469,15 +471,20 @@ function AssignmentsView({ showForm, onCloseForm, search }: { showForm: boolean;
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-2xs text-muted-foreground">Tanggal Mulai:</label>
-              <input type="date" value={form.effective_from}
-                onChange={(e) => setForm({ ...form, effective_from: e.target.value })}
-                className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20" />
+              <DatePickerInput
+                value={form.effective_from}
+                onChange={(effective_from) => setForm({ ...form, effective_from })}
+                aria-label="Tanggal mulai penugasan"
+              />
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-2xs text-muted-foreground">Tanggal Selesai (Opsional):</label>
-              <input type="date" value={form.effective_to}
-                onChange={(e) => setForm({ ...form, effective_to: e.target.value })}
-                className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20" />
+              <DatePickerInput
+                value={form.effective_to}
+                onChange={(effective_to) => setForm({ ...form, effective_to })}
+                min={form.effective_from || undefined}
+                aria-label="Tanggal selesai penugasan"
+              />
             </div>
           </div>
           <div className="flex justify-end gap-2">
@@ -514,8 +521,8 @@ function AssignmentsView({ showForm, onCloseForm, search }: { showForm: boolean;
                   <td className="px-4 py-3 text-sm">{a.schedule?.schedule_name || "—"}</td>
                   <td className="px-4 py-3 text-sm font-mono text-muted-foreground">{a.schedule?.start_time} - {a.schedule?.end_time}</td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">
-                    {new Date(a.effective_from).toLocaleDateString("id-ID")}
-                    {a.effective_to ? ` s/d ${new Date(a.effective_to).toLocaleDateString("id-ID")}` : " (Seterusnya)"}
+                    {formatDate(a.effective_from)}
+                    {a.effective_to ? ` s/d ${formatDate(a.effective_to)}` : " (Seterusnya)"}
                   </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">{a.employee?.department?.name || "—"}</td>
                   <td className="px-4 py-3 text-right">
@@ -586,9 +593,11 @@ function AbsencesView({ showForm, onCloseForm }: { showForm: boolean; onCloseFor
             <input type="text" placeholder="ID Karyawan" value={absForm.employee_id}
               onChange={(e) => setAbsForm({ ...absForm, employee_id: e.target.value })}
               className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20" />
-            <input type="date" value={absForm.absence_date}
-              onChange={(e) => setAbsForm({ ...absForm, absence_date: e.target.value })}
-              className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20" />
+            <DatePickerInput
+              value={absForm.absence_date}
+              onChange={(absence_date) => setAbsForm({ ...absForm, absence_date })}
+              aria-label="Tanggal ketidakhadiran"
+            />
             <select value={absForm.absence_type} onChange={(e) => setAbsForm({ ...absForm, absence_type: e.target.value })}
               className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20">
               <option value="no_info">Tanpa Keterangan</option>
@@ -616,7 +625,7 @@ function AbsencesView({ showForm, onCloseForm }: { showForm: boolean; onCloseFor
               <div>
                 <p className="text-sm font-medium">{a.employee?.full_name}</p>
                 <p className="text-2xs text-muted-foreground">
-                  {new Date(a.absence_date).toLocaleDateString("id-ID")} • {
+                  {formatDate(a.absence_date)} • {
                     a.absence_type === "no_info" ? "Tanpa Keterangan" :
                     a.absence_type === "unexcused" ? "Tidak Berizin" : a.absence_type
                   }
@@ -682,9 +691,11 @@ function HolidaysView({ showForm, onCloseForm }: { showForm: boolean; onCloseFor
             <input type="text" placeholder="Nama hari libur" value={holidayForm.holiday_name}
               onChange={(e) => setHolidayForm({ ...holidayForm, holiday_name: e.target.value })}
               className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20" />
-            <input type="date" value={holidayForm.holiday_date}
-              onChange={(e) => setHolidayForm({ ...holidayForm, holiday_date: e.target.value })}
-              className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20" />
+            <DatePickerInput
+              value={holidayForm.holiday_date}
+              onChange={(holiday_date) => setHolidayForm({ ...holidayForm, holiday_date })}
+              aria-label="Tanggal libur"
+            />
             <select value={holidayForm.type} onChange={(e) => setHolidayForm({ ...holidayForm, type: e.target.value })}
               className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20">
               <option value="public">Nasional</option>
@@ -709,9 +720,11 @@ function HolidaysView({ showForm, onCloseForm }: { showForm: boolean; onCloseFor
               <input type="text" placeholder="Nama hari libur" value={holidayForm.holiday_name}
                 onChange={(e) => setHolidayForm({ ...holidayForm, holiday_name: e.target.value })}
                 className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20" />
-              <input type="date" value={holidayForm.holiday_date}
-                onChange={(e) => setHolidayForm({ ...holidayForm, holiday_date: e.target.value })}
-                className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20" />
+              <DatePickerInput
+                value={holidayForm.holiday_date}
+                onChange={(holiday_date) => setHolidayForm({ ...holidayForm, holiday_date })}
+                aria-label="Tanggal libur perusahaan"
+              />
               <div className="flex gap-2">
                 <button onClick={() => setShowInlineAdd(null)} className="px-3 py-1.5 rounded text-xs border border-input hover:bg-accent">Batal</button>
                 <button onClick={() => handleAddHoliday("public")} className="px-3 py-1.5 rounded text-xs bg-gold/10 text-gold hover:bg-gold/20 font-medium">Simpan</button>
@@ -723,7 +736,7 @@ function HolidaysView({ showForm, onCloseForm }: { showForm: boolean; onCloseFor
           ) : (publicH?.data || []).map((h: any) => (
             <div key={h.id} className="flex justify-between py-2 border-b border-border/50 last:border-0">
               <span className="text-sm">{h.holiday_name}</span>
-              <span className="text-2xs text-muted-foreground font-mono">{new Date(h.holiday_date).toLocaleDateString("id-ID")}</span>
+              <span className="text-2xs text-muted-foreground font-mono">{formatDate(h.holiday_date)}</span>
             </div>
           ))}
         </div>
@@ -738,9 +751,11 @@ function HolidaysView({ showForm, onCloseForm }: { showForm: boolean; onCloseFor
               <input type="text" placeholder="Nama hari libur" value={holidayForm.holiday_name}
                 onChange={(e) => setHolidayForm({ ...holidayForm, holiday_name: e.target.value })}
                 className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20" />
-              <input type="date" value={holidayForm.holiday_date}
-                onChange={(e) => setHolidayForm({ ...holidayForm, holiday_date: e.target.value })}
-                className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20" />
+              <DatePickerInput
+                value={holidayForm.holiday_date}
+                onChange={(holiday_date) => setHolidayForm({ ...holidayForm, holiday_date })}
+                aria-label="Tanggal libur perusahaan"
+              />
               <div className="flex gap-2">
                 <button onClick={() => setShowInlineAdd(null)} className="px-3 py-1.5 rounded text-xs border border-input hover:bg-accent">Batal</button>
                 <button onClick={() => handleAddHoliday("company")} className="px-3 py-1.5 rounded text-xs bg-gold/10 text-gold hover:bg-gold/20 font-medium">Simpan</button>
@@ -752,7 +767,7 @@ function HolidaysView({ showForm, onCloseForm }: { showForm: boolean; onCloseFor
           ) : (companyH?.data || []).map((h: any) => (
             <div key={h.id} className="flex justify-between py-2 border-b border-border/50 last:border-0">
               <span className="text-sm">{h.holiday_name}</span>
-              <span className="text-2xs text-muted-foreground font-mono">{new Date(h.holiday_date).toLocaleDateString("id-ID")}</span>
+              <span className="text-2xs text-muted-foreground font-mono">{formatDate(h.holiday_date)}</span>
             </div>
           ))}
         </div>

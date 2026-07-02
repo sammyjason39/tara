@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { CalendarDays, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { formatDate, formatDateRange } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 export function LeavesPage() {
@@ -127,9 +128,7 @@ export function LeavesPage() {
                       {t("leaves.leave")} {leave.leave_type} • {leave.total_days} {t("leaves.days")}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {leave.start_date && new Date(leave.start_date).toLocaleDateString("id-ID")}
-                      {" — "}
-                      {leave.end_date && new Date(leave.end_date).toLocaleDateString("id-ID")}
+                      {formatDateRange(leave.start_date, leave.end_date)}
                     </p>
                     {leave.reason && (
                       <p className="text-xs text-muted-foreground mt-1 italic">
@@ -180,7 +179,7 @@ export function LeavesPage() {
                     </div>
                     <div>
                       <p className="text-luxury-label mb-1">{t("leaves.request_date")}</p>
-                      <p>{leave.created_at ? new Date(leave.created_at).toLocaleDateString("id-ID") : "—"}</p>
+                      <p>{formatDate(leave.created_at)}</p>
                     </div>
                     <div>
                       <p className="text-luxury-label mb-1">{t("common.status")}</p>

@@ -6,6 +6,7 @@ import {
   ArrowLeft, Mail, Phone, Building2, MapPin, Calendar,
   User, Shield, Briefcase,
 } from "lucide-react";
+import { formatDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 export function EmployeeDetailPage() {
@@ -66,7 +67,7 @@ export function EmployeeDetailPage() {
     { icon: Building2, label: "Departemen", value: employee.department || "—" },
     { icon: Shield, label: "Role", value: employee.role || "Employee" },
     { icon: MapPin, label: "Lokasi Kantor", value: employee.office || "—" },
-    { icon: Calendar, label: "Tanggal Bergabung", value: employee.hire_date ? new Date(employee.hire_date).toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" }) : "—" },
+    { icon: Calendar, label: "Tanggal Bergabung", value: formatDate(employee.hire_date) },
     { icon: Briefcase, label: "Status", value: employee.employment_status || "active" },
   ];
 

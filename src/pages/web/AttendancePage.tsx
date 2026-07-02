@@ -3,13 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
 import { Clock, Users, AlertTriangle, CheckCircle2, Calendar } from "lucide-react";
+import { DatePickerInput } from "@/components/DatePickerInput";
+import { todayApiDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 export function AttendancePage() {
   const { t } = useTranslation();
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
+  const [selectedDate, setSelectedDate] = useState(todayApiDate());
 
   const { data, isLoading } = useQuery({
     queryKey: ["attendance", selectedDate],
@@ -38,11 +38,11 @@ export function AttendancePage() {
         </div>
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-muted-foreground" />
-          <input
-            type="date"
+          <DatePickerInput
             value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="h-9 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 transition-colors"
+            onChange={setSelectedDate}
+            className="w-40"
+            aria-label="Pilih tanggal absensi"
           />
         </div>
       </div>

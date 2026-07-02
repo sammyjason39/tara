@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
 import { Banknote, Plus, FileText, CreditCard, ChevronRight, X } from "lucide-react";
+import { DatePickerInput } from "@/components/DatePickerInput";
+import { formatDate, formatDateRange } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 const allTabs = [
@@ -113,15 +115,16 @@ function PeriodsView({ showForm, onCloseForm }: { showForm: boolean; onCloseForm
               onChange={(e) => setForm({ ...form, period_name: e.target.value })}
               className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
             />
-            <input
-              type="date" value={form.start_date}
-              onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-              className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
+            <DatePickerInput
+              value={form.start_date}
+              onChange={(start_date) => setForm({ ...form, start_date })}
+              aria-label="Tanggal mulai periode gaji"
             />
-            <input
-              type="date" value={form.end_date}
-              onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-              className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
+            <DatePickerInput
+              value={form.end_date}
+              onChange={(end_date) => setForm({ ...form, end_date })}
+              min={form.start_date || undefined}
+              aria-label="Tanggal selesai periode gaji"
             />
           </div>
           <div className="flex justify-end gap-2">
@@ -155,7 +158,7 @@ function PeriodsView({ showForm, onCloseForm }: { showForm: boolean; onCloseForm
                 <div>
                   <p className="text-sm font-medium">{p.period_name}</p>
                   <p className="text-2xs text-muted-foreground">
-                    {new Date(p.start_date).toLocaleDateString("id-ID")} — {new Date(p.end_date).toLocaleDateString("id-ID")}
+                    {formatDateRange(p.start_date, p.end_date)}
                   </p>
                 </div>
               </div>
@@ -176,8 +179,8 @@ function PeriodsView({ showForm, onCloseForm }: { showForm: boolean; onCloseForm
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div><p className="text-luxury-label mb-1">Periode</p><p>{p.period_name}</p></div>
                   <div><p className="text-luxury-label mb-1">Status</p><p className="capitalize">{p.status}</p></div>
-                  <div><p className="text-luxury-label mb-1">Mulai</p><p>{new Date(p.start_date).toLocaleDateString("id-ID")}</p></div>
-                  <div><p className="text-luxury-label mb-1">Selesai</p><p>{new Date(p.end_date).toLocaleDateString("id-ID")}</p></div>
+                  <div><p className="text-luxury-label mb-1">Mulai</p><p>{formatDate(p.start_date)}</p></div>
+                  <div><p className="text-luxury-label mb-1">Selesai</p><p>{formatDate(p.end_date)}</p></div>
                 </div>
                 <p className="text-2xs text-muted-foreground mt-3">Klik untuk melihat slip gaji pada halaman detail (segera hadir)</p>
               </div>

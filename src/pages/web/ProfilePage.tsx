@@ -7,6 +7,7 @@ import {
   User, Mail, Phone, Building2, Shield, Calendar,
   Globe, Moon, Sun, Lock, Save, Eye, EyeOff, MapPin,
 } from "lucide-react";
+import { formatDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
 export function ProfilePage() {
@@ -111,7 +112,7 @@ export function ProfilePage() {
           <Field icon={Building2} label="Departemen" value={user?.department || "—"} editing={false} />
           <Field icon={Shield} label="Jabatan" value={user?.role || "—"} editing={false} />
           <Field icon={MapPin} label="Lokasi Kantor" value={(user as any)?.office || "—"} editing={false} />
-          <Field icon={Calendar} label="Tanggal Bergabung" value={(user as any)?.hire_date || "—"} editing={false} />
+          <Field icon={Calendar} label="Tanggal Bergabung" value={formatDate((user as any)?.hire_date)} editing={false} />
           <div className="space-y-1.5">
             <label className="text-luxury-label flex items-center gap-1.5"><Globe className="h-3 w-3" /> Bahasa</label>
             {editing ? (

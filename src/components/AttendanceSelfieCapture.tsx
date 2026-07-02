@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Camera, Loader2, MapPin, RefreshCw, Sun, X } from "lucide-react";
+import {
+  bindStreamToVideo,
+  mapCameraError,
+  requestFrontCameraStream,
+  stopMediaStream,
+} from "@/lib/camera";
 import { cn } from "@/lib/utils";
 
 type Step = "intro" | "camera" | "preview";
@@ -19,18 +25,29 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
+  const [isVideoLive, setIsVideoLive] = useState(false);
 
   const stopCamera = useCallback(() => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
+    stopMediaStream(streamRef.current);
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
+    setIsVideoLive(false);
   }, []);
 
-  const attachStream = useCallback(async (stream: MediaStream) => {
-    streamRef.current = stream;
-    if (videoRef.current) {
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play();
+  const bindActiveStream = useCallback(async () => {
+    const video = videoRef.current;
+    const stream = streamRef.current;
+    if (!video || !stream) return false;
+
+    try {
+      await bindStreamToVideo(video, stream);
+      setIsVideoLive(video.videoWidth > 0);
+      setError(null);
+      return video.videoWidth > 0;
+    } catch (err: unknown) {
+      setIsVideoLive(false);
+      setError(mapCameraError(err));
+      return false;
     }
   }, []);
 
@@ -38,33 +55,41 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
     setIsStarting(true);
     setError(null);
     setPreview(null);
+    setIsVideoLive(false);
     stopCamera();
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "user",
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        audio: false,
-      });
-      await attachStream(stream);
+      const stream = await requestFrontCameraStream();
+      streamRef.current = stream;
+      // Video element only exists when step is "camera" — bind happens in useEffect below.
       setStep("camera");
-    } catch (err: any) {
-      const name = err?.name || "";
-      if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-        setError("Izin kamera ditolak. Aktifkan kamera untuk tara.ralali.io di pengaturan browser.");
-      } else if (name === "NotFoundError") {
-        setError("Kamera depan tidak ditemukan di perangkat ini.");
-      } else {
-        setError(err?.message || "Gagal membuka kamera");
-      }
+    } catch (err: unknown) {
+      setError(mapCameraError(err));
       setStep("intro");
     } finally {
       setIsStarting(false);
     }
-  }, [attachStream, stopCamera]);
+  }, [stopCamera]);
+
+  // Attach stream after <video> mounts (fixes blank preview on Android Chrome).
+  useEffect(() => {
+    if (step !== "camera" || !streamRef.current) return;
+
+    let cancelled = false;
+    const run = async () => {
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      if (cancelled) return;
+      const ok = await bindActiveStream();
+      if (!cancelled && !ok && !error) {
+        setError("Kamera tidak menampilkan gambar. Tap Muat Ulang Kamera.");
+      }
+    };
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [step, bindActiveStream, error]);
 
   useEffect(() => {
     if (open) {
@@ -72,6 +97,7 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
       setPreview(null);
       setError(null);
       setIsStarting(false);
+      setIsVideoLive(false);
     } else {
       stopCamera();
       setPreview(null);
@@ -84,7 +110,7 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
   const handleCapture = () => {
     const video = videoRef.current;
     if (!video || !video.videoWidth) {
-      setError("Kamera belum siap. Tunggu sebentar lalu coba lagi.");
+      setError("Kamera belum siap. Tunggu preview muncul atau tap Muat Ulang Kamera.");
       return;
     }
 
@@ -119,6 +145,7 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
   if (!open) return null;
 
   const title = mode === "in" ? "Foto Clock In" : "Foto Clock Out";
+  const showCameraUi = step === "camera" || step === "preview";
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in">
@@ -158,9 +185,7 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
               </ul>
             </div>
 
-            {error && (
-              <p className="text-sm text-destructive text-center">{error}</p>
-            )}
+            {error && <p className="text-sm text-destructive text-center">{error}</p>}
 
             <button
               type="button"
@@ -183,7 +208,7 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
           </div>
         )}
 
-        {(step === "camera" || step === "preview") && (
+        {showCameraUi && (
           <>
             <p className="text-sm text-muted-foreground">
               {step === "preview"
@@ -193,20 +218,31 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
 
             <div
               className={cn(
-                "relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-black/90 border border-border",
+                "relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-black border border-border",
                 isStarting && "animate-pulse",
               )}
             >
               {step === "preview" && preview ? (
                 <img src={preview} alt="Pratinjau selfie" className="h-full w-full object-cover" />
               ) : (
-                <video
-                  ref={videoRef}
-                  playsInline
-                  muted
-                  autoPlay
-                  className="h-full w-full object-cover scale-x-[-1]"
-                />
+                <>
+                  <video
+                    ref={videoRef}
+                    playsInline
+                    muted
+                    autoPlay
+                    className={cn(
+                      "h-full w-full object-cover scale-x-[-1]",
+                      !isVideoLive && "opacity-0",
+                    )}
+                  />
+                  {!isVideoLive && !isStarting && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black text-center px-4">
+                      <Loader2 className="h-8 w-8 text-gold animate-spin" />
+                      <p className="text-xs text-muted-foreground">Menghubungkan kamera...</p>
+                    </div>
+                  )}
+                </>
               )}
 
               {isStarting && (
@@ -216,8 +252,17 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
               )}
             </div>
 
-            {error && (
-              <p className="text-sm text-destructive text-center">{error}</p>
+            {error && <p className="text-sm text-destructive text-center">{error}</p>}
+
+            {step === "camera" && !isVideoLive && !isStarting && (
+              <button
+                type="button"
+                onClick={() => void startCamera()}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-input text-sm font-medium"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Muat Ulang Kamera
+              </button>
             )}
 
             <div className="flex gap-2">
@@ -243,7 +288,7 @@ export function AttendanceSelfieCapture({ open, mode, officeName, onCapture, onC
                 <button
                   type="button"
                   onClick={handleCapture}
-                  disabled={isStarting || !!error}
+                  disabled={isStarting || !isVideoLive}
                   className="w-full py-3 rounded-lg bg-gold text-primary-foreground text-sm font-semibold disabled:opacity-50"
                 >
                   Ambil Foto
