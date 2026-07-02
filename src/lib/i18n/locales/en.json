@@ -150,7 +150,20 @@
     "no_data_for_date": "No attendance data for this date",
     "on_time": "On Time",
     "late_minutes": "Late {{minutes}}m",
-    "employee": "Employee"
+    "employee": "Employee",
+    "detail_title": "Attendance Detail",
+    "detail_not_found": "Attendance record not found",
+    "click_row_hint": "Click a row to view details and photo proof",
+    "photo": "Photo",
+    "photo_in": "Clock In Photo",
+    "photo_out": "Clock Out Photo",
+    "no_photo": "No photo for this attendance",
+    "photo_load_failed": "Failed to load photo",
+    "date": "Date",
+    "employee_code": "Employee ID",
+    "department": "Department",
+    "office": "Office Location",
+    "close": "Close"
   },
   "leaves": {
     "title": "Leave Management",

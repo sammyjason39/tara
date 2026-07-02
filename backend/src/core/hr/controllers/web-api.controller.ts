@@ -14,8 +14,11 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
+  NotFoundException,
+  Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import { JwtGuard } from '../../auth/guards/jwt.guard';
 import { RolesGuard, Roles } from '../../auth/guards/roles.guard';
 import { PrismaService } from '../../../persistence/prisma.service';
@@ -23,6 +26,7 @@ import { CompanyBrandingService } from '../services/company-branding.service';
 import { FeatureFlagsService } from '../services/feature-flags.service';
 import { LeaveService } from '../services/leave.service';
 import { NotificationService } from '../services/notification.service';
+import { AttendancePhotoService } from '../services/attendance-photo.service';
 import { createLogoMulterOptions } from '../services/company-logo-upload.config';
 
 /**
@@ -38,6 +42,7 @@ export class WebApiController {
     private readonly featureFlags: FeatureFlagsService,
     private readonly leaveService: LeaveService,
     private readonly notificationService: NotificationService,
+    private readonly attendancePhotoService: AttendancePhotoService,
   ) {}
 
   @Get('dashboard/stats')
@@ -177,6 +182,9 @@ export class WebApiController {
           employee: {
             select: { id: true, full_name: true, employee_code: true },
           },
+          office_location: {
+            select: { location_name: true },
+          },
         },
         orderBy: { clock_in_time: 'asc' },
       }),
@@ -194,19 +202,66 @@ export class WebApiController {
         tardy,
         absent,
         clocked_out: records.filter((r) => r.clock_out_time).length,
-        records: records.map((r) => ({
-          id: r.id,
-          employee_id: r.employee_id,
-          employee_name: r.employee.full_name,
-          employee_code: r.employee.employee_code,
-          attendance_date: r.attendance_date,
-          clock_in_time: r.clock_in_time,
-          clock_out_time: r.clock_out_time,
-          is_tardy: r.is_tardy,
-          tardiness_minutes: r.tardiness_minutes,
-        })),
+        records: records.map((r) => this.formatAttendanceRecord(r)),
       },
     };
+  }
+
+  @Get('attendance/:id')
+  @UseGuards(RolesGuard)
+  @Roles('SuperAdmin', 'HR_Admin', 'Supervisor')
+  async getAttendanceDetail(@Param('id') id: string) {
+    const record = await this.prisma.attendance.findUnique({
+      where: { id },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            full_name: true,
+            employee_code: true,
+            department: { select: { name: true } },
+          },
+        },
+        office_location: { select: { location_name: true } },
+      },
+    });
+
+    if (!record) {
+      throw new NotFoundException('Data absensi tidak ditemukan');
+    }
+
+    return { success: true, data: this.formatAttendanceRecord(record) };
+  }
+
+  @Get('attendance/:id/photo/:type')
+  @UseGuards(RolesGuard)
+  @Roles('SuperAdmin', 'HR_Admin', 'Supervisor')
+  async getAttendancePhoto(
+    @Param('id') id: string,
+    @Param('type') type: string,
+    @Res() res: Response,
+  ) {
+    if (type !== 'in' && type !== 'out') {
+      throw new BadRequestException('Tipe foto tidak valid');
+    }
+
+    const record = await this.prisma.attendance.findUnique({ where: { id } });
+    if (!record) {
+      throw new NotFoundException('Data absensi tidak ditemukan');
+    }
+
+    const relativePath =
+      type === 'in' ? record.clock_in_photo_path : record.clock_out_photo_path;
+    if (!relativePath) {
+      throw new NotFoundException('Foto tidak tersedia');
+    }
+
+    const { buffer, mimeType } =
+      await this.attendancePhotoService.readPhoto(relativePath);
+
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Cache-Control', 'private, max-age=3600');
+    res.send(buffer);
   }
 
   @Get('leaves/pending')
@@ -498,6 +553,26 @@ export class WebApiController {
     });
 
     return { success: true, data: employees.map((e) => this.formatEmployee(e)) };
+  }
+
+  private formatAttendanceRecord(r: any) {
+    return {
+      id: r.id,
+      employee_id: r.employee_id,
+      employee_name: r.employee?.full_name ?? null,
+      employee_code: r.employee?.employee_code ?? null,
+      department_name: r.employee?.department?.name ?? null,
+      attendance_date: r.attendance_date,
+      clock_in_time: r.clock_in_time,
+      clock_out_time: r.clock_out_time,
+      clock_in_source: r.clock_in_source,
+      clock_out_source: r.clock_out_source,
+      is_tardy: r.is_tardy,
+      tardiness_minutes: r.tardiness_minutes,
+      office_name: r.office_location?.location_name ?? null,
+      has_clock_in_photo: !!r.clock_in_photo_path,
+      has_clock_out_photo: !!r.clock_out_photo_path,
+    };
   }
 
   private formatEmployee(e: any) {

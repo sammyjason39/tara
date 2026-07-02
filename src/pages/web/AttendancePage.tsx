@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
-import { Clock, Users, AlertTriangle, CheckCircle2, Calendar } from "lucide-react";
+import { Clock, Users, AlertTriangle, CheckCircle2, Calendar, ChevronRight, Camera } from "lucide-react";
+import { AttendanceDetailDialog } from "@/components/AttendanceDetailDialog";
 import { DatePickerInput } from "@/components/DatePickerInput";
 import { todayApiDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
@@ -10,6 +11,7 @@ import { cn } from "@/lib/utils";
 export function AttendancePage() {
   const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState(todayApiDate());
+  const [selectedAttendanceId, setSelectedAttendanceId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["attendance", selectedDate],
@@ -62,8 +64,9 @@ export function AttendancePage() {
 
       {/* Attendance Table */}
       <div className="surface-elevated overflow-hidden">
-        <div className="px-4 py-3 border-b border-border">
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-2">
           <h2 className="text-sm font-semibold">{t("attendance.details")}</h2>
+          <p className="text-2xs text-muted-foreground hidden sm:block">{t("attendance.click_row_hint")}</p>
         </div>
         <table className="w-full">
           <thead>
@@ -72,7 +75,9 @@ export function AttendancePage() {
               <th className="text-left px-4 py-3 text-luxury-label">{t("attendance.clock_in")}</th>
               <th className="text-left px-4 py-3 text-luxury-label hidden md:table-cell">{t("attendance.clock_out")}</th>
               <th className="text-left px-4 py-3 text-luxury-label hidden lg:table-cell">{t("attendance.source")}</th>
+              <th className="text-left px-4 py-3 text-luxury-label hidden sm:table-cell">{t("attendance.photo")}</th>
               <th className="text-left px-4 py-3 text-luxury-label">{t("attendance.status")}</th>
+              <th className="w-10 px-2 py-3" aria-hidden />
             </tr>
           </thead>
           <tbody>
@@ -83,45 +88,72 @@ export function AttendancePage() {
                   <td className="px-4 py-3"><div className="h-4 w-14 bg-muted rounded animate-pulse" /></td>
                   <td className="px-4 py-3 hidden md:table-cell"><div className="h-4 w-14 bg-muted rounded animate-pulse" /></td>
                   <td className="px-4 py-3 hidden lg:table-cell"><div className="h-4 w-14 bg-muted rounded animate-pulse" /></td>
+                  <td className="px-4 py-3 hidden sm:table-cell"><div className="h-4 w-10 bg-muted rounded animate-pulse" /></td>
                   <td className="px-4 py-3"><div className="h-5 w-16 bg-muted rounded-full animate-pulse" /></td>
+                  <td className="px-2 py-3" />
                 </tr>
               ))
             ) : (stats.records || []).length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center">
+                <td colSpan={7} className="px-4 py-12 text-center">
                   <Clock className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
                   <p className="text-sm text-muted-foreground">{t("attendance.no_data_for_date")}</p>
                 </td>
               </tr>
             ) : (
-              (stats.records || []).map((record: any) => (
-                <tr key={record.id} className="border-b border-border/50 hover:bg-accent/30 transition-colors">
-                  <td className="px-4 py-3 text-sm font-medium">{record.employee_name || "—"}</td>
-                  <td className="px-4 py-3 text-sm font-mono text-muted-foreground">
-                    {record.clock_in_time ? new Date(record.clock_in_time).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-sm font-mono text-muted-foreground hidden md:table-cell">
-                    {record.clock_out_time ? new Date(record.clock_out_time).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground hidden lg:table-cell capitalize">
-                    {record.clock_in_source || "phone"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={cn(
-                      "inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-medium",
-                      record.is_tardy
-                        ? "bg-warning/10 text-warning"
-                        : "bg-success/10 text-success"
-                    )}>
-                      {record.is_tardy ? t("attendance.late_minutes", { minutes: record.tardiness_minutes }) : t("attendance.on_time")}
-                    </span>
-                  </td>
-                </tr>
-              ))
+              (stats.records || []).map((record: any) => {
+                const hasPhoto = record.has_clock_in_photo || record.has_clock_out_photo;
+                return (
+                  <tr
+                    key={record.id}
+                    onClick={() => setSelectedAttendanceId(record.id)}
+                    className="border-b border-border/50 hover:bg-accent/30 transition-colors cursor-pointer"
+                  >
+                    <td className="px-4 py-3 text-sm font-medium">{record.employee_name || "—"}</td>
+                    <td className="px-4 py-3 text-sm font-mono text-muted-foreground">
+                      {record.clock_in_time ? new Date(record.clock_in_time).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-sm font-mono text-muted-foreground hidden md:table-cell">
+                      {record.clock_out_time ? new Date(record.clock_out_time).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground hidden lg:table-cell capitalize">
+                      {record.clock_in_source || "phone"}
+                    </td>
+                    <td className="px-4 py-3 hidden sm:table-cell">
+                      {hasPhoto ? (
+                        <span className="inline-flex items-center gap-1 text-2xs text-muted-foreground">
+                          <Camera className="h-3.5 w-3.5" />
+                          {(record.has_clock_in_photo ? 1 : 0) + (record.has_clock_out_photo ? 1 : 0)}
+                        </span>
+                      ) : (
+                        <span className="text-2xs text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={cn(
+                        "inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-medium",
+                        record.is_tardy
+                          ? "bg-warning/10 text-warning"
+                          : "bg-success/10 text-success"
+                      )}>
+                        {record.is_tardy ? t("attendance.late_minutes", { minutes: record.tardiness_minutes }) : t("attendance.on_time")}
+                      </span>
+                    </td>
+                    <td className="px-2 py-3 text-muted-foreground">
+                      <ChevronRight className="h-4 w-4" />
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
+
+      <AttendanceDetailDialog
+        attendanceId={selectedAttendanceId}
+        onClose={() => setSelectedAttendanceId(null)}
+      />
     </div>
   );
 }

@@ -24,6 +24,26 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
   return res.json();
 }
 
+export async function fetchAuthenticatedBlobUrl(path: string): Promise<string> {
+  const token = localStorage.getItem("tara-token");
+  const res = await fetch(`${BASE}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  if (res.status === 401) {
+    localStorage.removeItem("tara-token");
+    window.location.href = "/login";
+    throw new Error("Unauthorized");
+  }
+
+  if (!res.ok) {
+    throw new Error(`Failed to load resource: ${res.status}`);
+  }
+
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
 export const api = {
   get: <T = any>(path: string) => request<T>(path),
   post: <T = any>(path: string, body?: any) =>

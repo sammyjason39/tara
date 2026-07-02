@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -47,6 +47,33 @@ export class AttendancePhotoService {
     const relativePath = path.join('attendance', employeeId, filename);
     this.logger.log(`Saved attendance selfie: ${relativePath}`);
     return relativePath;
+  }
+
+  resolveAbsolutePath(relativePath: string): string {
+    const normalized = relativePath.replace(/\\/g, '/').replace(/^\/+/, '');
+    if (!normalized || normalized.includes('..')) {
+      throw new BadRequestException('Path foto tidak valid');
+    }
+
+    const segments = normalized.split('/');
+    if (segments[0] !== 'attendance' || segments.length < 3) {
+      throw new BadRequestException('Path foto tidak valid');
+    }
+
+    return path.join(this.uploadDir, ...segments.slice(1));
+  }
+
+  async readPhoto(relativePath: string): Promise<{ buffer: Buffer; mimeType: string }> {
+    const absolutePath = this.resolveAbsolutePath(relativePath);
+    try {
+      const buffer = await fs.readFile(absolutePath);
+      const ext = path.extname(absolutePath).toLowerCase();
+      const mimeType =
+        ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg';
+      return { buffer, mimeType };
+    } catch {
+      throw new NotFoundException('File foto tidak ditemukan');
+    }
   }
 
   private decodePhoto(input: string): { buffer: Buffer; ext: string } {

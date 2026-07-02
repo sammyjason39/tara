@@ -150,7 +150,20 @@
     "no_data_for_date": "Belum ada data kehadiran untuk tanggal ini",
     "on_time": "Tepat Waktu",
     "late_minutes": "Terlambat {{minutes}}m",
-    "employee": "Karyawan"
+    "employee": "Karyawan",
+    "detail_title": "Detail Absensi",
+    "detail_not_found": "Data absensi tidak ditemukan",
+    "click_row_hint": "Klik baris untuk melihat detail dan bukti foto",
+    "photo": "Foto",
+    "photo_in": "Bukti Foto Clock In",
+    "photo_out": "Bukti Foto Clock Out",
+    "no_photo": "Tidak ada foto untuk absensi ini",
+    "photo_load_failed": "Gagal memuat foto",
+    "date": "Tanggal",
+    "employee_code": "ID Karyawan",
+    "department": "Departemen",
+    "office": "Lokasi Kantor",
+    "close": "Tutup"
   },
   "leaves": {
     "title": "Manajemen Cuti",
