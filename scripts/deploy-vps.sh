@@ -6,7 +6,7 @@
 #   bash scripts/deploy-vps.sh production
 #
 # Environment (CI or local):
-#   VPS_HOST          e.g. ubuntu@rll-tara-agentic-tencent.tail5edd98.ts.net
+#   VPS_HOST          e.g. ubuntu@43.157.212.212 (public IP — GitHub Actions cannot use Tailscale hostnames)
 #   VPS_SSH_KEY_FILE  path to private key (default: ~/.ssh/deploy_key)
 
 set -euo pipefail
@@ -18,7 +18,7 @@ if [[ "$TARGET" != "staging" && "$TARGET" != "production" ]]; then
 fi
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SSH_HOST="${VPS_HOST:-ubuntu@rll-tara-agentic-tencent.tail5edd98.ts.net}"
+SSH_HOST="${VPS_HOST:-ubuntu@43.157.212.212}"
 SSH_KEY="${VPS_SSH_KEY_FILE:-$HOME/.ssh/deploy_key}"
 SSH_OPTS=(-i "$SSH_KEY" -o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 
