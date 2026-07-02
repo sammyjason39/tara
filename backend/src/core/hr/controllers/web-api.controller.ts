@@ -13,6 +13,7 @@ import {
   UseInterceptors,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtGuard } from '../../auth/guards/jwt.guard';
@@ -20,6 +21,8 @@ import { RolesGuard, Roles } from '../../auth/guards/roles.guard';
 import { PrismaService } from '../../../persistence/prisma.service';
 import { CompanyBrandingService } from '../services/company-branding.service';
 import { FeatureFlagsService } from '../services/feature-flags.service';
+import { LeaveService } from '../services/leave.service';
+import { NotificationService } from '../services/notification.service';
 import { createLogoMulterOptions } from '../services/company-logo-upload.config';
 
 /**
@@ -33,6 +36,8 @@ export class WebApiController {
     private readonly prisma: PrismaService,
     private readonly brandingService: CompanyBrandingService,
     private readonly featureFlags: FeatureFlagsService,
+    private readonly leaveService: LeaveService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   @Get('dashboard/stats')
@@ -89,6 +94,28 @@ export class WebApiController {
     });
 
     return { success: true, data: employee ? this.formatEmployee(employee) : null };
+  }
+
+  @Put('employees/me')
+  async updateMyProfile(@Req() req: any, @Body() body: any) {
+    const data: Record<string, unknown> = {};
+    if (body.full_name !== undefined) data.full_name = body.full_name;
+    if (body.phone !== undefined) data.phone = body.phone;
+    if (body.language_preference !== undefined) {
+      data.language_preference = body.language_preference;
+    }
+
+    if (Object.keys(data).length === 0) {
+      throw new BadRequestException('Tidak ada field yang diperbarui');
+    }
+
+    const employee = await this.prisma.employee.update({
+      where: { id: req.user.sub },
+      data,
+      include: { role: true, department: true, office: true },
+    });
+
+    return { success: true, data: this.formatEmployee(employee) };
   }
 
   @Get('employees/:id')
@@ -215,6 +242,91 @@ export class WebApiController {
     };
   }
 
+  @Get('leaves/my-balance')
+  async getMyLeaveBalance(@Req() req: any) {
+    const balance = await this.leaveService.getLeaveBalance(req.user.sub);
+    return { success: true, data: this.formatLeaveBalance(balance) };
+  }
+
+  @Get('leaves/my-requests')
+  async getMyLeaveRequests(@Req() req: any, @Query('status') status?: string) {
+    const requests = await this.leaveService.getLeaveRequests(req.user.sub, {
+      status,
+    });
+    return {
+      success: true,
+      data: requests.map((r) => ({
+        id: r.id,
+        employee_id: r.employee_id,
+        leave_type: r.leave_type,
+        start_date: r.start_date,
+        end_date: r.end_date,
+        total_days: Number(r.total_days),
+        reason: r.reason,
+        status: r.status,
+        submitted_at: r.submitted_at,
+      })),
+    };
+  }
+
+  @Post('leaves/request')
+  @HttpCode(HttpStatus.CREATED)
+  async submitLeaveRequest(@Req() req: any, @Body() body: any) {
+    if (!body.leave_type || !body.start_date || !body.end_date) {
+      throw new BadRequestException(
+        'Jenis cuti, tanggal mulai, dan tanggal selesai wajib diisi',
+      );
+    }
+
+    const startDate = new Date(body.start_date);
+    const endDate = new Date(body.end_date);
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      throw new BadRequestException('Format tanggal tidak valid');
+    }
+
+    const leaveRequest = await this.leaveService.submitLeaveRequest({
+      employee_id: req.user.sub,
+      leave_type: body.leave_type,
+      start_date: startDate,
+      end_date: endDate,
+      reason: body.reason,
+      half_day: !!body.half_day,
+    });
+
+    return {
+      success: true,
+      message: 'Pengajuan cuti berhasil dikirim',
+      data: {
+        ...leaveRequest,
+        total_days: Number(leaveRequest.total_days),
+      },
+    };
+  }
+
+  @Put('leaves/:id/approve')
+  @UseGuards(RolesGuard)
+  @Roles('SuperAdmin', 'HR_Admin', 'Supervisor')
+  async approveLeave(@Param('id') id: string, @Req() req: any) {
+    const data = await this.leaveService.approveLeaveRequest(id, req.user.sub);
+    return { success: true, data };
+  }
+
+  @Put('leaves/:id/reject')
+  @UseGuards(RolesGuard)
+  @Roles('SuperAdmin', 'HR_Admin', 'Supervisor')
+  async rejectLeave(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Body() body: { rejection_reason?: string },
+  ) {
+    const data = await this.leaveService.rejectLeaveRequest(
+      id,
+      req.user.sub,
+      body?.rejection_reason?.trim() || 'Ditolak oleh atasan',
+    );
+    return { success: true, data };
+  }
+
   @Get('notifications/my-notifications')
   async getMyNotifications(@Req() req: any) {
     const notifications = await this.prisma.notification.findMany({
@@ -224,6 +336,43 @@ export class WebApiController {
     });
 
     return { success: true, data: notifications };
+  }
+
+  @Put('notifications/mark-all-read')
+  async markAllNotificationsRead(@Req() req: any) {
+    const count = await this.notificationService.markAllAsRead(req.user.sub);
+    return {
+      success: true,
+      message: 'Semua notifikasi ditandai sudah dibaca',
+      count,
+    };
+  }
+
+  @Get('settings/public-holidays')
+  async getPublicHolidays() {
+    const rows = await this.prisma.publicHoliday.findMany({
+      where: { is_active: true },
+      orderBy: { holiday_date: 'asc' },
+    });
+    return { success: true, data: rows };
+  }
+
+  @Post('settings/public-holidays')
+  @UseGuards(RolesGuard)
+  @Roles('SuperAdmin', 'HR_Admin')
+  async createPublicHoliday(
+    @Body() body: { holiday_name: string; holiday_date: string },
+  ) {
+    if (!body.holiday_name?.trim() || !body.holiday_date) {
+      throw new BadRequestException('Nama dan tanggal hari libur wajib diisi');
+    }
+    const row = await this.prisma.publicHoliday.create({
+      data: {
+        holiday_name: body.holiday_name.trim(),
+        holiday_date: new Date(body.holiday_date),
+      },
+    });
+    return { success: true, data: row };
   }
 
   @Get('settings/company')
@@ -364,6 +513,24 @@ export class WebApiController {
       employment_status: e.employment_status,
       hire_date: e.hire_date,
       language_preference: e.language_preference,
+    };
+  }
+
+  private formatLeaveBalance(balance: any) {
+    if (!balance) {
+      return {
+        remaining_days: 0,
+        total_entitlement: 0,
+        used_days: 0,
+        year: new Date().getFullYear(),
+      };
+    }
+    return {
+      remaining_days: Number(balance.remaining_days),
+      total_entitlement: Number(balance.total_entitlement),
+      used_days: Number(balance.used_days),
+      carryover_days: Number(balance.carryover_days ?? 0),
+      year: balance.year,
     };
   }
 }

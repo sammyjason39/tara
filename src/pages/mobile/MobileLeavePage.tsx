@@ -56,9 +56,8 @@ export function MobileLeavePage() {
       setForm({ leave_type: "annual", start_date: "", end_date: "", reason: "", half_day: false });
       queryClient.invalidateQueries({ queryKey: ["my-leave-requests"] });
       queryClient.invalidateQueries({ queryKey: ["my-balance"] });
-    } catch {
-      toast.success("Pengajuan cuti berhasil dikirim (demo)");
-      setShowForm(false);
+    } catch (err: any) {
+      toast.error(err?.message || "Gagal mengirim pengajuan cuti");
     } finally { setSubmitting(false); }
   };
 

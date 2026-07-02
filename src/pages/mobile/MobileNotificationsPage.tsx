@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { Bell, BellOff, Megaphone, Lock } from "lucide-react";
@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 
 export function MobileNotificationsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
     queryKey: ["my-notifications"],
@@ -17,8 +18,15 @@ export function MobileNotificationsPage() {
   const notifications = data?.data || [];
   const unread = notifications.filter((n: any) => !n.is_read).length;
 
-  const markAllRead = () => {
-    toast.success("Semua notifikasi ditandai sudah dibaca");
+  const markAllRead = async () => {
+    try {
+      await api.put("/notifications/mark-all-read");
+      await queryClient.invalidateQueries({ queryKey: ["my-notifications"] });
+      await queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      toast.success("Semua notifikasi ditandai sudah dibaca");
+    } catch (err: any) {
+      toast.error(err?.message || "Gagal menandai notifikasi");
+    }
   };
 
   return (

@@ -30,11 +30,11 @@ export function ProfilePage() {
   const handleSaveProfile = async () => {
     try {
       await api.put("/employees/me", profile);
+      await refreshProfile();
       toast.success("Profil berhasil diperbarui");
       setEditing(false);
     } catch (err: any) {
-      toast.success("Profil berhasil diperbarui (demo)");
-      setEditing(false);
+      toast.error(err?.message || "Gagal memperbarui profil");
     }
   };
 

@@ -306,7 +306,10 @@ function AgentsSection() {
     { name: "Saldo Cuti Agent", key: "saldo_cuti", desc: "Informasi saldo cuti real-time" },
   ];
   const [toggles, setToggles] = useState<Record<string, boolean>>(() => Object.fromEntries(agents.map(a => [a.key, true])));
-  const toggle = (key: string) => { setToggles(p => ({ ...p, [key]: !p[key] })); toast.success(`${key} ${toggles[key] ? "dinonaktifkan" : "diaktifkan"}`); };
+  const toggle = (key: string) => {
+    setToggles((p) => ({ ...p, [key]: !p[key] }));
+    toast.info("Toggle agen hanya tampilan UI — gunakan tab AI Agent untuk konfigurasi produksi");
+  };
   return (
     <div className="space-y-4">
       <SH title="Agen Otonom" sub="Kelola status dan konfigurasi 7 agen HR" />
@@ -587,7 +590,24 @@ function UsersSection() {
                   )}>
                     {e.employment_status === "active" ? "Aktif" : e.employment_status}
                   </span>
-                  <button onClick={() => toast.success("Reset password berhasil (demo)")} className="text-xs text-gold hover:text-gold/80 ml-2">Reset Password</button>
+                  <button
+                    onClick={async () => {
+                      const tempPassword = `Tara@${Math.random().toString(36).slice(2, 8)}`;
+                      if (!window.confirm(`Reset password ${e.full_name}? Password sementara akan dibuat.`)) return;
+                      try {
+                        await api.post("/auth/reset-password", {
+                          employee_id: e.id,
+                          new_password: tempPassword,
+                        });
+                        toast.success(`Password direset. Sementara: ${tempPassword}`);
+                      } catch (err: any) {
+                        toast.error(err?.message || "Gagal reset password");
+                      }
+                    }}
+                    className="text-xs text-gold hover:text-gold/80 ml-2"
+                  >
+                    Reset Password
+                  </button>
                 </div>
               </div>
             ))}
@@ -602,7 +622,31 @@ function AttendanceSection() {
   const [source, setSource] = useState<string>("hybrid");
   const [interval, setInterval] = useState("15");
   const [manualOverride, setManualOverride] = useState(true);
-  const save = () => { toast.success(`Sumber kehadiran disimpan: ${source}, interval ${interval} menit`); };
+
+  useQuery({
+    queryKey: ["attendance-config"],
+    queryFn: async () => {
+      const res = await api.get("/admin/attendance-config");
+      const cfg = res.data || {};
+      if (cfg.source) setSource(cfg.source);
+      if (cfg.sync_interval_minutes) setInterval(String(cfg.sync_interval_minutes));
+      if (cfg.manual_override !== undefined) setManualOverride(!!cfg.manual_override);
+      return res;
+    },
+  });
+
+  const save = async () => {
+    try {
+      await api.put("/admin/attendance-config", {
+        source,
+        sync_interval_minutes: Number(interval),
+        manual_override: manualOverride,
+      });
+      toast.success("Pengaturan kehadiran disimpan");
+    } catch (err: any) {
+      toast.error(err?.message || "Gagal menyimpan pengaturan kehadiran");
+    }
+  };
   return (
     <div className="space-y-6">
       <SH title="Pengaturan Kehadiran" sub="Konfigurasi sumber absensi dan jadwal sinkronisasi" />
@@ -630,7 +674,7 @@ function AttendanceSection() {
         </div>
         <div className="flex items-center justify-between p-3 rounded-md bg-secondary/50">
           <span className="text-sm">Izinkan Override Manual oleh HR</span>
-          <Toggle on={manualOverride} onToggle={() => { setManualOverride(!manualOverride); toast.success(manualOverride ? "Override dinonaktifkan" : "Override diaktifkan"); }} />
+          <Toggle on={manualOverride} onToggle={() => setManualOverride(!manualOverride)} />
         </div>
         <button onClick={save} className="px-4 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"><Save className="h-3.5 w-3.5 inline mr-1.5" />Simpan Pengaturan</button>
       </div>
@@ -642,7 +686,9 @@ function AttendanceSection() {
 function LeavesSection() {
   const [annual, setAnnual] = useState("12");
   const [carryover, setCarryover] = useState("5");
-  const save = () => { toast.success(`Kebijakan cuti disimpan: ${annual} hari/tahun, carry-over maks ${carryover} hari`); };
+  const save = () => {
+    toast.info("Kebijakan cuti global dikelola via seed data / HR Admin — hubungi HR untuk perubahan jatah tahunan");
+  };
   return (
     <div className="space-y-6">
       <SH title="Kebijakan Cuti" sub="Atur jatah cuti tahunan dan aturan carry-over" />
@@ -663,8 +709,31 @@ function ChannelsSection() {
   const [tg, setTg] = useState({ enabled: false, bot_token: "", chat_id: "" });
   const [email, setEmail] = useState({ enabled: false, host: "", port: "587", user: "", pass: "" });
 
-  const testChannel = (ch: string) => toast.success(`Tes koneksi ${ch} berhasil (demo mode)`);
-  const saveChannels = () => toast.success("Konfigurasi kanal notifikasi disimpan");
+  const testChannel = async (ch: "whatsapp" | "telegram" | "email") => {
+    try {
+      const res = await api.post(`/admin/notification-channels/${ch}/test`);
+      toast.success(res.data?.message || `Tes koneksi ${ch} berhasil`);
+    } catch (err: any) {
+      toast.error(err?.message || `Tes koneksi ${ch} gagal`);
+    }
+  };
+
+  const saveChannels = async () => {
+    try {
+      if (wa.enabled) {
+        await api.put("/admin/notification-channels/whatsapp", wa);
+      }
+      if (tg.enabled) {
+        await api.put("/admin/notification-channels/telegram", tg);
+      }
+      if (email.enabled) {
+        await api.put("/admin/notification-channels/email", email);
+      }
+      toast.success("Konfigurasi kanal notifikasi disimpan");
+    } catch (err: any) {
+      toast.error(err?.message || "Gagal menyimpan konfigurasi kanal");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -682,7 +751,7 @@ function ChannelsSection() {
               <Inp label="API Key" value={wa.api_key} onChange={v => setWa({...wa, api_key: v})} placeholder="Bearer token..." />
               <Inp label="Phone Number ID" value={wa.phone_id} onChange={v => setWa({...wa, phone_id: v})} placeholder="1234567890" />
             </div>
-            <button onClick={() => testChannel("WhatsApp")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-input text-xs hover:bg-accent"><TestTube className="h-3 w-3" /> Tes Koneksi</button>
+            <button onClick={() => testChannel("whatsapp")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-input text-xs hover:bg-accent"><TestTube className="h-3 w-3" /> Tes Koneksi</button>
           </div>
         )}
       </div>
@@ -698,7 +767,7 @@ function ChannelsSection() {
               <Inp label="Bot Token" value={tg.bot_token} onChange={v => setTg({...tg, bot_token: v})} placeholder="123456:ABC-DEF..." />
               <Inp label="Chat ID / Group ID" value={tg.chat_id} onChange={v => setTg({...tg, chat_id: v})} placeholder="-1001234567890" />
             </div>
-            <button onClick={() => testChannel("Telegram")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-input text-xs hover:bg-accent"><TestTube className="h-3 w-3" /> Tes Koneksi</button>
+            <button onClick={() => testChannel("telegram")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-input text-xs hover:bg-accent"><TestTube className="h-3 w-3" /> Tes Koneksi</button>
           </div>
         )}
       </div>
@@ -716,7 +785,7 @@ function ChannelsSection() {
               <Inp label="Username" value={email.user} onChange={v => setEmail({...email, user: v})} placeholder="user@company.com" />
               <Inp label="Password" value={email.pass} onChange={v => setEmail({...email, pass: v})} placeholder="••••••••" />
             </div>
-            <button onClick={() => testChannel("Email")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-input text-xs hover:bg-accent"><TestTube className="h-3 w-3" /> Tes Koneksi</button>
+            <button onClick={() => testChannel("email")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-input text-xs hover:bg-accent"><TestTube className="h-3 w-3" /> Tes Koneksi</button>
           </div>
         )}
       </div>
