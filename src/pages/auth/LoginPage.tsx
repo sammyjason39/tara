@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useBranding } from "@/contexts/BrandingContext";
 import { useTranslation } from "react-i18next";
-import { Eye, EyeOff, Sun, Moon } from "lucide-react";
+import { Eye, EyeOff, Sun, Moon, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { CompanyLogo } from "@/components/CompanyLogo";
@@ -16,6 +16,8 @@ export function LoginPage() {
   const { companyName } = useBranding();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get("redirect");
   const isMobile = useIsMobile();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -30,7 +32,11 @@ export function LoginPage() {
 
     try {
       await login(email, password);
-      navigate(isMobile ? "/m" : "/web");
+      if (redirectTo?.startsWith("/")) {
+        navigate(redirectTo);
+      } else {
+        navigate(isMobile ? "/m" : "/web");
+      }
     } catch (err: any) {
       setError(err.message || t("auth.login_failed"));
     } finally {
@@ -156,6 +162,14 @@ export function LoginPage() {
           <p className="text-center text-xs text-muted-foreground">
             {t("auth.need_help")}
           </p>
+
+          <Link
+            to="/docs"
+            className="flex items-center justify-center gap-2 text-sm text-primary hover:underline mt-2"
+          >
+            <BookOpen className="h-4 w-4" />
+            Baca dokumentasi TARA
+          </Link>
         </div>
       </div>
     </div>
