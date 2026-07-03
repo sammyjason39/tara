@@ -1,3 +1,12 @@
+import {
+  applyBrandingFonts,
+  DEFAULT_FONTS,
+  normalizeFontConfig,
+  type FontThemeConfig,
+} from "@/lib/google-fonts";
+
+export type { FontThemeConfig };
+
 const HEX_RE = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
 
 export function isValidHex(color: string): boolean {
@@ -67,6 +76,7 @@ export interface ThemeColorSet {
 export interface BrandingConfig {
   light: ThemeColorSet;
   dark: ThemeColorSet;
+  fonts: FontThemeConfig;
   dark_mode_enabled: boolean;
   forced_theme: 'light' | 'dark';
   default_theme: 'light' | 'dark';
@@ -75,10 +85,23 @@ export interface BrandingConfig {
 export const DEFAULT_BRANDING: BrandingConfig = {
   light: { primary: '#1a2332', background: '#faf9f7', accent: '#d4a037' },
   dark: { primary: '#ebe9e6', background: '#0f1117', accent: '#e0a845' },
+  fonts: { ...DEFAULT_FONTS },
   dark_mode_enabled: true,
   forced_theme: 'light',
   default_theme: 'light',
 };
+
+export function normalizeBrandingConfig(raw?: Partial<BrandingConfig> | null): BrandingConfig {
+  if (!raw || typeof raw !== 'object') return { ...DEFAULT_BRANDING };
+  return {
+    light: { ...DEFAULT_BRANDING.light, ...(raw.light || {}) },
+    dark: { ...DEFAULT_BRANDING.dark, ...(raw.dark || {}) },
+    fonts: normalizeFontConfig(raw.fonts),
+    dark_mode_enabled: raw.dark_mode_enabled ?? DEFAULT_BRANDING.dark_mode_enabled,
+    forced_theme: raw.forced_theme === 'dark' ? 'dark' : 'light',
+    default_theme: raw.default_theme === 'dark' ? 'dark' : 'light',
+  };
+}
 
 export function buildBrandingCss(branding: BrandingConfig): string {
   const light = branding.light;
@@ -114,6 +137,8 @@ export function buildBrandingCss(branding: BrandingConfig): string {
 }
 
 export function applyBrandingCss(branding: BrandingConfig): void {
+  const normalized = normalizeBrandingConfig(branding);
+
   const id = 'tara-branding-styles';
   let el = document.getElementById(id) as HTMLStyleElement | null;
   if (!el) {
@@ -121,9 +146,11 @@ export function applyBrandingCss(branding: BrandingConfig): void {
     el.id = id;
     document.head.appendChild(el);
   }
-  el.textContent = buildBrandingCss(branding);
+  el.textContent = buildBrandingCss(normalized);
 
-  const themeColor = branding.light.primary;
+  applyBrandingFonts(normalized.fonts);
+
+  const themeColor = normalized.light.primary;
   let meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
   if (!meta) {
     meta = document.createElement('meta');

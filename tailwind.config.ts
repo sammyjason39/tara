@@ -93,9 +93,9 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ['"Inter"', '"SF Pro Display"', "system-ui", "-apple-system", "sans-serif"],
-        display: ['"Playfair Display"', "Georgia", "serif"],
-        mono: ['"JetBrains Mono"', '"SF Mono"', "monospace"],
+        sans: ["var(--font-sans)", "system-ui", "-apple-system", "sans-serif"],
+        display: ["var(--font-display)", "Georgia", "serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
       fontSize: {
         "2xs": ["0.625rem", { lineHeight: "0.875rem" }],

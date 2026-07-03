@@ -10,6 +10,7 @@ import {
 import {
   applyBrandingCss,
   DEFAULT_BRANDING,
+  normalizeBrandingConfig,
   type BrandingConfig,
 } from "@/lib/color-utils";
 import { APP_VERSION } from "@/lib/version";
@@ -51,7 +52,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
     try {
       const branding = await fetchPublicBranding();
       setData(branding);
-      applyBrandingCss(branding.branding || DEFAULT_BRANDING);
+      applyBrandingCss(normalizeBrandingConfig(branding.branding || DEFAULT_BRANDING));
     } catch {
       applyBrandingCss(DEFAULT_BRANDING);
     } finally {
@@ -64,7 +65,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
   }, [refreshBranding]);
 
   const value = useMemo<BrandingContextValue>(() => {
-    const branding = data?.branding || DEFAULT_BRANDING;
+    const branding = normalizeBrandingConfig(data?.branding);
     const cacheBuster = data?.logo_updated_at
       ? `?v=${encodeURIComponent(data.logo_updated_at)}`
       : "";

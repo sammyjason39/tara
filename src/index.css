@@ -1,12 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* === TARA LUXURY LIGHT THEME === */
+    --font-sans: "Inter", system-ui, sans-serif;
+    --font-display: "Playfair Display", Georgia, serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
     /* Warm ivory/cream base — not sterile white */
     --background: 40 20% 98%;
     --foreground: 240 10% 10%;
@@ -143,7 +143,7 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground antialiased font-sans;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

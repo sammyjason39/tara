@@ -6,7 +6,8 @@ import { api } from "@/lib/api";
 import { HexColorPicker } from "@/components/HexColorPicker";
 import { CompanyLogo } from "@/components/CompanyLogo";
 import { useBranding } from "@/contexts/BrandingContext";
-import { DEFAULT_BRANDING, type BrandingConfig } from "@/lib/color-utils";
+import { DEFAULT_BRANDING, normalizeBrandingConfig, type BrandingConfig } from "@/lib/color-utils";
+import { FontThemePicker } from "@/components/FontThemePicker";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -18,13 +19,15 @@ export function BrandingSettingsPanel({ initialBranding, logoUrl }: Props) {
   const queryClient = useQueryClient();
   const { refreshBranding } = useBranding();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [branding, setBranding] = useState<BrandingConfig>(initialBranding || DEFAULT_BRANDING);
+  const [branding, setBranding] = useState<BrandingConfig>(
+    normalizeBrandingConfig(initialBranding || DEFAULT_BRANDING),
+  );
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [previewLogo, setPreviewLogo] = useState<string | null>(logoUrl || null);
 
   useEffect(() => {
-    if (initialBranding) setBranding(initialBranding);
+    if (initialBranding) setBranding(normalizeBrandingConfig(initialBranding));
   }, [initialBranding]);
 
   useEffect(() => {
@@ -169,6 +172,11 @@ export function BrandingSettingsPanel({ initialBranding, logoUrl }: Props) {
           </div>
         </div>
       </div>
+
+      <FontThemePicker
+        value={branding.fonts}
+        onChange={(fonts) => setBranding((prev) => ({ ...prev, fonts }))}
+      />
 
       {/* Dark mode policy */}
       <div className="surface-elevated p-6 space-y-4">

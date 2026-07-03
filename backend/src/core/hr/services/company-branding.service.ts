@@ -19,12 +19,34 @@ export interface ThemeColorSet {
 export interface CompanyBrandingConfig {
   light: ThemeColorSet;
   dark: ThemeColorSet;
+  fonts?: FontThemeConfig;
   dark_mode_enabled: boolean;
   /** When dark_mode_enabled is false, force this theme */
   forced_theme: ThemeMode;
   /** Default for new users when dark_mode_enabled is true */
   default_theme: ThemeMode;
 }
+
+export interface FontThemeConfig {
+  sans: string;
+  display: string;
+  mono: string;
+}
+
+const ALLOWED_FONT_IDS = new Set([
+  'inter', 'plus-jakarta', 'dm-sans', 'poppins', 'montserrat', 'nunito', 'lato', 'roboto',
+  'open-sans', 'work-sans', 'outfit', 'manrope', 'raleway', 'source-sans',
+  'playfair', 'fraunces', 'merriweather', 'libre-baskerville', 'cormorant', 'lora',
+  'crimson', 'dm-serif', 'bitter', 'source-serif', 'eb-garamond', 'space-grotesk',
+  'jetbrains', 'fira-code', 'roboto-mono', 'ibm-plex-mono', 'source-code', 'inconsolata',
+  'dm-mono', 'space-mono',
+]);
+
+export const DEFAULT_FONTS: FontThemeConfig = {
+  sans: 'inter',
+  display: 'playfair',
+  mono: 'jetbrains',
+};
 
 export const DEFAULT_BRANDING: CompanyBrandingConfig = {
   light: {
@@ -37,6 +59,7 @@ export const DEFAULT_BRANDING: CompanyBrandingConfig = {
     background: '#0f1117',
     accent: '#e0a845',
   },
+  fonts: { ...DEFAULT_FONTS },
   dark_mode_enabled: true,
   forced_theme: 'light',
   default_theme: 'light',
@@ -78,10 +101,23 @@ export class CompanyBrandingService {
     return {
       light: { ...DEFAULT_BRANDING.light, ...(data.light || {}) },
       dark: { ...DEFAULT_BRANDING.dark, ...(data.dark || {}) },
+      fonts: this.parseFonts(data.fonts),
       dark_mode_enabled:
         data.dark_mode_enabled ?? DEFAULT_BRANDING.dark_mode_enabled,
       forced_theme: data.forced_theme === 'dark' ? 'dark' : 'light',
       default_theme: data.default_theme === 'dark' ? 'dark' : 'light',
+    };
+  }
+
+  private parseFonts(raw?: Partial<FontThemeConfig> | null): FontThemeConfig {
+    const pick = (key: keyof FontThemeConfig, fallback: string) => {
+      const value = raw?.[key];
+      return typeof value === 'string' && ALLOWED_FONT_IDS.has(value) ? value : fallback;
+    };
+    return {
+      sans: pick('sans', DEFAULT_FONTS.sans),
+      display: pick('display', DEFAULT_FONTS.display),
+      mono: pick('mono', DEFAULT_FONTS.mono),
     };
   }
 
