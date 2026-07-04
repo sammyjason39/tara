@@ -5,7 +5,7 @@
 @layer base {
   :root {
     --font-sans: "Inter", system-ui, sans-serif;
-    --font-display: "Playfair Display", Georgia, serif;
+    --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, monospace;
     /* Warm ivory/cream base — not sterile white */
     --background: 40 20% 98%;

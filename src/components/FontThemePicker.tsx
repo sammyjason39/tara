@@ -1,12 +1,13 @@
 import { Type } from "lucide-react";
 import {
   FONT_THEME_PRESETS,
-  GOOGLE_FONT_DISPLAY,
+  GOOGLE_FONT_DISPLAY_GROUPS,
   GOOGLE_FONT_MONO,
   GOOGLE_FONT_SANS,
   applyBrandingFonts,
   findFontById,
   type FontThemeConfig,
+  type GoogleFontOption,
 } from "@/lib/google-fonts";
 import { cn } from "@/lib/utils";
 
@@ -19,16 +20,25 @@ function FontSelect({
   label,
   hint,
   options,
+  groups,
   value,
   onChange,
 }: {
   label: string;
   hint: string;
-  options: typeof GOOGLE_FONT_SANS;
+  options?: GoogleFontOption[];
+  groups?: { label: string; options: GoogleFontOption[] }[];
   value: string;
   onChange: (id: string) => void;
 }) {
   const selected = findFontById(value);
+  const renderOptions = (opts: GoogleFontOption[]) =>
+    opts.map((opt) => (
+      <option key={opt.id} value={opt.id} style={{ fontFamily: opt.family }}>
+        {opt.label}
+      </option>
+    ));
+
   return (
     <div className="space-y-1.5">
       <label className="text-xs font-medium text-foreground">{label}</label>
@@ -39,11 +49,13 @@ function FontSelect({
         className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
         style={{ fontFamily: selected?.family }}
       >
-        {options.map((opt) => (
-          <option key={opt.id} value={opt.id} style={{ fontFamily: opt.family }}>
-            {opt.label}
-          </option>
-        ))}
+        {groups
+          ? groups.map((group) => (
+              <optgroup key={group.label} label={group.label}>
+                {renderOptions(group.options)}
+              </optgroup>
+            ))
+          : renderOptions(options ?? [])}
       </select>
     </div>
   );
@@ -108,8 +120,8 @@ export function FontThemePicker({ value, onChange }: Props) {
         />
         <FontSelect
           label="Font 2 — Judul & Display"
-          hint="Heading, logo teks, angka besar"
-          options={GOOGLE_FONT_DISPLAY}
+          hint="Heading, logo — sans atau serif"
+          groups={GOOGLE_FONT_DISPLAY_GROUPS}
           value={value.display}
           onChange={(display) => update({ ...value, display })}
         />

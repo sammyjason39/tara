@@ -61,9 +61,26 @@ export interface FontThemeConfig {
 
 export const DEFAULT_FONTS: FontThemeConfig = {
   sans: "inter",
-  display: "playfair",
+  display: "plus-jakarta",
   mono: "jetbrains",
 };
+
+/** Font 2 options: sans + serif/display — deduped by id */
+export const GOOGLE_FONT_DISPLAY_PICKER: GoogleFontOption[] = (() => {
+  const map = new Map<string, GoogleFontOption>();
+  for (const f of [...GOOGLE_FONT_SANS, ...GOOGLE_FONT_DISPLAY]) {
+    if (!map.has(f.id)) map.set(f.id, f);
+  }
+  return [...map.values()];
+})();
+
+export const GOOGLE_FONT_DISPLAY_GROUPS: { label: string; options: GoogleFontOption[] }[] = [
+  { label: "Sans (modern)", options: GOOGLE_FONT_SANS },
+  {
+    label: "Serif & display",
+    options: GOOGLE_FONT_DISPLAY.filter((f) => !GOOGLE_FONT_SANS.some((s) => s.id === f.id)),
+  },
+];
 
 export interface FontThemePreset {
   id: string;
@@ -73,7 +90,7 @@ export interface FontThemePreset {
 }
 
 export const FONT_THEME_PRESETS: FontThemePreset[] = [
-  { id: "tara-classic", name: "TARA Classic", description: "Inter + Playfair + JetBrains", fonts: { sans: "inter", display: "playfair", mono: "jetbrains" } },
+  { id: "tara-classic", name: "TARA Classic", description: "Inter + Jakarta Sans + JetBrains", fonts: { sans: "inter", display: "plus-jakarta", mono: "jetbrains" } },
   { id: "jakarta-elegant", name: "Jakarta Elegant", description: "Plus Jakarta + Cormorant", fonts: { sans: "plus-jakarta", display: "cormorant", mono: "ibm-plex-mono" } },
   { id: "modern-clean", name: "Modern Clean", description: "Poppins + Space Grotesk", fonts: { sans: "poppins", display: "space-grotesk", mono: "fira-code" } },
   { id: "corporate", name: "Corporate", description: "Roboto + Merriweather", fonts: { sans: "roboto", display: "merriweather", mono: "roboto-mono" } },
@@ -96,7 +113,7 @@ export function resolveFontFamilies(config: FontThemeConfig): {
 } {
   return {
     sans: findFontById(config.sans)?.family ?? GOOGLE_FONT_SANS[0].family,
-    display: findFontById(config.display)?.family ?? GOOGLE_FONT_DISPLAY[0].family,
+    display: findFontById(config.display)?.family ?? findFontById(DEFAULT_FONTS.display)!.family,
     mono: findFontById(config.mono)?.family ?? GOOGLE_FONT_MONO[0].family,
   };
 }
@@ -125,7 +142,7 @@ function buildGoogleFontsUrl(fonts: GoogleFontOption[]): string {
 
 export function applyBrandingFonts(fonts: FontThemeConfig): void {
   const sans = findFontById(fonts.sans) ?? GOOGLE_FONT_SANS[0];
-  const display = findFontById(fonts.display) ?? GOOGLE_FONT_DISPLAY[0];
+  const display = findFontById(fonts.display) ?? findFontById(DEFAULT_FONTS.display)!;
   const mono = findFontById(fonts.mono) ?? GOOGLE_FONT_MONO[0];
 
   const resolved = resolveFontFamilies(fonts);

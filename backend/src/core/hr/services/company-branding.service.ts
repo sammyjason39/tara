@@ -44,7 +44,7 @@ const ALLOWED_FONT_IDS = new Set([
 
 export const DEFAULT_FONTS: FontThemeConfig = {
   sans: 'inter',
-  display: 'playfair',
+  display: 'plus-jakarta',
   mono: 'jetbrains',
 };
 
