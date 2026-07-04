@@ -24,7 +24,6 @@ SSH_OPTS=(-i "$SSH_KEY" -o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 
 if [[ "$TARGET" == "staging" ]]; then
   REMOTE_DIR="/home/ubuntu/tara-staging"
-  COMPOSE_CMD="sudo docker compose -f docker-compose.staging.yml --env-file .env up --build -d"
   HEALTH_URL="${STAGING_HEALTH_URL:-https://staging.tara.ralali.io/health}"
 else
   REMOTE_DIR="/home/ubuntu/tara"
@@ -64,7 +63,7 @@ if [[ "${TARGET}" == "production" ]]; then
   sudo docker compose \$COMPOSE_FILES --env-file .env up --build -d
   sudo docker compose \$COMPOSE_FILES ps
 else
-  ${COMPOSE_CMD}
+  sudo docker compose -f docker-compose.staging.yml --env-file .env up --build -d
   sudo docker compose -f docker-compose.staging.yml ps
 fi
 REMOTE
