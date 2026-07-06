@@ -125,6 +125,11 @@ export class AuthService {
     const healed = await this.healPasswordFlags(employee);
     const must_change_password = await this.mustChangePasswordFor(healed);
 
+    await this.prisma.employee.update({
+      where: { id: employee.id },
+      data: { last_login_at: new Date() },
+    });
+
     const payload: JwtPayload = {
       sub: employee.id,
       email: employee.email,
@@ -279,6 +284,27 @@ export class AuthService {
     } catch {
       throw new UnauthorizedException('Invalid or expired token');
     }
+  }
+
+  /** Whether the employee has ever logged into the web/mobile app. */
+  async hasEverLoggedIn(employeeId: string): Promise<boolean> {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { last_login_at: true, password_changed_at: true },
+    });
+    if (!employee) return false;
+    return employee.last_login_at != null || employee.password_changed_at != null;
+  }
+
+  /** Reveal temporary password only when still on the default seed hash. */
+  async getTemporaryPasswordForOnboarding(employeeId: string): Promise<string | null> {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { password_hash: true },
+    });
+    if (!employee?.password_hash) return null;
+    const isDefault = await this.isDefaultSeedPasswordHash(employee.password_hash);
+    return isDefault ? this.getDefaultSeedPassword() : null;
   }
 
   async getProfile(employeeId: string) {

@@ -27,6 +27,7 @@ model Employee {
   pin_hash             String?   // 6-digit PIN hash for attendance verification
   must_change_password Boolean  @default(false)
   password_changed_at  DateTime? // Set on first successful password change — stops force-change prompts
+  last_login_at        DateTime? // First / latest successful web login
   pin_changed_at       DateTime? // Last PIN update — used for monthly rotation reminder
   department_id        String?
   role_id              String?

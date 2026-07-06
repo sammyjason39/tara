@@ -16,6 +16,11 @@ import {
 } from './employee-identity.util';
 import { formatForWhatsApp } from '../hr/whatsapp/whatsapp-format.util';
 import { WhatsAppOutboundService } from '../hr/whatsapp/services/whatsapp-outbound.service';
+import { AuthService } from '../auth/auth.service';
+import {
+  buildFirstLoginWelcomeMessage,
+  isTaraGreetingMessage,
+} from './wa-onboarding.util';
 
 @Injectable()
 export class AiOrchestratorService {
@@ -33,6 +38,7 @@ export class AiOrchestratorService {
     private readonly memoryService: AiMemoryService,
     @Inject(forwardRef(() => WhatsAppOutboundService))
     private readonly whatsAppOutbound: WhatsAppOutboundService,
+    private readonly authService: AuthService,
   ) {}
 
   async processWhatsAppMessage(params: {
@@ -96,6 +102,12 @@ export class AiOrchestratorService {
     if (buttonId?.startsWith('reject_leave_')) {
       const leaveId = buttonId.replace('reject_leave_', '');
       return this.initiateSupervisorAction(params, 'reject_leave', { leave_request_id: leaveId }, start);
+    }
+
+    const onboardingReply = await this.tryFirstLoginGreeting(params.employeeId, plainMessage, ctx);
+    if (onboardingReply) {
+      await this.logInteraction(params, onboardingReply, Date.now() - start);
+      return onboardingReply;
     }
 
     const history = await this.loadConversationHistory(params.employeeId, 10);
@@ -179,6 +191,38 @@ export class AiOrchestratorService {
       result.reply,
     );
     return result;
+  }
+
+  /** First-time login onboarding when user greets TARA on WhatsApp */
+  private async tryFirstLoginGreeting(
+    employeeId: string,
+    message: string,
+    ctx: EmployeeAiContext,
+  ): Promise<AiProcessResult | null> {
+    if (!isTaraGreetingMessage(message)) return null;
+
+    const hasLoggedIn = await this.authService.hasEverLoggedIn(employeeId);
+    if (hasLoggedIn) return null;
+
+    const temporaryPassword =
+      await this.authService.getTemporaryPasswordForOnboarding(employeeId);
+
+    const reply = formatForWhatsApp(
+      buildFirstLoginWelcomeMessage({
+        fullName: ctx.full_name,
+        email: ctx.email,
+        employeeCode: ctx.employee_code,
+        temporaryPassword,
+      }),
+    );
+
+    return {
+      reply,
+      toolsCalled: ['wa_first_login_onboarding'],
+      inputTokens: 0,
+      outputTokens: 0,
+      status: 'success',
+    };
   }
 
   /** Notify supervisor about pending leave with Kapso buttons */
