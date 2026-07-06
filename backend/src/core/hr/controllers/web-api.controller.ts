@@ -28,6 +28,7 @@ import { LeaveService } from '../services/leave.service';
 import { NotificationService } from '../services/notification.service';
 import { AttendancePhotoService } from '../services/attendance-photo.service';
 import { TaraAttendanceService } from '../services/tara-attendance.service';
+import { AuthService } from '../../auth/auth.service';
 import { normalizeWhatsAppPhone } from '../whatsapp/utils/phone-normalize.util';
 import { createLogoMulterOptions } from '../services/company-logo-upload.config';
 
@@ -46,6 +47,7 @@ export class WebApiController {
     private readonly notificationService: NotificationService,
     private readonly attendancePhotoService: AttendancePhotoService,
     private readonly taraAttendanceService: TaraAttendanceService,
+    private readonly authService: AuthService,
   ) {}
 
   @Get('dashboard/stats')
@@ -253,6 +255,8 @@ export class WebApiController {
       await this.assertEmployeeCodeAvailable(employeeCode);
     }
 
+    const password_hash = await this.authService.hashDefaultEmployeePassword();
+
     let employee;
     try {
       employee = await this.prisma.employee.create({
@@ -270,6 +274,8 @@ export class WebApiController {
           supervisor_id: body.supervisor_id || null,
           employment_status: 'active',
           hire_date: new Date(),
+          password_hash,
+          must_change_password: true,
         },
         include: {
           role: true,
@@ -556,6 +562,40 @@ export class WebApiController {
   async getMyMonthlyTardiness(@Req() req: any) {
     const data = await this.taraAttendanceService.getMonthlyTardinessSummary(req.user.sub);
     return { success: true, data };
+  }
+
+  @Get('attendance/my-today')
+  async getMyTodayAttendance(@Req() req: any) {
+    const record = await this.taraAttendanceService.getTodayAttendanceForEmployee(req.user.sub);
+    if (!record) {
+      return {
+        success: true,
+        data: {
+          clock_in_time: null,
+          clock_out_time: null,
+          is_tardy: false,
+          tardiness_minutes: 0,
+          can_clock_in: true,
+          can_clock_out: false,
+        },
+      };
+    }
+
+    const hasClockIn = !!record.clock_in_time;
+    const hasClockOut = !!record.clock_out_time;
+
+    return {
+      success: true,
+      data: {
+        id: record.id,
+        clock_in_time: record.clock_in_time?.toISOString() ?? null,
+        clock_out_time: record.clock_out_time?.toISOString() ?? null,
+        is_tardy: record.is_tardy,
+        tardiness_minutes: record.tardiness_minutes ?? 0,
+        can_clock_in: !hasClockIn,
+        can_clock_out: hasClockIn && !hasClockOut,
+      },
+    };
   }
 
   @Get('attendance/monthly-tardiness')

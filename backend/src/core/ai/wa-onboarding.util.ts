@@ -10,18 +10,27 @@ export interface WaFirstLoginWelcomeParams {
   temporaryPassword: string | null;
 }
 
-/** Detect short greetings like "Halo Tara", "Hai Tara", "Tara halo", etc. */
-export function isTaraGreetingMessage(message: string): boolean {
+/** Detect casual openers that should start the first-login WA onboarding flow. */
+export function isCasualOnboardingMessage(message: string): boolean {
   const cleaned = message
     .trim()
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
-  if (!cleaned || !/\btara\b/i.test(cleaned)) return false;
-  if (cleaned.split(/\s+/).length > 8) return false;
+  if (!cleaned) return false;
+  if (cleaned.length > 48) return false;
 
   const lower = cleaned.toLowerCase();
+  const wordCount = lower.split(/\s+/).length;
+  if (wordCount > 6) return false;
+
+  const casualOpener =
+    /^(?:halo|halau|hai|hi|hello|hey|helo|hallo|test|tes|ping|p|ok|oke|okay|yoi|hola|hallo|assalamualaikum|asalamualaikum|ass?alam|pagi|siang|sore|malam|selamat(?:\s+(?:pagi|siang|sore|malam))?)$/i;
+  if (casualOpener.test(lower)) return true;
+
+  if (!/\btara\b/i.test(cleaned)) return false;
+
   const greetingWords =
     /^(?:halo|hai|hi|hello|hey|helo|hallo|selamat(?:\s+(?:pagi|siang|sore|malam))?|pagi|siang|sore|malam)/;
   const startsWithGreeting = greetingWords.test(lower);
@@ -29,8 +38,13 @@ export function isTaraGreetingMessage(message: string): boolean {
 
   return (
     (startsWithGreeting && /\btara\b/.test(lower)) ||
-    (startsWithTara && cleaned.split(/\s+/).length <= 3)
+    (startsWithTara && wordCount <= 3)
   );
+}
+
+/** @deprecated Use isCasualOnboardingMessage */
+export function isTaraGreetingMessage(message: string): boolean {
+  return isCasualOnboardingMessage(message);
 }
 
 export function buildFirstLoginWelcomeMessage(params: WaFirstLoginWelcomeParams): string {

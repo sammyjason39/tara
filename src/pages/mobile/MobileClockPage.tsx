@@ -18,6 +18,24 @@ import { AttendanceSelfieCapture } from "@/components/AttendanceSelfieCapture";
 
 type LocationPermissionState = "unknown" | "prompt" | "granted" | "denied" | "unsupported";
 
+type MyTodayAttendanceData = {
+  clock_in_time: string | null;
+  clock_out_time: string | null;
+  is_tardy: boolean;
+  tardiness_minutes: number;
+  can_clock_in: boolean;
+  can_clock_out: boolean;
+};
+
+function formatWibTime(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  return new Date(iso).toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Jakarta",
+  });
+}
+
 async function queryLocationPermission(): Promise<LocationPermissionState> {
   const state = await queryGeolocationPermission();
   if (state === "unsupported") return "unsupported";
@@ -175,6 +193,45 @@ export function MobileClockPage() {
     placeholderData: { data: { total_tardiness_minutes: 0, tardy_days: 0, is_over_threshold: false } },
   });
   const monthlyTardiness = monthlyTardinessRes?.data;
+
+  const { data: todayAttendanceRes, refetch: refetchTodayAttendance } = useQuery({
+    queryKey: ["my-today-attendance", user?.id],
+    queryFn: () => api.get<{ data: MyTodayAttendanceData }>("/attendance/my-today"),
+    enabled: !!user?.id,
+    refetchOnWindowFocus: true,
+  });
+  const todayAttendance = todayAttendanceRes?.data;
+  const isDayComplete = !!(todayAttendance?.clock_in_time && todayAttendance?.clock_out_time);
+
+  const applyTodayAttendance = useCallback((data: MyTodayAttendanceData | undefined) => {
+    if (!data) return;
+    setClockInTime(formatWibTime(data.clock_in_time));
+    setClockOutTime(formatWibTime(data.clock_out_time));
+    setClockedIn(data.can_clock_out);
+    if (data.is_tardy && data.tardiness_minutes > 0) {
+      setTodayTardy({ minutes: data.tardiness_minutes });
+    } else if (data.clock_in_time) {
+      setTodayTardy(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    applyTodayAttendance(todayAttendance);
+  }, [todayAttendance, applyTodayAttendance]);
+
+  useEffect(() => {
+    const syncOnVisible = () => {
+      if (document.visibilityState === "visible") {
+        refetchTodayAttendance();
+      }
+    };
+    document.addEventListener("visibilitychange", syncOnVisible);
+    window.addEventListener("focus", syncOnVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", syncOnVisible);
+      window.removeEventListener("focus", syncOnVisible);
+    };
+  }, [refetchTodayAttendance]);
 
   const locationBlocked = locationEnv.issue === "in_app_browser" || locationEnv.issue === "insecure" || locationEnv.issue === "unsupported";
 
@@ -400,6 +457,7 @@ export function MobileClockPage() {
           toast.success(`Clock-in berhasil pukul ${timeStr} WIB`);
         }
         queryClient.invalidateQueries({ queryKey: ["my-monthly-tardiness"] });
+        queryClient.invalidateQueries({ queryKey: ["my-today-attendance"] });
       } else {
         await api.post("/absensi-agent/clock-out", {
           employee_id: user!.id,
@@ -413,6 +471,7 @@ export function MobileClockPage() {
         setClockedIn(false);
         setStatus("success");
         toast.success(`Clock-out berhasil pukul ${timeStr} WIB`);
+        queryClient.invalidateQueries({ queryKey: ["my-today-attendance"] });
       }
       setTimeout(() => setStatus("idle"), 2000);
     } catch (err: any) {
@@ -465,7 +524,9 @@ export function MobileClockPage() {
       case "submitting": return "Mengirim data...";
       case "success": return "Berhasil!";
       case "error": return "Gagal. Coba lagi.";
-      default: return clockedIn ? "Ketuk untuk Clock Out" : "Ketuk untuk Clock In";
+      default:
+        if (isDayComplete) return "Absensi hari ini selesai";
+        return clockedIn ? "Ketuk untuk Clock Out" : "Ketuk untuk Clock In";
     }
   };
 
@@ -518,13 +579,15 @@ export function MobileClockPage() {
       <div className="flex flex-col items-center space-y-4">
         <button
           onClick={handleClock}
-          disabled={isProcessing || status === "pin" || status === "photo" || locationBlocked}
+          disabled={isProcessing || status === "pin" || status === "photo" || locationBlocked || isDayComplete}
           className={cn(
             "h-32 w-32 rounded-full flex flex-col items-center justify-center gap-1 transition-all duration-300",
             status === "success"
               ? "bg-success/10 border-2 border-success"
               : status === "error"
               ? "bg-destructive/10 border-2 border-destructive"
+              : isDayComplete
+              ? "bg-success/5 border-2 border-success/40"
               : clockedIn
               ? "bg-destructive/5 border-2 border-destructive/40 hover:border-destructive"
               : "bg-gradient-to-br from-gold/20 to-gold/5 border-2 border-gold/40 hover:border-gold hover:shadow-luxury-glow",
@@ -539,6 +602,8 @@ export function MobileClockPage() {
             <AlertTriangle className="h-10 w-10 text-destructive" />
           ) : isProcessing ? (
             <Loader2 className="h-10 w-10 text-gold animate-spin" />
+          ) : isDayComplete ? (
+            <CheckCircle2 className="h-10 w-10 text-success" />
           ) : (
             <>
               <Lock className={cn("h-10 w-10", clockedIn ? "text-destructive" : "text-gold")} />

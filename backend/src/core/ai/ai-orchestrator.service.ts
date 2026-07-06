@@ -19,7 +19,6 @@ import { WhatsAppOutboundService } from '../hr/whatsapp/services/whatsapp-outbou
 import { AuthService } from '../auth/auth.service';
 import {
   buildFirstLoginWelcomeMessage,
-  isTaraGreetingMessage,
 } from './wa-onboarding.util';
 
 @Injectable()
@@ -104,7 +103,11 @@ export class AiOrchestratorService {
       return this.initiateSupervisorAction(params, 'reject_leave', { leave_request_id: leaveId }, start);
     }
 
-    const onboardingReply = await this.tryFirstLoginGreeting(params.employeeId, plainMessage, ctx);
+    const onboardingReply = await this.ensureLoggedInOrOnboard(
+      params.employeeId,
+      plainMessage,
+      ctx,
+    );
     if (onboardingReply) {
       await this.logInteraction(params, onboardingReply, Date.now() - start);
       return onboardingReply;
@@ -193,14 +196,15 @@ export class AiOrchestratorService {
     return result;
   }
 
-  /** First-time login onboarding when user greets TARA on WhatsApp */
-  private async tryFirstLoginGreeting(
+  /**
+   * Always check login before AI. Employees who have never logged in always
+   * receive first-login credentials and instructions instead of AI replies.
+   */
+  private async ensureLoggedInOrOnboard(
     employeeId: string,
-    message: string,
+    _message: string,
     ctx: EmployeeAiContext,
   ): Promise<AiProcessResult | null> {
-    if (!isTaraGreetingMessage(message)) return null;
-
     const hasLoggedIn = await this.authService.hasEverLoggedIn(employeeId);
     if (hasLoggedIn) return null;
 

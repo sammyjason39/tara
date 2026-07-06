@@ -1,9 +1,10 @@
 import {
   buildFirstLoginWelcomeMessage,
+  isCasualOnboardingMessage,
   isTaraGreetingMessage,
 } from './wa-onboarding.util';
 
-describe('isTaraGreetingMessage', () => {
+describe('isCasualOnboardingMessage', () => {
   it.each([
     'Halo Tara',
     'halo tara',
@@ -13,17 +14,35 @@ describe('isTaraGreetingMessage', () => {
     'Tara halo',
     'Tara',
     'Halo Tara,',
-  ])('matches greeting: %s', (msg) => {
-    expect(isTaraGreetingMessage(msg)).toBe(true);
+    'halo',
+    'Halo',
+    'halau',
+    'hai',
+    'test',
+    'tes',
+    'p',
+    'ping',
+    'ok',
+    'oke',
+    'selamat pagi',
+  ])('matches casual opener: %s', (msg) => {
+    expect(isCasualOnboardingMessage(msg)).toBe(true);
   });
 
   it.each([
     'Saya mau cuti besok',
     'Tara tolong ajukan cuti',
-    'Halo semua',
+    'Tolong bantu ajukan cuti tahun depan untuk liburan keluarga',
     '',
-  ])('does not match: %s', (msg) => {
-    expect(isTaraGreetingMessage(msg)).toBe(false);
+  ])('does not match substantive message: %s', (msg) => {
+    expect(isCasualOnboardingMessage(msg)).toBe(false);
+  });
+});
+
+describe('isTaraGreetingMessage', () => {
+  it('delegates to isCasualOnboardingMessage for Tara greetings', () => {
+    expect(isTaraGreetingMessage('Halo Tara')).toBe(true);
+    expect(isTaraGreetingMessage('halo')).toBe(true);
   });
 });
 

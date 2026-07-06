@@ -631,6 +631,28 @@ export class TaraAttendanceService {
     );
   }
 
+  /** Today's attendance for one employee (matched by clock-in time in WIB). */
+  async getTodayAttendanceForEmployee(employeeId: string) {
+    const nowJakarta = new Date(
+      new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }),
+    );
+    const y = nowJakarta.getFullYear();
+    const m = String(nowJakarta.getMonth() + 1).padStart(2, '0');
+    const d = String(nowJakarta.getDate()).padStart(2, '0');
+    const jakartaToday = `${y}-${m}-${d}`;
+
+    const dayStart = new Date(`${jakartaToday}T00:00:00+07:00`);
+    const dayEnd = new Date(`${jakartaToday}T23:59:59.999+07:00`);
+
+    return this.prisma.attendance.findFirst({
+      where: {
+        employee_id: employeeId,
+        clock_in_time: { gte: dayStart, lte: dayEnd },
+      },
+      orderBy: { clock_in_time: 'desc' },
+    });
+  }
+
   /** Monthly tardiness rollup for one employee (WIB calendar month). */
   async getMonthlyTardinessSummary(
     employeeId: string,

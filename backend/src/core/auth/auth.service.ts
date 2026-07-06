@@ -29,8 +29,14 @@ export class AuthService {
     this.jwtSecret = secret || 'dev-secret-key-do-not-use-in-prod';
   }
 
-  private getDefaultSeedPassword(): string {
+  getDefaultSeedPassword(): string {
     return process.env.SEED_PASSWORD || 'demo123';
+  }
+
+  /** Default password hash for newly created employee accounts. */
+  async hashDefaultEmployeePassword(): Promise<string> {
+    const rounds = parseInt(process.env.BCRYPT_ROUNDS || '12', 10);
+    return bcrypt.hash(this.getDefaultSeedPassword(), rounds);
   }
 
   private async isDefaultSeedPasswordHash(passwordHash: string | null | undefined): Promise<boolean> {
@@ -302,7 +308,17 @@ export class AuthService {
       where: { id: employeeId },
       select: { password_hash: true },
     });
-    if (!employee?.password_hash) return null;
+    if (!employee) return null;
+
+    if (!employee.password_hash) {
+      const password_hash = await this.hashDefaultEmployeePassword();
+      await this.prisma.employee.update({
+        where: { id: employeeId },
+        data: { password_hash, must_change_password: true },
+      });
+      return this.getDefaultSeedPassword();
+    }
+
     const isDefault = await this.isDefaultSeedPasswordHash(employee.password_hash);
     return isDefault ? this.getDefaultSeedPassword() : null;
   }
