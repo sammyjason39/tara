@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
@@ -140,10 +141,12 @@ function PinDialog({
 
 export function MobileClockPage() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState<"idle" | "locating" | "pin" | "photo" | "submitting" | "success" | "error">("idle");
   const [clockedIn, setClockedIn] = useState(false);
   const [clockInTime, setClockInTime] = useState<string | null>(null);
   const [clockOutTime, setClockOutTime] = useState<string | null>(null);
+  const [todayTardy, setTodayTardy] = useState<{ minutes: number } | null>(null);
   const [locationEnv] = useState<LocationEnvironment>(() => getLocationEnvironment());
   const [permissionState, setPermissionState] = useState<LocationPermissionState>("unknown");
   const [geoError, setGeoError] = useState<string | null>(
@@ -164,6 +167,13 @@ export function MobileClockPage() {
     office_name: string;
     geofence_radius_meters: number;
   } | null>(null);
+
+  const { data: monthlyTardinessRes } = useQuery({
+    queryKey: ["my-monthly-tardiness"],
+    queryFn: () => api.get("/attendance/my-monthly-tardiness"),
+    placeholderData: { data: { total_tardiness_minutes: 0, tardy_days: 0, is_over_threshold: false } },
+  });
+  const monthlyTardiness = monthlyTardinessRes?.data;
 
   const locationBlocked = locationEnv.issue === "in_app_browser" || locationEnv.issue === "insecure" || locationEnv.issue === "unsupported";
 
@@ -368,7 +378,7 @@ export function MobileClockPage() {
 
     try {
       if (!clockedIn) {
-        await api.post("/absensi-agent/clock-in", {
+        const res = await api.post("/absensi-agent/clock-in", {
           employee_id: user!.id,
           timestamp: now.toISOString(),
           gps_latitude: position.latitude,
@@ -377,10 +387,18 @@ export function MobileClockPage() {
           attendance_source: "phone",
           selfie_photo: selfiePhoto,
         });
+        const record = res.data;
         setClockInTime(timeStr);
         setClockedIn(true);
         setStatus("success");
-        toast.success(`Clock-in berhasil pukul ${timeStr} WIB`);
+        if (record?.is_tardy) {
+          setTodayTardy({ minutes: record.tardiness_minutes });
+          toast.warning(`Anda terlambat ${record.tardiness_minutes} menit`);
+        } else {
+          setTodayTardy(null);
+          toast.success(`Clock-in berhasil pukul ${timeStr} WIB`);
+        }
+        queryClient.invalidateQueries({ queryKey: ["my-monthly-tardiness"] });
       } else {
         await api.post("/absensi-agent/clock-out", {
           employee_id: user!.id,
@@ -459,6 +477,28 @@ export function MobileClockPage() {
               <p className="text-2xs text-muted-foreground mt-1">{locationEnv.detail}</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {monthlyTardiness?.is_over_threshold && (
+        <div className="rounded-lg border border-warning/50 bg-warning/15 p-4">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-warning">Peringatan Keterlambatan</p>
+              <p className="text-2xs text-muted-foreground mt-1">
+                Total keterlambatan bulan ini: <strong>{monthlyTardiness.total_tardiness_minutes} menit</strong>
+                {" "}({monthlyTardiness.tardy_days} hari terlambat). Batas peringatan: 10 menit/bulan.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {todayTardy && (
+        <div className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-center">
+          <p className="text-sm font-medium text-warning">Anda terlambat hari ini</p>
+          <p className="text-2xs text-muted-foreground mt-0.5">{todayTardy.minutes} menit setelah batas toleransi</p>
         </div>
       )}
 
@@ -548,6 +588,15 @@ export function MobileClockPage() {
             <p className="text-xs text-muted-foreground">Clock Out</p>
             <p className="text-sm font-mono font-medium mt-1">{clockOutTime || "—"}</p>
           </div>
+        </div>
+        <div className="text-center p-3 rounded-md bg-secondary/30 border border-border/50">
+          <p className="text-xs text-muted-foreground">Total telat bulan ini</p>
+          <p className={cn(
+            "text-sm font-semibold mt-1",
+            monthlyTardiness?.is_over_threshold ? "text-warning" : "text-foreground",
+          )}>
+            {monthlyTardiness?.total_tardiness_minutes ?? 0} menit
+          </p>
         </div>
       </div>
 

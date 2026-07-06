@@ -114,10 +114,21 @@ export class AbsensiAgentController {
         clockInDto.selfie_photo,
       );
 
+      const monthlyTardiness = await this.attendanceService.getMonthlyTardinessSummary(
+        clockInDto.employee_id,
+      );
+
+      const message = result.is_tardy
+        ? `Clock-in tercatat. Anda terlambat ${result.tardiness_minutes} menit.`
+        : 'Clock-in recorded successfully';
+
       return {
         success: true,
-        message: 'Clock-in recorded successfully',
-        data: result,
+        message,
+        data: {
+          ...result,
+          monthly_tardiness: monthlyTardiness,
+        },
       };
     } catch (error) {
       this.logger.error(

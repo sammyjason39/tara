@@ -19,6 +19,14 @@ export function AttendancePage() {
     placeholderData: { data: { total_employees: 0, clocked_in: 0, tardy: 0, absent: 0, records: [] } },
   });
 
+  const { data: monthlyRes } = useQuery({
+    queryKey: ["monthly-tardiness"],
+    queryFn: () => api.get("/attendance/monthly-tardiness"),
+    placeholderData: { data: [] },
+  });
+
+  const monthlyTardiness = monthlyRes?.data || [];
+
   const stats = data?.data || { total_employees: 0, clocked_in: 0, tardy: 0, absent: 0, records: [] };
 
   const statCards = [
@@ -60,6 +68,64 @@ export function AttendancePage() {
             <p className="text-2xl font-semibold tracking-tight">{stat.value}</p>
           </div>
         ))}
+      </div>
+
+      {/* Monthly Tardiness Summary */}
+      <div className="surface-elevated overflow-hidden">
+        <div className="px-4 py-3 border-b border-border">
+          <h2 className="text-sm font-semibold">Keterlambatan Bulan Ini</h2>
+          <p className="text-2xs text-muted-foreground mt-0.5">Total menit terlambat per karyawan (setelah toleransi jadwal)</p>
+        </div>
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-border">
+              <th className="text-left px-4 py-3 text-luxury-label">Karyawan</th>
+              <th className="text-left px-4 py-3 text-luxury-label hidden md:table-cell">Departemen</th>
+              <th className="text-left px-4 py-3 text-luxury-label">Hari Telat</th>
+              <th className="text-left px-4 py-3 text-luxury-label">Total Menit</th>
+            </tr>
+          </thead>
+          <tbody>
+            {monthlyTardiness.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  Belum ada keterlambatan tercatat bulan ini
+                </td>
+              </tr>
+            ) : (
+              monthlyTardiness.map((row: any) => (
+                <tr
+                  key={row.employee_id}
+                  className={cn(
+                    "border-b border-border/50",
+                    row.is_over_threshold && "bg-warning/5",
+                  )}
+                >
+                  <td className="px-4 py-3 text-sm font-medium">
+                    <div className="flex items-center gap-2">
+                      {row.is_over_threshold && (
+                        <AlertTriangle className="h-3.5 w-3.5 text-warning shrink-0" />
+                      )}
+                      {row.employee_name}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground hidden md:table-cell">
+                    {row.department || "—"}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">{row.tardy_days}</td>
+                  <td className="px-4 py-3">
+                    <span className={cn(
+                      "text-sm font-semibold",
+                      row.is_over_threshold ? "text-warning" : "text-foreground",
+                    )}>
+                      {row.total_tardiness_minutes} mnt
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* Attendance Table */}

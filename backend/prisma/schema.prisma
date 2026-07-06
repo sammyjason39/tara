@@ -510,6 +510,7 @@ model WorkSchedule {
   schedule_name String   // 'Shift Pagi', 'Shift Siang', 'Normal', etc.
   start_time    String   // "08:00" format
   end_time      String   // "17:00" format
+  grace_minutes Int      @default(0) // toleransi keterlambatan (menit) setelah start_time
   break_start   String?  // "12:00"
   break_end     String?  // "13:00"
   work_days     Json     // [1,2,3,4,5] = Mon-Fri

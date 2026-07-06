@@ -194,8 +194,9 @@ export class TaraAttendanceService {
         );
       }
 
-      // Step 5: Calculate tardiness (Requirement 2.3)
+      // Step 5: Calculate tardiness (Requirement 2.3) — uses employee schedule + grace period
       const tardinessResult = await this.calculateTardiness(
+        employee_id,
         timestamp,
         attendanceDate,
       );
@@ -548,40 +549,51 @@ export class TaraAttendanceService {
   }
 
   /**
-   * Calculate tardiness based on system settings
-   * 
-   * Requirements:
-   * - 2.3: Flag as tardy if clock-in after 09:00 WIB
-   * - 8.3: Use configurable tardiness threshold
-   * 
-   * @param clockInTime - The actual clock-in timestamp
-   * @param attendanceDate - The attendance date (date only, no time)
-   * @returns Tardiness calculation result
+   * Calculate tardiness based on employee work schedule (start_time + grace_minutes)
+   * or system-wide fallback threshold.
    */
   private async calculateTardiness(
+    employeeId: string,
     clockInTime: Date,
     attendanceDate: Date,
   ): Promise<{
     is_tardy: boolean;
     tardiness_minutes: number;
     threshold_time: Date;
+    grace_minutes: number;
+    schedule_start_time: string;
   }> {
-    // Query system settings for tardiness threshold
-    const tardinessSettings = await this.prisma.systemSettings.findUnique({
-      where: { setting_key: 'attendance.tardiness_threshold' },
+    const assignment = await this.prisma.scheduleAssignment.findFirst({
+      where: {
+        employee_id: employeeId,
+        effective_from: { lte: clockInTime },
+        OR: [{ effective_to: null }, { effective_to: { gte: clockInTime } }],
+      },
+      include: { schedule: true },
+      orderBy: { effective_from: 'desc' },
     });
 
-    // Default to 09:00 WIB if not configured (Requirement 2.3)
-    const thresholdHour =
-      tardinessSettings?.setting_value?.['hour'] ?? 9;
-    const thresholdMinute =
-      tardinessSettings?.setting_value?.['minute'] ?? 0;
+    let startTime = '09:00';
+    let graceMinutes = 0;
 
-    // Create threshold time for the attendance date
-    const thresholdTime = new Date(attendanceDate);
-    thresholdTime.setHours(thresholdHour, thresholdMinute, 0, 0);
+    if (assignment?.schedule) {
+      startTime = assignment.schedule.start_time;
+      graceMinutes = assignment.schedule.grace_minutes ?? 0;
+    } else {
+      const tardinessSettings = await this.prisma.systemSettings.findUnique({
+        where: { setting_key: 'attendance.tardiness_threshold' },
+      });
+      const hour = tardinessSettings?.setting_value?.['hour'] ?? 9;
+      const minute = tardinessSettings?.setting_value?.['minute'] ?? 0;
+      startTime = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    }
 
-    // Calculate if tardy and by how many minutes
+    const thresholdTime = this.buildJakartaDeadline(
+      attendanceDate,
+      startTime,
+      graceMinutes,
+    );
+
     const isTardy = clockInTime > thresholdTime;
     const tardinessMinutes = isTardy
       ? Math.floor((clockInTime.getTime() - thresholdTime.getTime()) / (1000 * 60))
@@ -591,7 +603,130 @@ export class TaraAttendanceService {
       is_tardy: isTardy,
       tardiness_minutes: tardinessMinutes,
       threshold_time: thresholdTime,
+      grace_minutes: graceMinutes,
+      schedule_start_time: startTime,
     };
+  }
+
+  /** Build deadline datetime in Asia/Jakarta: start_time + grace_minutes. */
+  private buildJakartaDeadline(
+    attendanceDate: Date,
+    startTime: string,
+    graceMinutes: number,
+  ): Date {
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const datePart = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Jakarta',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(attendanceDate);
+
+    const totalMinutes = startHour * 60 + startMinute + graceMinutes;
+    const hour = Math.floor(totalMinutes / 60) % 24;
+    const minute = totalMinutes % 60;
+
+    return new Date(
+      `${datePart}T${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}:00+07:00`,
+    );
+  }
+
+  /** Monthly tardiness rollup for one employee (WIB calendar month). */
+  async getMonthlyTardinessSummary(
+    employeeId: string,
+    year?: number,
+    month?: number,
+  ) {
+    const nowJakarta = new Date(
+      new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }),
+    );
+    const y = year ?? nowJakarta.getFullYear();
+    const m = month ?? nowJakarta.getMonth() + 1;
+
+    const start = new Date(`${y}-${String(m).padStart(2, '0')}-01T00:00:00+07:00`);
+    const endMonth = m === 12 ? 1 : m + 1;
+    const endYear = m === 12 ? y + 1 : y;
+    const end = new Date(
+      `${endYear}-${String(endMonth).padStart(2, '0')}-01T00:00:00+07:00`,
+    );
+
+    const agg = await this.prisma.attendance.aggregate({
+      where: {
+        employee_id: employeeId,
+        attendance_date: { gte: start, lt: end },
+        is_tardy: true,
+      },
+      _sum: { tardiness_minutes: true },
+      _count: { id: true },
+    });
+
+    const totalMinutes = agg._sum.tardiness_minutes ?? 0;
+    const warningThreshold = 10;
+
+    return {
+      year: y,
+      month: m,
+      total_tardiness_minutes: totalMinutes,
+      tardy_days: agg._count.id,
+      warning_threshold_minutes: warningThreshold,
+      is_over_threshold: totalMinutes > warningThreshold,
+    };
+  }
+
+  /** Monthly tardiness rollup for all active employees (HR view). */
+  async getMonthlyTardinessForAll(year?: number, month?: number) {
+    const nowJakarta = new Date(
+      new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }),
+    );
+    const y = year ?? nowJakarta.getFullYear();
+    const m = month ?? nowJakarta.getMonth() + 1;
+
+    const start = new Date(`${y}-${String(m).padStart(2, '0')}-01T00:00:00+07:00`);
+    const endMonth = m === 12 ? 1 : m + 1;
+    const endYear = m === 12 ? y + 1 : y;
+    const end = new Date(
+      `${endYear}-${String(endMonth).padStart(2, '0')}-01T00:00:00+07:00`,
+    );
+
+    const records = await this.prisma.attendance.groupBy({
+      by: ['employee_id'],
+      where: {
+        attendance_date: { gte: start, lt: end },
+        is_tardy: true,
+      },
+      _sum: { tardiness_minutes: true },
+      _count: { id: true },
+    });
+
+    if (records.length === 0) return [];
+
+    const employees = await this.prisma.employee.findMany({
+      where: { id: { in: records.map((r) => r.employee_id) } },
+      select: {
+        id: true,
+        full_name: true,
+        employee_code: true,
+        department: { select: { name: true } },
+      },
+    });
+    const empMap = new Map(employees.map((e) => [e.id, e]));
+    const warningThreshold = 10;
+
+    return records
+      .map((r) => {
+        const emp = empMap.get(r.employee_id);
+        const total = r._sum.tardiness_minutes ?? 0;
+        return {
+          employee_id: r.employee_id,
+          employee_name: emp?.full_name ?? '—',
+          employee_code: emp?.employee_code ?? '—',
+          department: emp?.department?.name ?? null,
+          total_tardiness_minutes: total,
+          tardy_days: r._count.id,
+          is_over_threshold: total > warningThreshold,
+        };
+      })
+      .sort((a, b) => b.total_tardiness_minutes - a.total_tardiness_minutes);
   }
 
   /**

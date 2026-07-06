@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
@@ -6,6 +7,7 @@ import { X, Pencil } from "lucide-react";
 
 type Employee = {
   id: string;
+  employee_code?: string;
   full_name: string;
   email?: string;
   department?: string | null;
@@ -37,6 +39,7 @@ export function EmployeeEditModal({
   const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
+    employee_code: "",
     full_name: "",
     department: "",
     whatsapp_number: "",
@@ -46,11 +49,21 @@ export function EmployeeEditModal({
   useEffect(() => {
     if (!employee) return;
     setForm({
+      employee_code: employee.employee_code || "",
       full_name: employee.full_name || "",
       department: employee.department || "",
       whatsapp_number: employee.whatsapp_number || "",
       supervisor_id: employee.supervisor_id || "",
     });
+  }, [employee]);
+
+  useEffect(() => {
+    if (!employee) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
   }, [employee]);
 
   if (!employee) return null;
@@ -60,10 +73,15 @@ export function EmployeeEditModal({
       toast.error("Nama lengkap wajib diisi");
       return;
     }
+    if (!form.employee_code.trim()) {
+      toast.error("ID karyawan wajib diisi");
+      return;
+    }
 
     setSaving(true);
     try {
       await api.put(`/employees/${employee.id}`, {
+        employee_code: form.employee_code.trim(),
         full_name: form.full_name.trim(),
         department: form.department.trim() || null,
         whatsapp_number: form.whatsapp_number.trim() || null,
@@ -87,9 +105,9 @@ export function EmployeeEditModal({
     ].filter(Boolean)),
   ].sort();
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-[1px] p-4"
       onClick={onClose}
     >
       <div
@@ -112,6 +130,20 @@ export function EmployeeEditModal({
         </div>
 
         <div className="space-y-3">
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground">ID Karyawan</label>
+            <input
+              type="text"
+              value={form.employee_code}
+              onChange={(e) => setForm({ ...form, employee_code: e.target.value.toUpperCase() })}
+              placeholder="EMP-001"
+              className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring/20"
+            />
+            <p className="text-2xs text-muted-foreground">
+              Bisa diubah manual. Huruf, angka, underscore, dan tanda hubung (2–50 karakter).
+            </p>
+          </div>
+
           <div className="space-y-1.5">
             <label className="text-xs text-muted-foreground">Nama lengkap</label>
             <input
@@ -188,6 +220,7 @@ export function EmployeeEditModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

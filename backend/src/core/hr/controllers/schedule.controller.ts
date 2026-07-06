@@ -97,7 +97,7 @@ export class ScheduleController {
 
   @Post('assign/bulk')
   @UseGuards(RolesGuard) @Roles('SuperAdmin', 'HR_Admin')
-  async bulkAssignSchedule(@Body() dto: { schedule_id: string; employee_ids?: string[]; apply_to_all?: boolean; effective_from: string; effective_to?: string }, @Req() req: any) {
+  async bulkAssignSchedule(@Body() dto: { schedule_id: string; employee_ids?: string[]; apply_to_all?: boolean; department_ids?: string[]; role_ids?: string[]; effective_from: string; effective_to?: string }, @Req() req: any) {
     const data = await this.scheduleService.bulkAssignSchedule({
       ...dto,
       assigned_by: req.user?.sub,

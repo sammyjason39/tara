@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../persistence/prisma.service';
 
 @Injectable()
@@ -21,12 +21,19 @@ export class ScheduleService {
     schedule_name: string;
     start_time: string;
     end_time: string;
+    grace_minutes?: number;
     break_start?: string;
     break_end?: string;
     work_days: number[];
     is_default?: boolean;
   }) {
-    return this.prisma.workSchedule.create({ data: { ...data, work_days: data.work_days } });
+    return this.prisma.workSchedule.create({
+      data: {
+        ...data,
+        grace_minutes: data.grace_minutes ?? 0,
+        work_days: data.work_days,
+      },
+    });
   }
 
   async updateSchedule(id: string, data: any) {
@@ -84,30 +91,54 @@ export class ScheduleService {
     });
   }
 
-  async bulkAssignSchedule(data: { schedule_id: string; employee_ids?: string[]; apply_to_all?: boolean; effective_from: string; effective_to?: string; assigned_by?: string }) {
+  async bulkAssignSchedule(data: {
+    schedule_id: string;
+    employee_ids?: string[];
+    apply_to_all?: boolean;
+    department_ids?: string[];
+    role_ids?: string[];
+    effective_from: string;
+    effective_to?: string;
+    assigned_by?: string;
+  }) {
     let employeeIds = data.employee_ids || [];
+
     if (data.apply_to_all) {
       const employees = await this.prisma.employee.findMany({
         where: { employment_status: 'active' },
         select: { id: true },
       });
       employeeIds = employees.map((e) => e.id);
+    } else if ((data.department_ids?.length ?? 0) > 0 || (data.role_ids?.length ?? 0) > 0) {
+      const where: any = { employment_status: 'active' };
+      if (data.department_ids?.length) {
+        where.department_id = { in: data.department_ids };
+      }
+      if (data.role_ids?.length) {
+        where.role_id = { in: data.role_ids };
+      }
+      const employees = await this.prisma.employee.findMany({
+        where,
+        select: { id: true },
+      });
+      employeeIds = employees.map((e) => e.id);
     }
 
-    const results = [];
-    for (const employee_id of employeeIds) {
-      const assignment = await this.prisma.scheduleAssignment.create({
-        data: {
-          employee_id,
-          schedule_id: data.schedule_id,
-          effective_from: new Date(data.effective_from),
-          effective_to: data.effective_to ? new Date(data.effective_to) : null,
-          assigned_by: data.assigned_by,
-        },
-      });
-      results.push(assignment);
+    if (employeeIds.length === 0) {
+      throw new BadRequestException('Tidak ada karyawan yang cocok dengan filter penugasan');
     }
-    return { count: results.length, assignments: results };
+
+    const result = await this.prisma.scheduleAssignment.createMany({
+      data: employeeIds.map((employee_id) => ({
+        employee_id,
+        schedule_id: data.schedule_id,
+        effective_from: new Date(data.effective_from),
+        effective_to: data.effective_to ? new Date(data.effective_to) : null,
+        assigned_by: data.assigned_by,
+      })),
+    });
+
+    return { count: result.count };
   }
 
   async removeAssignment(id: string) {

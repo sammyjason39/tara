@@ -8,6 +8,7 @@ import { Search, Plus, Filter, MoreHorizontal, Building2, X } from "lucide-react
 import { cn } from "@/lib/utils";
 import { useBranding } from "@/contexts/BrandingContext";
 import { EmployeeEditModal } from "@/components/employees/EmployeeEditModal";
+import { EmployeeDeleteModal } from "@/components/employees/EmployeeDeleteModal";
 
 export function EmployeesPage() {
   const { t } = useTranslation();
@@ -19,6 +20,7 @@ export function EmployeesPage() {
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editEmp, setEditEmp] = useState<any | null>(null);
+  const [deleteEmp, setDeleteEmp] = useState<any | null>(null);
   const navigate = useNavigate();
   const filterRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -65,7 +67,14 @@ export function EmployeesPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const [newEmp, setNewEmp] = useState({ full_name: "", email: "", department: "", role: "", supervisor_id: "" });
+  const [newEmp, setNewEmp] = useState({
+    full_name: "",
+    email: "",
+    employee_code: "",
+    department: "",
+    role: "",
+    supervisor_id: "",
+  });
 
   const handleAddEmployee = async () => {
     if (!newEmp.full_name || !newEmp.email) {
@@ -75,11 +84,12 @@ export function EmployeesPage() {
     try {
       await api.post("/employees", {
         ...newEmp,
+        employee_code: newEmp.employee_code.trim() || undefined,
         supervisor_id: newEmp.supervisor_id || null,
       });
       toast.success(t("employees.added_success"));
       setShowAddPanel(false);
-      setNewEmp({ full_name: "", email: "", department: "", role: "", supervisor_id: "" });
+      setNewEmp({ full_name: "", email: "", employee_code: "", department: "", role: "", supervisor_id: "" });
       queryClient.invalidateQueries({ queryKey: ["employees"] });
     } catch (err: any) {
       toast.error(err.message || t("employees.add_failed"));
@@ -91,6 +101,10 @@ export function EmployeesPage() {
   };
 
   const handleEditSaved = () => {
+    queryClient.invalidateQueries({ queryKey: ["employees"] });
+  };
+
+  const handleDeleted = () => {
     queryClient.invalidateQueries({ queryKey: ["employees"] });
   };
 
@@ -136,6 +150,13 @@ export function EmployeesPage() {
               value={newEmp.email}
               onChange={(e) => setNewEmp({ ...newEmp, email: e.target.value })}
               className="h-10 px-3 rounded-md border border-input bg-background text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring/20"
+            />
+            <input
+              type="text"
+              placeholder="ID Karyawan (opsional, auto-generate)"
+              value={newEmp.employee_code}
+              onChange={(e) => setNewEmp({ ...newEmp, employee_code: e.target.value.toUpperCase() })}
+              className="h-10 px-3 rounded-md border border-input bg-background text-sm font-mono placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring/20"
             />
             <input
               type="text"
@@ -328,10 +349,10 @@ export function EmployeesPage() {
                             {t("common.edit")}
                           </button>
                           <button
-                            onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); toast(t("employees.deactivated")); }}
+                            onClick={(e) => { e.stopPropagation(); setOpenMenuId(null); setDeleteEmp(emp); }}
                             className="w-full text-left px-3 py-2 text-sm text-destructive hover:bg-accent transition-colors"
                           >
-                            {t("employees.deactivate")}
+                            Hapus Karyawan
                           </button>
                         </div>
                       )}
@@ -350,6 +371,12 @@ export function EmployeesPage() {
         departments={adminDepartments}
         onClose={() => setEditEmp(null)}
         onSaved={handleEditSaved}
+      />
+
+      <EmployeeDeleteModal
+        employee={deleteEmp}
+        onClose={() => setDeleteEmp(null)}
+        onDeleted={handleDeleted}
       />
     </div>
   );

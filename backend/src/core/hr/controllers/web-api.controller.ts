@@ -27,6 +27,8 @@ import { FeatureFlagsService } from '../services/feature-flags.service';
 import { LeaveService } from '../services/leave.service';
 import { NotificationService } from '../services/notification.service';
 import { AttendancePhotoService } from '../services/attendance-photo.service';
+import { TaraAttendanceService } from '../services/tara-attendance.service';
+import { normalizeWhatsAppPhone } from '../whatsapp/utils/phone-normalize.util';
 import { createLogoMulterOptions } from '../services/company-logo-upload.config';
 
 /**
@@ -43,6 +45,7 @@ export class WebApiController {
     private readonly leaveService: LeaveService,
     private readonly notificationService: NotificationService,
     private readonly attendancePhotoService: AttendancePhotoService,
+    private readonly taraAttendanceService: TaraAttendanceService,
   ) {}
 
   @Get('dashboard/stats')
@@ -142,11 +145,53 @@ export class WebApiController {
       },
     });
 
-    if (!employee) {
+    if (!employee || employee.employment_status === 'deleted') {
       return { success: false, message: 'Employee not found' };
     }
 
     return { success: true, data: this.formatEmployee(employee) };
+  }
+
+  @Get('employees/:id/leave-balance')
+  @UseGuards(RolesGuard)
+  @Roles('SuperAdmin', 'HR_Admin', 'Supervisor')
+  async getEmployeeLeaveBalance(@Param('id') id: string) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id },
+      select: { id: true, employment_status: true },
+    });
+    if (!employee || employee.employment_status === 'deleted') {
+      throw new NotFoundException('Karyawan tidak ditemukan');
+    }
+
+    const balance = await this.leaveService.getLeaveBalance(id);
+    return { success: true, data: this.formatLeaveBalance(balance) };
+  }
+
+  @Get('employees/:id/leave-requests')
+  @UseGuards(RolesGuard)
+  @Roles('SuperAdmin', 'HR_Admin', 'Supervisor')
+  async getEmployeeLeaveRequests(
+    @Param('id') id: string,
+    @Query('limit') limit?: string,
+  ) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id },
+      select: { id: true, employment_status: true },
+    });
+    if (!employee || employee.employment_status === 'deleted') {
+      throw new NotFoundException('Karyawan tidak ditemukan');
+    }
+
+    const parsedLimit = limit ? parseInt(limit, 10) : 5;
+    const requests = await this.leaveService.getLeaveRequests(id, {
+      limit: Number.isFinite(parsedLimit) ? parsedLimit : 5,
+    });
+
+    return {
+      success: true,
+      data: requests.map((r) => this.formatLeaveRequest(r)),
+    };
   }
 
   @Post('employees')
@@ -166,7 +211,7 @@ export class WebApiController {
 
     let whatsappNumber: string | null = null;
     if (body.whatsapp_number) {
-      whatsappNumber = this.normalizeWhatsAppNumber(String(body.whatsapp_number));
+      whatsappNumber = normalizeWhatsAppPhone(String(body.whatsapp_number));
       if (!this.isValidWhatsAppNumber(whatsappNumber)) {
         throw new BadRequestException(
           'Format nomor WhatsApp tidak valid. Gunakan format internasional (contoh: 6281234567890)',
@@ -181,9 +226,15 @@ export class WebApiController {
       }
     }
 
+    let employeeCode = `EMP-${Date.now()}`;
+    if (body.employee_code) {
+      employeeCode = this.normalizeEmployeeCode(String(body.employee_code));
+      await this.assertEmployeeCodeAvailable(employeeCode);
+    }
+
     const employee = await this.prisma.employee.create({
       data: {
-        employee_code: body.employee_code || `EMP-${Date.now()}`,
+        employee_code: employeeCode,
         full_name: body.full_name,
         email: body.email.toLowerCase(),
         phone: whatsappNumber || body.phone || '',
@@ -226,6 +277,13 @@ export class WebApiController {
       }
       data.full_name = name;
     }
+
+    if (body.employee_code !== undefined) {
+      const code = this.normalizeEmployeeCode(String(body.employee_code));
+      await this.assertEmployeeCodeAvailable(code, id);
+      data.employee_code = code;
+    }
+
     if (body.phone !== undefined) data.phone = body.phone;
     if (body.employment_status !== undefined) {
       data.employment_status = body.employment_status;
@@ -233,7 +291,7 @@ export class WebApiController {
 
     if (body.whatsapp_number !== undefined) {
       const wa = body.whatsapp_number
-        ? this.normalizeWhatsAppNumber(String(body.whatsapp_number))
+        ? normalizeWhatsAppPhone(String(body.whatsapp_number))
         : null;
       if (wa) {
         if (!this.isValidWhatsAppNumber(wa)) {
@@ -305,6 +363,40 @@ export class WebApiController {
     return { success: true, data: this.formatEmployee(employee) };
   }
 
+  @Delete('employees/:id')
+  @UseGuards(RolesGuard)
+  @Roles('SuperAdmin', 'HR_Admin')
+  async deleteEmployee(@Param('id') id: string, @Req() req: any) {
+    const existing = await this.prisma.employee.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException('Karyawan tidak ditemukan');
+    }
+    if (existing.employment_status === 'deleted') {
+      throw new BadRequestException('Karyawan sudah dihapus');
+    }
+    if (req.user?.sub === id) {
+      throw new BadRequestException('Tidak bisa menghapus akun sendiri');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.employee.updateMany({
+        where: { supervisor_id: id },
+        data: { supervisor_id: null, updated_at: new Date() },
+      }),
+      this.prisma.employee.update({
+        where: { id },
+        data: {
+          employment_status: 'deleted',
+          supervisor_id: null,
+          updated_at: new Date(),
+          updated_by: req.user?.sub ?? null,
+        },
+      }),
+    ]);
+
+    return { success: true, message: 'Karyawan berhasil dihapus' };
+  }
+
   private async assertSupervisorExists(supervisorId: string): Promise<void> {
     const supervisor = await this.prisma.employee.findUnique({
       where: { id: supervisorId },
@@ -332,19 +424,51 @@ export class WebApiController {
     return created.id;
   }
 
-  private normalizeWhatsAppNumber(phone: string): string {
-    let normalized = phone.replace(/[\s\-\(\)]/g, '');
-    if (normalized.startsWith('+')) {
-      normalized = normalized.substring(1);
-    }
-    if (normalized.startsWith('08')) {
-      normalized = '62' + normalized.substring(1);
-    }
-    return normalized;
-  }
-
   private isValidWhatsAppNumber(phone: string): boolean {
     return /^\d{10,15}$/.test(phone);
+  }
+
+  private normalizeEmployeeCode(code: string): string {
+    const trimmed = code.trim().toUpperCase();
+    if (!/^[\w-]{2,50}$/.test(trimmed)) {
+      throw new BadRequestException(
+        'Format ID karyawan tidak valid (2–50 karakter: huruf, angka, underscore, tanda hubung)',
+      );
+    }
+    return trimmed;
+  }
+
+  private async assertEmployeeCodeAvailable(code: string, excludeId?: string): Promise<void> {
+    const taken = await this.prisma.employee.findFirst({
+      where: {
+        employee_code: code,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+      select: { full_name: true },
+    });
+    if (taken) {
+      throw new BadRequestException(`ID karyawan "${code}" sudah dipakai oleh ${taken.full_name}`);
+    }
+  }
+
+  @Get('attendance/my-monthly-tardiness')
+  async getMyMonthlyTardiness(@Req() req: any) {
+    const data = await this.taraAttendanceService.getMonthlyTardinessSummary(req.user.sub);
+    return { success: true, data };
+  }
+
+  @Get('attendance/monthly-tardiness')
+  @UseGuards(RolesGuard)
+  @Roles('SuperAdmin', 'HR_Admin', 'Supervisor')
+  async getMonthlyTardiness(
+    @Query('year') year?: string,
+    @Query('month') month?: string,
+  ) {
+    const data = await this.taraAttendanceService.getMonthlyTardinessForAll(
+      year ? parseInt(year, 10) : undefined,
+      month ? parseInt(month, 10) : undefined,
+    );
+    return { success: true, data };
   }
 
   @Get('attendance/dashboard')
@@ -765,7 +889,9 @@ export class WebApiController {
       whatsapp_number: e.whatsapp_number,
       whatsapp_verified: e.whatsapp_verified ?? false,
       role: e.role?.role_name || 'Employee',
+      role_id: e.role_id ?? e.role?.id ?? null,
       department: e.department?.name || null,
+      department_id: e.department_id ?? e.department?.id ?? null,
       office: e.office?.location_name || null,
       employment_status: e.employment_status,
       hire_date: e.hire_date,
@@ -790,6 +916,20 @@ export class WebApiController {
       used_days: Number(balance.used_days),
       carryover_days: Number(balance.carryover_days ?? 0),
       year: balance.year,
+    };
+  }
+
+  private formatLeaveRequest(r: any) {
+    return {
+      id: r.id,
+      leave_type: r.leave_type,
+      start_date: r.start_date,
+      end_date: r.end_date,
+      total_days: Number(r.total_days),
+      reason: r.reason,
+      status: r.status,
+      submitted_at: r.submitted_at,
+      approver_name: r.approver?.full_name ?? null,
     };
   }
 }

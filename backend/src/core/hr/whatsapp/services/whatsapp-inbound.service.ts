@@ -2,6 +2,10 @@ import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../../../../persistence/prisma.service';
 import { EventBusService } from '../../services/event-bus.service';
 import { WhatsAppAuditService } from './whatsapp-audit.service';
+import {
+  normalizeWhatsAppPhone,
+  phoneLookupVariants,
+} from '../utils/phone-normalize.util';
 import { WhatsAppSessionService } from './whatsapp-session.service';
 import { WhatsAppClientService } from './whatsapp-client.service';
 import { WhatsAppOutboundService } from './whatsapp-outbound.service';
@@ -269,19 +273,46 @@ export class WhatsAppInboundService {
     const employee = await this.findEmployeeByPhone(senderPhone);
     if (!employee) {
       this.logger.warn(`[INBOUND] Unknown sender ${senderPhone} — cannot route to employee`);
-      // Optionally send a "not registered" reply
       await this.clientService.sendText(
         senderPhone,
-        '⚠️ Nomor Anda belum terdaftar di sistem TARA. Silakan atur nomor WhatsApp Anda di profil aplikasi.',
+        '⚠️ Nomor WhatsApp Anda belum terdaftar di sistem TARA.\n\n' +
+          'Silakan hubungi tim HR untuk aktivasi nomor WhatsApp Anda di TARA.',
       );
       return;
     }
 
+    const normalizedSender = normalizeWhatsAppPhone(senderPhone);
+    const registeredNumber =
+      (employee.whatsapp_number &&
+        normalizeWhatsAppPhone(employee.whatsapp_number) === normalizedSender) ||
+      (employee.phone && normalizeWhatsAppPhone(employee.phone) === normalizedSender);
+
     if (!employee.whatsapp_opted_in || !employee.whatsapp_verified) {
-      this.logger.warn(
-        `[INBOUND] Employee ${employee.id} (${employee.full_name}) not opted-in or not verified`,
-      );
-      return;
+      if (registeredNumber) {
+        await this.prisma.employee.update({
+          where: { id: employee.id },
+          data: {
+            whatsapp_number: normalizedSender,
+            whatsapp_opted_in: true,
+            whatsapp_verified: true,
+            whatsapp_verified_at: new Date(),
+            phone: normalizedSender,
+          },
+        });
+        this.logger.log(
+          `[INBOUND] Auto-activated WA for ${employee.full_name} (${normalizedSender})`,
+        );
+      } else {
+        this.logger.warn(
+          `[INBOUND] Employee ${employee.id} (${employee.full_name}) not opted-in or not verified`,
+        );
+        await this.clientService.sendText(
+          senderPhone,
+          '⚠️ Nomor WhatsApp Anda belum aktif di TARA.\n\n' +
+            'Silakan hubungi tim HR untuk aktivasi nomor WhatsApp Anda.',
+        );
+        return;
+      }
     }
 
     // Get or create session
@@ -437,26 +468,21 @@ export class WhatsAppInboundService {
    * Searches with multiple format variations.
    */
   private async findEmployeeByPhone(phone: string) {
-    // Normalize the incoming phone: remove '+' prefix if present
-    const normalized = phone.startsWith('+') ? phone.substring(1) : phone;
+    const variants = phoneLookupVariants(phone);
 
-    // Search by whatsapp_number (primary) or fallback to phone field
     const employee = await this.prisma.employee.findFirst({
       where: {
-        OR: [
-          { whatsapp_number: normalized },
-          { whatsapp_number: `+${normalized}` },
-          { whatsapp_number: phone },
-          // Fallback: match on phone field if whatsapp_number not set
-          { phone: normalized, whatsapp_opted_in: true },
-          { phone: `+${normalized}`, whatsapp_opted_in: true },
-        ],
         employment_status: 'active',
+        OR: variants.flatMap((v) => [
+          { whatsapp_number: v },
+          { phone: v },
+        ]),
       },
       select: {
         id: true,
         full_name: true,
         email: true,
+        phone: true,
         whatsapp_number: true,
         whatsapp_opted_in: true,
         whatsapp_verified: true,

@@ -16,10 +16,303 @@ import {
   Trash2,
   Eye,
   UserPlus,
+  Settings2,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const dayNames = ["", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
+
+type AssignMode = "individual" | "all" | "department" | "role";
+
+const assignModeOptions: { id: AssignMode; label: string; icon: typeof Users }[] = [
+  { id: "individual", label: "Per Karyawan", icon: UserPlus },
+  { id: "all", label: "Semua Karyawan", icon: Users },
+  { id: "department", label: "Per Divisi", icon: Building2 },
+  { id: "role", label: "Per Role", icon: Shield },
+];
+
+function BulkAssignPanel({
+  scheduleId = "",
+  lockSchedule = false,
+  onClose,
+  onSuccess,
+}: {
+  scheduleId?: string;
+  lockSchedule?: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [mode, setMode] = useState<AssignMode>("individual");
+  const [form, setForm] = useState({
+    schedule_id: scheduleId,
+    employee_id: "",
+    effective_from: "",
+    effective_to: "",
+  });
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+
+  const { data: schedulesData } = useQuery({
+    queryKey: ["schedules"],
+    queryFn: () => api.get("/schedules"),
+    placeholderData: { data: [] },
+  });
+  const { data: employeesData } = useQuery({
+    queryKey: ["employees-list"],
+    queryFn: () => api.get("/employees"),
+    placeholderData: { data: [] },
+  });
+  const { data: departmentsData } = useQuery({
+    queryKey: ["admin-departments"],
+    queryFn: () => api.get("/admin/departments"),
+    placeholderData: { data: [] },
+  });
+  const { data: rolesData } = useQuery({
+    queryKey: ["admin-roles"],
+    queryFn: () => api.get("/admin/roles"),
+    placeholderData: { data: [] },
+  });
+
+  const schedules = schedulesData?.data || [];
+  const employees = employeesData?.data || [];
+  const departments = departmentsData?.data || [];
+  const roles = rolesData?.data || [];
+
+  const targetCount = (() => {
+    if (mode === "all") return employees.length;
+    if (mode === "individual") return form.employee_id ? 1 : 0;
+    if (mode === "department") {
+      return employees.filter((e: any) => e.department_id && selectedDepartments.includes(e.department_id)).length;
+    }
+    if (mode === "role") {
+      return employees.filter((e: any) => e.role_id && selectedRoles.includes(e.role_id)).length;
+    }
+    return 0;
+  })();
+
+  const toggleDepartment = (id: string) => {
+    setSelectedDepartments((prev) =>
+      prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id],
+    );
+  };
+
+  const toggleRole = (id: string) => {
+    setSelectedRoles((prev) =>
+      prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id],
+    );
+  };
+
+  const handleAssign = async () => {
+    if (!form.schedule_id || !form.effective_from) {
+      toast.error("Jadwal dan tanggal mulai wajib diisi");
+      return;
+    }
+    if (mode === "individual" && !form.employee_id) {
+      toast.error("Pilih karyawan terlebih dahulu");
+      return;
+    }
+    if (mode === "department" && selectedDepartments.length === 0) {
+      toast.error("Pilih minimal satu divisi");
+      return;
+    }
+    if (mode === "role" && selectedRoles.length === 0) {
+      toast.error("Pilih minimal satu role");
+      return;
+    }
+
+    try {
+      if (mode === "individual") {
+        await api.post("/schedules/assign", {
+          employee_id: form.employee_id,
+          schedule_id: form.schedule_id,
+          effective_from: form.effective_from,
+          effective_to: form.effective_to || undefined,
+        });
+        toast.success("Karyawan berhasil ditugaskan ke jadwal");
+      } else {
+        const payload: Record<string, unknown> = {
+          schedule_id: form.schedule_id,
+          effective_from: form.effective_from,
+          effective_to: form.effective_to || undefined,
+        };
+        if (mode === "all") payload.apply_to_all = true;
+        if (mode === "department") payload.department_ids = selectedDepartments;
+        if (mode === "role") payload.role_ids = selectedRoles;
+
+        const res = await api.post("/schedules/assign/bulk", payload);
+        const count = res?.data?.count ?? targetCount;
+        toast.success(`Jadwal berhasil ditugaskan ke ${count} karyawan`);
+      }
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      toast.error(err.message || "Gagal menugaskan jadwal");
+    }
+  };
+
+  return (
+    <div className="surface-elevated p-5 space-y-4 border border-gold/20 animate-fade-in">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold flex items-center gap-2">
+          <Settings2 className="h-4 w-4" /> Terapkan Jadwal
+        </h3>
+        <button onClick={onClose} className="p-1 rounded hover:bg-accent">
+          <X className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {assignModeOptions.map((opt) => (
+          <button
+            key={opt.id}
+            type="button"
+            onClick={() => setMode(opt.id)}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border transition-colors",
+              mode === opt.id
+                ? "bg-gold/10 text-gold border-gold/40"
+                : "bg-background text-muted-foreground border-input hover:bg-accent",
+            )}
+          >
+            <opt.icon className="h-3.5 w-3.5" />
+            {opt.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        {mode === "individual" && (
+          <select
+            value={form.employee_id}
+            onChange={(e) => setForm({ ...form, employee_id: e.target.value })}
+            className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
+          >
+            <option value="">Pilih Karyawan</option>
+            {employees.map((e: any) => (
+              <option key={e.id} value={e.id}>{e.full_name}</option>
+            ))}
+          </select>
+        )}
+
+        {mode === "department" && (
+          <div className="lg:col-span-2 space-y-2">
+            <p className="text-2xs text-muted-foreground">Pilih divisi:</p>
+            <div className="flex flex-wrap gap-2">
+              {departments.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Belum ada divisi</p>
+              ) : departments.map((d: any) => (
+                <label
+                  key={d.id}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs cursor-pointer transition-colors",
+                    selectedDepartments.includes(d.id)
+                      ? "bg-gold/10 text-gold border-gold/40"
+                      : "border-input hover:bg-accent",
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedDepartments.includes(d.id)}
+                    onChange={() => toggleDepartment(d.id)}
+                    className="rounded border-input text-primary focus:ring-ring"
+                  />
+                  {d.name}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {mode === "role" && (
+          <div className="lg:col-span-2 space-y-2">
+            <p className="text-2xs text-muted-foreground">Pilih role:</p>
+            <div className="flex flex-wrap gap-2">
+              {roles.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Belum ada role</p>
+              ) : roles.map((r: any) => (
+                <label
+                  key={r.id}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-xs cursor-pointer transition-colors",
+                    selectedRoles.includes(r.id)
+                      ? "bg-gold/10 text-gold border-gold/40"
+                      : "border-input hover:bg-accent",
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedRoles.includes(r.id)}
+                    onChange={() => toggleRole(r.id)}
+                    className="rounded border-input text-primary focus:ring-ring"
+                  />
+                  {r.role_name}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {mode === "all" && (
+          <div className="flex items-center h-10 px-3 rounded-md border border-gold/30 bg-gold/5 text-sm text-gold">
+            Semua karyawan aktif ({employees.length})
+          </div>
+        )}
+
+        <select
+          value={form.schedule_id}
+          disabled={lockSchedule}
+          onChange={(e) => setForm({ ...form, schedule_id: e.target.value })}
+          className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:opacity-60"
+        >
+          <option value="">Pilih Jadwal</option>
+          {schedules.map((s: any) => (
+            <option key={s.id} value={s.id}>
+              {s.schedule_name} ({s.start_time}-{s.end_time})
+            </option>
+          ))}
+        </select>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-2xs text-muted-foreground">Tanggal Mulai:</label>
+          <DatePickerInput
+            value={form.effective_from}
+            onChange={(effective_from) => setForm({ ...form, effective_from })}
+            aria-label="Tanggal mulai penugasan"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label className="text-2xs text-muted-foreground">Tanggal Selesai (Opsional):</label>
+          <DatePickerInput
+            value={form.effective_to}
+            onChange={(effective_to) => setForm({ ...form, effective_to })}
+            min={form.effective_from || undefined}
+            aria-label="Tanggal selesai penugasan"
+          />
+        </div>
+      </div>
+
+      {mode !== "individual" && targetCount > 0 && (
+        <p className="text-xs text-muted-foreground">
+          Akan ditugaskan ke <span className="font-medium text-foreground">{targetCount}</span> karyawan
+        </p>
+      )}
+
+      <div className="flex justify-end gap-2">
+        <button onClick={onClose} className="px-4 py-2 rounded-md text-sm border border-input hover:bg-accent">
+          Batal
+        </button>
+        <button
+          onClick={handleAssign}
+          className="px-4 py-2 rounded-md text-sm bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+        >
+          Terapkan
+        </button>
+      </div>
+    </div>
+  );
+}
 
 type Tab = "schedules" | "assignments" | "absences" | "holidays";
 
@@ -42,7 +335,7 @@ export function SchedulePage() {
           className="flex items-center gap-2 px-4 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
         >
           <Plus className="h-4 w-4" />
-          {tab === "schedules" ? "Buat Jadwal" : tab === "assignments" ? "Tugaskan Karyawan" : tab === "absences" ? "Catat Absensi" : "Tambah Libur"}
+          {tab === "schedules" ? "Buat Jadwal" : tab === "assignments" ? "Terapkan Jadwal" : tab === "absences" ? "Catat Absensi" : "Tambah Libur"}
         </button>
       </div>
 
@@ -93,10 +386,12 @@ export function SchedulePage() {
 function SchedulesView({ showForm, onCloseForm, search }: { showForm: boolean; onCloseForm: () => void; search: string }) {
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [bulkApplyId, setBulkApplyId] = useState<string | null>(null);
   const [form, setForm] = useState({
     schedule_name: "",
     start_time: "08:00",
     end_time: "17:00",
+    grace_minutes: 10,
     break_start: "12:00",
     break_end: "13:00",
     work_days: [1, 2, 3, 4, 5] as number[],
@@ -135,6 +430,7 @@ function SchedulesView({ showForm, onCloseForm, search }: { showForm: boolean; o
         schedule_name: "",
         start_time: "08:00",
         end_time: "17:00",
+        grace_minutes: 10,
         break_start: "12:00",
         break_end: "13:00",
         work_days: [1, 2, 3, 4, 5],
@@ -180,6 +476,18 @@ function SchedulesView({ showForm, onCloseForm, search }: { showForm: boolean; o
               <input type="time" value={form.end_time}
                 onChange={(e) => setForm({ ...form, end_time: e.target.value })}
                 className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 flex-1" />
+            </div>
+            <div className="flex items-center gap-2 lg:col-span-2">
+              <label className="text-xs text-muted-foreground whitespace-nowrap">Toleransi telat (menit):</label>
+              <input
+                type="number"
+                min={0}
+                max={120}
+                value={form.grace_minutes}
+                onChange={(e) => setForm({ ...form, grace_minutes: Math.max(0, parseInt(e.target.value, 10) || 0) })}
+                className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 w-24"
+              />
+              <span className="text-2xs text-muted-foreground">Setelah jam masuk + toleransi = dianggap terlambat</span>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -296,12 +604,26 @@ function SchedulesView({ showForm, onCloseForm, search }: { showForm: boolean; o
                 <p className="text-sm font-medium">{s.schedule_name}</p>
                 {s.is_default && <span className="px-2 py-0.5 rounded-full text-2xs bg-gold/10 text-gold font-medium">Default</span>}
               </div>
-              <button onClick={(e) => { e.stopPropagation(); handleDelete(s.id); }} className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setBulkApplyId(bulkApplyId === s.id ? null : s.id);
+                    setSelectedId(s.id);
+                  }}
+                  className="p-1.5 rounded hover:bg-gold/10 text-muted-foreground hover:text-gold transition-colors"
+                  title="Terapkan jadwal"
+                >
+                  <Settings2 className="h-3.5 w-3.5" />
+                </button>
+                <button onClick={(e) => { e.stopPropagation(); handleDelete(s.id); }} className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
               <span className="font-mono">{s.start_time} - {s.end_time}</span>
+              <span className="text-2xs">Toleransi telat: {s.grace_minutes ?? 0} mnt</span>
               {s.daily_breaks && Object.keys(s.daily_breaks).length > 0 ? (
                 <span className="text-2xs text-gold font-medium">Istirahat Kustom per Hari</span>
               ) : (
@@ -321,6 +643,17 @@ function SchedulesView({ showForm, onCloseForm, search }: { showForm: boolean; o
             </p>
             {selectedId === s.id && (
               <div className="pt-3 border-t border-border/50 animate-fade-in space-y-3">
+                {bulkApplyId === s.id && (
+                  <BulkAssignPanel
+                    scheduleId={s.id}
+                    lockSchedule
+                    onClose={() => setBulkApplyId(null)}
+                    onSuccess={() => {
+                      refetch();
+                      queryClient.invalidateQueries({ queryKey: ["schedule-assignments"] });
+                    }}
+                  />
+                )}
                 {s.daily_breaks && Object.keys(s.daily_breaks).length > 0 && (
                   <div>
                     <p className="text-luxury-label text-xs mb-1.5 font-medium text-gold">Jam Istirahat per Hari:</p>
@@ -366,69 +699,16 @@ function SchedulesView({ showForm, onCloseForm, search }: { showForm: boolean; o
 // ─── Assignments View ─────────────────────────────────────────────────────────
 
 function AssignmentsView({ showForm, onCloseForm, search }: { showForm: boolean; onCloseForm: () => void; search: string }) {
-  const queryClient = useQueryClient();
-  const [form, setForm] = useState({
-    employee_id: "",
-    schedule_id: "",
-    effective_from: "",
-    effective_to: "",
-    apply_to_all: false,
-  });
-
-  const { data: schedulesData } = useQuery({
-    queryKey: ["schedules"],
-    queryFn: () => api.get("/schedules"),
-    placeholderData: { data: [] },
-  });
-
   const { data: assignmentsData, refetch } = useQuery({
     queryKey: ["schedule-assignments"],
     queryFn: () => api.get("/schedules/assignments/all"),
     placeholderData: { data: [] },
   });
 
-  const { data: employeesData } = useQuery({
-    queryKey: ["employees-list"],
-    queryFn: () => api.get("/employees"),
-    placeholderData: { data: [] },
-  });
-
-  const schedules = schedulesData?.data || [];
-  const employees = employeesData?.data || [];
   const assignments = (assignmentsData?.data || []).filter((a: any) =>
     !search || a.employee?.full_name?.toLowerCase().includes(search.toLowerCase()) ||
     a.schedule?.schedule_name?.toLowerCase().includes(search.toLowerCase())
   );
-
-  const handleAssign = async () => {
-    if ((!form.apply_to_all && !form.employee_id) || !form.schedule_id || !form.effective_from) {
-      toast.error("Semua field wajib diisi"); return;
-    }
-    try {
-      if (form.apply_to_all) {
-        await api.post("/schedules/assign/bulk", {
-          schedule_id: form.schedule_id,
-          apply_to_all: true,
-          effective_from: form.effective_from,
-          effective_to: form.effective_to || undefined,
-        });
-        toast.success("Jadwal berhasil ditugaskan ke semua karyawan");
-      } else {
-        await api.post("/schedules/assign", {
-          employee_id: form.employee_id,
-          schedule_id: form.schedule_id,
-          effective_from: form.effective_from,
-          effective_to: form.effective_to || undefined,
-        });
-        toast.success("Karyawan berhasil ditugaskan ke jadwal");
-      }
-      onCloseForm();
-      setForm({ employee_id: "", schedule_id: "", effective_from: "", effective_to: "", apply_to_all: false });
-      refetch();
-    } catch (err: any) {
-      toast.error(err.message || "Gagal menugaskan karyawan");
-    }
-  };
 
   const handleRemove = async (id: string) => {
     try {
@@ -443,55 +723,12 @@ function AssignmentsView({ showForm, onCloseForm, search }: { showForm: boolean;
   return (
     <div className="space-y-4">
       {showForm && (
-        <div className="surface-elevated p-5 space-y-4 border border-gold/20 animate-fade-in">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold flex items-center gap-2"><UserPlus className="h-4 w-4" /> Tugaskan Karyawan ke Jadwal</h3>
-            <button onClick={onCloseForm} className="p-1 rounded hover:bg-accent"><X className="h-4 w-4 text-muted-foreground" /></button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="flex flex-col gap-2">
-              <select value={form.employee_id} disabled={form.apply_to_all} onChange={(e) => setForm({ ...form, employee_id: e.target.value })}
-                className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 disabled:opacity-50">
-                <option value="">Pilih Karyawan</option>
-                {employees.map((e: any) => <option key={e.id} value={e.id}>{e.full_name}</option>)}
-              </select>
-              <label className="flex items-center gap-2 cursor-pointer mt-1">
-                <input type="checkbox" checked={form.apply_to_all}
-                  onChange={(e) => setForm({ ...form, apply_to_all: e.target.checked, employee_id: e.target.checked ? "" : form.employee_id })}
-                  className="rounded border-input text-primary focus:ring-ring" />
-                <span className="text-xs text-muted-foreground">Tugaskan ke Semua Karyawan</span>
-              </label>
-            </div>
-            <div className="flex flex-col">
-              <select value={form.schedule_id} onChange={(e) => setForm({ ...form, schedule_id: e.target.value })}
-                className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20">
-                <option value="">Pilih Jadwal</option>
-                {schedules.map((s: any) => <option key={s.id} value={s.id}>{s.schedule_name} ({s.start_time}-{s.end_time})</option>)}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-2xs text-muted-foreground">Tanggal Mulai:</label>
-              <DatePickerInput
-                value={form.effective_from}
-                onChange={(effective_from) => setForm({ ...form, effective_from })}
-                aria-label="Tanggal mulai penugasan"
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-2xs text-muted-foreground">Tanggal Selesai (Opsional):</label>
-              <DatePickerInput
-                value={form.effective_to}
-                onChange={(effective_to) => setForm({ ...form, effective_to })}
-                min={form.effective_from || undefined}
-                aria-label="Tanggal selesai penugasan"
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <button onClick={onCloseForm} className="px-4 py-2 rounded-md text-sm border border-input hover:bg-accent">Batal</button>
-            <button onClick={handleAssign} className="px-4 py-2 rounded-md text-sm bg-primary text-primary-foreground hover:bg-primary/90 font-medium">Tugaskan</button>
-          </div>
-        </div>
+        <BulkAssignPanel
+          onClose={onCloseForm}
+          onSuccess={() => {
+            refetch();
+          }}
+        />
       )}
 
       {/* Assignments Table */}
