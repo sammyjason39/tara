@@ -4,11 +4,12 @@ import * as path from 'path';
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { getAppVersion } from './shared/app-version';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { rawBody: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
 
   // CORS
   const origins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173')
@@ -33,6 +34,10 @@ async function bootstrap() {
 
   // API prefix
   app.setGlobalPrefix('v1');
+
+  // Selfie attendance uploads arrive as base64 JSON — default 100kb is too small for phone cameras.
+  app.useBodyParser('json', { limit: '8mb' });
+  app.useBodyParser('urlencoded', { limit: '8mb', extended: true });
 
   const port = parseInt(process.env.PORT || '3001', 10);
   await app.listen(port, '0.0.0.0');

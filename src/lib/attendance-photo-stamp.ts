@@ -102,6 +102,46 @@ function roundRect(
 
 import { getVideoCaptureSize } from "@/lib/camera";
 
+/** Keep uploads small for mobile JSON payloads (base64 expands ~33%). */
+const MAX_CAPTURE_LONG_EDGE = 1280;
+const MAX_JPEG_BYTES = 1_800_000;
+
+function scaleCaptureDimensions(
+  width: number,
+  height: number,
+): { width: number; height: number } {
+  const longEdge = Math.max(width, height);
+  if (longEdge <= MAX_CAPTURE_LONG_EDGE) {
+    return { width, height };
+  }
+  const scale = MAX_CAPTURE_LONG_EDGE / longEdge;
+  return {
+    width: Math.round(width * scale),
+    height: Math.round(height * scale),
+  };
+}
+
+function estimateDataUrlBytes(dataUrl: string): number {
+  const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
+  return Math.ceil((base64.length * 3) / 4);
+}
+
+function encodeJpegWithLimit(canvas: HTMLCanvasElement): string {
+  let quality = 0.82;
+  let dataUrl = canvas.toDataURL("image/jpeg", quality);
+
+  while (estimateDataUrlBytes(dataUrl) > MAX_JPEG_BYTES && quality > 0.45) {
+    quality -= 0.08;
+    dataUrl = canvas.toDataURL("image/jpeg", quality);
+  }
+
+  if (estimateDataUrlBytes(dataUrl) > MAX_JPEG_BYTES) {
+    throw new Error("Foto terlalu besar. Coba lagi dengan pencahayaan normal.");
+  }
+
+  return dataUrl;
+}
+
 /**
  * Capture a mirrored selfie frame and burn verification metadata into the image.
  */
@@ -113,13 +153,15 @@ export function captureStampedSelfie(
   const size = getVideoCaptureSize(video, stream);
   if (!size) throw new Error("Kamera belum siap");
 
+  const scaled = scaleCaptureDimensions(size.width, size.height);
+
   const canvas = document.createElement("canvas");
-  canvas.width = size.width;
-  canvas.height = size.height;
+  canvas.width = scaled.width;
+  canvas.height = scaled.height;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas tidak didukung");
 
-  // Mirror to match front-camera preview.
+  // Mirror to match front-camera preview; draw scaled to reduce iPhone sensor resolution.
   ctx.save();
   ctx.translate(canvas.width, 0);
   ctx.scale(-1, 1);
@@ -128,7 +170,7 @@ export function captureStampedSelfie(
 
   drawStampOverlay(ctx, canvas.width, canvas.height, stamp);
 
-  const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+  const dataUrl = encodeJpegWithLimit(canvas);
   if (!dataUrl || dataUrl.length < 200) {
     throw new Error("Gagal mengambil foto");
   }

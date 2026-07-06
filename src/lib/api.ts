@@ -18,6 +18,12 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
+    if (res.status === 413) {
+      throw new Error(
+        (err as { message?: string }).message ||
+          "Foto terlalu besar untuk dikirim. Coba ambil ulang foto selfie.",
+      );
+    }
     throw new Error(err.message || `Request failed: ${res.status}`);
   }
 
