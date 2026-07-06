@@ -131,6 +131,17 @@ export class WebApiController {
     return { success: true, data: this.formatEmployee(employee) };
   }
 
+  @Get('employees/check-email')
+  @UseGuards(RolesGuard)
+  @Roles('SuperAdmin', 'HR_Admin')
+  async checkEmailAvailability(
+    @Query('email') email: string,
+    @Query('exclude_id') excludeId?: string,
+  ) {
+    const result = await this.lookupEmailAvailability(email, excludeId);
+    return { success: true, data: result };
+  }
+
   @Get('employees/:id')
   @UseGuards(RolesGuard)
   @Roles('SuperAdmin', 'HR_Admin', 'Supervisor')
@@ -206,18 +217,7 @@ export class WebApiController {
       throw new BadRequestException('Nama lengkap wajib diisi');
     }
 
-    const existingEmail = await this.prisma.employee.findUnique({
-      where: { email },
-      select: { id: true, full_name: true, employment_status: true },
-    });
-    if (existingEmail) {
-      if (existingEmail.employment_status === 'deleted') {
-        throw new BadRequestException(
-          `Email sudah pernah dipakai oleh karyawan yang dihapus (${existingEmail.full_name}). Gunakan email lain.`,
-        );
-      }
-      throw new BadRequestException('Email sudah dipakai karyawan lain');
-    }
+    await this.assertEmailAvailable(email);
 
     const role = body.role
       ? await this.prisma.role.findFirst({ where: { role_name: body.role } })
@@ -317,6 +317,17 @@ export class WebApiController {
       data.employee_code = code;
     }
 
+    if (body.email !== undefined) {
+      const email = String(body.email).trim().toLowerCase();
+      if (!email) {
+        throw new BadRequestException('Email tidak boleh kosong');
+      }
+      if (email !== existing.email.toLowerCase()) {
+        await this.assertEmailAvailable(email, id);
+        data.email = email;
+      }
+    }
+
     if (body.phone !== undefined) data.phone = body.phone;
     if (body.employment_status !== undefined) {
       data.employment_status = body.employment_status;
@@ -382,16 +393,30 @@ export class WebApiController {
       throw new BadRequestException('Tidak ada field yang diperbarui');
     }
 
-    const employee = await this.prisma.employee.update({
-      where: { id },
-      data,
-      include: {
-        role: true,
-        department: true,
-        office: true,
-        supervisor: { select: { id: true, full_name: true } },
-      },
-    });
+    let employee;
+    try {
+      employee = await this.prisma.employee.update({
+        where: { id },
+        data,
+        include: {
+          role: true,
+          department: true,
+          office: true,
+          supervisor: { select: { id: true, full_name: true } },
+        },
+      });
+    } catch (error: any) {
+      if (error?.code === 'P2002') {
+        const target = error?.meta?.target;
+        if (Array.isArray(target) && target.includes('email')) {
+          throw new BadRequestException('Email sudah dipakai karyawan lain');
+        }
+        if (Array.isArray(target) && target.includes('employee_code')) {
+          throw new BadRequestException('ID karyawan sudah dipakai');
+        }
+      }
+      throw error;
+    }
 
     return { success: true, data: this.formatEmployee(employee) };
   }
@@ -455,6 +480,49 @@ export class WebApiController {
       select: { id: true },
     });
     return created.id;
+  }
+
+  private isValidEmail(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  private async lookupEmailAvailability(
+    email: string,
+    excludeId?: string,
+  ): Promise<{ available: boolean; message?: string }> {
+    const normalized = String(email || '').trim().toLowerCase();
+    if (!normalized) {
+      return { available: false, message: 'Email wajib diisi' };
+    }
+    if (!this.isValidEmail(normalized)) {
+      return { available: false, message: 'Format email tidak valid' };
+    }
+
+    const taken = await this.prisma.employee.findFirst({
+      where: {
+        email: normalized,
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+      select: { full_name: true, employment_status: true },
+    });
+
+    if (!taken) {
+      return { available: true };
+    }
+    if (taken.employment_status === 'deleted') {
+      return {
+        available: false,
+        message: `Email sudah pernah dipakai oleh karyawan yang dihapus (${taken.full_name})`,
+      };
+    }
+    return { available: false, message: 'Email sudah dipakai karyawan lain' };
+  }
+
+  private async assertEmailAvailable(email: string, excludeId?: string): Promise<void> {
+    const result = await this.lookupEmailAvailability(email, excludeId);
+    if (!result.available) {
+      throw new BadRequestException(result.message || 'Email tidak tersedia');
+    }
   }
 
   private isValidWhatsAppNumber(phone: string): boolean {

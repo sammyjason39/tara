@@ -3,7 +3,10 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
-import { X, Pencil } from "lucide-react";
+import { X, Pencil, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+type EmailCheckStatus = "unchanged" | "checking" | "available" | "unavailable" | "invalid";
 
 type Employee = {
   id: string;
@@ -38,9 +41,12 @@ export function EmployeeEditModal({
 }: Props) {
   const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<EmailCheckStatus>("unchanged");
+  const [emailMessage, setEmailMessage] = useState("");
   const [form, setForm] = useState({
     employee_code: "",
     full_name: "",
+    email: "",
     department: "",
     whatsapp_number: "",
     supervisor_id: "",
@@ -51,11 +57,56 @@ export function EmployeeEditModal({
     setForm({
       employee_code: employee.employee_code || "",
       full_name: employee.full_name || "",
+      email: employee.email || "",
       department: employee.department || "",
       whatsapp_number: employee.whatsapp_number || "",
       supervisor_id: employee.supervisor_id || "",
     });
+    setEmailStatus("unchanged");
+    setEmailMessage("");
   }, [employee]);
+
+  useEffect(() => {
+    if (!employee) return;
+
+    const normalized = form.email.trim().toLowerCase();
+    const original = (employee.email || "").trim().toLowerCase();
+
+    if (!normalized || normalized === original) {
+      setEmailStatus("unchanged");
+      setEmailMessage("");
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+      setEmailStatus("invalid");
+      setEmailMessage("Format email tidak valid");
+      return;
+    }
+
+    setEmailStatus("checking");
+    setEmailMessage("");
+
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await api.get(
+          `/employees/check-email?email=${encodeURIComponent(normalized)}&exclude_id=${encodeURIComponent(employee.id)}`,
+        );
+        if (res?.data?.available) {
+          setEmailStatus("available");
+          setEmailMessage("Email tersedia");
+        } else {
+          setEmailStatus("unavailable");
+          setEmailMessage(res?.data?.message || "Email sudah dipakai");
+        }
+      } catch {
+        setEmailStatus("unavailable");
+        setEmailMessage("Gagal memeriksa email");
+      }
+    }, 400);
+
+    return () => window.clearTimeout(timer);
+  }, [form.email, employee]);
 
   useEffect(() => {
     if (!employee) return;
@@ -77,12 +128,25 @@ export function EmployeeEditModal({
       toast.error("ID karyawan wajib diisi");
       return;
     }
+    if (!form.email.trim()) {
+      toast.error("Email wajib diisi");
+      return;
+    }
+    if (emailStatus === "checking") {
+      toast.error("Tunggu sebentar, email sedang dicek...");
+      return;
+    }
+    if (emailStatus === "invalid" || emailStatus === "unavailable") {
+      toast.error(emailMessage || "Email tidak valid atau sudah dipakai");
+      return;
+    }
 
     setSaving(true);
     try {
       await api.put(`/employees/${employee.id}`, {
         employee_code: form.employee_code.trim(),
         full_name: form.full_name.trim(),
+        email: form.email.trim().toLowerCase(),
         department: form.department.trim() || null,
         whatsapp_number: form.whatsapp_number.trim() || null,
         supervisor_id: form.supervisor_id || null,
@@ -124,12 +188,48 @@ export function EmployeeEditModal({
           </button>
         </div>
 
-        <div className="text-sm border-b border-border pb-3">
-          <p className="text-xs text-muted-foreground">Email (tidak bisa diubah)</p>
-          <p className="font-medium">{employee.email}</p>
-        </div>
-
         <div className="space-y-3">
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground">Email</label>
+            <div className="relative">
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                placeholder="nama@perusahaan.com"
+                className={cn(
+                  "w-full h-10 px-3 pr-10 rounded-md border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20",
+                  emailStatus === "available" && "border-success/50",
+                  (emailStatus === "unavailable" || emailStatus === "invalid") && "border-destructive/50",
+                )}
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                {emailStatus === "checking" && (
+                  <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+                )}
+                {emailStatus === "available" && (
+                  <CheckCircle2 className="h-4 w-4 text-success" />
+                )}
+                {(emailStatus === "unavailable" || emailStatus === "invalid") && (
+                  <XCircle className="h-4 w-4 text-destructive" />
+                )}
+              </div>
+            </div>
+            {emailMessage && emailStatus !== "unchanged" && emailStatus !== "checking" && (
+              <p className={cn(
+                "text-2xs",
+                emailStatus === "available" ? "text-success" : "text-destructive",
+              )}>
+                {emailMessage}
+              </p>
+            )}
+            {emailStatus === "unchanged" && (
+              <p className="text-2xs text-muted-foreground">
+                Ubah email jika perlu — sistem akan cek duplikasi sebelum disimpan.
+              </p>
+            )}
+          </div>
+
           <div className="space-y-1.5">
             <label className="text-xs text-muted-foreground">ID Karyawan</label>
             <input
@@ -213,7 +313,7 @@ export function EmployeeEditModal({
           </button>
           <button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || emailStatus === "checking" || emailStatus === "unavailable" || emailStatus === "invalid"}
             className="px-4 py-2 rounded-md text-sm bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium disabled:opacity-50"
           >
             {saving ? "Menyimpan..." : t("common.save")}
