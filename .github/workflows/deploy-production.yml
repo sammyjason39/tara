@@ -5,10 +5,23 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Bump level — A=major, B=minor (UI/fitur besar), C=patch (bug fix)'
+        required: false
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 concurrency:
   group: deploy-production
   cancel-in-progress: true
+
+permissions:
+  contents: write
 
 jobs:
   deploy:
@@ -20,6 +33,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump version
+        id: version
+        if: >-
+          github.event_name == 'workflow_dispatch' ||
+          (github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'chore(release):'))
+        run: |
+          chmod +x scripts/bump-version.sh scripts/sync-version.sh
+          BUMP="${{ github.event.inputs.version_bump || 'patch' }}"
+          bash scripts/bump-version.sh "$BUMP"
+          bash scripts/sync-version.sh
+          echo "bumped=true" >> "$GITHUB_OUTPUT"
+          echo "version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
 
       - name: Configure SSH
         env:
@@ -37,3 +66,14 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_SSH_KEY_FILE: ~/.ssh/deploy_key
         run: bash scripts/deploy-vps.sh production
+
+      - name: Commit and tag release
+        if: steps.version.outputs.bumped == 'true'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add VERSION backend/VERSION package.json backend/package.json package-lock.json src/lib/version.ts
+          git commit -m "chore(release): v${VERSION}"
+          git tag -a "v${VERSION}" -m "Release v${VERSION}"
+          git push origin HEAD:main --tags

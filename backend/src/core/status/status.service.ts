@@ -14,8 +14,8 @@ import {
   displayOverall,
   worstStatus,
 } from './status.types';
+import { getAppVersion } from '../../shared/app-version';
 
-const APP_VERSION = '2.0.0';
 const RETENTION_DAYS = 120;
 const SNAPSHOT_INTERVAL_MINUTES = 5;
 
@@ -46,7 +46,7 @@ export class StatusService implements OnModuleInit {
     return {
       status: 'ok',
       service: 'tara-backend',
-      version: APP_VERSION,
+      version: getAppVersion(),
       timestamp: new Date().toISOString(),
     };
   }
@@ -82,7 +82,7 @@ export class StatusService implements OnModuleInit {
       },
       daily_uptime: dailyUptime,
       incidents,
-      version: APP_VERSION,
+      version: getAppVersion(),
     };
   }
 

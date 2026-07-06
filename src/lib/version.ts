@@ -1,19 +1,18 @@
 // ============================================================================
-// APP VERSION CONTROL
+// APP VERSION CONTROL — see /VERSION (A.B.C)
 // ============================================================================
 //
-// Single source of truth for application version metadata.
-// Update this file when releasing new versions.
+// A = major platform (generasi produk besar, saat ini: 2)
+// B = upgrade mayor (UI masif, fitur besar, perubahan signifikan)
+// C = minor (bug fix, hotfix, penyesuaian kecil)
 //
-// Versioning follows Semantic Versioning (semver): MAJOR.MINOR.PATCH
-// - MAJOR: Breaking changes / major releases
-// - MINOR: New features (backward compatible)
-// - PATCH: Bug fixes and minor improvements
+// Jangan edit manual — gunakan scripts/bump-version.sh + sync-version.sh
+// Production deploy otomatis bump C (patch) dan commit tag vA.B.C
 //
 // ============================================================================
 
 export const APP_VERSION = "2.0.0";
-export const APP_BUILD_DATE = "2026-06-25";
+export const APP_BUILD_DATE = "2026-07-06";
 export const APP_NAME = "TARA";
 /** Fallback when branding API is unavailable */
 export const APP_COMPANY_FALLBACK = "TARA";

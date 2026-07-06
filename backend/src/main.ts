@@ -5,6 +5,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { getAppVersion } from './shared/app-version';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true });
@@ -22,7 +23,7 @@ async function bootstrap() {
       return res.status(200).json({
         status: 'ok',
         service: 'tara-backend',
-        version: '2.0.0',
+        version: getAppVersion(),
         timestamp: new Date().toISOString(),
         status_page: '/status',
       });
