@@ -20,7 +20,7 @@ export const DOC_SECTIONS: DocSection[] = [
       { slug: "memulai", title: "Memulai", description: "Login, PWA, dan navigasi dasar" },
       { slug: "absensi", title: "Absensi & Clock-in", description: "Selfie, GPS, dan jam kerja" },
       { slug: "cuti", title: "Pengajuan Cuti", description: "Ajukan dan lacak status cuti" },
-      { slug: "whatsapp-ai", title: "Asisten WhatsApp", description: "Tanya kebijakan lewat chat" },
+      { slug: "whatsapp-ai", title: "Asisten WhatsApp", description: "Login pertama & tanya kebijakan lewat chat" },
       { slug: "sop", title: "Dokumen SOP", description: "Baca prosedur perusahaan" },
       { slug: "profil", title: "Profil & Keamanan", description: "PIN, password, dan bahasa" },
     ],

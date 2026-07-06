@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
 import {
   ArrowLeft, Mail, Phone, Building2, MapPin, Calendar,
-  User, Shield, Briefcase,
+  User, Shield, Briefcase, UserCheck,
 } from "lucide-react";
 import { formatDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
@@ -66,6 +66,7 @@ export function EmployeeDetailPage() {
     { icon: Phone, label: "Telepon", value: employee.phone || "—" },
     { icon: Building2, label: "Departemen", value: employee.department || "—" },
     { icon: Shield, label: "Role", value: employee.role || "Employee" },
+    { icon: UserCheck, label: "Atasan / Approver Cuti", value: employee.supervisor_name || "—" },
     { icon: MapPin, label: "Lokasi Kantor", value: employee.office || "—" },
     { icon: Calendar, label: "Tanggal Bergabung", value: formatDate(employee.hire_date) },
     { icon: Briefcase, label: "Status", value: employee.employment_status || "active" },

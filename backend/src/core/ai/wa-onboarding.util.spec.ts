@@ -42,7 +42,7 @@ describe('buildFirstLoginWelcomeMessage', () => {
     expect(msg).toContain('budi@ralali.com');
     expect(msg).toContain('EMP-001');
     expect(msg).toContain('*demo123*');
-    expect(msg).toContain('/docs/memulai');
+    expect(msg).toContain('/docs/employee/memulai');
     expect(msg).toContain('mengganti password');
   });
 });

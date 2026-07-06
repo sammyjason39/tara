@@ -81,7 +81,12 @@ export class WebApiController {
   async getEmployees() {
     const employees = await this.prisma.employee.findMany({
       where: { employment_status: 'active' },
-      include: { role: true, department: true, office: true },
+      include: {
+        role: true,
+        department: true,
+        office: true,
+        supervisor: { select: { id: true, full_name: true } },
+      },
       orderBy: { full_name: 'asc' },
     });
 
@@ -129,7 +134,12 @@ export class WebApiController {
   async getEmployeeById(@Param('id') id: string) {
     const employee = await this.prisma.employee.findUnique({
       where: { id },
-      include: { role: true, department: true, office: true },
+      include: {
+        role: true,
+        department: true,
+        office: true,
+        supervisor: { select: { id: true, full_name: true } },
+      },
     });
 
     if (!employee) {
@@ -150,6 +160,10 @@ export class WebApiController {
       ? await this.prisma.department.findFirst({ where: { name: body.department } })
       : null;
 
+    if (body.supervisor_id) {
+      await this.assertSupervisorExists(body.supervisor_id);
+    }
+
     const employee = await this.prisma.employee.create({
       data: {
         employee_code: body.employee_code || `EMP-${Date.now()}`,
@@ -158,13 +172,91 @@ export class WebApiController {
         phone: body.phone || '',
         role_id: role?.id,
         department_id: department?.id,
+        supervisor_id: body.supervisor_id || null,
         employment_status: 'active',
         hire_date: new Date(),
       },
-      include: { role: true, department: true, office: true },
+      include: {
+        role: true,
+        department: true,
+        office: true,
+        supervisor: { select: { id: true, full_name: true } },
+      },
     });
 
     return { success: true, data: this.formatEmployee(employee) };
+  }
+
+  @Put('employees/:id')
+  @UseGuards(RolesGuard)
+  @Roles('SuperAdmin', 'HR_Admin')
+  async updateEmployee(@Param('id') id: string, @Body() body: any) {
+    const existing = await this.prisma.employee.findUnique({ where: { id } });
+    if (!existing) {
+      throw new NotFoundException('Karyawan tidak ditemukan');
+    }
+
+    const data: Record<string, unknown> = {};
+
+    if (body.full_name !== undefined) data.full_name = body.full_name;
+    if (body.phone !== undefined) data.phone = body.phone;
+    if (body.employment_status !== undefined) {
+      data.employment_status = body.employment_status;
+    }
+
+    if (body.role !== undefined) {
+      const role = body.role
+        ? await this.prisma.role.findFirst({ where: { role_name: body.role } })
+        : null;
+      data.role_id = role?.id ?? null;
+    }
+
+    if (body.department !== undefined) {
+      const department = body.department
+        ? await this.prisma.department.findFirst({ where: { name: body.department } })
+        : null;
+      data.department_id = department?.id ?? null;
+    }
+
+    // supervisor_id: string to assign, null/'' to clear
+    if (body.supervisor_id !== undefined) {
+      if (body.supervisor_id) {
+        if (body.supervisor_id === id) {
+          throw new BadRequestException('Karyawan tidak bisa menjadi atasan dirinya sendiri');
+        }
+        await this.assertSupervisorExists(body.supervisor_id);
+        data.supervisor_id = body.supervisor_id;
+      } else {
+        data.supervisor_id = null;
+      }
+    }
+
+    if (Object.keys(data).length === 0) {
+      throw new BadRequestException('Tidak ada field yang diperbarui');
+    }
+
+    const employee = await this.prisma.employee.update({
+      where: { id },
+      data,
+      include: {
+        role: true,
+        department: true,
+        office: true,
+        supervisor: { select: { id: true, full_name: true } },
+      },
+    });
+
+    return { success: true, data: this.formatEmployee(employee) };
+  }
+
+  private async assertSupervisorExists(supervisorId: string): Promise<void> {
+    const supervisor = await this.prisma.employee.findUnique({
+      where: { id: supervisorId },
+      select: { id: true, employment_status: true },
+    });
+    if (!supervisor || supervisor.employment_status !== 'active') {
+      throw new BadRequestException('Atasan yang dipilih tidak valid atau tidak aktif');
+    }
   }
 
   @Get('attendance/dashboard')
@@ -588,6 +680,8 @@ export class WebApiController {
       employment_status: e.employment_status,
       hire_date: e.hire_date,
       language_preference: e.language_preference,
+      supervisor_id: e.supervisor_id ?? e.supervisor?.id ?? null,
+      supervisor_name: e.supervisor?.full_name ?? null,
     };
   }
 

@@ -49,7 +49,7 @@ export const TARA_PUBLIC_BASE_URL =
   process.env.TARA_PUBLIC_URL || 'https://tara.ralali.io';
 export const TARA_CLOCK_URL = `${TARA_PUBLIC_BASE_URL}/m/clock`;
 export const TARA_LOGIN_URL = `${TARA_PUBLIC_BASE_URL}/login`;
-export const TARA_DOCS_MEMULAI_URL = `${TARA_PUBLIC_BASE_URL}/docs/memulai`;
+export const TARA_DOCS_MEMULAI_URL = `${TARA_PUBLIC_BASE_URL}/docs/employee/memulai`;
 
 /** HR contact for AI escalations (Pak Ahmad Yani) */
 export const HR_ESCALATION_CONTACT_EMAIL =
