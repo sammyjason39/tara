@@ -198,6 +198,27 @@ export class WebApiController {
   @UseGuards(RolesGuard)
   @Roles('SuperAdmin', 'HR_Admin')
   async createEmployee(@Body() body: any) {
+    const email = String(body.email || '').trim().toLowerCase();
+    if (!email) {
+      throw new BadRequestException('Email wajib diisi');
+    }
+    if (!body.full_name?.trim()) {
+      throw new BadRequestException('Nama lengkap wajib diisi');
+    }
+
+    const existingEmail = await this.prisma.employee.findUnique({
+      where: { email },
+      select: { id: true, full_name: true, employment_status: true },
+    });
+    if (existingEmail) {
+      if (existingEmail.employment_status === 'deleted') {
+        throw new BadRequestException(
+          `Email sudah pernah dipakai oleh karyawan yang dihapus (${existingEmail.full_name}). Gunakan email lain.`,
+        );
+      }
+      throw new BadRequestException('Email sudah dipakai karyawan lain');
+    }
+
     const role = body.role
       ? await this.prisma.role.findFirst({ where: { role_name: body.role } })
       : null;
@@ -232,29 +253,41 @@ export class WebApiController {
       await this.assertEmployeeCodeAvailable(employeeCode);
     }
 
-    const employee = await this.prisma.employee.create({
-      data: {
-        employee_code: employeeCode,
-        full_name: body.full_name,
-        email: body.email.toLowerCase(),
-        phone: whatsappNumber || body.phone || '',
-        whatsapp_number: whatsappNumber,
-        whatsapp_verified: !!whatsappNumber,
-        whatsapp_opted_in: !!whatsappNumber,
-        whatsapp_verified_at: whatsappNumber ? new Date() : null,
-        role_id: role?.id,
-        department_id: department,
-        supervisor_id: body.supervisor_id || null,
-        employment_status: 'active',
-        hire_date: new Date(),
-      },
-      include: {
-        role: true,
-        department: true,
-        office: true,
-        supervisor: { select: { id: true, full_name: true } },
-      },
-    });
+    let employee;
+    try {
+      employee = await this.prisma.employee.create({
+        data: {
+          employee_code: employeeCode,
+          full_name: body.full_name.trim(),
+          email,
+          phone: whatsappNumber || body.phone || '',
+          whatsapp_number: whatsappNumber,
+          whatsapp_verified: !!whatsappNumber,
+          whatsapp_opted_in: !!whatsappNumber,
+          whatsapp_verified_at: whatsappNumber ? new Date() : null,
+          role_id: role?.id,
+          department_id: department,
+          supervisor_id: body.supervisor_id || null,
+          employment_status: 'active',
+          hire_date: new Date(),
+        },
+        include: {
+          role: true,
+          department: true,
+          office: true,
+          supervisor: { select: { id: true, full_name: true } },
+        },
+      });
+    } catch (error: any) {
+      if (error?.code === 'P2002') {
+        const target = error?.meta?.target;
+        if (Array.isArray(target) && target.includes('employee_code')) {
+          throw new BadRequestException('ID karyawan sudah dipakai');
+        }
+        throw new BadRequestException('Email sudah dipakai karyawan lain');
+      }
+      throw error;
+    }
 
     return { success: true, data: this.formatEmployee(employee) };
   }

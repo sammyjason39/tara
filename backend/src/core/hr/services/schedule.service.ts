@@ -25,19 +25,45 @@ export class ScheduleService {
     break_start?: string;
     break_end?: string;
     work_days: number[];
+    daily_breaks?: Record<string, { break_start: string; break_end: string }> | null;
     is_default?: boolean;
   }) {
     return this.prisma.workSchedule.create({
       data: {
-        ...data,
+        schedule_name: data.schedule_name,
+        start_time: data.start_time,
+        end_time: data.end_time,
         grace_minutes: data.grace_minutes ?? 0,
+        break_start: data.break_start,
+        break_end: data.break_end,
         work_days: data.work_days,
+        daily_breaks: data.daily_breaks ?? undefined,
+        is_default: data.is_default ?? false,
       },
     });
   }
 
   async updateSchedule(id: string, data: any) {
-    return this.prisma.workSchedule.update({ where: { id }, data: { ...data, updated_at: new Date() } });
+    const allowed: Record<string, unknown> = {};
+    const fields = [
+      'schedule_name',
+      'start_time',
+      'end_time',
+      'grace_minutes',
+      'break_start',
+      'break_end',
+      'work_days',
+      'daily_breaks',
+      'is_default',
+      'is_active',
+    ] as const;
+    for (const key of fields) {
+      if (data[key] !== undefined) allowed[key] = data[key];
+    }
+    return this.prisma.workSchedule.update({
+      where: { id },
+      data: { ...allowed, updated_at: new Date() },
+    });
   }
 
   async deleteSchedule(id: string) {

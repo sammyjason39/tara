@@ -420,7 +420,13 @@ function SchedulesView({ showForm, onCloseForm, search }: { showForm: boolean; o
     if (!form.schedule_name) { toast.error("Nama jadwal wajib diisi"); return; }
     try {
       const payload = {
-        ...form,
+        schedule_name: form.schedule_name,
+        start_time: form.start_time,
+        end_time: form.end_time,
+        grace_minutes: form.grace_minutes,
+        break_start: form.break_start,
+        break_end: form.break_end,
+        work_days: form.work_days,
         daily_breaks: form.use_daily_breaks ? form.daily_breaks : null,
       };
       await api.post("/schedules", payload);
