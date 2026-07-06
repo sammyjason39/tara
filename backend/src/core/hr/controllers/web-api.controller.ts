@@ -157,11 +157,28 @@ export class WebApiController {
       ? await this.prisma.role.findFirst({ where: { role_name: body.role } })
       : null;
     const department = body.department
-      ? await this.prisma.department.findFirst({ where: { name: body.department } })
+      ? await this.resolveDepartmentId(body.department)
       : null;
 
     if (body.supervisor_id) {
       await this.assertSupervisorExists(body.supervisor_id);
+    }
+
+    let whatsappNumber: string | null = null;
+    if (body.whatsapp_number) {
+      whatsappNumber = this.normalizeWhatsAppNumber(String(body.whatsapp_number));
+      if (!this.isValidWhatsAppNumber(whatsappNumber)) {
+        throw new BadRequestException(
+          'Format nomor WhatsApp tidak valid. Gunakan format internasional (contoh: 6281234567890)',
+        );
+      }
+      const taken = await this.prisma.employee.findFirst({
+        where: { whatsapp_number: whatsappNumber },
+        select: { id: true },
+      });
+      if (taken) {
+        throw new BadRequestException('Nomor WhatsApp sudah dipakai karyawan lain');
+      }
     }
 
     const employee = await this.prisma.employee.create({
@@ -169,9 +186,13 @@ export class WebApiController {
         employee_code: body.employee_code || `EMP-${Date.now()}`,
         full_name: body.full_name,
         email: body.email.toLowerCase(),
-        phone: body.phone || '',
+        phone: whatsappNumber || body.phone || '',
+        whatsapp_number: whatsappNumber,
+        whatsapp_verified: !!whatsappNumber,
+        whatsapp_opted_in: !!whatsappNumber,
+        whatsapp_verified_at: whatsappNumber ? new Date() : null,
         role_id: role?.id,
-        department_id: department?.id,
+        department_id: department,
         supervisor_id: body.supervisor_id || null,
         employment_status: 'active',
         hire_date: new Date(),
@@ -198,10 +219,48 @@ export class WebApiController {
 
     const data: Record<string, unknown> = {};
 
-    if (body.full_name !== undefined) data.full_name = body.full_name;
+    if (body.full_name !== undefined) {
+      const name = String(body.full_name).trim();
+      if (!name) {
+        throw new BadRequestException('Nama lengkap tidak boleh kosong');
+      }
+      data.full_name = name;
+    }
     if (body.phone !== undefined) data.phone = body.phone;
     if (body.employment_status !== undefined) {
       data.employment_status = body.employment_status;
+    }
+
+    if (body.whatsapp_number !== undefined) {
+      const wa = body.whatsapp_number
+        ? this.normalizeWhatsAppNumber(String(body.whatsapp_number))
+        : null;
+      if (wa) {
+        if (!this.isValidWhatsAppNumber(wa)) {
+          throw new BadRequestException(
+            'Format nomor WhatsApp tidak valid. Gunakan format internasional (contoh: 6281234567890)',
+          );
+        }
+        const taken = await this.prisma.employee.findFirst({
+          where: { whatsapp_number: wa, id: { not: id } },
+          select: { full_name: true },
+        });
+        if (taken) {
+          throw new BadRequestException(
+            `Nomor WhatsApp sudah dipakai oleh ${taken.full_name}`,
+          );
+        }
+        data.whatsapp_number = wa;
+        data.whatsapp_verified = true;
+        data.whatsapp_opted_in = true;
+        data.whatsapp_verified_at = new Date();
+        data.phone = wa;
+      } else {
+        data.whatsapp_number = null;
+        data.whatsapp_verified = false;
+        data.whatsapp_opted_in = false;
+        data.whatsapp_verified_at = null;
+      }
     }
 
     if (body.role !== undefined) {
@@ -212,10 +271,7 @@ export class WebApiController {
     }
 
     if (body.department !== undefined) {
-      const department = body.department
-        ? await this.prisma.department.findFirst({ where: { name: body.department } })
-        : null;
-      data.department_id = department?.id ?? null;
+      data.department_id = await this.resolveDepartmentId(body.department);
     }
 
     // supervisor_id: string to assign, null/'' to clear
@@ -257,6 +313,38 @@ export class WebApiController {
     if (!supervisor || supervisor.employment_status !== 'active') {
       throw new BadRequestException('Atasan yang dipilih tidak valid atau tidak aktif');
     }
+  }
+
+  private async resolveDepartmentId(name: string | null | undefined): Promise<string | null> {
+    const trimmed = name?.trim();
+    if (!trimmed) return null;
+
+    const existing = await this.prisma.department.findFirst({
+      where: { name: trimmed },
+      select: { id: true },
+    });
+    if (existing) return existing.id;
+
+    const created = await this.prisma.department.create({
+      data: { name: trimmed },
+      select: { id: true },
+    });
+    return created.id;
+  }
+
+  private normalizeWhatsAppNumber(phone: string): string {
+    let normalized = phone.replace(/[\s\-\(\)]/g, '');
+    if (normalized.startsWith('+')) {
+      normalized = normalized.substring(1);
+    }
+    if (normalized.startsWith('08')) {
+      normalized = '62' + normalized.substring(1);
+    }
+    return normalized;
+  }
+
+  private isValidWhatsAppNumber(phone: string): boolean {
+    return /^\d{10,15}$/.test(phone);
   }
 
   @Get('attendance/dashboard')
@@ -674,6 +762,8 @@ export class WebApiController {
       full_name: e.full_name,
       email: e.email,
       phone: e.phone,
+      whatsapp_number: e.whatsapp_number,
+      whatsapp_verified: e.whatsapp_verified ?? false,
       role: e.role?.role_name || 'Employee',
       department: e.department?.name || null,
       office: e.office?.location_name || null,

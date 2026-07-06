@@ -1,18 +1,22 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { api } from "@/lib/api";
 import {
   ArrowLeft, Mail, Phone, Building2, MapPin, Calendar,
-  User, Shield, Briefcase, UserCheck,
+  User, Shield, Briefcase, UserCheck, MessageCircle, Pencil,
 } from "lucide-react";
 import { formatDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { EmployeeEditModal } from "@/components/employees/EmployeeEditModal";
 
 export function EmployeeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
+  const [showEdit, setShowEdit] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["employee", id],
@@ -20,7 +24,21 @@ export function EmployeeDetailPage() {
     enabled: !!id,
   });
 
+  const { data: employeesRes } = useQuery({
+    queryKey: ["employees"],
+    queryFn: () => api.get("/employees"),
+    placeholderData: { data: [] },
+  });
+
+  const { data: departmentsRes } = useQuery({
+    queryKey: ["admin-departments"],
+    queryFn: () => api.get("/admin/departments"),
+    placeholderData: { data: [] },
+  });
+
   const employee = data?.data || data;
+  const allEmployees = employeesRes?.data || [];
+  const adminDepartments = departmentsRes?.data || [];
 
   if (isLoading) {
     return (
@@ -64,6 +82,13 @@ export function EmployeeDetailPage() {
   const infoItems = [
     { icon: Mail, label: "Email", value: employee.email },
     { icon: Phone, label: "Telepon", value: employee.phone || "—" },
+    {
+      icon: MessageCircle,
+      label: "WhatsApp (TARA)",
+      value: employee.whatsapp_number
+        ? `+${employee.whatsapp_number}${employee.whatsapp_verified ? "" : " (belum terverifikasi)"}`
+        : "—",
+    },
     { icon: Building2, label: "Departemen", value: employee.department || "—" },
     { icon: Shield, label: "Role", value: employee.role || "Employee" },
     { icon: UserCheck, label: "Atasan / Approver Cuti", value: employee.supervisor_name || "—" },
@@ -106,6 +131,13 @@ export function EmployeeDetailPage() {
             <p className="text-sm text-muted-foreground mt-1">{employee.employee_code}</p>
             <p className="text-sm text-muted-foreground">{employee.email}</p>
           </div>
+          <button
+            onClick={() => setShowEdit(true)}
+            className="flex items-center gap-2 px-3 py-2 rounded-md border border-input text-sm hover:bg-accent transition-colors shrink-0"
+          >
+            <Pencil className="h-4 w-4" />
+            Edit
+          </button>
         </div>
       </div>
 
@@ -123,6 +155,17 @@ export function EmployeeDetailPage() {
           </div>
         ))}
       </div>
+
+      <EmployeeEditModal
+        employee={showEdit ? employee : null}
+        allEmployees={allEmployees}
+        departments={adminDepartments}
+        onClose={() => setShowEdit(false)}
+        onSaved={() => {
+          queryClient.invalidateQueries({ queryKey: ["employee", id] });
+          queryClient.invalidateQueries({ queryKey: ["employees"] });
+        }}
+      />
     </div>
   );
 }
