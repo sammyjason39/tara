@@ -4,11 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
-import { Search, Plus, Filter, MoreHorizontal, Building2, X } from "lucide-react";
+import { Search, Plus, Filter, MoreHorizontal, Building2, X, FileSpreadsheet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBranding } from "@/contexts/BrandingContext";
 import { EmployeeEditModal } from "@/components/employees/EmployeeEditModal";
 import { EmployeeDeleteModal } from "@/components/employees/EmployeeDeleteModal";
+import { EmployeeBulkModal } from "@/components/employees/EmployeeBulkModal";
 
 export function EmployeesPage() {
   const { t } = useTranslation();
@@ -21,6 +22,7 @@ export function EmployeesPage() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editEmp, setEditEmp] = useState<any | null>(null);
   const [deleteEmp, setDeleteEmp] = useState<any | null>(null);
+  const [showBulkModal, setShowBulkModal] = useState(false);
   const navigate = useNavigate();
   const filterRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -118,13 +120,22 @@ export function EmployeesPage() {
             Kelola data karyawan {companyName}
           </p>
         </div>
-        <button
-          onClick={() => setShowAddPanel(true)}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          {t("employees.add_employee")}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowBulkModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-md border border-input text-sm font-medium hover:bg-accent transition-colors"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            Import / Export Excel
+          </button>
+          <button
+            onClick={() => setShowAddPanel(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            {t("employees.add_employee")}
+          </button>
+        </div>
       </div>
 
       {/* Add Employee Panel */}
@@ -377,6 +388,12 @@ export function EmployeesPage() {
         employee={deleteEmp}
         onClose={() => setDeleteEmp(null)}
         onDeleted={handleDeleted}
+      />
+
+      <EmployeeBulkModal
+        open={showBulkModal}
+        onClose={() => setShowBulkModal(false)}
+        onApplied={() => queryClient.invalidateQueries({ queryKey: ["employees"] })}
       />
     </div>
   );

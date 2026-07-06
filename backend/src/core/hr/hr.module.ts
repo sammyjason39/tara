@@ -33,6 +33,7 @@ import { OfficeLocationController } from './controllers/office-location.controll
 import { AdminSettingsController } from './controllers/admin-settings.controller';
 import { PayrollController } from './controllers/payroll.controller';
 import { ScheduleController } from './controllers/schedule.controller';
+import { EmployeeBulkController } from './controllers/employee-bulk.controller';
 
 // Core Services
 import { EventBusService } from './services/event-bus.service';
@@ -62,6 +63,7 @@ import { AttendanceConfigService } from './services/attendance-config.service';
 import { PayrollService } from './services/payroll.service';
 import { LoanService } from './services/loan.service';
 import { ScheduleService } from './services/schedule.service';
+import { EmployeeBulkService } from './services/employee-bulk.service';
 import { CacheAsideService } from '../../shared/cache/cache-aside.service';
 import { AuditService } from '../../shared/audit/audit.service';
 import { LoggerService } from '../../shared/logger/logger.service';
@@ -142,6 +144,7 @@ import { I18nModule } from './i18n/i18n.module';
     AdminSettingsController,
     PayrollController,
     ScheduleController,
+    EmployeeBulkController,
     EventSubscriptionController,
     // WhatsApp Integration
     WhatsAppWebhookController,
@@ -178,6 +181,7 @@ import { I18nModule } from './i18n/i18n.module';
     PayrollService,
     LoanService,
     ScheduleService,
+    EmployeeBulkService,
     CompanyBrandingService,
     FeatureFlagsService,
     FeatureEnabledGuard,
