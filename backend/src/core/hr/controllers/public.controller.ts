@@ -4,6 +4,7 @@ import type { Request } from 'express';
 import * as path from 'path';
 import { CompanyBrandingService } from '../services/company-branding.service';
 import { FeatureFlagsService } from '../services/feature-flags.service';
+import { StatusService } from '../../status/status.service';
 
 /**
  * Public endpoints (no auth) — used on login page and initial app bootstrap.
@@ -13,6 +14,7 @@ export class PublicController {
   constructor(
     private readonly brandingService: CompanyBrandingService,
     private readonly featureFlags: FeatureFlagsService,
+    private readonly statusService: StatusService,
   ) {}
 
   @Get('branding')
@@ -38,6 +40,12 @@ export class PublicController {
       null;
 
     return { success: true, data: { ip } };
+  }
+
+  @Get('status')
+  async getStatus() {
+    const data = await this.statusService.getPublicStatus();
+    return { success: true, data };
   }
 
   @Get('logo')

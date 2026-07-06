@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { AiModule } from '../ai/ai.module';
+import { StatusModule } from '../status/status.module';
 
 // Hermes Integration — now a self-contained module
 import { HermesModule } from './hermes/hermes.module';
@@ -112,6 +113,7 @@ import { I18nModule } from './i18n/i18n.module';
 @Module({
   imports: [
     AuthModule,
+    StatusModule,
     forwardRef(() => AiModule),
     forwardRef(() =>
       HermesModule.forRoot({

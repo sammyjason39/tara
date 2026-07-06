@@ -24,10 +24,10 @@ SSH_OPTS=(-i "$SSH_KEY" -o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 
 if [[ "$TARGET" == "staging" ]]; then
   REMOTE_DIR="/home/ubuntu/tara-staging"
-  HEALTH_URL="${STAGING_HEALTH_URL:-https://staging.tara.ralali.io/health}"
+  HEALTH_URL="${STAGING_HEALTH_URL:-https://staging.tara.ralali.io/api/public/status}"
 else
   REMOTE_DIR="/home/ubuntu/tara"
-  HEALTH_URL="${PROD_HEALTH_URL:-https://tara.ralali.io/health}"
+  HEALTH_URL="${PROD_HEALTH_URL:-https://tara.ralali.io/api/public/status}"
 fi
 
 RSYNC_EXCLUDES=(

@@ -13,6 +13,7 @@ import { HrModule } from './core/hr/hr.module';
 import { DemoModule } from './core/demo/demo.module';
 import { SopModule } from './core/sop/sop.module';
 import { AiModule } from './core/ai/ai.module';
+import { StatusModule } from './core/status/status.module';
 
 const demoEnabled = process.env.DEMO_MODE === 'true';
 
@@ -32,6 +33,7 @@ const demoEnabled = process.env.DEMO_MODE === 'true';
     SettingsModule,
     SopModule,    // SOP document management with PDF storage
     AiModule,     // TARA AI Assistant (LangChain + RAG + WhatsApp)
+    StatusModule, // Public status page probes & history
     HrModule,     // HR + WhatsApp local MVP
   ],
   providers: [

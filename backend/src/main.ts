@@ -18,12 +18,13 @@ async function bootstrap() {
 
   // Health check
   app.use((req: any, res: any, next: any) => {
-    if (req.url === '/' || req.url === '/health') {
+    if (req.url === '/' || req.url === '/health' || req.url === '/status') {
       return res.status(200).json({
         status: 'ok',
         service: 'tara-backend',
         version: '2.0.0',
         timestamp: new Date().toISOString(),
+        status_page: '/status',
       });
     }
     next();
@@ -38,7 +39,8 @@ async function bootstrap() {
   console.log(`\n🏛  TARA Backend v2.0 running on http://localhost:${port}`);
   console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`   Auth: POST /v1/auth/login`);
-  console.log(`   Health: GET /health\n`);
+  console.log(`   Health: GET /health (internal)`);
+  console.log(`   Status: GET /status · /v1/public/status\n`);
 }
 
 bootstrap();

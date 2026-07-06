@@ -817,6 +817,16 @@ model AiAgentLog {
   @@map("ai_agent_logs")
 }
 
+model StatusSnapshot {
+  id         String   @id @default(uuid()) @db.Uuid
+  checked_at DateTime @default(now())
+  overall    String
+  components Json
+
+  @@index([checked_at])
+  @@map("status_snapshots")
+}
+
 model AiPendingAction {
   id          String    @id @default(uuid())
   employee_id String

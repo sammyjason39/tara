@@ -41,6 +41,7 @@ import { MobileSopPage } from "@/pages/mobile/MobileSopPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { DocsLayout } from "@/docs/components/DocsLayout";
 import { DocsIndexPage, DocsArticlePage } from "@/pages/docs/DocsPage";
+import { StatusPage } from "@/pages/StatusPage";
 import { ForcePasswordChangeModal } from "@/components/ForcePasswordChangeModal";
 import { SitePermissionsGate } from "@/components/SitePermissionsGate";
 import { PinRotationPrompt } from "@/components/PinRotationPrompt";
@@ -86,6 +87,7 @@ function ThemedApp() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/status" element={<StatusPage />} />
             <Route path="/docs" element={<DocsLayout />}>
               <Route index element={<DocsIndexPage />} />
               <Route path=":section/:slug" element={<DocsArticlePage />} />
