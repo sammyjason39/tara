@@ -21,6 +21,8 @@ fi
 
 # Run Prisma migrations
 echo "[2/4] Running database migrations..."
+# Clear failed migration from a previous bad deploy (wrong table name), if any
+npx prisma migrate resolve --rolled-back "20260706100000_employee_last_login_at" 2>/dev/null || true
 npx prisma migrate deploy || {
   echo "  ERROR: Migrations failed. Refusing to run db push --accept-data-loss in production."
   echo "  Fix the migration issue manually. Data is preserved."
