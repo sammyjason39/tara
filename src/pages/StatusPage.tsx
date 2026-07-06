@@ -239,13 +239,21 @@ export function StatusPage() {
                         {component.message && (
                           <p className="text-xs text-muted-foreground mt-1">{component.message}</p>
                         )}
-                        {component.id === "ai_assistant" &&
-                          component.metrics?.avg_response_ms != null &&
-                          Number(component.metrics.avg_response_ms) > 0 && (
-                            <p className="text-2xs text-muted-foreground mt-1 font-mono">
-                              Avg response: {component.metrics.avg_response_ms}ms (24h)
-                            </p>
-                          )}
+                        {component.id === "ai_assistant" && component.metrics && (
+                          <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5 text-2xs text-muted-foreground font-mono">
+                            {Number(component.metrics.requests_24h) > 0 ? (
+                              <>
+                                <span>{component.metrics.requests_24h} req (24h)</span>
+                                <span>{component.metrics.success_rate_24h}% success</span>
+                                {Number(component.metrics.avg_response_ms) > 0 && (
+                                  <span>{component.metrics.avg_response_ms}ms avg</span>
+                                )}
+                              </>
+                            ) : component.metrics.enabled ? (
+                              <span>No requests in last 24h</span>
+                            ) : null}
+                          </div>
+                        )}
                       </div>
                       {component.latency_ms != null && component.latency_ms > 0 && (
                         <span className="text-2xs font-mono text-muted-foreground shrink-0">

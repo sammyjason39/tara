@@ -86,3 +86,33 @@ export function worstStatus(statuses: ComponentStatus[]): ComponentStatus {
     'operational' as ComponentStatus,
   );
 }
+
+/** Uptime & incidents — only infrastructure that blocks the app */
+export function coreOverall(components: StatusSnapshotComponents): ComponentStatus {
+  return worstStatus([
+    components.api.status,
+    components.database.status,
+    components.redis.status,
+  ]);
+}
+
+/** Banner — core plus optional services when they are actively monitored */
+export function displayOverall(components: StatusSnapshotComponents): ComponentStatus {
+  const statuses: ComponentStatus[] = [
+    components.api.status,
+    components.database.status,
+    components.redis.status,
+  ];
+
+  const aiRequests = Number(components.ai_assistant.metrics?.requests_24h ?? 0);
+  if (components.ai_assistant.metrics?.enabled && aiRequests > 0) {
+    statuses.push(components.ai_assistant.status);
+  }
+
+  const wa = components.whatsapp;
+  if (wa.message?.includes('configured') && wa.status !== 'operational') {
+    statuses.push(wa.status);
+  }
+
+  return worstStatus(statuses);
+}

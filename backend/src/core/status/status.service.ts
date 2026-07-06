@@ -10,6 +10,8 @@ import {
   StatusComponentProbe,
   StatusIncident,
   StatusSnapshotComponents,
+  coreOverall,
+  displayOverall,
   worstStatus,
 } from './status.types';
 
@@ -51,10 +53,10 @@ export class StatusService implements OnModuleInit {
 
   async getPublicStatus(): Promise<PublicStatusPayload> {
     const components = await this.probeAllComponents();
-    const overallStatus = worstStatus(Object.values(components).map((c) => c.status));
+    const overallStatus = displayOverall(components);
     const now = new Date();
 
-    await this.maybeRecordSnapshot(components, overallStatus);
+    await this.maybeRecordSnapshot(components, coreOverall(components));
 
     const since90 = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
     const snapshots = await this.prisma.statusSnapshot.findMany({
@@ -86,8 +88,7 @@ export class StatusService implements OnModuleInit {
 
   async recordSnapshot(): Promise<void> {
     const components = await this.probeAllComponents();
-    const overall = worstStatus(Object.values(components).map((c) => c.status));
-    await this.persistSnapshot(components, overall);
+    await this.persistSnapshot(components, coreOverall(components));
     await this.pruneOldSnapshots();
   }
 
@@ -141,25 +142,20 @@ export class StatusService implements OnModuleInit {
     };
 
     const whatsappCfg = this.aiConfig.getWhatsAppConfig();
+    const whatsappConfigured = whatsappCfg.enabled && !!whatsappCfg.kapsoApiKey;
     const whatsapp: StatusComponentProbe = {
       id: 'whatsapp',
       name: 'WhatsApp Gateway',
-      status: whatsappCfg.enabled && whatsappCfg.kapsoApiKey ? 'operational' : 'degraded',
-      message:
-        whatsappCfg.enabled && whatsappCfg.kapsoApiKey
-          ? 'WhatsApp integration configured'
-          : 'WhatsApp not configured or disabled',
+      status: 'operational',
+      message: whatsappConfigured
+        ? 'WhatsApp integration configured'
+        : 'Not configured (optional)',
     };
 
-    const overallFromInfra = worstStatus([
-      api.status,
-      database.status,
-      redis.status,
-      aiMetrics.status,
-      whatsapp.status,
-    ]);
-
-    if (overallFromInfra === 'major_outage' && api.status === 'operational') {
+    if (
+      worstStatus([database.status, redis.status]) === 'major_outage' &&
+      api.status === 'operational'
+    ) {
       api.status = 'degraded';
       api.message = 'Dependent services are unavailable';
     }
@@ -240,8 +236,8 @@ export class StatusService implements OnModuleInit {
       return {
         id: 'ai_assistant',
         name: 'AI Assistant',
-        status: 'degraded',
-        message: 'AI assistant disabled or API key missing',
+        status: 'operational',
+        message: 'Not enabled (optional)',
         metrics: { enabled: false },
       };
     }
@@ -342,12 +338,14 @@ export class StatusService implements OnModuleInit {
     const incidents: StatusIncident[] = [];
     let current: StatusIncident | null = null;
 
+    const coreIds = new Set(['api', 'database', 'redis']);
+
     for (const snap of snapshots) {
       const isBad = snap.overall !== 'operational';
       if (isBad && !current) {
         const components = snap.components as StatusSnapshotComponents;
         const affected = Object.values(components)
-          .filter((c) => c.status !== 'operational')
+          .filter((c) => coreIds.has(c.id) && c.status !== 'operational')
           .map((c) => c.id);
         current = {
           id: snap.id,
