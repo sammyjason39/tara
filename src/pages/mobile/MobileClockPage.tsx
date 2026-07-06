@@ -7,6 +7,7 @@ import {
   requestDeviceLocation,
   getLocationEnvironment,
   queryGeolocationPermission,
+  isIosDevice,
   type GeoPosition,
   type LocationEnvironment,
 } from "@/lib/geolocation";
@@ -190,7 +191,7 @@ export function MobileClockPage() {
         );
         window.setTimeout(() => setStatus("idle"), 3000);
       }
-    }, 40000);
+    }, isIosDevice() ? 60000 : 40000);
 
     return () => window.clearTimeout(safetyTimer);
   }, [status, isLocatingPreview]);
@@ -449,7 +450,9 @@ export function MobileClockPage() {
         .join(" • ");
     }
     if (permissionState === "denied") {
-      return "Aktifkan izin lokasi di pengaturan HP atau browser, lalu tap Coba Lagi.";
+      return isIosDevice()
+        ? "Aktifkan lokasi di Pengaturan → Privasi → Layanan Lokasi → Safari (atau TARA), pilih «Saat Menggunakan» dan nyalakan Lokasi Presisi."
+        : "Aktifkan izin lokasi di pengaturan HP atau browser, lalu tap Coba Lagi.";
     }
     return "Lokasi akan diambil saat Anda tap Clock In/Out.";
   };

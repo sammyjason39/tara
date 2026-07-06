@@ -1,4 +1,8 @@
-import { queryGeolocationPermission } from "@/lib/geolocation";
+import {
+  hasSessionGeolocationGrant,
+  queryGeolocationPermission,
+  requestDeviceLocation,
+} from "@/lib/geolocation";
 
 export type SitePermissionKind = "geolocation" | "camera";
 
@@ -34,6 +38,9 @@ export async function checkSitePermission(
 ): Promise<SitePermissionStatus> {
   if (kind === "geolocation") {
     const state = await queryGeolocationPermission();
+    if (state === "granted" || hasSessionGeolocationGrant()) {
+      return "granted";
+    }
     return state;
   }
 
@@ -61,16 +68,20 @@ export async function requestSitePermission(
   if (kind === "geolocation") {
     if (!navigator.geolocation) return "unsupported";
 
-    const result = await new Promise<SitePermissionStatus>((resolve) => {
-      navigator.geolocation.getCurrentPosition(
-        () => resolve("granted"),
-        (err) => resolve(err.code === 1 ? "denied" : "prompt"),
-        { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 },
-      );
-    });
-
-    const after = await checkSitePermission("geolocation");
-    return after === "granted" ? "granted" : result;
+    try {
+      await requestDeviceLocation();
+      return "granted";
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message.toLowerCase() : "";
+      if (message.includes("ditolak") || message.includes("izin")) {
+        return "denied";
+      }
+      // Permission may be granted but GPS fix failed — don't block the app gate forever.
+      if (hasSessionGeolocationGrant()) {
+        return "granted";
+      }
+      return "prompt";
+    }
   }
 
   if (!navigator.mediaDevices?.getUserMedia) {

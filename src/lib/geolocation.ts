@@ -55,6 +55,25 @@ export function isStandalonePwa(): boolean {
   );
 }
 
+const GEO_SESSION_KEY = "tara_geo_granted_v1";
+
+/** iOS Safari often keeps Permissions API at "prompt" after the user allows — session flag backs that up. */
+export function markGeolocationGrantedInSession(): void {
+  try {
+    sessionStorage.setItem(GEO_SESSION_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+export function hasSessionGeolocationGrant(): boolean {
+  try {
+    return sessionStorage.getItem(GEO_SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 export function detectInAppBrowser(): string | null {
   const ua = navigator.userAgent || "";
   for (const { pattern, label } of IN_APP_UA) {
@@ -147,8 +166,14 @@ function formatGeoError(err: GeolocationPositionError | null): string {
     case err.PERMISSION_DENIED:
       return "Izin lokasi ditolak. Aktifkan di pengaturan browser atau HP, lalu coba lagi.";
     case err.POSITION_UNAVAILABLE:
+      if (isIosDevice()) {
+        return "Sinyal GPS tidak tersedia. Pastikan Lokasi HP aktif, izinkan Lokasi Presisi untuk browser/TARA, lalu coba di area terbuka.";
+      }
       return "Sinyal GPS lemah. Nyalakan Lokasi/GPS di pengaturan HP, lalu coba lagi.";
     case err.TIMEOUT:
+      if (isIosDevice()) {
+        return "Timeout mendapatkan lokasi. Pastikan izin Lokasi Presisi aktif, tunggu beberapa detik, lalu coba lagi.";
+      }
       return "Timeout mendapatkan lokasi. Pastikan GPS aktif dan coba lagi.";
     default:
       return `Gagal mendapatkan lokasi (kode ${err.code}).`;
@@ -194,33 +219,73 @@ export async function requestDeviceLocation(): Promise<GeoPosition> {
     throw new Error(env.detail);
   }
 
-  const permission = await queryGeolocationPermission();
-  if (permission === "denied") {
-    throw new Error(formatGeoError({ code: 1 } as GeolocationPositionError));
+  // iOS Permissions API is unreliable — always attempt getCurrentPosition and use its error.
+  if (!isIosDevice()) {
+    const permission = await queryGeolocationPermission();
+    if (permission === "denied") {
+      throw new Error(formatGeoError({ code: 1 } as GeolocationPositionError));
+    }
   }
 
-  const hardTimeoutMs = isAndroidDevice() ? 35000 : 45000;
-  const hardTimeoutMessage =
-    "Tidak ada respons dari GPS. Pastikan izin lokasi sudah diizinkan dan GPS aktif.";
+  const hardTimeoutMs = isIosDevice() ? 55000 : isAndroidDevice() ? 35000 : 45000;
+  const hardTimeoutMessage = isIosDevice()
+    ? "Tidak ada respons dari GPS. Pastikan izin Lokasi Presisi aktif untuk Safari/TARA, lalu coba lagi."
+    : "Tidak ada respons dari GPS. Pastikan izin lokasi sudah diizinkan dan GPS aktif.";
 
-  return withHardTimeout(requestDeviceLocationInternal(), hardTimeoutMs, hardTimeoutMessage);
+  const position = await withHardTimeout(
+    requestDeviceLocationInternal(),
+    hardTimeoutMs,
+    hardTimeoutMessage,
+  );
+  markGeolocationGrantedInSession();
+  return position;
 }
 
 async function requestDeviceLocationInternal(): Promise<GeoPosition> {
-  const mobile = isMobileDevice();
   const ios = isIosDevice();
   const android = isAndroidDevice();
   let lastError: GeolocationPositionError | null = null;
 
-  if (ios || android) {
+  // iOS Safari: getCurrentPosition is more reliable than watchPosition (especially after Precise Location prompt).
+  if (ios) {
+    const iosStrategies: PositionOptions[] = [
+      { enableHighAccuracy: true, timeout: 28000, maximumAge: 0 },
+      { enableHighAccuracy: true, timeout: 22000, maximumAge: 30000 },
+      { enableHighAccuracy: false, timeout: 20000, maximumAge: 120000 },
+    ];
+
+    for (const options of iosStrategies) {
+      try {
+        return await tryGetCurrentPosition(options);
+      } catch (err) {
+        lastError = err as GeolocationPositionError;
+        if (lastError?.code === 1) break;
+      }
+    }
+
+    if (lastError?.code !== 1) {
+      try {
+        return await tryWatchPosition(
+          { enableHighAccuracy: true, timeout: 25000, maximumAge: 0 },
+          30000,
+        );
+      } catch (err) {
+        lastError = err as GeolocationPositionError;
+      }
+    }
+
+    throw new Error(formatGeoError(lastError));
+  }
+
+  if (android) {
     try {
       return await tryWatchPosition(
         {
           enableHighAccuracy: false,
-          timeout: android ? 15000 : 30000,
-          maximumAge: android ? 60000 : 120000,
+          timeout: 15000,
+          maximumAge: 60000,
         },
-        android ? 18000 : 35000,
+        18000,
       );
     } catch (err) {
       lastError = err as GeolocationPositionError;
@@ -230,10 +295,10 @@ async function requestDeviceLocationInternal(): Promise<GeoPosition> {
     }
   }
 
-  const strategies: PositionOptions[] = mobile
+  const strategies: PositionOptions[] = android
     ? [
-        { enableHighAccuracy: false, timeout: android ? 12000 : 30000, maximumAge: 300000 },
-        { enableHighAccuracy: true, timeout: android ? 15000 : 25000, maximumAge: 0 },
+        { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
       ]
     : [
         { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 },
