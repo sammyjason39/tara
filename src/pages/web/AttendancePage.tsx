@@ -1,16 +1,25 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { api } from "@/lib/api";
-import { Clock, Users, AlertTriangle, CheckCircle2, Calendar, ChevronRight, Camera } from "lucide-react";
+import { format } from "date-fns";
+import { api, downloadAuthenticatedFile } from "@/lib/api";
+import { Clock, Users, AlertTriangle, CheckCircle2, Calendar, ChevronRight, Camera, FileSpreadsheet, Loader2 } from "lucide-react";
 import { AttendanceDetailDialog } from "@/components/AttendanceDetailDialog";
 import { DatePickerInput } from "@/components/DatePickerInput";
 import { todayApiDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 
+function monthStartApiDate(): string {
+  const now = new Date();
+  return format(new Date(now.getFullYear(), now.getMonth(), 1), "yyyy-MM-dd");
+}
+
 export function AttendancePage() {
   const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState(todayApiDate());
+  const [reportStart, setReportStart] = useState(monthStartApiDate());
+  const [reportEnd, setReportEnd] = useState(todayApiDate());
+  const [exporting, setExporting] = useState(false);
   const [selectedAttendanceId, setSelectedAttendanceId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -35,6 +44,20 @@ export function AttendancePage() {
     { label: t("attendance.not_present"), value: stats.absent, icon: Users, color: "text-muted-foreground" },
     { label: t("attendance.total_employees"), value: stats.total_employees, icon: Users, color: "text-foreground" },
   ];
+
+  const handleExportReport = async () => {
+    setExporting(true);
+    try {
+      await downloadAuthenticatedFile(
+        `/attendance/report/export?start=${reportStart}&end=${reportEnd}`,
+        `tara-absensi-${reportStart}_${reportEnd}.xlsx`,
+      );
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Gagal mengunduh laporan absensi");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -68,6 +91,49 @@ export function AttendancePage() {
             <p className="text-2xl font-semibold tracking-tight">{stat.value}</p>
           </div>
         ))}
+      </div>
+
+      {/* Export laporan */}
+      <div className="surface-elevated p-4 space-y-3">
+        <div>
+          <h2 className="text-sm font-semibold">Export Laporan Absensi</h2>
+          <p className="text-2xs text-muted-foreground mt-0.5">
+            Baris = karyawan, kolom = tanggal. Maksimal 62 hari per unduhan.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+          <div className="space-y-1">
+            <label className="text-luxury-label">Dari tanggal</label>
+            <DatePickerInput
+              value={reportStart}
+              onChange={setReportStart}
+              className="w-40"
+              aria-label="Tanggal mulai laporan"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-luxury-label">Sampai tanggal</label>
+            <DatePickerInput
+              value={reportEnd}
+              onChange={setReportEnd}
+              className="w-40"
+              aria-label="Tanggal akhir laporan"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={handleExportReport}
+            disabled={exporting}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+          >
+            {exporting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileSpreadsheet className="h-4 w-4" />
+            )}
+            Unduh Excel
+          </button>
+        </div>
       </div>
 
       {/* Monthly Tardiness Summary */}

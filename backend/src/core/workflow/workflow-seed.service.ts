@@ -342,6 +342,116 @@ export class WorkflowSeedService implements OnModuleInit {
         },
       },
       {
+        slug: 'daily-tardiness-report',
+        name: 'Absensi — Jadwal Laporan Keterlambatan',
+        description:
+          'Jadwal pembuatan laporan keterlambatan harian. Ubah cron di node Trigger (default 11:30 WIB Senin–Jumat).',
+        category: 'attendance',
+        trigger_event: 'report.daily_tardiness',
+        is_active: true,
+        graph: {
+          nodes: [
+            node('trigger', 'trigger', 80, 80, {
+              label: 'Jadwal laporan harian',
+              eventType: 'report.daily_tardiness',
+              scheduleCron: '30 11 * * 1-5',
+              scheduleTimezone: 'Asia/Jakarta',
+              scheduleAction: 'generate_tardiness_report',
+            }),
+          ],
+          edges: [],
+        },
+      },
+      {
+        slug: 'daily-tardiness-notify-late',
+        name: 'Absensi — Pengumuman Ada Keterlambatan',
+        description:
+          'Broadcast daftar karyawan terlambat + rekap HR saat laporan harian menemukan keterlambatan.',
+        category: 'attendance',
+        trigger_event: 'report.daily_tardiness',
+        is_active: true,
+        graph: {
+          nodes: [
+            node('trigger', 'trigger', 80, 80, {
+              label: 'Laporan harian siap',
+              eventType: 'report.daily_tardiness',
+            }),
+            node('check-late', 'condition', 80, 220, {
+              label: 'Ada yang telat?',
+              match: 'all',
+              rules: [{ field: 'payload.tardy_count', operator: 'gt', value: '0' }],
+            }),
+            node('public', 'action', 80, 380, {
+              label: 'Pengumuman publik',
+              actionType: 'send_public_announcement',
+              config: {
+                notification_type: 'tardiness_announcement',
+                title: '{{payload.public_tardiness_title}}',
+                content: '{{payload.public_tardiness_content}}',
+              },
+            }),
+            node('hr', 'action', 320, 380, {
+              label: 'Rekap HR',
+              actionType: 'send_hr_team_notification',
+              config: {
+                notification_type: 'weekly_attendance_recap',
+                title: '{{payload.hr_recap_title}}',
+                content: '{{payload.hr_recap_content}}',
+              },
+            }),
+            node('wa-group', 'action', 560, 380, {
+              label: 'WA Grup HR',
+              actionType: 'send_whatsapp_group',
+              config: {
+                group_id: '',
+                message: '{{payload.public_tardiness_content}}',
+              },
+            }),
+          ],
+          edges: [
+            edge('e1', 'trigger', 'check-late'),
+            edge('e2', 'check-late', 'public', 'true'),
+            edge('e3', 'check-late', 'hr', 'true'),
+            edge('e4', 'check-late', 'wa-group', 'true'),
+          ],
+        },
+      },
+      {
+        slug: 'daily-tardiness-notify-on-time',
+        name: 'Absensi — Apresiasi Tidak Ada Keterlambatan',
+        description:
+          'Pengumuman positif ke seluruh karyawan jika laporan harian tidak menemukan keterlambatan.',
+        category: 'attendance',
+        trigger_event: 'report.daily_tardiness',
+        is_active: true,
+        graph: {
+          nodes: [
+            node('trigger', 'trigger', 80, 80, {
+              label: 'Laporan harian siap',
+              eventType: 'report.daily_tardiness',
+            }),
+            node('check-none', 'condition', 80, 220, {
+              label: 'Tidak ada yang telat?',
+              match: 'all',
+              rules: [{ field: 'payload.tardy_count', operator: 'eq', value: '0' }],
+            }),
+            node('public', 'action', 80, 380, {
+              label: 'Apresiasi kehadiran',
+              actionType: 'send_public_announcement',
+              config: {
+                notification_type: 'attendance_announcement',
+                title: '{{payload.positive_title}}',
+                content: '{{payload.positive_content}}',
+              },
+            }),
+          ],
+          edges: [
+            edge('e1', 'trigger', 'check-none'),
+            edge('e2', 'check-none', 'public', 'true'),
+          ],
+        },
+      },
+      {
         slug: 'tardiness-warning-notify',
         name: 'Absensi — Peringatan Keterlambatan',
         description: 'Notifikasi karyawan saat terdeteksi telat (Warning Letter Agent awal).',

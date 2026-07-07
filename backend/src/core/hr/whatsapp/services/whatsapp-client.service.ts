@@ -2,6 +2,14 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { WhatsAppClient } from '@kapso/whatsapp-cloud-api';
 import { formatForWhatsApp } from '../whatsapp-format.util';
 
+export type WhatsAppGroupSummary = {
+  id: string;
+  subject: string | null;
+  created_at: string | null;
+};
+
+const KAPSO_API_BASE = 'https://api.kapso.ai/meta/whatsapp/v24.0';
+
 /**
  * WhatsApp Client Service — Kapso SDK wrapper.
  *
@@ -17,9 +25,11 @@ export class WhatsAppClientService implements OnModuleInit {
   private readonly logger = new Logger(WhatsAppClientService.name);
   private client: WhatsAppClient | null = null;
   private phoneNumberId: string;
+  private apiKey: string | null = null;
 
   onModuleInit() {
     const apiKey = process.env.KAPSO_API_KEY;
+    this.apiKey = apiKey ?? null;
     this.phoneNumberId = process.env.KAPSO_PHONE_NUMBER_ID || '1177690982091942';
 
     if (!apiKey) {
@@ -121,6 +131,102 @@ export class WhatsAppClientService implements OnModuleInit {
     } catch (error) {
       this.logger.error(`[WA] Failed to send buttons to ${to}: ${error.message}`);
       return { success: false };
+    }
+  }
+
+  /**
+   * Send a text message to a WhatsApp group (Meta Cloud API via Kapso).
+   * Group ID must come from Kapso/Meta Groups API — not WAHA @g.us IDs.
+   */
+  async sendTextToGroup(
+    groupId: string,
+    body: string,
+  ): Promise<{ messageId?: string; success: boolean; error?: string }> {
+    if (!this.apiKey) {
+      return { success: false, error: 'WhatsApp client not configured' };
+    }
+
+    const to = groupId.trim();
+    if (!to) {
+      return { success: false, error: 'Group ID is required' };
+    }
+
+    const formattedBody = formatForWhatsApp(body);
+    const url = `${KAPSO_API_BASE}/${this.phoneNumberId}/messages`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': this.apiKey,
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          recipient_type: 'group',
+          to,
+          type: 'text',
+          text: { body: formattedBody },
+        }),
+      });
+
+      const json = (await response.json().catch(() => ({}))) as {
+        messages?: Array<{ id?: string }>;
+        error?: { message?: string };
+      };
+
+      if (!response.ok) {
+        const errMsg = json.error?.message ?? `HTTP ${response.status}`;
+        this.logger.error(`[WA] Failed to send group message to ${to}: ${errMsg}`);
+        return { success: false, error: errMsg };
+      }
+
+      const messageId = json.messages?.[0]?.id;
+      this.logger.log(`[WA] Group message sent to ${to} — wamid: ${messageId}`);
+      return { messageId, success: true };
+    } catch (error: any) {
+      this.logger.error(`[WA] Failed to send group message to ${to}: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * List active WhatsApp groups for the configured business phone number.
+   */
+  async listGroups(): Promise<WhatsAppGroupSummary[]> {
+    if (!this.apiKey) {
+      return [];
+    }
+
+    const url = `${KAPSO_API_BASE}/${this.phoneNumberId}/groups?limit=50`;
+
+    try {
+      const response = await fetch(url, {
+        headers: { 'X-API-Key': this.apiKey },
+      });
+
+      if (!response.ok) {
+        const err = await response.text();
+        this.logger.warn(`[WA] listGroups failed: HTTP ${response.status} ${err}`);
+        return [];
+      }
+
+      const json = (await response.json()) as {
+        data?: { groups?: Array<{ id?: string; subject?: string; created_at?: string }> };
+        groups?: Array<{ id?: string; subject?: string; created_at?: string }>;
+      };
+
+      const rawGroups = json.data?.groups ?? json.groups ?? [];
+      return rawGroups
+        .filter((g) => g.id)
+        .map((g) => ({
+          id: g.id!,
+          subject: g.subject ?? null,
+          created_at: g.created_at ?? null,
+        }));
+    } catch (error: any) {
+      this.logger.warn(`[WA] listGroups error: ${error.message}`);
+      return [];
     }
   }
 

@@ -38,8 +38,14 @@ export class WorkflowNodeExecutorService {
     switch (actionType) {
       case 'send_notification':
         return this.sendNotification(node, templateContext);
+      case 'send_public_announcement':
+        return this.sendPublicAnnouncement(node, templateContext);
+      case 'send_hr_team_notification':
+        return this.sendHrTeamNotification(node, templateContext);
       case 'send_whatsapp':
         return this.sendWhatsApp(node, templateContext);
+      case 'send_whatsapp_group':
+        return this.sendWhatsAppGroup(node, templateContext);
       case 'escalate_hr':
         return this.escalateHr(node, templateContext);
       case 'notify_by_role':
@@ -84,6 +90,50 @@ export class WorkflowNodeExecutorService {
     return `notification sent to ${recipientIds.length} recipient(s)`;
   }
 
+  private async sendPublicAnnouncement(
+    node: WorkflowNode,
+    templateContext: Record<string, unknown>,
+  ): Promise<string> {
+    const config = node.data.config ?? {};
+    const title = renderTemplate(String(config.title ?? 'Pengumuman TARA'), templateContext);
+    const content = renderTemplate(String(config.content ?? ''), templateContext);
+    const notificationType = String(config.notification_type ?? 'attendance_announcement');
+
+    const recipients = await this.notificationService.sendPublicAnnouncement({
+      type: notificationType,
+      title,
+      content,
+      metadata: {
+        source: 'workflow_engine',
+        workflow_node: node.id,
+      },
+    });
+
+    return `public announcement sent to ${recipients.length} employee(s)`;
+  }
+
+  private async sendHrTeamNotification(
+    node: WorkflowNode,
+    templateContext: Record<string, unknown>,
+  ): Promise<string> {
+    const config = node.data.config ?? {};
+    const title = renderTemplate(String(config.title ?? 'Rekap HR'), templateContext);
+    const content = renderTemplate(String(config.content ?? ''), templateContext);
+    const notificationType = String(config.notification_type ?? 'weekly_attendance_recap');
+
+    const recipients = await this.notificationService.sendHRTeamNotification({
+      type: notificationType,
+      title,
+      content,
+      metadata: {
+        source: 'workflow_engine',
+        workflow_node: node.id,
+      },
+    });
+
+    return `HR team notification sent to ${recipients.length} member(s)`;
+  }
+
   private async sendWhatsApp(
     node: WorkflowNode,
     templateContext: Record<string, unknown>,
@@ -115,6 +165,35 @@ export class WorkflowNodeExecutorService {
     }
 
     return `whatsapp sent to ${sent} recipient(s)`;
+  }
+
+  private async sendWhatsAppGroup(
+    node: WorkflowNode,
+    templateContext: Record<string, unknown>,
+  ): Promise<string> {
+    const config = node.data.config ?? {};
+    const groupId = renderTemplate(String(config.group_id ?? ''), templateContext).trim();
+    if (!groupId) {
+      return 'skipped: no group_id';
+    }
+
+    const content = renderTemplate(String(config.message ?? ''), templateContext);
+    if (!content.trim()) {
+      return 'skipped: empty message';
+    }
+
+    const result = await this.whatsappOutbound.sendGroupMessage({
+      group_id: groupId,
+      content,
+      message_type: 'workflow_automation_group',
+      metadata: { workflow_node: node.id },
+    });
+
+    if (!result.success) {
+      throw new Error(result.error ?? 'WhatsApp group send failed');
+    }
+
+    return `whatsapp group message sent to ${groupId}`;
   }
 
   private async notifyByRole(

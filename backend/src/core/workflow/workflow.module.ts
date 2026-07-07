@@ -1,4 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from '../auth/auth.module';
 import { HrModule } from '../hr/hr.module';
 import { WorkflowController } from './workflow.controller';
@@ -7,9 +8,10 @@ import { WorkflowEngineService } from './workflow-engine.service';
 import { WorkflowNodeExecutorService } from './workflow-node-executor.service';
 import { WorkflowSeedService } from './workflow-seed.service';
 import { WorkflowContextService } from './workflow-context.service';
+import { WorkflowScheduleService } from './workflow-schedule.service';
 
 @Module({
-  imports: [AuthModule, forwardRef(() => HrModule)],
+  imports: [AuthModule, ScheduleModule, forwardRef(() => HrModule)],
   controllers: [WorkflowController],
   providers: [
     WorkflowDefinitionService,
@@ -17,7 +19,8 @@ import { WorkflowContextService } from './workflow-context.service';
     WorkflowNodeExecutorService,
     WorkflowSeedService,
     WorkflowContextService,
+    WorkflowScheduleService,
   ],
-  exports: [WorkflowEngineService, WorkflowDefinitionService],
+  exports: [WorkflowEngineService, WorkflowDefinitionService, WorkflowScheduleService],
 })
 export class WorkflowModule {}

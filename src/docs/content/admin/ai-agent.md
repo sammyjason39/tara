@@ -37,3 +37,10 @@ Jalankan setelah upload PDF baru atau jika jawaban AI tidak akurat:
 ## Log AI
 
 Modul **AI Logs** (`/web/ai-logs`) menampilkan riwayat percakapan untuk audit HR.
+
+## Hubungan dengan Workflow Otomasi
+
+- **AI Agent** — jawaban percakapan natural language (WhatsApp).
+- **Workflow** — aturan otomatis pada event (cuti diajukan, intent resign, dll.).
+
+Keduanya dapat berjalan bersamaan. Pastikan tidak ada duplikasi notifikasi untuk skenario yang sama — lihat [Otomasi Workflow](/docs/admin/otomasi-workflow).

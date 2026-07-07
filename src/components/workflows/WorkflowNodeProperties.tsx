@@ -25,6 +25,7 @@ type Props = {
   selectedNodeId: string | null;
   catalog?: CatalogSlice;
   triggerEvent: string | null;
+  whatsappGroups?: Array<{ id: string; subject: string | null }>;
   onChange: (graph: WorkflowGraph) => void;
 };
 
@@ -33,6 +34,7 @@ export function WorkflowNodeProperties({
   selectedNodeId,
   catalog,
   triggerEvent,
+  whatsappGroups = [],
   onChange,
 }: Props) {
   const selectedNode = graph.nodes.find((n) => n.id === selectedNodeId) ?? null;
@@ -98,17 +100,45 @@ export function WorkflowNodeProperties({
       />
 
       {selectedNode.type === "trigger" && (
-        <div className="space-y-1">
-          <label className="text-2xs text-muted-foreground">Event trigger</label>
-          <select
-            value={String(selectedNode.data.eventType ?? triggerEvent ?? "")}
-            onChange={(e) => patchNode({ eventType: e.target.value })}
-            className="w-full h-8 px-2 rounded-md border border-input bg-background text-xs"
-          >
-            {(catalog?.trigger_events ?? []).map((ev) => (
-              <option key={ev} value={ev}>{ev}</option>
-            ))}
-          </select>
+        <div className="space-y-2">
+          <div className="space-y-1">
+            <label className="text-2xs text-muted-foreground">Event trigger</label>
+            <select
+              value={String(selectedNode.data.eventType ?? triggerEvent ?? "")}
+              onChange={(e) => patchNode({ eventType: e.target.value })}
+              className="w-full h-8 px-2 rounded-md border border-input bg-background text-xs"
+            >
+              {(catalog?.trigger_events ?? []).map((ev) => (
+                <option key={ev} value={ev}>{ev}</option>
+              ))}
+            </select>
+          </div>
+
+          <Field
+            label="Jadwal cron (opsional)"
+            value={String(selectedNode.data.scheduleCron ?? "")}
+            onChange={(v) => patchNode({ scheduleCron: v })}
+            placeholder="30 11 * * 1-5"
+          />
+          <Field
+            label="Timezone jadwal"
+            value={String(selectedNode.data.scheduleTimezone ?? "Asia/Jakarta")}
+            onChange={(v) => patchNode({ scheduleTimezone: v })}
+          />
+          <div className="space-y-1">
+            <label className="text-2xs text-muted-foreground">Aksi terjadwal</label>
+            <select
+              value={String(selectedNode.data.scheduleAction ?? "")}
+              onChange={(e) => patchNode({ scheduleAction: e.target.value })}
+              className="w-full h-8 px-2 rounded-md border border-input bg-background text-xs"
+            >
+              <option value="">— tidak ada —</option>
+              <option value="generate_tardiness_report">Buat laporan keterlambatan harian</option>
+            </select>
+          </div>
+          <p className="text-2xs text-muted-foreground leading-relaxed">
+            Isi cron hanya pada workflow penjadwal (mis. laporan harian). Format: menit jam hari bulan hari-minggu.
+          </p>
         </div>
       )}
 
@@ -214,6 +244,66 @@ export function WorkflowNodeProperties({
               ))}
             </select>
           </div>
+
+          {(selectedNode.data.actionType === "send_public_announcement" ||
+            selectedNode.data.actionType === "send_hr_team_notification") && (
+            <>
+              <Field
+                label="Tipe notifikasi"
+                value={String((selectedNode.data.config as any)?.notification_type ?? "")}
+                onChange={(v) => patchConfig("notification_type", v)}
+                hint="tardiness_announcement / attendance_announcement / weekly_attendance_recap"
+              />
+              <Field
+                label="Judul"
+                value={String((selectedNode.data.config as any)?.title ?? "")}
+                onChange={(v) => patchConfig("title", v)}
+                hint="Gunakan {{payload.positive_title}}, dll."
+              />
+              <Field
+                label="Isi notifikasi"
+                value={String((selectedNode.data.config as any)?.content ?? "")}
+                onChange={(v) => patchConfig("content", v)}
+                multiline
+                hint="Gunakan {{payload.public_tardiness_content}}, dll."
+              />
+            </>
+          )}
+
+          {selectedNode.data.actionType === "send_whatsapp_group" && (
+            <>
+              {whatsappGroups.length > 0 ? (
+                <div className="space-y-1">
+                  <label className="text-2xs text-muted-foreground">Grup WA (dari Kapso)</label>
+                  <select
+                    value={String((selectedNode.data.config as any)?.group_id ?? "")}
+                    onChange={(e) => patchConfig("group_id", e.target.value)}
+                    className="w-full h-8 px-2 rounded-md border border-input bg-background text-xs"
+                  >
+                    <option value="">— pilih grup —</option>
+                    {whatsappGroups.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.subject ? `${g.subject} (${g.id.slice(0, 12)}…)` : g.id}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+              <Field
+                label="Group ID"
+                value={String((selectedNode.data.config as any)?.group_id ?? "")}
+                onChange={(v) => patchConfig("group_id", v)}
+                hint="ID dari Kapso/Meta Groups API (bukan format WAHA @g.us). Kosongkan untuk skip."
+              />
+              <Field
+                label="Pesan WA"
+                value={String((selectedNode.data.config as any)?.message ?? "")}
+                onChange={(v) => patchConfig("message", v)}
+                multiline
+                hint="Gunakan {{payload.public_tardiness_content}}, dll."
+              />
+            </>
+          )}
 
           {(selectedNode.data.actionType === "send_notification" ||
             selectedNode.data.actionType === "send_whatsapp" ||

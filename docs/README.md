@@ -2,6 +2,14 @@
 
 All project documentation organized by category.
 
+## AI / LLM Onboarding (start here)
+
+| Document | Description |
+|----------|-------------|
+| [agents.md](../agents.md) | Codebase map, conventions, agents, workflow engine — for coding agents |
+| [prd.md](../prd.md) | Product requirements, personas, v2.1 features, DoD |
+| [designs.md](../designs.md) | Design system, UX patterns, mobile PWA rules |
+
 ## Backend
 
 | Document | Description |

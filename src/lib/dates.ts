@@ -13,6 +13,13 @@ export function toDate(value: string | Date | null | undefined): Date | null {
   if (value instanceof Date) return isValid(value) ? value : null;
 
   const str = String(value).trim();
+
+  // ISO datetime — parse full instant (not date-only slice)
+  if (/^\d{4}-\d{2}-\d{2}T/.test(str)) {
+    const iso = new Date(str);
+    return isValid(iso) ? iso : null;
+  }
+
   if (API_DATE_PATTERN.test(str)) {
     const parsed = parse(str.slice(0, 10), API_DATE_FORMAT, new Date());
     return isValid(parsed) ? parsed : null;

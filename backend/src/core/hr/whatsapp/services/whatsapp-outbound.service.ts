@@ -23,6 +23,13 @@ export interface SendMessageResult {
   error?: string;
 }
 
+export interface SendGroupMessageParams {
+  group_id: string;
+  content: string;
+  message_type?: string;
+  metadata?: Record<string, any>;
+}
+
 /**
  * WhatsApp Outbound Service — handles sending messages to employees.
  *
@@ -221,6 +228,100 @@ export class WhatsAppOutboundService {
       success: result.success,
       wa_message_id: result.messageId,
     };
+  }
+
+  /**
+   * Send a text message to a WhatsApp group (no per-employee opt-in required).
+   * Group must be created via Meta/Kapso Groups API; use listGroups() for valid IDs.
+   */
+  async sendGroupMessage(params: SendGroupMessageParams): Promise<SendMessageResult> {
+    if (!this.clientService.isAvailable()) {
+      return { success: false, error: 'WhatsApp client not configured' };
+    }
+
+    const groupId = params.group_id?.trim();
+    if (!groupId) {
+      return { success: false, error: 'Group ID is required' };
+    }
+
+    if (params.content.length > this.MAX_MESSAGE_LENGTH) {
+      return { success: false, error: `Message exceeds ${this.MAX_MESSAGE_LENGTH} character limit` };
+    }
+
+    const formatted = formatForWhatsApp(params.content);
+    const result = await this.clientService.sendTextToGroup(groupId, formatted);
+
+    const auditEmployeeId = await this.resolveGroupAuditEmployeeId();
+    let logId: string | undefined;
+
+    if (auditEmployeeId) {
+      const logEntry = await this.auditService.logMessage({
+        employee_id: auditEmployeeId,
+        direction: 'outbound',
+        message_type: params.message_type || 'group_text',
+        content: formatted,
+        wa_message_id: result.messageId,
+        wa_status: result.success ? 'sent' : 'failed',
+        correlation_id: `wa-group:${groupId}`,
+        metadata: {
+          recipient_type: 'group',
+          group_id: groupId,
+          ...params.metadata,
+        },
+        error_message: result.success ? undefined : result.error ?? 'Send failed',
+      });
+      logId = logEntry.id;
+    }
+
+    await this.eventBusService.emit({
+      event_type: 'whatsapp.message.outbound',
+      event_version: '1.0',
+      actor: { id: 'workflow_engine', type: 'system' },
+      entity: { id: logId ?? groupId, type: 'whatsapp_group_message' },
+      payload: {
+        recipient_type: 'group',
+        group_id: groupId,
+        message_log_id: logId,
+        wa_message_id: result.messageId,
+        content_preview: params.content.substring(0, 100),
+        success: result.success,
+      },
+    });
+
+    if (!result.success) {
+      return {
+        success: false,
+        message_log_id: logId,
+        error: result.error ?? 'Delivery failed',
+      };
+    }
+
+    this.logger.log(`[OUTBOUND] Group message sent to ${groupId} (wamid: ${result.messageId})`);
+    return {
+      success: true,
+      message_log_id: logId,
+      wa_message_id: result.messageId,
+    };
+  }
+
+  /** List WhatsApp groups available for the business number (Kapso/Meta Groups API). */
+  listGroups() {
+    return this.clientService.listGroups();
+  }
+
+  /**
+   * Resolve an employee ID for audit logging of group messages.
+   */
+  private async resolveGroupAuditEmployeeId(): Promise<string | null> {
+    const hr = await this.prisma.employee.findFirst({
+      where: {
+        employment_status: 'active',
+        role: { role_name: { in: ['HR_Admin', 'SuperAdmin'] } },
+      },
+      select: { id: true },
+      orderBy: { created_at: 'asc' },
+    });
+    return hr?.id ?? null;
   }
 
   /**

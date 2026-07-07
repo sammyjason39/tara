@@ -6,9 +6,10 @@ Ajukan cuti tahunan, cuti sakit, atau cuti khusus melalui TARA.
 
 1. Buka **Cuti** (`/m/leave` di mobile atau `/web/leaves` di web).
 2. Pilih **tipe cuti** (tahunan, sakit, dll.).
-3. Tentukan **tanggal mulai** dan **tanggal selesai**.
-4. Isi **alasan** jika diperlukan.
-5. Kirim pengajuan — status awal: **Menunggu persetujuan**.
+3. Tentukan **tanggal mulai** dan **tanggal selesai** — tap langsung field tanggal (di HP akan muncul kalender sistem).
+4. Untuk satu hari saja, Anda bisa centang **Cuti setengah hari** (memotong 0,5 jatah).
+5. Isi **alasan** jika diperlukan.
+6. Kirim pengajuan — status awal: **Menunggu persetujuan**.
 
 ## Melacak status
 

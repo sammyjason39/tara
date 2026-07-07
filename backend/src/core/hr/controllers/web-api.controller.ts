@@ -27,6 +27,7 @@ import { FeatureFlagsService } from '../services/feature-flags.service';
 import { LeaveService } from '../services/leave.service';
 import { NotificationService } from '../services/notification.service';
 import { AttendancePhotoService } from '../services/attendance-photo.service';
+import { AttendanceReportService } from '../services/attendance-report.service';
 import { TaraAttendanceService } from '../services/tara-attendance.service';
 import { AuthService } from '../../auth/auth.service';
 import { buildPasswordResetMessage } from '../../ai/wa-onboarding.util';
@@ -48,6 +49,7 @@ export class WebApiController {
     private readonly leaveService: LeaveService,
     private readonly notificationService: NotificationService,
     private readonly attendancePhotoService: AttendancePhotoService,
+    private readonly attendanceReportService: AttendanceReportService,
     private readonly taraAttendanceService: TaraAttendanceService,
     private readonly authService: AuthService,
     private readonly whatsappOutbound: WhatsAppOutboundService,
@@ -755,12 +757,38 @@ export class WebApiController {
     return { success: true, data };
   }
 
+  @Get('attendance/report/export')
+  @UseGuards(RolesGuard)
+  @Roles('SuperAdmin', 'HR_Admin', 'Supervisor')
+  async exportAttendanceReport(
+    @Query('start') start: string,
+    @Query('end') end: string,
+    @Res() res: Response,
+  ) {
+    if (!start?.trim() || !end?.trim()) {
+      throw new BadRequestException('Parameter start dan end wajib diisi (YYYY-MM-DD)');
+    }
+
+    const buffer = await this.attendanceReportService.exportWorkbook(start.trim(), end.trim());
+    const filename = `tara-absensi-${start.trim()}_${end.trim()}.xlsx`;
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buffer);
+  }
+
   @Get('attendance/dashboard')
   @UseGuards(RolesGuard)
   @Roles('SuperAdmin', 'HR_Admin', 'Supervisor')
   async getAttendanceDashboard(@Query('date') date?: string) {
-    const target = date ? new Date(date) : new Date();
-    target.setHours(0, 0, 0, 0);
+    const target = date
+      ? this.attendanceReportService.parseLocalDate(date)
+      : this.attendanceReportService.parseLocalDate(
+          new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }),
+        );
 
     const [totalEmployees, records] = await Promise.all([
       this.prisma.employee.count({ where: { employment_status: 'active' } }),
@@ -1144,15 +1172,20 @@ export class WebApiController {
   }
 
   private formatAttendanceRecord(r: any) {
+    const attendanceDate =
+      r.attendance_date instanceof Date
+        ? this.formatDateOnly(r.attendance_date)
+        : r.attendance_date;
+
     return {
       id: r.id,
       employee_id: r.employee_id,
       employee_name: r.employee?.full_name ?? null,
       employee_code: r.employee?.employee_code ?? null,
       department_name: r.employee?.department?.name ?? null,
-      attendance_date: r.attendance_date,
-      clock_in_time: r.clock_in_time,
-      clock_out_time: r.clock_out_time,
+      attendance_date: attendanceDate,
+      clock_in_time: r.clock_in_time?.toISOString?.() ?? r.clock_in_time ?? null,
+      clock_out_time: r.clock_out_time?.toISOString?.() ?? r.clock_out_time ?? null,
       clock_in_source: r.clock_in_source,
       clock_out_source: r.clock_out_source,
       is_tardy: r.is_tardy,
@@ -1161,6 +1194,13 @@ export class WebApiController {
       has_clock_in_photo: !!r.clock_in_photo_path,
       has_clock_out_photo: !!r.clock_out_photo_path,
     };
+  }
+
+  private formatDateOnly(d: Date): string {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   private formatEmployee(e: any) {

@@ -98,6 +98,14 @@ export function WorkflowsPage() {
 
   const catalog: Catalog | undefined = catalogRes?.data;
 
+  const { data: waGroupsRes } = useQuery({
+    queryKey: ["whatsapp-groups"],
+    queryFn: () =>
+      api.get<{ data: Array<{ id: string; subject: string | null }> }>("/workflows/whatsapp/groups"),
+    staleTime: 60_000,
+  });
+  const whatsappGroups = waGroupsRes?.data ?? [];
+
   const filtered = useMemo(() => {
     if (filterCategory === "all") return workflows;
     return workflows.filter((w) => w.category === filterCategory);
@@ -430,6 +438,7 @@ export function WorkflowsPage() {
                     selectedNodeId={selectedNodeId}
                     catalog={catalog}
                     triggerEvent={selected.trigger_event}
+                    whatsappGroups={whatsappGroups}
                     onChange={setDraftGraph}
                   />
                 </div>

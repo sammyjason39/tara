@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 type NodeData = {
   label: string;
   eventType?: string;
+  scheduleCron?: string;
   field?: string;
   operator?: string;
   value?: string;
@@ -42,11 +43,14 @@ function BaseNode({
 
 export const TriggerNode = memo(({ data }: NodeProps) => {
   const d = data as NodeData;
+  const subtitle = d.scheduleCron
+    ? `⏱ ${d.scheduleCron}`
+    : d.eventType;
   return (
     <BaseNode
       icon={Zap}
       title={d.label || "Trigger"}
-      subtitle={d.eventType}
+      subtitle={subtitle}
       className="border-gold/40"
       handles={
         <Handle type="source" position={Position.Bottom} className="!bg-gold !w-2 !h-2" />

@@ -37,6 +37,6 @@ export const SECTION_LABELS: Record<DocsAudience, string> = {
 export const SECTION_DESCRIPTIONS: Record<DocsAudience, string> = {
   employee: "Panduan untuk semua karyawan — tidak perlu login",
   supervisor: "Kelola tim, setujui cuti, pantau absensi",
-  hr: "Kelola karyawan, SOP, dan kebijakan HR",
-  admin: "Konfigurasi sistem, role, dan AI Agent",
+  hr: "Kelola karyawan, SOP, otomasi, dan kebijakan HR",
+  admin: "Konfigurasi sistem, workflow engine, role, dan AI Agent",
 };

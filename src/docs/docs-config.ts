@@ -40,8 +40,9 @@ export const DOC_SECTIONS: DocSection[] = [
     label: "HR",
     pages: [
       { slug: "dashboard-hr", title: "Dashboard HR", description: "Ringkasan operasional" },
-      { slug: "karyawan", title: "Manajemen Karyawan", description: "Tambah, edit, dan impor data" },
-      { slug: "kebijakan-cuti", title: "Kebijakan Cuti", description: "Jatah, tipe cuti, dan kalender" },
+      { slug: "karyawan", title: "Manajemen Karyawan", description: "Tambah, edit, reset password, penyesuaian cuti" },
+      { slug: "kebijakan-cuti", title: "Kebijakan Cuti", description: "Jatah, penyesuaian saldo, dan kalender" },
+      { slug: "otomasi-workflow", title: "Otomasi Workflow", description: "Aturan notifikasi dan eskalasi tanpa coding" },
       { slug: "sop-upload", title: "Upload SOP", description: "PDF kebijakan untuk AI Agent" },
       { slug: "absensi-hr", title: "Absensi & Bukti Foto", description: "Audit kehadiran karyawan" },
     ],
@@ -51,6 +52,7 @@ export const DOC_SECTIONS: DocSection[] = [
     label: "Admin",
     pages: [
       { slug: "pengaturan", title: "Pengaturan Sistem", description: "Branding, fitur, dan integrasi" },
+      { slug: "otomasi-workflow", title: "Otomasi Workflow", description: "Mesin aturan, trigger, dan troubleshooting" },
       { slug: "role-akses", title: "Role & Akses", description: "Kelola role dan permission" },
       { slug: "ai-agent", title: "AI Agent", description: "Skill, memori, dan re-index SOP" },
       { slug: "deployment", title: "Staging & Production", description: "Alur deploy dan environment" },

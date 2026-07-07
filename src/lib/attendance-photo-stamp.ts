@@ -46,18 +46,27 @@ function drawStampOverlay(
   stamp: AttendancePhotoStamp,
 ): void {
   const lines = buildStampLines(stamp);
-  const fontSize = Math.max(13, Math.round(width * 0.028));
-  const lineHeight = fontSize * 1.38;
-  const paddingX = fontSize * 0.85;
-  const paddingY = fontSize * 0.7;
+  let fontSize = Math.max(12, Math.round(width * 0.028));
+  let lineHeight = fontSize * 1.38;
+  let paddingX = fontSize * 0.85;
+  let paddingY = fontSize * 0.7;
   const margin = fontSize * 0.65;
+
+  let boxHeight = lines.length * lineHeight + paddingY * 2;
+  const maxBoxHeight = height * 0.38;
+  while (boxHeight > maxBoxHeight && fontSize > 10) {
+    fontSize -= 1;
+    lineHeight = fontSize * 1.38;
+    paddingX = fontSize * 0.85;
+    paddingY = fontSize * 0.65;
+    boxHeight = lines.length * lineHeight + paddingY * 2;
+  }
 
   ctx.font = `600 ${fontSize}px system-ui, -apple-system, "Segoe UI", sans-serif`;
   const textWidths = lines.map((line) => ctx.measureText(line).width);
   const boxWidth = Math.min(width - margin * 2, Math.max(...textWidths) + paddingX * 2);
-  const boxHeight = lines.length * lineHeight + paddingY * 2;
   const boxX = margin;
-  const boxY = height - boxHeight - margin;
+  const boxY = Math.max(margin, height - boxHeight - margin);
 
   ctx.fillStyle = "rgba(0, 0, 0, 0.62)";
   roundRect(ctx, boxX, boxY, boxWidth, boxHeight, fontSize * 0.35);

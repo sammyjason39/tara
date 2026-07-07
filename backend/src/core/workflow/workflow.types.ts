@@ -28,7 +28,10 @@ export interface WorkflowConditionRule {
 
 export type WorkflowActionType =
   | 'send_notification'
+  | 'send_public_announcement'
+  | 'send_hr_team_notification'
   | 'send_whatsapp'
+  | 'send_whatsapp_group'
   | 'escalate_hr'
   | 'set_variable'
   | 'notify_by_role'
@@ -42,6 +45,10 @@ export interface WorkflowNodePosition {
 export interface WorkflowNodeData {
   label: string;
   eventType?: string;
+  /** Cron expression for scheduled workflows (e.g. 30 11 * * 1-5) */
+  scheduleCron?: string;
+  scheduleTimezone?: string;
+  scheduleAction?: string;
   /** @deprecated use rules[] — kept for backward compatibility */
   field?: string;
   operator?: WorkflowConditionOperator;
@@ -147,9 +154,21 @@ export const WORKFLOW_ACTION_CATALOG: Record<
     label: 'Kirim Notifikasi',
     description: 'Notifikasi in-app ke karyawan/HR/supervisor',
   },
+  send_public_announcement: {
+    label: 'Pengumuman Publik',
+    description: 'Broadcast notifikasi ke seluruh karyawan aktif',
+  },
+  send_hr_team_notification: {
+    label: 'Notifikasi Tim HR',
+    description: 'Kirim rekap/detail ke role HR_Admin & Supervisor',
+  },
   send_whatsapp: {
     label: 'Kirim WhatsApp',
     description: 'Pesan WhatsApp ke karyawan terkait event',
+  },
+  send_whatsapp_group: {
+    label: 'Kirim WhatsApp Grup',
+    description: 'Pesan teks ke grup WhatsApp (Group ID dari Kapso/Meta)',
   },
   escalate_hr: {
     label: 'Eskalasi ke HR',

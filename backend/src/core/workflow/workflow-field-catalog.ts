@@ -89,6 +89,17 @@ export const WORKFLOW_EVENT_PAYLOAD_FIELDS: Record<string, WorkflowFieldDef[]> =
   'attendance.tardiness_detected': [
     { path: 'payload.tardiness_minutes', label: 'Menit telat', group: 'Payload Absensi', type: 'number' },
   ],
+  'report.daily_tardiness': [
+    { path: 'payload.report_date', label: 'Tanggal laporan', group: 'Payload Laporan', type: 'string' },
+    { path: 'payload.tardy_count', label: 'Jumlah terlambat', group: 'Payload Laporan', type: 'number' },
+    { path: 'payload.no_tardiness', label: 'Tidak ada keterlambatan?', group: 'Payload Laporan', type: 'boolean' },
+    { path: 'payload.public_tardiness_title', label: 'Judul pengumuman telat', group: 'Payload Laporan', type: 'string' },
+    { path: 'payload.public_tardiness_content', label: 'Isi pengumuman telat', group: 'Payload Laporan', type: 'string' },
+    { path: 'payload.positive_title', label: 'Judul apresiasi', group: 'Payload Laporan', type: 'string' },
+    { path: 'payload.positive_content', label: 'Isi apresiasi', group: 'Payload Laporan', type: 'string' },
+    { path: 'payload.hr_recap_title', label: 'Judul rekap HR', group: 'Payload Laporan', type: 'string' },
+    { path: 'payload.hr_recap_content', label: 'Isi rekap HR', group: 'Payload Laporan', type: 'string' },
+  ],
   'employee.created': [
     { path: 'payload.full_name', label: 'Nama karyawan baru', group: 'Payload Karyawan', type: 'string' },
     { path: 'payload.email', label: 'Email', group: 'Payload Karyawan', type: 'string' },

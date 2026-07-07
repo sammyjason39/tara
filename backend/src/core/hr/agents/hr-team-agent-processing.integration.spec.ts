@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import 'reflect-metadata';
 import { LateReportAgent } from './late-report.agent';
+import { TardinessReportService } from '../services/tardiness-report.service';
 import { SaldoCutiAgent } from './saldo-cuti.agent';
 import { PrismaService } from '../../../persistence/prisma.service';
 import {
@@ -31,10 +32,9 @@ describe('HR_Team Agent Processing (Task 35.3)', () => {
   // Requirement 30.15: Late_Report_Agent includes tardy HR_Team in public
   // announcements
   // ---------------------------------------------------------------------------
-  describe('Requirement 30.15: LateReportAgent includes HR_Team in public tardiness announcements', () => {
-    let agent: LateReportAgent;
+  describe('Requirement 30.15: TardinessReportService includes HR_Team in public tardiness payload', () => {
+    let service: TardinessReportService;
     let prismaService: any;
-    let notificationService: any;
     let eventBusService: any;
 
     beforeEach(() => {
@@ -43,20 +43,12 @@ describe('HR_Team Agent Processing (Task 35.3)', () => {
         publicHoliday: { findFirst: vi.fn().mockResolvedValue(null) },
       };
 
-      notificationService = {
-        sendPublicAnnouncement: vi.fn().mockResolvedValue([
-          { id: 'pub-1' }, { id: 'pub-2' }, { id: 'pub-3' },
-        ]),
-        sendHRTeamNotification: vi.fn().mockResolvedValue([{ id: 'hr-1' }]),
-      };
-
       eventBusService = {
         emit: vi.fn().mockResolvedValue({ id: 'event-1' }),
       };
 
-      agent = new LateReportAgent(
+      service = new TardinessReportService(
         prismaService as PrismaService,
-        notificationService as NotificationService,
         eventBusService as EventBusService,
       );
     });
@@ -112,10 +104,9 @@ describe('HR_Team Agent Processing (Task 35.3)', () => {
     it('includes tardy HR_Team members in the public announcement alongside regular employees', async () => {
       prismaService.attendance.findMany.mockResolvedValue(mixedTardyRecords);
 
-      await agent.generateDailyTardinessReport(WORKDAY);
-
-      const call = notificationService.sendPublicAnnouncement.mock.calls[0][0];
-      const content: string = call.content;
+      const payload = await service.generateAndEmit(WORKDAY);
+      expect(payload).not.toBeNull();
+      const content = payload!.public_tardiness_content;
 
       // HR_Team members appear in the public tardiness announcement
       expect(content).toContain('Sarah HR Admin');
@@ -124,10 +115,8 @@ describe('HR_Team Agent Processing (Task 35.3)', () => {
       expect(content).toContain('Dev Engineer');
 
       // All three employees reflected in metadata
-      expect(call.metadata.tardy_count).toBe(3);
-      const names = call.metadata.tardy_employees.map(
-        (e: any) => e.employee_name,
-      );
+      expect(payload!.tardy_count).toBe(3);
+      const names = payload!.tardy_employees.map((e) => e.employee_name);
       expect(names).toContain('Sarah HR Admin');
       expect(names).toContain('Rizky HR Staff');
       expect(names).toContain('Dev Engineer');
@@ -136,10 +125,8 @@ describe('HR_Team Agent Processing (Task 35.3)', () => {
     it('reports HR_Team tardiness with same detail (arrival time, minutes late) as other employees', async () => {
       prismaService.attendance.findMany.mockResolvedValue(mixedTardyRecords);
 
-      await agent.generateDailyTardinessReport(WORKDAY);
-
-      const call = notificationService.sendPublicAnnouncement.mock.calls[0][0];
-      const content: string = call.content;
+      const payload = await service.generateAndEmit(WORKDAY);
+      const content = payload!.public_tardiness_content;
 
       // HR_Team member arrival times and minutes present
       expect(content).toContain('09:20');
@@ -151,10 +138,8 @@ describe('HR_Team Agent Processing (Task 35.3)', () => {
     it('includes HR_Team in HR detailed recap with department context', async () => {
       prismaService.attendance.findMany.mockResolvedValue(mixedTardyRecords);
 
-      await agent.generateDailyTardinessReport(WORKDAY);
-
-      const call = notificationService.sendHRTeamNotification.mock.calls[0][0];
-      const content: string = call.content;
+      const payload = await service.generateAndEmit(WORKDAY);
+      const content = payload!.hr_recap_content;
 
       // HR_Team members listed in the HR recap with department
       expect(content).toContain('Sarah HR Admin');
@@ -165,13 +150,14 @@ describe('HR_Team Agent Processing (Task 35.3)', () => {
     it('does not filter out HR_Team from the attendance query (no role-based exclusion)', async () => {
       prismaService.attendance.findMany.mockResolvedValue(mixedTardyRecords);
 
-      await agent.generateDailyTardinessReport(WORKDAY);
+      await service.generateAndEmit(WORKDAY);
 
-      // The query only filters by date and is_tardy — no role or department filter
+      // The query only filters by date range and is_tardy — no role or department filter
       const queryArgs = prismaService.attendance.findMany.mock.calls[0][0];
       expect(queryArgs.where).toEqual(
         expect.objectContaining({
           is_tardy: true,
+          clock_in_time: { not: null },
         }),
       );
       // No role-based exclusion
@@ -346,27 +332,29 @@ describe('HR_Team Agent Processing (Task 35.3)', () => {
   // Requirement 30.14: Absensi_Agent processes HR_Team with same tardiness rules
   // ---------------------------------------------------------------------------
   describe('Requirement 30.14: Absensi_Agent same tardiness rules for HR_Team', () => {
-    let agent: LateReportAgent;
+    let reportService: TardinessReportService;
+    let lateReportAgent: LateReportAgent;
     let prismaService: any;
-    let notificationService: any;
     let eventBusService: any;
+    let tardinessReportServiceMock: any;
 
     beforeEach(() => {
       prismaService = {
         attendance: { findMany: vi.fn() },
         publicHoliday: { findFirst: vi.fn().mockResolvedValue(null) },
       };
-      notificationService = {
-        sendPublicAnnouncement: vi.fn().mockResolvedValue([{ id: 'pub-1' }]),
-        sendHRTeamNotification: vi.fn().mockResolvedValue([{ id: 'hr-1' }]),
-      };
       eventBusService = {
         emit: vi.fn().mockResolvedValue({ id: 'event-1' }),
       };
-      agent = new LateReportAgent(
+      reportService = new TardinessReportService(
         prismaService as PrismaService,
-        notificationService as NotificationService,
         eventBusService as EventBusService,
+      );
+      tardinessReportServiceMock = {
+        generateAndEmit: vi.fn().mockResolvedValue({ tardy_count: 1 }),
+      };
+      lateReportAgent = new LateReportAgent(
+        tardinessReportServiceMock as TardinessReportService,
       );
     });
 
@@ -393,15 +381,14 @@ describe('HR_Team Agent Processing (Task 35.3)', () => {
         },
       ]);
 
-      await agent.generateDailyTardinessReport(WORKDAY);
+      const payload = await reportService.generateAndEmit(WORKDAY);
 
       // Even when the ONLY tardy employee is HR_Team, report is generated
-      expect(notificationService.sendPublicAnnouncement).toHaveBeenCalledTimes(1);
-      const call = notificationService.sendPublicAnnouncement.mock.calls[0][0];
-      expect(call.content).toContain('Sarah HR Admin');
-      expect(call.content).toContain('30 menit');
-      expect(call.metadata.tardy_count).toBe(1);
-      expect(call.metadata.tardy_employees[0].employee_name).toBe('Sarah HR Admin');
+      expect(payload).not.toBeNull();
+      expect(payload!.public_tardiness_content).toContain('Sarah HR Admin');
+      expect(payload!.public_tardiness_content).toContain('30 menit');
+      expect(payload!.tardy_count).toBe(1);
+      expect(payload!.tardy_employees[0].employee_name).toBe('Sarah HR Admin');
     });
 
     it('handles the real-time attendance.clock_in event for HR_Team member', async () => {
@@ -420,7 +407,7 @@ describe('HR_Team Agent Processing (Task 35.3)', () => {
 
       // Should not throw — HR_Team events processed just like any employee event
       await expect(
-        agent.handleAttendanceClockIn(hrClockInEvent),
+        lateReportAgent.handleAttendanceClockIn(hrClockInEvent),
       ).resolves.toBeUndefined();
     });
   });
@@ -429,7 +416,7 @@ describe('HR_Team Agent Processing (Task 35.3)', () => {
   // Requirement 30.20: All agent events include HR_Team members as employees
   // ---------------------------------------------------------------------------
   describe('Requirement 30.20: Agent events include HR_Team members as employees', () => {
-    let lateReportAgent: LateReportAgent;
+    let tardinessReportService: TardinessReportService;
     let saldoCutiAgent: SaldoCutiAgent;
     let prismaService: any;
     let notificationService: any;
@@ -452,9 +439,8 @@ describe('HR_Team Agent Processing (Task 35.3)', () => {
         emit: vi.fn().mockResolvedValue({ id: 'event-1' }),
       };
 
-      lateReportAgent = new LateReportAgent(
+      tardinessReportService = new TardinessReportService(
         prismaService as PrismaService,
-        notificationService as NotificationService,
         eventBusService as EventBusService,
       );
       saldoCutiAgent = new SaldoCutiAgent(
@@ -485,7 +471,7 @@ describe('HR_Team Agent Processing (Task 35.3)', () => {
         },
       ]);
 
-      await lateReportAgent.generateDailyTardinessReport(WORKDAY);
+      await tardinessReportService.generateAndEmit(WORKDAY);
 
       // Event Bus receives events that include HR_Team member data
       const emittedEvents = eventBusService.emit.mock.calls.map(

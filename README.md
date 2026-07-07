@@ -237,6 +237,7 @@ TARA-HR-AGENTIC/
 
 | Topik | File |
 |-------|------|
+| **AI / LLM onboarding** | [`agents.md`](../agents.md) · [`prd.md`](../prd.md) · [`designs.md`](../designs.md) |
 | Index dokumentasi | [`docs/README.md`](./docs/README.md) |
 | Deployment | [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) |
 | Arsitektur backend | [`docs/backend/ARCHITECTURE.md`](./docs/backend/ARCHITECTURE.md) |

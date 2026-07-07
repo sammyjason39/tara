@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Camera, Loader2, X } from "lucide-react";
 import { api, fetchAuthenticatedBlobUrl } from "@/lib/api";
@@ -45,13 +45,23 @@ function AttendancePhotoPanel({
   const { data: photoUrl, isLoading, isError } = useQuery({
     queryKey: ["attendance-photo", attendanceId, type],
     queryFn: () => fetchAuthenticatedBlobUrl(`/attendance/${attendanceId}/photo/${type}`),
-    enabled: available,
-    staleTime: 5 * 60 * 1000,
+    enabled: available && !!attendanceId,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: "always",
   });
 
+  const blobUrlRef = useRef<string | null>(null);
   useEffect(() => {
+    if (blobUrlRef.current && blobUrlRef.current !== photoUrl) {
+      URL.revokeObjectURL(blobUrlRef.current);
+    }
+    blobUrlRef.current = photoUrl ?? null;
     return () => {
-      if (photoUrl) URL.revokeObjectURL(photoUrl);
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+        blobUrlRef.current = null;
+      }
     };
   }, [photoUrl]);
 
@@ -61,21 +71,25 @@ function AttendancePhotoPanel({
         <Camera className="h-3.5 w-3.5" />
         {label}
       </p>
-      <div className="aspect-[3/4] w-full overflow-hidden rounded-xl border border-border bg-muted/30">
+      <div className="flex w-full aspect-[3/4] items-end justify-center overflow-hidden rounded-xl border border-border bg-black/90">
         {!available ? (
-          <div className="flex h-full items-center justify-center p-4 text-center">
+          <div className="flex h-full w-full items-center justify-center p-4 text-center">
             <p className="text-xs text-muted-foreground">{t("attendance.no_photo")}</p>
           </div>
         ) : isLoading ? (
-          <div className="flex h-full items-center justify-center">
+          <div className="flex h-full w-full items-center justify-center">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : isError || !photoUrl ? (
-          <div className="flex h-full items-center justify-center p-4 text-center">
+          <div className="flex h-full w-full items-center justify-center p-4 text-center">
             <p className="text-xs text-destructive">{t("attendance.photo_load_failed")}</p>
           </div>
         ) : (
-          <img src={photoUrl} alt={label} className="h-full w-full object-cover" />
+          <img
+            src={photoUrl}
+            alt={label}
+            className="max-h-full max-w-full object-contain object-bottom"
+          />
         )}
       </div>
     </div>
@@ -84,6 +98,15 @@ function AttendancePhotoPanel({
 
 export function AttendanceDetailDialog({ attendanceId, onClose }: Props) {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  const handleClose = () => {
+    if (attendanceId) {
+      queryClient.removeQueries({ queryKey: ["attendance-photo", attendanceId] });
+      queryClient.removeQueries({ queryKey: ["attendance-detail", attendanceId] });
+    }
+    onClose();
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ["attendance-detail", attendanceId],
@@ -103,7 +126,7 @@ export function AttendanceDetailDialog({ attendanceId, onClose }: Props) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in p-0 sm:p-4"
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
         className="bg-card w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl shadow-luxury-lg"
@@ -118,7 +141,7 @@ export function AttendanceDetailDialog({ attendanceId, onClose }: Props) {
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="rounded-md p-1.5 hover:bg-accent"
             aria-label={t("attendance.close")}
           >

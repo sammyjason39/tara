@@ -16,7 +16,9 @@ import { JwtGuard } from '../auth/guards/jwt.guard';
 import { RolesGuard, Roles } from '../auth/guards/roles.guard';
 import { WorkflowDefinitionService } from './workflow-definition.service';
 import { WorkflowEngineService } from './workflow-engine.service';
+import { WhatsAppOutboundService } from '../hr/whatsapp/services/whatsapp-outbound.service';
 import { WorkflowSeedService } from './workflow-seed.service';
+import { WorkflowScheduleService } from './workflow-schedule.service';
 import {
   WORKFLOW_ACTION_CATALOG,
   WORKFLOW_CATEGORIES,
@@ -36,7 +38,15 @@ export class WorkflowController {
     private readonly definitionService: WorkflowDefinitionService,
     private readonly engineService: WorkflowEngineService,
     private readonly seedService: WorkflowSeedService,
+    private readonly scheduleService: WorkflowScheduleService,
+    private readonly whatsappOutbound: WhatsAppOutboundService,
   ) {}
+
+  @Get('whatsapp/groups')
+  async listWhatsAppGroups() {
+    const groups = await this.whatsappOutbound.listGroups();
+    return { success: true, data: groups };
+  }
 
   @Get('catalog')
   getCatalog(@Query('trigger_event') triggerEvent?: string) {
@@ -57,6 +67,7 @@ export class WorkflowController {
           'attendance.clock_in',
           'attendance.clock_out',
           'attendance.tardiness_detected',
+          'report.daily_tardiness',
           'whatsapp.message.inbound',
           'employee.created',
           'employee.updated',
@@ -121,6 +132,7 @@ export class WorkflowController {
       updated_by: req.user?.sub,
     });
     this.engineService.invalidateCache();
+    await this.scheduleService.reloadSchedules();
     return { success: true, data: row };
   }
 
@@ -131,6 +143,7 @@ export class WorkflowController {
         ? await this.definitionService.activate(id, req.user?.sub)
         : await this.definitionService.deactivate(id, req.user?.sub);
       this.engineService.invalidateCache();
+      await this.scheduleService.reloadSchedules();
       return { success: true, data: row };
     }
 
@@ -143,6 +156,7 @@ export class WorkflowController {
       updated_by: req.user?.sub,
     });
     this.engineService.invalidateCache();
+    await this.scheduleService.reloadSchedules();
     return { success: true, data: row };
   }
 
@@ -151,6 +165,7 @@ export class WorkflowController {
   async publish(@Param('id') id: string, @Req() req: any) {
     const row = await this.definitionService.publish(id, req.user?.sub);
     this.engineService.invalidateCache();
+    await this.scheduleService.reloadSchedules();
     return { success: true, data: row, message: 'Workflow dipublish' };
   }
 
@@ -159,6 +174,7 @@ export class WorkflowController {
   async activate(@Param('id') id: string, @Req() req: any) {
     const row = await this.definitionService.activate(id, req.user?.sub);
     this.engineService.invalidateCache();
+    await this.scheduleService.reloadSchedules();
     return { success: true, data: row, message: 'Workflow diaktifkan' };
   }
 
@@ -167,6 +183,7 @@ export class WorkflowController {
   async deactivate(@Param('id') id: string, @Req() req: any) {
     const row = await this.definitionService.deactivate(id, req.user?.sub);
     this.engineService.invalidateCache();
+    await this.scheduleService.reloadSchedules();
     return { success: true, data: row, message: 'Workflow dinonaktifkan' };
   }
 
@@ -201,6 +218,7 @@ export class WorkflowController {
   async reseed() {
     await this.seedService.seedDefaults();
     this.engineService.invalidateCache();
+    await this.scheduleService.reloadSchedules();
     return { success: true, message: 'Workflow templates re-seeded' };
   }
 }
