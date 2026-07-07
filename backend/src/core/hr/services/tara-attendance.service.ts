@@ -31,23 +31,13 @@ export class TaraAttendanceService {
   ) {}
 
   /**
-   * Validate employee GPS against active office geofence (shared by API + clock flows).
+   * Resolve which office location(s) apply for an employee's geofence check.
+   * Assigned employees use their office; unassigned employees may match any active site.
    */
-  async validateGeofenceForEmployee(
-    employee_id: string,
-    gps_latitude: number,
-    gps_longitude: number,
-  ): Promise<{
-    within_fence: boolean;
-    distance_meters: number;
-    office_name: string;
-    office_latitude: number;
-    office_longitude: number;
-    geofence_radius_meters: number;
-  }> {
+  private async resolveOfficeLocationsForEmployee(employee_id: string) {
     const employee = await this.prisma.employee.findUnique({
       where: { id: employee_id },
-      select: { id: true, employment_status: true },
+      select: { id: true, employment_status: true, office_location_id: true },
     });
 
     if (!employee) {
@@ -58,35 +48,83 @@ export class TaraAttendanceService {
       throw new BadRequestException('Karyawan tidak aktif');
     }
 
-    const officeLocation = await this.prisma.officeLocation.findFirst({
-      where: { is_active: true },
+    const offices = await this.prisma.officeLocation.findMany({
+      where: employee.office_location_id
+        ? { id: employee.office_location_id, is_active: true }
+        : { is_active: true },
+      orderBy: { location_name: 'asc' },
     });
 
-    if (!officeLocation) {
+    if (employee.office_location_id && offices.length === 0) {
+      throw new BadRequestException(
+        'Lokasi kantor yang ditugaskan kepada Anda tidak aktif atau tidak ditemukan. Hubungi HR.',
+      );
+    }
+
+    if (offices.length === 0) {
       throw new BadRequestException(
         'Lokasi kantor belum dikonfigurasi. Hubungi HR.',
       );
     }
 
-    const officeLatitude = parseFloat(officeLocation.latitude.toString());
-    const officeLongitude = parseFloat(officeLocation.longitude.toString());
+    return { employee, offices };
+  }
 
-    const distanceMeters = this.geoService.calculateHaversineDistance(
-      gps_latitude,
-      gps_longitude,
-      officeLatitude,
-      officeLongitude,
-    );
+  /**
+   * Validate employee GPS against active office geofence (shared by API + clock flows).
+   */
+  async validateGeofenceForEmployee(
+    employee_id: string,
+    gps_latitude: number,
+    gps_longitude: number,
+  ): Promise<{
+    within_fence: boolean;
+    distance_meters: number;
+    office_location_id: string;
+    office_name: string;
+    office_latitude: number;
+    office_longitude: number;
+    geofence_radius_meters: number;
+  }> {
+    const { offices } = await this.resolveOfficeLocationsForEmployee(employee_id);
 
-    const withinFence = distanceMeters <= officeLocation.geofence_radius_meters;
+    let nearestWithin: { office: (typeof offices)[number]; distance: number } | null = null;
+    let nearestOverall: { office: (typeof offices)[number]; distance: number } | null = null;
+
+    for (const office of offices) {
+      const officeLatitude = parseFloat(office.latitude.toString());
+      const officeLongitude = parseFloat(office.longitude.toString());
+      const distanceMeters = this.geoService.calculateHaversineDistance(
+        gps_latitude,
+        gps_longitude,
+        officeLatitude,
+        officeLongitude,
+      );
+
+      if (!nearestOverall || distanceMeters < nearestOverall.distance) {
+        nearestOverall = { office, distance: distanceMeters };
+      }
+
+      if (distanceMeters <= office.geofence_radius_meters) {
+        if (!nearestWithin || distanceMeters < nearestWithin.distance) {
+          nearestWithin = { office, distance: distanceMeters };
+        }
+      }
+    }
+
+    const reference = nearestWithin ?? nearestOverall!;
+    const office = reference.office;
+    const officeLatitude = parseFloat(office.latitude.toString());
+    const officeLongitude = parseFloat(office.longitude.toString());
 
     return {
-      within_fence: withinFence,
-      distance_meters: Math.round(distanceMeters),
-      office_name: officeLocation.location_name,
+      within_fence: !!nearestWithin,
+      distance_meters: Math.round(reference.distance),
+      office_location_id: office.id,
+      office_name: office.location_name,
       office_latitude: officeLatitude,
       office_longitude: officeLongitude,
-      geofence_radius_meters: officeLocation.geofence_radius_meters,
+      geofence_radius_meters: office.geofence_radius_meters,
     };
   }
 
@@ -142,20 +180,7 @@ export class TaraAttendanceService {
         );
       }
 
-      // Step 2: Get employee's assigned office location
-      // For now, we'll use the first active office location
-      // TODO: In future, support employee-specific office assignments
-      const officeLocation = await tx.officeLocation.findFirst({
-        where: { is_active: true },
-      });
-
-      if (!officeLocation) {
-        throw new BadRequestException(
-          'No active office location configured. Please configure office location in Settings.',
-        );
-      }
-
-      // Step 3: Validate geo-fence (Requirement 23.1)
+      // Step 2: Validate geo-fence against employee's assigned office (or any site if unassigned)
       const geoValidation = await this.validateGeofenceForEmployee(
         employee_id,
         gps_latitude,
@@ -266,7 +291,7 @@ export class TaraAttendanceService {
         attendance_source,
         tardinessResult.is_tardy,
         tardinessResult.tardiness_minutes,
-        officeLocation.id,
+        geoValidation.office_location_id,
         clockInPhotoPath,
       );
 
@@ -313,8 +338,8 @@ export class TaraAttendanceService {
             longitude: gps_longitude,
           },
           office_location: {
-            id: officeLocation.id,
-            name: officeLocation.location_name,
+            id: geoValidation.office_location_id,
+            name: geoValidation.office_name,
             distance_meters: geoValidation.distance_meters,
           },
         },
@@ -403,18 +428,7 @@ export class TaraAttendanceService {
         throw new BadRequestException(`Employee not found: ${employee_id}`);
       }
 
-      // Step 2: Get employee's assigned office location
-      const officeLocation = await tx.officeLocation.findFirst({
-        where: { is_active: true },
-      });
-
-      if (!officeLocation) {
-        throw new BadRequestException(
-          'No active office location configured. Please configure office location in Settings.',
-        );
-      }
-
-      // Step 3: Validate geo-fence (Requirement 23.2)
+      // Step 2: Validate geo-fence against employee's assigned office (or any site if unassigned)
       const geoValidation = await this.validateGeofenceForEmployee(
         employee_id,
         gps_latitude,
@@ -532,8 +546,8 @@ export class TaraAttendanceService {
             longitude: gps_longitude,
           },
           office_location: {
-            id: officeLocation.id,
-            name: officeLocation.location_name,
+            id: geoValidation.office_location_id,
+            name: geoValidation.office_name,
             distance_meters: geoValidation.distance_meters,
           },
         },

@@ -16,6 +16,7 @@ type Employee = {
   department?: string | null;
   role?: string;
   supervisor_id?: string | null;
+  office_location_id?: string | null;
   whatsapp_number?: string | null;
 };
 
@@ -24,10 +25,16 @@ type Department = {
   name: string;
 };
 
+type OfficeLocation = {
+  id: string;
+  location_name: string;
+};
+
 type Props = {
   employee: Employee | null;
   allEmployees: Employee[];
   departments: Department[];
+  offices: OfficeLocation[];
   onClose: () => void;
   onSaved: () => void;
 };
@@ -36,6 +43,7 @@ export function EmployeeEditModal({
   employee,
   allEmployees,
   departments,
+  offices,
   onClose,
   onSaved,
 }: Props) {
@@ -50,6 +58,7 @@ export function EmployeeEditModal({
     department: "",
     whatsapp_number: "",
     supervisor_id: "",
+    office_location_id: "",
   });
 
   useEffect(() => {
@@ -61,6 +70,7 @@ export function EmployeeEditModal({
       department: employee.department || "",
       whatsapp_number: employee.whatsapp_number || "",
       supervisor_id: employee.supervisor_id || "",
+      office_location_id: employee.office_location_id || "",
     });
     setEmailStatus("unchanged");
     setEmailMessage("");
@@ -150,6 +160,7 @@ export function EmployeeEditModal({
         department: form.department.trim() || null,
         whatsapp_number: form.whatsapp_number.trim() || null,
         supervisor_id: form.supervisor_id || null,
+        office_location_id: form.office_location_id || null,
       });
       toast.success("Data karyawan berhasil diperbarui");
       onSaved();
@@ -282,6 +293,25 @@ export function EmployeeEditModal({
             />
             <p className="text-2xs text-muted-foreground">
               Format internasional tanpa + (contoh: 6281234567890). Nomor ini dipakai TARA untuk chat WhatsApp.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs text-muted-foreground">Lokasi kantor (geo-fence absensi)</label>
+            <select
+              value={form.office_location_id}
+              onChange={(e) => setForm({ ...form, office_location_id: e.target.value })}
+              className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
+            >
+              <option value="">— Otomatis (semua lokasi aktif) —</option>
+              {offices.map((office) => (
+                <option key={office.id} value={office.id}>
+                  {office.location_name}
+                </option>
+              ))}
+            </select>
+            <p className="text-2xs text-muted-foreground">
+              Pilih lokasi kantor tempat karyawan ini absen. Wajib untuk multi-site.
             </p>
           </div>
 

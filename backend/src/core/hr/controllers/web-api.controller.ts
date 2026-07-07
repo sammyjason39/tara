@@ -257,6 +257,11 @@ export class WebApiController {
 
     const password_hash = await this.authService.hashDefaultEmployeePassword();
 
+    let officeLocationId: string | null = null;
+    if (body.office_location_id) {
+      officeLocationId = await this.assertOfficeLocationActive(body.office_location_id);
+    }
+
     let employee;
     try {
       employee = await this.prisma.employee.create({
@@ -272,6 +277,7 @@ export class WebApiController {
           role_id: role?.id,
           department_id: department,
           supervisor_id: body.supervisor_id || null,
+          office_location_id: officeLocationId,
           employment_status: 'active',
           hire_date: new Date(),
           password_hash,
@@ -395,6 +401,12 @@ export class WebApiController {
       }
     }
 
+    if (body.office_location_id !== undefined) {
+      data.office_location_id = body.office_location_id
+        ? await this.assertOfficeLocationActive(body.office_location_id)
+        : null;
+    }
+
     if (Object.keys(data).length === 0) {
       throw new BadRequestException('Tidak ada field yang diperbarui');
     }
@@ -469,6 +481,17 @@ export class WebApiController {
     if (!supervisor || supervisor.employment_status !== 'active') {
       throw new BadRequestException('Atasan yang dipilih tidak valid atau tidak aktif');
     }
+  }
+
+  private async assertOfficeLocationActive(officeLocationId: string): Promise<string> {
+    const office = await this.prisma.officeLocation.findFirst({
+      where: { id: officeLocationId, is_active: true },
+      select: { id: true },
+    });
+    if (!office) {
+      throw new BadRequestException('Lokasi kantor tidak ditemukan atau tidak aktif');
+    }
+    return office.id;
   }
 
   private async resolveDepartmentId(name: string | null | undefined): Promise<string | null> {
@@ -1034,6 +1057,7 @@ export class WebApiController {
       department: e.department?.name || null,
       department_id: e.department_id ?? e.department?.id ?? null,
       office: e.office?.location_name || null,
+      office_location_id: e.office_location_id ?? e.office?.id ?? null,
       employment_status: e.employment_status,
       hire_date: e.hire_date,
       language_preference: e.language_preference,

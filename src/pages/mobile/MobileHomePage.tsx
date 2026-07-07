@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { CalendarDays, Clock, ChevronRight, Bell } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, truncatePreview } from "@/lib/utils";
 
 export function MobileHomePage() {
   const { user } = useAuth();
@@ -87,9 +87,9 @@ export function MobileHomePage() {
         ) : (
           notifs.slice(0, 3).map((n: any) => (
             <button key={n.id} onClick={() => navigate("/m/notifications")}
-              className={cn("w-full text-left surface-elevated p-3", !n.is_read && "border-l-2 border-l-gold")}>
-              <p className={cn("text-sm", !n.is_read && "font-medium")}>{n.title}</p>
-              <p className="text-2xs text-muted-foreground mt-0.5 line-clamp-1">{n.content}</p>
+              className={cn("w-full text-left surface-elevated p-3 overflow-hidden", !n.is_read && "border-l-2 border-l-gold")}>
+              <p className={cn("text-sm break-words", !n.is_read && "font-medium")}>{n.title}</p>
+              <p className="text-2xs text-muted-foreground mt-0.5 break-words">{truncatePreview(n.content || "", 80)}</p>
             </button>
           ))
         )}

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { formatDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { PwaInstallCard } from "@/components/pwa/PwaInstallCard";
 
 export function ProfilePage() {
   const { user, refreshProfile } = useAuth();
@@ -99,6 +100,8 @@ export function ProfilePage() {
           )}
         </div>
       </div>
+
+      <PwaInstallCard />
 
       {/* Personal Information */}
       <div className="surface-elevated p-6 space-y-5">

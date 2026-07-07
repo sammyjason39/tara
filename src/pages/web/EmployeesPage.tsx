@@ -39,8 +39,15 @@ export function EmployeesPage() {
     placeholderData: { data: [] },
   });
 
+  const { data: officesRes } = useQuery({
+    queryKey: ["admin-offices"],
+    queryFn: () => api.get("/admin/offices"),
+    placeholderData: { data: [] },
+  });
+
   const allEmployees = data?.data || [];
   const adminDepartments = departmentsRes?.data || [];
+  const offices = officesRes?.data || [];
 
   const employees = allEmployees.filter((emp: any) => {
     const matchesSearch = search.trim() === "" || [
@@ -76,6 +83,7 @@ export function EmployeesPage() {
     department: "",
     role: "",
     supervisor_id: "",
+    office_location_id: "",
   });
 
   const handleAddEmployee = async () => {
@@ -88,10 +96,11 @@ export function EmployeesPage() {
         ...newEmp,
         employee_code: newEmp.employee_code.trim() || undefined,
         supervisor_id: newEmp.supervisor_id || null,
+        office_location_id: newEmp.office_location_id || null,
       });
       toast.success(t("employees.added_success"));
       setShowAddPanel(false);
-      setNewEmp({ full_name: "", email: "", employee_code: "", department: "", role: "", supervisor_id: "" });
+      setNewEmp({ full_name: "", email: "", employee_code: "", department: "", role: "", supervisor_id: "", office_location_id: "" });
       queryClient.invalidateQueries({ queryKey: ["employees"] });
     } catch (err: any) {
       toast.error(err.message || t("employees.add_failed"));
@@ -186,12 +195,24 @@ export function EmployeesPage() {
             <select
               value={newEmp.supervisor_id}
               onChange={(e) => setNewEmp({ ...newEmp, supervisor_id: e.target.value })}
-              className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 md:col-span-2"
+              className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20"
             >
               <option value="">— Atasan / Approver cuti (opsional) —</option>
               {allEmployees.map((emp: any) => (
                 <option key={emp.id} value={emp.id}>
                   {emp.full_name} {emp.department ? `· ${emp.department}` : ""}
+                </option>
+              ))}
+            </select>
+            <select
+              value={newEmp.office_location_id}
+              onChange={(e) => setNewEmp({ ...newEmp, office_location_id: e.target.value })}
+              className="h-10 px-3 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 md:col-span-2"
+            >
+              <option value="">— Lokasi kantor (geo-fence) —</option>
+              {offices.map((office: any) => (
+                <option key={office.id} value={office.id}>
+                  {office.location_name}
                 </option>
               ))}
             </select>
@@ -380,6 +401,7 @@ export function EmployeesPage() {
         employee={editEmp}
         allEmployees={allEmployees}
         departments={adminDepartments}
+        offices={offices}
         onClose={() => setEditEmp(null)}
         onSaved={handleEditSaved}
       />

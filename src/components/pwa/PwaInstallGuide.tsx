@@ -1,52 +1,24 @@
-import { useEffect, useState } from "react";
 import { Download, Loader2, Smartphone, X } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useSitePermissions } from "@/contexts/SitePermissionsContext";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
 import { AndroidInstallSteps, IosInstallSteps } from "@/components/pwa/PwaInstallSteps";
-import {
-  clearPwaPromptSession,
-  dismissPwaInstallPrompt,
-  shouldShowPwaInstallPrompt,
-} from "@/lib/pwa-install";
 import { cn } from "@/lib/utils";
 
-export function PwaInstallPromptModal() {
-  const { user, isAuthenticated, isLoading, mustChangePassword } = useAuth();
-  const { permissionsReady } = useSitePermissions();
-  const { platform, installed, inAppBrowser, canDirectInstall, isInstalling, install } = usePwaInstall();
-  const [visible, setVisible] = useState(false);
+interface PwaInstallGuideProps {
+  open: boolean;
+  onClose: () => void;
+  onInstalled?: () => void;
+}
 
-  useEffect(() => {
-    if (isLoading || !isAuthenticated || !user || mustChangePassword || !permissionsReady) {
-      setVisible(false);
-      return;
-    }
+export function PwaInstallGuide({ open, onClose, onInstalled }: PwaInstallGuideProps) {
+  const { platform, inAppBrowser, canDirectInstall, isInstalling, install } = usePwaInstall();
 
-    const show = shouldShowPwaInstallPrompt(user.id);
-    setVisible(show);
-  }, [isLoading, isAuthenticated, user, mustChangePassword, permissionsReady]);
-
-  useEffect(() => {
-    if (installed && user) {
-      dismissPwaInstallPrompt(user.id);
-      setVisible(false);
-    }
-  }, [installed, user]);
-
-  if (!visible || !user) return null;
-
-  const handleDismiss = () => {
-    dismissPwaInstallPrompt(user.id);
-    setVisible(false);
-  };
+  if (!open) return null;
 
   const handleInstall = async () => {
     const outcome = await install();
     if (outcome === "accepted") {
-      dismissPwaInstallPrompt(user.id);
-      clearPwaPromptSession();
-      setVisible(false);
+      onInstalled?.();
+      onClose();
     }
   };
 
@@ -56,7 +28,7 @@ export function PwaInstallPromptModal() {
         className="bg-card rounded-t-2xl sm:rounded-2xl w-full max-w-md shadow-luxury-lg border border-gold/20 max-h-[90vh] overflow-y-auto"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="pwa-install-title"
+        aria-labelledby="pwa-guide-title"
       >
         <div className="p-6 space-y-5">
           <div className="flex items-start justify-between gap-3">
@@ -65,29 +37,23 @@ export function PwaInstallPromptModal() {
                 <Smartphone className="h-5 w-5 text-gold" />
               </div>
               <div>
-                <h2 id="pwa-install-title" className="font-display font-semibold text-lg">
+                <h2 id="pwa-guide-title" className="font-display font-semibold text-lg">
                   Install TARA di HP
                 </h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Disarankan untuk absensi harian
+                  {platform === "ios" ? "Panduan iPhone / iPad" : "Panduan Android"}
                 </p>
               </div>
             </div>
             <button
               type="button"
-              onClick={handleDismiss}
+              onClick={onClose}
               className="p-1.5 rounded-md hover:bg-accent shrink-0"
               aria-label="Tutup"
             >
               <X className="h-4 w-4 text-muted-foreground" />
             </button>
           </div>
-
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Halo <span className="font-medium text-foreground">{user.full_name}</span>, pasang TARA sebagai
-            aplikasi di layar utama HP Anda. GPS, kamera selfie, dan notifikasi absensi lebih stabil dari
-            ikon aplikasi dibanding membuka lewat browser biasa.
-          </p>
 
           {inAppBrowser && (
             <div className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-warning">
@@ -123,14 +89,6 @@ export function PwaInstallPromptModal() {
               )}
             </button>
           )}
-
-          <button
-            type="button"
-            onClick={handleDismiss}
-            className="w-full h-10 text-sm text-muted-foreground hover:text-foreground"
-          >
-            Nanti saja
-          </button>
         </div>
       </div>
     </div>

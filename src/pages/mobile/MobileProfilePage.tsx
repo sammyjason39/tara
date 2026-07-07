@@ -7,6 +7,7 @@ import { User, Sun, Moon, Globe, LogOut, ChevronRight, Shield, Lock, Eye, EyeOff
 import { useBranding } from "@/contexts/BrandingContext";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { PwaInstallCard } from "@/components/pwa/PwaInstallCard";
 
 export function MobileProfilePage() {
   const { user, logout, refreshProfile } = useAuth();
@@ -134,6 +135,8 @@ export function MobileProfilePage() {
           <p className="text-2xs text-muted-foreground mt-0.5">{user?.role} • {user?.department || "—"}</p>
         </div>
       </div>
+
+      <PwaInstallCard />
 
       {/* Menu */}
       <div className="space-y-1">

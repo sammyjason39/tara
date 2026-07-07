@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { Bell, BellOff, CheckCheck } from "lucide-react";
 import { formatDate, formatDateTime } from "@/lib/dates";
-import { cn } from "@/lib/utils";
+import { cn, truncatePreview } from "@/lib/utils";
 
 export function NotificationsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -64,12 +64,16 @@ export function NotificationsPage() {
             <p className="text-sm text-muted-foreground">Tidak ada notifikasi</p>
           </div>
         ) : (
-          notifications.map((n: any) => (
+          notifications.map((n: any) => {
+            const isExpanded = expandedId === n.id;
+            const preview = truncatePreview(n.content || "", 160);
+
+            return (
             <div
               key={n.id}
-              onClick={() => setExpandedId(expandedId === n.id ? null : n.id)}
+              onClick={() => setExpandedId(isExpanded ? null : n.id)}
               className={cn(
-                "surface-elevated p-4 hover:shadow-luxury-md transition-shadow cursor-pointer",
+                "surface-elevated p-4 hover:shadow-luxury-md transition-shadow cursor-pointer overflow-hidden isolate",
                 !n.is_read && "border-l-2 border-l-gold"
               )}
             >
@@ -82,24 +86,21 @@ export function NotificationsPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <p className={cn("text-sm", !n.is_read && "font-medium")}>{n.title}</p>
+                    <p className={cn("text-sm break-words", !n.is_read && "font-medium")}>{n.title}</p>
                     <span className="text-2xs text-muted-foreground whitespace-nowrap">
                       {formatDate(n.created_at)}
                     </span>
                   </div>
-                  <p className={cn("text-xs text-muted-foreground mt-1", expandedId !== n.id && "line-clamp-2")}>{n.content}</p>
+                  <p className="text-xs text-muted-foreground mt-1 break-words whitespace-pre-wrap">
+                    {isExpanded ? n.content : preview}
+                  </p>
 
-                  {expandedId === n.id && (
-                    <div className="mt-3 pt-3 border-t border-border/50 animate-fade-in">
-                      <div className="space-y-2 text-sm">
-                        {n.content && <p>{n.content}</p>}
-                        {n.metadata && (
-                          <div className="text-xs text-muted-foreground">
-                            <p>Tipe: {n.notification_type || n.visibility || "—"}</p>
-                            {n.related_entity_type && <p>Referensi: {n.related_entity_type}</p>}
-                          </div>
-                        )}
-                        <p className="text-2xs text-muted-foreground">
+                  {isExpanded && (
+                    <div className="mt-3 pt-3 border-t border-border/50">
+                      <div className="space-y-2 text-sm text-muted-foreground">
+                        <p>Tipe: {n.notification_type || n.visibility || "—"}</p>
+                        {n.related_entity_type && <p>Referensi: {n.related_entity_type}</p>}
+                        <p className="text-2xs">
                           Dibuat: {formatDateTime(n.created_at)}
                         </p>
                       </div>
@@ -108,7 +109,8 @@ export function NotificationsPage() {
                 </div>
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
