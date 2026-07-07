@@ -1,5 +1,6 @@
 import {
   buildFirstLoginWelcomeMessage,
+  buildPasswordResetMessage,
   isCasualOnboardingMessage,
   isTaraGreetingMessage,
 } from './wa-onboarding.util';
@@ -63,5 +64,20 @@ describe('buildFirstLoginWelcomeMessage', () => {
     expect(msg).toContain('*demo123*');
     expect(msg).toContain('/docs/employee/memulai');
     expect(msg).toContain('mengganti password');
+  });
+});
+
+describe('buildPasswordResetMessage', () => {
+  it('includes reset notice and new password', () => {
+    const msg = buildPasswordResetMessage({
+      fullName: 'Budi Santoso',
+      email: 'budi@ralali.com',
+      newPassword: 'demo123',
+    });
+
+    expect(msg).toContain('direset');
+    expect(msg).toContain('budi@ralali.com');
+    expect(msg).toContain('*demo123*');
+    expect(msg).toContain('wajib ganti password');
   });
 });

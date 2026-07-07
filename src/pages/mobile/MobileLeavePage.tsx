@@ -104,7 +104,7 @@ export function MobileLeavePage() {
                 <option value="unpaid">Tanpa Bayaran</option>
               </select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <label className="text-luxury-label">Dari</label>
                 <DatePickerInput

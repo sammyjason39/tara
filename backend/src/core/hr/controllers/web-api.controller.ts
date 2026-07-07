@@ -29,7 +29,9 @@ import { NotificationService } from '../services/notification.service';
 import { AttendancePhotoService } from '../services/attendance-photo.service';
 import { TaraAttendanceService } from '../services/tara-attendance.service';
 import { AuthService } from '../../auth/auth.service';
+import { buildPasswordResetMessage } from '../../ai/wa-onboarding.util';
 import { normalizeWhatsAppPhone } from '../whatsapp/utils/phone-normalize.util';
+import { WhatsAppOutboundService } from '../whatsapp/services/whatsapp-outbound.service';
 import { createLogoMulterOptions } from '../services/company-logo-upload.config';
 
 /**
@@ -48,6 +50,7 @@ export class WebApiController {
     private readonly attendancePhotoService: AttendancePhotoService,
     private readonly taraAttendanceService: TaraAttendanceService,
     private readonly authService: AuthService,
+    private readonly whatsappOutbound: WhatsAppOutboundService,
   ) {}
 
   @Get('dashboard/stats')
@@ -204,6 +207,123 @@ export class WebApiController {
     return {
       success: true,
       data: requests.map((r) => this.formatLeaveRequest(r)),
+    };
+  }
+
+  @Get('employees/:id/leave-adjustments')
+  @UseGuards(RolesGuard)
+  @Roles('SuperAdmin', 'HR_Admin', 'Supervisor')
+  async getEmployeeLeaveAdjustments(
+    @Param('id') id: string,
+    @Query('limit') limit?: string,
+  ) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id },
+      select: { id: true, employment_status: true },
+    });
+    if (!employee || employee.employment_status === 'deleted') {
+      throw new NotFoundException('Karyawan tidak ditemukan');
+    }
+
+    const parsedLimit = limit ? parseInt(limit, 10) : 10;
+    const adjustments = await this.leaveService.getLeaveAdjustments(id, {
+      limit: Number.isFinite(parsedLimit) ? parsedLimit : 10,
+    });
+
+    return {
+      success: true,
+      data: adjustments.map((a) => this.formatLeaveAdjustment(a)),
+    };
+  }
+
+  @Post('employees/:id/leave-balance/adjust')
+  @UseGuards(RolesGuard)
+  @Roles('SuperAdmin', 'HR_Admin')
+  @HttpCode(HttpStatus.OK)
+  async adjustEmployeeLeaveBalance(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Body() body: any,
+  ) {
+    const daysDelta = Number(body.days_delta);
+    if (!Number.isFinite(daysDelta)) {
+      throw new BadRequestException('Jumlah hari penyesuaian tidak valid');
+    }
+
+    const result = await this.leaveService.adjustLeaveBalance({
+      employee_id: id,
+      days_delta: daysDelta,
+      reason: String(body.reason || ''),
+      adjusted_by: req.user.sub,
+      year: body.year ? Number(body.year) : undefined,
+    });
+
+    return {
+      success: true,
+      data: {
+        balance: this.formatLeaveBalance(result.balance),
+        adjustment: this.formatLeaveAdjustment(result.adjustment),
+      },
+    };
+  }
+
+  @Post('employees/:id/reset-password')
+  @UseGuards(RolesGuard)
+  @Roles('SuperAdmin', 'HR_Admin')
+  @HttpCode(HttpStatus.OK)
+  async resetEmployeePassword(@Param('id') id: string, @Req() req: any) {
+    if (req.user?.sub === id) {
+      throw new BadRequestException('Tidak bisa mereset password akun sendiri dari sini');
+    }
+
+    const employee = await this.prisma.employee.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        full_name: true,
+        email: true,
+        employment_status: true,
+        whatsapp_number: true,
+        whatsapp_opted_in: true,
+        whatsapp_verified: true,
+      },
+    });
+
+    if (!employee || employee.employment_status === 'deleted') {
+      throw new NotFoundException('Karyawan tidak ditemukan');
+    }
+
+    const newPassword = this.authService.getDefaultSeedPassword();
+    await this.authService.resetPassword(id, newPassword);
+
+    let whatsapp_sent = false;
+    let whatsapp_error: string | undefined;
+
+    if (employee.whatsapp_number) {
+      const message = buildPasswordResetMessage({
+        fullName: employee.full_name,
+        email: employee.email,
+        newPassword,
+      });
+      const waResult = await this.whatsappOutbound.sendMessage({
+        employee_id: id,
+        content: message,
+        message_type: 'password_reset',
+        metadata: { reset_by: req.user.sub },
+      });
+      whatsapp_sent = waResult.success;
+      whatsapp_error = waResult.error;
+    } else {
+      whatsapp_error = 'Karyawan belum punya nomor WhatsApp terdaftar';
+    }
+
+    return {
+      success: true,
+      data: {
+        password: newPassword,
+        whatsapp_sent,
+        whatsapp_error,
+      },
     };
   }
 
@@ -1095,6 +1215,17 @@ export class WebApiController {
       status: r.status,
       submitted_at: r.submitted_at,
       approver_name: r.approver?.full_name ?? null,
+    };
+  }
+
+  private formatLeaveAdjustment(a: any) {
+    return {
+      id: a.id,
+      year: a.year,
+      days_delta: Number(a.days_delta),
+      reason: a.reason,
+      created_at: a.created_at,
+      adjuster_name: a.adjuster?.full_name ?? null,
     };
   }
 }

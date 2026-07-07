@@ -72,3 +72,24 @@ export function buildFirstLoginWelcomeMessage(params: WaFirstLoginWelcomeParams)
     `Silakan login dulu, lalu chat TARA lagi jika butuh bantuan absensi, cuti, atau kebijakan perusahaan.`
   );
 }
+
+export interface WaPasswordResetParams {
+  fullName: string;
+  email: string;
+  newPassword: string;
+}
+
+export function buildPasswordResetMessage(params: WaPasswordResetParams): string {
+  const firstName = params.fullName.trim().split(/\s+/)[0] || params.fullName;
+  return (
+    `Halo, *${firstName}*!\n\n` +
+    `Password akun TARA Anda telah *direset* oleh HR Admin.\n\n` +
+    `*Login:*\n` +
+    `🔗 ${TARA_LOGIN_URL}\n\n` +
+    `*Akun Anda:*\n` +
+    `📧 Email: ${params.email}\n` +
+    `🔑 Password baru: *${params.newPassword}*\n\n` +
+    `⚠️ Demi keamanan, *wajib ganti password* saat login berikutnya.\n\n` +
+    `Jika Anda tidak meminta reset ini, segera hubungi HR Admin.`
+  );
+}

@@ -410,6 +410,143 @@ export class LeaveService {
   }
 
   /**
+   * HR manual adjustment to an employee's leave balance for the current (or given) year.
+   * Positive days_delta adds leave; negative subtracts. Recorded in leave_balance_adjustments.
+   */
+  async adjustLeaveBalance(data: {
+    employee_id: string;
+    days_delta: number;
+    reason: string;
+    adjusted_by: string;
+    year?: number;
+  }): Promise<{ balance: any; adjustment: any }> {
+    const { employee_id, reason, adjusted_by } = data;
+    const year = data.year ?? new Date().getFullYear();
+    const days_delta = toLeaveDays(data.days_delta);
+
+    if (!reason?.trim()) {
+      throw new BadRequestException('Alasan penyesuaian wajib diisi');
+    }
+    if (days_delta === 0) {
+      throw new BadRequestException('Jumlah hari penyesuaian tidak boleh 0');
+    }
+    try {
+      assertValidLeaveDays(Math.abs(days_delta));
+    } catch (err: any) {
+      throw new BadRequestException(err.message);
+    }
+
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employee_id },
+      select: { id: true, employment_status: true, full_name: true },
+    });
+    if (!employee || employee.employment_status === 'deleted') {
+      throw new BadRequestException('Karyawan tidak ditemukan');
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      let balance = await tx.leaveBalance.findUnique({
+        where: { employee_id_year: { employee_id, year } },
+      });
+
+      if (!balance) {
+        balance = await tx.leaveBalance.create({
+          data: {
+            employee_id,
+            year,
+            total_entitlement: 12,
+            used_days: 0,
+            remaining_days: 12,
+          },
+        });
+      }
+
+      const currentRemaining = toLeaveDays(balance.remaining_days);
+      const newRemaining = toLeaveDays(currentRemaining + days_delta);
+      if (newRemaining < 0) {
+        throw new BadRequestException(
+          `Saldo cuti tidak cukup untuk pengurangan ${formatLeaveDays(Math.abs(days_delta))} hari`,
+        );
+      }
+
+      const currentEntitlement = toLeaveDays(balance.total_entitlement);
+      const newEntitlement =
+        days_delta > 0
+          ? toLeaveDays(currentEntitlement + days_delta)
+          : currentEntitlement;
+
+      const updatedBalance = await tx.leaveBalance.update({
+        where: { employee_id_year: { employee_id, year } },
+        data: {
+          remaining_days: newRemaining,
+          total_entitlement: newEntitlement,
+          last_calculated_at: new Date(),
+        },
+      });
+
+      const adjustment = await tx.leaveBalanceAdjustment.create({
+        data: {
+          employee_id,
+          year,
+          days_delta,
+          reason: reason.trim(),
+          adjusted_by,
+        },
+        include: {
+          adjuster: { select: { id: true, full_name: true } },
+        },
+      });
+
+      return { balance: updatedBalance, adjustment };
+    });
+
+    await this.cacheAside.invalidate(
+      CacheAsideService.leaveBalanceKey(employee_id, year),
+    );
+
+    try {
+      await this.eventBusService.emit({
+        event_type: 'leave.balance.adjusted',
+        event_version: '1.0',
+        actor: { id: adjusted_by, type: 'employee' },
+        entity: { id: result.adjustment.id, type: 'leave_balance_adjustment' },
+        payload: {
+          employee_id,
+          employee_name: employee.full_name,
+          year,
+          days_delta,
+          reason: reason.trim(),
+          remaining_days: result.balance.remaining_days,
+          adjusted_by,
+        },
+        metadata: { source: 'hr_admin' },
+      });
+    } catch (err) {
+      this.logger.warn(`Failed to emit leave.balance.adjusted: ${err}`);
+    }
+
+    this.logger.log(
+      `Leave balance adjusted for ${employee_id}: ${days_delta > 0 ? '+' : ''}${formatLeaveDays(days_delta)} days (${reason.trim()})`,
+    );
+
+    return result;
+  }
+
+  async getLeaveAdjustments(
+    employee_id: string,
+    options?: { limit?: number },
+  ): Promise<any[]> {
+    return this.prisma.leaveBalanceAdjustment.findMany({
+      where: { employee_id },
+      orderBy: { created_at: 'desc' },
+      take: options?.limit ?? 20,
+      include: {
+        adjuster: { select: { id: true, full_name: true } },
+      },
+    });
+  }
+
+  /**
    * Get a specific leave request by ID
    * 
    * @param request_id - ID of the leave request

@@ -43,7 +43,7 @@ export function EmployeeEditModal({
   employee,
   allEmployees,
   departments,
-  offices,
+  offices = [],
   onClose,
   onSaved,
 }: Props) {

@@ -1,18 +1,26 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
 import {
   ArrowLeft, Mail, Phone, Building2, MapPin, Calendar,
   User, Shield, Briefcase, UserCheck, MessageCircle, Pencil, Trash2, Hash,
-  CalendarDays, Clock, CheckCircle2, XCircle,
+  CalendarDays, Clock, CheckCircle2, XCircle, KeyRound, Plus, Minus,
 } from "lucide-react";
 import { formatDate, formatDateRange } from "@/lib/dates";
 import { formatLeaveDays, toLeaveDays } from "@/lib/leave-days";
 import { cn } from "@/lib/utils";
 import { EmployeeEditModal } from "@/components/employees/EmployeeEditModal";
 import { EmployeeDeleteModal } from "@/components/employees/EmployeeDeleteModal";
+
+const ADJUSTMENT_REASON_PRESETS = [
+  "Adjustment sistem",
+  "Bonus cuti",
+  "Koreksi saldo",
+  "Carryover manual",
+];
 
 export function EmployeeDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +29,12 @@ export function EmployeeDetailPage() {
   const queryClient = useQueryClient();
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [showAdjustForm, setShowAdjustForm] = useState(false);
+  const [adjustDays, setAdjustDays] = useState("1");
+  const [adjustSign, setAdjustSign] = useState<"+" | "-">("+");
+  const [adjustReason, setAdjustReason] = useState("");
+  const [adjusting, setAdjusting] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["employee", id],
@@ -40,6 +54,12 @@ export function EmployeeDetailPage() {
     placeholderData: { data: [] },
   });
 
+  const { data: officesRes } = useQuery({
+    queryKey: ["admin-offices"],
+    queryFn: () => api.get("/admin/offices"),
+    placeholderData: { data: [] },
+  });
+
   const { data: leaveBalanceRes } = useQuery({
     queryKey: ["employee-leave-balance", id],
     queryFn: () => api.get(`/employees/${id}/leave-balance`),
@@ -49,16 +69,101 @@ export function EmployeeDetailPage() {
 
   const { data: leaveRequestsRes } = useQuery({
     queryKey: ["employee-leave-requests", id],
-    queryFn: () => api.get(`/employees/${id}/leave-requests?limit=5`),
+    queryFn: () => api.get(`/employees/${id}/leave-requests?limit=10`),
     enabled: !!id,
     placeholderData: { data: [] },
   });
 
-  const employee = data?.data || data;
+  const { data: leaveAdjustmentsRes } = useQuery({
+    queryKey: ["employee-leave-adjustments", id],
+    queryFn: () => api.get(`/employees/${id}/leave-adjustments?limit=10`),
+    enabled: !!id,
+    placeholderData: { data: [] },
+  });
+
+  const employee = data?.success === false ? null : (data?.data ?? null);
   const allEmployees = employeesRes?.data || [];
   const adminDepartments = departmentsRes?.data || [];
+  const offices = officesRes?.data || [];
   const leaveBalance = leaveBalanceRes?.data || { remaining_days: 0, total_entitlement: 0, used_days: 0 };
   const leaveRequests = leaveRequestsRes?.data || [];
+  const leaveAdjustments = leaveAdjustmentsRes?.data || [];
+
+  const leaveLog = useMemo(() => {
+    const entries = [
+      ...leaveRequests.map((req: any) => ({
+        kind: "request" as const,
+        id: req.id,
+        date: req.submitted_at,
+        data: req,
+      })),
+      ...leaveAdjustments.map((adj: any) => ({
+        kind: "adjustment" as const,
+        id: adj.id,
+        date: adj.created_at,
+        data: adj,
+      })),
+    ];
+    return entries
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 10);
+  }, [leaveRequests, leaveAdjustments]);
+
+  const handleAdjustLeave = async () => {
+    const days = Number(adjustDays);
+    if (!Number.isFinite(days) || days <= 0) {
+      toast.error("Masukkan jumlah hari yang valid");
+      return;
+    }
+    if (!adjustReason.trim()) {
+      toast.error("Alasan penyesuaian wajib diisi");
+      return;
+    }
+
+    const daysDelta = adjustSign === "+" ? days : -days;
+    setAdjusting(true);
+    try {
+      await api.post(`/employees/${id}/leave-balance/adjust`, {
+        days_delta: daysDelta,
+        reason: adjustReason.trim(),
+      });
+      toast.success("Saldo cuti berhasil disesuaikan");
+      setAdjustReason("");
+      setAdjustDays("1");
+      setShowAdjustForm(false);
+      queryClient.invalidateQueries({ queryKey: ["employee-leave-balance", id] });
+      queryClient.invalidateQueries({ queryKey: ["employee-leave-adjustments", id] });
+    } catch (err: any) {
+      toast.error(err?.message || "Gagal menyesuaikan saldo cuti");
+    } finally {
+      setAdjusting(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    const waNote = employee?.whatsapp_number
+      ? " Password default akan dikirim otomatis ke WhatsApp karyawan."
+      : " Karyawan belum punya WhatsApp — password akan ditampilkan di sini.";
+    if (!window.confirm(`Reset password ${employee?.full_name}?${waNote}`)) return;
+
+    setResettingPassword(true);
+    try {
+      const res = await api.post(`/employees/${id}/reset-password`);
+      const { password, whatsapp_sent, whatsapp_error } = res.data || {};
+      if (whatsapp_sent) {
+        toast.success("Password direset dan dikirim ke WhatsApp karyawan");
+      } else if (password) {
+        toast.success(`Password direset: ${password}`, { duration: 12000 });
+        if (whatsapp_error) toast.warning(whatsapp_error);
+      } else {
+        toast.success("Password berhasil direset");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Gagal reset password");
+    } finally {
+      setResettingPassword(false);
+    }
+  };
 
   const leaveTypeLabel: Record<string, string> = {
     annual: "Tahunan",
@@ -165,7 +270,15 @@ export function EmployeeDetailPage() {
             <p className="text-sm text-muted-foreground mt-1">{employee.employee_code}</p>
             <p className="text-sm text-muted-foreground">{employee.email}</p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+            <button
+              onClick={handleResetPassword}
+              disabled={resettingPassword}
+              className="flex items-center gap-2 px-3 py-2 rounded-md border border-input text-sm hover:bg-accent transition-colors disabled:opacity-50"
+            >
+              <KeyRound className="h-4 w-4" />
+              {resettingPassword ? "Mereset..." : "Reset Password"}
+            </button>
             <button
               onClick={() => setShowEdit(true)}
               className="flex items-center gap-2 px-3 py-2 rounded-md border border-input text-sm hover:bg-accent transition-colors"
@@ -230,22 +343,139 @@ export function EmployeeDetailPage() {
               <> · {formatLeaveDays(leaveBalance.carryover_days)} hari carryover</>
             )}
           </p>
+
+          <div className="pt-2 border-t border-border/60">
+            <button
+              type="button"
+              onClick={() => setShowAdjustForm((v) => !v)}
+              className="text-xs text-gold hover:text-gold/80 font-medium"
+            >
+              {showAdjustForm ? "Tutup penyesuaian" : "+ Sesuaikan saldo cuti"}
+            </button>
+
+            {showAdjustForm && (
+              <div className="mt-3 space-y-3 rounded-md border border-border/60 p-3 bg-accent/30">
+                <p className="text-2xs text-muted-foreground">
+                  Tambah atau kurangi saldo cuti. Perubahan tercatat di log cuti.
+                </p>
+                <div className="flex items-center gap-2">
+                  <div className="flex rounded-md border border-input overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setAdjustSign("+")}
+                      className={cn(
+                        "px-3 py-2 text-sm flex items-center gap-1",
+                        adjustSign === "+" ? "bg-gold/15 text-gold" : "hover:bg-accent",
+                      )}
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Tambah
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAdjustSign("-")}
+                      className={cn(
+                        "px-3 py-2 text-sm flex items-center gap-1 border-l border-input",
+                        adjustSign === "-" ? "bg-destructive/10 text-destructive" : "hover:bg-accent",
+                      )}
+                    >
+                      <Minus className="h-3.5 w-3.5" />
+                      Kurang
+                    </button>
+                  </div>
+                  <input
+                    type="number"
+                    min="0.5"
+                    step="0.5"
+                    value={adjustDays}
+                    onChange={(e) => setAdjustDays(e.target.value)}
+                    className="w-20 h-9 px-2 rounded-md border border-input bg-background text-sm text-center"
+                  />
+                  <span className="text-sm text-muted-foreground">hari</span>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-2xs text-muted-foreground">Alasan penyesuaian</label>
+                  <input
+                    type="text"
+                    value={adjustReason}
+                    onChange={(e) => setAdjustReason(e.target.value)}
+                    placeholder="Misal: bonus cuti, koreksi sistem..."
+                    className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
+                  />
+                  <div className="flex flex-wrap gap-1.5">
+                    {ADJUSTMENT_REASON_PRESETS.map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setAdjustReason(preset)}
+                        className="px-2 py-0.5 rounded-full text-2xs border border-border hover:bg-accent transition-colors"
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAdjustLeave}
+                  disabled={adjusting}
+                  className="w-full h-9 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {adjusting ? "Menyimpan..." : "Simpan penyesuaian"}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="surface-elevated p-5 space-y-3">
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
-            <h2 className="text-sm font-semibold">Riwayat Cuti Terakhir</h2>
+            <h2 className="text-sm font-semibold">Log Cuti</h2>
           </div>
-          {leaveRequests.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">Belum ada pengajuan cuti</p>
+          {leaveLog.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">Belum ada aktivitas cuti</p>
           ) : (
             <div className="space-y-2">
-              {leaveRequests.map((req: any) => {
+              {leaveLog.map((entry) => {
+                if (entry.kind === "adjustment") {
+                  const adj = entry.data;
+                  const delta = Number(adj.days_delta);
+                  const sign = delta > 0 ? "+" : "";
+                  return (
+                    <div key={entry.id} className="rounded-md border border-border/60 p-3 space-y-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">
+                            Penyesuaian saldo{" "}
+                            <span className={cn(
+                              "font-semibold",
+                              delta > 0 ? "text-success" : "text-destructive",
+                            )}>
+                              {sign}{formatLeaveDays(delta)} hari
+                            </span>
+                          </p>
+                          <p className="text-2xs text-muted-foreground italic">"{adj.reason}"</p>
+                        </div>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-medium shrink-0 bg-gold/10 text-gold">
+                          Adjustment
+                        </span>
+                      </div>
+                      <p className="text-2xs text-muted-foreground">
+                        {formatDate(adj.created_at)}
+                        {adj.adjuster_name && ` · oleh ${adj.adjuster_name}`}
+                      </p>
+                    </div>
+                  );
+                }
+
+                const req = entry.data;
                 const status = leaveStatusLabel[req.status] || leaveStatusLabel.pending;
                 const StatusIcon = status.icon;
                 return (
-                  <div key={req.id} className="rounded-md border border-border/60 p-3 space-y-1">
+                  <div key={entry.id} className="rounded-md border border-border/60 p-3 space-y-1">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="text-sm font-medium">
@@ -282,6 +512,7 @@ export function EmployeeDetailPage() {
         employee={showEdit ? employee : null}
         allEmployees={allEmployees}
         departments={adminDepartments}
+        offices={offices}
         onClose={() => setShowEdit(false)}
         onSaved={() => {
           queryClient.invalidateQueries({ queryKey: ["employee", id] });

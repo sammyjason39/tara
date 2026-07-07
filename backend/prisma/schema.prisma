@@ -54,6 +54,8 @@ model Employee {
   leave_requests          LeaveRequest[]       @relation("EmployeeLeaveRequests")
   approved_leave_requests LeaveRequest[]       @relation("LeaveApprover")
   leave_balances          LeaveBalance[]
+  leave_balance_adjustments LeaveBalanceAdjustment[] @relation("EmployeeLeaveAdjustments")
+  leave_adjustments_made    LeaveBalanceAdjustment[] @relation("LeaveAdjustmentBy")
   notifications           Notification[]
   warning_letters         WarningLetter[]      @relation("WarningLetterRecipient")
   issued_warnings         WarningLetter[]      @relation("WarningLetterIssuer")
@@ -210,6 +212,23 @@ model LeaveBalance {
   @@map("leave_balances")
 }
 
+model LeaveBalanceAdjustment {
+  id          String   @id @default(uuid())
+  employee_id String
+  year        Int
+  days_delta  Decimal  @db.Decimal(8, 2)
+  reason      String
+  adjusted_by String
+  created_at  DateTime @default(now())
+
+  employee Employee @relation("EmployeeLeaveAdjustments", fields: [employee_id], references: [id])
+  adjuster Employee @relation("LeaveAdjustmentBy", fields: [adjusted_by], references: [id])
+
+  @@index([employee_id])
+  @@index([created_at])
+  @@map("leave_balance_adjustments")
+}
+
 // Notification Models
 model Notification {
   id                String    @id @default(uuid())
@@ -316,6 +335,52 @@ model SystemSettings {
   @@index([setting_category])
   @@index([setting_key])
   @@map("system_settings")
+}
+
+model WorkflowDefinition {
+  id              String    @id @default(uuid())
+  slug            String    @unique
+  name            String
+  description     String?
+  category        String
+  trigger_event   String?
+  is_active       Boolean   @default(false)
+  is_system       Boolean   @default(false)
+  version         Int       @default(1)
+  graph           Json
+  published_graph Json?
+  published_at    DateTime?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @default(now())
+  updated_by      String?
+
+  executions WorkflowExecution[]
+
+  @@index([category])
+  @@index([trigger_event])
+  @@index([is_active])
+  @@map("workflow_definitions")
+}
+
+model WorkflowExecution {
+  id               String    @id @default(uuid())
+  workflow_id      String
+  trigger_event_id String?
+  status           String    @default("running")
+  is_test          Boolean   @default(false)
+  context          Json
+  steps_log        Json      @default("[]")
+  error            String?
+  started_at       DateTime  @default(now())
+  completed_at     DateTime?
+
+  workflow WorkflowDefinition @relation(fields: [workflow_id], references: [id], onDelete: Cascade)
+
+  @@index([workflow_id])
+  @@index([status])
+  @@index([started_at])
+  @@index([is_test])
+  @@map("workflow_executions")
 }
 
 model AgentConfig {

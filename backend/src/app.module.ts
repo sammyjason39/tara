@@ -14,6 +14,7 @@ import { DemoModule } from './core/demo/demo.module';
 import { SopModule } from './core/sop/sop.module';
 import { AiModule } from './core/ai/ai.module';
 import { StatusModule } from './core/status/status.module';
+import { WorkflowModule } from './core/workflow/workflow.module';
 
 const demoEnabled = process.env.DEMO_MODE === 'true';
 
@@ -35,6 +36,7 @@ const demoEnabled = process.env.DEMO_MODE === 'true';
     AiModule,     // TARA AI Assistant (LangChain + RAG + WhatsApp)
     StatusModule, // Public status page probes & history
     HrModule,     // HR + WhatsApp local MVP
+    WorkflowModule,
   ],
   providers: [
     {

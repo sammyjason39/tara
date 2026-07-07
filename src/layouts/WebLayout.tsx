@@ -23,6 +23,7 @@ import {
   ChevronDown,
   FileText,
   ScrollText,
+  Workflow,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFeatureFlags } from "@/contexts/FeatureFlagsContext";
@@ -43,6 +44,7 @@ const navItems: Array<{
   { to: "/web/schedule", icon: CalendarClock, labelKey: "nav.schedule", feature: "schedule" },
   { to: "/web/sop", icon: FileText, labelKey: "nav.sop", feature: "sop" },
   { to: "/web/ai-logs", icon: ScrollText, labelKey: "nav.aiLogs", feature: "ai_logs" },
+  { to: "/web/workflows", icon: Workflow, labelKey: "nav.workflows", feature: null },
   { to: "/web/notifications", icon: Bell, labelKey: "nav.notifications", feature: "notifications" },
   { to: "/web/settings", icon: Settings, labelKey: "nav.settings", feature: null },
 ];

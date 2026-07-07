@@ -27,6 +27,7 @@ import { SchedulePage } from "@/pages/web/SchedulePage";
 import { EmployeeDetailPage } from "@/pages/web/EmployeeDetailPage";
 import { SopPage } from "@/pages/web/SopPage";
 import { AiLogsPage } from "@/pages/web/AiLogsPage";
+import { WorkflowsPage } from "@/pages/web/WorkflowsPage";
 
 // Mobile pages
 import { MobileHomePage } from "@/pages/mobile/MobileHomePage";
@@ -105,6 +106,7 @@ function ThemedApp() {
               <Route path="schedule" element={<FeatureGate feature="schedule"><SchedulePage /></FeatureGate>} />
               <Route path="sop" element={<FeatureGate feature="sop"><SopPage /></FeatureGate>} />
               <Route path="ai-logs" element={<FeatureGate feature="ai_logs"><AiLogsPage /></FeatureGate>} />
+              <Route path="workflows" element={<WorkflowsPage />} />
             </Route>
             <Route path="/m" element={<MobileLayout />}>
               <Route index element={<MobileFeatureGate feature="dashboard"><MobileHomePage /></MobileFeatureGate>} />
