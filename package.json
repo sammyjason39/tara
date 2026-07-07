@@ -1,7 +1,7 @@
 {
   "name": "tara",
   "private": true,
-  "version": "2.0.8",
+  "version": "2.0.9",
   "type": "module",
   "scripts": {
     "dev": "concurrently -n \"WEB,API\" -c \"cyan,green\" \"npm run dev:frontend\" \"npm run dev:backend\"",

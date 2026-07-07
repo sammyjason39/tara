@@ -11,7 +11,7 @@
 //
 // ============================================================================
 
-export const APP_VERSION = "2.0.8";
+export const APP_VERSION = "2.0.9";
 export const APP_BUILD_DATE = "2026-07-06";
 export const APP_NAME = "TARA";
 /** Fallback when branding API is unavailable */
