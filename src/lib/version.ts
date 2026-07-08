@@ -11,8 +11,8 @@
 //
 // ============================================================================
 
-export const APP_VERSION = "2.1.0";
-export const APP_BUILD_DATE = "2026-07-07";
+export const APP_VERSION = "2.1.1";
+export const APP_BUILD_DATE = "2026-07-08";
 export const APP_NAME = "TARA";
 /** Fallback when branding API is unavailable */
 export const APP_COMPANY_FALLBACK = "TARA";
