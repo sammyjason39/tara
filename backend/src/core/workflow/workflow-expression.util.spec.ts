@@ -25,6 +25,44 @@ describe('workflow-expression.util', () => {
     expect(evaluateCondition(enriched, 'payload.content', 'contains', 'resign')).toBe(true);
   });
 
+  it('contains_word matches whole words only', () => {
+    expect(evaluateSingleCondition(enriched, 'payload.content', 'contains_word', 'resign')).toBe(
+      true,
+    );
+    expect(
+      evaluateSingleCondition(
+        { payload: { content: 'Tolong memberhentikan proses cuti saya' } },
+        'payload.content',
+        'contains_word',
+        'berhenti',
+      ),
+    ).toBe(false);
+    expect(
+      evaluateSingleCondition(
+        { payload: { content: 'Saya mau berhenti kerja' } },
+        'payload.content',
+        'contains_word',
+        'berhenti',
+      ),
+    ).toBe(true);
+    expect(
+      evaluateSingleCondition(
+        { payload: { content: 'Bagaimana cara presign dokumen?' } },
+        'payload.content',
+        'contains_word',
+        'resign',
+      ),
+    ).toBe(false);
+    expect(
+      evaluateSingleCondition(
+        { payload: { content: 'Berapa sisa cuti saya?' } },
+        'payload.content',
+        'contains_word',
+        'resign',
+      ),
+    ).toBe(false);
+  });
+
   it('evaluates employee role', () => {
     expect(evaluateSingleCondition(enriched, 'employee.role', 'eq', 'Supervisor')).toBe(true);
     expect(evaluateSingleCondition(enriched, 'employee.role', 'in', 'Employee,Supervisor')).toBe(true);

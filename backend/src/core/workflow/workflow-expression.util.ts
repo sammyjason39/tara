@@ -43,6 +43,22 @@ function asLowerString(value: unknown): string {
   return String(value).toLowerCase();
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Whole-word match — avoids substring hits (e.g. "berhenti" inside "memberhentikan"). */
+function containsWholeWord(haystack: string, word: string): boolean {
+  const h = asLowerString(haystack);
+  const w = asLowerString(word).trim();
+  if (!w) return false;
+  const pattern = new RegExp(
+    `(?:^|[^\\p{L}\\p{N}])${escapeRegExp(w)}(?:[^\\p{L}\\p{N}]|$)`,
+    'iu',
+  );
+  return pattern.test(h);
+}
+
 export function evaluateSingleCondition(
   context: Record<string, unknown>,
   field: string,
@@ -61,6 +77,10 @@ export function evaluateSingleCondition(
       return asLowerString(actual).includes(asLowerString(expected));
     case 'not_contains':
       return !asLowerString(actual).includes(asLowerString(expected));
+    case 'contains_word':
+      return containsWholeWord(asLowerString(actual), String(expected ?? ''));
+    case 'not_contains_word':
+      return !containsWholeWord(asLowerString(actual), String(expected ?? ''));
     case 'starts_with':
       return asLowerString(actual).startsWith(asLowerString(expected));
     case 'ends_with':

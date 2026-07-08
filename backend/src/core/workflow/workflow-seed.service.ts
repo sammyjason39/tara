@@ -60,6 +60,7 @@ export class WorkflowSeedService implements OnModuleInit {
           category: wf.category,
           trigger_event: wf.trigger_event,
           graph: wf.graph as any,
+          is_active: wf.is_active,
           ...(wf.is_active
             ? { published_graph: wf.graph as any, published_at: new Date() }
             : {}),
@@ -77,7 +78,7 @@ export class WorkflowSeedService implements OnModuleInit {
         description: 'Contoh rule: jika yang mengajukan role Supervisor DAN cuti lebih dari 5 hari, eskalasi HR.',
         category: 'leave',
         trigger_event: 'leave.request.submitted',
-        is_active: false,
+        is_active: true,
         graph: {
           nodes: [
             node('trigger', 'trigger', 80, 80, {
@@ -116,7 +117,7 @@ export class WorkflowSeedService implements OnModuleInit {
         description: 'Kirim notifikasi ke supervisor saat karyawan mengajukan cuti (menggantikan Leave Request Agent step 3).',
         category: 'leave',
         trigger_event: 'leave.request.submitted',
-        is_active: false,
+        is_active: true,
         graph: {
           nodes: [
             node('trigger', 'trigger', 80, 80, {
@@ -146,7 +147,7 @@ export class WorkflowSeedService implements OnModuleInit {
         description: 'Notifikasi + WhatsApp ke karyawan saat cuti disetujui.',
         category: 'leave',
         trigger_event: 'leave.request.approved',
-        is_active: false,
+        is_active: true,
         graph: {
           nodes: [
             node('trigger', 'trigger', 80, 80, {
@@ -187,7 +188,7 @@ export class WorkflowSeedService implements OnModuleInit {
         description: 'Notifikasi ke karyawan saat cuti ditolak.',
         category: 'leave',
         trigger_event: 'leave.request.rejected',
-        is_active: false,
+        is_active: true,
         graph: {
           nodes: [
             node('trigger', 'trigger', 80, 80, {
@@ -215,7 +216,7 @@ export class WorkflowSeedService implements OnModuleInit {
         description: 'Kirim WhatsApp konfirmasi setelah clock in (Clock Confirmation Agent).',
         category: 'attendance',
         trigger_event: 'attendance.clock_in',
-        is_active: false,
+        is_active: true,
         graph: {
           nodes: [
             node('trigger', 'trigger', 80, 80, {
@@ -241,7 +242,7 @@ export class WorkflowSeedService implements OnModuleInit {
         description: 'Notifikasi selamat datang saat karyawan baru dibuat (Onboarding Agent step 1).',
         category: 'onboarding',
         trigger_event: 'employee.created',
-        is_active: false,
+        is_active: true,
         graph: {
           nodes: [
             node('trigger', 'trigger', 80, 80, {
@@ -266,7 +267,8 @@ export class WorkflowSeedService implements OnModuleInit {
       {
         slug: 'wa-intent-resign-escalate',
         name: 'WhatsApp — Intent Resign → HR',
-        description: 'Deteksi kata resign/berhenti/phk di chat WA dan eskalasi ke HR.',
+        description:
+          'Deteksi intent resign/berhenti/PHK di chat WA (kata utuh) dan eskalasi ke HR. Pesan umum tetap ditangani AI default.',
         category: 'whatsapp',
         trigger_event: 'whatsapp.message.inbound',
         is_active: true,
@@ -276,19 +278,18 @@ export class WorkflowSeedService implements OnModuleInit {
               label: 'Pesan WA masuk',
               eventType: 'whatsapp.message.inbound',
             }),
-            node('check-resign', 'condition', 80, 200, {
-              label: 'Intent resign?',
-              field: 'payload.content',
-              operator: 'contains',
-              value: 'resign',
+            node('check-intent', 'condition', 80, 220, {
+              label: 'Intent resign / PHK?',
+              match: 'any',
+              rules: [
+                { field: 'payload.content', operator: 'contains_word', value: 'resign' },
+                { field: 'payload.content', operator: 'contains_word', value: 'berhenti' },
+                { field: 'payload.content', operator: 'contains_word', value: 'phk' },
+                { field: 'payload.content', operator: 'contains', value: 'pengunduran diri' },
+                { field: 'payload.content', operator: 'contains', value: 'mengundurkan diri' },
+              ],
             }),
-            node('check-berhenti', 'condition', 320, 200, {
-              label: 'Kata "berhenti"?',
-              field: 'payload.content',
-              operator: 'contains',
-              value: 'berhenti',
-            }),
-            node('escalate', 'action', 200, 380, {
+            node('escalate', 'action', 80, 380, {
               label: 'Eskalasi HR',
               actionType: 'escalate_hr',
               config: {
@@ -300,20 +301,19 @@ export class WorkflowSeedService implements OnModuleInit {
             }),
           ],
           edges: [
-            edge('e1', 'trigger', 'check-resign'),
-            edge('e2-true', 'check-resign', 'escalate', 'true'),
-            edge('e3-false', 'check-resign', 'check-berhenti', 'false'),
-            edge('e4-true', 'check-berhenti', 'escalate', 'true'),
+            edge('e1', 'trigger', 'check-intent'),
+            edge('e2-true', 'check-intent', 'escalate', 'true'),
           ],
         },
       },
       {
         slug: 'wa-intent-phk-escalate',
         name: 'WhatsApp — Intent PHK → HR',
-        description: 'Deteksi pertanyaan PHK/pemutusan kerja dan eskalasi ke HR.',
+        description:
+          'Legacy — digabung ke workflow "WhatsApp — Intent Resign → HR". Dinonaktifkan agar tidak double eskalasi.',
         category: 'whatsapp',
         trigger_event: 'whatsapp.message.inbound',
-        is_active: true,
+        is_active: false,
         graph: {
           nodes: [
             node('trigger', 'trigger', 80, 80, {
@@ -322,9 +322,8 @@ export class WorkflowSeedService implements OnModuleInit {
             }),
             node('check-phk', 'condition', 80, 220, {
               label: 'Mention PHK?',
-              field: 'payload.content',
-              operator: 'contains',
-              value: 'phk',
+              match: 'all',
+              rules: [{ field: 'payload.content', operator: 'contains_word', value: 'phk' }],
             }),
             node('escalate', 'action', 80, 380, {
               label: 'Eskalasi HR',
@@ -457,7 +456,7 @@ export class WorkflowSeedService implements OnModuleInit {
         description: 'Notifikasi karyawan saat terdeteksi telat (Warning Letter Agent awal).',
         category: 'attendance',
         trigger_event: 'attendance.tardiness_detected',
-        is_active: false,
+        is_active: true,
         graph: {
           nodes: [
             node('trigger', 'trigger', 80, 80, {

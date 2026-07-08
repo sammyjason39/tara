@@ -18,6 +18,16 @@ export const WORKFLOW_OPERATOR_CATALOG: Record<
   neq: { label: 'tidak sama dengan', description: 'Nilai berbeda', needsValue: true },
   contains: { label: 'mengandung', description: 'Teks mengandung substring', needsValue: true },
   not_contains: { label: 'tidak mengandung', description: 'Teks tidak mengandung substring', needsValue: true },
+  contains_word: {
+    label: 'mengandung kata',
+    description: 'Teks mengandung kata utuh (bukan substring)',
+    needsValue: true,
+  },
+  not_contains_word: {
+    label: 'tidak mengandung kata',
+    description: 'Teks tidak mengandung kata utuh',
+    needsValue: true,
+  },
   starts_with: { label: 'diawali', description: 'Teks diawali dengan', needsValue: true },
   ends_with: { label: 'diakhiri', description: 'Teks diakhiri dengan', needsValue: true },
   exists: { label: 'ada / tidak kosong', description: 'Field punya nilai', needsValue: false },

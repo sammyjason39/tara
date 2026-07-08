@@ -7,6 +7,8 @@ export type WorkflowConditionOperator =
   | 'neq'
   | 'contains'
   | 'not_contains'
+  | 'contains_word'
+  | 'not_contains_word'
   | 'starts_with'
   | 'ends_with'
   | 'exists'
